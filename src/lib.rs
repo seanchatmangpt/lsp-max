@@ -1940,6 +1940,25 @@ pub trait LanguageServer: Send + Sync + 'static {
         }))
     }
 
+    /// Returns conformance score delta entries since the given sequence number.
+    #[rpc(name = "max/conformanceDelta")]
+    async fn max_conformance_delta(&self, params: serde_json::Value) -> Result<serde_json::Value> {
+        let since_seq: u64 = params
+            .get("since_seq")
+            .and_then(|v| v.as_u64())
+            .unwrap_or(0);
+        let mesh = lock_mesh()?;
+        let deltas: Vec<&max_runtime::ConformanceDeltaEntry> = mesh
+            .conformance_delta_log
+            .iter()
+            .filter(|e| e.seq > since_seq)
+            .collect();
+        Ok(serde_json::json!({
+            "deltas": deltas,
+            "current_seq": mesh.action_seq,
+        }))
+    }
+
     /// The `textDocument/inlineCompletion` request is sent from the client to the server to compute inline completions.
     ///
     /// # Compatibility

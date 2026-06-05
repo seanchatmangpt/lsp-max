@@ -233,7 +233,7 @@ impl DeterministicSnapshot {
     pub fn new() -> Self {
         let timestamp = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
-            .unwrap()
+            .unwrap_or(std::time::Duration::ZERO)
             .as_secs();
         Self {
             id: tower_lsp_max_protocol::SnapshotId(format!("snap-{}", timestamp)),
@@ -990,6 +990,11 @@ pub struct LspInstance {
     pub diagnostics: Vec<MaxDiagnostic>,
     pub receipts: Vec<Receipt>,
     pub policy_state: Option<PolicyState>,
+    /// Lazy-invalidation cache for `conformance_score()`.
+    /// Interior mutability via `Cell` keeps `&self` signature.
+    /// Skipped during serde (derived from `diagnostics`).
+    #[serde(skip)]
+    cached_score: std::cell::Cell<Option<f64>>,
 }
 
 impl LspInstance {
@@ -1000,10 +1005,22 @@ impl LspInstance {
             diagnostics: Vec::new(),
             receipts: Vec::new(),
             policy_state: None,
+            cached_score: std::cell::Cell::new(None),
         }
     }
 
+    /// Invalidate the cached conformance score.
+    /// Call whenever `diagnostics` is mutated.
+    #[inline]
+    pub fn invalidate_score_cache(&mut self) {
+        self.cached_score.set(None);
+    }
+
+    /// Conformance score: O(1) cached reads, O(n) only after mutation.
     pub fn conformance_score(&self) -> f64 {
+        if let Some(score) = self.cached_score.get() {
+            return score;
+        }
         let mut penalty: f64 = 0.0;
         for diag in &self.diagnostics {
             let p = match diag.lsp.severity {
@@ -1016,7 +1033,9 @@ impl LspInstance {
             };
             penalty += p;
         }
-        f64::max(100.0 - penalty, 0.0)
+        let score = f64::max(100.0 - penalty, 0.0);
+        self.cached_score.set(Some(score));
+        score
     }
 
     /// Map a conformance score to its [`ConformanceGrade`] bucket.
@@ -1039,6 +1058,7 @@ impl Default for LspInstance {
             diagnostics: Vec::new(),
             receipts: Vec::new(),
             policy_state: None,
+            cached_score: std::cell::Cell::new(None),
         }
     }
 }
@@ -1202,6 +1222,116 @@ pub struct ConformanceDeltaEntry {
     pub instance_id: String,
     pub old_score: f64,
     pub new_score: f64,
+}
+
+
+/// Typed enumeration of every known `max/` RPC method.
+///
+/// `dispatch_rpc` parses the incoming method string into this enum before dispatching.
+/// Adding a new protocol method requires a new variant here **and** a new match arm in
+/// `dispatch_rpc` — the compiler enforces completeness, making "unimplemented method"
+/// bugs structurally impossible.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum MaxMethod {
+    Snapshot,
+    ConformanceVector,
+    ClearDiagnostic,
+    ExplainDiagnostic,
+    RepairPlan,
+    ApplyRepairTransaction,
+    ExportAnalysisBundle,
+    RunGate,
+    Receipt,
+    Hook,
+    HookGraph,
+    Chain,
+    Propagate,
+    AutonomicLoop,
+    ManifoldSnapshot,
+    LawfulTransition,
+    Admission,
+    Refusal,
+    Replay,
+    ReleaseActuation,
+    InstanceList,
+    DumpState,
+    RestoreState,
+    Reset,
+    ConformanceDelta,
+    VerifyLedger,
+    LedgerReport,
+}
+
+impl MaxMethod {
+    /// Return the canonical JSON-RPC method string for this variant.
+    pub fn as_str(self) -> &'static str {
+        match self {
+            MaxMethod::Snapshot => "max/snapshot",
+            MaxMethod::ConformanceVector => "max/conformanceVector",
+            MaxMethod::ClearDiagnostic => "max/clearDiagnostic",
+            MaxMethod::ExplainDiagnostic => "max/explainDiagnostic",
+            MaxMethod::RepairPlan => "max/repairPlan",
+            MaxMethod::ApplyRepairTransaction => "max/applyRepairTransaction",
+            MaxMethod::ExportAnalysisBundle => "max/exportAnalysisBundle",
+            MaxMethod::RunGate => "max/runGate",
+            MaxMethod::Receipt => "max/receipt",
+            MaxMethod::Hook => "max/hook",
+            MaxMethod::HookGraph => "max/hookGraph",
+            MaxMethod::Chain => "max/chain",
+            MaxMethod::Propagate => "max/propagate",
+            MaxMethod::AutonomicLoop => "max/autonomicLoop",
+            MaxMethod::ManifoldSnapshot => "max/manifoldSnapshot",
+            MaxMethod::LawfulTransition => "max/lawfulTransition",
+            MaxMethod::Admission => "max/admission",
+            MaxMethod::Refusal => "max/refusal",
+            MaxMethod::Replay => "max/replay",
+            MaxMethod::ReleaseActuation => "max/releaseActuation",
+            MaxMethod::InstanceList => "max/instanceList",
+            MaxMethod::DumpState => "max/dumpState",
+            MaxMethod::RestoreState => "max/restoreState",
+            MaxMethod::Reset => "max/reset",
+            MaxMethod::ConformanceDelta => "max/conformanceDelta",
+            MaxMethod::VerifyLedger => "max/verifyLedger",
+            MaxMethod::LedgerReport => "max/ledgerReport",
+        }
+    }
+}
+
+impl<'a> TryFrom<&'a str> for MaxMethod {
+    type Error = ();
+
+    fn try_from(s: &'a str) -> Result<Self, Self::Error> {
+        match s {
+            "max/snapshot" => Ok(MaxMethod::Snapshot),
+            "max/conformanceVector" => Ok(MaxMethod::ConformanceVector),
+            "max/clearDiagnostic" => Ok(MaxMethod::ClearDiagnostic),
+            "max/explainDiagnostic" => Ok(MaxMethod::ExplainDiagnostic),
+            "max/repairPlan" => Ok(MaxMethod::RepairPlan),
+            "max/applyRepairTransaction" => Ok(MaxMethod::ApplyRepairTransaction),
+            "max/exportAnalysisBundle" => Ok(MaxMethod::ExportAnalysisBundle),
+            "max/runGate" => Ok(MaxMethod::RunGate),
+            "max/receipt" => Ok(MaxMethod::Receipt),
+            "max/hook" => Ok(MaxMethod::Hook),
+            "max/hookGraph" => Ok(MaxMethod::HookGraph),
+            "max/chain" => Ok(MaxMethod::Chain),
+            "max/propagate" => Ok(MaxMethod::Propagate),
+            "max/autonomicLoop" => Ok(MaxMethod::AutonomicLoop),
+            "max/manifoldSnapshot" => Ok(MaxMethod::ManifoldSnapshot),
+            "max/lawfulTransition" => Ok(MaxMethod::LawfulTransition),
+            "max/admission" => Ok(MaxMethod::Admission),
+            "max/refusal" => Ok(MaxMethod::Refusal),
+            "max/replay" => Ok(MaxMethod::Replay),
+            "max/releaseActuation" => Ok(MaxMethod::ReleaseActuation),
+            "max/instanceList" => Ok(MaxMethod::InstanceList),
+            "max/dumpState" => Ok(MaxMethod::DumpState),
+            "max/restoreState" => Ok(MaxMethod::RestoreState),
+            "max/reset" => Ok(MaxMethod::Reset),
+            "max/conformanceDelta" => Ok(MaxMethod::ConformanceDelta),
+            "max/verifyLedger" => Ok(MaxMethod::VerifyLedger),
+            "max/ledgerReport" => Ok(MaxMethod::LedgerReport),
+            _ => Err(()),
+        }
+    }
 }
 
 pub struct AutonomicMesh {
@@ -1465,6 +1595,7 @@ impl AutonomicMesh {
                         .diagnostics
                         .retain(|d| d.diagnostic_id != diagnostic_id);
                     if instance.diagnostics.len() < old_len {
+                        instance.invalidate_score_cache();
                         let event = HookEvent::DiagnosticCleared {
                             instance_id,
                             diagnostic_id,
@@ -1479,6 +1610,7 @@ impl AutonomicMesh {
             } => {
                 if let Some(instance) = self.instances.get_mut(&instance_id.0) {
                     instance.diagnostics.push((*diagnostic).clone());
+                    instance.invalidate_score_cache();
                     let event = HookEvent::DiagnosticEmitted {
                         instance_id,
                         diagnostic,
@@ -1513,7 +1645,7 @@ impl AutonomicMesh {
                         description,
                         std::time::SystemTime::now()
                             .duration_since(std::time::UNIX_EPOCH)
-                            .unwrap()
+                            .unwrap_or(std::time::Duration::ZERO)
                             .as_secs()
                     );
                     if let Err(e) = std::fs::write(&file_path, content) {
@@ -1532,6 +1664,7 @@ impl AutonomicMesh {
                     instance.diagnostics.clear();
                     instance.receipts.clear();
                     instance.policy_state = Some(PolicyState::Operational);
+                    instance.invalidate_score_cache();
                     self.dispatch_event(HookEvent::InstanceReset {
                         instance_id,
                     });
@@ -1690,27 +1823,32 @@ impl AutonomicMesh {
             return Err(format!("Instance {} not found", instance_id));
         }
 
-        match method {
-            "max/verifyLedger" => {
+        // Parse to typed enum — unknown methods fail here; the exhaustive match below
+        // makes any newly-added variant that lacks a dispatch arm a compile error.
+        let max_method = MaxMethod::try_from(method)
+            .map_err(|_| format!("Method {} not supported on local RPC surface", method))?;
+
+        match max_method {
+            MaxMethod::VerifyLedger => {
                 self.verify_instance_ledger(instance_id)?;
                 Ok(serde_json::Value::Null)
             }
-            "max/ledgerReport" => {
+            MaxMethod::LedgerReport => {
                 let report = self.get_ledger_diagnostic_report(instance_id);
                 Ok(serde_json::Value::String(report))
             }
-            "max/snapshot" => {
+            MaxMethod::Snapshot => {
                 let snap = DeterministicSnapshot::new();
                 serde_json::to_value(snap.id).map_err(|e| e.to_string())
             }
-            "max/conformanceVector" => {
+            MaxMethod::ConformanceVector => {
                 let instance = self.instances.get(instance_id)
                     .ok_or_else(|| format!("Instance not found: {}", instance_id))?;
 
                 let vec = build_conformance_vector(&instance.diagnostics);
                 serde_json::to_value(vec).map_err(|e| e.to_string())
             }
-            "max/clearDiagnostic" => {
+            MaxMethod::ClearDiagnostic => {
                 let diag_id: String =
                     serde_json::from_value(params).map_err(|e| format!("Invalid params: {}", e))?;
 
@@ -1720,7 +1858,7 @@ impl AutonomicMesh {
                 });
                 Ok(serde_json::Value::Null)
             }
-            "max/explainDiagnostic" => {
+            MaxMethod::ExplainDiagnostic => {
                 let diag_id: String =
                     serde_json::from_value(params).map_err(|e| format!("Invalid params: {}", e))?;
                 let inst = self
@@ -1734,7 +1872,7 @@ impl AutonomicMesh {
                     .ok_or_else(|| format!("Diagnostic not found: {}", diag_id))?;
                 serde_json::to_value(diag.clone()).map_err(|e| e.to_string())
             }
-            "max/repairPlan" => {
+            MaxMethod::RepairPlan => {
                 let id: String =
                     serde_json::from_value(params).map_err(|e| format!("Invalid params: {}", e))?;
                 let inst = self
@@ -1778,12 +1916,12 @@ impl AutonomicMesh {
                     .collect();
                 serde_json::to_value(actions).map_err(|e| e.to_string())
             }
-            "max/applyRepairTransaction" => {
+            MaxMethod::ApplyRepairTransaction => {
                 let code_action: tower_lsp_max_protocol::MaxCodeAction =
                     serde_json::from_value(params).map_err(|e| format!("Invalid params: {}", e))?;
                 self.apply_repair_transaction(instance_id, code_action)
             }
-            "max/exportAnalysisBundle" => {
+            MaxMethod::ExportAnalysisBundle => {
                 let snapshot_id: tower_lsp_max_protocol::SnapshotId =
                     serde_json::from_value(params).map_err(|e| format!("Invalid params: {}", e))?;
                 let inst = self
@@ -1809,7 +1947,7 @@ impl AutonomicMesh {
                 };
                 serde_json::to_value(bundle).map_err(|e| e.to_string())
             }
-            "max/runGate" => {
+            MaxMethod::RunGate => {
                 let gate_str: String =
                     serde_json::from_value(params).map_err(|e| format!("Invalid params: {}", e))?;
                 let inst = self
@@ -1822,7 +1960,7 @@ impl AutonomicMesh {
                     .any(|d| d.verification_gates.iter().any(|g| g.0 == gate_str));
                 serde_json::to_value(!gate_blocked).map_err(|e| e.to_string())
             }
-            "max/receipt" => {
+            MaxMethod::Receipt => {
                 let receipt_id: String =
                     serde_json::from_value(params).map_err(|e| format!("Invalid params: {}", e))?;
                 let inst = self
@@ -1836,7 +1974,7 @@ impl AutonomicMesh {
                     .ok_or_else(|| format!("Receipt not found: {}", receipt_id))?;
                 serde_json::to_value(receipt.clone()).map_err(|e| e.to_string())
             }
-            "max/hook" => {
+            MaxMethod::Hook => {
                 // List all registered hooks with their metadata
                 let hook_names: Vec<serde_json::Value> = self.hooks.iter().map(|h| {
                     serde_json::json!({ "name": h.name() })
@@ -1844,7 +1982,7 @@ impl AutonomicMesh {
                 serde_json::to_value(hook_names).map_err(|e| e.to_string())
             }
 
-            "max/hookGraph" => {
+            MaxMethod::HookGraph => {
                 // Return hook topology: for each hook, name + active diagnostic/receipt triggers
                 let inst = self.instances.get(instance_id)
                     .ok_or_else(|| format!("Instance not found: {}", instance_id))?;
@@ -1867,7 +2005,7 @@ impl AutonomicMesh {
                 serde_json::to_value(graph).map_err(|e| e.to_string())
             }
 
-            "max/chain" => {
+            MaxMethod::Chain => {
                 // Return full instance state summaries for all mesh members
                 let mut chain: Vec<serde_json::Value> = self.instances.iter().map(|(id, inst)| {
                     serde_json::json!({
@@ -1894,7 +2032,7 @@ impl AutonomicMesh {
                 serde_json::to_value(chain).map_err(|e| e.to_string())
             }
 
-            "max/propagate" => {
+            MaxMethod::Propagate => {
                 // Propagate a receipt from one instance to trigger hooks on all others
                 let receipt: tower_lsp_max_protocol::Receipt =
                     serde_json::from_value(params).map_err(|e| format!("Invalid params: {}", e))?;
@@ -1905,7 +2043,7 @@ impl AutonomicMesh {
                 Ok(serde_json::json!({ "propagated": true }))
             }
 
-            "max/autonomicLoop" => {
+            MaxMethod::AutonomicLoop => {
                 // Return current autonomic loop status: instances, active hooks, event log size
                 let status = serde_json::json!({
                     "instances": self.instances.keys().collect::<Vec<_>>(),
@@ -1916,7 +2054,7 @@ impl AutonomicMesh {
                 Ok(status)
             }
 
-            "max/manifoldSnapshot" => {
+            MaxMethod::ManifoldSnapshot => {
                 // Full manifold metadata: all instances with their complete state
                 let snapshot = serde_json::json!({
                     "instances": self.instances.iter().map(|(id, inst)| {
@@ -1936,7 +2074,7 @@ impl AutonomicMesh {
                 Ok(snapshot)
             }
 
-            "max/lawfulTransition" => {
+            MaxMethod::LawfulTransition => {
                 // Attempt a lawful transition: validate phase order and check blocking diagnostics
                 let target_phase: String =
                     serde_json::from_value(params).map_err(|e| format!("Invalid params: {}", e))?;
@@ -1982,7 +2120,7 @@ impl AutonomicMesh {
                 Ok(result)
             }
 
-            "max/admission" => {
+            MaxMethod::Admission => {
                 // Admissibility gate: returns Admitted/Refused/Unknown — NEVER collapses
                 let inst = self.instances.get(instance_id)
                     .ok_or_else(|| format!("Instance not found: {}", instance_id))?;
@@ -2002,7 +2140,7 @@ impl AutonomicMesh {
                 }))
             }
 
-            "max/refusal" => {
+            MaxMethod::Refusal => {
                 // Explicit refusal with law axis and receipt
                 let diag_id: String =
                     serde_json::from_value(params).map_err(|e| format!("Invalid params: {}", e))?;
@@ -2020,7 +2158,7 @@ impl AutonomicMesh {
                 }))
             }
 
-            "max/replay" => {
+            MaxMethod::Replay => {
                 // Replay the event log for the instance
                 let inst = self.instances.get(instance_id)
                     .ok_or_else(|| format!("Instance not found: {}", instance_id))?;
@@ -2044,7 +2182,7 @@ impl AutonomicMesh {
                 }))
             }
 
-            "max/releaseActuation" => {
+            MaxMethod::ReleaseActuation => {
                 // Controlled release: only if conformance admits it
                 let inst = self.instances.get(instance_id)
                     .ok_or_else(|| format!("Instance not found: {}", instance_id))?;
@@ -2072,7 +2210,7 @@ impl AutonomicMesh {
                 }))
             }
 
-            "max/instanceList" => {
+            MaxMethod::InstanceList => {
                 // Lightweight enumeration of all live instances: id, phase, conformance_score.
                 // Callers that only need instance IDs should prefer this over max/manifoldSnapshot.
                 let mut list: Vec<serde_json::Value> = self.instances.values().map(|inst| {
@@ -2087,19 +2225,19 @@ impl AutonomicMesh {
                 serde_json::to_value(list).map_err(|e| e.to_string())
             }
 
-            "max/dumpState" => {
+            MaxMethod::DumpState => {
                 let state = self.to_state();
                 serde_json::to_value(&state).map_err(|e| format!("Serialization failed: {}", e))
             }
 
-            "max/restoreState" => {
+            MaxMethod::RestoreState => {
                 let state: AutonomicMeshState =
                     serde_json::from_value(params).map_err(|e| format!("Invalid params: {}", e))?;
                 self.load_state(state);
                 Ok(serde_json::Value::Null)
             }
 
-            "max/reset" => {
+            MaxMethod::Reset => {
                 // Reset a single instance back to initial state: clears diagnostics, receipts,
                 // and sets policy state to Active. Supports test-harness teardown and chaos recycling.
                 self.execute_action(MeshAction::ResetInstance {
@@ -2111,7 +2249,7 @@ impl AutonomicMesh {
                 }))
             }
 
-            "max/conformanceDelta" => {
+            MaxMethod::ConformanceDelta => {
                 // Returns all conformance score changes since the given since_seq cursor.
                 // Params: { "since_seq": <u64> }
                 // Response: { "deltas": [...], "current_seq": <u64> }
@@ -2131,10 +2269,6 @@ impl AutonomicMesh {
                 }))
             }
 
-            _ => Err(format!(
-                "Method {} not supported on local RPC surface",
-                method
-            )),
         }
     }
 
@@ -3242,6 +3376,56 @@ mod tests_gaps {
         let inst = LspInstance::new("X");
         assert_eq!(inst.conformance_score(), 100.0);
     }
+    /// INN-10-04: cached conformance_score is O(1) after first call and invalidated by mutation.
+    #[test]
+    fn test_conformance_score_cache_invalidation() {
+        let mut inst = LspInstance::new("CACHE_TEST");
+        // Fresh instance: score 100
+        assert_eq!(inst.conformance_score(), 100.0, "empty diags must score 100");
+        // Second call must use cache (same result)
+        assert_eq!(inst.conformance_score(), 100.0, "cached call must also score 100");
+
+        // Add an ERROR diagnostic; cache must be invalidated
+        let diag = MaxDiagnostic {
+            diagnostic_id: "d1".to_string(),
+            law_id: "law-cache-test".to_string(),
+            lsp: lsp_types::Diagnostic {
+                range: lsp_types::Range::default(),
+                severity: Some(lsp_types::DiagnosticSeverity::ERROR),
+                code: None,
+                code_description: None,
+                source: None,
+                message: "cache test error".to_string(),
+                related_information: None,
+                tags: None,
+                data: None,
+            },
+            attempted_transition: None,
+            violated_axes: vec![],
+            doc_routes: vec![],
+            repair_actions: vec![],
+            verification_gates: vec![],
+            receipt_obligation: None,
+            law_axis: tower_lsp_max_protocol::LawAxis::Domain,
+            violated_invariant: String::new(),
+            observed_state: serde_json::Value::Null,
+            expected_state: serde_json::Value::Null,
+            repairability: tower_lsp_max_protocol::Repairability::Unknown,
+            terminality: tower_lsp_max_protocol::Terminality::NonTerminal,
+        };
+        inst.diagnostics.push(diag);
+        inst.invalidate_score_cache();
+        // Score must drop by 30 (one ERROR)
+        assert_eq!(inst.conformance_score(), 70.0, "one ERROR must reduce score to 70");
+        // Repeated reads use cache
+        assert_eq!(inst.conformance_score(), 70.0, "cached score must remain 70");
+
+        // Clear diagnostic; invalidate
+        inst.diagnostics.clear();
+        inst.invalidate_score_cache();
+        assert_eq!(inst.conformance_score(), 100.0, "after clear score must return to 100");
+    }
+
 
     #[test]
     fn test_rpc_conformance_vector_warning_diagnostic() {
@@ -4918,5 +5102,80 @@ mod reset_instance_guard_tests {
             before_len,
             "ResetInstance on a nonexistent instance must not append any HookEvent"
         );
+    }
+}
+
+// ---------------------------------------------------------------------------
+// INN-10-08 — Property-based tests for conformance_score invariants (DfLSS-CTQ)
+// ---------------------------------------------------------------------------
+
+#[cfg(test)]
+mod conformance_score_proptest {
+    use super::*;
+    use proptest::prelude::*;
+
+    fn make_diag_sev_prop(id: &str, severity_byte: u8) -> MaxDiagnostic {
+        let severity = match severity_byte % 4 {
+            0 => Some(lsp_types::DiagnosticSeverity::ERROR),
+            1 => Some(lsp_types::DiagnosticSeverity::WARNING),
+            2 => Some(lsp_types::DiagnosticSeverity::INFORMATION),
+            _ => Some(lsp_types::DiagnosticSeverity::HINT),
+        };
+        MaxDiagnostic {
+            diagnostic_id: id.to_string(),
+            law_id: "law-prop".to_string(),
+            lsp: lsp_types::Diagnostic {
+                range: lsp_types::Range::default(),
+                severity,
+                code: None,
+                code_description: None,
+                source: None,
+                message: "prop-test".to_string(),
+                related_information: None,
+                tags: None,
+                data: None,
+            },
+            ..Default::default()
+        }
+    }
+
+    proptest! {
+        #[test]
+        fn prop_conformance_score_always_in_range(
+            diag_severities in proptest::collection::vec(0u8..4, 0..50)
+        ) {
+            let mut inst = LspInstance::new("PROP_INST");
+            for (i, s) in diag_severities.iter().enumerate() {
+                inst.diagnostics.push(make_diag_sev_prop(&format!("d{}", i), *s));
+            }
+            let score = inst.conformance_score();
+            prop_assert!(score >= 0.0, "score must be >= 0.0, got {}", score);
+            prop_assert!(score <= 100.0, "score must be <= 100.0, got {}", score);
+        }
+
+        #[test]
+        fn prop_conformance_score_zero_diags_is_100(_salt in 0u64..u64::MAX) {
+            let inst = LspInstance::new("PROP_EMPTY");
+            prop_assert_eq!(inst.conformance_score(), 100.0);
+        }
+
+        #[test]
+        fn prop_conformance_score_error_does_not_increase(
+            diag_severities in proptest::collection::vec(0u8..4, 0..20)
+        ) {
+            let mut inst = LspInstance::new("PROP_MONO");
+            for (i, s) in diag_severities.iter().enumerate() {
+                inst.diagnostics.push(make_diag_sev_prop(&format!("d{}", i), *s));
+            }
+            let score_before = inst.conformance_score();
+            inst.diagnostics.push(make_diag_sev_prop("extra_error", 0));
+            let score_after = inst.conformance_score();
+            prop_assert!(
+                score_after <= score_before,
+                "adding ERROR must not increase score: before={}, after={}",
+                score_before,
+                score_after
+            );
+        }
     }
 }

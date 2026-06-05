@@ -8,6 +8,238 @@ mod lsp_3_18;
 
 use serde_json::json;
 
+// ---------------------------------------------------------------------------
+// INN-10-06: serde round-trip tests for protocol types
+// ---------------------------------------------------------------------------
+
+#[test]
+fn test_protocol_conformance_vector_round_trip() {
+    use tower_lsp_max_protocol::{ConformanceVector, LawAxis};
+    let cv = ConformanceVector {
+        admitted: vec![LawAxis::Protocol, LawAxis::Type],
+        refused: vec![LawAxis::Hook],
+        unknown: vec![LawAxis::Domain],
+        score: Some(66.7),
+        strict_mode: true,
+    };
+    let s = serde_json::to_string(&cv).expect("serialize ConformanceVector");
+    let cv2: ConformanceVector = serde_json::from_str(&s).expect("deserialize ConformanceVector");
+    assert_eq!(cv2.admitted.len(), 2);
+    assert_eq!(cv2.refused.len(), 1);
+    assert_eq!(cv2.unknown.len(), 1);
+    assert_eq!(cv2.score, Some(66.7));
+    assert!(cv2.strict_mode);
+}
+
+#[test]
+fn test_protocol_admission_result_round_trip() {
+    use tower_lsp_max_protocol::{AdmissionDecision, AdmissionResult, LawAxis, Receipt};
+    let ar = AdmissionResult {
+        decision: AdmissionDecision::Admitted,
+        law_axis: LawAxis::Protocol,
+        rationale: "all checks pass".to_string(),
+        receipt: Some(Receipt {
+            receipt_id: "rcpt-001".to_string(),
+            hash: "abc123".to_string(),
+            prev_receipt_hash: None,
+        }),
+    };
+    let s = serde_json::to_string(&ar).expect("serialize AdmissionResult");
+    let ar2: AdmissionResult = serde_json::from_str(&s).expect("deserialize AdmissionResult");
+    assert_eq!(ar2.decision, AdmissionDecision::Admitted);
+    assert_eq!(ar2.rationale, "all checks pass");
+    assert!(ar2.receipt.is_some());
+}
+
+#[test]
+fn test_protocol_refusal_result_round_trip() {
+    use tower_lsp_max_protocol::{LawAxis, Receipt, RefusalResult, RepairAction};
+    let rr = RefusalResult {
+        law_axis: LawAxis::Security,
+        rationale: "security gate failed".to_string(),
+        receipt: Receipt {
+            receipt_id: "rcpt-002".to_string(),
+            hash: "def456".to_string(),
+            prev_receipt_hash: Some("abc123".to_string()),
+        },
+        repair_actions: vec![RepairAction {
+            action_id: "fix-security".to_string(),
+            description: "Run security scan".to_string(),
+        }],
+    };
+    let s = serde_json::to_string(&rr).expect("serialize RefusalResult");
+    let rr2: RefusalResult = serde_json::from_str(&s).expect("deserialize RefusalResult");
+    assert_eq!(rr2.rationale, "security gate failed");
+    assert_eq!(rr2.repair_actions.len(), 1);
+    assert_eq!(rr2.receipt.prev_receipt_hash, Some("abc123".to_string()));
+}
+
+#[test]
+fn test_protocol_lawful_transition_result_round_trip() {
+    use tower_lsp_max_protocol::{LawfulTransitionResult, Receipt};
+    let ltr = LawfulTransitionResult {
+        from_phase: "Uninitialized".to_string(),
+        to_phase: "Initializing".to_string(),
+        lawful: true,
+        violated_laws: vec![],
+        receipt: Some(Receipt {
+            receipt_id: "rcpt-003".to_string(),
+            hash: "ghi789".to_string(),
+            prev_receipt_hash: None,
+        }),
+    };
+    let s = serde_json::to_string(&ltr).expect("serialize LawfulTransitionResult");
+    let ltr2: LawfulTransitionResult = serde_json::from_str(&s).expect("deserialize LawfulTransitionResult");
+    assert_eq!(ltr2.from_phase, "Uninitialized");
+    assert_eq!(ltr2.to_phase, "Initializing");
+    assert!(ltr2.lawful);
+    assert!(ltr2.violated_laws.is_empty());
+}
+
+#[test]
+fn test_protocol_replay_result_round_trip() {
+    use tower_lsp_max_protocol::{ConformanceVector, Receipt, ReplayResult};
+    let rr = ReplayResult {
+        replay_id: "replay-001".to_string(),
+        events_replayed: 42,
+        conformance: ConformanceVector::default(),
+        receipts: vec![Receipt {
+            receipt_id: "rcpt-004".to_string(),
+            hash: "jkl012".to_string(),
+            prev_receipt_hash: None,
+        }],
+    };
+    let s = serde_json::to_string(&rr).expect("serialize ReplayResult");
+    let rr2: ReplayResult = serde_json::from_str(&s).expect("deserialize ReplayResult");
+    assert_eq!(rr2.replay_id, "replay-001");
+    assert_eq!(rr2.events_replayed, 42);
+    assert_eq!(rr2.receipts.len(), 1);
+}
+
+#[test]
+fn test_protocol_release_actuation_result_round_trip() {
+    use tower_lsp_max_protocol::{ConformanceVector, Receipt, ReleaseActuationResult};
+    let rar = ReleaseActuationResult {
+        released: true,
+        conformance: ConformanceVector::default(),
+        blocking_axes: vec![],
+        receipt: Some(Receipt {
+            receipt_id: "rcpt-release".to_string(),
+            hash: "mno345".to_string(),
+            prev_receipt_hash: None,
+        }),
+    };
+    let s = serde_json::to_string(&rar).expect("serialize ReleaseActuationResult");
+    let rar2: ReleaseActuationResult = serde_json::from_str(&s).expect("deserialize ReleaseActuationResult");
+    assert!(rar2.released);
+    assert!(rar2.blocking_axes.is_empty());
+    assert!(rar2.receipt.is_some());
+}
+
+#[test]
+fn test_protocol_hook_descriptor_round_trip() {
+    use tower_lsp_max_protocol::{HookDescriptor, LawAxis};
+    let hd = HookDescriptor {
+        hook_id: "hook-001".to_string(),
+        name: "TestHook".to_string(),
+        description: "A test hook".to_string(),
+        axes: vec![LawAxis::Protocol],
+        trigger_law: LawAxis::Hook,
+        input_type: "MaxDiagnostic".to_string(),
+        output_type: "Receipt".to_string(),
+        failure_mode: "Refused".to_string(),
+    };
+    let s = serde_json::to_string(&hd).expect("serialize HookDescriptor");
+    let hd2: HookDescriptor = serde_json::from_str(&s).expect("deserialize HookDescriptor");
+    assert_eq!(hd2.hook_id, "hook-001");
+    assert_eq!(hd2.name, "TestHook");
+    assert_eq!(hd2.failure_mode, "Refused");
+}
+
+#[test]
+fn test_protocol_chain_descriptor_round_trip() {
+    use tower_lsp_max_protocol::{ChainDescriptor, HookDescriptor, HookGraphNode, LawAxis};
+    let node = HookGraphNode {
+        node_id: "node-001".to_string(),
+        hook: HookDescriptor::default(),
+        predecessors: vec![],
+        successors: vec!["node-002".to_string()],
+    };
+    let cd = ChainDescriptor {
+        chain_id: "chain-001".to_string(),
+        nodes: vec![node],
+        law_axis: LawAxis::Protocol,
+    };
+    let s = serde_json::to_string(&cd).expect("serialize ChainDescriptor");
+    let cd2: ChainDescriptor = serde_json::from_str(&s).expect("deserialize ChainDescriptor");
+    assert_eq!(cd2.chain_id, "chain-001");
+    assert_eq!(cd2.nodes.len(), 1);
+    assert_eq!(cd2.nodes[0].successors, vec!["node-002".to_string()]);
+}
+
+#[test]
+fn test_protocol_propagation_result_round_trip() {
+    use tower_lsp_max_protocol::{PropagationResult, Receipt};
+    let pr = PropagationResult {
+        propagation_id: "prop-001".to_string(),
+        affected_nodes: vec!["node-A".to_string(), "node-B".to_string()],
+        receipts: vec![Receipt {
+            receipt_id: "rcpt-prop".to_string(),
+            hash: "pqr678".to_string(),
+            prev_receipt_hash: None,
+        }],
+        success: true,
+    };
+    let s = serde_json::to_string(&pr).expect("serialize PropagationResult");
+    let pr2: PropagationResult = serde_json::from_str(&s).expect("deserialize PropagationResult");
+    assert_eq!(pr2.propagation_id, "prop-001");
+    assert_eq!(pr2.affected_nodes.len(), 2);
+    assert!(pr2.success);
+}
+
+#[test]
+fn test_protocol_autonomic_loop_status_round_trip() {
+    use tower_lsp_max_protocol::{AutonomicLoopStatus, Receipt};
+    let als = AutonomicLoopStatus {
+        loop_id: "loop-001".to_string(),
+        active: true,
+        iteration_count: 99,
+        last_receipt: Some(Receipt {
+            receipt_id: "rcpt-loop".to_string(),
+            hash: "stu901".to_string(),
+            prev_receipt_hash: None,
+        }),
+    };
+    let s = serde_json::to_string(&als).expect("serialize AutonomicLoopStatus");
+    let als2: AutonomicLoopStatus = serde_json::from_str(&s).expect("deserialize AutonomicLoopStatus");
+    assert_eq!(als2.loop_id, "loop-001");
+    assert_eq!(als2.iteration_count, 99);
+    assert!(als2.active);
+    assert!(als2.last_receipt.is_some());
+}
+
+#[test]
+fn test_protocol_manifold_snapshot_round_trip() {
+    use tower_lsp_max_protocol::{ChainDescriptor, ConformanceVector, HookDescriptor, ManifoldSnapshot, Receipt, SnapshotId};
+    let ms = ManifoldSnapshot {
+        snapshot_id: SnapshotId("snap-001".to_string()),
+        conformance: ConformanceVector::default(),
+        hooks: vec![HookDescriptor::default()],
+        chains: vec![ChainDescriptor::default()],
+        receipts: vec![Receipt {
+            receipt_id: "rcpt-snap".to_string(),
+            hash: "vwx234".to_string(),
+            prev_receipt_hash: None,
+        }],
+    };
+    let s = serde_json::to_string(&ms).expect("serialize ManifoldSnapshot");
+    let ms2: ManifoldSnapshot = serde_json::from_str(&s).expect("deserialize ManifoldSnapshot");
+    assert_eq!(ms2.snapshot_id.0, "snap-001");
+    assert_eq!(ms2.hooks.len(), 1);
+    assert_eq!(ms2.chains.len(), 1);
+    assert_eq!(ms2.receipts.len(), 1);
+}
+
 #[test]
 fn test_minimal_serialization() {
     use lsp_minimal::{DocumentDiagnosticParams, TextDocumentIdentifier};

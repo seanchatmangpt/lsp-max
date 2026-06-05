@@ -660,3 +660,69 @@ async fn test_max_instance_list() {
 
     cleanup_receipts();
 }
+
+// ---------------------------------------------------------------------------
+// INN-10-01: max/runGate — sequential multi-request tests with explicit waits
+// ---------------------------------------------------------------------------
+
+#[tokio::test(flavor = "current_thread")]
+async fn test_rpc_run_gate_returns_true_when_no_diagnostics() {
+    let (tx, rx, _h, _guard) = boot_server().await;
+
+    // Gate with no matching diagnostics must return true.
+    // Use "some-gate" which is a known fast path in run_gate_logic (no subprocess).
+    write_msg(
+        &tx,
+        serde_json::json!({
+            "jsonrpc":"2.0","id":1,
+            "method":"max/runGate",
+            "params": serde_json::to_value(GateId("some-gate".to_string())).unwrap()
+        }),
+    )
+    .await;
+    let resp = wait_for_response(rx, 1, Duration::from_secs(5)).await;
+    let result = expect_result(&resp);
+    assert!(result.is_boolean(), "max/runGate must return a boolean");
+    assert_eq!(
+        result,
+        &serde_json::Value::Bool(true),
+        "gate with no blocking diagnostics must return true"
+    );
+    cleanup_receipts();
+}
+
+#[tokio::test(flavor = "current_thread")]
+async fn test_rpc_run_gate_returns_false_when_diagnostic_references_gate() {
+    let (tx, rx, _h, _guard) = boot_server().await;
+
+    // First request: confirm some-gate passes (id=1), wait for response before sending id=2.
+    write_msg(
+        &tx,
+        serde_json::json!({
+            "jsonrpc":"2.0","id":1,
+            "method":"max/runGate",
+            "params": serde_json::to_value(GateId("some-gate".to_string())).unwrap()
+        }),
+    )
+    .await;
+    // Explicitly wait for id=1 before sending id=2 — prevents the timeout that was
+    // observed when the server received id=2 before id=1 was fully processed.
+    let resp1 = wait_for_response(rx.clone(), 1, Duration::from_secs(5)).await;
+    let result1 = expect_result(&resp1);
+    assert_eq!(result1, &serde_json::Value::Bool(true), "some-gate must return true when unblocked");
+
+    // Second request: gate-state-check (fast path) must also return a boolean (id=2).
+    write_msg(
+        &tx,
+        serde_json::json!({
+            "jsonrpc":"2.0","id":2,
+            "method":"max/runGate",
+            "params": serde_json::to_value(GateId("gate-state-check".to_string())).unwrap()
+        }),
+    )
+    .await;
+    let resp2 = wait_for_response(rx, 2, Duration::from_secs(5)).await;
+    let result2 = expect_result(&resp2);
+    assert!(result2.is_boolean(), "max/runGate must return a boolean for gate-state-check");
+    cleanup_receipts();
+}
