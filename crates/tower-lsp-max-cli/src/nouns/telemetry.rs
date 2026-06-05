@@ -170,33 +170,54 @@ pub fn flush() -> Result<FlushResult> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::env;
+
+    fn with_isolated_state<F: FnOnce()>(path: &str, f: F) {
+        let prev = env::var("TOWER_LSP_MAX_STATE_PATH").ok();
+        env::set_var("TOWER_LSP_MAX_STATE_PATH", path);
+        let _ = std::fs::remove_file(path);
+        f();
+        let _ = std::fs::remove_file(path);
+        match prev {
+            Some(v) => env::set_var("TOWER_LSP_MAX_STATE_PATH", v),
+            None => env::remove_var("TOWER_LSP_MAX_STATE_PATH"),
+        }
+    }
 
     #[test]
     fn test_export_returns_exported_status() {
-        let result = export("s3://bucket".to_string(), "data-001".to_string()).unwrap();
-        assert!(matches!(result.status, TelemetryStatus::Exported));
-        assert_eq!(result.destination, "s3://bucket");
-        assert_eq!(result.data_id, "data-001");
+        with_isolated_state("/tmp/telemetry_export_test.json", || {
+            let result = export("s3://bucket".to_string(), "data-001".to_string()).unwrap();
+            assert!(matches!(result.status, TelemetryStatus::Exported));
+            assert_eq!(result.destination, "s3://bucket");
+            assert_eq!(result.data_id, "data-001");
+        });
     }
 
     #[test]
     fn test_trace_returns_traced_status() {
-        let result = trace("my-span".to_string()).unwrap();
-        assert!(matches!(result.status, TelemetryStatus::Traced));
-        assert_eq!(result.span_name, "my-span");
+        with_isolated_state("/tmp/telemetry_trace_test.json", || {
+            let result = trace("my-span".to_string()).unwrap();
+            assert!(matches!(result.status, TelemetryStatus::Traced));
+            assert_eq!(result.span_name, "my-span");
+        });
     }
 
     #[test]
     fn test_metrics_returns_metrics_collected_status() {
-        let result = metrics("cpu.usage".to_string(), 42.5).unwrap();
-        assert!(matches!(result.status, TelemetryStatus::MetricsCollected));
-        assert_eq!(result.metric_name, "cpu.usage");
-        assert_eq!(result.value, 42.5);
+        with_isolated_state("/tmp/telemetry_metrics_test.json", || {
+            let result = metrics("cpu.usage".to_string(), 42.5).unwrap();
+            assert!(matches!(result.status, TelemetryStatus::MetricsCollected));
+            assert_eq!(result.metric_name, "cpu.usage");
+            assert_eq!(result.value, 42.5);
+        });
     }
 
     #[test]
     fn test_flush_returns_flushed_status() {
-        let result = flush().unwrap();
-        assert!(matches!(result.status, TelemetryStatus::Flushed));
+        with_isolated_state("/tmp/telemetry_flush_test.json", || {
+            let result = flush().unwrap();
+            assert!(matches!(result.status, TelemetryStatus::Flushed));
+        });
     }
 }
