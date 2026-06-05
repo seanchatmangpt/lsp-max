@@ -1,15 +1,15 @@
 use serde_json::Value;
 use tokio::net::{TcpListener, TcpStream};
-use tower_lsp::jsonrpc::Result;
-use tower_lsp::lsp_types::*;
-use tower_lsp::{Client, LanguageServer, LspService, Server};
+use tower_lsp_max::jsonrpc::Result;
+use tower_lsp_max::lsp_types::*;
+use tower_lsp_max::{Client, LanguageServer, LspService, Server};
 
 #[derive(Debug)]
 struct Backend {
     client: Client,
 }
 
-#[tower_lsp::async_trait]
+#[tower_lsp_max::async_trait]
 impl LanguageServer for Backend {
     async fn initialize(&self, _: InitializeParams) -> Result<InitializeResult> {
         Ok(InitializeResult {
@@ -38,7 +38,6 @@ impl LanguageServer for Backend {
                 }),
                 ..ServerCapabilities::default()
             },
-            ..Default::default()
         })
     }
 
@@ -151,5 +150,5 @@ async fn main() {
     let (read, write) = (read.compat(), write.compat_write());
 
     let (service, socket) = LspService::new(|client| Backend { client });
-    Server::new(read, write, socket).serve(service).await;
+    let _ = Server::new(read, write, socket).serve(service).await;
 }

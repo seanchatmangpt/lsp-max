@@ -62,7 +62,8 @@ where
     }
 
     fn call(&mut self, req: Request) -> Self::Future {
-        if self.state.get() == State::Uninitialized {
+        let params = req.params().cloned().unwrap_or(serde_json::Value::Null);
+        if self.state.try_initialize(params) {
             let state = self.state.clone();
             let fut = self.inner.call(req);
 
@@ -70,8 +71,13 @@ where
                 let response = fut.await?;
 
                 match &response {
-                    Some(res) if res.is_ok() => state.set(State::Initialized),
-                    _ => state.set(State::Uninitialized),
+                    Some(res) if res.is_ok() => {
+                        let server_caps = res.result().cloned().unwrap_or(serde_json::Value::Null);
+                        state.transition_to_initialized(server_caps);
+                    }
+                    _ => {
+                        state.transition_to_uninitialized();
+                    }
                 }
 
                 Ok(response)
@@ -131,16 +137,13 @@ where
     }
 
     fn call(&mut self, req: Request) -> Self::Future {
-        match self.state.get() {
-            State::Initialized => {
-                info!("shutdown request received, shutting down");
-                self.state.set(State::ShutDown);
-                self.inner.call(req)
-            }
-            cur_state => {
-                let (_, id, _) = req.into_parts();
-                future::ok(not_initialized_response(id, cur_state)).boxed()
-            }
+        if self.state.transition_to_shutdown() {
+            info!("shutdown request received, shutting down");
+            self.inner.call(req)
+        } else {
+            let cur_state = self.state.get();
+            let (_, id, _) = req.into_parts();
+            future::ok(not_initialized_response(id, cur_state)).boxed()
         }
     }
 }
@@ -194,7 +197,7 @@ impl<S> Service<Request> for ExitService<S> {
 
     fn poll_ready(&mut self, _: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
         if self.state.get() == State::Exited {
-            Poll::Ready(Err(ExitedError(())))
+            Poll::Ready(Err(ExitedError(self.state.get_exit_code())))
         } else {
             Poll::Ready(Ok(()))
         }
@@ -202,7 +205,7 @@ impl<S> Service<Request> for ExitService<S> {
 
     fn call(&mut self, _: Request) -> Self::Future {
         info!("exit notification received, stopping");
-        self.state.set(State::Exited);
+        self.state.transition_to_exited();
         self.pending.cancel_all();
         self.client.close();
         future::ok(None)

@@ -39,7 +39,7 @@ struct MethodCall<'a> {
     result: Option<&'a syn::Type>,
 }
 
-fn parse_method_calls(lang_server_trait: &ItemTrait) -> Vec<MethodCall> {
+fn parse_method_calls(lang_server_trait: &ItemTrait) -> Vec<MethodCall<'_>> {
     let mut calls = Vec::new();
 
     for item in &lang_server_trait.items {

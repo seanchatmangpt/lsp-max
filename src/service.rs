@@ -26,13 +26,21 @@ mod state;
 
 /// Error that occurs when attempting to call the language server after it has already exited.
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct ExitedError(());
+#[repr(transparent)]
+pub struct ExitedError(pub i32);
 
 impl std::error::Error for ExitedError {}
 
 impl Display for ExitedError {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        f.write_str("language server has exited")
+        write!(f, "language server has exited with status: {}", self.0)
+    }
+}
+
+impl ExitedError {
+    /// Returns the exit status code.
+    pub fn code(&self) -> i32 {
+        self.0
     }
 }
 
@@ -106,16 +114,20 @@ impl<S: LanguageServer> Service<Request> for LspService<S> {
     type Future = BoxFuture<'static, Result<Self::Response, Self::Error>>;
 
     fn poll_ready(&mut self, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
-        match self.state.get() {
-            State::Initializing => Poll::Pending,
-            State::Exited => Poll::Ready(Err(ExitedError(()))),
-            _ => self.inner.poll_ready(cx),
+        if self.state.get() == State::Exited {
+            let code = self.state.get_exit_code();
+            return Poll::Ready(Err(ExitedError(code)));
         }
+        if self.state.poll_initializing(cx).is_pending() {
+            return Poll::Pending;
+        }
+        self.inner.poll_ready(cx)
     }
 
     fn call(&mut self, req: Request) -> Self::Future {
         if self.state.get() == State::Exited {
-            return future::err(ExitedError(())).boxed();
+            let code = self.state.get_exit_code();
+            return future::err(ExitedError(code)).boxed();
         }
 
         let fut = self.inner.call(req);
@@ -169,14 +181,14 @@ impl<S: LanguageServer> LspServiceBuilder<S> {
     ///
     /// ```rust
     /// use serde_json::{json, Value};
-    /// use tower_lsp::jsonrpc::Result;
-    /// use tower_lsp::lsp_types::*;
-    /// use tower_lsp::{LanguageServer, LspService};
+    /// use tower_lsp_max::jsonrpc::Result;
+    /// use tower_lsp_max::lsp_types::*;
+    /// use tower_lsp_max::{LanguageServer, LspService};
     ///
     /// struct Mock;
     ///
     /// // Implementation of `LanguageServer` omitted...
-    /// # #[tower_lsp::async_trait]
+    /// # #[tower_lsp_max::async_trait]
     /// # impl LanguageServer for Mock {
     /// #     async fn initialize(&self, _: InitializeParams) -> Result<InitializeResult> {
     /// #         Ok(InitializeResult::default())
@@ -331,8 +343,28 @@ mod tests {
         assert_eq!(response, Ok(None));
 
         let ready = future::poll_fn(|cx| service.poll_ready(cx)).await;
-        assert_eq!(ready, Err(ExitedError(())));
-        assert_eq!(service.call(exit).await, Err(ExitedError(())));
+        assert_eq!(ready, Err(ExitedError(1)));
+        assert_eq!(service.call(exit).await, Err(ExitedError(1)));
+    }
+
+    #[tokio::test(flavor = "current_thread")]
+    async fn exit_notification_after_shutdown() {
+        let (mut service, _) = LspService::new(|_| Mock);
+
+        let initialize = initialize_request(1);
+        let response = service.ready().await.unwrap().call(initialize).await;
+        assert!(response.is_ok());
+
+        let shutdown = Request::build("shutdown").id(1).finish();
+        let response = service.ready().await.unwrap().call(shutdown).await;
+        assert!(response.is_ok());
+
+        let exit = Request::build("exit").finish();
+        let response = service.ready().await.unwrap().call(exit).await;
+        assert_eq!(response, Ok(None));
+
+        let ready = future::poll_fn(|cx| service.poll_ready(cx)).await;
+        assert_eq!(ready, Err(ExitedError(0)));
     }
 
     #[tokio::test(flavor = "current_thread")]
@@ -388,5 +420,306 @@ mod tests {
             .initialize(InitializeParams::default())
             .await
             .unwrap();
+    }
+
+    #[tokio::test(flavor = "current_thread")]
+    async fn test_max_rpc_endpoints() {
+        let (mut service, _) = LspService::new(|_| Mock);
+
+        // 1. Initialize
+        let initialize = initialize_request(1);
+        let response = service.ready().await.unwrap().call(initialize).await;
+        assert!(response.is_ok());
+
+        // 2. Call max/snapshot
+        let req = Request::build("max/snapshot").id(2).finish();
+        let response = service
+            .ready()
+            .await
+            .unwrap()
+            .call(req)
+            .await
+            .unwrap()
+            .unwrap();
+        let (_, res) = response.into_parts();
+        let snapshot_id: max_protocol::SnapshotId = serde_json::from_value(res.unwrap()).unwrap();
+        assert!(snapshot_id.0.starts_with("snap-"));
+
+        // 3. Call max/explainDiagnostic
+        let req = Request::build("max/explainDiagnostic")
+            .params("diag-uninitialized-admission".to_string())
+            .id(3)
+            .finish();
+        let response = service
+            .ready()
+            .await
+            .unwrap()
+            .call(req)
+            .await
+            .unwrap()
+            .unwrap();
+        let (_, res) = response.into_parts();
+        let diagnostic: max_protocol::MaxDiagnostic = serde_json::from_value(res.unwrap()).unwrap();
+        assert_eq!(diagnostic.diagnostic_id, "diag-uninitialized-admission");
+
+        // 4. Call max/repairPlan
+        let req = Request::build("max/repairPlan")
+            .params("diag-uninitialized-admission".to_string())
+            .id(4)
+            .finish();
+        let response = service
+            .ready()
+            .await
+            .unwrap()
+            .call(req)
+            .await
+            .unwrap()
+            .unwrap();
+        let (_, res) = response.into_parts();
+        let plans: Vec<max_protocol::MaxCodeAction> = serde_json::from_value(res.unwrap()).unwrap();
+        assert_eq!(plans.len(), 1);
+        let action = plans[0].clone();
+
+        // 5. Call max/applyRepairTransaction
+        let req = Request::build("max/applyRepairTransaction")
+            .params(serde_json::to_value(action.clone()).unwrap())
+            .id(5)
+            .finish();
+        let response = service
+            .ready()
+            .await
+            .unwrap()
+            .call(req)
+            .await
+            .unwrap()
+            .unwrap();
+        let (_, res) = response.into_parts();
+        let receipt: max_protocol::Receipt = serde_json::from_value(res.unwrap()).unwrap();
+        assert!(receipt.receipt_id.starts_with("rcpt-"));
+
+        // Verify the diagnostic has been cleared/resolved
+        let req = Request::build("max/explainDiagnostic")
+            .params("diag-uninitialized-admission".to_string())
+            .id(6)
+            .finish();
+        let response = service
+            .ready()
+            .await
+            .unwrap()
+            .call(req)
+            .await
+            .unwrap()
+            .unwrap();
+        let (_, res) = response.into_parts();
+        let err = res.unwrap_err();
+        assert_eq!(
+            err.message,
+            "Diagnostic 'diag-uninitialized-admission' not found"
+        );
+
+        // 6. Test Law 3: Receipt Integrity (Missing Validation Receipt)
+        // Get the repair plan for diag-missing-receipt
+        let req = Request::build("max/repairPlan")
+            .params("diag-missing-receipt".to_string())
+            .id(7)
+            .finish();
+        let response = service
+            .ready()
+            .await
+            .unwrap()
+            .call(req)
+            .await
+            .unwrap()
+            .unwrap();
+        let (_, res) = response.into_parts();
+        let plans2: Vec<max_protocol::MaxCodeAction> =
+            serde_json::from_value(res.unwrap()).unwrap();
+        let action_with_dep = plans2[0].clone();
+
+        // Attempting to apply it fails because expected_receipts has "rcpt-security-auth" which is not registered yet
+        let req = Request::build("max/applyRepairTransaction")
+            .params(serde_json::to_value(action_with_dep.clone()).unwrap())
+            .id(8)
+            .finish();
+        let response = service
+            .ready()
+            .await
+            .unwrap()
+            .call(req)
+            .await
+            .unwrap()
+            .unwrap();
+        let (_, res) = response.into_parts();
+        let err = res.unwrap_err();
+        assert!(err.message.contains("Receipt integrity violation"));
+
+        // Retrieve generator action to get security auth receipt
+        let req = Request::build("max/repairPlan")
+            .params("diag-auth-generator".to_string())
+            .id(9)
+            .finish();
+        let response = service
+            .ready()
+            .await
+            .unwrap()
+            .call(req)
+            .await
+            .unwrap()
+            .unwrap();
+        let (_, res) = response.into_parts();
+        let plans3: Vec<max_protocol::MaxCodeAction> =
+            serde_json::from_value(res.unwrap()).unwrap();
+        let gen_action = plans3[0].clone();
+
+        // Apply generator action to obtain "rcpt-security-auth"
+        let req = Request::build("max/applyRepairTransaction")
+            .params(serde_json::to_value(gen_action).unwrap())
+            .id(10)
+            .finish();
+        let response = service
+            .ready()
+            .await
+            .unwrap()
+            .call(req)
+            .await
+            .unwrap()
+            .unwrap();
+        let (_, res) = response.into_parts();
+        let gen_receipt: max_protocol::Receipt = serde_json::from_value(res.unwrap()).unwrap();
+        assert_eq!(gen_receipt.receipt_id, "rcpt-security-auth");
+
+        // Now apply action_with_dep again - it should succeed!
+        let req = Request::build("max/applyRepairTransaction")
+            .params(serde_json::to_value(action_with_dep).unwrap())
+            .id(11)
+            .finish();
+        let response = service
+            .ready()
+            .await
+            .unwrap()
+            .call(req)
+            .await
+            .unwrap()
+            .unwrap();
+        let (_, res) = response.into_parts();
+        let final_receipt: max_protocol::Receipt = serde_json::from_value(res.unwrap()).unwrap();
+        assert!(final_receipt.receipt_id.starts_with("rcpt-"));
+
+        // 7. Verify we can lookup receipt
+        let req = Request::build("max/receipt")
+            .params("rcpt-security-auth".to_string())
+            .id(12)
+            .finish();
+        let response = service
+            .ready()
+            .await
+            .unwrap()
+            .call(req)
+            .await
+            .unwrap()
+            .unwrap();
+        let (_, res) = response.into_parts();
+        let retrieved: max_protocol::Receipt = serde_json::from_value(res.unwrap()).unwrap();
+        assert_eq!(retrieved.hash, gen_receipt.hash);
+
+        // 8. Test max/runGate
+        let req = Request::build("max/runGate")
+            .params(serde_json::to_value(max_protocol::GateId("some-gate".to_string())).unwrap())
+            .id(13)
+            .finish();
+        let response = service
+            .ready()
+            .await
+            .unwrap()
+            .call(req)
+            .await
+            .unwrap()
+            .unwrap();
+        let (_, res) = response.into_parts();
+        let gate_result: bool = serde_json::from_value(res.unwrap()).unwrap();
+        assert!(gate_result);
+
+        // 9. Export Analysis Bundle for the snapshot
+        let req = Request::build("max/exportAnalysisBundle")
+            .params(serde_json::to_value(snapshot_id.clone()).unwrap())
+            .id(14)
+            .finish();
+        let response = service
+            .ready()
+            .await
+            .unwrap()
+            .call(req)
+            .await
+            .unwrap()
+            .unwrap();
+        let (_, res) = response.into_parts();
+        let bundle: max_protocol::AnalysisBundle = serde_json::from_value(res.unwrap()).unwrap();
+        assert_eq!(bundle.snapshot_id.0, snapshot_id.0);
+        assert!(!bundle.diagnostics.is_empty());
+    }
+
+    #[tokio::test(flavor = "current_thread")]
+    async fn test_lsp_3_18_methods() {
+        let (mut service, _) = LspService::new(|_| Mock);
+
+        let initialize = initialize_request(1);
+        let response = service.ready().await.unwrap().call(initialize).await;
+        assert!(response.is_ok());
+
+        // 1. textDocument/inlineCompletion
+        let req = Request::build("textDocument/inlineCompletion")
+            .params(json!({
+                "textDocument": { "uri": "file:///foo.rs" },
+                "position": { "line": 0, "character": 0 },
+                "context": { "triggerKind": 1 }
+            }))
+            .id(2)
+            .finish();
+        let response = service
+            .ready()
+            .await
+            .unwrap()
+            .call(req)
+            .await
+            .unwrap()
+            .unwrap();
+        let (_, res) = response.into_parts();
+        assert_eq!(res.unwrap_err().code, ErrorCode::MethodNotFound);
+
+        // 2. workspace/textDocumentContent
+        let req = Request::build("workspace/textDocumentContent")
+            .params(json!({
+                "uri": "file:///foo.rs"
+            }))
+            .id(3)
+            .finish();
+        let response = service
+            .ready()
+            .await
+            .unwrap()
+            .call(req)
+            .await
+            .unwrap()
+            .unwrap();
+        let (_, res) = response.into_parts();
+        assert_eq!(res.unwrap_err().code, ErrorCode::MethodNotFound);
+
+        // 3. workspace/textDocumentContent/refresh
+        let req = Request::build("workspace/textDocumentContent/refresh")
+            .params(json!({
+                "uri": "file:///foo.rs"
+            }))
+            .id(4)
+            .finish();
+        let response = service
+            .ready()
+            .await
+            .unwrap()
+            .call(req)
+            .await
+            .unwrap()
+            .unwrap();
+        let (_, res) = response.into_parts();
+        assert_eq!(res.unwrap_err().code, ErrorCode::MethodNotFound);
     }
 }

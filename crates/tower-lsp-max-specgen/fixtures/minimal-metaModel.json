@@ -1,0 +1,31 @@
+{
+  "metaData": { "version": "3.18.0" },
+  "requests": [
+    {
+      "method": "textDocument/diagnostic",
+      "typeName": "DocumentDiagnosticRequest",
+      "result": { "kind": "reference", "name": "DocumentDiagnosticReport" },
+      "messageDirection": "clientToServer",
+      "params": { "kind": "reference", "name": "DocumentDiagnosticParams" }
+    }
+  ],
+  "notifications": [],
+  "structures": [
+    {
+      "name": "DocumentDiagnosticParams",
+      "properties": [
+        { "name": "textDocument", "type": { "kind": "reference", "name": "TextDocumentIdentifier" } }
+      ]
+    },
+    {
+      "name": "TextDocumentIdentifier",
+      "properties": [
+        { "name": "uri", "type": { "kind": "base", "name": "DocumentUri" } }
+      ]
+    }
+  ],
+  "enumerations": [],
+  "typeAliases": [
+    { "name": "DocumentDiagnosticReport", "type": { "kind": "base", "name": "string" } }
+  ]
+}

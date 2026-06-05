@@ -347,6 +347,7 @@ impl Client {
     ///
     /// This request was introduced in specification version 3.17.0.
     pub async fn workspace_diagnostic_refresh(&self) -> jsonrpc::Result<()> {
+        use lsp_types::request::WorkspaceDiagnosticRefresh;
         self.send_request::<WorkspaceDiagnosticRefresh>(()).await
     }
 
@@ -464,7 +465,7 @@ impl Client {
     /// # Examples
     ///
     /// ```no_run
-    /// # use tower_lsp::{lsp_types::*, Client};
+    /// # use tower_lsp_max::{lsp_types::*, Client};
     /// #
     /// # struct Mock {
     /// #     client: Client,
@@ -598,20 +599,30 @@ impl Service<Request> for Client {
     type Future = BoxFuture<'static, Result<Self::Response, Self::Error>>;
 
     fn poll_ready(&mut self, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
-        self.inner
-            .tx
-            .clone()
-            .poll_ready(cx)
-            .map_err(|_| ExitedError(()))
+        let state = self.inner.state.clone();
+        self.inner.tx.clone().poll_ready(cx).map_err(move |_| {
+            let code = if state.get() == State::Exited {
+                state.get_exit_code()
+            } else {
+                1
+            };
+            ExitedError(code)
+        })
     }
 
     fn call(&mut self, req: Request) -> Self::Future {
         let mut tx = self.inner.tx.clone();
         let response_waiter = req.id().cloned().map(|id| self.inner.pending.wait(id));
+        let state = self.inner.state.clone();
 
         Box::pin(async move {
             if tx.send(req).await.is_err() {
-                return Err(ExitedError(()));
+                let code = if state.get() == State::Exited {
+                    state.get_exit_code()
+                } else {
+                    1
+                };
+                return Err(ExitedError(code));
             }
 
             match response_waiter {
