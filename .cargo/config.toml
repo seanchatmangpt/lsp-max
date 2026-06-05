@@ -1,0 +1,4 @@
+[test]
+# Global registry singleton requires serial execution across integration tests
+# that share state (receipts, diagnostics).
+test-threads = 1

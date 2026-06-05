@@ -1481,6 +1481,23 @@ impl AutonomicMesh {
             "max/applyRepairTransaction" => {
                 let code_action: tower_lsp_max_protocol::MaxCodeAction =
                     serde_json::from_value(params).map_err(|e| format!("Invalid params: {}", e))?;
+                // Pre-flight: verify all expected receipts exist before applying
+                {
+                    let inst = self
+                        .instances
+                        .get(instance_id)
+                        .ok_or_else(|| format!("Instance not found: {}", instance_id))?;
+                    let existing: std::collections::HashSet<&str> =
+                        inst.receipts.iter().map(|r| r.receipt_id.as_str()).collect();
+                    for expected in &code_action.receipt_plan.expected_receipts {
+                        if !existing.contains(expected.as_str()) {
+                            return Err(format!(
+                                "Receipt integrity violation: required receipt '{}' not found",
+                                expected
+                            ));
+                        }
+                    }
+                }
                 let action_id = format!("repair-{}", code_action.action.title.replace(' ', "-"));
                 let receipt_id =
                     format!("rcpt-repair-{}", code_action.action.title.replace(' ', "-"));

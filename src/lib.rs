@@ -2345,6 +2345,24 @@ fn lock_registry() -> Result<std::sync::MutexGuard<'static, ServerRegistry>> {
         .map_err(|_| Error::internal_error())
 }
 
+/// Reset the global registry to a fresh state.
+/// Exposed as a public function for integration tests to prevent shared-state pollution.
+pub fn reset_registry_for_tests() {
+    if let Ok(mut reg) = get_registry().lock() {
+        reg.client_capabilities = None;
+        reg.server_capabilities = None;
+        reg.diagnostics.clear();
+        reg.repair_plans.clear();
+        reg.gates.clear();
+        reg.gates.insert("gate-state-check".to_string(), false);
+        reg.receipts.clear();
+        reg.snapshots.clear();
+        reg.cleared_diagnostics.clear();
+        reg.current_state = crate::service::State::Uninitialized;
+        reg.root_path = std::env::current_dir().unwrap_or_else(|_| std::path::PathBuf::from("."));
+    }
+}
+
 fn sha256(data: &[u8]) -> String {
     let mut h = [
         0x6a09e667u32,

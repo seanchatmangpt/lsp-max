@@ -8,6 +8,10 @@ use std::sync::Arc;
 use std::time::Duration;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tower_lsp_max::{LanguageServer, LspService, Server};
+
+// Serialise all tests in this file so they don't race on the shared global registry.
+// boot_server() acquires this lock; the returned guard must be held until test completion.
+static TEST_MUTEX: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
 use tower_lsp_max::jsonrpc::Result as RpcResult;
 use tower_lsp_max::lsp_types as lsp;
 use tower_lsp_max::max_protocol::{
@@ -95,9 +99,16 @@ async fn wait_for_response(received: RxLog, id: i64, timeout: Duration) -> serde
     }
 }
 
-/// Boot a fresh server and return (tx, received-log, server-join-handle).
-/// Also sends initialize and waits for the response.
-async fn boot_server() -> (TxShared, RxLog, tokio::task::JoinHandle<()>) {
+type SerialGuard = tokio::sync::MutexGuard<'static, ()>;
+
+/// Boot a fresh server and return (tx, received-log, server-join-handle, serial-guard).
+/// The serial-guard must be held until the test completes to prevent concurrent tests from
+/// corrupting the shared global registry.
+async fn boot_server() -> (TxShared, RxLog, tokio::task::JoinHandle<()>, SerialGuard) {
+    // Acquire the serial guard first so no two tests run concurrently.
+    let _guard = TEST_MUTEX.lock().await;
+    // Reset shared global registry so tests don't bleed state into each other.
+    tower_lsp_max::reset_registry_for_tests();
     let _ = std::fs::remove_file("admission.receipt");
     let _ = std::fs::remove_file("security.receipt");
     let _ = std::fs::remove_file("auth.receipt");
@@ -132,7 +143,7 @@ async fn boot_server() -> (TxShared, RxLog, tokio::task::JoinHandle<()>) {
     .await;
     wait_for_response(received.clone(), 0, Duration::from_secs(3)).await;
 
-    (client_tx_shared, received, server_handle)
+    (client_tx_shared, received, server_handle, _guard)
 }
 
 /// Extract `result` from a JSON-RPC response, panicking on error.
@@ -159,7 +170,7 @@ fn cleanup_receipts() {
 
 #[tokio::test(flavor = "current_thread")]
 async fn test_max_snapshot_returns_snap_id() {
-    let (tx, rx, _h) = boot_server().await;
+    let (tx, rx, _h, _guard) = boot_server().await;
 
     write_msg(&tx, serde_json::json!({"jsonrpc":"2.0","id":1,"method":"max/snapshot"})).await;
     let resp = wait_for_response(rx, 1, Duration::from_secs(3)).await;
@@ -179,7 +190,7 @@ async fn test_max_snapshot_returns_snap_id() {
 
 #[tokio::test(flavor = "current_thread")]
 async fn test_max_explain_diagnostic_known_id() {
-    let (tx, rx, _h) = boot_server().await;
+    let (tx, rx, _h, _guard) = boot_server().await;
 
     write_msg(
         &tx,
@@ -202,7 +213,7 @@ async fn test_max_explain_diagnostic_known_id() {
 
 #[tokio::test(flavor = "current_thread")]
 async fn test_max_explain_diagnostic_unknown_id_returns_error() {
-    let (tx, rx, _h) = boot_server().await;
+    let (tx, rx, _h, _guard) = boot_server().await;
 
     write_msg(
         &tx,
@@ -227,7 +238,7 @@ async fn test_max_explain_diagnostic_unknown_id_returns_error() {
 
 #[tokio::test(flavor = "current_thread")]
 async fn test_max_repair_plan_known_diagnostic() {
-    let (tx, rx, _h) = boot_server().await;
+    let (tx, rx, _h, _guard) = boot_server().await;
 
     write_msg(
         &tx,
@@ -253,7 +264,7 @@ async fn test_max_repair_plan_known_diagnostic() {
 
 #[tokio::test(flavor = "current_thread")]
 async fn test_max_repair_plan_unknown_diagnostic_returns_empty_or_error() {
-    let (tx, rx, _h) = boot_server().await;
+    let (tx, rx, _h, _guard) = boot_server().await;
 
     write_msg(
         &tx,
@@ -280,7 +291,7 @@ async fn test_max_repair_plan_unknown_diagnostic_returns_empty_or_error() {
 
 #[tokio::test(flavor = "current_thread")]
 async fn test_max_apply_repair_transaction_returns_receipt() {
-    let (tx, rx, _h) = boot_server().await;
+    let (tx, rx, _h, _guard) = boot_server().await;
 
     // Use the auth-generator diagnostic — its repair action has no state preconditions.
     write_msg(
@@ -321,7 +332,7 @@ async fn test_max_apply_repair_transaction_returns_receipt() {
 
 #[tokio::test(flavor = "current_thread")]
 async fn test_max_apply_repair_transaction_blocks_without_prerequisite_receipt() {
-    let (tx, rx, _h) = boot_server().await;
+    let (tx, rx, _h, _guard) = boot_server().await;
 
     write_msg(
         &tx,
@@ -360,7 +371,7 @@ async fn test_max_apply_repair_transaction_blocks_without_prerequisite_receipt()
 
 #[tokio::test(flavor = "current_thread")]
 async fn test_max_receipt_lookup() {
-    let (tx, rx, _h) = boot_server().await;
+    let (tx, rx, _h, _guard) = boot_server().await;
 
     // Step 1: Request repair plan for diag-auth-generator to get the action.
     write_msg(
@@ -426,7 +437,7 @@ async fn test_max_receipt_lookup() {
 
 #[tokio::test(flavor = "current_thread")]
 async fn test_max_receipt_unknown_returns_error() {
-    let (tx, rx, _h) = boot_server().await;
+    let (tx, rx, _h, _guard) = boot_server().await;
 
     write_msg(
         &tx,
@@ -449,7 +460,7 @@ async fn test_max_receipt_unknown_returns_error() {
 
 #[tokio::test(flavor = "current_thread")]
 async fn test_max_run_gate_returns_bool() {
-    let (tx, rx, _h) = boot_server().await;
+    let (tx, rx, _h, _guard) = boot_server().await;
 
     // Use "some-gate" which is a known gate that returns true without running cargo check.
     write_msg(
@@ -479,7 +490,7 @@ async fn test_max_run_gate_returns_bool() {
 
 #[tokio::test(flavor = "current_thread")]
 async fn test_max_export_analysis_bundle() {
-    let (tx, rx, _h) = boot_server().await;
+    let (tx, rx, _h, _guard) = boot_server().await;
 
     // Take a snapshot first
     write_msg(&tx, serde_json::json!({"jsonrpc":"2.0","id":1,"method":"max/snapshot"})).await;
@@ -511,7 +522,7 @@ async fn test_max_export_analysis_bundle() {
 
 #[tokio::test(flavor = "current_thread")]
 async fn test_max_conformance_vector() {
-    let (tx, rx, _h) = boot_server().await;
+    let (tx, rx, _h, _guard) = boot_server().await;
 
     // Take a snapshot
     write_msg(&tx, serde_json::json!({"jsonrpc":"2.0","id":1,"method":"max/snapshot"})).await;
@@ -549,7 +560,7 @@ async fn test_max_conformance_vector() {
 
 #[tokio::test(flavor = "current_thread")]
 async fn test_max_clear_diagnostic() {
-    let (tx, rx, _h) = boot_server().await;
+    let (tx, rx, _h, _guard) = boot_server().await;
 
     // Verify diagnostic exists
     write_msg(
@@ -592,7 +603,7 @@ async fn test_max_clear_diagnostic() {
 
 #[tokio::test(flavor = "current_thread")]
 async fn test_max_verify_ledger() {
-    let (tx, rx, _h) = boot_server().await;
+    let (tx, rx, _h, _guard) = boot_server().await;
 
     write_msg(&tx, serde_json::json!({"jsonrpc":"2.0","id":1,"method":"max/verifyLedger"})).await;
     let resp = wait_for_response(rx, 1, Duration::from_secs(3)).await;
@@ -612,7 +623,7 @@ async fn test_max_verify_ledger() {
 
 #[tokio::test(flavor = "current_thread")]
 async fn test_max_ledger_report() {
-    let (tx, rx, _h) = boot_server().await;
+    let (tx, rx, _h, _guard) = boot_server().await;
 
     write_msg(&tx, serde_json::json!({"jsonrpc":"2.0","id":1,"method":"max/ledgerReport"})).await;
     let resp = wait_for_response(rx, 1, Duration::from_secs(3)).await;
