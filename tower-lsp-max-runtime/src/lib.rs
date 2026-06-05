@@ -344,6 +344,71 @@ impl<L: Law, P: Phase, D: Data> Machine<L, P, D> {
     }
 }
 
+/// Error type for receipt chain validation failures during replay.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ChainError {
+    /// The chain is empty when it must not be.
+    EmptyHistory,
+    /// Cryptographic hash mismatch between the declared and computed hash.
+    HashMismatch { index: usize, expected: String, got: String },
+    /// Receipt ID at a given index does not match the expected value.
+    ReceiptIdMismatch { index: usize, detail: String },
+    /// Chain is too short to reconstruct the target phase.
+    InsufficientHistory { required: usize, got: usize },
+    /// History contains more receipts than the protocol allows.
+    ExcessHistory { extra: usize },
+    /// JSON embedded in a receipt ID could not be parsed.
+    ParseError { index: usize, detail: String },
+}
+
+impl std::fmt::Display for ChainError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ChainError::EmptyHistory => write!(f, "Receipt chain is empty"),
+            ChainError::HashMismatch { index, expected, got } => write!(
+                f,
+                "Hash mismatch at index {}: expected '{}', got '{}'",
+                index, expected, got
+            ),
+            ChainError::ReceiptIdMismatch { index, detail } => {
+                write!(f, "Receipt ID mismatch at index {}: {}", index, detail)
+            }
+            ChainError::InsufficientHistory { required, got } => write!(
+                f,
+                "Insufficient history: required {} receipts, got {}",
+                required, got
+            ),
+            ChainError::ExcessHistory { extra } => {
+                write!(f, "History contains {} unexpected extra receipts", extra)
+            }
+            ChainError::ParseError { index, detail } => {
+                write!(f, "Parse error at index {}: {}", index, detail)
+            }
+        }
+    }
+}
+
+/// Convert a `validate_and_reconstruct_chain_checked` string error into a `ChainError`.
+fn chain_err_from_str(e: String) -> ChainError {
+    // Best-effort mapping; callers that need precise variants should use the typed API.
+    if e.contains("must not be empty") || e.contains("History must not be empty") {
+        ChainError::EmptyHistory
+    } else if e.contains("Hash mismatch") {
+        // Extract index if present
+        let index = e
+            .split_whitespace()
+            .find_map(|w| w.trim_end_matches(':').parse::<usize>().ok())
+            .unwrap_or(0);
+        ChainError::HashMismatch { index, expected: String::new(), got: e }
+    } else if e.contains("Insufficient history") {
+        ChainError::InsufficientHistory { required: 0, got: 0 }
+    } else if e.contains("unexpected") {
+        ChainError::ExcessHistory { extra: 0 }
+    } else {
+        ChainError::ReceiptIdMismatch { index: 0, detail: e }
+    }
+}
+
 /// Enforces the Admit -> Receipt -> Exit -> Replay operational theorem stages.
 pub trait TypestateKernel<L: Law, P: Phase, D: Data> {
     type Input;
@@ -370,7 +435,10 @@ pub trait TypestateKernel<L: Law, P: Phase, D: Data> {
     fn exit(self) -> D;
 
     /// Reconstruct the machine state by replaying a ledger of historic receipts.
-    fn replay(history: Vec<Self::Receipt>) -> Self;
+    /// Returns `Err(ChainError)` when the history is corrupted, malformed, or insufficient.
+    fn replay(history: Vec<Self::Receipt>) -> Result<Self, ChainError>
+    where
+        Self: Sized;
 }
 
 // ==========================================
@@ -468,6 +536,7 @@ impl TypestateKernel<AccessAdmissionLaw, Uninitialized, EmptyData>
     fn receipt(&self) -> Self::Receipt {
         let receipt_id = "rcpt-uninitialized".to_string();
         let hash = sha256(receipt_id.as_bytes());
+        // First receipt in the chain — no predecessor.
         tower_lsp_max_protocol::Receipt { receipt_id, hash, prev_receipt_hash: None }
     }
 
@@ -475,10 +544,10 @@ impl TypestateKernel<AccessAdmissionLaw, Uninitialized, EmptyData>
         self.data
     }
 
-    fn replay(history: Vec<Self::Receipt>) -> Self {
+    fn replay(history: Vec<Self::Receipt>) -> Result<Self, ChainError> {
         validate_and_reconstruct_chain_checked(&history)
-            .unwrap_or_else(|e| panic!("Receipt chain validation failed: {}", e));
-        Machine::new(Uninitialized, EmptyData::default())
+            .map_err(chain_err_from_str)?;
+        Ok(Machine::new(Uninitialized, EmptyData::default()))
     }
 }
 
@@ -513,28 +582,31 @@ impl TypestateKernel<AccessAdmissionLaw, Initializing, InitializingData>
         let client_caps_json = serde_json::to_string(&self.data.client_capabilities)
             .unwrap_or_else(|_| "<unserializable>".to_string());
         let receipt_id = format!("rcpt-uninitialized-to-initializing:{}", client_caps_json);
-        let hash_uninit = sha256(b"rcpt-uninitialized");
-        let hash = sha256(format!("{}:{}", hash_uninit, receipt_id).as_bytes());
-        tower_lsp_max_protocol::Receipt { receipt_id, hash, prev_receipt_hash: None }
+        let prev_hash = sha256(b"rcpt-uninitialized");
+        let hash = sha256(format!("{}:{}", prev_hash, receipt_id).as_bytes());
+        tower_lsp_max_protocol::Receipt {
+            receipt_id,
+            hash,
+            prev_receipt_hash: Some(prev_hash),
+        }
     }
 
     fn exit(self) -> InitializingData {
         self.data
     }
 
-    fn replay(history: Vec<Self::Receipt>) -> Self {
-        assert!(
-            history.len() >= 2,
-            "Insufficient history for Initializing state"
-        );
+    fn replay(history: Vec<Self::Receipt>) -> Result<Self, ChainError> {
+        if history.len() < 2 {
+            return Err(ChainError::InsufficientHistory { required: 2, got: history.len() });
+        }
         let (client_caps, _) = validate_and_reconstruct_chain_checked(&history)
-            .unwrap_or_else(|e| panic!("Receipt chain validation failed: {}", e));
-        Machine::new(
+            .map_err(chain_err_from_str)?;
+        Ok(Machine::new(
             Initializing,
             InitializingData {
                 client_capabilities: client_caps,
             },
-        )
+        ))
     }
 }
 
@@ -572,30 +644,33 @@ impl TypestateKernel<AccessAdmissionLaw, Initialized, InitializedData>
             .unwrap_or_else(|_| "<unserializable>".to_string());
         let hash_0 = sha256(b"rcpt-uninitialized");
         let rcpt_1 = format!("rcpt-uninitialized-to-initializing:{}", client_caps_json);
-        let hash_1 = sha256(format!("{}:{}", hash_0, rcpt_1).as_bytes());
+        let prev_hash = sha256(format!("{}:{}", hash_0, rcpt_1).as_bytes());
         let receipt_id = format!("rcpt-initializing-to-initialized:{}", server_caps_json);
-        let hash = sha256(format!("{}:{}", hash_1, receipt_id).as_bytes());
-        tower_lsp_max_protocol::Receipt { receipt_id, hash, prev_receipt_hash: None }
+        let hash = sha256(format!("{}:{}", prev_hash, receipt_id).as_bytes());
+        tower_lsp_max_protocol::Receipt {
+            receipt_id,
+            hash,
+            prev_receipt_hash: Some(prev_hash),
+        }
     }
 
     fn exit(self) -> InitializedData {
         self.data
     }
 
-    fn replay(history: Vec<Self::Receipt>) -> Self {
-        assert!(
-            history.len() >= 3,
-            "Insufficient history for Initialized state"
-        );
+    fn replay(history: Vec<Self::Receipt>) -> Result<Self, ChainError> {
+        if history.len() < 3 {
+            return Err(ChainError::InsufficientHistory { required: 3, got: history.len() });
+        }
         let (client_caps, server_caps) = validate_and_reconstruct_chain_checked(&history)
-            .unwrap_or_else(|e| panic!("Receipt chain validation failed: {}", e));
-        Machine::new(
+            .map_err(chain_err_from_str)?;
+        Ok(Machine::new(
             Initialized,
             InitializedData {
                 client_capabilities: client_caps,
                 server_capabilities: server_caps,
             },
-        )
+        ))
     }
 }
 
@@ -643,30 +718,33 @@ impl TypestateKernel<AccessAdmissionLaw, ShutDown, EmptyData>
         let rcpt_1 = format!("rcpt-uninitialized-to-initializing:{}", client_caps_json);
         let hash_1 = sha256(format!("{}:{}", hash_0, rcpt_1).as_bytes());
         let rcpt_2 = format!("rcpt-initializing-to-initialized:{}", server_caps_json);
-        let hash_2 = sha256(format!("{}:{}", hash_1, rcpt_2).as_bytes());
+        let prev_hash = sha256(format!("{}:{}", hash_1, rcpt_2).as_bytes());
         let receipt_id = "rcpt-initialized-to-shutdown".to_string();
-        let hash = sha256(format!("{}:{}", hash_2, receipt_id).as_bytes());
-        tower_lsp_max_protocol::Receipt { receipt_id, hash, prev_receipt_hash: None }
+        let hash = sha256(format!("{}:{}", prev_hash, receipt_id).as_bytes());
+        tower_lsp_max_protocol::Receipt {
+            receipt_id,
+            hash,
+            prev_receipt_hash: Some(prev_hash),
+        }
     }
 
     fn exit(self) -> EmptyData {
         self.data
     }
 
-    fn replay(history: Vec<Self::Receipt>) -> Self {
-        assert!(
-            history.len() >= 4,
-            "Insufficient history for ShutDown state"
-        );
+    fn replay(history: Vec<Self::Receipt>) -> Result<Self, ChainError> {
+        if history.len() < 4 {
+            return Err(ChainError::InsufficientHistory { required: 4, got: history.len() });
+        }
         let (client_caps, server_caps) = validate_and_reconstruct_chain_checked(&history)
-            .unwrap_or_else(|e| panic!("Receipt chain validation failed: {}", e));
-        Machine::new(
+            .map_err(chain_err_from_str)?;
+        Ok(Machine::new(
             ShutDown,
             EmptyData {
                 client_capabilities: Some(client_caps),
                 server_capabilities: Some(server_caps),
             },
-        )
+        ))
     }
 }
 
@@ -716,27 +794,33 @@ impl TypestateKernel<AccessAdmissionLaw, Exited, EmptyData>
         let rcpt_2 = format!("rcpt-initializing-to-initialized:{}", server_caps_json);
         let hash_2 = sha256(format!("{}:{}", hash_1, rcpt_2).as_bytes());
         let rcpt_3 = "rcpt-initialized-to-shutdown".to_string();
-        let hash_3 = sha256(format!("{}:{}", hash_2, rcpt_3).as_bytes());
+        let prev_hash = sha256(format!("{}:{}", hash_2, rcpt_3).as_bytes());
         let receipt_id = "rcpt-shutdown-to-exited".to_string();
-        let hash = sha256(format!("{}:{}", hash_3, receipt_id).as_bytes());
-        tower_lsp_max_protocol::Receipt { receipt_id, hash, prev_receipt_hash: None }
+        let hash = sha256(format!("{}:{}", prev_hash, receipt_id).as_bytes());
+        tower_lsp_max_protocol::Receipt {
+            receipt_id,
+            hash,
+            prev_receipt_hash: Some(prev_hash),
+        }
     }
 
     fn exit(self) -> EmptyData {
         self.data
     }
 
-    fn replay(history: Vec<Self::Receipt>) -> Self {
-        assert!(history.len() >= 5, "Insufficient history for Exited state");
+    fn replay(history: Vec<Self::Receipt>) -> Result<Self, ChainError> {
+        if history.len() < 5 {
+            return Err(ChainError::InsufficientHistory { required: 5, got: history.len() });
+        }
         let (client_caps, server_caps) = validate_and_reconstruct_chain_checked(&history)
-            .unwrap_or_else(|e| panic!("Receipt chain validation failed: {}", e));
-        Machine::new(
+            .map_err(chain_err_from_str)?;
+        Ok(Machine::new(
             Exited,
             EmptyData {
                 client_capabilities: Some(client_caps),
                 server_capabilities: Some(server_caps),
             },
-        )
+        ))
     }
 }
 
@@ -858,12 +942,13 @@ mod tests {
             <Machine<AccessAdmissionLaw, Exited, EmptyData> as TypestateKernel<_, _, _>>::replay(
                 history.clone(),
             );
+        let replayed_exited_ok = replayed_exited.expect("replay must succeed");
         assert_eq!(
-            replayed_exited.data.client_capabilities.as_ref().unwrap(),
+            replayed_exited_ok.data.client_capabilities.as_ref().unwrap(),
             &client_caps
         );
         assert_eq!(
-            replayed_exited.data.server_capabilities.as_ref().unwrap(),
+            replayed_exited_ok.data.server_capabilities.as_ref().unwrap(),
             &server_caps
         );
 
@@ -1014,6 +1099,29 @@ impl LspInstance {
     #[inline]
     pub fn invalidate_score_cache(&mut self) {
         self.cached_score.set(None);
+    }
+
+    /// Add a diagnostic and automatically invalidate the conformance score cache.
+    ///
+    /// Callers must use this instead of directly mutating `diagnostics` to ensure
+    /// the cache is never stale after a mutation.
+    pub fn add_diagnostic(&mut self, diag: MaxDiagnostic) {
+        self.diagnostics.push(diag);
+        self.invalidate_score_cache();
+    }
+
+    /// Remove diagnostics matching `diagnostic_id` and automatically invalidate
+    /// the conformance score cache when at least one entry is removed.
+    ///
+    /// Returns the number of entries removed.
+    pub fn remove_diagnostic(&mut self, diagnostic_id: &str) -> usize {
+        let before = self.diagnostics.len();
+        self.diagnostics.retain(|d| d.diagnostic_id != diagnostic_id);
+        let removed = before - self.diagnostics.len();
+        if removed > 0 {
+            self.invalidate_score_cache();
+        }
+        removed
     }
 
     /// Conformance score: O(1) cached reads, O(n) only after mutation.
@@ -3709,6 +3817,77 @@ mod tests_gaps {
         );
     }
 
+    /// INN-12-10: depth resets to zero after a normal (non-overflow) dispatch call
+    #[test]
+    fn test_dispatch_depth_resets_to_zero_after_call() {
+        let mut mesh = make_mesh_with_instance("RESET_INST");
+        assert_eq!(mesh.dispatch_depth, 0, "precondition: depth starts at 0");
+        mesh.dispatch_event(HookEvent::StateTransition {
+            instance_id: InstanceId::from("RESET_INST"),
+            from_phase: "Uninitialized".to_string(),
+            to_phase: "Initializing".to_string(),
+        });
+        assert_eq!(mesh.dispatch_depth, 0, "dispatch_depth must return to 0 after normal dispatch");
+    }
+
+    /// INN-12-10: sentinel fires exactly once per overflow call, not accumulated
+    #[test]
+    fn test_dispatch_depth_sentinel_fires_exactly_once_per_overflow() {
+        let mut mesh = make_mesh_with_instance("SENTINEL_INST");
+        mesh.dispatch_depth = MAX_DISPATCH_DEPTH;
+
+        for call_n in 0..3u32 {
+            let log_before = mesh.event_log.len();
+            mesh.dispatch_event(HookEvent::StateTransition {
+                instance_id: InstanceId::from("SENTINEL_INST"),
+                from_phase: "a".to_string(),
+                to_phase: "b".to_string(),
+            });
+            let new_entries = mesh.event_log.len() - log_before;
+            assert_eq!(
+                new_entries, 1,
+                "overflow call #{} must produce exactly 1 sentinel entry, got {}",
+                call_n, new_entries
+            );
+            let sentinel = mesh.event_log.last().unwrap();
+            assert!(
+                matches!(sentinel, HookEvent::DiagnosticEmitted { diagnostic, .. }
+                    if diagnostic.law_id == "MESH_DISPATCH_DEPTH"),
+                "overflow call #{} must emit a MESH_DISPATCH_DEPTH sentinel",
+                call_n
+            );
+        }
+    }
+
+    /// INN-12-10: hook chain at MAX-2 completes without sentinel
+    #[test]
+    fn test_dispatch_depth_nested_near_boundary() {
+        let mut mesh = make_mesh_with_instance("NEAR_BOUND_INST");
+        mesh.dispatch_depth = MAX_DISPATCH_DEPTH - 2;
+
+        let log_len_before = mesh.event_log.len();
+        mesh.dispatch_event(HookEvent::StateTransition {
+            instance_id: InstanceId::from("NEAR_BOUND_INST"),
+            from_phase: "Initialized".to_string(),
+            to_phase: "ShutDown".to_string(),
+        });
+
+        let new_sentinels = mesh.event_log[log_len_before..].iter().filter(|e| {
+            matches!(e, HookEvent::DiagnosticEmitted { diagnostic, .. }
+                if diagnostic.law_id == "MESH_DISPATCH_DEPTH")
+        }).count();
+        assert_eq!(
+            new_sentinels, 0,
+            "hook chain at MAX-2 must not trigger sentinel, but {} were emitted",
+            new_sentinels
+        );
+        assert_eq!(
+            mesh.dispatch_depth,
+            MAX_DISPATCH_DEPTH - 2,
+            "depth must be restored to pre-call baseline after normal dispatch at MAX-2"
+        );
+    }
+
     #[test]
     fn test_rpc_verify_ledger_empty_returns_err() {
         let mut mesh = make_mesh_with_instance("INST_A");
@@ -3866,6 +4045,52 @@ mod tests_gaps {
         });
         let result = mesh.dispatch_rpc("INST_A", "max/releaseActuation", json!(null));
         assert!(result.is_err(), "max/releaseActuation with active diagnostics should return Err, got: {:?}", result);
+    }
+
+    /// INN-12-05: release on missing instance returns Err
+    #[test]
+    fn test_release_actuation_missing_instance_returns_err() {
+        let mut mesh = AutonomicMesh::new();
+        let result = mesh.dispatch_rpc("NONEXISTENT", "max/releaseActuation", json!(null));
+        assert!(result.is_err(), "release on missing instance must return Err, got: {:?}", result);
+        let err = result.unwrap_err();
+        assert!(
+            err.contains("not found") || err.contains("NONEXISTENT"),
+            "error message should reference missing instance, got: {}",
+            err
+        );
+    }
+
+    /// INN-12-05: release after repair (clear all diagnostics) succeeds
+    #[test]
+    fn test_release_actuation_after_repair_succeeds() {
+        let mut mesh = make_mesh_with_instance("REPAIR_INST");
+        let diag = make_error_diagnostic("diag-repair-block");
+        mesh.execute_action(MeshAction::AddDiagnostic {
+            instance_id: InstanceId::from("REPAIR_INST"),
+            diagnostic: Box::new(diag),
+        });
+        let blocked = mesh.dispatch_rpc("REPAIR_INST", "max/releaseActuation", json!(null));
+        assert!(blocked.is_err(), "release must be blocked when diagnostic is active");
+        mesh.execute_action(MeshAction::ClearDiagnostic {
+            instance_id: InstanceId::from("REPAIR_INST"),
+            diagnostic_id: "diag-repair-block".to_string(),
+        });
+        let released = mesh.dispatch_rpc("REPAIR_INST", "max/releaseActuation", json!(null));
+        assert!(released.is_ok(), "release must succeed after repair transaction, got: {:?}", released);
+        assert_eq!(released.unwrap()["released"], json!(true));
+    }
+
+    /// INN-12-05: release is idempotent — two consecutive releases both succeed when no diagnostics
+    #[test]
+    fn test_release_actuation_idempotent() {
+        let mut mesh = make_mesh_with_instance("IDEMPOTENT_INST");
+        let first = mesh.dispatch_rpc("IDEMPOTENT_INST", "max/releaseActuation", json!(null));
+        assert!(first.is_ok(), "first release must succeed, got: {:?}", first);
+        assert_eq!(first.unwrap()["released"], json!(true));
+        let second = mesh.dispatch_rpc("IDEMPOTENT_INST", "max/releaseActuation", json!(null));
+        assert!(second.is_ok(), "second consecutive release must also succeed (idempotent), got: {:?}", second);
+        assert_eq!(second.unwrap()["released"], json!(true));
     }
 
     #[test]
@@ -5176,6 +5401,399 @@ mod conformance_score_proptest {
                 score_before,
                 score_after
             );
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// INN-12-09: cache auto-invalidation deterministic unit tests
+// (proptest already integrated into conformance_score_proptest above)
+// ---------------------------------------------------------------------------
+
+#[cfg(test)]
+mod cache_auto_invalidation_tests {
+    use super::*;
+
+    fn make_diag_sev(id: &str, sev_byte: u8) -> MaxDiagnostic {
+        let severity = match sev_byte % 4 {
+            0 => Some(lsp_types::DiagnosticSeverity::ERROR),
+            1 => Some(lsp_types::DiagnosticSeverity::WARNING),
+            2 => Some(lsp_types::DiagnosticSeverity::INFORMATION),
+            _ => Some(lsp_types::DiagnosticSeverity::HINT),
+        };
+        MaxDiagnostic {
+            diagnostic_id: id.to_string(),
+            law_id: "law-cache".to_string(),
+            lsp: lsp_types::Diagnostic {
+                range: lsp_types::Range::default(),
+                severity,
+                code: None,
+                code_description: None,
+                source: None,
+                message: "cache-test".to_string(),
+                related_information: None,
+                tags: None,
+                data: None,
+            },
+            ..Default::default()
+        }
+    }
+
+    #[test]
+    fn test_score_auto_invalidates_after_add() {
+        let mut inst = LspInstance::new("CACHE_ADD");
+        assert_eq!(inst.conformance_score(), 100.0);
+        inst.add_diagnostic(make_diag_sev("err1", 0 /* ERROR */));
+        let score_after = inst.conformance_score();
+        assert!(
+            score_after < 100.0,
+            "score should decrease after add_diagnostic(ERROR), got {}",
+            score_after
+        );
+    }
+
+    #[test]
+    fn test_score_auto_invalidates_after_remove() {
+        let mut inst = LspInstance::new("CACHE_REMOVE");
+        inst.add_diagnostic(make_diag_sev("err1", 0 /* ERROR */));
+        let score_with = inst.conformance_score();
+        let removed = inst.remove_diagnostic("err1");
+        assert_eq!(removed, 1);
+        let score_after = inst.conformance_score();
+        assert_eq!(score_after, 100.0, "score should be 100 after removing only error");
+        assert!(score_after > score_with, "score should increase after remove");
+    }
+}
+
+// ---------------------------------------------------------------------------
+// INN-12-04 — Property-based tests for admission decision determinism (DfLSS-CTQ)
+// ---------------------------------------------------------------------------
+
+#[cfg(test)]
+mod admission_proptest {
+    use super::*;
+    use proptest::prelude::*;
+
+    fn make_diag_for_admission(id: &str, severity_byte: u8) -> MaxDiagnostic {
+        let severity = match severity_byte % 4 {
+            0 => Some(lsp_types::DiagnosticSeverity::ERROR),
+            1 => Some(lsp_types::DiagnosticSeverity::WARNING),
+            2 => Some(lsp_types::DiagnosticSeverity::INFORMATION),
+            _ => Some(lsp_types::DiagnosticSeverity::HINT),
+        };
+        MaxDiagnostic {
+            diagnostic_id: id.to_string(),
+            law_id: "law-admission-prop".to_string(),
+            lsp: lsp_types::Diagnostic {
+                range: lsp_types::Range::default(),
+                severity,
+                code: None,
+                code_description: None,
+                source: None,
+                message: "admission-prop-test".to_string(),
+                related_information: None,
+                tags: None,
+                data: None,
+            },
+            ..Default::default()
+        }
+    }
+
+    proptest! {
+        // INN-12-04: Admitted iff no ERROR-severity diagnostics present
+        #[test]
+        fn prop_admission_admitted_iff_no_errors(
+            diag_severities in proptest::collection::vec(0u8..4, 0..30)
+        ) {
+            let mut mesh = AutonomicMesh::new();
+            mesh.add_instance(LspInstance::new("PROP_ADM"));
+
+            for (i, s) in diag_severities.iter().enumerate() {
+                mesh.execute_action(MeshAction::AddDiagnostic {
+                    instance_id: InstanceId::from("PROP_ADM"),
+                    diagnostic: Box::new(make_diag_for_admission(&format!("d{}", i), *s)),
+                });
+            }
+
+            let has_error = diag_severities.iter().any(|s| s % 4 == 0);
+            let result = mesh.dispatch_rpc("PROP_ADM", "max/admission", serde_json::Value::Null);
+            prop_assert!(result.is_ok());
+            let val = result.unwrap();
+
+            if diag_severities.is_empty() {
+                prop_assert_eq!(
+                    val["verdict"].as_str().unwrap_or(""),
+                    "Admitted",
+                    "empty diagnostics must yield Admitted"
+                );
+            } else if has_error {
+                prop_assert_eq!(
+                    val["verdict"].as_str().unwrap_or(""),
+                    "Refused",
+                    "ERROR present must yield Refused"
+                );
+            } else {
+                // Warnings/hints only — must not be Admitted
+                prop_assert_ne!(
+                    val["verdict"].as_str().unwrap_or(""),
+                    "Admitted",
+                    "non-empty non-error diagnostics must not yield Admitted"
+                );
+            }
+        }
+
+        // INN-12-04: Idempotence — same mesh state must produce same verdict on two consecutive calls
+        #[test]
+        fn prop_admission_is_idempotent(
+            diag_severities in proptest::collection::vec(0u8..4, 0..30)
+        ) {
+            let mut mesh = AutonomicMesh::new();
+            mesh.add_instance(LspInstance::new("PROP_IDEM"));
+
+            for (i, s) in diag_severities.iter().enumerate() {
+                mesh.execute_action(MeshAction::AddDiagnostic {
+                    instance_id: InstanceId::from("PROP_IDEM"),
+                    diagnostic: Box::new(make_diag_for_admission(&format!("d{}", i), *s)),
+                });
+            }
+
+            let r1 = mesh.dispatch_rpc("PROP_IDEM", "max/admission", serde_json::Value::Null);
+            let r2 = mesh.dispatch_rpc("PROP_IDEM", "max/admission", serde_json::Value::Null);
+
+            prop_assert!(r1.is_ok());
+            prop_assert!(r2.is_ok());
+            let v1 = r1.unwrap();
+            let v2 = r2.unwrap();
+            prop_assert_eq!(
+                v1["verdict"].as_str().unwrap_or(""),
+                v2["verdict"].as_str().unwrap_or(""),
+                "admission verdict must be idempotent: first={:?}, second={:?}",
+                v1,
+                v2
+            );
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// INN-12-03 — ERRC-Eliminate: test fixture factory (mesh_fixture! macro)
+// ---------------------------------------------------------------------------
+//
+// `mesh_fixture!(id1, id2, ...)` creates an AutonomicMesh pre-loaded with the
+// named instances.  Duplicate ids cause a panic at test time, surfacing
+// collisions that were previously silently masked by HashMap::insert.
+
+/// Build an [`AutonomicMesh`] pre-loaded with one or more named instances.
+/// Panics if any id appears more than once so id collisions are caught
+/// immediately rather than silently discarded.
+#[cfg(test)]
+macro_rules! mesh_fixture {
+    ($($id:expr),+ $(,)?) => {{
+        let ids: &[&str] = &[$($id),+];
+        let mut seen = std::collections::HashSet::new();
+        for id in ids {
+            assert!(
+                seen.insert(*id),
+                "mesh_fixture!: duplicate instance id {:?}",
+                id
+            );
+        }
+        let mut _mesh = AutonomicMesh::new();
+        for id in ids {
+            _mesh.add_instance(LspInstance::new(id));
+        }
+        _mesh
+    }};
+}
+
+#[cfg(test)]
+mod mesh_fixture_tests {
+    use super::*;
+
+    #[test]
+    fn test_mesh_fixture_single_instance() {
+        let mesh = mesh_fixture!("INST_A");
+        assert!(mesh.instances.contains_key("INST_A"));
+        assert_eq!(mesh.instances.len(), 1);
+    }
+
+    #[test]
+    fn test_mesh_fixture_multiple_instances() {
+        let mesh = mesh_fixture!("A", "B", "C");
+        assert_eq!(mesh.instances.len(), 3);
+        assert!(mesh.instances.contains_key("A"));
+        assert!(mesh.instances.contains_key("B"));
+        assert!(mesh.instances.contains_key("C"));
+    }
+
+    #[test]
+    #[should_panic(expected = "duplicate instance id")]
+    fn test_mesh_fixture_duplicate_id_panics() {
+        let _ = mesh_fixture!("INST_A", "INST_B", "INST_A");
+    }
+
+    #[test]
+    fn test_mesh_fixture_execute_action_works() {
+        let mut mesh = mesh_fixture!("INST_A");
+        mesh.execute_action(MeshAction::TransitionPolicyState {
+            instance_id: InstanceId::from("INST_A"),
+            new_state: PolicyState::ClarificationRequested,
+        });
+        assert_eq!(
+            mesh.instances.get("INST_A").unwrap().policy_state,
+            Some(PolicyState::ClarificationRequested)
+        );
+    }
+}
+
+// ---------------------------------------------------------------------------
+// INN-12-08 — ERRC-Raise: PolicyState transition coverage
+// ---------------------------------------------------------------------------
+
+#[cfg(test)]
+mod policy_state_transition_tests {
+    use super::*;
+    use proptest::prelude::*;
+
+    #[test]
+    fn test_policy_transition_operational_to_clarification() {
+        let mut mesh = mesh_fixture!("INST");
+        mesh.execute_action(MeshAction::TransitionPolicyState {
+            instance_id: InstanceId::from("INST"),
+            new_state: PolicyState::ClarificationRequested,
+        });
+        assert_eq!(
+            mesh.instances.get("INST").unwrap().policy_state,
+            Some(PolicyState::ClarificationRequested)
+        );
+    }
+
+    #[test]
+    fn test_policy_transition_clarification_to_refund_authorized() {
+        let mut mesh = mesh_fixture!("INST");
+        mesh.execute_action(MeshAction::TransitionPolicyState {
+            instance_id: InstanceId::from("INST"),
+            new_state: PolicyState::ClarificationRequested,
+        });
+        mesh.execute_action(MeshAction::TransitionPolicyState {
+            instance_id: InstanceId::from("INST"),
+            new_state: PolicyState::RefundAuthorized,
+        });
+        assert_eq!(
+            mesh.instances.get("INST").unwrap().policy_state,
+            Some(PolicyState::RefundAuthorized)
+        );
+    }
+
+    #[test]
+    fn test_policy_transition_refund_authorized_to_operational() {
+        let mut mesh = mesh_fixture!("INST");
+        mesh.execute_action(MeshAction::TransitionPolicyState {
+            instance_id: InstanceId::from("INST"),
+            new_state: PolicyState::ClarificationRequested,
+        });
+        mesh.execute_action(MeshAction::TransitionPolicyState {
+            instance_id: InstanceId::from("INST"),
+            new_state: PolicyState::RefundAuthorized,
+        });
+        mesh.execute_action(MeshAction::TransitionPolicyState {
+            instance_id: InstanceId::from("INST"),
+            new_state: PolicyState::Operational,
+        });
+        assert_eq!(
+            mesh.instances.get("INST").unwrap().policy_state,
+            Some(PolicyState::Operational)
+        );
+    }
+
+    #[test]
+    fn test_policy_transition_operational_to_active() {
+        let mut mesh = mesh_fixture!("INST");
+        mesh.execute_action(MeshAction::TransitionPolicyState {
+            instance_id: InstanceId::from("INST"),
+            new_state: PolicyState::Active,
+        });
+        assert_eq!(
+            mesh.instances.get("INST").unwrap().policy_state,
+            Some(PolicyState::Active)
+        );
+    }
+
+    #[test]
+    fn test_policy_state_all_variants_reachable() {
+        let all_states = [
+            PolicyState::Operational,
+            PolicyState::ClarificationRequested,
+            PolicyState::RefundAuthorized,
+            PolicyState::Active,
+        ];
+        for target in &all_states {
+            let mut mesh = mesh_fixture!("INST");
+            mesh.execute_action(MeshAction::TransitionPolicyState {
+                instance_id: InstanceId::from("INST"),
+                new_state: target.clone(),
+            });
+            assert_eq!(
+                mesh.instances.get("INST").unwrap().policy_state,
+                Some(target.clone()),
+                "Could not reach {:?}",
+                target
+            );
+        }
+    }
+
+    #[test]
+    fn test_policy_transition_unknown_instance_is_noop() {
+        let mut mesh = mesh_fixture!("INST");
+        let before_log_len = mesh.event_log.len();
+        mesh.execute_action(MeshAction::TransitionPolicyState {
+            instance_id: InstanceId::from("NO_SUCH_INST"),
+            new_state: PolicyState::RefundAuthorized,
+        });
+        assert_eq!(
+            mesh.instances.get("INST").unwrap().policy_state,
+            None,
+            "known instance policy_state must not change"
+        );
+        assert_eq!(
+            mesh.event_log.len(),
+            before_log_len,
+            "no event should be logged for a missing instance"
+        );
+    }
+
+    fn arb_policy_state() -> impl Strategy<Value = PolicyState> {
+        prop_oneof![
+            Just(PolicyState::Operational),
+            Just(PolicyState::ClarificationRequested),
+            Just(PolicyState::RefundAuthorized),
+            Just(PolicyState::Active),
+        ]
+    }
+
+    proptest! {
+        #[test]
+        fn prop_policy_state_never_enters_unknown_variant(
+            states in proptest::collection::vec(arb_policy_state(), 1..20)
+        ) {
+            let mut mesh = mesh_fixture!("PROP_INST");
+            for state in &states {
+                mesh.execute_action(MeshAction::TransitionPolicyState {
+                    instance_id: InstanceId::from("PROP_INST"),
+                    new_state: state.clone(),
+                });
+            }
+            let final_state = mesh.instances.get("PROP_INST").unwrap().policy_state.clone();
+            prop_assert!(
+                final_state.is_some(),
+                "policy_state must be Some after at least one transition, got None"
+            );
+            let _ = match final_state.unwrap() {
+                PolicyState::Operational => (),
+                PolicyState::ClarificationRequested => (),
+                PolicyState::RefundAuthorized => (),
+                PolicyState::Active => (),
+            };
         }
     }
 }
