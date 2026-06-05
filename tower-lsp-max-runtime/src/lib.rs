@@ -1625,23 +1625,30 @@ impl AutonomicMesh {
             }
 
             "max/admission" => {
-                // Admissibility gate: returns Admitted/Refused/Unknown — NEVER collapses
+                // Admissibility gate: returns AdmissionResult — NEVER collapses Unknown
                 let inst = self.instances.get(instance_id)
                     .ok_or_else(|| format!("Instance not found: {}", instance_id))?;
-                let verdict = if inst.diagnostics.is_empty() {
-                    "Admitted"
+                let (decision, rationale) = if inst.diagnostics.is_empty() {
+                    (tower_lsp_max_protocol::AdmissionDecision::Admitted,
+                     "No diagnostics — instance is admissible".to_string())
                 } else if inst.diagnostics.iter().any(|d| {
                     matches!(d.lsp.severity, Some(lsp_types::DiagnosticSeverity::ERROR))
                 }) {
-                    "Refused"
+                    (tower_lsp_max_protocol::AdmissionDecision::Refused,
+                     format!("{} error diagnostic(s) present", inst.diagnostics.iter()
+                         .filter(|d| matches!(d.lsp.severity, Some(lsp_types::DiagnosticSeverity::ERROR)))
+                         .count()))
                 } else {
-                    "Unknown" // Warnings/hints present — cannot determine admissibility
+                    (tower_lsp_max_protocol::AdmissionDecision::Unknown,
+                     "Warnings or hints present — admissibility cannot be determined".to_string())
                 };
-                Ok(serde_json::json!({
-                    "instance_id": instance_id,
-                    "verdict": verdict,
-                    "diagnostic_count": inst.diagnostics.len(),
-                }))
+                let result = tower_lsp_max_protocol::AdmissionResult {
+                    decision,
+                    law_axis: tower_lsp_max_protocol::LawAxis::Domain,
+                    rationale,
+                    receipt: None,
+                };
+                Ok(serde_json::to_value(&result).map_err(|e| e.to_string())?)
             }
 
             "max/refusal" => {
