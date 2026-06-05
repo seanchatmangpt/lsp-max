@@ -927,3 +927,23 @@ async fn test_rpc_run_gate_returns_false_when_diagnostic_references_gate() {
     );
     cleanup_receipts();
 }
+
+// ---------------------------------------------------------------------------
+// max/lsif — returns full LSIF NDJSON
+// ---------------------------------------------------------------------------
+
+#[tokio::test(flavor = "current_thread")]
+async fn test_max_lsif_export() {
+    let (tx, rx, _h, _guard) = boot_server().await;
+
+    write_msg(
+        &tx,
+        serde_json::json!({"jsonrpc":"2.0","id":99,"method":"max/lsif"}),
+    )
+    .await;
+    let resp = wait_for_response(rx, 99, Duration::from_secs(3)).await;
+
+    let lsif_str: String = serde_json::from_value(expect_result(&resp).clone()).unwrap();
+    assert!(lsif_str.contains("\"label\":\"metaData\""));
+    assert!(lsif_str.contains("\"label\":\"project\""));
+}
