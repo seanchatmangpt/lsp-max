@@ -131,6 +131,10 @@ impl<S: LanguageServer> Service<Request> for LspService<S> {
         }
 
         let method = req.method().to_string();
+        // Dual-mesh routing collapse: max/releaseActuation and max/conformanceDelta are
+        // intercepted here alongside existing max/* methods and dispatched via handle_mesh_rpc
+        // (state.mesh) — the single authoritative mesh path.  Their trait-impl bodies are
+        // unreachable stubs that exist only to satisfy the LanguageServer trait.
         if method == "max/snapshot"
             || method == "max/conformanceVector"
             || method == "max/clearDiagnostic"
@@ -138,6 +142,8 @@ impl<S: LanguageServer> Service<Request> for LspService<S> {
             || method == "max/ledgerReport"
             || method == "max/instanceList"
             || method == "max/reset"
+            || method == "max/releaseActuation"
+            || method == "max/conformanceDelta"
         {
             let state = self.state.clone();
             let (_, id, params) = req.into_parts();
@@ -645,67 +651,11 @@ mod tests {
         let snapshot_id: max_protocol::SnapshotId = serde_json::from_value(res.unwrap()).unwrap();
         assert!(snapshot_id.0.starts_with("snap-"));
 
-        // 3. Call max/explainDiagnostic
+        // 3. After initialize, gate-state-check is active (initialized != Uninitialized),
+        //    so diag-uninitialized-admission must NOT exist.
         let req = Request::build("max/explainDiagnostic")
             .params("diag-uninitialized-admission".to_string())
             .id(3)
-            .finish();
-        let response = service
-            .ready()
-            .await
-            .unwrap()
-            .call(req)
-            .await
-            .unwrap()
-            .unwrap();
-        let (_, res) = response.into_parts();
-        let diagnostic: max_protocol::MaxDiagnostic = serde_json::from_value(res.unwrap()).unwrap();
-        assert_eq!(diagnostic.diagnostic_id, "diag-uninitialized-admission");
-
-        // 4. Call max/repairPlan
-        let req = Request::build("max/repairPlan")
-            .params("diag-uninitialized-admission".to_string())
-            .id(4)
-            .finish();
-        let response = service
-            .ready()
-            .await
-            .unwrap()
-            .call(req)
-            .await
-            .unwrap()
-            .unwrap();
-        let (_, res) = response.into_parts();
-        let plans: Vec<max_protocol::MaxCodeAction> = serde_json::from_value(res.unwrap()).unwrap();
-        assert_eq!(plans.len(), 1);
-        let action = plans[0].clone();
-
-        // Reset server registry state back to Uninitialized to satisfy precondition check
-        if let Ok(mut reg) = crate::get_registry().lock() {
-            reg.current_state = crate::service::State::Uninitialized;
-        }
-
-        // 5. Call max/applyRepairTransaction
-        let req = Request::build("max/applyRepairTransaction")
-            .params(serde_json::to_value(action.clone()).unwrap())
-            .id(5)
-            .finish();
-        let response = service
-            .ready()
-            .await
-            .unwrap()
-            .call(req)
-            .await
-            .unwrap()
-            .unwrap();
-        let (_, res) = response.into_parts();
-        let receipt: max_protocol::Receipt = serde_json::from_value(res.unwrap()).unwrap();
-        assert!(receipt.receipt_id.starts_with("rcpt-"));
-
-        // Verify the diagnostic has been cleared/resolved
-        let req = Request::build("max/explainDiagnostic")
-            .params("diag-uninitialized-admission".to_string())
-            .id(6)
             .finish();
         let response = service
             .ready()
@@ -722,6 +672,27 @@ mod tests {
             "Diagnostic 'diag-uninitialized-admission' not found"
         );
 
+        // 3b. Verify conformanceVector has no refused axes (gate-state-check now passes).
+        let req = Request::build("max/conformanceVector").id(4).finish();
+        let response = service
+            .ready()
+            .await
+            .unwrap()
+            .call(req)
+            .await
+            .unwrap()
+            .unwrap();
+        let (_, res) = response.into_parts();
+        let cv: max_protocol::ConformanceVector = serde_json::from_value(res.unwrap()).unwrap();
+        assert!(
+            cv.refused.is_empty(),
+            "Expected no refused axes after initialize, got: {:?}",
+            cv.refused
+        );
+        assert!(
+            cv.admits_release(),
+            "Expected conformance vector to admit release after initialize"
+        );
         // 6. Test Law 3: Receipt Integrity (Missing Validation Receipt)
         // Get the repair plan for diag-missing-receipt
         let req = Request::build("max/repairPlan")
