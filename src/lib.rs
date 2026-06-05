@@ -1626,8 +1626,24 @@ pub trait LanguageServer: Send + Sync + 'static {
         Err(Error::method_not_found())
     }
 
-    // TODO: Add `work_done_progress_cancel()` here (since 3.15.0) when supported by `tower-lsp`.
-    // https://github.com/ebkalderon/tower-lsp/issues/176
+    /// Dumps the current server registry state.
+    #[rpc(name = "max/dumpState")]
+    async fn max_dump_state(&self) -> Result<serde_json::Value> {
+        let registry = get_registry().lock().unwrap();
+        Ok(serde_json::to_value(&*registry).unwrap())
+    }
+
+    /// Restores the server registry state.
+    #[rpc(name = "max/restoreState")]
+    async fn max_restore_state(&self, params: serde_json::Value) -> Result<()> {
+        let mut registry = get_registry().lock().unwrap();
+        if let Ok(restored) = serde_json::from_value::<ServerRegistry>(params) {
+            *registry = restored;
+            Ok(())
+        } else {
+            Err(Error::invalid_params("Failed to parse ServerRegistry JSON"))
+        }
+    }
 }
 
 fn _assert_object_safe() {
@@ -1638,32 +1654,49 @@ fn _assert_object_safe() {
 use std::collections::HashMap;
 use std::sync::{Mutex, OnceLock};
 
-#[derive(Clone, Debug)]
+/// Record representing a snapshot of the server state.
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 #[allow(dead_code)]
-struct SnapshotRecord {
+pub struct SnapshotRecord {
+    /// The unique identifier of this snapshot.
     #[allow(dead_code)]
-    id: max_protocol::SnapshotId,
-    capability_vector: max_protocol::MaxCapabilityVector,
-    diagnostics: Vec<max_protocol::MaxDiagnostic>,
-    actions: Vec<max_protocol::MaxCodeAction>,
-    conformance_vector: max_protocol::ConformanceVector,
-    receipts: Vec<max_protocol::Receipt>,
+    pub id: max_protocol::SnapshotId,
+    /// The capability vector at the time of snapshot.
+    pub capability_vector: max_protocol::MaxCapabilityVector,
+    /// Diagnostics present during the snapshot.
+    pub diagnostics: Vec<max_protocol::MaxDiagnostic>,
+    /// Actions generated/available for the snapshot.
+    pub actions: Vec<max_protocol::MaxCodeAction>,
+    /// The conformance vector of the server.
+    pub conformance_vector: max_protocol::ConformanceVector,
+    /// Receipts associated with the snapshot.
+    pub receipts: Vec<max_protocol::Receipt>,
 }
 
-#[derive(Clone, Debug)]
-struct ServerRegistry {
-    client_capabilities: Option<ClientCapabilities>,
-    server_capabilities: Option<ServerCapabilities>,
-    diagnostics: HashMap<String, max_protocol::MaxDiagnostic>,
-    repair_plans: HashMap<String, Vec<max_protocol::MaxCodeAction>>,
-    gates: HashMap<String, bool>,
-    receipts: HashMap<String, max_protocol::Receipt>,
-    snapshots: HashMap<String, SnapshotRecord>,
+/// Registry storing server diagnostic and capability state.
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
+pub struct ServerRegistry {
+    /// Client capabilities negotiated during initialization.
+    pub client_capabilities: Option<ClientCapabilities>,
+    /// Server capabilities returned during initialization.
+    pub server_capabilities: Option<ServerCapabilities>,
+    /// Table mapping diagnostic IDs to diagnostics.
+    pub diagnostics: HashMap<String, max_protocol::MaxDiagnostic>,
+    /// Table mapping file/resource paths to lists of repair code actions.
+    pub repair_plans: HashMap<String, Vec<max_protocol::MaxCodeAction>>,
+    /// Autonomic capability gates.
+    pub gates: HashMap<String, bool>,
+    /// Table mapping receipt IDs to receipt data.
+    pub receipts: HashMap<String, max_protocol::Receipt>,
+    /// Table mapping snapshot IDs to snapshot records.
+    pub snapshots: HashMap<String, SnapshotRecord>,
 }
 
-static REGISTRY: OnceLock<Mutex<ServerRegistry>> = OnceLock::new();
+/// Global static instance of the server registry.
+pub static REGISTRY: OnceLock<Mutex<ServerRegistry>> = OnceLock::new();
 
-fn get_registry() -> &'static Mutex<ServerRegistry> {
+/// Retrieves a reference to the global server registry.
+pub fn get_registry() -> &'static Mutex<ServerRegistry> {
     REGISTRY.get_or_init(|| {
         let mut diagnostics = HashMap::new();
         let mut repair_plans = HashMap::new();
