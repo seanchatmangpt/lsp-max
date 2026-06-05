@@ -136,6 +136,8 @@ impl<S: LanguageServer> Service<Request> for LspService<S> {
             || method == "max/clearDiagnostic"
             || method == "max/verifyLedger"
             || method == "max/ledgerReport"
+            || method == "max/instanceList"
+            || method == "max/reset"
         {
             let state = self.state.clone();
             let (_, id, params) = req.into_parts();

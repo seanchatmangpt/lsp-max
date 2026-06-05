@@ -636,6 +636,8 @@ pub enum PolicyState {
     Operational,
     ClarificationRequested,
     RefundAuthorized,
+    /// Clean slate — used after max/reset to mark an instance ready for reuse.
+    Active,
 }
 
 impl std::str::FromStr for PolicyState {
@@ -645,6 +647,7 @@ impl std::str::FromStr for PolicyState {
             "Operational" => Ok(Self::Operational),
             "ClarificationRequested" => Ok(Self::ClarificationRequested),
             "RefundAuthorized" => Ok(Self::RefundAuthorized),
+            "Active" => Ok(Self::Active),
             other => Err(format!("Unknown policy state: {other}")),
         }
     }
