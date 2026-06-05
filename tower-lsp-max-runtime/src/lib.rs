@@ -990,6 +990,55 @@ impl LspInstance {
         }
         f64::max(100.0 - penalty, 0.0)
     }
+
+    /// Map a conformance score to its [`ConformanceGrade`] bucket.
+    ///
+    /// Thresholds (inclusive lower bound):
+    /// * `score == 100.0` → `Perfect`
+    /// * `75.0 ≤ score < 100.0` → `Good`
+    /// * `50.0 ≤ score < 75.0` → `Degraded`
+    /// * `score < 50.0` → `Critical`
+    pub fn conformance_grade(&self) -> ConformanceGrade {
+        ConformanceGrade::from_score(self.conformance_score())
+    }
+}
+
+/// Coarse quality bucket derived from a conformance score.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+pub enum ConformanceGrade {
+    /// Score == 100: zero active diagnostics.
+    Perfect,
+    /// Score in [75, 100): minor warnings only.
+    Good,
+    /// Score in [50, 75): non-trivial degradation.
+    Degraded,
+    /// Score < 50: severe violation load.
+    Critical,
+}
+
+impl ConformanceGrade {
+    /// Derive a grade directly from a numeric score.
+    pub fn from_score(score: f64) -> Self {
+        if score >= 100.0 {
+            ConformanceGrade::Perfect
+        } else if score >= 75.0 {
+            ConformanceGrade::Good
+        } else if score >= 50.0 {
+            ConformanceGrade::Degraded
+        } else {
+            ConformanceGrade::Critical
+        }
+    }
+
+    /// Return the canonical string label used in JSON responses.
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            ConformanceGrade::Perfect => "perfect",
+            ConformanceGrade::Good => "good",
+            ConformanceGrade::Degraded => "degraded",
+            ConformanceGrade::Critical => "critical",
+        }
+    }
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -1752,6 +1801,7 @@ impl AutonomicMesh {
                         "phase": inst.phase,
                         "policy_state": inst.policy_state,
                         "conformance_score": inst.conformance_score(),
+                        "conformance_grade": inst.conformance_grade().as_str(),
                         "diagnostic_count": inst.diagnostics.len(),
                         "receipt_count": inst.receipts.len(),
                         "diagnostics": inst.diagnostics.iter().map(|d| serde_json::json!({
@@ -1803,6 +1853,7 @@ impl AutonomicMesh {
                             "diagnostic_count": inst.diagnostics.len(),
                             "receipt_count": inst.receipts.len(),
                             "conformance_score": inst.conformance_score(),
+                            "conformance_grade": inst.conformance_grade().as_str(),
                         })
                     }).collect::<Vec<_>>(),
                     "hook_count": self.hooks.len(),
@@ -1852,6 +1903,7 @@ impl AutonomicMesh {
                         .filter(|d| matches!(d.lsp.severity, Some(lsp_types::DiagnosticSeverity::ERROR)))
                         .count(),
                     "conformance_score": inst.conformance_score(),
+                    "conformance_grade": inst.conformance_grade().as_str(),
                 });
                 Ok(result)
             }
@@ -1939,6 +1991,7 @@ impl AutonomicMesh {
                     "released": true,
                     "instance_id": instance_id,
                     "conformance_score": score,
+                    "conformance_grade": ConformanceGrade::from_score(score).as_str(),
                     "release_receipt": receipt,
                 }))
             }
@@ -1951,6 +2004,7 @@ impl AutonomicMesh {
                         "id": inst.id,
                         "phase": inst.phase,
                         "conformance_score": inst.conformance_score(),
+                        "conformance_grade": inst.conformance_grade().as_str(),
                     })
                 }).collect();
                 list.sort_by_key(|v| v["id"].as_str().unwrap_or("").to_string());
@@ -4097,5 +4151,124 @@ mod test_dump_restore {
             original_conformance,
             restored_conformance
         );
+    }
+}
+
+// NOTE: appended by innovation agent — ConformanceGrade boundary tests
+#[cfg(test)]
+mod test_conformance_grade {
+    use super::*;
+
+    fn make_diag_with_severity(id: &str, severity: lsp_types::DiagnosticSeverity) -> MaxDiagnostic {
+        MaxDiagnostic {
+            diagnostic_id: id.to_string(),
+            law_id: "law-grade-test".to_string(),
+            attempted_transition: None,
+            violated_axes: vec![],
+            doc_routes: vec![],
+            lsp: lsp_types::Diagnostic {
+                range: lsp_types::Range::default(),
+                severity: Some(severity),
+                code: None,
+                code_description: None,
+                source: Some("grade-test".to_string()),
+                message: "grade boundary test diagnostic".to_string(),
+                related_information: None,
+                tags: None,
+                data: None,
+            },
+            repair_actions: vec![],
+            verification_gates: vec![],
+            receipt_obligation: None,
+            law_axis: tower_lsp_max_protocol::LawAxis::Domain,
+            violated_invariant: String::new(),
+            observed_state: serde_json::Value::Null,
+            expected_state: serde_json::Value::Null,
+            repairability: tower_lsp_max_protocol::Repairability::Unknown,
+            terminality: tower_lsp_max_protocol::Terminality::NonTerminal,
+        }
+    }
+
+    /// score == 100 (zero diagnostics) → Perfect
+    #[test]
+    fn grade_perfect() {
+        let inst = LspInstance::new("GRADE_PERFECT");
+        // No diagnostics: score must be 100.0
+        assert_eq!(inst.conformance_score(), 100.0, "expected score 100 with no diagnostics");
+        assert_eq!(inst.conformance_grade(), ConformanceGrade::Perfect);
+    }
+
+    /// 1 WARNING → penalty 20 → score 80 → Good
+    #[test]
+    fn grade_good() {
+        let mut inst = LspInstance::new("GRADE_GOOD");
+        inst.diagnostics.push(make_diag_with_severity("w1", lsp_types::DiagnosticSeverity::WARNING));
+        let score = inst.conformance_score();
+        assert!((score - 80.0).abs() < f64::EPSILON, "expected score 80, got {}", score);
+        assert_eq!(inst.conformance_grade(), ConformanceGrade::Good);
+    }
+
+    /// Engineer score in [50, 75) using 2 WARNINGs (40 penalty → 60) → Degraded
+    #[test]
+    fn grade_degraded() {
+        let mut inst = LspInstance::new("GRADE_DEGRADED");
+        // 2 × WARNING = 40 penalty → score 60
+        inst.diagnostics.push(make_diag_with_severity("w1", lsp_types::DiagnosticSeverity::WARNING));
+        inst.diagnostics.push(make_diag_with_severity("w2", lsp_types::DiagnosticSeverity::WARNING));
+        let score = inst.conformance_score();
+        assert!((score - 60.0).abs() < f64::EPSILON, "expected score 60, got {}", score);
+        assert!((50.0..75.0).contains(&score), "score {} not in [50, 75)", score);
+        assert_eq!(inst.conformance_grade(), ConformanceGrade::Degraded);
+    }
+
+    /// 4 ERRORs → penalty 120 → score clamped to 0 → Critical (< 50)
+    #[test]
+    fn grade_critical() {
+        let mut inst = LspInstance::new("GRADE_CRITICAL");
+        for i in 0..4 {
+            inst.diagnostics.push(make_diag_with_severity(
+                &format!("e{}", i),
+                lsp_types::DiagnosticSeverity::ERROR,
+            ));
+        }
+        let score = inst.conformance_score();
+        assert!(score <= 10.0, "expected score ≤ 10 with 4 ERRORs, got {}", score);
+        assert_eq!(inst.conformance_grade(), ConformanceGrade::Critical);
+    }
+
+    /// Boundary edge: score == 75.0 → Good (inclusive lower bound of Good)
+    #[test]
+    fn grade_boundary_at_75() {
+        // 1 WARNING (20) + 1 HINT (5) = 25 penalty → score 75
+        let mut inst = LspInstance::new("GRADE_BOUNDARY_75");
+        inst.diagnostics.push(make_diag_with_severity("w1", lsp_types::DiagnosticSeverity::WARNING));
+        inst.diagnostics.push(make_diag_with_severity("h1", lsp_types::DiagnosticSeverity::HINT));
+        let score = inst.conformance_score();
+        assert!((score - 75.0).abs() < f64::EPSILON, "expected score 75.0, got {}", score);
+        assert_eq!(
+            inst.conformance_grade(),
+            ConformanceGrade::Good,
+            "score 75.0 must map to Good (inclusive lower bound)"
+        );
+    }
+
+    /// Boundary edge: score == 50.0 → Degraded (inclusive lower bound of Degraded)
+    #[test]
+    fn grade_boundary_at_50() {
+        // 1 WARNING (20) + 1 INFORMATION (10) + 2 × HINT (5+5) + 1 WARNING (20) = 50 penalty → 50
+        // Simpler: use from_score directly for a precise 50.0 check
+        assert_eq!(
+            ConformanceGrade::from_score(50.0),
+            ConformanceGrade::Degraded,
+            "score 50.0 must map to Degraded (inclusive lower bound)"
+        );
+        // Also verify the instance path: 2×WARNING(40) + 1×INFORMATION(10) = 50 → score 50
+        let mut inst = LspInstance::new("GRADE_BOUNDARY_50");
+        inst.diagnostics.push(make_diag_with_severity("w1", lsp_types::DiagnosticSeverity::WARNING));
+        inst.diagnostics.push(make_diag_with_severity("w2", lsp_types::DiagnosticSeverity::WARNING));
+        inst.diagnostics.push(make_diag_with_severity("i1", lsp_types::DiagnosticSeverity::INFORMATION));
+        let score = inst.conformance_score();
+        assert!((score - 50.0).abs() < f64::EPSILON, "expected score 50.0, got {}", score);
+        assert_eq!(inst.conformance_grade(), ConformanceGrade::Degraded);
     }
 }

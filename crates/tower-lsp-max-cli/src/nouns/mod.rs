@@ -9,6 +9,7 @@ pub mod metamodel;
 pub mod plugin;
 pub mod receipt;
 pub mod rpc;
+pub mod snapshot;
 pub mod server;
 pub mod state;
 pub mod telemetry;
