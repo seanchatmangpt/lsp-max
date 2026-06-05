@@ -11,7 +11,7 @@ use crate::max_runtime::{
 };
 
 /// A list of possible states the language server can be in.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
 #[repr(u8)]
 pub enum State {
     /// Server has not received an `initialize` request.
@@ -38,6 +38,7 @@ pub enum StateMachine {
     /// ShutDown.
     ShutDown(Machine<AccessAdmissionLaw, ShutDown, EmptyData>),
     /// Exited.
+    #[allow(dead_code)]
     Exited(Machine<AccessAdmissionLaw, Exited, EmptyData>),
 }
 
@@ -68,7 +69,10 @@ impl ServerState {
             machine: Mutex::new(StateMachine::Uninitialized(Machine {
                 _law: std::marker::PhantomData,
                 phase: Uninitialized,
-                data: EmptyData,
+                data: EmptyData {
+                    client_capabilities: None,
+                    server_capabilities: None,
+                },
             })),
             wakers: Mutex::new(Vec::new()),
             exit_code: AtomicI32::new(1),
@@ -82,7 +86,7 @@ impl ServerState {
         let mut lock = self.machine.lock().unwrap();
         let next_machine = match state {
             State::Uninitialized => {
-                StateMachine::Uninitialized(Machine::new(Uninitialized, EmptyData))
+                StateMachine::Uninitialized(Machine::new(Uninitialized, EmptyData::default()))
             }
             State::Initializing => StateMachine::Initializing(Machine::new(
                 Initializing,
@@ -97,10 +101,13 @@ impl ServerState {
                     server_capabilities: serde_json::Value::Null,
                 },
             )),
-            State::ShutDown => StateMachine::ShutDown(Machine::new(ShutDown, EmptyData)),
-            State::Exited => StateMachine::Exited(Machine::new(Exited, EmptyData)),
+            State::ShutDown => StateMachine::ShutDown(Machine::new(ShutDown, EmptyData::default())),
+            State::Exited => StateMachine::Exited(Machine::new(Exited, EmptyData::default())),
         };
         *lock = next_machine;
+        if let Ok(mut reg) = crate::get_registry().lock() {
+            reg.current_state = state;
+        }
 
         if state != State::Initializing {
             let mut wakers = self.wakers.lock().unwrap();
@@ -134,10 +141,13 @@ impl ServerState {
             StateMachine::Uninitialized(_) => {
                 let old = std::mem::replace(
                     &mut *lock,
-                    StateMachine::Exited(Machine::new(Exited, EmptyData)),
+                    StateMachine::Exited(Machine::new(Exited, EmptyData::default())),
                 );
                 if let StateMachine::Uninitialized(m) = old {
                     *lock = StateMachine::Initializing(m.admit_initialize(client_caps));
+                    if let Ok(mut reg) = crate::get_registry().lock() {
+                        reg.current_state = State::Initializing;
+                    }
                     true
                 } else {
                     unreachable!()
@@ -154,7 +164,7 @@ impl ServerState {
             StateMachine::Initializing(_) => {
                 let old = std::mem::replace(
                     &mut *lock,
-                    StateMachine::Exited(Machine::new(Exited, EmptyData)),
+                    StateMachine::Exited(Machine::new(Exited, EmptyData::default())),
                 );
                 if let StateMachine::Initializing(m) = old {
                     *lock = StateMachine::Initialized(m.admit_initialized(server_caps));
@@ -166,6 +176,9 @@ impl ServerState {
             _ => false,
         };
         if success {
+            if let Ok(mut reg) = crate::get_registry().lock() {
+                reg.current_state = State::Initialized;
+            }
             let mut wakers = self.wakers.lock().unwrap();
             let wakers_to_wake = std::mem::take(&mut *wakers);
             for waker in wakers_to_wake {
@@ -180,12 +193,16 @@ impl ServerState {
         let mut lock = self.machine.lock().unwrap();
         let success = match &*lock {
             StateMachine::Initializing(_) => {
-                *lock = StateMachine::Uninitialized(Machine::new(Uninitialized, EmptyData));
+                *lock =
+                    StateMachine::Uninitialized(Machine::new(Uninitialized, EmptyData::default()));
                 true
             }
             _ => false,
         };
         if success {
+            if let Ok(mut reg) = crate::get_registry().lock() {
+                reg.current_state = State::Uninitialized;
+            }
             let mut wakers = self.wakers.lock().unwrap();
             let wakers_to_wake = std::mem::take(&mut *wakers);
             for waker in wakers_to_wake {
@@ -202,10 +219,13 @@ impl ServerState {
             StateMachine::Initialized(_) => {
                 let old = std::mem::replace(
                     &mut *lock,
-                    StateMachine::Exited(Machine::new(Exited, EmptyData)),
+                    StateMachine::Exited(Machine::new(Exited, EmptyData::default())),
                 );
                 if let StateMachine::Initialized(m) = old {
                     *lock = StateMachine::ShutDown(m.admit_shutdown());
+                    if let Ok(mut reg) = crate::get_registry().lock() {
+                        reg.current_state = State::ShutDown;
+                    }
                     true
                 } else {
                     unreachable!()
@@ -218,11 +238,11 @@ impl ServerState {
     /// Transitions to `Exited` phase.
     pub fn transition_to_exited(&self) -> bool {
         let mut lock = self.machine.lock().unwrap();
-        match &*lock {
+        let res = match &*lock {
             StateMachine::ShutDown(_) => {
                 let old = std::mem::replace(
                     &mut *lock,
-                    StateMachine::Exited(Machine::new(Exited, EmptyData)),
+                    StateMachine::Exited(Machine::new(Exited, EmptyData::default())),
                 );
                 if let StateMachine::ShutDown(m) = old {
                     *lock = StateMachine::Exited(m.admit_exit());
@@ -233,11 +253,15 @@ impl ServerState {
                 }
             }
             _ => {
-                *lock = StateMachine::Exited(Machine::new(Exited, EmptyData));
+                *lock = StateMachine::Exited(Machine::new(Exited, EmptyData::default()));
                 self.set_exit_code(1);
                 true
             }
+        };
+        if let Ok(mut reg) = crate::get_registry().lock() {
+            reg.current_state = State::Exited;
         }
+        res
     }
 
     /// Polls whether the server state is currently `Initializing`.

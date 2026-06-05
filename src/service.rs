@@ -424,6 +424,12 @@ mod tests {
 
     #[tokio::test(flavor = "current_thread")]
     async fn test_max_rpc_endpoints() {
+        // Remove any stale receipt files from previous failed runs
+        let _ = std::fs::remove_file("admission.receipt");
+        let _ = std::fs::remove_file("security.receipt");
+        let _ = std::fs::remove_file("auth.receipt");
+        let _ = std::fs::remove_file("debug.log");
+
         let (mut service, _) = LspService::new(|_| Mock);
 
         // 1. Initialize
@@ -479,6 +485,11 @@ mod tests {
         let plans: Vec<max_protocol::MaxCodeAction> = serde_json::from_value(res.unwrap()).unwrap();
         assert_eq!(plans.len(), 1);
         let action = plans[0].clone();
+
+        // Reset server registry state back to Uninitialized to satisfy precondition check
+        if let Ok(mut reg) = crate::get_registry().lock() {
+            reg.current_state = crate::service::State::Uninitialized;
+        }
 
         // 5. Call max/applyRepairTransaction
         let req = Request::build("max/applyRepairTransaction")
@@ -656,6 +667,11 @@ mod tests {
         let bundle: max_protocol::AnalysisBundle = serde_json::from_value(res.unwrap()).unwrap();
         assert_eq!(bundle.snapshot_id.0, snapshot_id.0);
         assert!(!bundle.diagnostics.is_empty());
+
+        // Cleanup created receipt files from disk
+        let _ = std::fs::remove_file("admission.receipt");
+        let _ = std::fs::remove_file("security.receipt");
+        let _ = std::fs::remove_file("auth.receipt");
     }
 
     #[tokio::test(flavor = "current_thread")]

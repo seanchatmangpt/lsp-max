@@ -2,6 +2,11 @@
 //! Do not hand-edit generated protocol vocabulary.
 #![allow(clippy::large_enum_variant)]
 #![allow(clippy::enum_variant_names)]
+#![allow(clippy::upper_case_acronyms)]
+#![allow(clippy::doc_lazy_continuation)]
+#![allow(clippy::derive_partial_eq_without_eq)]
+#![allow(dead_code)]
+#![allow(unused_imports)]
 #![allow(non_upper_case_globals)]
 use serde::{Deserialize, Serialize};
 use serde_json::Value as LspAny;

@@ -1338,6 +1338,7 @@ pub trait LanguageServer: Send + Sync + 'static {
     #[rpc(name = "max/snapshot")]
     async fn max_snapshot(&self) -> Result<max_protocol::SnapshotId> {
         let mut registry = get_registry().lock().unwrap();
+        update_diagnostics(&mut registry);
 
         let snapshot = max_runtime::DeterministicSnapshot::new();
         let snapshot_id = snapshot.id.clone();
@@ -1399,7 +1400,8 @@ pub trait LanguageServer: Send + Sync + 'static {
         &self,
         params: max_protocol::SnapshotId,
     ) -> Result<max_protocol::ConformanceVector> {
-        let registry = get_registry().lock().unwrap();
+        let mut registry = get_registry().lock().unwrap();
+        update_diagnostics(&mut registry);
         if let Some(snap) = registry.snapshots.get(&params.0) {
             Ok(snap.conformance_vector.clone())
         } else {
@@ -1413,7 +1415,8 @@ pub trait LanguageServer: Send + Sync + 'static {
     /// The `max/explainDiagnostic` request returns a full MaxDiagnostic by ID.
     #[rpc(name = "max/explainDiagnostic")]
     async fn max_explain_diagnostic(&self, params: String) -> Result<max_protocol::MaxDiagnostic> {
-        let registry = get_registry().lock().unwrap();
+        let mut registry = get_registry().lock().unwrap();
+        update_diagnostics(&mut registry);
         if let Some(diag) = registry.diagnostics.get(&params) {
             Ok(diag.clone())
         } else {
@@ -1427,7 +1430,8 @@ pub trait LanguageServer: Send + Sync + 'static {
     /// The `max/repairPlan` request returns repair actions for a specific diagnostic or law.
     #[rpc(name = "max/repairPlan")]
     async fn max_repair_plan(&self, params: String) -> Result<Vec<max_protocol::MaxCodeAction>> {
-        let registry = get_registry().lock().unwrap();
+        let mut registry = get_registry().lock().unwrap();
+        update_diagnostics(&mut registry);
 
         if let Some(plans) = registry.repair_plans.get(&params) {
             return Ok(plans.clone());
@@ -1469,7 +1473,21 @@ pub trait LanguageServer: Send + Sync + 'static {
         params: max_protocol::MaxCodeAction,
     ) -> Result<max_protocol::Receipt> {
         let mut registry = get_registry().lock().unwrap();
+        update_diagnostics(&mut registry);
 
+        // Preconditions check
+        for pre in &params.preconditions {
+            if pre.condition == "State is Uninitialized"
+                && registry.current_state != crate::service::State::Uninitialized
+            {
+                return Err(Error::invalid_params(format!(
+                    "Precondition failed: Server state is {:?}, but condition requires State is Uninitialized.",
+                    registry.current_state
+                )));
+            }
+        }
+
+        // Expected receipts check
         for expected in &params.receipt_plan.expected_receipts {
             if !registry.receipts.contains_key(expected) {
                 return Err(Error::invalid_params(format!(
@@ -1479,27 +1497,86 @@ pub trait LanguageServer: Send + Sync + 'static {
             }
         }
 
-        for pre in &params.preconditions {
-            tracing::info!("Verifying precondition: {}", pre.condition);
+        // Safety verification check: workspace edit must have an explicit validation plan
+        if params.action.edit.is_some() && params.validation_plan.gates.is_empty() {
+            return Err(Error::invalid_params(
+                "Unsafe transaction: A workspace edit is not called 'safe' unless there is an explicit validation plan (non-empty gates)."
+            ));
         }
 
-        if let Some(ref diags) = params.action.diagnostics {
-            for d in diags {
-                let keys_to_remove: Vec<String> = registry
-                    .diagnostics
-                    .iter()
-                    .filter(|(_, max_d)| max_d.lsp.message == d.message)
-                    .map(|(k, _)| k.clone())
-                    .collect();
-                for k in keys_to_remove {
-                    registry.diagnostics.remove(&k);
+        // Backup original files before applying edits
+        let mut backups = std::collections::HashMap::new();
+        if let Some(ref edit) = params.action.edit {
+            if let Some(ref changes) = edit.changes {
+                for url in changes.keys() {
+                    if let Ok(path) = url.to_file_path() {
+                        let content = if path.exists() {
+                            std::fs::read_to_string(&path).ok()
+                        } else {
+                            None
+                        };
+                        backups.insert(path, content);
+                    }
                 }
+            }
+            if let Err(e) = apply_workspace_edit(edit) {
+                return Err(Error::invalid_params(format!(
+                    "Failed to apply edits: {}",
+                    e
+                )));
             }
         }
 
+        // Run validation gates
+        let mut validation_failed = false;
+        let mut failed_gate = String::new();
+        for gate in &params.validation_plan.gates {
+            if !run_gate_logic(&gate.0, registry.current_state) {
+                validation_failed = true;
+                failed_gate = gate.0.clone();
+                break;
+            }
+        }
+
+        if validation_failed {
+            // Rollback files
+            for (path, backup) in backups {
+                if let Some(old_content) = backup {
+                    let _ = std::fs::write(&path, old_content);
+                } else {
+                    let _ = std::fs::remove_file(&path);
+                }
+            }
+            return Err(Error::invalid_params(format!(
+                "Transaction validation failed: validation gate '{}' failed check. Rolled back changes.",
+                failed_gate
+            )));
+        }
+
+        // Record successful gate executions
         for gate in &params.validation_plan.gates {
             registry.gates.insert(gate.0.clone(), true);
         }
+
+        // Clear resolved diagnostics and repair plans
+        if let Some(ref diags) = params.action.diagnostics {
+            let mut resolved_ids = Vec::new();
+            for d in diags {
+                for (id, max_d) in &registry.diagnostics {
+                    if max_d.lsp.message == d.message && max_d.lsp.range == d.range {
+                        resolved_ids.push(id.clone());
+                    }
+                }
+            }
+            for id in resolved_ids {
+                registry.cleared_diagnostics.insert(id.clone());
+                registry.diagnostics.remove(&id);
+                registry.repair_plans.remove(&id);
+            }
+        }
+
+        // Update diagnostics dynamic state
+        update_diagnostics(&mut registry);
 
         let serialized = serde_json::to_vec(&params).unwrap();
         let hash = sha256(&serialized);
@@ -1527,7 +1604,8 @@ pub trait LanguageServer: Send + Sync + 'static {
         &self,
         params: max_protocol::SnapshotId,
     ) -> Result<max_protocol::AnalysisBundle> {
-        let registry = get_registry().lock().unwrap();
+        let mut registry = get_registry().lock().unwrap();
+        update_diagnostics(&mut registry);
         if let Some(snap) = registry.snapshots.get(&params.0) {
             Ok(max_protocol::AnalysisBundle {
                 snapshot_id: params,
@@ -1549,15 +1627,20 @@ pub trait LanguageServer: Send + Sync + 'static {
     #[rpc(name = "max/runGate")]
     async fn max_run_gate(&self, params: max_protocol::GateId) -> Result<bool> {
         let mut registry = get_registry().lock().unwrap();
-        registry.gates.insert(params.0.clone(), true);
-        Ok(true)
+        update_diagnostics(&mut registry);
+        let success = run_gate_logic(&params.0, registry.current_state);
+        registry.gates.insert(params.0.clone(), success);
+        Ok(success)
     }
 
     /// The `max/clearDiagnostic` request forcibly clears a diagnostic.
     #[rpc(name = "max/clearDiagnostic")]
     async fn max_clear_diagnostic(&self, params: String) -> Result<()> {
         let mut registry = get_registry().lock().unwrap();
+        update_diagnostics(&mut registry);
+        registry.cleared_diagnostics.insert(params.clone());
         if registry.diagnostics.remove(&params).is_some() {
+            registry.repair_plans.remove(&params);
             Ok(())
         } else {
             Err(Error::invalid_params(format!(
@@ -1690,20 +1773,169 @@ pub struct ServerRegistry {
     pub receipts: HashMap<String, max_protocol::Receipt>,
     /// Table mapping snapshot IDs to snapshot records.
     pub snapshots: HashMap<String, SnapshotRecord>,
+    /// Table of cleared diagnostic IDs.
+    #[serde(default)]
+    pub cleared_diagnostics: std::collections::HashSet<String>,
+    /// Current server lifecycle phase state.
+    pub current_state: crate::service::State,
 }
 
 /// Global static instance of the server registry.
 pub static REGISTRY: OnceLock<Mutex<ServerRegistry>> = OnceLock::new();
 
-/// Retrieves a reference to the global server registry.
-pub fn get_registry() -> &'static Mutex<ServerRegistry> {
-    REGISTRY.get_or_init(|| {
-        let mut diagnostics = HashMap::new();
-        let mut repair_plans = HashMap::new();
-        let mut gates = HashMap::new();
+/// Helper function to verify a gate by running real checks.
+fn run_gate_logic(gate_id: &str, current_state: crate::service::State) -> bool {
+    match gate_id {
+        "gate-state-check" => current_state == crate::service::State::Uninitialized,
+        "gate-receipt-check" => {
+            let root_path = std::env::current_dir()
+                .unwrap_or_else(|_| std::path::PathBuf::from("/Users/sac/tower-lsp-max"));
+            let path = root_path.join("security.receipt");
+            if path.exists() {
+                if let Ok(content) = std::fs::read_to_string(&path) {
+                    content.trim() == "rcpt-security-auth"
+                } else {
+                    false
+                }
+            } else {
+                false
+            }
+        }
+        "gate-auth-check" => {
+            let root_path = std::env::current_dir()
+                .unwrap_or_else(|_| std::path::PathBuf::from("/Users/sac/tower-lsp-max"));
+            let path = root_path.join("auth.receipt");
+            if path.exists() {
+                if let Ok(content) = std::fs::read_to_string(&path) {
+                    content.trim() == "generated-rcpt-security-auth"
+                } else {
+                    false
+                }
+            } else {
+                false
+            }
+        }
+        _ => {
+            let root_path = std::env::current_dir()
+                .unwrap_or_else(|_| std::path::PathBuf::from("/Users/sac/tower-lsp-max"));
+            let output = std::process::Command::new("cargo")
+                .arg("check")
+                .current_dir(root_path)
+                .output();
+            match output {
+                Ok(out) => out.status.success(),
+                Err(_) => false,
+            }
+        }
+    }
+}
 
-        // Seed 1: LAW-001 (Machine Match / Lifecycle synchronization)
-        let diag1_id = "diag-uninitialized-admission".to_string();
+fn apply_workspace_edit(edit: &lsp_types::WorkspaceEdit) -> std::result::Result<(), String> {
+    if let Some(changes) = &edit.changes {
+        for (url, edits) in changes {
+            if url.scheme() != "file" {
+                return Err(format!("Unsupported URL scheme: {}", url.scheme()));
+            }
+            let path = url
+                .to_file_path()
+                .map_err(|_| format!("Invalid file path for URL: {}", url))?;
+
+            let mut content = if path.exists() {
+                std::fs::read_to_string(&path)
+                    .map_err(|e| format!("Failed to read file {}: {}", path.display(), e))?
+            } else {
+                String::new()
+            };
+
+            let mut sorted_edits = edits.clone();
+            sorted_edits.sort_by(|a, b| {
+                let start_a = a.range.start;
+                let start_b = b.range.start;
+                if start_a.line != start_b.line {
+                    start_b.line.cmp(&start_a.line)
+                } else {
+                    start_b.character.cmp(&start_a.character)
+                }
+            });
+
+            for text_edit in sorted_edits {
+                content = apply_text_edit(&content, &text_edit)?;
+            }
+
+            if let Some(parent) = path.parent() {
+                std::fs::create_dir_all(parent)
+                    .map_err(|e| format!("Failed to create directories: {}", e))?;
+            }
+            std::fs::write(&path, &content)
+                .map_err(|e| format!("Failed to write file {}: {}", path.display(), e))?;
+        }
+    }
+    Ok(())
+}
+
+fn apply_text_edit(
+    content: &str,
+    edit: &lsp_types::TextEdit,
+) -> std::result::Result<String, String> {
+    let lines: Vec<&str> = content.split('\n').collect();
+
+    let start_line = edit.range.start.line as usize;
+    let start_char = edit.range.start.character as usize;
+    let end_line = edit.range.end.line as usize;
+    let end_char = edit.range.end.character as usize;
+
+    let get_char_offset = |line_idx: usize,
+                           char_idx: usize|
+     -> std::result::Result<usize, String> {
+        if line_idx > lines.len() {
+            return Err(format!("Line index {} out of bounds", line_idx));
+        }
+
+        let mut byte_offset = 0;
+        for line in lines.iter().take(line_idx) {
+            byte_offset += line.len() + 1;
+        }
+
+        if line_idx < lines.len() {
+            let line_chars: Vec<char> = lines[line_idx].chars().collect();
+            if char_idx > line_chars.len() {
+                return Err(format!(
+                    "Character index {} out of bounds for line {}",
+                    char_idx, line_idx
+                ));
+            }
+            let char_byte_len: usize = line_chars[0..char_idx].iter().map(|c| c.len_utf8()).sum();
+            byte_offset += char_byte_len;
+        }
+
+        Ok(byte_offset)
+    };
+
+    let start_offset = get_char_offset(start_line, start_char)?;
+    let end_offset = get_char_offset(end_line, end_char)?;
+
+    if start_offset > end_offset || end_offset > content.len() {
+        return Err("Invalid range for text edit".to_string());
+    }
+
+    let mut new_content = content[0..start_offset].to_string();
+    new_content.push_str(&edit.new_text);
+    new_content.push_str(&content[end_offset..]);
+
+    Ok(new_content)
+}
+
+/// Dynamic diagnostic and repair plan updater.
+fn update_diagnostics(registry: &mut ServerRegistry) {
+    let root_path = std::env::current_dir()
+        .unwrap_or_else(|_| std::path::PathBuf::from("/Users/sac/tower-lsp-max"));
+
+    // 1. Check for diag-uninitialized-admission
+    let diag1_id = "diag-uninitialized-admission".to_string();
+    let gate_state_check_active = registry.gates.get("gate-state-check") == Some(&true);
+    let diag1_cleared = registry.cleared_diagnostics.contains(&diag1_id);
+
+    if !gate_state_check_active && !diag1_cleared {
         let diag1 = max_protocol::MaxDiagnostic {
             lsp: Diagnostic {
                 range: Range::default(),
@@ -1728,12 +1960,30 @@ pub fn get_registry() -> &'static Mutex<ServerRegistry> {
             verification_gates: vec![max_protocol::GateId("gate-state-check".to_string())],
             receipt_obligation: None,
         };
-        diagnostics.insert(diag1_id.clone(), diag1.clone());
+        registry.diagnostics.insert(diag1_id.clone(), diag1.clone());
 
-        let mut lsp_action1 = CodeAction::default();
-        lsp_action1.title = "Synchronize machine state with semantic state".to_string();
-        lsp_action1.kind = Some(CodeActionKind::QUICKFIX);
-        lsp_action1.diagnostics = Some(vec![diag1.lsp.clone()]);
+        let uri1 = lsp_types::Url::from_file_path(root_path.join("admission.receipt")).unwrap();
+        let mut changes1 = HashMap::new();
+        changes1.insert(
+            uri1,
+            vec![TextEdit {
+                range: Range::default(),
+                new_text: "rcpt-uninitialized\n".to_string(),
+            }],
+        );
+
+        let lsp_action1 = CodeAction {
+            title: "Synchronize machine state with semantic state".to_string(),
+            kind: Some(CodeActionKind::QUICKFIX),
+            diagnostics: Some(vec![diag1.lsp.clone()]),
+            edit: Some(WorkspaceEdit {
+                changes: Some(changes1),
+                document_changes: None,
+                change_annotations: None,
+            }),
+            ..Default::default()
+        };
+
         let action1 = max_protocol::MaxCodeAction {
             action: lsp_action1,
             preconditions: vec![max_protocol::Precondition {
@@ -1749,104 +1999,176 @@ pub fn get_registry() -> &'static Mutex<ServerRegistry> {
                 expected_receipts: vec![],
             },
         };
-        repair_plans.insert(diag1_id, vec![action1]);
+        registry.repair_plans.insert(diag1_id, vec![action1]);
+    } else {
+        registry.diagnostics.remove(&diag1_id);
+        registry.repair_plans.remove(&diag1_id);
+    }
+
+    // 2. Check for diag-missing-receipt and diag-auth-generator
+    let diag2_id = "diag-missing-receipt".to_string();
+    let diag3_id = "diag-auth-generator".to_string();
+    let has_security_auth = registry.receipts.contains_key("rcpt-security-auth");
+
+    if !has_security_auth {
+        // diag-missing-receipt
+        let diag2_cleared = registry.cleared_diagnostics.contains(&diag2_id);
+        if !diag2_cleared {
+            let diag2 = max_protocol::MaxDiagnostic {
+                lsp: Diagnostic {
+                    range: Range::default(),
+                    severity: Some(DiagnosticSeverity::WARNING),
+                    code: None,
+                    code_description: None,
+                    source: Some("tower-lsp-max".to_string()),
+                    message: "Missing validation receipt for secure admission.".to_string(),
+                    related_information: None,
+                    tags: None,
+                    data: None,
+                },
+                diagnostic_id: diag2_id.clone(),
+                law_id: "LAW-003".to_string(),
+                attempted_transition: None,
+                violated_axes: vec!["Receipt Integrity".to_string()],
+                doc_routes: vec![max_protocol::DocRoute {
+                    path: "/doc/receipts".to_string(),
+                }],
+                repair_actions: vec![max_protocol::RepairAction {
+                    action_id: "repair-apply-security-patch".to_string(),
+                    description: "Apply cryptographic admission repair".to_string(),
+                }],
+                verification_gates: vec![max_protocol::GateId("gate-receipt-check".to_string())],
+                receipt_obligation: Some(max_protocol::ReceiptObligation {
+                    required_receipts: vec!["rcpt-security-auth".to_string()],
+                }),
+            };
+            registry.diagnostics.insert(diag2_id.clone(), diag2.clone());
+
+            let uri2 = lsp_types::Url::from_file_path(root_path.join("security.receipt")).unwrap();
+            let mut changes2 = HashMap::new();
+            changes2.insert(
+                uri2,
+                vec![TextEdit {
+                    range: Range::default(),
+                    new_text: "rcpt-security-auth\n".to_string(),
+                }],
+            );
+
+            let lsp_action2 = CodeAction {
+                title: "Apply cryptographic admission repair".to_string(),
+                kind: Some(CodeActionKind::QUICKFIX),
+                diagnostics: Some(vec![diag2.lsp.clone()]),
+                edit: Some(WorkspaceEdit {
+                    changes: Some(changes2),
+                    document_changes: None,
+                    change_annotations: None,
+                }),
+                ..Default::default()
+            };
+
+            let action2 = max_protocol::MaxCodeAction {
+                action: lsp_action2,
+                preconditions: vec![],
+                validation_plan: max_protocol::ValidationPlan {
+                    gates: vec![max_protocol::GateId("gate-receipt-check".to_string())],
+                },
+                rollback_plan: max_protocol::RollbackPlan {
+                    strategy: "None".to_string(),
+                },
+                receipt_plan: max_protocol::ReceiptPlan {
+                    expected_receipts: vec!["rcpt-security-auth".to_string()],
+                },
+            };
+            registry.repair_plans.insert(diag2_id, vec![action2]);
+        } else {
+            registry.diagnostics.remove(&diag2_id);
+            registry.repair_plans.remove(&diag2_id);
+        }
+
+        // diag-auth-generator
+        let diag3_cleared = registry.cleared_diagnostics.contains(&diag3_id);
+        if !diag3_cleared {
+            let diag3 = max_protocol::MaxDiagnostic {
+                lsp: Diagnostic {
+                    range: Range::default(),
+                    severity: Some(DiagnosticSeverity::INFORMATION),
+                    code: None,
+                    code_description: None,
+                    source: Some("tower-lsp-max".to_string()),
+                    message: "Generate security authorization receipt.".to_string(),
+                    related_information: None,
+                    tags: None,
+                    data: None,
+                },
+                diagnostic_id: diag3_id.clone(),
+                law_id: "LAW-003".to_string(),
+                attempted_transition: None,
+                violated_axes: vec!["Receipt Integrity".to_string()],
+                doc_routes: vec![],
+                repair_actions: vec![max_protocol::RepairAction {
+                    action_id: "repair-generate-auth".to_string(),
+                    description: "Generate the required 'rcpt-security-auth' token".to_string(),
+                }],
+                verification_gates: vec![max_protocol::GateId("gate-auth-check".to_string())],
+                receipt_obligation: None,
+            };
+            registry.diagnostics.insert(diag3_id.clone(), diag3.clone());
+
+            let uri3 = lsp_types::Url::from_file_path(root_path.join("auth.receipt")).unwrap();
+            let mut changes3 = HashMap::new();
+            changes3.insert(
+                uri3,
+                vec![TextEdit {
+                    range: Range::default(),
+                    new_text: "generated-rcpt-security-auth\n".to_string(),
+                }],
+            );
+
+            let lsp_action3 = CodeAction {
+                title: "Generate security authorization receipt".to_string(),
+                kind: Some(CodeActionKind::QUICKFIX),
+                diagnostics: Some(vec![diag3.lsp.clone()]),
+                edit: Some(WorkspaceEdit {
+                    changes: Some(changes3),
+                    document_changes: None,
+                    change_annotations: None,
+                }),
+                ..Default::default()
+            };
+
+            let action3 = max_protocol::MaxCodeAction {
+                action: lsp_action3,
+                preconditions: vec![],
+                validation_plan: max_protocol::ValidationPlan {
+                    gates: vec![max_protocol::GateId("gate-auth-check".to_string())],
+                },
+                rollback_plan: max_protocol::RollbackPlan {
+                    strategy: "None".to_string(),
+                },
+                receipt_plan: max_protocol::ReceiptPlan {
+                    expected_receipts: vec![],
+                },
+            };
+            registry.repair_plans.insert(diag3_id, vec![action3]);
+        } else {
+            registry.diagnostics.remove(&diag3_id);
+            registry.repair_plans.remove(&diag3_id);
+        }
+    } else {
+        registry.diagnostics.remove(&diag2_id);
+        registry.repair_plans.remove(&diag2_id);
+        registry.diagnostics.remove(&diag3_id);
+        registry.repair_plans.remove(&diag3_id);
+    }
+}
+
+/// Retrieves a reference to the global server registry.
+pub fn get_registry() -> &'static Mutex<ServerRegistry> {
+    REGISTRY.get_or_init(|| {
+        let diagnostics = HashMap::new();
+        let repair_plans = HashMap::new();
+        let mut gates = HashMap::new();
         gates.insert("gate-state-check".to_string(), false);
-
-        // Seed 2: LAW-003 (Receipt Integrity - Missing Validation Receipt)
-        let diag2_id = "diag-missing-receipt".to_string();
-        let diag2 = max_protocol::MaxDiagnostic {
-            lsp: Diagnostic {
-                range: Range::default(),
-                severity: Some(DiagnosticSeverity::WARNING),
-                code: None,
-                code_description: None,
-                source: Some("tower-lsp-max".to_string()),
-                message: "Missing validation receipt for secure admission.".to_string(),
-                related_information: None,
-                tags: None,
-                data: None,
-            },
-            diagnostic_id: diag2_id.clone(),
-            law_id: "LAW-003".to_string(),
-            attempted_transition: None,
-            violated_axes: vec!["Receipt Integrity".to_string()],
-            doc_routes: vec![max_protocol::DocRoute { path: "/doc/receipts".to_string() }],
-            repair_actions: vec![max_protocol::RepairAction {
-                action_id: "repair-apply-security-patch".to_string(),
-                description: "Apply cryptographic admission repair".to_string(),
-            }],
-            verification_gates: vec![],
-            receipt_obligation: Some(max_protocol::ReceiptObligation {
-                required_receipts: vec!["rcpt-security-auth".to_string()],
-            }),
-        };
-        diagnostics.insert(diag2_id.clone(), diag2.clone());
-
-        let mut lsp_action2 = CodeAction::default();
-        lsp_action2.title = "Apply cryptographic admission repair".to_string();
-        lsp_action2.kind = Some(CodeActionKind::QUICKFIX);
-        lsp_action2.diagnostics = Some(vec![diag2.lsp.clone()]);
-        let action2 = max_protocol::MaxCodeAction {
-            action: lsp_action2,
-            preconditions: vec![],
-            validation_plan: max_protocol::ValidationPlan {
-                gates: vec![],
-            },
-            rollback_plan: max_protocol::RollbackPlan {
-                strategy: "None".to_string(),
-            },
-            receipt_plan: max_protocol::ReceiptPlan {
-                expected_receipts: vec!["rcpt-security-auth".to_string()],
-            },
-        };
-        repair_plans.insert(diag2_id, vec![action2]);
-
-        // Seed 3: Security patch generator action (to satisfy LAW-003)
-        let diag3_id = "diag-auth-generator".to_string();
-        let diag3 = max_protocol::MaxDiagnostic {
-            lsp: Diagnostic {
-                range: Range::default(),
-                severity: Some(DiagnosticSeverity::INFORMATION),
-                code: None,
-                code_description: None,
-                source: Some("tower-lsp-max".to_string()),
-                message: "Generate security authorization receipt.".to_string(),
-                related_information: None,
-                tags: None,
-                data: None,
-            },
-            diagnostic_id: diag3_id.clone(),
-            law_id: "LAW-003".to_string(),
-            attempted_transition: None,
-            violated_axes: vec!["Receipt Integrity".to_string()],
-            doc_routes: vec![],
-            repair_actions: vec![max_protocol::RepairAction {
-                action_id: "repair-generate-auth".to_string(),
-                description: "Generate the required 'rcpt-security-auth' token".to_string(),
-            }],
-            verification_gates: vec![],
-            receipt_obligation: None,
-        };
-        diagnostics.insert(diag3_id.clone(), diag3.clone());
-
-        let mut lsp_action3 = CodeAction::default();
-        lsp_action3.title = "Generate security authorization receipt".to_string();
-        lsp_action3.kind = Some(CodeActionKind::QUICKFIX);
-        lsp_action3.diagnostics = Some(vec![diag3.lsp.clone()]);
-        let action3 = max_protocol::MaxCodeAction {
-            action: lsp_action3,
-            preconditions: vec![],
-            validation_plan: max_protocol::ValidationPlan {
-                gates: vec![],
-            },
-            rollback_plan: max_protocol::RollbackPlan {
-                strategy: "None".to_string(),
-            },
-            receipt_plan: max_protocol::ReceiptPlan {
-                expected_receipts: vec![],
-            },
-        };
-        repair_plans.insert(diag3_id, vec![action3]);
 
         Mutex::new(ServerRegistry {
             client_capabilities: None,
@@ -1856,6 +2178,8 @@ pub fn get_registry() -> &'static Mutex<ServerRegistry> {
             gates,
             receipts: HashMap::new(),
             snapshots: HashMap::new(),
+            cleared_diagnostics: std::collections::HashSet::new(),
+            current_state: crate::service::State::Uninitialized,
         })
     })
 }

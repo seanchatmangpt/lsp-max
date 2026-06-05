@@ -63,6 +63,13 @@ where
 
     fn call(&mut self, req: Request) -> Self::Future {
         let params = req.params().cloned().unwrap_or(serde_json::Value::Null);
+        let client_caps_val = params
+            .get("capabilities")
+            .cloned()
+            .unwrap_or(serde_json::Value::Null);
+        let client_caps: Option<lsp_types::ClientCapabilities> =
+            serde_json::from_value(client_caps_val).ok();
+
         if self.state.try_initialize(params) {
             let state = self.state.clone();
             let fut = self.inner.call(req);
@@ -73,6 +80,19 @@ where
                 match &response {
                     Some(res) if res.is_ok() => {
                         let server_caps = res.result().cloned().unwrap_or(serde_json::Value::Null);
+                        let server_caps_val = server_caps
+                            .get("capabilities")
+                            .cloned()
+                            .unwrap_or(serde_json::Value::Null);
+                        let server_caps_parsed: Option<lsp_types::ServerCapabilities> =
+                            serde_json::from_value(server_caps_val).ok();
+
+                        {
+                            let mut registry = crate::get_registry().lock().unwrap();
+                            registry.client_capabilities = client_caps;
+                            registry.server_capabilities = server_caps_parsed;
+                        }
+
                         state.transition_to_initialized(server_caps);
                     }
                     _ => {

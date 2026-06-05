@@ -1,11 +1,14 @@
-# Progress Tracker
+# Progress
 
-Last visited: 2026-06-05T00:12:20Z
+Last visited: 2026-06-05T01:41:40Z
 
-## Tasks
-- [x] Initialize original request and briefing files
-- [x] Locate and list files/directories in `/Users/sac/Downloads/tower-lsp-max-specgen` <!-- id: 0 -->
-- [x] Analyze the contents, crate structure, Cargo.toml, and dependencies of the source crate <!-- id: 1 -->
-- [x] Investigate the destination workspace at `/Users/sac/tower-lsp-max` <!-- id: 2 -->
-- [x] Formulate copy plan and verify files/directories existence <!-- id: 3 -->
-- [x] Document findings in handoff report <!-- id: 4 -->
+- [x] Analyze files /Users/sac/tower-lsp-max/.agents/generated_protocol_agent/SCOPE.md and ORIGINAL_REQUEST.md
+- [x] Locate LSP 3.18 Rust surface files
+- [x] Investigate if stable module exposes it
+- [x] Investigate serde derives
+- [x] Investigate use of LspAny / serde_json::Value
+- [x] Investigate recursive / self-referential structures
+- [x] Investigate numeric enums serialization/deserialization
+- [x] Investigate generated name stability
+- [x] Write handoff.md
+- [x] Send message to main agent

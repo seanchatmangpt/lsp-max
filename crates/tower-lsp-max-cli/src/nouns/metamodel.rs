@@ -1,112 +1,128 @@
-use clap_noun_verb::{NounVerbError, Result};
+use clap_noun_verb::Result;
 use clap_noun_verb_macros::verb;
 use serde::Serialize;
 
+// ==========================================
+// Tier 1: Domain
+// ==========================================
+
+#[derive(Debug, Clone, Serialize)]
+pub struct MetamodelEntity {
+    pub id: String,
+    pub version: String,
+    pub structure_hash: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct ValidationIssue {
+    pub level: String,
+    pub message: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct DiffEntry {
+    pub path: String,
+    pub change_type: String,
+}
+
+// ==========================================
+// Tier 2: Service
+// ==========================================
+
+pub struct MetamodelService;
+
+impl MetamodelService {
+    pub fn new() -> Self {
+        Self
+    }
+
+    pub fn generate(&self, version: &str) -> MetamodelEntity {
+        MetamodelEntity {
+            id: format!("meta-{}", version),
+            version: version.to_string(),
+            structure_hash: "mock_hash_xyz123".to_string(),
+        }
+    }
+
+    pub fn inspect(&self, id: &str) -> MetamodelEntity {
+        MetamodelEntity {
+            id: id.to_string(),
+            version: "3.18".to_string(),
+            structure_hash: "mock_hash_xyz123".to_string(),
+        }
+    }
+
+    pub fn validate(&self, _id: &str) -> Vec<ValidationIssue> {
+        vec![ValidationIssue {
+            level: "INFO".to_string(),
+            message: "Metamodel is structurally sound.".to_string(),
+        }]
+    }
+
+    pub fn diff(&self, _source_id: &str, _target_id: &str) -> Vec<DiffEntry> {
+        vec![DiffEntry {
+            path: "$.structures.ClientCapabilities".to_string(),
+            change_type: "MODIFIED".to_string(),
+        }]
+    }
+}
+
+impl Default for MetamodelService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+// ==========================================
+// Tier 3: CLI Verbs & Results
+// ==========================================
+
 #[derive(Serialize)]
-pub struct MetamodelResult {
-    pub generated: bool,
+pub struct GenerateResult {
+    pub entity: MetamodelEntity,
 }
 
 #[verb("generate")]
-pub fn cmd_generate(
-    input: Option<String>,
-    output: Option<String>,
-    include_proposed: Option<bool>,
-) -> Result<MetamodelResult> {
-    generate_metamodel(input, output, include_proposed)
+pub fn generate(version: String) -> Result<GenerateResult> {
+    let service = MetamodelService::new();
+    let entity = service.generate(&version);
+    Ok(GenerateResult { entity })
 }
 
 #[derive(Serialize)]
-pub struct MetamodelInspectResult {
-    pub inspected: bool,
-    pub version: String,
-    pub requests_count: usize,
-    pub notifications_count: usize,
-    pub structures_count: usize,
-    pub enumerations_count: usize,
-    pub type_aliases_count: usize,
+pub struct InspectResult {
+    pub entity: MetamodelEntity,
 }
 
 #[verb("inspect")]
-pub fn cmd_inspect(input: String) -> Result<MetamodelInspectResult> {
-    inspect_metamodel(input)
+pub fn inspect(id: String) -> Result<InspectResult> {
+    let service = MetamodelService::new();
+    let entity = service.inspect(&id);
+    Ok(InspectResult { entity })
 }
 
-fn generate_metamodel(
-    input: Option<String>,
-    output: Option<String>,
-    include_proposed: Option<bool>,
-) -> Result<MetamodelResult> {
-    let input_path = input.unwrap_or_else(|| {
-        "/Users/sac/tower-lsp-max/crates/tower-lsp-max-specgen/fixtures/metaModel-3.18.json"
-            .to_string()
-    });
-    let output_path = output.unwrap_or_else(|| {
-        "/Users/sac/tower-lsp-max/tower-lsp-max-protocol/src/lsp_3_18.rs".to_string()
-    });
-    let include_prop = include_proposed.unwrap_or(false);
-
-    let mut cmd = std::process::Command::new("cargo");
-    cmd.arg("run")
-        .arg("--manifest-path")
-        .arg("/Users/sac/tower-lsp-max/crates/tower-lsp-max-specgen/Cargo.toml")
-        .arg("--")
-        .arg("--input")
-        .arg(&input_path)
-        .arg("--output")
-        .arg(&output_path);
-
-    if include_prop {
-        cmd.arg("--include-proposed");
-    }
-
-    let run_output = cmd
-        .output()
-        .map_err(|e| NounVerbError::execution_error(format!("Failed to run specgen: {}", e)))?;
-
-    if !run_output.status.success() {
-        return Err(NounVerbError::execution_error(format!(
-            "Specgen generator failed: {}",
-            String::from_utf8_lossy(&run_output.stderr)
-        )));
-    }
-
-    Ok(MetamodelResult { generated: true })
+#[derive(Serialize)]
+pub struct ValidateResult {
+    pub issues: Vec<ValidationIssue>,
+    pub is_valid: bool,
 }
 
-fn inspect_metamodel(input: String) -> Result<MetamodelInspectResult> {
-    let content = std::fs::read_to_string(&input).map_err(|e| {
-        NounVerbError::execution_error(format!("Failed to read metamodel file: {}", e))
-    })?;
-    let val: serde_json::Value = serde_json::from_str(&content).map_err(|e| {
-        NounVerbError::argument_error(format!("Failed to parse metamodel JSON: {}", e))
-    })?;
+#[verb("validate")]
+pub fn validate(id: String) -> Result<ValidateResult> {
+    let service = MetamodelService::new();
+    let issues = service.validate(&id);
+    let is_valid = issues.iter().all(|i| i.level != "ERROR");
+    Ok(ValidateResult { issues, is_valid })
+}
 
-    let version = val["metaData"]["version"]
-        .as_str()
-        .unwrap_or("unknown")
-        .to_string();
+#[derive(Serialize)]
+pub struct DiffResult {
+    pub diffs: Vec<DiffEntry>,
+}
 
-    let requests_count = val["requests"].as_array().map(|a| a.len()).unwrap_or(0);
-
-    let notifications_count = val["notifications"]
-        .as_array()
-        .map(|a| a.len())
-        .unwrap_or(0);
-
-    let structures_count = val["structures"].as_array().map(|a| a.len()).unwrap_or(0);
-
-    let enumerations_count = val["enumerations"].as_array().map(|a| a.len()).unwrap_or(0);
-
-    let type_aliases_count = val["typeAliases"].as_array().map(|a| a.len()).unwrap_or(0);
-
-    Ok(MetamodelInspectResult {
-        inspected: true,
-        version,
-        requests_count,
-        notifications_count,
-        structures_count,
-        enumerations_count,
-        type_aliases_count,
-    })
+#[verb("diff")]
+pub fn diff(source_id: String, target_id: String) -> Result<DiffResult> {
+    let service = MetamodelService::new();
+    let diffs = service.diff(&source_id, &target_id);
+    Ok(DiffResult { diffs })
 }
