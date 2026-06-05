@@ -28,6 +28,12 @@ pub enum ErrorCode {
     /// Reserved for implementation-defined server errors.
     ServerError(i64),
 
+    /// Error response returned for every request received before the server is initialized.
+    ///
+    /// # Compatibility
+    ///
+    /// This error code is defined by the Language Server Protocol.
+    ServerNotInitialized,
     /// The request was cancelled by the client.
     ///
     /// # Compatibility
@@ -40,6 +46,18 @@ pub enum ErrorCode {
     ///
     /// This error code is specific to the Language Server Protocol.
     ContentModified,
+    /// The request failed for some reason.
+    ///
+    /// # Compatibility
+    ///
+    /// This error code is defined by the Language Server Protocol.
+    RequestFailed,
+    /// The server cancelled the request for some reason.
+    ///
+    /// # Compatibility
+    ///
+    /// This error code is defined by the Language Server Protocol.
+    ServerCancelled,
 }
 
 impl ErrorCode {
@@ -51,8 +69,11 @@ impl ErrorCode {
             ErrorCode::MethodNotFound => -32601,
             ErrorCode::InvalidParams => -32602,
             ErrorCode::InternalError => -32603,
+            ErrorCode::ServerNotInitialized => -32002,
             ErrorCode::RequestCancelled => -32800,
             ErrorCode::ContentModified => -32801,
+            ErrorCode::ServerCancelled => -32802,
+            ErrorCode::RequestFailed => -32803,
             ErrorCode::ServerError(code) => code,
         }
     }
@@ -65,8 +86,11 @@ impl ErrorCode {
             ErrorCode::MethodNotFound => "Method not found",
             ErrorCode::InvalidParams => "Invalid params",
             ErrorCode::InternalError => "Internal error",
+            ErrorCode::ServerNotInitialized => "Server not initialized",
             ErrorCode::RequestCancelled => "Canceled",
             ErrorCode::ContentModified => "Content modified",
+            ErrorCode::ServerCancelled => "Server cancelled",
+            ErrorCode::RequestFailed => "Request failed",
             ErrorCode::ServerError(_) => "Server error",
         }
     }
@@ -80,8 +104,11 @@ impl From<i64> for ErrorCode {
             -32601 => ErrorCode::MethodNotFound,
             -32602 => ErrorCode::InvalidParams,
             -32603 => ErrorCode::InternalError,
+            -32002 => ErrorCode::ServerNotInitialized,
             -32800 => ErrorCode::RequestCancelled,
             -32801 => ErrorCode::ContentModified,
+            -32802 => ErrorCode::ServerCancelled,
+            -32803 => ErrorCode::RequestFailed,
             code => ErrorCode::ServerError(code),
         }
     }
@@ -154,6 +181,15 @@ impl Error {
         Error::new(ErrorCode::InternalError)
     }
 
+    /// Creates a new "server not initialized" error (`-32002`).
+    ///
+    /// # Compatibility
+    ///
+    /// This error code is defined by the Language Server Protocol.
+    pub const fn server_not_initialized() -> Self {
+        Error::new(ErrorCode::ServerNotInitialized)
+    }
+
     /// Creates a new "request cancelled" error (`-32800`).
     ///
     /// # Compatibility
@@ -172,6 +208,15 @@ impl Error {
         Error::new(ErrorCode::ContentModified)
     }
 
+    /// Creates a new "server cancelled" error (`-32802`).
+    ///
+    /// # Compatibility
+    ///
+    /// This error code is defined by the Language Server Protocol.
+    pub const fn server_cancelled() -> Self {
+        Error::new(ErrorCode::ServerCancelled)
+    }
+
     /// Creates a new "request failed" server error (`-32803`).
     ///
     /// Used to propagate runtime dispatch failures from the autonomic mesh.
@@ -180,7 +225,7 @@ impl Error {
         M: Into<Cow<'static, str>>,
     {
         Error {
-            code: ErrorCode::ServerError(-32803),
+            code: ErrorCode::RequestFailed,
             message: message.into(),
             data: None,
         }
@@ -200,12 +245,9 @@ impl std::error::Error for Error {}
 /// See [here](https://microsoft.github.io/language-server-protocol/specification#initialize)
 /// for reference.
 pub(crate) const fn not_initialized_error() -> Error {
-    Error {
-        code: ErrorCode::ServerError(-32002),
-        message: Cow::Borrowed("Server not initialized"),
-        data: None,
-    }
+    Error::server_not_initialized()
 }
+
 
 #[cfg(test)]
 mod tests {

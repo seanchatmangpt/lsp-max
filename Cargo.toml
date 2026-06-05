@@ -35,7 +35,7 @@ memchr = "2.5"
 windows-sys = { version = "0.52", features = ["Win32_System_Threading", "Win32_Foundation"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-tokio = { version = "1.17", optional = true, features = ["time", "macros"] }
+tokio = { version = "1.17", optional = true, features = ["time", "macros", "rt"] }
 tokio-util = { version = "0.7", optional = true, features = ["codec"] }
 tower-lsp-max-macros = { version = "26.6.4", path = "./tower-lsp-max-macros" }
 tower-lsp-max-protocol = { version = "26.6.4", path = "./tower-lsp-max-protocol" }
@@ -65,10 +65,10 @@ members = [
     "./tower-lsp-max-agent",
     "crates/tower-lsp-max-specgen",
     "crates/tower-lsp-max-cli",
-    "crates/playground", "crates/tower-lsp-max-client",
+    "crates/playground", "crates/tower-lsp-max-client", 
 ]
 default-members = ["."]
 
 [patch.crates-io]
-lsp-types = { path = "/Users/sac/lsp-types" }
+lsp-types = { path = "/Users/sac/lsp-types-max" }
 

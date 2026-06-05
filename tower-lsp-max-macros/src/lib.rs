@@ -37,6 +37,7 @@ struct MethodCall<'a> {
     handler_name: &'a syn::Ident,
     params: Option<&'a syn::Type>,
     result: Option<&'a syn::Type>,
+    layer: Option<String>,
 }
 
 fn parse_method_calls(lang_server_trait: &ItemTrait) -> Vec<MethodCall<'_>> {
@@ -55,13 +56,18 @@ fn parse_method_calls(lang_server_trait: &ItemTrait) -> Vec<MethodCall<'_>> {
             .expect("expected `#[rpc(name = \"foo\")]` attribute");
 
         let mut rpc_name = String::new();
+        let mut layer = None;
         attr.parse_nested_meta(|meta| {
             if meta.path.is_ident("name") {
                 let s: LitStr = meta.value().and_then(|v| v.parse())?;
                 rpc_name = s.value();
                 Ok(())
+            } else if meta.path.is_ident("layer") {
+                let s: LitStr = meta.value().and_then(|v| v.parse())?;
+                layer = Some(s.value());
+                Ok(())
             } else {
-                Err(meta.error("expected `name` identifier in `#[rpc]`"))
+                Err(meta.error("expected `name` or `layer` identifier in `#[rpc]`"))
             }
         })
         .unwrap();
@@ -81,6 +87,7 @@ fn parse_method_calls(lang_server_trait: &ItemTrait) -> Vec<MethodCall<'_>> {
             handler_name: &method.sig.ident,
             params,
             result,
+            layer,
         });
     }
 
@@ -94,10 +101,22 @@ fn gen_server_router(trait_name: &syn::Ident, methods: &[MethodCall]) -> proc_ma
             let rpc_name = &method.rpc_name;
             let handler = &method.handler_name;
 
-            let layer = match &rpc_name[..] {
-                "initialize" => quote! { layers::Initialize::new(state.clone(), pending.clone()) },
-                "shutdown" => quote! { layers::Shutdown::new(state.clone(), pending.clone()) },
-                _ => quote! { layers::Normal::new(state.clone(), pending.clone()) },
+            let layer = if let Some(ref l) = method.layer {
+                let l: syn::Path = syn::parse_str(l).expect("invalid layer path");
+                quote! { #l::new(state.clone(), pending.clone()) }
+            } else {
+                match &rpc_name[..] {
+                    "initialize" => {
+                        quote! { layers::Initialize::new(state.clone(), pending.clone()) }
+                    }
+                    "shutdown" => quote! { layers::Shutdown::new(state.clone(), pending.clone()) },
+                    _ => quote! {
+                        tower::ServiceBuilder::new()
+                            .layer(layers::Normal::new(state.clone(), pending.clone()))
+                            .layer(doc_sync.clone())
+                            .into_inner()
+                    },
+                }
             };
 
             // NOTE: In a perfect world, we could simply loop over each `MethodCall` and emit
@@ -164,6 +183,7 @@ fn gen_server_router(trait_name: &syn::Ident, methods: &[MethodCall]) -> proc_ma
                 state: Arc<ServerState>,
                 pending: Arc<Pending>,
                 client: Client,
+                doc_sync: layers::DocumentSync,
             ) -> Router<S, ExitedError>
             where
                 S: #trait_name,

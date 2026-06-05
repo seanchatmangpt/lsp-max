@@ -1,9 +1,10 @@
 //! Service abstraction for language servers.
 
 pub use self::client::{progress, Client, ClientSocket, RequestStream, ResponseSink};
+pub use self::cancellation::{CancellationGuard, OnDrop};
 
-pub(crate) use self::pending::Pending;
-pub(crate) use self::state::{ServerState, State};
+pub use self::pending::Pending;
+pub use self::state::{ServerState, State};
 
 use std::fmt::{self, Debug, Display, Formatter};
 use std::sync::Arc;
@@ -20,9 +21,12 @@ use crate::LanguageServer;
 
 pub(crate) mod layers;
 
+mod cancellation;
 mod client;
 mod pending;
 mod state;
+mod watchdog;
+
 
 /// Error that occurs when attempting to call the language server after it has already exited.
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -62,7 +66,7 @@ impl ExitedError {
 /// [`exit`]: https://microsoft.github.io/language-server-protocol/specification#exit
 #[derive(Debug)]
 pub struct LspService<S> {
-    inner: Router<S, ExitedError>,
+    inner: layers::CatchUnwindService<Router<S, ExitedError>>,
     state: Arc<ServerState>,
 }
 
@@ -88,6 +92,7 @@ impl<S: LanguageServer> LspService<S> {
         let (client, socket) = Client::new(state.clone());
         let inner = Router::new(init(client.clone()));
         let pending = Arc::new(Pending::new());
+        let doc_sync = layers::DocumentSync::new();
 
         LspServiceBuilder {
             inner: crate::generated::register_lsp_methods(
@@ -95,16 +100,18 @@ impl<S: LanguageServer> LspService<S> {
                 state.clone(),
                 pending.clone(),
                 client,
+                doc_sync.clone(),
             ),
             state,
             pending,
             socket,
+            doc_sync,
         }
     }
 
     /// Returns a reference to the inner server.
     pub fn inner(&self) -> &S {
-        self.inner.inner()
+        self.inner.inner().inner()
     }
 }
 
@@ -128,48 +135,6 @@ impl<S: LanguageServer> Service<Request> for LspService<S> {
         if self.state.get() == State::Exited {
             let code = self.state.get_exit_code();
             return future::err(ExitedError(code)).boxed();
-        }
-
-        let method = req.method().to_string();
-        // Dual-mesh routing collapse: max/releaseActuation and max/conformanceDelta are
-        // intercepted here alongside existing max/* methods and dispatched via handle_mesh_rpc
-        // (state.mesh) — the single authoritative mesh path.  Their trait-impl bodies are
-        // unreachable stubs that exist only to satisfy the LanguageServer trait.
-        if method == "max/snapshot"
-            || method == "max/conformanceVector"
-            || method == "max/clearDiagnostic"
-            || method == "max/verifyLedger"
-            || method == "max/ledgerReport"
-            || method == "max/instanceList"
-            || method == "max/reset"
-            || method == "max/releaseActuation"
-            || method == "max/conformanceDelta"
-        {
-            let state = self.state.clone();
-            let (_, id, params) = req.into_parts();
-            return Box::pin(async move {
-                match handle_mesh_rpc(&state, &method, params) {
-                    Ok(val) => {
-                        if let Some(id) = id {
-                            Ok(Some(Response::from_ok(id, val)))
-                        } else {
-                            Ok(None)
-                        }
-                    }
-                    Err(err) => {
-                        if let Some(id) = id {
-                            let rpc_err = Error {
-                                code: ErrorCode::InvalidParams,
-                                message: err.into(),
-                                data: None,
-                            };
-                            Ok(Some(Response::from_error(id, rpc_err)))
-                        } else {
-                            Ok(None)
-                        }
-                    }
-                }
-            });
         }
 
         let fut = self.inner.call(req);
@@ -197,6 +162,7 @@ pub struct LspServiceBuilder<S> {
     state: Arc<ServerState>,
     pending: Arc<Pending>,
     socket: ClientSocket,
+    doc_sync: layers::DocumentSync,
 }
 
 impl<S: LanguageServer> LspServiceBuilder<S> {
@@ -273,7 +239,10 @@ impl<S: LanguageServer> LspServiceBuilder<S> {
         R: IntoResponse,
         F: for<'a> Method<&'a S, P, R> + Clone + Send + Sync + 'static,
     {
-        let layer = layers::Normal::new(self.state.clone(), self.pending.clone());
+        let layer = tower::ServiceBuilder::new()
+            .layer(layers::Normal::new(self.state.clone(), self.pending.clone()))
+            .layer(self.doc_sync.clone())
+            .into_inner();
         self.inner.method(name, callback, layer);
         self
     }
@@ -287,6 +256,8 @@ impl<S: LanguageServer> LspServiceBuilder<S> {
             socket,
             ..
         } = self;
+
+        let inner = tower::Layer::layer(&layers::CatchUnwind, inner);
 
         (LspService { inner, state }, socket)
     }

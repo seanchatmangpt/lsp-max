@@ -8,6 +8,10 @@ description = "LSP server providing IDE support for writing tower-lsp-max server
 name = "tower-lsp-max-playground"
 path = "src/main.rs"
 
+[[bin]]
+name = "lsif_demo"
+path = "src/bin/lsif_demo.rs"
+
 [lib]
 name = "tower_lsp_max_playground"
 path = "src/lib.rs"

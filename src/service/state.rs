@@ -62,6 +62,7 @@ pub struct ServerState {
     exit_code: AtomicI32,
     /// The autonomic mesh manager for monitoring the workspace state.
     pub mesh: Mutex<crate::max_runtime::AutonomicMesh>,
+    parent_pid: Mutex<Option<u32>>,
 }
 
 impl ServerState {
@@ -94,6 +95,7 @@ impl ServerState {
             wakers: Mutex::new(Vec::new()),
             exit_code: AtomicI32::new(1),
             mesh: Mutex::new(mesh),
+            parent_pid: Mutex::new(None),
         }
     }
 
@@ -165,6 +167,16 @@ impl ServerState {
     /// Gets the exit code.
     pub fn get_exit_code(&self) -> i32 {
         self.exit_code.load(Ordering::SeqCst)
+    }
+
+    /// Sets the parent process ID.
+    pub fn set_parent_pid(&self, pid: u32) {
+        *self.parent_pid.lock().unwrap() = Some(pid);
+    }
+
+    /// Gets the parent process ID.
+    pub fn get_parent_pid(&self) -> Option<u32> {
+        *self.parent_pid.lock().unwrap()
     }
 
     /// Attempts to transition from `Uninitialized` to `Initializing` phase.

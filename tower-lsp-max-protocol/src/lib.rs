@@ -12,6 +12,9 @@ pub mod core;
 pub mod custom_methods;
 pub mod diagnostics;
 pub mod hooks;
+pub mod lsif;
+pub mod lsif_builder;
+pub mod lsif_reader;
 pub mod policy;
 
 // Re-export all types so they are visible at the crate root level exactly as before.

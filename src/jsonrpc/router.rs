@@ -100,18 +100,27 @@ impl<S, E: Send + 'static> Service<Request> for Router<S, E> {
 
 /// Opaque JSON-RPC method handler.
 pub struct MethodHandler<P, R, E> {
-    f: Box<dyn Fn(P) -> BoxFuture<'static, R> + Send>,
+    f: Arc<dyn Fn(P) -> BoxFuture<'static, R> + Send + Sync>,
     _marker: PhantomData<E>,
+}
+
+impl<P, R, E> Clone for MethodHandler<P, R, E> {
+    fn clone(&self) -> Self {
+        MethodHandler {
+            f: self.f.clone(),
+            _marker: PhantomData,
+        }
+    }
 }
 
 impl<P: FromParams, R: IntoResponse, E> MethodHandler<P, R, E> {
     fn new<F, Fut>(handler: F) -> Self
     where
-        F: Fn(P) -> Fut + Send + 'static,
+        F: Fn(P) -> Fut + Send + Sync + 'static,
         Fut: Future<Output = R> + Send + 'static,
     {
         MethodHandler {
-            f: Box::new(move |p| handler(p).boxed()),
+            f: Arc::new(move |p| handler(p).boxed()),
             _marker: PhantomData,
         }
     }
@@ -206,27 +215,21 @@ pub trait FromParams: private::Sealed + Send + Sized + 'static {
 
 /// Deserialize non-existent JSON-RPC parameters.
 impl FromParams for () {
-    fn from_params(params: Option<Value>) -> super::Result<Self> {
-        if let Some(p) = params {
-            Err(Error::invalid_params(format!("Unexpected params: {p}")))
-        } else {
-            Ok(())
-        }
+    fn from_params(_params: Option<Value>) -> super::Result<Self> {
+        Ok(())
     }
 }
 
 /// Deserialize required JSON-RPC parameters.
 impl<P: DeserializeOwned + Send + 'static> FromParams for (P,) {
     fn from_params(params: Option<Value>) -> super::Result<Self> {
-        if let Some(p) = params {
-            serde_json::from_value(p)
-                .map(|params| (params,))
-                .map_err(|e| Error::invalid_params(e.to_string()))
-        } else {
-            Err(Error::invalid_params("Missing params field"))
-        }
+        let p = params.unwrap_or(Value::Null);
+        serde_json::from_value(p)
+            .map(|p| (p,))
+            .map_err(|e| Error::invalid_params(e.to_string()))
     }
 }
+
 
 /// A trait implemented by all JSON-RPC response types.
 pub trait IntoResponse: private::Sealed + Send + 'static {
