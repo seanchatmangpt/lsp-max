@@ -1,0 +1,9 @@
+[package]
+name = "tower-lsp-max-agent"
+version = "26.6.4"
+edition = "2021"
+description = "Agent integration and analysis bundles for tower-lsp-max"
+
+[dependencies]
+tower-lsp-max-protocol = { path = "../tower-lsp-max-protocol", version = "26.6.4" }
+serde_json = "1.0"

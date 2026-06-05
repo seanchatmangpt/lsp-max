@@ -1,10 +1,10 @@
 [package]
-name = "tower-lsp"
-version = "0.20.0"
+name = "tower-lsp-max"
+version = "26.6.4"
 authors = ["Eyal Kalderon <ebkalderon@gmail.com>"]
 edition = "2021"
-rust-version = "1.64.0"
-description = "Language Server Protocol implementation based on Tower"
+rust-version = "1.70.0"
+description = "Language Server Protocol implementation based on Tower, upgraded for maximal LSP capability projection"
 license = "MIT OR Apache-2.0"
 homepage = "https://github.com/ebkalderon/tower-lsp"
 repository = "https://github.com/ebkalderon/tower-lsp"
@@ -34,7 +34,10 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 tokio = { version = "1.17", optional = true }
 tokio-util = { version = "0.7", optional = true, features = ["codec"] }
-tower-lsp-macros = { version = "0.9", path = "./tower-lsp-macros" }
+tower-lsp-max-macros = { version = "26.6.4", path = "./tower-lsp-max-macros" }
+tower-lsp-max-protocol = { version = "26.6.4", path = "./tower-lsp-max-protocol" }
+tower-lsp-max-runtime = { version = "26.6.4", path = "./tower-lsp-max-runtime" }
+tower-lsp-max-agent = { version = "26.6.4", path = "./tower-lsp-max-agent" }
 tower = { version = "0.4", default-features = false, features = ["util"] }
 tracing = "0.1"
 
@@ -46,5 +49,13 @@ tokio-util = { version = "0.7", features = ["compat"] }
 ws_stream_tungstenite = { version = "0.10", features = ["tokio_io"] }
 
 [workspace]
-members = [".", "./tower-lsp-macros"]
+members = [
+    ".",
+    "./tower-lsp-max-macros",
+    "./tower-lsp-max-protocol",
+    "./tower-lsp-max-runtime",
+    "./tower-lsp-max-agent",
+    "crates/tower-lsp-max-specgen",
+    "crates/tower-lsp-max-cli",
+]
 default-members = ["."]

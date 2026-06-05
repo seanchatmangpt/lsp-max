@@ -10,6 +10,8 @@ use tokio::io::{AsyncRead, AsyncWrite};
 #[cfg(feature = "runtime-tokio")]
 use tokio_util::codec::{FramedRead, FramedWrite};
 
+use std::task::Poll;
+
 use futures::channel::mpsc;
 use futures::{future, join, stream, FutureExt, Sink, SinkExt, Stream, StreamExt, TryFutureExt};
 use tower::Service;
@@ -17,7 +19,7 @@ use tracing::error;
 
 use crate::codec::{LanguageServerCodec, ParseError};
 use crate::jsonrpc::{Error, Id, Message, Request, Response};
-use crate::service::{ClientSocket, RequestStream, ResponseSink};
+use crate::service::{ClientSocket, ExitedError, RequestStream, ResponseSink};
 
 const DEFAULT_MAX_CONCURRENCY: usize = 4;
 const MESSAGE_QUEUE_SIZE: usize = 100;
@@ -99,10 +101,10 @@ where
     }
 
     /// Spawns the service with messages read through `stdin` and responses written to `stdout`.
-    pub async fn serve<T>(self, mut service: T)
+    pub async fn serve<T>(self, mut service: T) -> Result<(), T::Error>
     where
         T: Service<Request, Response = Option<Response>> + Send + 'static,
-        T::Error: Into<Box<dyn std::error::Error + Send + Sync>>,
+        T::Error: std::error::Error + Send + Sync + 'static + From<ExitedError>,
         T::Future: Send,
     {
         let (client_requests, mut client_responses) = self.loopback.split();
@@ -130,12 +132,12 @@ where
                 match msg {
                     Ok(Message::Request(req)) => {
                         if let Err(err) = future::poll_fn(|cx| service.poll_ready(cx)).await {
-                            error!("{}", display_sources(err.into().as_ref()));
-                            return;
+                            error!("{}", display_sources(&err));
+                            return Err(err);
                         }
 
                         let fut = service.call(req).unwrap_or_else(|err| {
-                            error!("{}", display_sources(err.into().as_ref()));
+                            error!("{}", display_sources(&err));
                             None
                         });
 
@@ -144,7 +146,7 @@ where
                     Ok(Message::Response(res)) => {
                         if let Err(err) = client_responses.send(res).await {
                             error!("{}", display_sources(&err));
-                            return;
+                            return Ok(());
                         }
                     }
                     Err(err) => {
@@ -158,9 +160,22 @@ where
             server_tasks_tx.disconnect();
             responses_tx.disconnect();
             client_abort.abort();
+
+            let exited_err = future::poll_fn(|cx| match service.poll_ready(cx) {
+                Poll::Ready(Err(err)) => Poll::Ready(Some(err)),
+                _ => Poll::Ready(None),
+            })
+            .await;
+
+            if let Some(err) = exited_err {
+                return Err(err);
+            }
+
+            Err(T::Error::from(ExitedError(1)))
         };
 
-        join!(print_output, read_input, process_server_tasks);
+        let (_, res, _) = join!(print_output, read_input, process_server_tasks);
+        res
     }
 }
 
@@ -210,7 +225,7 @@ mod tests {
 
     impl Service<Request> for MockService {
         type Response = Option<Response>;
-        type Error = String;
+        type Error = ExitedError;
         type Future = Ready<Result<Self::Response, Self::Error>>;
 
         fn poll_ready(&mut self, _: &mut Context) -> Poll<Result<(), Self::Error>> {
@@ -249,10 +264,11 @@ mod tests {
     #[tokio::test(flavor = "current_thread")]
     async fn serves_on_stdio() {
         let (mut stdin, mut stdout) = mock_stdio();
-        Server::new(&mut stdin, &mut stdout, MockLoopback(vec![]))
+        let res = Server::new(&mut stdin, &mut stdout, MockLoopback(vec![]))
             .serve(MockService)
             .await;
 
+        assert_eq!(res, Err(ExitedError(1)));
         assert_eq!(stdin.position(), 80);
         assert_eq!(stdout, mock_response());
     }
@@ -262,10 +278,11 @@ mod tests {
         let socket = MockLoopback(vec![serde_json::from_str(REQUEST).unwrap()]);
 
         let (mut stdin, mut stdout) = mock_stdio();
-        Server::new(&mut stdin, &mut stdout, socket)
+        let res = Server::new(&mut stdin, &mut stdout, socket)
             .serve(MockService)
             .await;
 
+        assert_eq!(res, Err(ExitedError(1)));
         assert_eq!(stdin.position(), 80);
         let output: Vec<_> = mock_request().into_iter().chain(mock_response()).collect();
         assert_eq!(stdout, output);
@@ -277,10 +294,11 @@ mod tests {
         let message = format!("Content-Length: {}\r\n\r\n{}", invalid.len(), invalid).into_bytes();
         let (mut stdin, mut stdout) = (Cursor::new(message), Vec::new());
 
-        Server::new(&mut stdin, &mut stdout, MockLoopback(vec![]))
+        let res = Server::new(&mut stdin, &mut stdout, MockLoopback(vec![]))
             .serve(MockService)
             .await;
 
+        assert_eq!(res, Err(ExitedError(1)));
         assert_eq!(stdin.position(), 48);
         let err = r#"{"jsonrpc":"2.0","error":{"code":-32700,"message":"Parse error"},"id":null}"#;
         let output = format!("Content-Length: {}\r\n\r\n{}", err.len(), err).into_bytes();

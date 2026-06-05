@@ -1,0 +1,11 @@
+[package]
+name = "tower-lsp-max-cli"
+version = "26.6.4"
+edition = "2021"
+
+[dependencies]
+clap-noun-verb = { path = "/Users/sac/clap-noun-verb" }
+clap-noun-verb-macros = { path = "/Users/sac/clap-noun-verb/clap-noun-verb-macros" }
+serde = { version = "1.0", features = ["derive"] }
+tokio = { version = "1.17", features = ["full"] }
+linkme = "0.3.36"
