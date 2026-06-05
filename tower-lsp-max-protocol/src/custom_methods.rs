@@ -38,6 +38,9 @@ pub const METHOD_REPLAY: &str = "max/replay";
 /// max/releaseActuation — Actuate a release if and only if the ConformanceVector admits it. Strict mode blocks on Unknown.
 pub const METHOD_RELEASE_ACTUATION: &str = "max/releaseActuation";
 
+/// max/lsif — Stream the current registry state as an exhaustive LSIF NDJSON graph.
+pub const METHOD_LSIF_EXPORT: &str = "max/lsif";
+
 // Request implementations
 
 pub enum MaxSnapshot {}
