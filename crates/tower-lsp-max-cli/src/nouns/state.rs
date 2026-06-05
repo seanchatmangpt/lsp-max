@@ -2,6 +2,7 @@ use clap_noun_verb::Result;
 use clap_noun_verb_macros::verb;
 use serde::Serialize;
 use tower_lsp_max_runtime::{AutonomicMesh, MeshAction, PolicyState};
+use tower_lsp_max_protocol::InstanceId;
 
 // ==============================================================================
 // 1. Domain Tier
@@ -201,7 +202,7 @@ pub fn transition(instance_id: String, new_state: String) -> Result<TransitionRe
         .map_err(|e| clap_noun_verb::error::NounVerbError::execution_error(e.to_string()))?;
 
     mesh.execute_action(MeshAction::TransitionPolicyState {
-        instance_id: instance_id.clone(),
+        instance_id: InstanceId::from(instance_id.clone()),
         new_state: policy_state,
     });
 
@@ -228,7 +229,7 @@ pub fn action(instance_id: String, action_id: String, description: String) -> Re
         .map_err(|e| clap_noun_verb::error::NounVerbError::execution_error(e.to_string()))?;
 
     mesh.execute_action(MeshAction::ExecuteBoundedAction {
-        instance_id: instance_id.clone(),
+        instance_id: InstanceId::from(instance_id.clone()),
         action_id: action_id.clone(),
         description,
     });

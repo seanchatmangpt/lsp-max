@@ -837,28 +837,28 @@ mod tests {
 // 5-Layer Autonomic Mesh Controller
 // ==========================================
 
-pub use tower_lsp_max_protocol::{HookEvent, MaxDiagnostic, PolicyState, Receipt};
+pub use tower_lsp_max_protocol::{HookEvent, InstanceId, MaxDiagnostic, PolicyState, Receipt};
 
 #[derive(Debug, Clone)]
 pub enum MeshAction {
     TransitionPolicyState {
-        instance_id: String,
+        instance_id: InstanceId,
         new_state: PolicyState,
     },
     ClearDiagnostic {
-        instance_id: String,
+        instance_id: InstanceId,
         diagnostic_id: String,
     },
     AddDiagnostic {
-        instance_id: String,
+        instance_id: InstanceId,
         diagnostic: Box<MaxDiagnostic>,
     },
     EmitReceipt {
-        instance_id: String,
+        instance_id: InstanceId,
         receipt: Receipt,
     },
     ExecuteBoundedAction {
-        instance_id: String,
+        instance_id: InstanceId,
         action_id: String,
         description: String,
     },
@@ -950,9 +950,9 @@ impl Hook for IntakeDiagnosticHook {
                 instance_id,
                 diagnostic,
             } => {
-                if instance_id == "LSP_1" && diagnostic.law_id == "law-intake-validation" {
+                if instance_id.0 == "LSP_1" && diagnostic.law_id == "law-intake-validation" {
                     vec![MeshAction::TransitionPolicyState {
-                        instance_id: "LSP_2".to_string(),
+                        instance_id: InstanceId::from("LSP_2"),
                         new_state: PolicyState::ClarificationRequested,
                     }]
                 } else {
@@ -977,27 +977,27 @@ impl Hook for IntakeClearHook {
                 instance_id,
                 diagnostic_id,
             } => {
-                if instance_id == "LSP_1" && diagnostic_id == "diag-invalid-input" {
+                if instance_id.0 == "LSP_1" && diagnostic_id == "diag-invalid-input" {
                     vec![
                         MeshAction::EmitReceipt {
-                            instance_id: "LSP_1".to_string(),
+                            instance_id: InstanceId::from("LSP_1"),
                             receipt: Receipt {
                                 receipt_id: "rcpt-intake-validated".to_string(),
                                 hash: "hash-intake-validated-mock".to_string(),
                             },
                         },
                         MeshAction::TransitionPolicyState {
-                            instance_id: "LSP_2".to_string(),
+                            instance_id: InstanceId::from("LSP_2"),
                             new_state: PolicyState::RefundAuthorized,
                         },
                         MeshAction::ExecuteBoundedAction {
-                            instance_id: "LSP_2".to_string(),
+                            instance_id: InstanceId::from("LSP_2"),
                             action_id: "act-create-refund-receipt".to_string(),
                             description: "Creating refund receipt file for policy execution"
                                 .to_string(),
                         },
                         MeshAction::EmitReceipt {
-                            instance_id: "LSP_2".to_string(),
+                            instance_id: InstanceId::from("LSP_2"),
                             receipt: Receipt {
                                 receipt_id: "rcpt-refund-executed".to_string(),
                                 hash: "hash-refund-executed-mock".to_string(),
@@ -1107,7 +1107,7 @@ impl AutonomicMesh {
             // Recursive hook chain has exceeded the safety limit.
             // Push a sentinel event and return rather than stack-overflowing.
             self.event_log.push(HookEvent::DiagnosticEmitted {
-                instance_id: "mesh".to_string(),
+                instance_id: InstanceId::from("mesh"),
                 diagnostic: Box::new(MaxDiagnostic {
                     lsp: lsp_types::Diagnostic {
                         range: lsp_types::Range::default(),
@@ -1168,7 +1168,7 @@ impl AutonomicMesh {
                 instance_id,
                 new_state,
             } => {
-                if let Some(instance) = self.instances.get_mut(&instance_id) {
+                if let Some(instance) = self.instances.get_mut(&instance_id.0) {
                     let old_state = instance
                         .policy_state
                         .clone()
@@ -1187,7 +1187,7 @@ impl AutonomicMesh {
                 instance_id,
                 diagnostic_id,
             } => {
-                if let Some(instance) = self.instances.get_mut(&instance_id) {
+                if let Some(instance) = self.instances.get_mut(&instance_id.0) {
                     let old_len = instance.diagnostics.len();
                     instance
                         .diagnostics
@@ -1205,7 +1205,7 @@ impl AutonomicMesh {
                 instance_id,
                 diagnostic,
             } => {
-                if let Some(instance) = self.instances.get_mut(&instance_id) {
+                if let Some(instance) = self.instances.get_mut(&instance_id.0) {
                     instance.diagnostics.push((*diagnostic).clone());
                     let event = HookEvent::DiagnosticEmitted {
                         instance_id,
@@ -1218,7 +1218,7 @@ impl AutonomicMesh {
                 instance_id,
                 receipt,
             } => {
-                if let Some(instance) = self.instances.get_mut(&instance_id) {
+                if let Some(instance) = self.instances.get_mut(&instance_id.0) {
                     instance.receipts.push(receipt.clone());
                     let event = HookEvent::ReceiptEmitted {
                         instance_id,
@@ -1268,7 +1268,7 @@ impl AutonomicMesh {
                             .to_string(),
                     );
                 }
-                let instance_id = parts[1].to_string();
+                let instance_id = InstanceId::from(parts[1]);
                 let diag_id = parts[2].to_string();
                 let law_id = parts[3].to_string();
                 let severity_str = parts[4];
@@ -1321,7 +1321,7 @@ impl AutonomicMesh {
                 if parts.len() < 3 {
                     return Err("Usage: clear <instance_id> <diag_id>".to_string());
                 }
-                let instance_id = parts[1].to_string();
+                let instance_id = InstanceId::from(parts[1]);
                 let diag_id = parts[2].to_string();
 
                 self.execute_action(MeshAction::ClearDiagnostic {
@@ -1358,7 +1358,7 @@ impl AutonomicMesh {
                 if parts.len() < 3 {
                     return Err("Usage: patch <instance_id> <policy_state>".to_string());
                 }
-                let instance_id = parts[1].to_string();
+                let instance_id = InstanceId::from(parts[1]);
                 let new_state = parts[2].parse::<PolicyState>()?;
 
                 self.execute_action(MeshAction::TransitionPolicyState {
@@ -1446,7 +1446,7 @@ impl AutonomicMesh {
                     serde_json::from_value(params).map_err(|e| format!("Invalid params: {}", e))?;
 
                 self.execute_action(MeshAction::ClearDiagnostic {
-                    instance_id: instance_id.to_string(),
+                    instance_id: InstanceId::from(instance_id),
                     diagnostic_id: diag_id,
                 });
                 Ok(serde_json::Value::Null)
@@ -1538,12 +1538,12 @@ impl AutonomicMesh {
                     hash,
                 };
                 self.execute_action(MeshAction::ExecuteBoundedAction {
-                    instance_id: instance_id.to_string(),
+                    instance_id: InstanceId::from(instance_id),
                     action_id,
                     description: code_action.action.title.clone(),
                 });
                 self.execute_action(MeshAction::EmitReceipt {
-                    instance_id: instance_id.to_string(),
+                    instance_id: InstanceId::from(instance_id),
                     receipt: receipt.clone(),
                 });
                 Ok(serde_json::to_value(receipt).unwrap())
@@ -1687,7 +1687,7 @@ impl AutonomicMesh {
                 let receipt: tower_lsp_max_protocol::Receipt =
                     serde_json::from_value(params).map_err(|e| format!("Invalid params: {}", e))?;
                 self.execute_action(MeshAction::EmitReceipt {
-                    instance_id: instance_id.to_string(),
+                    instance_id: InstanceId::from(instance_id),
                     receipt,
                 });
                 Ok(serde_json::json!({ "propagated": true }))
@@ -1796,7 +1796,7 @@ impl AutonomicMesh {
                 let hash = sha256(receipt_id.as_bytes());
                 let receipt = tower_lsp_max_protocol::Receipt { receipt_id: receipt_id.clone(), hash };
                 self.execute_action(MeshAction::EmitReceipt {
-                    instance_id: instance_id.to_string(),
+                    instance_id: InstanceId::from(instance_id),
                     receipt: receipt.clone(),
                 });
                 Ok(serde_json::json!({
@@ -1816,7 +1816,7 @@ impl AutonomicMesh {
                         HookEvent::DiagnosticEmitted { instance_id: id, .. } |
                         HookEvent::DiagnosticCleared { instance_id: id, .. } |
                         HookEvent::ReceiptEmitted { instance_id: id, .. } |
-                        HookEvent::PolicyStateChanged { instance_id: id, .. } => id == instance_id,
+                        HookEvent::PolicyStateChanged { instance_id: id, .. } => id.0 == instance_id,
                     })
                     .filter_map(|e| serde_json::to_value(e).ok())
                     .collect();
@@ -1844,7 +1844,7 @@ impl AutonomicMesh {
                 let hash = sha256(receipt_id.as_bytes());
                 let receipt = tower_lsp_max_protocol::Receipt { receipt_id: receipt_id.clone(), hash };
                 self.execute_action(MeshAction::EmitReceipt {
-                    instance_id: instance_id.to_string(),
+                    instance_id: InstanceId::from(instance_id),
                     receipt: receipt.clone(),
                 });
                 Ok(serde_json::json!({
@@ -1853,6 +1853,18 @@ impl AutonomicMesh {
                     "conformance_score": score,
                     "release_receipt": receipt,
                 }))
+            }
+
+            "max/dumpState" => {
+                let state = self.to_state();
+                serde_json::to_value(&state).map_err(|e| format!("Serialization failed: {}", e))
+            }
+
+            "max/restoreState" => {
+                let state: AutonomicMeshState =
+                    serde_json::from_value(params).map_err(|e| format!("Invalid params: {}", e))?;
+                self.load_state(state);
+                Ok(serde_json::Value::Null)
             }
 
             _ => Err(format!(
@@ -2068,7 +2080,7 @@ impl Hook for CustomerRequestClassifierHook {
                 || receipt.receipt_id.contains("customer-proof") =>
             {
                 if let Ok(mut proof) = self.proof_received.lock() {
-                    proof.insert(instance_id.clone());
+                    proof.insert(instance_id.0.clone());
                 }
             }
             HookEvent::PolicyStateChanged {
@@ -2077,7 +2089,7 @@ impl Hook for CustomerRequestClassifierHook {
                 to_state,
             } => {
                 if let Ok(mut states) = self.policy_states.lock() {
-                    states.insert(instance_id.clone(), to_state.clone());
+                    states.insert(instance_id.0.clone(), to_state.clone());
                 }
             }
             HookEvent::DiagnosticEmitted {
@@ -2095,7 +2107,7 @@ impl Hook for CustomerRequestClassifierHook {
                 if is_proof_issue {
                     let should_transition = if let Ok(states) = self.policy_states.lock() {
                         !matches!(
-                            states.get(instance_id),
+                            states.get(instance_id.0.as_str()),
                             Some(PolicyState::ClarificationRequested)
                                 | Some(PolicyState::RefundAuthorized)
                         )
@@ -2116,14 +2128,14 @@ impl Hook for CustomerRequestClassifierHook {
                 to_phase,
             } if to_phase == "Initialized" => {
                 let is_missing = if let Ok(proof) = self.proof_received.lock() {
-                    !proof.contains(instance_id)
+                    !proof.contains(instance_id.0.as_str())
                 } else {
                     true
                 };
                 if is_missing {
                     let should_transition = if let Ok(states) = self.policy_states.lock() {
                         !matches!(
-                            states.get(instance_id),
+                            states.get(instance_id.0.as_str()),
                             Some(PolicyState::ClarificationRequested)
                                 | Some(PolicyState::RefundAuthorized)
                         )
@@ -2177,7 +2189,7 @@ impl Hook for PolicyEvaluationHook {
                 || receipt.receipt_id.contains("customer-proof") =>
             {
                 let is_clarification_requested = if let Ok(states) = self.policy_states.lock() {
-                    states.get(instance_id) == Some(&PolicyState::ClarificationRequested)
+                    states.get(&instance_id.0) == Some(&PolicyState::ClarificationRequested)
                 } else {
                     false
                 };
@@ -2194,7 +2206,7 @@ impl Hook for PolicyEvaluationHook {
                 to_state,
             } => {
                 if let Ok(mut states) = self.policy_states.lock() {
-                    states.insert(instance_id.clone(), to_state.clone());
+                    states.insert(instance_id.0.clone(), to_state.clone());
                 }
                 if from_state == &PolicyState::ClarificationRequested
                     && to_state == &PolicyState::RefundAuthorized
@@ -2246,7 +2258,7 @@ impl Hook for ReceiptRoutingHook {
             } => {
                 if let Ok(mut diags) = self.active_diagnostics.lock() {
                     diags
-                        .entry(instance_id.clone())
+                        .entry(instance_id.0.clone())
                         .or_default()
                         .insert(diagnostic.diagnostic_id.clone());
                 }
@@ -2256,7 +2268,7 @@ impl Hook for ReceiptRoutingHook {
                 diagnostic_id,
             } => {
                 if let Ok(mut diags) = self.active_diagnostics.lock() {
-                    if let Some(set) = diags.get_mut(instance_id) {
+                    if let Some(set) = diags.get_mut(&instance_id.0) {
                         set.remove(diagnostic_id);
                     }
                 }
@@ -2265,12 +2277,12 @@ impl Hook for ReceiptRoutingHook {
                 instance_id,
                 receipt: _,
             } => {
-                let target_instance = if instance_id == "LSP_2" {
+                let target_instance = if instance_id.0 == "LSP_2" {
                     Some("LSP_1".to_string())
-                } else if instance_id.contains("LSP_2") {
-                    Some(instance_id.replace("LSP_2", "LSP_1"))
-                } else if instance_id.contains("lsp_2") {
-                    Some(instance_id.replace("lsp_2", "lsp_1"))
+                } else if instance_id.0.contains("LSP_2") {
+                    Some(instance_id.0.replace("LSP_2", "LSP_1"))
+                } else if instance_id.0.contains("lsp_2") {
+                    Some(instance_id.0.replace("lsp_2", "lsp_1"))
                 } else {
                     None
                 };
@@ -2280,7 +2292,7 @@ impl Hook for ReceiptRoutingHook {
                         if let Some(set) = diags.get(&target) {
                             for diag_id in set {
                                 actions.push(MeshAction::ClearDiagnostic {
-                                    instance_id: target.clone(),
+                                    instance_id: InstanceId::from(target.clone()),
                                     diagnostic_id: diag_id.clone(),
                                 });
                             }
@@ -2313,7 +2325,7 @@ mod additional_hooks_tests {
 
         // 1. Initial State transitions to trigger CustomerRequestClassifierHook
         mesh.dispatch_event(HookEvent::StateTransition {
-            instance_id: "LSP_1".to_string(),
+            instance_id: InstanceId::from("LSP_1"),
             from_phase: "Uninitialized".to_string(),
             to_phase: "Initialized".to_string(),
         });
@@ -2348,7 +2360,7 @@ mod additional_hooks_tests {
             ..Default::default()
         };
         mesh.execute_action(MeshAction::AddDiagnostic {
-            instance_id: "LSP_1".to_string(),
+            instance_id: InstanceId::from("LSP_1"),
             diagnostic: Box::new(diag),
         });
         assert_eq!(mesh.instances.get("LSP_1").unwrap().diagnostics.len(), 1);
@@ -2361,12 +2373,12 @@ mod additional_hooks_tests {
 
         // Before dispatching receipt, policy state of LSP_2 should transition to ClarificationRequested first
         mesh.execute_action(MeshAction::TransitionPolicyState {
-            instance_id: "LSP_2".to_string(),
+            instance_id: InstanceId::from("LSP_2"),
             new_state: PolicyState::ClarificationRequested,
         });
 
         mesh.dispatch_event(HookEvent::ReceiptEmitted {
-            instance_id: "LSP_2".to_string(),
+            instance_id: InstanceId::from("LSP_2"),
             receipt: receipt.clone(),
         });
 
@@ -2449,7 +2461,7 @@ mod tests_gaps {
     fn test_rpc_conformance_vector_with_error_diagnostic() {
         let mut mesh = make_mesh_with_instance("INST_A");
         mesh.execute_action(MeshAction::AddDiagnostic {
-            instance_id: "INST_A".to_string(),
+            instance_id: InstanceId::from("INST_A"),
             diagnostic: Box::new(make_error_diagnostic("diag-1")),
         });
         let result = mesh.dispatch_rpc("INST_A", "max/conformanceVector", json!(null));
@@ -2464,7 +2476,7 @@ mod tests_gaps {
     fn test_rpc_clear_diagnostic_removes_diag() {
         let mut mesh = make_mesh_with_instance("INST_A");
         mesh.execute_action(MeshAction::AddDiagnostic {
-            instance_id: "INST_A".to_string(),
+            instance_id: InstanceId::from("INST_A"),
             diagnostic: Box::new(make_error_diagnostic("diag-1")),
         });
         assert_eq!(mesh.instances.get("INST_A").unwrap().diagnostics.len(), 1);
@@ -2504,7 +2516,7 @@ mod tests_gaps {
         let mut mesh = AutonomicMesh::new();
         // Should not panic
         mesh.execute_action(MeshAction::TransitionPolicyState {
-            instance_id: "GHOST".to_string(),
+            instance_id: InstanceId::from("GHOST"),
             new_state: PolicyState::Operational,
         });
         assert!(mesh.instances.is_empty());
@@ -2515,7 +2527,7 @@ mod tests_gaps {
         let mut mesh = make_mesh_with_instance("INST_A");
         let before = mesh.event_log.len();
         mesh.execute_action(MeshAction::ClearDiagnostic {
-            instance_id: "INST_A".to_string(),
+            instance_id: InstanceId::from("INST_A"),
             diagnostic_id: "no-such-diag".to_string(),
         });
         // No DiagnosticCleared event should be appended
@@ -2534,7 +2546,7 @@ mod tests_gaps {
             hash: "h1".to_string(),
         };
         mesh.execute_action(MeshAction::EmitReceipt {
-            instance_id: "GHOST".to_string(),
+            instance_id: InstanceId::from("GHOST"),
             receipt,
         });
         assert!(mesh.event_log.is_empty());
@@ -2632,7 +2644,7 @@ mod tests_gaps {
             ..Default::default()
         };
         mesh.execute_action(MeshAction::AddDiagnostic {
-            instance_id: "INST_A".to_string(),
+            instance_id: InstanceId::from("INST_A"),
             diagnostic: Box::new(diag),
         });
         let stored = &mesh.instances.get("INST_A").unwrap().diagnostics[0];
@@ -2813,7 +2825,7 @@ mod tests_gaps {
     fn test_rpc_conformance_vector_warning_diagnostic() {
         let mut mesh = make_mesh_with_instance("INST_A");
         mesh.execute_action(MeshAction::AddDiagnostic {
-            instance_id: "INST_A".to_string(),
+            instance_id: InstanceId::from("INST_A"),
             diagnostic: Box::new(MaxDiagnostic {
                 diagnostic_id: "w1".to_string(),
                 law_id: "law".to_string(),
@@ -2851,15 +2863,15 @@ mod tests_gaps {
     fn test_clear_first_of_two_diags_leaves_second() {
         let mut mesh = make_mesh_with_instance("INST_A");
         mesh.execute_action(MeshAction::AddDiagnostic {
-            instance_id: "INST_A".to_string(),
+            instance_id: InstanceId::from("INST_A"),
             diagnostic: Box::new(make_error_diagnostic("d1")),
         });
         mesh.execute_action(MeshAction::AddDiagnostic {
-            instance_id: "INST_A".to_string(),
+            instance_id: InstanceId::from("INST_A"),
             diagnostic: Box::new(make_error_diagnostic("d2")),
         });
         mesh.execute_action(MeshAction::ClearDiagnostic {
-            instance_id: "INST_A".to_string(),
+            instance_id: InstanceId::from("INST_A"),
             diagnostic_id: "d1".to_string(),
         });
         let diags = &mesh.instances.get("INST_A").unwrap().diagnostics;
@@ -2871,19 +2883,19 @@ mod tests_gaps {
     fn test_clear_all_diags_sequentially() {
         let mut mesh = make_mesh_with_instance("INST_A");
         mesh.execute_action(MeshAction::AddDiagnostic {
-            instance_id: "INST_A".to_string(),
+            instance_id: InstanceId::from("INST_A"),
             diagnostic: Box::new(make_error_diagnostic("d1")),
         });
         mesh.execute_action(MeshAction::AddDiagnostic {
-            instance_id: "INST_A".to_string(),
+            instance_id: InstanceId::from("INST_A"),
             diagnostic: Box::new(make_error_diagnostic("d2")),
         });
         mesh.execute_action(MeshAction::ClearDiagnostic {
-            instance_id: "INST_A".to_string(),
+            instance_id: InstanceId::from("INST_A"),
             diagnostic_id: "d1".to_string(),
         });
         mesh.execute_action(MeshAction::ClearDiagnostic {
-            instance_id: "INST_A".to_string(),
+            instance_id: InstanceId::from("INST_A"),
             diagnostic_id: "d2".to_string(),
         });
         assert!(mesh.instances.get("INST_A").unwrap().diagnostics.is_empty());
@@ -2966,7 +2978,7 @@ mod tests_gaps {
 
         // Must not stack overflow; must return cleanly.
         mesh.dispatch_event(HookEvent::StateTransition {
-            instance_id: "LSP_BOMB".to_string(),
+            instance_id: InstanceId::from("LSP_BOMB"),
             from_phase: "A".to_string(),
             to_phase: "B".to_string(),
         });
@@ -3091,7 +3103,7 @@ mod tests_gaps {
         let mut mesh = make_mesh_with_instance("INST_A");
         let diag = make_error_diagnostic("diag-admission-error");
         mesh.execute_action(MeshAction::AddDiagnostic {
-            instance_id: "INST_A".to_string(),
+            instance_id: InstanceId::from("INST_A"),
             diagnostic: Box::new(diag),
         });
         let result = mesh.dispatch_rpc("INST_A", "max/admission", json!(null));
@@ -3137,10 +3149,184 @@ mod tests_gaps {
         let mut mesh = make_mesh_with_instance("INST_A");
         let diag = make_error_diagnostic("diag-release-block");
         mesh.execute_action(MeshAction::AddDiagnostic {
-            instance_id: "INST_A".to_string(),
+            instance_id: InstanceId::from("INST_A"),
             diagnostic: Box::new(diag),
         });
         let result = mesh.dispatch_rpc("INST_A", "max/releaseActuation", json!(null));
         assert!(result.is_err(), "max/releaseActuation with active diagnostics should return Err, got: {:?}", result);
     }
+
+    // --- Property invariant tests (5) ---
+
+    #[test]
+    fn conformance_score_in_range() {
+        let inst0 = LspInstance::new("SCORE_0");
+        let s0 = inst0.conformance_score();
+        assert!((0.0..=100.0).contains(&s0), "score with 0 diags out of range: {}", s0);
+
+        let mut inst1 = LspInstance::new("SCORE_1");
+        inst1.diagnostics.push(MaxDiagnostic {
+            diagnostic_id: "d1".to_string(),
+            law_id: "l".to_string(),
+            lsp: lsp_types::Diagnostic {
+                range: lsp_types::Range::default(),
+                severity: Some(lsp_types::DiagnosticSeverity::ERROR),
+                code: None,
+                code_description: None,
+                source: None,
+                message: "e".to_string(),
+                related_information: None,
+                tags: None,
+                data: None,
+            },
+            ..Default::default()
+        });
+        let s1 = inst1.conformance_score();
+        assert!((0.0..=100.0).contains(&s1), "score with 1 error diag out of range: {}", s1);
+
+        let mut inst5 = LspInstance::new("SCORE_5");
+        let severities = [
+            lsp_types::DiagnosticSeverity::ERROR,
+            lsp_types::DiagnosticSeverity::WARNING,
+            lsp_types::DiagnosticSeverity::INFORMATION,
+            lsp_types::DiagnosticSeverity::HINT,
+            lsp_types::DiagnosticSeverity::WARNING,
+        ];
+        for (i, sev) in severities.iter().enumerate() {
+            inst5.diagnostics.push(MaxDiagnostic {
+                diagnostic_id: format!("d{}", i),
+                law_id: "l".to_string(),
+                lsp: lsp_types::Diagnostic {
+                    range: lsp_types::Range::default(),
+                    severity: Some(*sev),
+                    code: None,
+                    code_description: None,
+                    source: None,
+                    message: "m".to_string(),
+                    related_information: None,
+                    tags: None,
+                    data: None,
+                },
+                ..Default::default()
+            });
+        }
+        let s5 = inst5.conformance_score();
+        assert!((0.0..=100.0).contains(&s5), "score with 5 mixed diags out of range: {}", s5);
+    }
+
+    #[test]
+    fn admitted_refused_disjoint() {
+        use std::collections::HashSet;
+        let mut mesh = make_mesh_with_instance("INST_D");
+        mesh.execute_action(MeshAction::AddDiagnostic {
+            instance_id: InstanceId::from("INST_D"),
+            diagnostic: Box::new(MaxDiagnostic {
+                diagnostic_id: "err-axis".to_string(),
+                law_id: "law-err".to_string(),
+                lsp: lsp_types::Diagnostic {
+                    range: lsp_types::Range::default(),
+                    severity: Some(lsp_types::DiagnosticSeverity::ERROR),
+                    code: None,
+                    code_description: None,
+                    source: None,
+                    message: "error".to_string(),
+                    related_information: None,
+                    tags: None,
+                    data: None,
+                },
+                law_axis: tower_lsp_max_protocol::LawAxis::Security,
+                ..Default::default()
+            }),
+        });
+        mesh.execute_action(MeshAction::AddDiagnostic {
+            instance_id: InstanceId::from("INST_D"),
+            diagnostic: Box::new(MaxDiagnostic {
+                diagnostic_id: "warn-axis".to_string(),
+                law_id: "law-warn".to_string(),
+                lsp: lsp_types::Diagnostic {
+                    range: lsp_types::Range::default(),
+                    severity: Some(lsp_types::DiagnosticSeverity::WARNING),
+                    code: None,
+                    code_description: None,
+                    source: None,
+                    message: "warning".to_string(),
+                    related_information: None,
+                    tags: None,
+                    data: None,
+                },
+                law_axis: tower_lsp_max_protocol::LawAxis::Domain,
+                ..Default::default()
+            }),
+        });
+        let result = mesh
+            .dispatch_rpc("INST_D", "max/conformanceVector", json!(null))
+            .unwrap();
+        let admitted: Vec<tower_lsp_max_protocol::LawAxis> =
+            serde_json::from_value(result["admitted"].clone()).unwrap();
+        let refused: Vec<tower_lsp_max_protocol::LawAxis> =
+            serde_json::from_value(result["refused"].clone()).unwrap();
+        let admitted_set: HashSet<_> = admitted.iter().collect();
+        let refused_set: HashSet<_> = refused.iter().collect();
+        let intersection: HashSet<_> = admitted_set.intersection(&refused_set).collect();
+        assert!(
+            intersection.is_empty(),
+            "admitted and refused must be disjoint but share: {:?}",
+            intersection
+        );
+    }
+
+    #[test]
+    fn unknown_method_always_errors() {
+        let mut mesh = make_mesh_with_instance("INST_E");
+        let result = mesh.dispatch_rpc("INST_E", "max/doesNotExist", json!(null));
+        assert!(result.is_err(), "dispatch_rpc with unknown method must return Err, got Ok");
+    }
+
+    #[test]
+    fn receipt_ids_unique() {
+        let mut mesh = make_mesh_with_instance("INST_R");
+        let receipt_ids = ["rcpt-alpha", "rcpt-beta", "rcpt-gamma"];
+        for id in &receipt_ids {
+            mesh.execute_action(MeshAction::EmitReceipt {
+                instance_id: InstanceId::from("INST_R"),
+                receipt: Receipt {
+                    receipt_id: id.to_string(),
+                    hash: sha256(id.as_bytes()),
+                },
+            });
+        }
+        let inst = mesh.instances.get("INST_R").unwrap();
+        let ids: Vec<&str> = inst.receipts.iter().map(|r| r.receipt_id.as_str()).collect();
+        let unique: std::collections::HashSet<&str> = ids.iter().cloned().collect();
+        assert_eq!(
+            ids.len(),
+            unique.len(),
+            "receipt IDs must all be distinct; found duplicates among {:?}",
+            ids
+        );
+    }
+
+    #[test]
+    fn clear_diagnostic_removes_from_list() {
+        let mut mesh = make_mesh_with_instance("INST_C");
+        mesh.execute_action(MeshAction::AddDiagnostic {
+            instance_id: InstanceId::from("INST_C"),
+            diagnostic: Box::new(make_error_diagnostic("diag-to-clear")),
+        });
+        assert_eq!(mesh.instances.get("INST_C").unwrap().diagnostics.len(), 1);
+        mesh.dispatch_rpc("INST_C", "max/clearDiagnostic", json!("diag-to-clear"))
+            .unwrap();
+        let cv = mesh
+            .dispatch_rpc("INST_C", "max/conformanceVector", json!(null))
+            .unwrap();
+        assert!(
+            cv["score"].is_null(),
+            "after clearing all diagnostics, conformanceVector score must be null"
+        );
+        assert!(
+            mesh.instances.get("INST_C").unwrap().diagnostics.is_empty(),
+            "diagnostics list must be empty after clearing the only diagnostic"
+        );
+    }
+
 }

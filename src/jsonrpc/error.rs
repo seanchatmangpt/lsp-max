@@ -171,6 +171,20 @@ impl Error {
     pub const fn content_modified() -> Self {
         Error::new(ErrorCode::ContentModified)
     }
+
+    /// Creates a new "request failed" server error (`-32803`).
+    ///
+    /// Used to propagate runtime dispatch failures from the autonomic mesh.
+    pub fn request_failed<M>(message: M) -> Self
+    where
+        M: Into<Cow<'static, str>>,
+    {
+        Error {
+            code: ErrorCode::ServerError(-32803),
+            message: message.into(),
+            data: None,
+        }
+    }
 }
 
 impl Display for Error {

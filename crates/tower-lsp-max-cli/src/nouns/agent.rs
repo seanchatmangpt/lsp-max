@@ -253,6 +253,37 @@ pub struct HaltResult {
     pub state: AgentState,
 }
 
+#[derive(Debug, Clone, Serialize)]
+pub struct AgentSummary {
+    pub id: String,
+    pub status: String,
+    pub current_task: Option<String>,
+}
+
+#[derive(Serialize)]
+pub struct AgentListResult {
+    pub agents: Vec<AgentSummary>,
+    pub count: usize,
+}
+
+#[verb("list")]
+pub fn list() -> Result<AgentListResult> {
+    let path = crate::nouns::get_state_path();
+    let mesh = tower_lsp_max_runtime::AutonomicMesh::load_from_file(&path)
+        .unwrap_or_default();
+    let agents: Vec<AgentSummary> = mesh
+        .instances
+        .values()
+        .map(|inst| AgentSummary {
+            id: inst.id.clone(),
+            status: inst.phase.to_string(),
+            current_task: None,
+        })
+        .collect();
+    let count = agents.len();
+    Ok(AgentListResult { agents, count })
+}
+
 #[verb("halt")]
 pub fn halt(id: String) -> Result<HaltResult> {
     let service = AgentService::new();
