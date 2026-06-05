@@ -102,14 +102,7 @@ pub fn sha256(data: &[u8]) -> String {
     result
 }
 
-fn validate_and_reconstruct_chain(
-    history: &[tower_lsp_max_protocol::Receipt],
-) -> (serde_json::Value, serde_json::Value) {
-    validate_and_reconstruct_chain_checked(history)
-        .unwrap_or_else(|e| panic!("Receipt chain validation failed: {}", e))
-}
-
-/// Fallible variant of [`validate_and_reconstruct_chain`].
+/// Fallible variant of [`validate_and_reconstruct_chain_checked`].
 ///
 /// Returns `Ok((client_caps, server_caps))` when the ledger is cryptographically
 /// sound, or `Err(description)` for any corruption, malformed receipt ID, JSON
@@ -483,7 +476,8 @@ impl TypestateKernel<AccessAdmissionLaw, Uninitialized, EmptyData>
     }
 
     fn replay(history: Vec<Self::Receipt>) -> Self {
-        validate_and_reconstruct_chain(&history);
+        validate_and_reconstruct_chain_checked(&history)
+            .unwrap_or_else(|e| panic!("Receipt chain validation failed: {}", e));
         Machine::new(Uninitialized, EmptyData::default())
     }
 }
@@ -532,7 +526,8 @@ impl TypestateKernel<AccessAdmissionLaw, Initializing, InitializingData>
             history.len() >= 2,
             "Insufficient history for Initializing state"
         );
-        let (client_caps, _) = validate_and_reconstruct_chain(&history);
+        let (client_caps, _) = validate_and_reconstruct_chain_checked(&history)
+            .unwrap_or_else(|e| panic!("Receipt chain validation failed: {}", e));
         Machine::new(
             Initializing,
             InitializingData {
@@ -589,7 +584,8 @@ impl TypestateKernel<AccessAdmissionLaw, Initialized, InitializedData>
             history.len() >= 3,
             "Insufficient history for Initialized state"
         );
-        let (client_caps, server_caps) = validate_and_reconstruct_chain(&history);
+        let (client_caps, server_caps) = validate_and_reconstruct_chain_checked(&history)
+            .unwrap_or_else(|e| panic!("Receipt chain validation failed: {}", e));
         Machine::new(
             Initialized,
             InitializedData {
@@ -659,7 +655,8 @@ impl TypestateKernel<AccessAdmissionLaw, ShutDown, EmptyData>
             history.len() >= 4,
             "Insufficient history for ShutDown state"
         );
-        let (client_caps, server_caps) = validate_and_reconstruct_chain(&history);
+        let (client_caps, server_caps) = validate_and_reconstruct_chain_checked(&history)
+            .unwrap_or_else(|e| panic!("Receipt chain validation failed: {}", e));
         Machine::new(
             ShutDown,
             EmptyData {
@@ -728,7 +725,8 @@ impl TypestateKernel<AccessAdmissionLaw, Exited, EmptyData>
 
     fn replay(history: Vec<Self::Receipt>) -> Self {
         assert!(history.len() >= 5, "Insufficient history for Exited state");
-        let (client_caps, server_caps) = validate_and_reconstruct_chain(&history);
+        let (client_caps, server_caps) = validate_and_reconstruct_chain_checked(&history)
+            .unwrap_or_else(|e| panic!("Receipt chain validation failed: {}", e));
         Machine::new(
             Exited,
             EmptyData {
@@ -3342,6 +3340,128 @@ mod tests_gaps {
         assert!(result.is_err(), "max/releaseActuation with active diagnostics should return Err, got: {:?}", result);
     }
 
+    #[test]
+    fn test_rpc_receipt_lookup_found_and_not_found() {
+        // Case 1: receipt exists — emit via max/refusal then look it up
+        let mut mesh = make_mesh_with_instance("INST_A");
+        let refusal_result = mesh.dispatch_rpc("INST_A", "max/refusal", json!("diag-receipt-test"));
+        assert!(refusal_result.is_ok(), "max/refusal should succeed");
+        // max/refusal encodes receipt_id as "rcpt-refusal-<diag_id>"
+        let expected_receipt_id = "rcpt-refusal-diag-receipt-test";
+        let found = mesh.dispatch_rpc("INST_A", "max/receipt", json!(expected_receipt_id));
+        assert!(found.is_ok(), "max/receipt lookup for existing receipt should return Ok, got: {:?}", found);
+        let val = found.unwrap();
+        assert_eq!(val["receipt_id"], json!(expected_receipt_id), "returned receipt_id must match queried id");
+
+        // Case 2: receipt does not exist — must return Err
+        let not_found = mesh.dispatch_rpc("INST_A", "max/receipt", json!("rcpt-nonexistent-xyz"));
+        assert!(not_found.is_err(), "max/receipt with unknown receipt_id should return Err, got: {:?}", not_found);
+        let err = not_found.unwrap_err();
+        assert!(err.contains("Receipt not found"), "error message should indicate not found, got: {}", err);
+    }
+
+    // --- max/repairPlan tests ---
+
+    #[test]
+    fn test_rpc_repair_plan_returns_actions() {
+        let mut mesh = make_mesh_with_instance("INST_A");
+        let diag = MaxDiagnostic {
+            diagnostic_id: "diag-repair-1".to_string(),
+            law_id: "law-repair".to_string(),
+            attempted_transition: None,
+            violated_axes: vec![],
+            doc_routes: vec![],
+            lsp: lsp_types::Diagnostic {
+                range: lsp_types::Range::default(),
+                severity: Some(lsp_types::DiagnosticSeverity::ERROR),
+                code: None,
+                code_description: None,
+                source: None,
+                message: "repair test".to_string(),
+                related_information: None,
+                tags: None,
+                data: None,
+            },
+            repair_actions: vec![
+                tower_lsp_max_protocol::RepairAction {
+                    action_id: "action-1".to_string(),
+                    description: "Apply patch".to_string(),
+                },
+            ],
+            verification_gates: vec![],
+            receipt_obligation: Some(tower_lsp_max_protocol::ReceiptObligation {
+                required_receipts: vec!["receipt-abc".to_string()],
+            }),
+            ..Default::default()
+        };
+        mesh.execute_action(MeshAction::AddDiagnostic {
+            instance_id: InstanceId::from("INST_A"),
+            diagnostic: Box::new(diag),
+        });
+        let result = mesh.dispatch_rpc("INST_A", "max/repairPlan", json!("law-repair"));
+        assert!(result.is_ok(), "max/repairPlan should return Ok, got: {:?}", result);
+        let val = result.unwrap();
+        let arr = val.as_array().expect("max/repairPlan should return an array");
+        assert_eq!(arr.len(), 1, "expected 1 action for law-repair");
+        assert_eq!(arr[0]["action"]["title"], json!("Apply patch"));
+        let expected_receipts = &arr[0]["receipt_plan"]["expected_receipts"];
+        assert_eq!(expected_receipts[0], json!("receipt-abc"));
+    }
+
+    #[test]
+    fn test_rpc_repair_plan_by_diagnostic_id() {
+        let mut mesh = make_mesh_with_instance("INST_A");
+        let diag = MaxDiagnostic {
+            diagnostic_id: "diag-by-id".to_string(),
+            law_id: "law-other".to_string(),
+            attempted_transition: None,
+            violated_axes: vec![],
+            doc_routes: vec![],
+            lsp: lsp_types::Diagnostic {
+                range: lsp_types::Range::default(),
+                severity: Some(lsp_types::DiagnosticSeverity::ERROR),
+                code: None,
+                code_description: None,
+                source: None,
+                message: "repair by diag id".to_string(),
+                related_information: None,
+                tags: None,
+                data: None,
+            },
+            repair_actions: vec![
+                tower_lsp_max_protocol::RepairAction {
+                    action_id: "action-2".to_string(),
+                    description: "Rollback config".to_string(),
+                },
+            ],
+            verification_gates: vec![],
+            receipt_obligation: None,
+            ..Default::default()
+        };
+        mesh.execute_action(MeshAction::AddDiagnostic {
+            instance_id: InstanceId::from("INST_A"),
+            diagnostic: Box::new(diag),
+        });
+        let result = mesh.dispatch_rpc("INST_A", "max/repairPlan", json!("diag-by-id"));
+        assert!(result.is_ok(), "max/repairPlan by diagnostic_id should return Ok");
+        let val = result.unwrap();
+        let arr = val.as_array().expect("max/repairPlan should return an array");
+        assert_eq!(arr.len(), 1, "expected 1 action for diag-by-id");
+        assert_eq!(arr[0]["action"]["title"], json!("Rollback config"));
+        let expected_receipts = &arr[0]["receipt_plan"]["expected_receipts"];
+        assert_eq!(expected_receipts.as_array().map(|a| a.len()), Some(0));
+    }
+
+    #[test]
+    fn test_rpc_repair_plan_empty_when_no_match() {
+        let mut mesh = make_mesh_with_instance("INST_A");
+        let result = mesh.dispatch_rpc("INST_A", "max/repairPlan", json!("nonexistent-id"));
+        assert!(result.is_ok(), "max/repairPlan with no match should return Ok empty array");
+        let val = result.unwrap();
+        let arr = val.as_array().expect("max/repairPlan should return an array");
+        assert_eq!(arr.len(), 0, "expected empty array for unmatched id");
+    }
+
     // --- Property invariant tests (5) ---
 
     #[test]
@@ -3812,5 +3932,170 @@ mod max_reset_tests {
             assert!(d["seq"].as_u64().unwrap() > mid_seq,
                 "all returned deltas must have seq > since_seq");
         }
+    }
+
+    #[test]
+    fn test_rpc_run_gate_blocked_and_clear() {
+        let mut mesh = AutonomicMesh::new();
+        let iid = "GATE_TEST_INST";
+
+        // Register instance
+        mesh.add_instance(LspInstance::new(iid));
+
+        // No diagnostics — gate should be clear (true)
+        let result = mesh
+            .dispatch_rpc(iid, "max/runGate", serde_json::json!("GATE_A"))
+            .expect("max/runGate must succeed with no diagnostics");
+        assert_eq!(result, serde_json::json!(true), "gate should be clear when no diagnostics reference it");
+
+        // Add a diagnostic whose verification_gates contains GATE_A
+        let blocking_diag = MaxDiagnostic {
+            lsp: lsp_types::Diagnostic {
+                range: lsp_types::Range::default(),
+                severity: Some(lsp_types::DiagnosticSeverity::ERROR),
+                code: None,
+                code_description: None,
+                source: Some("test".to_string()),
+                message: "gate-blocking diagnostic".to_string(),
+                related_information: None,
+                tags: None,
+                data: None,
+            },
+            diagnostic_id: "diag-gate-block-1".to_string(),
+            law_id: "law-gate".to_string(),
+            attempted_transition: None,
+            violated_axes: vec![],
+            doc_routes: vec![],
+            repair_actions: vec![],
+            verification_gates: vec![tower_lsp_max_protocol::GateId("GATE_A".to_string())],
+            receipt_obligation: None,
+            law_axis: tower_lsp_max_protocol::LawAxis::Domain,
+            violated_invariant: String::new(),
+            observed_state: serde_json::Value::Null,
+            expected_state: serde_json::Value::Null,
+            repairability: tower_lsp_max_protocol::Repairability::Unknown,
+            terminality: tower_lsp_max_protocol::Terminality::NonTerminal,
+        };
+        mesh.execute_action(MeshAction::AddDiagnostic {
+            instance_id: InstanceId::from(iid),
+            diagnostic: Box::new(blocking_diag),
+        });
+
+        // Gate should now be blocked (false)
+        let result = mesh
+            .dispatch_rpc(iid, "max/runGate", serde_json::json!("GATE_A"))
+            .expect("max/runGate must succeed with blocking diagnostic");
+        assert_eq!(result, serde_json::json!(false), "gate should be blocked when a diagnostic references it");
+
+        // A different gate string should still be clear
+        let result_other = mesh
+            .dispatch_rpc(iid, "max/runGate", serde_json::json!("GATE_B"))
+            .expect("max/runGate must succeed for unrelated gate");
+        assert_eq!(result_other, serde_json::json!(true), "unrelated gate should remain clear");
+    }
+}
+
+
+// NOTE: appended by innovation agent — test_rpc_dump_state_and_restore_state_roundtrip
+#[cfg(test)]
+mod test_dump_restore {
+    use super::*;
+
+    fn make_dump_diag(id: &str) -> MaxDiagnostic {
+        MaxDiagnostic {
+            diagnostic_id: id.to_string(),
+            law_id: "law-dump-test".to_string(),
+            attempted_transition: None,
+            violated_axes: vec![],
+            doc_routes: vec![],
+            lsp: lsp_types::Diagnostic {
+                range: lsp_types::Range::default(),
+                severity: Some(lsp_types::DiagnosticSeverity::ERROR),
+                code: None,
+                code_description: None,
+                source: Some("dump-test".to_string()),
+                message: "dump roundtrip diagnostic".to_string(),
+                related_information: None,
+                tags: None,
+                data: None,
+            },
+            repair_actions: vec![],
+            verification_gates: vec![],
+            receipt_obligation: None,
+            law_axis: tower_lsp_max_protocol::LawAxis::Domain,
+            violated_invariant: String::new(),
+            observed_state: serde_json::Value::Null,
+            expected_state: serde_json::Value::Null,
+            repairability: tower_lsp_max_protocol::Repairability::Unknown,
+            terminality: tower_lsp_max_protocol::Terminality::NonTerminal,
+        }
+    }
+
+    #[test]
+    fn test_rpc_dump_state_and_restore_state_roundtrip() {
+        let mut mesh = AutonomicMesh::new();
+        mesh.add_instance(LspInstance::new("DUMP_INST"));
+
+        mesh.execute_action(MeshAction::AddDiagnostic {
+            instance_id: InstanceId::from("DUMP_INST"),
+            diagnostic: Box::new(make_dump_diag("dump-diag-1")),
+        });
+
+        let receipt = Receipt {
+            receipt_id: "dump-rcpt-1".to_string(),
+            hash: "dump-hash-abc".to_string(),
+            prev_receipt_hash: None,
+        };
+        mesh.execute_action(MeshAction::EmitReceipt {
+            instance_id: InstanceId::from("DUMP_INST"),
+            receipt,
+        });
+
+        // Capture original conformance score before dump.
+        let original_list = mesh
+            .dispatch_rpc("DUMP_INST", "max/instanceList", serde_json::Value::Null)
+            .expect("instanceList must succeed");
+        let original_entry = original_list
+            .as_array()
+            .expect("instanceList returns array")
+            .iter()
+            .find(|v| v["id"].as_str() == Some("DUMP_INST"))
+            .expect("DUMP_INST must be in list")
+            .clone();
+        let original_conformance = original_entry["conformance_score"].as_f64()
+            .expect("conformance_score must be f64");
+
+        // Dump state via RPC — covers the arm at max/dumpState.
+        let dump_json = mesh
+            .dispatch_rpc("DUMP_INST", "max/dumpState", serde_json::Value::Null)
+            .expect("max/dumpState must succeed");
+
+        // Restore into a fresh mesh — covers the arm at max/restoreState.
+        // dispatch_rpc requires at least one instance to exist; add a sentinel.
+        let mut fresh_mesh = AutonomicMesh::new();
+        fresh_mesh.add_instance(LspInstance::new("__sentinel__"));
+        fresh_mesh
+            .dispatch_rpc("__sentinel__", "max/restoreState", dump_json)
+            .expect("max/restoreState must succeed");
+
+        // Verify restored instance appears in instanceList with same conformance score.
+        let restored_list = fresh_mesh
+            .dispatch_rpc("DUMP_INST", "max/instanceList", serde_json::Value::Null)
+            .expect("instanceList after restore must succeed");
+        let restored_entry = restored_list
+            .as_array()
+            .expect("instanceList returns array")
+            .iter()
+            .find(|v| v["id"].as_str() == Some("DUMP_INST"))
+            .expect("DUMP_INST must survive restore");
+        let restored_conformance = restored_entry["conformance_score"].as_f64()
+            .expect("restored conformance_score must be f64");
+
+        assert!(
+            (original_conformance - restored_conformance).abs() < f64::EPSILON,
+            "conformance score must survive dump/restore roundtrip: {} vs {}",
+            original_conformance,
+            restored_conformance
+        );
     }
 }
