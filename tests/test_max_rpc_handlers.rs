@@ -631,3 +631,32 @@ async fn test_max_ledger_report() {
     let _ = expect_result(&resp); // just assert we got a result, not an error
     cleanup_receipts();
 }
+
+// ---------------------------------------------------------------------------
+// max/instanceList — returns lightweight array of {id, phase, conformance_score}
+// ---------------------------------------------------------------------------
+
+#[tokio::test(flavor = "current_thread")]
+async fn test_max_instance_list() {
+    let (tx, rx, _h, _guard) = boot_server().await;
+
+    write_msg(&tx, serde_json::json!({"jsonrpc":"2.0","id":1,"method":"max/instanceList"})).await;
+    let resp = wait_for_response(rx, 1, Duration::from_secs(3)).await;
+    let result = expect_result(&resp);
+
+    // Must be a JSON array
+    assert!(result.is_array(), "max/instanceList must return a JSON array, got: {}", result);
+    let arr = result.as_array().unwrap();
+
+    // Every entry must have id, phase, and conformance_score fields
+    for entry in arr {
+        assert!(entry.get("id").is_some(), "entry missing 'id': {}", entry);
+        assert!(entry.get("phase").is_some(), "entry missing 'phase': {}", entry);
+        assert!(entry.get("conformance_score").is_some(), "entry missing 'conformance_score': {}", entry);
+        // conformance_score must be a number in [0, 100]
+        let score = entry["conformance_score"].as_f64().expect("conformance_score must be f64");
+        assert!((0.0..=100.0).contains(&score), "conformance_score out of range: {}", score);
+    }
+
+    cleanup_receipts();
+}

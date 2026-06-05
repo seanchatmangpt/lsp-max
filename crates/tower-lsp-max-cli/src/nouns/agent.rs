@@ -125,6 +125,15 @@ impl AgentService {
         Ok(AgentPlan { steps })
     }
 
+    pub fn reset(&self, instance_id: String) -> std::result::Result<serde_json::Value, String> {
+        let path = crate::nouns::get_state_path();
+        let mut mesh = tower_lsp_max_runtime::AutonomicMesh::load_from_file(&path)
+            .map_err(|e| e.to_string())?;
+        let result = mesh.dispatch_rpc(&instance_id, "max/reset", serde_json::Value::Null)?;
+        mesh.save_to_file(&path).map_err(|e| e.to_string())?;
+        Ok(result)
+    }
+
     pub fn halt(&self, id: String) -> std::result::Result<AgentState, String> {
         let mut mesh = Self::load_mesh_json();
         if !mesh.is_object() {
@@ -268,18 +277,39 @@ pub struct AgentListResult {
 
 #[verb("list")]
 pub fn list() -> Result<AgentListResult> {
+    // Use max/instanceList RPC for efficient polling — avoids loading full mesh state.
     let path = crate::nouns::get_state_path();
-    let mesh = tower_lsp_max_runtime::AutonomicMesh::load_from_file(&path)
+    let mut mesh = tower_lsp_max_runtime::AutonomicMesh::load_from_file(&path)
         .unwrap_or_default();
-    let agents: Vec<AgentSummary> = mesh
-        .instances
-        .values()
-        .map(|inst| AgentSummary {
-            id: inst.id.clone(),
-            status: inst.phase.to_string(),
-            current_task: None,
-        })
-        .collect();
+    // Pick any instance_id that exists, or fall back to full load if mesh is empty.
+    let first_id = mesh.instances.keys().next().cloned();
+    let agents: Vec<AgentSummary> = if let Some(ref id) = first_id {
+        match mesh.dispatch_rpc(id, "max/instanceList", serde_json::Value::Null) {
+            Ok(serde_json::Value::Array(entries)) => entries
+                .iter()
+                .filter_map(|e| {
+                    let id = e.get("id")?.as_str()?.to_string();
+                    let status = e
+                        .get("phase")
+                        .and_then(|v| v.as_str())
+                        .unwrap_or("Unknown")
+                        .to_string();
+                    Some(AgentSummary { id, status, current_task: None })
+                })
+                .collect(),
+            _ => mesh
+                .instances
+                .values()
+                .map(|inst| AgentSummary {
+                    id: inst.id.clone(),
+                    status: inst.phase.to_string(),
+                    current_task: None,
+                })
+                .collect(),
+        }
+    } else {
+        vec![]
+    };
     let count = agents.len();
     Ok(AgentListResult { agents, count })
 }
@@ -289,4 +319,22 @@ pub fn halt(id: String) -> Result<HaltResult> {
     let service = AgentService::new();
     let state = service.halt(id).map_err(NounVerbError::execution_error)?;
     Ok(HaltResult { state })
+}
+
+#[derive(serde::Serialize)]
+pub struct ResetResult {
+    pub reset: bool,
+    pub instance_id: String,
+}
+
+#[verb("reset")]
+pub fn reset(instance_id: String) -> Result<ResetResult> {
+    let service = AgentService::new();
+    let resp = service
+        .reset(instance_id.clone())
+        .map_err(NounVerbError::execution_error)?;
+    Ok(ResetResult {
+        reset: resp["reset"].as_bool().unwrap_or(true),
+        instance_id,
+    })
 }

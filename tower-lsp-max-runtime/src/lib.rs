@@ -105,69 +105,130 @@ pub fn sha256(data: &[u8]) -> String {
 fn validate_and_reconstruct_chain(
     history: &[tower_lsp_max_protocol::Receipt],
 ) -> (serde_json::Value, serde_json::Value) {
-    assert!(!history.is_empty(), "History must not be empty");
+    validate_and_reconstruct_chain_checked(history)
+        .unwrap_or_else(|e| panic!("Receipt chain validation failed: {}", e))
+}
+
+/// Fallible variant of [`validate_and_reconstruct_chain`].
+///
+/// Returns `Ok((client_caps, server_caps))` when the ledger is cryptographically
+/// sound, or `Err(description)` for any corruption, malformed receipt ID, JSON
+/// parse failure, or unexpected chain length.  Production paths that cannot
+/// tolerate a process abort should call this instead of the panicking wrapper.
+pub fn validate_and_reconstruct_chain_checked(
+    history: &[tower_lsp_max_protocol::Receipt],
+) -> Result<(serde_json::Value, serde_json::Value), String> {
+    if history.is_empty() {
+        return Err("History must not be empty".to_string());
+    }
 
     // Validate step 0
     let r0 = &history[0];
-    assert_eq!(r0.receipt_id, "rcpt-uninitialized");
+    if r0.receipt_id != "rcpt-uninitialized" {
+        return Err(format!(
+            "Expected receipt_id 'rcpt-uninitialized' at index 0, got '{}'",
+            r0.receipt_id
+        ));
+    }
     let mut expected_hash = sha256(r0.receipt_id.as_bytes());
-    assert_eq!(r0.hash, expected_hash, "Hash mismatch at index 0");
+    if r0.hash != expected_hash {
+        return Err(format!(
+            "Hash mismatch at index 0: expected '{}', got '{}'",
+            expected_hash, r0.hash
+        ));
+    }
 
     let mut client_caps = serde_json::Value::Null;
     let mut server_caps = serde_json::Value::Null;
 
     if history.len() > 1 {
         let r1 = &history[1];
-        assert!(
-            r1.receipt_id
-                .starts_with("rcpt-uninitialized-to-initializing:"),
-            "Invalid receipt ID at index 1: {}",
-            r1.receipt_id
-        );
+        if !r1.receipt_id.starts_with("rcpt-uninitialized-to-initializing:") {
+            return Err(format!(
+                "Invalid receipt ID at index 1: expected prefix                  'rcpt-uninitialized-to-initializing:', got '{}'",
+                r1.receipt_id
+            ));
+        }
         let prefix_len = "rcpt-uninitialized-to-initializing:".len();
         let json_str = &r1.receipt_id[prefix_len..];
-        client_caps = serde_json::from_str(json_str).expect("Failed to parse client capabilities");
+        client_caps = serde_json::from_str(json_str).map_err(|e| {
+            format!("Failed to parse client capabilities at index 1: {}", e)
+        })?;
 
         expected_hash = sha256(format!("{}:{}", expected_hash, r1.receipt_id).as_bytes());
-        assert_eq!(r1.hash, expected_hash, "Hash mismatch at index 1");
+        if r1.hash != expected_hash {
+            return Err(format!(
+                "Hash mismatch at index 1: expected '{}', got '{}'",
+                expected_hash, r1.hash
+            ));
+        }
     }
 
     if history.len() > 2 {
         let r2 = &history[2];
-        assert!(
-            r2.receipt_id
-                .starts_with("rcpt-initializing-to-initialized:"),
-            "Invalid receipt ID at index 2: {}",
-            r2.receipt_id
-        );
+        if !r2.receipt_id.starts_with("rcpt-initializing-to-initialized:") {
+            return Err(format!(
+                "Invalid receipt ID at index 2: expected prefix                  'rcpt-initializing-to-initialized:', got '{}'",
+                r2.receipt_id
+            ));
+        }
         let prefix_len = "rcpt-initializing-to-initialized:".len();
         let json_str = &r2.receipt_id[prefix_len..];
-        server_caps = serde_json::from_str(json_str).expect("Failed to parse server capabilities");
+        server_caps = serde_json::from_str(json_str).map_err(|e| {
+            format!("Failed to parse server capabilities at index 2: {}", e)
+        })?;
 
         expected_hash = sha256(format!("{}:{}", expected_hash, r2.receipt_id).as_bytes());
-        assert_eq!(r2.hash, expected_hash, "Hash mismatch at index 2");
+        if r2.hash != expected_hash {
+            return Err(format!(
+                "Hash mismatch at index 2: expected '{}', got '{}'",
+                expected_hash, r2.hash
+            ));
+        }
     }
 
     if history.len() > 3 {
         let r3 = &history[3];
-        assert_eq!(r3.receipt_id, "rcpt-initialized-to-shutdown");
+        if r3.receipt_id != "rcpt-initialized-to-shutdown" {
+            return Err(format!(
+                "Expected receipt_id 'rcpt-initialized-to-shutdown' at index 3, got '{}'",
+                r3.receipt_id
+            ));
+        }
         expected_hash = sha256(format!("{}:{}", expected_hash, r3.receipt_id).as_bytes());
-        assert_eq!(r3.hash, expected_hash, "Hash mismatch at index 3");
+        if r3.hash != expected_hash {
+            return Err(format!(
+                "Hash mismatch at index 3: expected '{}', got '{}'",
+                expected_hash, r3.hash
+            ));
+        }
     }
 
     if history.len() > 4 {
         let r4 = &history[4];
-        assert_eq!(r4.receipt_id, "rcpt-shutdown-to-exited");
+        if r4.receipt_id != "rcpt-shutdown-to-exited" {
+            return Err(format!(
+                "Expected receipt_id 'rcpt-shutdown-to-exited' at index 4, got '{}'",
+                r4.receipt_id
+            ));
+        }
         expected_hash = sha256(format!("{}:{}", expected_hash, r4.receipt_id).as_bytes());
-        assert_eq!(r4.hash, expected_hash, "Hash mismatch at index 4");
+        if r4.hash != expected_hash {
+            return Err(format!(
+                "Hash mismatch at index 4: expected '{}', got '{}'",
+                expected_hash, r4.hash
+            ));
+        }
     }
 
-    assert!(
-        history.len() <= 5,
-        "History contains unexpected items beyond the Exited state"
-    );
+    if history.len() > 5 {
+        return Err(format!(
+            "History contains {} unexpected items beyond the Exited state (max 5)",
+            history.len() - 5
+        ));
+    }
 
-    (client_caps, server_caps)
+    Ok((client_caps, server_caps))
 }
 
 pub struct DeterministicSnapshot {
@@ -862,6 +923,11 @@ pub enum MeshAction {
         action_id: String,
         description: String,
     },
+    /// Clear all diagnostics and receipts on an instance and reset its policy
+    /// state to Active, supporting test-harness teardown and chaos recycling.
+    ResetInstance {
+        instance_id: InstanceId,
+    },
 }
 
 pub trait Hook: Send + Sync {
@@ -1019,12 +1085,31 @@ const MAX_EVENT_LOG: usize = 1000;
 
 const MAX_DISPATCH_DEPTH: usize = 16;
 
+/// Maximum number of conformance delta entries retained in memory.
+const MAX_CONFORMANCE_DELTA_LOG: usize = 4096;
+
+/// A single recorded conformance score change on a mesh instance.
+/// Returned by `max/conformanceDelta` to enable live-dashboard polling.
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct ConformanceDeltaEntry {
+    /// Monotonically-increasing sequence number assigned at the moment of the change.
+    pub seq: u64,
+    pub instance_id: String,
+    pub old_score: f64,
+    pub new_score: f64,
+}
+
 pub struct AutonomicMesh {
     pub instances: std::collections::HashMap<String, LspInstance>,
     pub hooks: Vec<Box<dyn Hook>>,
     pub event_log: Vec<HookEvent>,
     pub executed_bounded_actions: Vec<String>,
     pub extra: std::collections::HashMap<String, serde_json::Value>,
+    /// Monotonically-increasing counter incremented on every `execute_action` call.
+    /// Used as a since-cursor for `max/conformanceDelta` polling.
+    pub action_seq: u64,
+    /// Ring-buffer of recent conformance score changes keyed by sequence number.
+    pub conformance_delta_log: std::collections::VecDeque<ConformanceDeltaEntry>,
     /// Tracks re-entrant depth of `dispatch_event` to prevent unbounded recursion.
     /// Transient call-stack state — not serialized or persisted.
     dispatch_depth: usize,
@@ -1036,6 +1121,59 @@ impl Default for AutonomicMesh {
     }
 }
 
+/// Build a [`tower_lsp_max_protocol::ConformanceVector`] from a slice of diagnostics.
+///
+/// Aggregates per [`tower_lsp_max_protocol::LawAxis`]: an axis is *refused* if any
+/// ERROR-severity diagnostic is present, *admitted* if only non-ERROR diagnostics are present,
+/// and *unknown* if no diagnostic has been observed for that axis.
+/// Both `max/conformanceVector` and `max/exportAnalysisBundle` delegate to this function so
+/// that a bug fix needs to be applied only once.
+fn build_conformance_vector(diagnostics: &[MaxDiagnostic]) -> tower_lsp_max_protocol::ConformanceVector {
+    let mut axis_map: std::collections::HashMap<tower_lsp_max_protocol::LawAxis, bool> =
+        std::collections::HashMap::new(); // true = has error
+    for diag in diagnostics {
+        let is_error = matches!(diag.lsp.severity, Some(lsp_types::DiagnosticSeverity::ERROR));
+        let entry = axis_map.entry(diag.law_axis.clone()).or_insert(false);
+        if is_error {
+            *entry = true;
+        }
+    }
+
+    let mut admitted = vec![];
+    let mut refused = vec![];
+    for (axis, has_error) in &axis_map {
+        if *has_error {
+            refused.push(axis.clone());
+        } else {
+            admitted.push(axis.clone());
+        }
+    }
+
+    let total = admitted.len() + refused.len();
+    let derived_score = if total == 0 {
+        None
+    } else {
+        Some(100.0 * admitted.len() as f64 / total as f64)
+    };
+
+    let witnessed: std::collections::HashSet<tower_lsp_max_protocol::LawAxis> =
+        axis_map.keys().cloned().collect();
+    let unknown: Vec<tower_lsp_max_protocol::LawAxis> =
+        tower_lsp_max_protocol::LawAxis::all_named()
+            .iter()
+            .filter(|ax| !witnessed.contains(ax))
+            .cloned()
+            .collect();
+
+    tower_lsp_max_protocol::ConformanceVector {
+        admitted,
+        refused,
+        unknown,
+        score: derived_score,
+        strict_mode: true,
+    }
+}
+
 impl AutonomicMesh {
     pub fn new() -> Self {
         Self {
@@ -1044,6 +1182,8 @@ impl AutonomicMesh {
             event_log: Vec::new(),
             executed_bounded_actions: Vec::new(),
             extra: std::collections::HashMap::new(),
+            action_seq: 0,
+            conformance_delta_log: std::collections::VecDeque::new(),
             dispatch_depth: 0,
         }
     }
@@ -1165,6 +1305,23 @@ impl AutonomicMesh {
     }
 
     pub fn execute_action(&mut self, action: MeshAction) {
+        self.action_seq = self.action_seq.saturating_add(1);
+        let seq = self.action_seq;
+
+        // Record conformance score changes for any instance touched by this action.
+        let maybe_instance_id: Option<String> = match &action {
+            MeshAction::AddDiagnostic { instance_id, .. }
+            | MeshAction::ClearDiagnostic { instance_id, .. }
+            | MeshAction::TransitionPolicyState { instance_id, .. }
+            | MeshAction::EmitReceipt { instance_id, .. }
+            | MeshAction::ExecuteBoundedAction { instance_id, .. }
+            | MeshAction::ResetInstance { instance_id } => Some(instance_id.0.clone()),
+        };
+        let old_score: Option<f64> = maybe_instance_id
+            .as_deref()
+            .and_then(|id| self.instances.get(id))
+            .map(|inst| inst.conformance_score());
+
         match action {
             MeshAction::TransitionPolicyState {
                 instance_id,
@@ -1251,6 +1408,33 @@ impl AutonomicMesh {
                     }
                 }
                 self.executed_bounded_actions.push(action_id);
+            }
+            MeshAction::ResetInstance { instance_id } => {
+                if let Some(instance) = self.instances.get_mut(&instance_id.0) {
+                    instance.diagnostics.clear();
+                    instance.receipts.clear();
+                    instance.policy_state = Some(PolicyState::Operational);
+                }
+            }
+        }
+
+        // Record conformance delta if score changed.
+        if let Some(iid) = maybe_instance_id {
+            if let Some(new_score) = self.instances.get(&iid).map(|inst| inst.conformance_score()) {
+                if let Some(old) = old_score {
+                    if (new_score - old).abs() > f64::EPSILON {
+                        let entry = ConformanceDeltaEntry {
+                            seq,
+                            instance_id: iid,
+                            old_score: old,
+                            new_score,
+                        };
+                        self.conformance_delta_log.push_back(entry);
+                        if self.conformance_delta_log.len() > MAX_CONFORMANCE_DELTA_LOG {
+                            self.conformance_delta_log.pop_front();
+                        }
+                    }
+                }
             }
         }
     }
@@ -1396,52 +1580,14 @@ impl AutonomicMesh {
             }
             "max/snapshot" => {
                 let snap = DeterministicSnapshot::new();
-                Ok(serde_json::to_value(snap.id).unwrap())
+                serde_json::to_value(snap.id).map_err(|e| e.to_string())
             }
             "max/conformanceVector" => {
                 let instance = self.instances.get(instance_id)
                     .ok_or_else(|| format!("Instance not found: {}", instance_id))?;
 
-                // Aggregate per LawAxis: refused if any ERROR, admitted if non-ERROR present, unknown if absent
-                let mut axis_map: std::collections::HashMap<tower_lsp_max_protocol::LawAxis, bool> =
-                    std::collections::HashMap::new(); // true = has error
-                for diag in &instance.diagnostics {
-                    let is_error = matches!(diag.lsp.severity, Some(lsp_types::DiagnosticSeverity::ERROR));
-                    let entry = axis_map.entry(diag.law_axis.clone()).or_insert(false);
-                    if is_error { *entry = true; }
-                }
-
-                let mut admitted = vec![];
-                let mut refused = vec![];
-                // Each axis appears in exactly one of admitted/refused; guarantees disjoint partition
-                for (axis, has_error) in &axis_map {
-                    if *has_error { refused.push(axis.clone()); } else { admitted.push(axis.clone()); }
-                }
-
-                let total = admitted.len() + refused.len();
-                let derived_score = if total == 0 {
-                    None
-                } else {
-                    Some(100.0 * admitted.len() as f64 / total as f64)
-                };
-
-                let witnessed: std::collections::HashSet<tower_lsp_max_protocol::LawAxis> =
-                    axis_map.keys().cloned().collect();
-                let unknown: Vec<tower_lsp_max_protocol::LawAxis> =
-                    tower_lsp_max_protocol::LawAxis::all_named()
-                        .iter()
-                        .filter(|ax| !witnessed.contains(ax))
-                        .cloned()
-                        .collect();
-
-                let vec = tower_lsp_max_protocol::ConformanceVector {
-                    admitted,
-                    refused,
-                    unknown,
-                    score: derived_score,
-                    strict_mode: true,
-                };
-                Ok(serde_json::to_value(vec).unwrap())
+                let vec = build_conformance_vector(&instance.diagnostics);
+                serde_json::to_value(vec).map_err(|e| e.to_string())
             }
             "max/clearDiagnostic" => {
                 let diag_id: String =
@@ -1465,7 +1611,7 @@ impl AutonomicMesh {
                     .iter()
                     .find(|d| d.diagnostic_id == diag_id)
                     .ok_or_else(|| format!("Diagnostic not found: {}", diag_id))?;
-                Ok(serde_json::to_value(diag.clone()).unwrap())
+                serde_json::to_value(diag.clone()).map_err(|e| e.to_string())
             }
             "max/repairPlan" => {
                 let id: String =
@@ -1509,7 +1655,7 @@ impl AutonomicMesh {
                         })
                     })
                     .collect();
-                Ok(serde_json::to_value(actions).unwrap())
+                serde_json::to_value(actions).map_err(|e| e.to_string())
             }
             "max/applyRepairTransaction" => {
                 let code_action: tower_lsp_max_protocol::MaxCodeAction =
@@ -1523,27 +1669,9 @@ impl AutonomicMesh {
                     .instances
                     .get(instance_id)
                     .ok_or_else(|| format!("Instance not found: {}", instance_id))?;
-                let score = inst.conformance_score();
-                let mut bundle_axis_map: std::collections::HashMap<tower_lsp_max_protocol::LawAxis, bool> =
-                    std::collections::HashMap::new();
-                for diag in &inst.diagnostics {
-                    let is_error = matches!(diag.lsp.severity, Some(lsp_types::DiagnosticSeverity::ERROR));
-                    let entry = bundle_axis_map.entry(diag.law_axis.clone()).or_insert(false);
-                    if is_error { *entry = true; }
-                }
-                let mut bundle_admitted = vec![];
-                let mut bundle_refused = vec![];
-                for (axis, has_error) in &bundle_axis_map {
-                    if *has_error { bundle_refused.push(axis.clone()); } else { bundle_admitted.push(axis.clone()); }
-                }
-                let bundle_witnessed: std::collections::HashSet<tower_lsp_max_protocol::LawAxis> =
-                    bundle_axis_map.keys().cloned().collect();
-                let bundle_unknown: Vec<tower_lsp_max_protocol::LawAxis> =
-                    tower_lsp_max_protocol::LawAxis::all_named()
-                        .iter()
-                        .filter(|ax| !bundle_witnessed.contains(ax))
-                        .cloned()
-                        .collect();
+                let mut cv = build_conformance_vector(&inst.diagnostics);
+                // Override score with the instance's authoritative conformance_score()
+                cv.score = Some(inst.conformance_score());
                 let bundle = tower_lsp_max_protocol::AnalysisBundle {
                     snapshot_id,
                     capability_vector: tower_lsp_max_protocol::MaxCapabilityVector {
@@ -1555,16 +1683,10 @@ impl AutonomicMesh {
                     },
                     diagnostics: inst.diagnostics.clone(),
                     actions: vec![],
-                    conformance_vector: tower_lsp_max_protocol::ConformanceVector {
-                        admitted: bundle_admitted,
-                        refused: bundle_refused,
-                        unknown: bundle_unknown,
-                        score: Some(score),
-                        strict_mode: true,
-                    },
+                    conformance_vector: cv,
                     receipts: inst.receipts.clone(),
                 };
-                Ok(serde_json::to_value(bundle).unwrap())
+                serde_json::to_value(bundle).map_err(|e| e.to_string())
             }
             "max/runGate" => {
                 let gate_str: String =
@@ -1577,7 +1699,7 @@ impl AutonomicMesh {
                     .diagnostics
                     .iter()
                     .any(|d| d.verification_gates.iter().any(|g| g.0 == gate_str));
-                Ok(serde_json::to_value(!gate_blocked).unwrap())
+                serde_json::to_value(!gate_blocked).map_err(|e| e.to_string())
             }
             "max/receipt" => {
                 let receipt_id: String =
@@ -1591,14 +1713,14 @@ impl AutonomicMesh {
                     .iter()
                     .find(|r| r.receipt_id == receipt_id)
                     .ok_or_else(|| format!("Receipt not found: {}", receipt_id))?;
-                Ok(serde_json::to_value(receipt.clone()).unwrap())
+                serde_json::to_value(receipt.clone()).map_err(|e| e.to_string())
             }
             "max/hook" => {
                 // List all registered hooks with their metadata
                 let hook_names: Vec<serde_json::Value> = self.hooks.iter().map(|h| {
                     serde_json::json!({ "name": h.name() })
                 }).collect();
-                Ok(serde_json::to_value(hook_names).unwrap())
+                serde_json::to_value(hook_names).map_err(|e| e.to_string())
             }
 
             "max/hookGraph" => {
@@ -1621,7 +1743,7 @@ impl AutonomicMesh {
                         "pending_receipt_count": inst.receipts.len(),
                     })
                 }).collect();
-                Ok(serde_json::to_value(graph).unwrap())
+                serde_json::to_value(graph).map_err(|e| e.to_string())
             }
 
             "max/chain" => {
@@ -1647,7 +1769,7 @@ impl AutonomicMesh {
                     })
                 }).collect();
                 chain.sort_by_key(|v| v["id"].as_str().unwrap_or("").to_string());
-                Ok(serde_json::to_value(chain).unwrap())
+                serde_json::to_value(chain).map_err(|e| e.to_string())
             }
 
             "max/propagate" => {
@@ -1823,6 +1945,20 @@ impl AutonomicMesh {
                 }))
             }
 
+            "max/instanceList" => {
+                // Lightweight enumeration of all live instances: id, phase, conformance_score.
+                // Callers that only need instance IDs should prefer this over max/manifoldSnapshot.
+                let mut list: Vec<serde_json::Value> = self.instances.values().map(|inst| {
+                    serde_json::json!({
+                        "id": inst.id,
+                        "phase": inst.phase,
+                        "conformance_score": inst.conformance_score(),
+                    })
+                }).collect();
+                list.sort_by_key(|v| v["id"].as_str().unwrap_or("").to_string());
+                serde_json::to_value(list).map_err(|e| e.to_string())
+            }
+
             "max/dumpState" => {
                 let state = self.to_state();
                 serde_json::to_value(&state).map_err(|e| format!("Serialization failed: {}", e))
@@ -1833,6 +1969,38 @@ impl AutonomicMesh {
                     serde_json::from_value(params).map_err(|e| format!("Invalid params: {}", e))?;
                 self.load_state(state);
                 Ok(serde_json::Value::Null)
+            }
+
+            "max/reset" => {
+                // Reset a single instance back to initial state: clears diagnostics, receipts,
+                // and sets policy state to Active. Supports test-harness teardown and chaos recycling.
+                self.execute_action(MeshAction::ResetInstance {
+                    instance_id: InstanceId::from(instance_id),
+                });
+                Ok(serde_json::json!({
+                    "reset": true,
+                    "instance_id": instance_id,
+                }))
+            }
+
+            "max/conformanceDelta" => {
+                // Returns all conformance score changes since the given since_seq cursor.
+                // Params: { "since_seq": <u64> }
+                // Response: { "deltas": [...], "current_seq": <u64> }
+                let since_seq: u64 = params
+                    .as_object()
+                    .and_then(|o| o.get("since_seq"))
+                    .and_then(|v| v.as_u64())
+                    .unwrap_or(0);
+                let deltas: Vec<&ConformanceDeltaEntry> = self
+                    .conformance_delta_log
+                    .iter()
+                    .filter(|e| e.seq > since_seq)
+                    .collect();
+                Ok(serde_json::json!({
+                    "deltas": deltas,
+                    "current_seq": self.action_seq,
+                }))
             }
 
             _ => Err(format!(
@@ -1888,7 +2056,7 @@ impl AutonomicMesh {
             instance_id: InstanceId::from(instance_id),
             receipt: receipt.clone(),
         });
-        Ok(serde_json::to_value(receipt).unwrap())
+        serde_json::to_value(receipt).map_err(|e| e.to_string())
     }
 
     pub fn verify_instance_ledger(&self, instance_id: &str) -> Result<(), String> {
@@ -3432,5 +3600,217 @@ mod apply_repair_transaction_tests {
             "Expected Ok when required receipt is present, got: {:?}",
             result
         );
+    }
+}
+
+#[cfg(test)]
+mod max_reset_tests {
+    use super::*;
+
+    fn make_error_diagnostic(id: &str) -> MaxDiagnostic {
+        MaxDiagnostic {
+            lsp: lsp_types::Diagnostic {
+                range: lsp_types::Range::default(),
+                severity: Some(lsp_types::DiagnosticSeverity::ERROR),
+                code: None,
+                code_description: None,
+                source: Some("test".to_string()),
+                message: "test error".to_string(),
+                related_information: None,
+                tags: None,
+                data: None,
+            },
+            diagnostic_id: id.to_string(),
+            law_id: "law-test".to_string(),
+            attempted_transition: None,
+            violated_axes: vec![],
+            doc_routes: vec![],
+            repair_actions: vec![],
+            verification_gates: vec![],
+            receipt_obligation: None,
+            law_axis: tower_lsp_max_protocol::LawAxis::Domain,
+            violated_invariant: String::new(),
+            observed_state: serde_json::Value::Null,
+            expected_state: serde_json::Value::Null,
+            repairability: tower_lsp_max_protocol::Repairability::Unknown,
+            terminality: tower_lsp_max_protocol::Terminality::NonTerminal,
+        }
+    }
+
+    #[test]
+    fn test_max_reset_rpc_conformance_score_100_after_dirty_instance() {
+        let mut mesh = AutonomicMesh::new();
+
+        // Create a dirty instance with diagnostics and receipts
+        let mut inst = LspInstance::new("RESET_TEST");
+        inst.diagnostics.push(make_error_diagnostic("diag-error-1"));
+        inst.diagnostics.push(make_error_diagnostic("diag-error-2"));
+        inst.receipts.push(Receipt {
+            receipt_id: "rcpt-old-1".to_string(),
+            hash: sha256(b"rcpt-old-1"),
+            prev_receipt_hash: None,
+        });
+        inst.policy_state = Some(PolicyState::ClarificationRequested);
+        mesh.add_instance(inst);
+
+        // Confirm dirty state
+        {
+            let dirty = mesh.instances.get("RESET_TEST").unwrap();
+            assert!(dirty.conformance_score() < 100.0, "Expected dirty conformance before reset");
+            assert!(!dirty.diagnostics.is_empty());
+            assert!(!dirty.receipts.is_empty());
+        }
+
+        // Invoke max/reset via dispatch_rpc
+        let result = mesh.dispatch_rpc("RESET_TEST", "max/reset", serde_json::Value::Null);
+        assert!(result.is_ok(), "max/reset must return Ok, got: {:?}", result);
+
+        let resp = result.unwrap();
+        assert_eq!(resp["reset"], true);
+        assert_eq!(resp["instance_id"], "RESET_TEST");
+
+        // After reset: conformance_score must be 100.0
+        let clean = mesh.instances.get("RESET_TEST").unwrap();
+        assert_eq!(
+            clean.conformance_score(),
+            100.0,
+            "conformance_score must be 100.0 after reset"
+        );
+        assert!(clean.diagnostics.is_empty(), "diagnostics must be cleared after reset");
+        assert!(clean.receipts.is_empty(), "receipts must be cleared after reset");
+        assert_eq!(
+            clean.policy_state,
+            Some(PolicyState::Operational),
+            "policy_state must be Operational after reset"
+        );
+    }
+
+    #[test]
+    fn test_max_reset_unknown_instance_returns_err() {
+        let mut mesh = AutonomicMesh::new();
+        let result = mesh.dispatch_rpc("NONEXISTENT", "max/reset", serde_json::Value::Null);
+        assert!(result.is_err(), "max/reset on unknown instance must return Err");
+    }
+
+    // ---- max/conformanceDelta tests ----
+
+    #[test]
+    fn test_conformance_delta_empty_on_fresh_mesh() {
+        let mut mesh = AutonomicMesh::new();
+        mesh.add_instance(LspInstance::new("INST_X"));
+        let result = mesh
+            .dispatch_rpc("INST_X", "max/conformanceDelta", serde_json::json!({ "since_seq": 0 }))
+            .expect("max/conformanceDelta must succeed");
+        let deltas = result["deltas"].as_array().expect("deltas must be array");
+        assert!(deltas.is_empty(), "fresh mesh has no conformance deltas");
+        assert_eq!(result["current_seq"].as_u64().unwrap(), 0);
+    }
+
+    #[test]
+    fn test_conformance_delta_records_score_change_on_add_diagnostic() {
+        let mut mesh = AutonomicMesh::new();
+        mesh.add_instance(LspInstance::new("INST_D"));
+        // Add an error diagnostic — score drops from 100 -> 70
+        let diag = MaxDiagnostic {
+            lsp: lsp_types::Diagnostic {
+                range: lsp_types::Range::default(),
+                severity: Some(lsp_types::DiagnosticSeverity::ERROR),
+                code: None,
+                code_description: None,
+                source: Some("test".to_string()),
+                message: "delta-test".to_string(),
+                related_information: None,
+                tags: None,
+                data: None,
+            },
+            diagnostic_id: "diag-delta-1".to_string(),
+            law_id: "law-delta".to_string(),
+            attempted_transition: None,
+            violated_axes: vec![],
+            doc_routes: vec![],
+            repair_actions: vec![],
+            verification_gates: vec![],
+            receipt_obligation: None,
+            law_axis: tower_lsp_max_protocol::LawAxis::Domain,
+            violated_invariant: String::new(),
+            observed_state: serde_json::Value::Null,
+            expected_state: serde_json::Value::Null,
+            repairability: tower_lsp_max_protocol::Repairability::Unknown,
+            terminality: tower_lsp_max_protocol::Terminality::NonTerminal,
+        };
+        mesh.execute_action(MeshAction::AddDiagnostic {
+            instance_id: InstanceId::from("INST_D"),
+            diagnostic: Box::new(diag),
+        });
+        let seq_after = mesh.action_seq;
+        assert!(seq_after > 0, "action_seq must increment after execute_action");
+        let result = mesh
+            .dispatch_rpc("INST_D", "max/conformanceDelta", serde_json::json!({ "since_seq": 0 }))
+            .expect("max/conformanceDelta must succeed");
+        let deltas = result["deltas"].as_array().expect("deltas must be array");
+        assert!(!deltas.is_empty(), "adding a diagnostic must produce a delta");
+        let entry = &deltas[0];
+        assert_eq!(entry["instance_id"].as_str().unwrap(), "INST_D");
+        assert!(entry["old_score"].as_f64().unwrap() > entry["new_score"].as_f64().unwrap(),
+            "old_score must be higher than new_score after adding error diagnostic");
+    }
+
+    #[test]
+    fn test_conformance_delta_since_cursor_filters_older_entries() {
+        let mut mesh = AutonomicMesh::new();
+        mesh.add_instance(LspInstance::new("INST_E"));
+        // Helper closure: add a new error diagnostic with a unique id
+        let make_diag = |id: &str| MaxDiagnostic {
+            lsp: lsp_types::Diagnostic {
+                range: lsp_types::Range::default(),
+                severity: Some(lsp_types::DiagnosticSeverity::ERROR),
+                code: None,
+                code_description: None,
+                source: Some("test".to_string()),
+                message: "cursor-test".to_string(),
+                related_information: None,
+                tags: None,
+                data: None,
+            },
+            diagnostic_id: id.to_string(),
+            law_id: "law-cursor".to_string(),
+            attempted_transition: None,
+            violated_axes: vec![],
+            doc_routes: vec![],
+            repair_actions: vec![],
+            verification_gates: vec![],
+            receipt_obligation: None,
+            law_axis: tower_lsp_max_protocol::LawAxis::Domain,
+            violated_invariant: String::new(),
+            observed_state: serde_json::Value::Null,
+            expected_state: serde_json::Value::Null,
+            repairability: tower_lsp_max_protocol::Repairability::Unknown,
+            terminality: tower_lsp_max_protocol::Terminality::NonTerminal,
+        };
+        // First add — clears score from 100
+        mesh.execute_action(MeshAction::AddDiagnostic {
+            instance_id: InstanceId::from("INST_E"),
+            diagnostic: Box::new(make_diag("diag-cursor-1")),
+        });
+        let mid_seq = mesh.action_seq;
+        // Clear so score can change again
+        mesh.execute_action(MeshAction::ClearDiagnostic {
+            instance_id: InstanceId::from("INST_E"),
+            diagnostic_id: "diag-cursor-1".to_string(),
+        });
+        // Second add
+        mesh.execute_action(MeshAction::AddDiagnostic {
+            instance_id: InstanceId::from("INST_E"),
+            diagnostic: Box::new(make_diag("diag-cursor-2")),
+        });
+        // Query with mid_seq cursor — should only see changes after mid_seq
+        let result = mesh
+            .dispatch_rpc("INST_E", "max/conformanceDelta", serde_json::json!({ "since_seq": mid_seq }))
+            .expect("max/conformanceDelta must succeed");
+        let deltas = result["deltas"].as_array().expect("deltas must be array");
+        for d in deltas {
+            assert!(d["seq"].as_u64().unwrap() > mid_seq,
+                "all returned deltas must have seq > since_seq");
+        }
     }
 }
