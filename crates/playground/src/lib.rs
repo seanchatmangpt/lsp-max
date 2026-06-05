@@ -145,6 +145,12 @@ impl Backend {
 
 /// Convert an LSP Position (line/character) to a char offset in a Rope.
 fn rope_offset(rope: &Rope, pos: Position) -> usize {
-    let line_start = rope.line_to_char(pos.line as usize);
-    line_start + pos.character as usize
+    if rope.len_lines() == 0 {
+        return 0;
+    }
+    let line_idx = (pos.line as usize).min(rope.len_lines().saturating_sub(1));
+    let line_start = rope.line_to_char(line_idx);
+    let line_len = rope.line(line_idx).len_chars();
+    let char_idx = (pos.character as usize).min(line_len);
+    line_start + char_idx
 }
