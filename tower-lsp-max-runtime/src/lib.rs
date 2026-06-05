@@ -510,7 +510,8 @@ impl TypestateKernel<AccessAdmissionLaw, Initializing, InitializingData>
     }
 
     fn receipt(&self) -> Self::Receipt {
-        let client_caps_json = serde_json::to_string(&self.data.client_capabilities).unwrap();
+        let client_caps_json = serde_json::to_string(&self.data.client_capabilities)
+            .unwrap_or_else(|_| "<unserializable>".to_string());
         let receipt_id = format!("rcpt-uninitialized-to-initializing:{}", client_caps_json);
         let hash_uninit = sha256(b"rcpt-uninitialized");
         let hash = sha256(format!("{}:{}", hash_uninit, receipt_id).as_bytes());
@@ -565,8 +566,10 @@ impl TypestateKernel<AccessAdmissionLaw, Initialized, InitializedData>
     }
 
     fn receipt(&self) -> Self::Receipt {
-        let client_caps_json = serde_json::to_string(&self.data.client_capabilities).unwrap();
-        let server_caps_json = serde_json::to_string(&self.data.server_capabilities).unwrap();
+        let client_caps_json = serde_json::to_string(&self.data.client_capabilities)
+            .unwrap_or_else(|_| "<unserializable>".to_string());
+        let server_caps_json = serde_json::to_string(&self.data.server_capabilities)
+            .unwrap_or_else(|_| "<unserializable>".to_string());
         let hash_0 = sha256(b"rcpt-uninitialized");
         let rcpt_1 = format!("rcpt-uninitialized-to-initializing:{}", client_caps_json);
         let hash_1 = sha256(format!("{}:{}", hash_0, rcpt_1).as_bytes());
@@ -628,13 +631,13 @@ impl TypestateKernel<AccessAdmissionLaw, ShutDown, EmptyData>
             .data
             .client_capabilities
             .as_ref()
-            .map(|c| serde_json::to_string(c).unwrap())
+            .map(|c| serde_json::to_string(c).unwrap_or_else(|_| "<unserializable>".to_string()))
             .unwrap_or_else(|| "null".to_string());
         let server_caps_json = self
             .data
             .server_capabilities
             .as_ref()
-            .map(|s| serde_json::to_string(s).unwrap())
+            .map(|s| serde_json::to_string(s).unwrap_or_else(|_| "<unserializable>".to_string()))
             .unwrap_or_else(|| "null".to_string());
         let hash_0 = sha256(b"rcpt-uninitialized");
         let rcpt_1 = format!("rcpt-uninitialized-to-initializing:{}", client_caps_json);
@@ -699,13 +702,13 @@ impl TypestateKernel<AccessAdmissionLaw, Exited, EmptyData>
             .data
             .client_capabilities
             .as_ref()
-            .map(|c| serde_json::to_string(c).unwrap())
+            .map(|c| serde_json::to_string(c).unwrap_or_else(|_| "<unserializable>".to_string()))
             .unwrap_or_else(|| "null".to_string());
         let server_caps_json = self
             .data
             .server_capabilities
             .as_ref()
-            .map(|s| serde_json::to_string(s).unwrap())
+            .map(|s| serde_json::to_string(s).unwrap_or_else(|_| "<unserializable>".to_string()))
             .unwrap_or_else(|| "null".to_string());
         let hash_0 = sha256(b"rcpt-uninitialized");
         let rcpt_1 = format!("rcpt-uninitialized-to-initializing:{}", client_caps_json);
@@ -1529,10 +1532,10 @@ impl AutonomicMesh {
                     instance.diagnostics.clear();
                     instance.receipts.clear();
                     instance.policy_state = Some(PolicyState::Operational);
+                    self.dispatch_event(HookEvent::InstanceReset {
+                        instance_id,
+                    });
                 }
-                self.dispatch_event(HookEvent::InstanceReset {
-                    instance_id,
-                });
             }
         }
 
@@ -2459,6 +2462,41 @@ impl Hook for CustomerRequestClassifierHook {
                     }
                 }
             }
+            HookEvent::BoundedActionExecuted {
+                instance_id,
+                action_id,
+                description,
+            } => {
+                // Record that this instance completed a bounded action so
+                // subsequent StateTransition("Initialized") checks see it as
+                // having proof on file.
+                if let Ok(mut proof) = self.proof_received.lock() {
+                    proof.insert(instance_id.0.clone());
+                }
+                // Emit a receipt confirming the bounded action execution.
+                actions.push(MeshAction::EmitReceipt {
+                    instance_id: instance_id.clone(),
+                    receipt: tower_lsp_max_protocol::Receipt {
+                        receipt_id: format!("bounded-action-executed-{}", action_id),
+                        hash: format!(
+                            "sha256:bounded:{}:{}",
+                            action_id,
+                            description.len()
+                        ),
+                        prev_receipt_hash: None,
+                    },
+                });
+            }
+            HookEvent::InstanceReset { instance_id } => {
+                // Evict stale per-instance cache entries so the reset instance is
+                // treated as a fresh instance on the next StateTransition/proof events.
+                if let Ok(mut proof) = self.proof_received.lock() {
+                    proof.remove(&instance_id.0);
+                }
+                if let Ok(mut states) = self.policy_states.lock() {
+                    states.remove(&instance_id.0);
+                }
+            }
             _ => {}
         }
         actions
@@ -2526,6 +2564,29 @@ impl Hook for PolicyEvaluationHook {
                         description: "Arrival of proof validated, creating refund receipt"
                             .to_string(),
                     });
+                }
+            }
+            HookEvent::BoundedActionExecuted {
+                instance_id,
+                action_id,
+                ..
+            } if action_id == "act-create-refund-receipt" => {
+                // The refund receipt action completed; emit a confirmation receipt
+                // so downstream hooks and audit consumers have evidence of completion.
+                actions.push(MeshAction::EmitReceipt {
+                    instance_id: instance_id.clone(),
+                    receipt: tower_lsp_max_protocol::Receipt {
+                        receipt_id: "refund-action-completion-receipt".to_string(),
+                        hash: format!("sha256:completion:{}", action_id),
+                        prev_receipt_hash: None,
+                    },
+                });
+            }
+            HookEvent::InstanceReset { instance_id } => {
+                // Evict stale policy_states cache for the reset instance so it
+                // is evaluated as a fresh instance on subsequent policy events.
+                if let Ok(mut states) = self.policy_states.lock() {
+                    states.remove(&instance_id.0);
                 }
             }
             _ => {}
@@ -2618,6 +2679,56 @@ impl Hook for ReceiptRoutingHook {
 #[cfg(test)]
 mod additional_hooks_tests {
     use super::*;
+
+
+    #[test]
+    fn test_instance_reset_clears_hook_caches() {
+        let mut mesh = AutonomicMesh::new();
+
+        let classifier = CustomerRequestClassifierHook::new();
+        let policy_eval = PolicyEvaluationHook::new();
+        mesh.register_hook(Box::new(classifier));
+        mesh.register_hook(Box::new(policy_eval));
+
+        mesh.add_instance(LspInstance::new("LSP_RESET"));
+
+        // Step 1: Drive the instance to Initialized — hooks cache it as having no proof.
+        mesh.dispatch_event(HookEvent::StateTransition {
+            instance_id: InstanceId::from("LSP_RESET"),
+            from_phase: "Uninitialized".to_string(),
+            to_phase: "Initialized".to_string(),
+        });
+        // CustomerRequestClassifierHook should have set ClarificationRequested.
+        assert_eq!(
+            mesh.instances.get("LSP_RESET").unwrap().policy_state,
+            Some(PolicyState::ClarificationRequested),
+            "Hook should flag the instance as needing clarification before reset"
+        );
+
+        // Step 2: Reset the instance mid-flight.
+        mesh.execute_action(MeshAction::ResetInstance {
+            instance_id: InstanceId::from("LSP_RESET"),
+        });
+        // After reset the instance policy_state is Operational and caches are evicted.
+        assert_eq!(
+            mesh.instances.get("LSP_RESET").unwrap().policy_state,
+            Some(PolicyState::Operational),
+            "Reset must restore policy state to Operational"
+        );
+
+        // Step 3: Re-dispatch StateTransition to Initialized — hooks must treat it as fresh.
+        mesh.dispatch_event(HookEvent::StateTransition {
+            instance_id: InstanceId::from("LSP_RESET"),
+            from_phase: "Uninitialized".to_string(),
+            to_phase: "Initialized".to_string(),
+        });
+        // The hook sees no proof in its cache (it was evicted), so it requests clarification again.
+        assert_eq!(
+            mesh.instances.get("LSP_RESET").unwrap().policy_state,
+            Some(PolicyState::ClarificationRequested),
+            "Hook must re-evaluate fresh instance and request clarification again after reset"
+        );
+    }
 
     #[test]
     fn test_customer_service_hooks() {
@@ -3306,6 +3417,112 @@ mod tests_gaps {
 
         // Depth counter must be reset to zero after dispatch unwinds.
         assert_eq!(mesh.dispatch_depth, 0, "dispatch_depth must reset to 0");
+    }
+
+    // --- Dispatch depth boundary semantics (3 new tests) ---
+
+    /// (a) At exactly MAX_DISPATCH_DEPTH-1 a valid event is still fully processed.
+    #[test]
+    fn test_dispatch_depth_boundary_at_max_minus_one_executes_normally() {
+        struct AddDiagHook;
+        impl Hook for AddDiagHook {
+            fn name(&self) -> &str { "AddDiagHook" }
+            fn trigger(&self, event: &HookEvent) -> Vec<MeshAction> {
+                match event {
+                    HookEvent::StateTransition { instance_id, .. } => vec![
+                        MeshAction::AddDiagnostic {
+                            instance_id: instance_id.clone(),
+                            diagnostic: Box::new(make_error_diagnostic("boundary-diag")),
+                        },
+                    ],
+                    _ => vec![],
+                }
+            }
+        }
+
+        let mut mesh = make_mesh_with_instance("BOUND_INST");
+        mesh.register_hook(Box::new(AddDiagHook));
+
+        // Simulate being one level below the limit.
+        mesh.dispatch_depth = MAX_DISPATCH_DEPTH - 1;
+
+        mesh.dispatch_event(HookEvent::StateTransition {
+            instance_id: InstanceId::from("BOUND_INST"),
+            from_phase: "idle".to_string(),
+            to_phase: "active".to_string(),
+        });
+
+        // Hook action must have executed — diagnostic present on the instance.
+        let inst = mesh.instances.get("BOUND_INST").unwrap();
+        assert!(
+            inst.diagnostics.iter().any(|d| d.diagnostic_id == "boundary-diag"),
+            "Hook action at MAX_DISPATCH_DEPTH-1 must be fully executed"
+        );
+
+        // Depth must be restored to the artificial baseline.
+        assert_eq!(
+            mesh.dispatch_depth,
+            MAX_DISPATCH_DEPTH - 1,
+            "dispatch_depth must be restored to pre-call value after normal dispatch"
+        );
+    }
+
+    /// (b) At MAX_DISPATCH_DEPTH the sentinel fires and no hook actions execute.
+    #[test]
+    fn test_dispatch_depth_at_max_fires_sentinel_and_drops_actions() {
+        let mut mesh = make_mesh_with_instance("DROP_INST");
+        mesh.dispatch_depth = MAX_DISPATCH_DEPTH;
+
+        let log_len_before = mesh.event_log.len();
+
+        mesh.dispatch_event(HookEvent::StateTransition {
+            instance_id: InstanceId::from("DROP_INST"),
+            from_phase: "a".to_string(),
+            to_phase: "b".to_string(),
+        });
+
+        // Exactly one new entry: the sentinel.
+        let new_entries = mesh.event_log.len() - log_len_before;
+        assert_eq!(new_entries, 1, "Only the sentinel should be added when depth == MAX");
+
+        let sentinel = mesh.event_log.last().unwrap();
+        assert!(
+            matches!(sentinel, HookEvent::DiagnosticEmitted { diagnostic, .. }
+                if diagnostic.law_id == "MESH_DISPATCH_DEPTH"),
+            "The single new entry must be the MESH_DISPATCH_DEPTH sentinel"
+        );
+
+        // Guard fires without touching depth (the guard path never incremented it,
+        // so there is nothing to decrement).  Depth must remain at MAX_DISPATCH_DEPTH.
+        assert_eq!(
+            mesh.dispatch_depth,
+            MAX_DISPATCH_DEPTH,
+            "Guard branch must leave depth unchanged (it never incremented it)"
+        );
+    }
+
+    /// (c) After N consecutive over-limit calls depth must not accumulate unbounded.
+    #[test]
+    fn test_dispatch_depth_no_leak_after_repeated_over_limit_calls() {
+        let mut mesh = make_mesh_with_instance("LEAK_INST");
+
+        mesh.dispatch_depth = MAX_DISPATCH_DEPTH;
+        let baseline = mesh.dispatch_depth;
+
+        for _ in 0..5 {
+            mesh.dispatch_event(HookEvent::StateTransition {
+                instance_id: InstanceId::from("LEAK_INST"),
+                from_phase: "x".to_string(),
+                to_phase: "y".to_string(),
+            });
+        }
+
+        // Guard path never increments or decrements depth, so after N over-limit
+        // calls the counter must be unchanged from baseline.
+        assert_eq!(
+            mesh.dispatch_depth, baseline,
+            "Repeated over-limit calls must not change depth (guard path is depth-neutral)"
+        );
     }
 
     #[test]
@@ -4390,6 +4607,105 @@ mod test_bounded_action_event {
 }
 
 #[cfg(test)]
+mod bounded_action_hook_trigger_tests {
+    use super::*;
+
+    /// CustomerRequestClassifierHook must react to BoundedActionExecuted by
+    /// emitting an EmitReceipt action with receipt_id
+    /// "bounded-action-executed-<action_id>".
+    #[test]
+    fn classifier_hook_bounded_action_executed_emits_receipt() {
+        let hook = CustomerRequestClassifierHook::new();
+        let event = HookEvent::BoundedActionExecuted {
+            instance_id: InstanceId::from("classifier-bounded-test"),
+            action_id: "act-create-refund-receipt".to_string(),
+            description: "Arrival of proof validated, creating refund receipt".to_string(),
+        };
+        let actions = hook.trigger(&event);
+        let receipt_action = actions.iter().find(|a| {
+            matches!(a, MeshAction::EmitReceipt { receipt, .. }
+                if receipt.receipt_id == "bounded-action-executed-act-create-refund-receipt")
+        });
+        assert!(
+            receipt_action.is_some(),
+            "CustomerRequestClassifierHook must emit a receipt for BoundedActionExecuted, got: {:?}",
+            actions
+        );
+    }
+
+    /// PolicyEvaluationHook must react to BoundedActionExecuted for
+    /// "act-create-refund-receipt" by emitting a completion receipt.
+    #[test]
+    fn policy_hook_bounded_action_executed_emits_completion_receipt() {
+        let hook = PolicyEvaluationHook::new();
+        let event = HookEvent::BoundedActionExecuted {
+            instance_id: InstanceId::from("policy-bounded-test"),
+            action_id: "act-create-refund-receipt".to_string(),
+            description: "Arrival of proof validated, creating refund receipt".to_string(),
+        };
+        let actions = hook.trigger(&event);
+        let receipt_action = actions.iter().find(|a| {
+            matches!(a, MeshAction::EmitReceipt { receipt, .. }
+                if receipt.receipt_id == "refund-action-completion-receipt")
+        });
+        assert!(
+            receipt_action.is_some(),
+            "PolicyEvaluationHook must emit refund-action-completion-receipt for BoundedActionExecuted, got: {:?}",
+            actions
+        );
+    }
+
+    /// PolicyEvaluationHook must NOT emit a completion receipt for unknown
+    /// bounded action IDs (the guard is specific to act-create-refund-receipt).
+    #[test]
+    fn policy_hook_bounded_action_unknown_id_no_receipt() {
+        let hook = PolicyEvaluationHook::new();
+        let event = HookEvent::BoundedActionExecuted {
+            instance_id: InstanceId::from("policy-bounded-unknown"),
+            action_id: "act-unknown-action".to_string(),
+            description: "Some other action".to_string(),
+        };
+        let actions = hook.trigger(&event);
+        assert!(
+            actions.is_empty(),
+            "PolicyEvaluationHook must not emit actions for unknown bounded action IDs, got: {:?}",
+            actions
+        );
+    }
+
+    /// End-to-end: dispatching BoundedActionExecuted via the full MaxMesh (with
+    /// hooks registered) causes a downstream EmitReceipt to be processed and
+    /// a ReceiptEmitted event to appear in the event log.
+    #[test]
+    fn max_mesh_bounded_action_executed_triggers_downstream_receipt() {
+        let mut mesh = MaxMesh::new();
+        mesh.register_hook(Box::new(CustomerRequestClassifierHook::new()));
+        mesh.register_hook(Box::new(PolicyEvaluationHook::new()));
+        mesh.register_instance("e2e-bounded".to_string());
+        mesh.event_log.clear();
+
+        // Manually fire the BoundedActionExecuted event through dispatch_event
+        // to simulate what execute_action already does after executing the action.
+        mesh.dispatch_event(HookEvent::BoundedActionExecuted {
+            instance_id: InstanceId::from("e2e-bounded"),
+            action_id: "act-create-refund-receipt".to_string(),
+            description: "Arrival of proof validated, creating refund receipt".to_string(),
+        });
+
+        let receipt_emitted = mesh.event_log.iter().any(|e| {
+            matches!(e, HookEvent::ReceiptEmitted { receipt, .. }
+                if receipt.receipt_id.contains("bounded-action-executed")
+                    || receipt.receipt_id == "refund-action-completion-receipt")
+        });
+        assert!(
+            receipt_emitted,
+            "dispatching BoundedActionExecuted must produce ReceiptEmitted downstream, log: {:?}",
+            mesh.event_log
+        );
+    }
+}
+
+#[cfg(test)]
 mod policy_and_routing_hook_unit_tests {
     use super::*;
 
@@ -4576,6 +4892,31 @@ mod policy_and_routing_hook_unit_tests {
         assert!(
             actions.is_empty(),
             "clearing unknown diagnostic should produce no actions"
+        );
+    }
+}
+
+#[cfg(test)]
+mod reset_instance_guard_tests {
+    use super::*;
+
+    /// ResetInstance for a nonexistent instance must not emit InstanceReset into the event_log.
+    /// All other MeshAction variants are guarded by `if let Some(instance)`; this test enforces
+    /// that ResetInstance matches that behavior so process-mining conformance checks never observe
+    /// spurious ghost-instance events.
+    #[test]
+    fn test_reset_missing_instance_emits_no_event() {
+        let mut mesh = AutonomicMesh::new();
+        let before_len = mesh.event_log.len();
+
+        mesh.execute_action(MeshAction::ResetInstance {
+            instance_id: InstanceId::from("GHOST_99"),
+        });
+
+        assert_eq!(
+            mesh.event_log.len(),
+            before_len,
+            "ResetInstance on a nonexistent instance must not append any HookEvent"
         );
     }
 }

@@ -857,3 +857,299 @@ pub enum HookEvent {
         instance_id: InstanceId,
     },
 }
+
+// ---------------------------------------------------------------------------
+// Unit tests — protocol types
+// ---------------------------------------------------------------------------
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // --- ConformanceVector ---------------------------------------------------
+
+    #[test]
+    fn conformance_vector_all_admitted_empty_is_true() {
+        let cv = ConformanceVector {
+            admitted: vec![LawAxis::Protocol],
+            refused: vec![],
+            unknown: vec![],
+            score: Some(100.0),
+            strict_mode: true,
+        };
+        assert!(cv.all_admitted());
+    }
+
+    #[test]
+    fn conformance_vector_all_admitted_with_refused_is_false() {
+        let cv = ConformanceVector {
+            admitted: vec![LawAxis::Protocol],
+            refused: vec![LawAxis::Security],
+            unknown: vec![],
+            score: Some(50.0),
+            strict_mode: true,
+        };
+        assert!(!cv.all_admitted());
+    }
+
+    #[test]
+    fn conformance_vector_all_admitted_with_unknown_is_false() {
+        let cv = ConformanceVector {
+            admitted: vec![LawAxis::Protocol],
+            refused: vec![],
+            unknown: vec![LawAxis::Domain],
+            score: None,
+            strict_mode: true,
+        };
+        assert!(!cv.all_admitted());
+    }
+
+    #[test]
+    fn conformance_vector_score_recomputes_from_grade_boundaries() {
+        assert_eq!(ConformanceGrade::from_score(100.0), ConformanceGrade::Perfect);
+        assert_eq!(ConformanceGrade::from_score(99.9), ConformanceGrade::Good);
+        assert_eq!(ConformanceGrade::from_score(75.0), ConformanceGrade::Good);
+        assert_eq!(ConformanceGrade::from_score(74.9), ConformanceGrade::Degraded);
+        assert_eq!(ConformanceGrade::from_score(50.0), ConformanceGrade::Degraded);
+        assert_eq!(ConformanceGrade::from_score(49.9), ConformanceGrade::Critical);
+        assert_eq!(ConformanceGrade::from_score(0.0), ConformanceGrade::Critical);
+    }
+
+    #[test]
+    fn admits_release_strict_mode_blocks_unknown() {
+        let cv = ConformanceVector {
+            admitted: vec![LawAxis::Protocol],
+            refused: vec![],
+            unknown: vec![LawAxis::Domain],
+            score: None,
+            strict_mode: true,
+        };
+        assert!(!cv.admits_release(), "strict_mode=true must block when unknown is non-empty");
+    }
+
+    #[test]
+    fn admits_release_non_strict_mode_allows_unknown() {
+        let cv = ConformanceVector {
+            admitted: vec![LawAxis::Protocol],
+            refused: vec![],
+            unknown: vec![LawAxis::Domain],
+            score: None,
+            strict_mode: false,
+        };
+        assert!(cv.admits_release(), "strict_mode=false must allow unknown axes");
+    }
+
+    #[test]
+    fn admits_release_refused_always_blocks_regardless_of_strict_mode() {
+        for strict in [true, false] {
+            let cv = ConformanceVector {
+                admitted: vec![],
+                refused: vec![LawAxis::Security],
+                unknown: vec![],
+                score: Some(0.0),
+                strict_mode: strict,
+            };
+            assert!(!cv.admits_release(), "refused must block release regardless of strict_mode");
+        }
+    }
+
+    #[test]
+    fn conformance_vector_default_is_strict_and_empty() {
+        let cv = ConformanceVector::default();
+        assert!(cv.admitted.is_empty());
+        assert!(cv.refused.is_empty());
+        assert!(cv.unknown.is_empty());
+        assert!(cv.strict_mode);
+        assert!(cv.score.is_none());
+    }
+
+    // --- Receipt Merkle chain semantics --------------------------------------
+
+    #[test]
+    fn receipt_genesis_has_no_prev_hash() {
+        let r = Receipt {
+            receipt_id: "r-0".to_string(),
+            hash: "abc123".to_string(),
+            prev_receipt_hash: None,
+        };
+        assert!(r.prev_receipt_hash.is_none(), "genesis receipt must have no prev_receipt_hash");
+    }
+
+    #[test]
+    fn receipt_chain_links_prev_hash() {
+        let genesis = Receipt {
+            receipt_id: "r-0".to_string(),
+            hash: "hash0".to_string(),
+            prev_receipt_hash: None,
+        };
+        let next = Receipt {
+            receipt_id: "r-1".to_string(),
+            hash: "hash1".to_string(),
+            prev_receipt_hash: Some(genesis.hash.clone()),
+        };
+        assert_eq!(
+            next.prev_receipt_hash.as_deref(),
+            Some("hash0"),
+            "second receipt must link to genesis hash"
+        );
+    }
+
+    #[test]
+    fn receipt_plan_is_satisfied_by() {
+        let plan = ReceiptPlan {
+            expected_receipts: vec!["r-0".to_string(), "r-1".to_string()],
+        };
+        let receipts = [
+            Receipt { receipt_id: "r-0".to_string(), hash: "h0".to_string(), prev_receipt_hash: None },
+            Receipt { receipt_id: "r-1".to_string(), hash: "h1".to_string(), prev_receipt_hash: Some("h0".to_string()) },
+        ];
+        // All expected receipt ids appear in the actual receipts
+        let actual_ids: Vec<&str> = receipts.iter().map(|r| r.receipt_id.as_str()).collect();
+        for expected in &plan.expected_receipts {
+            assert!(actual_ids.contains(&expected.as_str()), "receipt {} missing", expected);
+        }
+    }
+
+    // --- AnalysisBundle ------------------------------------------------------
+
+    #[test]
+    fn analysis_bundle_is_empty() {
+        let bundle = AnalysisBundle::default();
+        assert!(bundle.diagnostics.is_empty());
+        assert!(bundle.actions.is_empty());
+        assert!(bundle.receipts.is_empty());
+        assert!(bundle.conformance_vector.admitted.is_empty());
+    }
+
+    // --- ConformanceGrade display / as_str -----------------------------------
+
+    #[test]
+    fn conformance_grade_as_str_matches_display() {
+        let grades = [
+            ConformanceGrade::Perfect,
+            ConformanceGrade::Good,
+            ConformanceGrade::Degraded,
+            ConformanceGrade::Critical,
+        ];
+        for g in &grades {
+            assert_eq!(g.as_str(), g.to_string().as_str());
+        }
+    }
+
+    // --- LawAxis -------------------------------------------------------------
+
+    #[test]
+    fn law_axis_all_named_has_no_custom_variants() {
+        for axis in LawAxis::all_named() {
+            assert!(
+                !matches!(axis, LawAxis::Custom(_)),
+                "all_named must not include Custom variants"
+            );
+        }
+    }
+
+    #[test]
+    fn law_axis_custom_display() {
+        let axis = LawAxis::Custom("my-law".to_string());
+        assert_eq!(axis.to_string(), "Custom(my-law)");
+    }
+
+    // --- AdmissionDecision ---------------------------------------------------
+
+    #[test]
+    fn admission_decision_from_bool() {
+        assert_eq!(AdmissionDecision::from(true), AdmissionDecision::Admitted);
+        assert_eq!(AdmissionDecision::from(false), AdmissionDecision::Refused);
+    }
+
+    #[test]
+    fn admission_decision_into_bool() {
+        assert!(bool::from(AdmissionDecision::Admitted));
+        assert!(!bool::from(AdmissionDecision::Refused));
+        assert!(!bool::from(AdmissionDecision::Unknown));
+    }
+
+    // --- InstanceId ----------------------------------------------------------
+
+    #[test]
+    fn instance_id_from_str_and_display() {
+        let id = InstanceId::from("test-instance");
+        assert_eq!(id.to_string(), "test-instance");
+        assert_eq!(id.0, "test-instance");
+    }
+
+    // --- GateId --------------------------------------------------------------
+
+    #[test]
+    fn gate_id_from_str_and_display() {
+        let gate: GateId = GateId::from("gate-42");
+        assert_eq!(gate.to_string(), "gate-42");
+    }
+
+    // --- MaxDiagnostic -------------------------------------------------------
+
+    #[test]
+    fn max_diagnostic_default_is_valid() {
+        let d = MaxDiagnostic::default();
+        assert!(d.diagnostic_id.is_empty());
+        assert!(d.violated_axes.is_empty());
+        assert!(d.repair_actions.is_empty());
+    }
+
+    #[test]
+    fn max_diagnostic_into_lsp_preserves_data() {
+        let d = MaxDiagnostic {
+            diagnostic_id: "diag-1".to_string(),
+            law_id: "LSP-001".to_string(),
+            ..MaxDiagnostic::default()
+        };
+        let lsp = d.into_lsp();
+        // data should be populated since it was None before
+        assert!(lsp.data.is_some());
+    }
+
+    // --- Serde round-trips ---------------------------------------------------
+
+    #[test]
+    fn conformance_vector_serde_roundtrip() {
+        let cv = ConformanceVector {
+            admitted: vec![LawAxis::Protocol, LawAxis::Security],
+            refused: vec![LawAxis::Hook],
+            unknown: vec![LawAxis::Domain],
+            score: Some(66.7),
+            strict_mode: false,
+        };
+        let json = serde_json::to_string(&cv).expect("serialize");
+        let cv2: ConformanceVector = serde_json::from_str(&json).expect("deserialize");
+        assert_eq!(cv2.admitted.len(), 2);
+        assert_eq!(cv2.refused.len(), 1);
+        assert_eq!(cv2.unknown.len(), 1);
+        assert!((cv2.score.unwrap() - 66.7).abs() < 1e-9);
+        assert!(!cv2.strict_mode);
+    }
+
+    #[test]
+    fn receipt_serde_roundtrip_omits_none_prev_hash() {
+        let r = Receipt {
+            receipt_id: "r-0".to_string(),
+            hash: "deadbeef".to_string(),
+            prev_receipt_hash: None,
+        };
+        let json = serde_json::to_string(&r).expect("serialize");
+        assert!(!json.contains("prev_receipt_hash"), "None must be omitted: {}", json);
+        let r2: Receipt = serde_json::from_str(&json).expect("deserialize");
+        assert!(r2.prev_receipt_hash.is_none());
+    }
+
+    #[test]
+    fn receipt_serde_roundtrip_includes_prev_hash_when_set() {
+        let r = Receipt {
+            receipt_id: "r-1".to_string(),
+            hash: "cafebabe".to_string(),
+            prev_receipt_hash: Some("deadbeef".to_string()),
+        };
+        let json = serde_json::to_string(&r).expect("serialize");
+        let r2: Receipt = serde_json::from_str(&json).expect("deserialize");
+        assert_eq!(r2.prev_receipt_hash.as_deref(), Some("deadbeef"));
+    }
+}

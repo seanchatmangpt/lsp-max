@@ -2,4 +2,4 @@ REFUND RECEIPT
 Instance: LSP_2
 Description: Arrival of proof validated, creating refund receipt
 Status: Executed
-Timestamp: 1780652878
+Timestamp: 1780653525
