@@ -25,6 +25,7 @@ impl Hook for CustomerServiceWorkflowHook {
                         receipt: Receipt {
                             receipt_id: "rcpt-customer-proof".to_string(),
                             hash: receipt.hash.clone(),
+                            prev_receipt_hash: None,
                         },
                     });
                 }
@@ -63,6 +64,7 @@ impl Hook for CustomerServiceWorkflowHook {
                         receipt: Receipt {
                             receipt_id: "rcpt-refund-executed".to_string(),
                             hash: "sha256-cryptographic-proof-of-refund-executed-successfully-0xdeadbeef".to_string(),
+                            prev_receipt_hash: None,
                         },
                     });
                 }
@@ -157,6 +159,7 @@ fn test_customer_service_autonomic_mesh_workflow() {
             receipt_id: "rcpt-customer-proof".to_string(),
             hash: "sha256-cryptographic-customer-proof-of-damaged-item-verification-hash"
                 .to_string(),
+            prev_receipt_hash: None,
         },
     });
 
@@ -263,6 +266,7 @@ fn test_save_load_preserves_instances() {
         receipt: Receipt {
             receipt_id: "rcpt-save-load".to_string(),
             hash: "hash-save-load".to_string(),
+            prev_receipt_hash: None,
         },
     });
 
@@ -373,6 +377,7 @@ fn test_receipt_routing_hook_partial_clear() {
         receipt: Receipt {
             receipt_id: "rcpt-routing-test".to_string(),
             hash: "hash-routing-test".to_string(),
+            prev_receipt_hash: None,
         },
     });
 
@@ -409,6 +414,7 @@ fn test_receipt_routing_hook_clear_fires_event_per_diag() {
         receipt: Receipt {
             receipt_id: "rcpt-routing-test".to_string(),
             hash: "hash-routing-test".to_string(),
+            prev_receipt_hash: None,
         },
     });
 

@@ -49,7 +49,7 @@ impl TelemetryService {
         let hash = tower_lsp_max_runtime::sha256(receipt_id.as_bytes());
         mesh.execute_action(tower_lsp_max_runtime::MeshAction::EmitReceipt {
             instance_id,
-            receipt: tower_lsp_max_protocol::Receipt { receipt_id, hash },
+            receipt: tower_lsp_max_protocol::Receipt { receipt_id, hash, prev_receipt_hash: None },
         });
         let _ = params; // params used for documentation only
         mesh.save_to_file(&self.state_path).map_err(|e| e.to_string())?;

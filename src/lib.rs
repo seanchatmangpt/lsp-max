@@ -1614,6 +1614,7 @@ pub trait LanguageServer: Send + Sync + 'static {
         let receipt = max_protocol::Receipt {
             receipt_id: receipt_id.clone(),
             hash,
+            prev_receipt_hash: None,
         };
 
         // Phase 3: re-acquire lock only to write receipts/diagnostics back.
@@ -1899,7 +1900,7 @@ pub trait LanguageServer: Send + Sync + 'static {
         let mut registry = lock_registry()?;
         let receipt_id = format!("rcpt-refusal-{}", params);
         let hash = max_runtime::sha256(receipt_id.as_bytes());
-        let receipt = max_protocol::Receipt { receipt_id: receipt_id.clone(), hash };
+        let receipt = max_protocol::Receipt { receipt_id: receipt_id.clone(), hash, prev_receipt_hash: None };
         registry.receipts.insert(receipt_id, receipt.clone());
         Ok(serde_json::json!({
             "refused": true,

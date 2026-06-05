@@ -73,6 +73,7 @@ impl ServerState {
         let r0 = crate::max_protocol::Receipt {
             receipt_id: "rcpt-uninitialized".to_string(),
             hash: crate::max_runtime::sha256(b"rcpt-uninitialized"),
+            prev_receipt_hash: None,
         };
         instance.receipts.push(r0.clone());
         mesh.add_instance(instance);

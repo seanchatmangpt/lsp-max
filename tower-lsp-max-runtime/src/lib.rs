@@ -414,7 +414,7 @@ impl TypestateKernel<AccessAdmissionLaw, Uninitialized, EmptyData>
     fn receipt(&self) -> Self::Receipt {
         let receipt_id = "rcpt-uninitialized".to_string();
         let hash = sha256(receipt_id.as_bytes());
-        tower_lsp_max_protocol::Receipt { receipt_id, hash }
+        tower_lsp_max_protocol::Receipt { receipt_id, hash, prev_receipt_hash: None }
     }
 
     fn exit(self) -> EmptyData {
@@ -459,7 +459,7 @@ impl TypestateKernel<AccessAdmissionLaw, Initializing, InitializingData>
         let receipt_id = format!("rcpt-uninitialized-to-initializing:{}", client_caps_json);
         let hash_uninit = sha256(b"rcpt-uninitialized");
         let hash = sha256(format!("{}:{}", hash_uninit, receipt_id).as_bytes());
-        tower_lsp_max_protocol::Receipt { receipt_id, hash }
+        tower_lsp_max_protocol::Receipt { receipt_id, hash, prev_receipt_hash: None }
     }
 
     fn exit(self) -> InitializingData {
@@ -516,7 +516,7 @@ impl TypestateKernel<AccessAdmissionLaw, Initialized, InitializedData>
         let hash_1 = sha256(format!("{}:{}", hash_0, rcpt_1).as_bytes());
         let receipt_id = format!("rcpt-initializing-to-initialized:{}", server_caps_json);
         let hash = sha256(format!("{}:{}", hash_1, receipt_id).as_bytes());
-        tower_lsp_max_protocol::Receipt { receipt_id, hash }
+        tower_lsp_max_protocol::Receipt { receipt_id, hash, prev_receipt_hash: None }
     }
 
     fn exit(self) -> InitializedData {
@@ -586,7 +586,7 @@ impl TypestateKernel<AccessAdmissionLaw, ShutDown, EmptyData>
         let hash_2 = sha256(format!("{}:{}", hash_1, rcpt_2).as_bytes());
         let receipt_id = "rcpt-initialized-to-shutdown".to_string();
         let hash = sha256(format!("{}:{}", hash_2, receipt_id).as_bytes());
-        tower_lsp_max_protocol::Receipt { receipt_id, hash }
+        tower_lsp_max_protocol::Receipt { receipt_id, hash, prev_receipt_hash: None }
     }
 
     fn exit(self) -> EmptyData {
@@ -658,7 +658,7 @@ impl TypestateKernel<AccessAdmissionLaw, Exited, EmptyData>
         let hash_3 = sha256(format!("{}:{}", hash_2, rcpt_3).as_bytes());
         let receipt_id = "rcpt-shutdown-to-exited".to_string();
         let hash = sha256(format!("{}:{}", hash_3, receipt_id).as_bytes());
-        tower_lsp_max_protocol::Receipt { receipt_id, hash }
+        tower_lsp_max_protocol::Receipt { receipt_id, hash, prev_receipt_hash: None }
     }
 
     fn exit(self) -> EmptyData {
@@ -984,6 +984,7 @@ impl Hook for IntakeClearHook {
                             receipt: Receipt {
                                 receipt_id: "rcpt-intake-validated".to_string(),
                                 hash: "hash-intake-validated-mock".to_string(),
+                                prev_receipt_hash: None,
                             },
                         },
                         MeshAction::TransitionPolicyState {
@@ -1001,6 +1002,7 @@ impl Hook for IntakeClearHook {
                             receipt: Receipt {
                                 receipt_id: "rcpt-refund-executed".to_string(),
                                 hash: "hash-refund-executed-mock".to_string(),
+                                prev_receipt_hash: None,
                             },
                         },
                     ]
@@ -1512,41 +1514,7 @@ impl AutonomicMesh {
             "max/applyRepairTransaction" => {
                 let code_action: tower_lsp_max_protocol::MaxCodeAction =
                     serde_json::from_value(params).map_err(|e| format!("Invalid params: {}", e))?;
-                // Pre-flight: verify all expected receipts exist before applying
-                {
-                    let inst = self
-                        .instances
-                        .get(instance_id)
-                        .ok_or_else(|| format!("Instance not found: {}", instance_id))?;
-                    let existing: std::collections::HashSet<&str> =
-                        inst.receipts.iter().map(|r| r.receipt_id.as_str()).collect();
-                    for expected in &code_action.receipt_plan.expected_receipts {
-                        if !existing.contains(expected.as_str()) {
-                            return Err(format!(
-                                "Receipt integrity violation: required receipt '{}' not found",
-                                expected
-                            ));
-                        }
-                    }
-                }
-                let action_id = format!("repair-{}", code_action.action.title.replace(' ', "-"));
-                let receipt_id =
-                    format!("rcpt-repair-{}", code_action.action.title.replace(' ', "-"));
-                let hash = sha256(receipt_id.as_bytes());
-                let receipt = tower_lsp_max_protocol::Receipt {
-                    receipt_id: receipt_id.clone(),
-                    hash,
-                };
-                self.execute_action(MeshAction::ExecuteBoundedAction {
-                    instance_id: InstanceId::from(instance_id),
-                    action_id,
-                    description: code_action.action.title.clone(),
-                });
-                self.execute_action(MeshAction::EmitReceipt {
-                    instance_id: InstanceId::from(instance_id),
-                    receipt: receipt.clone(),
-                });
-                Ok(serde_json::to_value(receipt).unwrap())
+                self.apply_repair_transaction(instance_id, code_action)
             }
             "max/exportAnalysisBundle" => {
                 let snapshot_id: tower_lsp_max_protocol::SnapshotId =
@@ -1794,7 +1762,7 @@ impl AutonomicMesh {
                     serde_json::from_value(params).map_err(|e| format!("Invalid params: {}", e))?;
                 let receipt_id = format!("rcpt-refusal-{}", diag_id);
                 let hash = sha256(receipt_id.as_bytes());
-                let receipt = tower_lsp_max_protocol::Receipt { receipt_id: receipt_id.clone(), hash };
+                let receipt = tower_lsp_max_protocol::Receipt { receipt_id: receipt_id.clone(), hash, prev_receipt_hash: None };
                 self.execute_action(MeshAction::EmitReceipt {
                     instance_id: InstanceId::from(instance_id),
                     receipt: receipt.clone(),
@@ -1842,7 +1810,7 @@ impl AutonomicMesh {
                 }
                 let receipt_id = format!("rcpt-release-{}", instance_id);
                 let hash = sha256(receipt_id.as_bytes());
-                let receipt = tower_lsp_max_protocol::Receipt { receipt_id: receipt_id.clone(), hash };
+                let receipt = tower_lsp_max_protocol::Receipt { receipt_id: receipt_id.clone(), hash, prev_receipt_hash: None };
                 self.execute_action(MeshAction::EmitReceipt {
                     instance_id: InstanceId::from(instance_id),
                     receipt: receipt.clone(),
@@ -1875,6 +1843,54 @@ impl AutonomicMesh {
     }
 
     /// Verifies the cryptographic receipt chain of a mesh instance.
+    /// Typed entry point for applying a repair transaction without a `serde_json::Value`
+    /// round-trip inside `dispatch_rpc`.
+    ///
+    /// The `"max/applyRepairTransaction"` dispatch arm delegates here after the single
+    /// `serde_json::from_value` call. Callers that already hold a typed `MaxCodeAction`
+    /// can call this directly and skip serialization entirely.
+    pub fn apply_repair_transaction(
+        &mut self,
+        instance_id: &str,
+        code_action: tower_lsp_max_protocol::MaxCodeAction,
+    ) -> Result<serde_json::Value, String> {
+        // Pre-flight: verify all expected receipts exist before applying
+        {
+            let inst = self
+                .instances
+                .get(instance_id)
+                .ok_or_else(|| format!("Instance not found: {}", instance_id))?;
+            let existing: std::collections::HashSet<&str> =
+                inst.receipts.iter().map(|r| r.receipt_id.as_str()).collect();
+            for expected in &code_action.receipt_plan.expected_receipts {
+                if !existing.contains(expected.as_str()) {
+                    return Err(format!(
+                        "Receipt integrity violation: required receipt '{}' not found",
+                        expected
+                    ));
+                }
+            }
+        }
+        let action_id = format!("repair-{}", code_action.action.title.replace(' ', "-"));
+        let receipt_id = format!("rcpt-repair-{}", code_action.action.title.replace(' ', "-"));
+        let hash = sha256(receipt_id.as_bytes());
+        let receipt = tower_lsp_max_protocol::Receipt {
+            receipt_id: receipt_id.clone(),
+            hash,
+            prev_receipt_hash: None,
+        };
+        self.execute_action(MeshAction::ExecuteBoundedAction {
+            instance_id: InstanceId::from(instance_id),
+            action_id,
+            description: code_action.action.title.clone(),
+        });
+        self.execute_action(MeshAction::EmitReceipt {
+            instance_id: InstanceId::from(instance_id),
+            receipt: receipt.clone(),
+        });
+        Ok(serde_json::to_value(receipt).unwrap())
+    }
+
     pub fn verify_instance_ledger(&self, instance_id: &str) -> Result<(), String> {
         let instance = self
             .instances
@@ -2369,6 +2385,7 @@ mod additional_hooks_tests {
         let receipt = Receipt {
             receipt_id: "rcpt-customer-proof".to_string(),
             hash: "dummyhash".to_string(),
+            prev_receipt_hash: None,
         };
 
         // Before dispatching receipt, policy state of LSP_2 should transition to ClarificationRequested first
@@ -2544,6 +2561,7 @@ mod tests_gaps {
         let receipt = Receipt {
             receipt_id: "r1".to_string(),
             hash: "h1".to_string(),
+            prev_receipt_hash: None,
         };
         mesh.execute_action(MeshAction::EmitReceipt {
             instance_id: InstanceId::from("GHOST"),
@@ -3292,6 +3310,7 @@ mod tests_gaps {
                 receipt: Receipt {
                     receipt_id: id.to_string(),
                     hash: sha256(id.as_bytes()),
+                    prev_receipt_hash: None,
                 },
             });
         }
@@ -3329,4 +3348,89 @@ mod tests_gaps {
         );
     }
 
+}
+
+#[cfg(test)]
+mod apply_repair_transaction_tests {
+    use super::*;
+
+    fn make_code_action(title: &str, expected_receipts: Vec<String>) -> tower_lsp_max_protocol::MaxCodeAction {
+        tower_lsp_max_protocol::MaxCodeAction {
+            action: lsp_types::CodeAction {
+                title: title.to_string(),
+                kind: None,
+                diagnostics: None,
+                edit: None,
+                command: None,
+                is_preferred: None,
+                disabled: None,
+                data: None,
+            },
+            preconditions: vec![],
+            validation_plan: tower_lsp_max_protocol::ValidationPlan { gates: vec![] },
+            rollback_plan: tower_lsp_max_protocol::RollbackPlan { strategy: "revert".to_string() },
+            receipt_plan: tower_lsp_max_protocol::ReceiptPlan { expected_receipts },
+        }
+    }
+
+    #[test]
+    fn apply_repair_transaction_emits_receipt_and_stores_it() {
+        let mut mesh = AutonomicMesh::new();
+        mesh.add_instance(LspInstance::new("INST_A"));
+
+        let action = make_code_action("Fix admission", vec![]);
+        let result = mesh.apply_repair_transaction("INST_A", action);
+        assert!(result.is_ok(), "Expected Ok, got: {:?}", result);
+
+        let val = result.unwrap();
+        let receipt_id = val["receipt_id"].as_str().unwrap_or("");
+        assert!(
+            receipt_id.starts_with("rcpt-repair-"),
+            "receipt_id should start with rcpt-repair-, got: {}",
+            receipt_id
+        );
+
+        let inst = mesh.instances.get("INST_A").unwrap();
+        assert!(!inst.receipts.is_empty(), "Receipt should be stored in instance");
+        assert_eq!(inst.receipts.last().unwrap().receipt_id, receipt_id);
+    }
+
+    #[test]
+    fn apply_repair_transaction_fails_if_required_receipt_missing() {
+        let mut mesh = AutonomicMesh::new();
+        mesh.add_instance(LspInstance::new("INST_B"));
+
+        let action = make_code_action("Fix auth", vec!["rcpt-security-auth".to_string()]);
+        let result = mesh.apply_repair_transaction("INST_B", action);
+        assert!(result.is_err(), "Should fail due to missing required receipt");
+        let err = result.unwrap_err();
+        assert!(
+            err.contains("Receipt integrity violation"),
+            "Error should mention receipt integrity, got: {}",
+            err
+        );
+    }
+
+    #[test]
+    fn apply_repair_transaction_succeeds_when_required_receipt_present() {
+        let mut mesh = AutonomicMesh::new();
+        let mut inst = LspInstance::new("INST_C");
+        inst.receipts.push(tower_lsp_max_protocol::Receipt {
+            receipt_id: "rcpt-security-auth".to_string(),
+            hash: sha256(b"rcpt-security-auth"),
+            prev_receipt_hash: None,
+        });
+        mesh.add_instance(inst);
+
+        let action = make_code_action(
+            "Fix missing receipt",
+            vec!["rcpt-security-auth".to_string()],
+        );
+        let result = mesh.apply_repair_transaction("INST_C", action);
+        assert!(
+            result.is_ok(),
+            "Expected Ok when required receipt is present, got: {:?}",
+            result
+        );
+    }
 }

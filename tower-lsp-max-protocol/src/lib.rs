@@ -299,6 +299,12 @@ impl Default for ConformanceVector {
 pub struct Receipt {
     pub receipt_id: String,
     pub hash: String,
+    /// Hash of the immediately preceding receipt in the instance ledger.
+    /// `None` for genesis (first) receipts only.  All subsequent receipts
+    /// must set this to close the Merkle chain and make `verify_instance_ledger`
+    /// meaningful for non-LSP_1 instances.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub prev_receipt_hash: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
