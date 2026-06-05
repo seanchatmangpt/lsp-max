@@ -39,6 +39,7 @@ tokio = { version = "1.17", optional = true, features = ["time", "macros", "rt"]
 tokio-util = { version = "0.7", optional = true, features = ["codec"] }
 tower-lsp-max-macros = { version = "26.6.4", path = "./tower-lsp-max-macros" }
 tower-lsp-max-protocol = { version = "26.6.4", path = "./tower-lsp-max-protocol" }
+tower-lsp-max-lsif = { path = "./crates/tower-lsp-max-lsif" }
 tower-lsp-max-runtime = { version = "26.6.4", path = "./tower-lsp-max-runtime" }
 tower-lsp-max-agent = { version = "26.6.4", path = "./tower-lsp-max-agent" }
 tower = { version = "0.4", default-features = false, features = ["util"] }
@@ -65,7 +66,7 @@ members = [
     "./tower-lsp-max-agent",
     "crates/tower-lsp-max-specgen",
     "crates/tower-lsp-max-cli",
-    "crates/playground", "crates/tower-lsp-max-client", 
+    "crates/playground", "crates/tower-lsp-max-client", "crates/tower-lsp-max-base", "crates/tower-lsp-max-live", "crates/tower-lsp-max-lsif", "crates/tower-lsp-max-adapters/auto_lsp_adapter", 
 ]
 default-members = ["."]
 
