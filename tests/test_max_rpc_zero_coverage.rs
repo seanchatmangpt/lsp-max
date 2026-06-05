@@ -308,6 +308,17 @@ async fn test_max_replay_returns_result() {
     write_msg(&tx, serde_json::json!({"jsonrpc":"2.0","id":1,"method":"max/replay"})).await;
     let resp = wait_for_response(rx, 1, Duration::from_secs(3)).await;
     assert_has_result(&resp, "max/replay");
+    let result = resp.get("result").unwrap();
+    assert!(
+        result.get("receipt_count").is_some(),
+        "max/replay result must have 'receipt_count' key, got: {}",
+        result
+    );
+    assert!(
+        result.get("receipts").is_some(),
+        "max/replay result must have 'receipts' key, got: {}",
+        result
+    );
     cleanup_receipts();
 }
 
@@ -335,7 +346,7 @@ async fn test_max_release_actuation_returns_rpc_response() {
 }
 
 // ---------------------------------------------------------------------------
-// max/dumpState
+// max/dumpState — DfLSS CTQ: result must contain 'diagnostics' field
 // ---------------------------------------------------------------------------
 
 #[tokio::test(flavor = "current_thread")]
@@ -344,6 +355,12 @@ async fn test_max_dump_state_returns_result() {
     write_msg(&tx, serde_json::json!({"jsonrpc":"2.0","id":1,"method":"max/dumpState"})).await;
     let resp = wait_for_response(rx, 1, Duration::from_secs(3)).await;
     assert_has_result(&resp, "max/dumpState");
+    let result = resp.get("result").unwrap();
+    assert!(
+        result.get("diagnostics").is_some(),
+        "max/dumpState result must contain 'diagnostics' field (ServerRegistry), got: {}",
+        result
+    );
     cleanup_receipts();
 }
 
@@ -386,6 +403,121 @@ async fn test_max_reset_returns_result() {
     write_msg(&tx, serde_json::json!({"jsonrpc":"2.0","id":1,"method":"max/reset"})).await;
     let resp = wait_for_response(rx, 1, Duration::from_secs(3)).await;
     assert_has_result(&resp, "max/reset");
+    cleanup_receipts();
+}
+
+// ---------------------------------------------------------------------------
+// DfLSS CTQ: max/lawfulTransition — verify "admitted" boolean in result
+// ---------------------------------------------------------------------------
+
+#[tokio::test(flavor = "current_thread")]
+async fn test_max_lawful_transition_has_admitted_field() {
+    let (tx, rx, _h, _guard) = boot_server().await;
+    write_msg(
+        &tx,
+        serde_json::json!({
+            "jsonrpc": "2.0",
+            "id": 2,
+            "method": "max/lawfulTransition",
+            "params": "Initializing"
+        }),
+    )
+    .await;
+    let resp = wait_for_response(rx, 2, Duration::from_secs(3)).await;
+    assert_has_result(&resp, "max/lawfulTransition");
+    let result = resp.get("result").unwrap();
+    assert!(
+        result.get("admitted").is_some(),
+        "max/lawfulTransition result must have 'admitted' field, got: {}",
+        result
+    );
+    let admitted = result.get("admitted").unwrap();
+    assert!(
+        admitted.is_boolean(),
+        "max/lawfulTransition 'admitted' must be a boolean, got: {}",
+        admitted
+    );
+    assert!(
+        result.get("current_phase").is_some(),
+        "max/lawfulTransition result must have 'current_phase' field"
+    );
+    assert!(
+        result.get("requested_phase").is_some(),
+        "max/lawfulTransition result must have 'requested_phase' field"
+    );
+    cleanup_receipts();
+}
+
+// ---------------------------------------------------------------------------
+// DfLSS CTQ: max/admission — verify ConformanceVector fields
+// ---------------------------------------------------------------------------
+
+#[tokio::test(flavor = "current_thread")]
+async fn test_max_admission_conformance_vector_fields() {
+    let (tx, rx, _h, _guard) = boot_server().await;
+    write_msg(&tx, serde_json::json!({"jsonrpc":"2.0","id":2,"method":"max/admission"})).await;
+    let resp = wait_for_response(rx, 2, Duration::from_secs(3)).await;
+    assert_has_result(&resp, "max/admission");
+    let result = resp.get("result").unwrap();
+    // The verdict must be one of the three ConformanceVector states
+    let verdict = result.get("verdict").and_then(|v| v.as_str()).unwrap_or("");
+    assert!(
+        ["Admitted", "Refused", "Unknown"].contains(&verdict),
+        "max/admission verdict must be Admitted/Refused/Unknown (ConformanceVector states), got: {}",
+        verdict
+    );
+    // diagnostic_count is a required field
+    assert!(
+        result.get("diagnostic_count").is_some(),
+        "max/admission result must have 'diagnostic_count' field"
+    );
+    cleanup_receipts();
+}
+
+// ---------------------------------------------------------------------------
+// DfLSS CTQ: max/refusal — verify response shape with refused/receipt fields
+// ---------------------------------------------------------------------------
+
+#[tokio::test(flavor = "current_thread")]
+async fn test_max_refusal_response_shape() {
+    let (tx, rx, _h, _guard) = boot_server().await;
+    write_msg(
+        &tx,
+        serde_json::json!({
+            "jsonrpc": "2.0",
+            "id": 2,
+            "method": "max/refusal",
+            "params": "diag-ctq-refusal"
+        }),
+    )
+    .await;
+    let resp = wait_for_response(rx, 2, Duration::from_secs(3)).await;
+    assert_has_result(&resp, "max/refusal");
+    let result = resp.get("result").unwrap();
+    assert!(
+        result.get("refused").is_some(),
+        "max/refusal result must have 'refused' field, got: {}",
+        result
+    );
+    let refused = result.get("refused").unwrap().as_bool().unwrap_or(false);
+    assert!(refused, "max/refusal 'refused' must be true");
+    assert!(
+        result.get("diagnostic_id").is_some(),
+        "max/refusal result must have 'diagnostic_id' field"
+    );
+    assert!(
+        result.get("receipt").is_some(),
+        "max/refusal result must have 'receipt' field"
+    );
+    let receipt = result.get("receipt").unwrap();
+    assert!(
+        receipt.get("receipt_id").is_some(),
+        "max/refusal receipt must have 'receipt_id' field"
+    );
+    assert!(
+        receipt.get("hash").is_some(),
+        "max/refusal receipt must have 'hash' field"
+    );
     cleanup_receipts();
 }
 
