@@ -68,7 +68,10 @@ pub struct HookRpcResult {
 }
 
 #[verb("hook-rpc")]
-pub fn hook_rpc(instance_id: String, hook_id: Option<String>) -> clap_noun_verb::Result<HookRpcResult> {
+pub fn hook_rpc(
+    instance_id: String,
+    hook_id: Option<String>,
+) -> clap_noun_verb::Result<HookRpcResult> {
     let state_path = crate::nouns::get_state_path();
     let mut mesh = AutonomicMesh::load_from_file(&state_path)
         .map_err(|e| clap_noun_verb::error::NounVerbError::execution_error(e.to_string()))?;
@@ -81,7 +84,11 @@ pub fn hook_rpc(instance_id: String, hook_id: Option<String>) -> clap_noun_verb:
         .map_err(|e| clap_noun_verb::error::NounVerbError::execution_error(e.to_string()))?;
     mesh.save_to_file(&state_path)
         .map_err(|e| clap_noun_verb::error::NounVerbError::execution_error(e.to_string()))?;
-    Ok(HookRpcResult { instance_id, hook_id, raw })
+    Ok(HookRpcResult {
+        instance_id,
+        hook_id,
+        raw,
+    })
 }
 
 /// Result type for the  verb.
@@ -93,7 +100,10 @@ pub struct HookGraphResult {
 }
 
 #[verb("hook-graph")]
-pub fn hook_graph(instance_id: String, root_node_id: Option<String>) -> clap_noun_verb::Result<HookGraphResult> {
+pub fn hook_graph(
+    instance_id: String,
+    root_node_id: Option<String>,
+) -> clap_noun_verb::Result<HookGraphResult> {
     let state_path = crate::nouns::get_state_path();
     let mut mesh = AutonomicMesh::load_from_file(&state_path)
         .map_err(|e| clap_noun_verb::error::NounVerbError::execution_error(e.to_string()))?;
@@ -106,7 +116,11 @@ pub fn hook_graph(instance_id: String, root_node_id: Option<String>) -> clap_nou
         .map_err(|e| clap_noun_verb::error::NounVerbError::execution_error(e.to_string()))?;
     mesh.save_to_file(&state_path)
         .map_err(|e| clap_noun_verb::error::NounVerbError::execution_error(e.to_string()))?;
-    Ok(HookGraphResult { instance_id, root_node_id, raw })
+    Ok(HookGraphResult {
+        instance_id,
+        root_node_id,
+        raw,
+    })
 }
 
 #[derive(Serialize)]
@@ -117,16 +131,27 @@ pub struct PropagateResult {
 }
 
 #[verb("propagate")]
-pub fn propagate(instance_id: String, chain_or_hook_id: String) -> clap_noun_verb::Result<PropagateResult> {
+pub fn propagate(
+    instance_id: String,
+    chain_or_hook_id: String,
+) -> clap_noun_verb::Result<PropagateResult> {
     let state_path = crate::nouns::get_state_path();
     let mut mesh = AutonomicMesh::load_from_file(&state_path)
         .map_err(|e| clap_noun_verb::error::NounVerbError::execution_error(e.to_string()))?;
     let raw = mesh
-        .dispatch_rpc(&instance_id, "max/propagate", serde_json::json!(chain_or_hook_id))
+        .dispatch_rpc(
+            &instance_id,
+            "max/propagate",
+            serde_json::json!(chain_or_hook_id),
+        )
         .map_err(|e| clap_noun_verb::error::NounVerbError::execution_error(e.to_string()))?;
     mesh.save_to_file(&state_path)
         .map_err(|e| clap_noun_verb::error::NounVerbError::execution_error(e.to_string()))?;
-    Ok(PropagateResult { instance_id, chain_or_hook_id, raw })
+    Ok(PropagateResult {
+        instance_id,
+        chain_or_hook_id,
+        raw,
+    })
 }
 
 #[derive(Serialize)]
@@ -150,5 +175,9 @@ pub fn chain(instance_id: String, chain_id: Option<String>) -> clap_noun_verb::R
         .map_err(|e| clap_noun_verb::error::NounVerbError::execution_error(e.to_string()))?;
     mesh.save_to_file(&state_path)
         .map_err(|e| clap_noun_verb::error::NounVerbError::execution_error(e.to_string()))?;
-    Ok(ChainResult { instance_id, chain_id, raw })
+    Ok(ChainResult {
+        instance_id,
+        chain_id,
+        raw,
+    })
 }

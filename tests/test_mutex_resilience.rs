@@ -9,9 +9,9 @@
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
-use tower_lsp_max::{LanguageServer, LspService, Server};
 use tower_lsp_max::jsonrpc::Result as RpcResult;
 use tower_lsp_max::lsp_types as lsp;
+use tower_lsp_max::{LanguageServer, LspService, Server};
 
 // Serialise tests so they don't race on the shared global registry.
 static TEST_MUTEX: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
@@ -89,12 +89,23 @@ async fn wait_for_response(received: RxLog, id: i64, timeout: Duration) -> serde
     }
 }
 
-async fn boot_initialized_server() -> (TxShared, RxLog, tokio::task::JoinHandle<()>, tokio::sync::MutexGuard<'static, ()>) {
+async fn boot_initialized_server() -> (
+    TxShared,
+    RxLog,
+    tokio::task::JoinHandle<()>,
+    tokio::sync::MutexGuard<'static, ()>,
+) {
     let guard = TEST_MUTEX.lock().await;
     tower_lsp_max::reset_registry_for_tests();
-    let _ = std::fs::remove_file("admission.receipt");
-    let _ = std::fs::remove_file("security.receipt");
-    let _ = std::fs::remove_file("auth.receipt");
+    let temp_dir = tempfile::tempdir().unwrap();
+    let temp_path = temp_dir.path().to_path_buf();
+    std::boxed::Box::leak(std::boxed::Box::new(temp_dir));
+    if let Ok(mut reg) = tower_lsp_max::get_registry().lock() {
+        reg.root_path = temp_path.clone();
+    }
+    let _ = std::fs::remove_file(temp_path.join("admission.receipt"));
+    let _ = std::fs::remove_file(temp_path.join("security.receipt"));
+    let _ = std::fs::remove_file(temp_path.join("auth.receipt"));
 
     let (service, socket) = LspService::new(|_| TestBackend);
 
@@ -102,7 +113,9 @@ async fn boot_initialized_server() -> (TxShared, RxLog, tokio::task::JoinHandle<
     let (server_tx, client_rx) = tokio::io::duplex(1024 * 1024);
 
     let server_handle = tokio::spawn(async move {
-        let _ = Server::new(server_rx, server_tx, socket).serve(service).await;
+        let _ = Server::new(server_rx, server_tx, socket)
+            .serve(service)
+            .await;
     });
 
     let client_tx_shared: TxShared = Arc::new(tokio::sync::Mutex::new(Some(client_tx)));
@@ -164,10 +177,7 @@ async fn test_mesh_rpc_snapshot_succeeds_on_healthy_registry() {
 
     let resp = wait_for_response(received, 99, Duration::from_secs(5)).await;
     // Should get a result (not an error) — registry lock is healthy.
-    assert!(
-        resp.get("result").is_some(),
-        "expected result, got: {resp}"
-    );
+    assert!(resp.get("result").is_some(), "expected result, got: {resp}");
 }
 
 /// Test 2: handle_mesh_rpc (max/conformanceVector) returns a valid response —
@@ -195,8 +205,9 @@ async fn test_mesh_rpc_conformance_vector_succeeds_on_healthy_registry() {
     // Conformance vector must have admitted/refused/unknown keys.
     let result = &resp["result"];
     assert!(
-        result.get("admitted").is_some() || result.get("Admitted").is_some()
-            || result.as_object().map(|o| o.len() > 0).unwrap_or(false),
+        result.get("admitted").is_some()
+            || result.get("Admitted").is_some()
+            || result.as_object().map(|o| !o.is_empty()).unwrap_or(false),
         "conformanceVector result should be non-empty: {result}"
     );
 }
@@ -208,5 +219,8 @@ fn test_registry_lock_returns_ok_when_healthy() {
     // This is the pattern that replaced .lock().unwrap() in layers.rs and service.rs.
     // If it panics, the replacement is broken.
     let result = tower_lsp_max::get_registry().lock();
-    assert!(result.is_ok(), "registry lock should succeed on healthy mutex");
+    assert!(
+        result.is_ok(),
+        "registry lock should succeed on healthy mutex"
+    );
 }

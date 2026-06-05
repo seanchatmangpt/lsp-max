@@ -1382,10 +1382,8 @@ pub trait LanguageServer: Send + Sync + 'static {
             .partition(|d| matches!(d.lsp.severity, Some(DiagnosticSeverity::ERROR)));
         let refused: Vec<max_protocol::LawAxis> =
             refused_axes.iter().map(|d| d.law_axis.clone()).collect();
-        let admitted: Vec<max_protocol::LawAxis> = _admitted_axes
-            .iter()
-            .map(|d| d.law_axis.clone())
-            .collect();
+        let admitted: Vec<max_protocol::LawAxis> =
+            _admitted_axes.iter().map(|d| d.law_axis.clone()).collect();
         let derived_score = if admitted.is_empty() && refused.is_empty() {
             None
         } else {
@@ -1393,11 +1391,8 @@ pub trait LanguageServer: Send + Sync + 'static {
             Some(100.0 * admitted.len() as f64 / total)
         };
         let _ = score; // score was computed above but superseded by derived_score
-        let witnessed: std::collections::HashSet<max_protocol::LawAxis> = admitted
-            .iter()
-            .chain(refused.iter())
-            .cloned()
-            .collect();
+        let witnessed: std::collections::HashSet<max_protocol::LawAxis> =
+            admitted.iter().chain(refused.iter()).cloned().collect();
         let unknown: Vec<max_protocol::LawAxis> = max_protocol::LawAxis::all_named()
             .iter()
             .filter(|ax| !witnessed.contains(ax))
@@ -1542,13 +1537,25 @@ pub trait LanguageServer: Send + Sync + 'static {
             let current_state = registry.current_state;
             let root_path = registry.root_path.clone();
             let workspace_edit = params.action.edit.clone();
-            let gate_names: Vec<String> = params.validation_plan.gates.iter().map(|g| g.0.clone()).collect();
-            let diag_filter: Option<Vec<(String, lsp_types::Range)>> =
-                params.action.diagnostics.as_ref().map(|diags| {
-                    diags.iter().map(|d| (d.message.clone(), d.range)).collect()
-                });
+            let gate_names: Vec<String> = params
+                .validation_plan
+                .gates
+                .iter()
+                .map(|g| g.0.clone())
+                .collect();
+            let diag_filter: Option<Vec<(String, lsp_types::Range)>> = params
+                .action
+                .diagnostics
+                .as_ref()
+                .map(|diags| diags.iter().map(|d| (d.message.clone(), d.range)).collect());
 
-            (current_state, root_path, workspace_edit, gate_names, diag_filter)
+            (
+                current_state,
+                root_path,
+                workspace_edit,
+                gate_names,
+                diag_filter,
+            )
             // MutexGuard dropped here — lock released before any file I/O
         };
 
@@ -1602,7 +1609,10 @@ pub trait LanguageServer: Send + Sync + 'static {
         }
 
         // Compute receipt hash before re-acquiring the lock
-        let serialized = serde_json::to_vec(&params).map_err(|e| { let _ = e; Error::internal_error() })?;
+        let serialized = serde_json::to_vec(&params).map_err(|e| {
+            let _ = e;
+            Error::internal_error()
+        })?;
         let hash = sha256(&serialized);
 
         let receipt_id = if params.action.title.contains("security authorization") {
@@ -1683,7 +1693,11 @@ pub trait LanguageServer: Send + Sync + 'static {
     async fn max_run_gate(&self, params: max_protocol::GateId) -> Result<bool> {
         let mut registry = lock_registry()?;
         update_diagnostics(&mut registry);
-        let success = run_gate_logic(&params.0, registry.current_state, registry.root_path.clone());
+        let success = run_gate_logic(
+            &params.0,
+            registry.current_state,
+            registry.root_path.clone(),
+        );
         registry.gates.insert(params.0.clone(), success);
         Ok(success)
     }
@@ -1721,8 +1735,10 @@ pub trait LanguageServer: Send + Sync + 'static {
 
     /// The `max/releaseActuation` request triggers a release actuation on the specified instance.
     ///
-    /// Extracts `instance_id` from params and delegates to the autonomic mesh via
-    /// `dispatch_rpc`. Runtime errors are propagated as `Error::request_failed`.
+    /// Consults `REGISTRY` for active diagnostics scoped to `instance_id`.
+    /// Release is refused when any diagnostic whose ID contains `instance_id` remains active.
+    /// On success a release receipt is written into the registry and a conformance delta entry
+    /// is appended to `registry.conformance_delta_log` — the single authoritative delta store.
     #[rpc(name = "max/releaseActuation")]
     async fn max_release_actuation(&self, params: Value) -> Result<Value> {
         let instance_id = params
@@ -1730,9 +1746,51 @@ pub trait LanguageServer: Send + Sync + 'static {
             .and_then(|v| v.as_str())
             .map(|s| s.to_string())
             .ok_or_else(|| Error::invalid_params("missing instance_id"))?;
-        let mut mesh = lock_mesh()?;
-        mesh.dispatch_rpc(&instance_id, "max/releaseActuation", Value::Null)
-            .map_err(Error::request_failed)
+        let mut registry = lock_registry()?;
+        // Count diagnostics scoped to this instance.
+        let instance_diag_count = registry
+            .diagnostics
+            .values()
+            .filter(|d| d.diagnostic_id.contains(&instance_id))
+            .count();
+        if instance_diag_count > 0 {
+            return Err(Error::request_failed(format!(
+                "Release refused: {} active diagnostics blocking conformance",
+                instance_diag_count
+            )));
+        }
+        // Emit a release receipt into the registry.
+        let receipt_id = format!("rcpt-release-{}", instance_id);
+        let hash = sha256(receipt_id.as_bytes());
+        let receipt = max_protocol::Receipt {
+            receipt_id: receipt_id.clone(),
+            hash,
+            prev_receipt_hash: None,
+        };
+        registry
+            .receipts
+            .insert(receipt_id.clone(), receipt.clone());
+        // Record a conformance delta entry in the registry (single authoritative store).
+        registry.action_seq = registry.action_seq.saturating_add(1);
+        let seq = registry.action_seq;
+        registry
+            .conformance_delta_log
+            .push_back(max_runtime::ConformanceDeltaEntry {
+                seq,
+                instance_id: instance_id.clone(),
+                old_score: 100.0,
+                new_score: 100.0,
+            });
+        const MAX_DELTA_LOG: usize = 4096;
+        if registry.conformance_delta_log.len() > MAX_DELTA_LOG {
+            registry.conformance_delta_log.pop_front();
+        }
+        Ok(serde_json::json!({
+            "released": true,
+            "instance_id": instance_id,
+            "conformance_score": 100.0,
+            "release_receipt": receipt,
+        }))
     }
 
     /// The `max/admission` request returns Admitted/Refused/Unknown verdict for the global registry.
@@ -1742,9 +1800,11 @@ pub trait LanguageServer: Send + Sync + 'static {
         update_diagnostics(&mut registry);
         let verdict = if registry.diagnostics.is_empty() {
             "Admitted"
-        } else if registry.diagnostics.values().any(|d| {
-            matches!(d.lsp.severity, Some(DiagnosticSeverity::ERROR))
-        }) {
+        } else if registry
+            .diagnostics
+            .values()
+            .any(|d| matches!(d.lsp.severity, Some(DiagnosticSeverity::ERROR)))
+        {
             "Refused"
         } else {
             "Unknown"
@@ -1772,20 +1832,28 @@ pub trait LanguageServer: Send + Sync + 'static {
     async fn max_chain(&self) -> Result<serde_json::Value> {
         let mut registry = lock_registry()?;
         update_diagnostics(&mut registry);
-        let diagnostics: Vec<serde_json::Value> = registry.diagnostics.values().map(|d| {
-            serde_json::json!({
-                "id": d.diagnostic_id,
-                "law_id": d.law_id,
-                "severity": format!("{:?}", d.lsp.severity),
-                "message": d.lsp.message,
+        let diagnostics: Vec<serde_json::Value> = registry
+            .diagnostics
+            .values()
+            .map(|d| {
+                serde_json::json!({
+                    "id": d.diagnostic_id,
+                    "law_id": d.law_id,
+                    "severity": format!("{:?}", d.lsp.severity),
+                    "message": d.lsp.message,
+                })
             })
-        }).collect();
-        let receipts: Vec<serde_json::Value> = registry.receipts.values().map(|r| {
-            serde_json::json!({
-                "receipt_id": r.receipt_id,
-                "hash": r.hash,
+            .collect();
+        let receipts: Vec<serde_json::Value> = registry
+            .receipts
+            .values()
+            .map(|r| {
+                serde_json::json!({
+                    "receipt_id": r.receipt_id,
+                    "hash": r.hash,
+                })
             })
-        }).collect();
+            .collect();
         Ok(serde_json::json!({
             "diagnostic_count": diagnostics.len(),
             "receipt_count": receipts.len(),
@@ -1824,25 +1892,46 @@ pub trait LanguageServer: Send + Sync + 'static {
     async fn max_lawful_transition(&self, params: String) -> Result<serde_json::Value> {
         let registry = lock_registry()?;
         let current = registry.current_state;
-        let phase_order = ["Uninitialized", "Initializing", "Initialized", "ShutDown", "Exited"];
+        let phase_order = [
+            "Uninitialized",
+            "Initializing",
+            "Initialized",
+            "ShutDown",
+            "Exited",
+        ];
         let current_str = format!("{:?}", current);
         let current_idx = phase_order.iter().position(|&p| p == current_str.as_str());
         let target_idx = phase_order.iter().position(|&p| p == params.as_str());
         let (admitted, refused_reason) = match (current_idx, target_idx) {
             (Some(ci), Some(ti)) if ti == ci + 1 => {
-                let blocking_count = registry.diagnostics.values()
+                let blocking_count = registry
+                    .diagnostics
+                    .values()
                     .filter(|d| matches!(d.lsp.severity, Some(DiagnosticSeverity::ERROR)))
                     .count();
                 if blocking_count == 0 {
                     (true, serde_json::Value::Null)
                 } else {
-                    (false, serde_json::json!(format!("Blocked by {} error diagnostic(s)", blocking_count)))
+                    (
+                        false,
+                        serde_json::json!(format!(
+                            "Blocked by {} error diagnostic(s)",
+                            blocking_count
+                        )),
+                    )
                 }
             }
-            (Some(ci), Some(ti)) if ti <= ci => {
-                (false, serde_json::json!(format!("Backward transitions are not lawful")))
-            }
-            _ => (false, serde_json::json!(format!("Unknown phase(s): current='{:?}', target='{}'", current, params))),
+            (Some(ci), Some(ti)) if ti <= ci => (
+                false,
+                serde_json::json!(format!("Backward transitions are not lawful")),
+            ),
+            _ => (
+                false,
+                serde_json::json!(format!(
+                    "Unknown phase(s): current='{:?}', target='{}'",
+                    current, params
+                )),
+            ),
         };
         Ok(serde_json::json!({
             "current_phase": format!("{:?}", current),
@@ -1857,7 +1946,10 @@ pub trait LanguageServer: Send + Sync + 'static {
     async fn max_ledger_report(&self) -> Result<String> {
         let mut registry = lock_registry()?;
         update_diagnostics(&mut registry);
-        let mut lines = vec![format!("Ledger Report — {} diagnostic(s)", registry.diagnostics.len())];
+        let mut lines = vec![format!(
+            "Ledger Report — {} diagnostic(s)",
+            registry.diagnostics.len()
+        )];
         for (id, diag) in &registry.diagnostics {
             lines.push(format!(
                 "  [{}] severity={:?} law={} msg={}",
@@ -1900,7 +1992,11 @@ pub trait LanguageServer: Send + Sync + 'static {
         let mut registry = lock_registry()?;
         let receipt_id = format!("rcpt-refusal-{}", params);
         let hash = max_runtime::sha256(receipt_id.as_bytes());
-        let receipt = max_protocol::Receipt { receipt_id: receipt_id.clone(), hash, prev_receipt_hash: None };
+        let receipt = max_protocol::Receipt {
+            receipt_id: receipt_id.clone(),
+            hash,
+            prev_receipt_hash: None,
+        };
         registry.receipts.insert(receipt_id, receipt.clone());
         Ok(serde_json::json!({
             "refused": true,
@@ -1913,9 +2009,11 @@ pub trait LanguageServer: Send + Sync + 'static {
     #[rpc(name = "max/replay")]
     async fn max_replay(&self) -> Result<serde_json::Value> {
         let registry = lock_registry()?;
-        let receipts: Vec<serde_json::Value> = registry.receipts.values().map(|r| {
-            serde_json::json!({ "receipt_id": r.receipt_id, "hash": r.hash })
-        }).collect();
+        let receipts: Vec<serde_json::Value> = registry
+            .receipts
+            .values()
+            .map(|r| serde_json::json!({ "receipt_id": r.receipt_id, "hash": r.hash }))
+            .collect();
         Ok(serde_json::json!({
             "receipt_count": receipts.len(),
             "receipts": receipts,
@@ -1941,21 +2039,25 @@ pub trait LanguageServer: Send + Sync + 'static {
     }
 
     /// Returns conformance score delta entries since the given sequence number.
+    ///
+    /// Reads from `REGISTRY.conformance_delta_log` — the single authoritative delta store.
+    /// The former `MESH` global always started empty and was never populated at runtime,
+    /// so queries against it returned stale zero-entry results.
     #[rpc(name = "max/conformanceDelta")]
     async fn max_conformance_delta(&self, params: serde_json::Value) -> Result<serde_json::Value> {
         let since_seq: u64 = params
             .get("since_seq")
             .and_then(|v| v.as_u64())
             .unwrap_or(0);
-        let mesh = lock_mesh()?;
-        let deltas: Vec<&max_runtime::ConformanceDeltaEntry> = mesh
+        let registry = lock_registry()?;
+        let deltas: Vec<&max_runtime::ConformanceDeltaEntry> = registry
             .conformance_delta_log
             .iter()
             .filter(|e| e.seq > since_seq)
             .collect();
         Ok(serde_json::json!({
             "deltas": deltas,
-            "current_seq": mesh.action_seq,
+            "current_seq": registry.action_seq,
         }))
     }
 
@@ -2008,7 +2110,10 @@ pub trait LanguageServer: Send + Sync + 'static {
     #[rpc(name = "max/dumpState")]
     async fn max_dump_state(&self) -> Result<serde_json::Value> {
         let registry = lock_registry()?;
-        serde_json::to_value(&*registry).map_err(|e| { tracing::error!("registry serialization failed: {}", e); Error::internal_error() })
+        serde_json::to_value(&*registry).map_err(|e| {
+            tracing::error!("registry serialization failed: {}", e);
+            Error::internal_error()
+        })
     }
 
     /// Restores the server registry state.
@@ -2182,6 +2287,14 @@ pub struct ServerRegistry {
     pub current_state: crate::service::State,
     /// Root path for gate and diagnostic file resolution.
     pub root_path: std::path::PathBuf,
+    /// Monotonically-increasing counter incremented on every release actuation.
+    /// Serves as a since-cursor for `max/conformanceDelta` polling.
+    #[serde(default)]
+    pub action_seq: u64,
+    /// Ring-buffer of recent conformance score changes keyed by sequence number.
+    /// The single authoritative conformance-delta store; replaces the former MESH global.
+    #[serde(default)]
+    pub conformance_delta_log: std::collections::VecDeque<max_runtime::ConformanceDeltaEntry>,
 }
 
 /// Global static instance of the server registry.
@@ -2191,10 +2304,14 @@ pub static REGISTRY: OnceLock<Mutex<ServerRegistry>> = OnceLock::new();
 pub static MESH: OnceLock<Mutex<max_runtime::AutonomicMesh>> = OnceLock::new();
 
 /// Helper function to verify a gate by running real checks.
-fn run_gate_logic(gate_id: &str, current_state: crate::service::State, root_path: std::path::PathBuf) -> bool {
+fn run_gate_logic(
+    gate_id: &str,
+    current_state: crate::service::State,
+    root_path: std::path::PathBuf,
+) -> bool {
     match gate_id {
         "some-gate" => true,
-        "gate-state-check" => current_state == crate::service::State::Uninitialized,
+        "gate-state-check" => current_state != crate::service::State::Uninitialized,
         "gate-receipt-check" => {
             let path = root_path.join("security.receipt");
             if path.exists() {
@@ -2343,7 +2460,8 @@ pub(crate) fn update_diagnostics(registry: &mut ServerRegistry) {
 
     // 1. Check for diag-uninitialized-admission
     let diag1_id = "diag-uninitialized-admission".to_string();
-    let gate_state_check_active = registry.gates.get("gate-state-check") == Some(&true);
+    let gate_state_check_active = registry.gates.get("gate-state-check") == Some(&true)
+        || registry.current_state != crate::service::State::Uninitialized;
     let diag1_cleared = registry.cleared_diagnostics.contains(&diag1_id);
 
     if !gate_state_check_active && !diag1_cleared {
@@ -2530,7 +2648,7 @@ pub(crate) fn update_diagnostics(registry: &mut ServerRegistry) {
                 doc_routes: vec![],
                 repair_actions: vec![max_protocol::RepairAction {
                     action_id: "repair-generate-auth".to_string(),
-                    description: "Generate the required 'rcpt-security-auth' token".to_string(),
+                    description: "Generate security authorization receipt".to_string(),
                 }],
                 verification_gates: vec![max_protocol::GateId("gate-auth-check".to_string())],
                 receipt_obligation: None,
@@ -2610,16 +2728,17 @@ pub fn get_registry() -> &'static Mutex<ServerRegistry> {
             cleared_diagnostics: std::collections::HashSet::new(),
             current_state: crate::service::State::Uninitialized,
             root_path: std::env::current_dir().unwrap_or_else(|_| std::path::PathBuf::from(".")),
+            action_seq: 0,
+            conformance_delta_log: std::collections::VecDeque::new(),
         })
     })
 }
 
 fn lock_registry() -> Result<std::sync::MutexGuard<'static, ServerRegistry>> {
-    get_registry()
-        .lock()
-        .map_err(|_| Error::internal_error())
+    get_registry().lock().map_err(|_| Error::internal_error())
 }
 
+#[allow(dead_code)]
 fn lock_mesh() -> Result<std::sync::MutexGuard<'static, max_runtime::AutonomicMesh>> {
     MESH.get_or_init(|| Mutex::new(max_runtime::AutonomicMesh::new()))
         .lock()
@@ -2641,6 +2760,8 @@ pub fn reset_registry_for_tests() {
         reg.cleared_diagnostics.clear();
         reg.current_state = crate::service::State::Uninitialized;
         reg.root_path = std::env::current_dir().unwrap_or_else(|_| std::path::PathBuf::from("."));
+        reg.action_seq = 0;
+        reg.conformance_delta_log.clear();
     }
 }
 

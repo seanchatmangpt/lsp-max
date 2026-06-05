@@ -965,3 +965,46 @@ Integrity mode: benchmark
 - [ ] `cargo test --workspace` executes successfully.
 - [ ] `cargo clippy --workspace --all-targets -- -D warnings` passes with zero warnings.
 - [ ] `cargo fmt --check` passes successfully.
+
+## Follow-up — 2026-06-05T17:58:13Z
+
+Refactor all Rust files in the workspace containing more than 500 lines of code (LOC) into smaller, modular files, following Rust idiomatic design patterns, without breaking any compilation or test functionality.
+
+Working directory: /Users/sac/tower-lsp-max
+Integrity mode: benchmark
+
+## Requirements
+
+### R1. Refactor Files Exceeding 500 LOC
+Identify all Rust files (`*.rs`) in the repository (excluding `target/` and `.git/` directories) that contain more than 500 lines of code (as counted by `wc -l`). Refactor these files by splitting their contents into smaller, logically coherent modules or files.
+
+### R2. Maintain Rust Idioms and Visibility
+Use standard Rust modular organization (e.g., creating a module folder with `mod.rs` or a sub-module file structure). Maintain correct visibility (`pub`, `pub(crate)`) and keep imports (`use` statements) clean.
+
+### R3. Preservation of Functionality
+The refactoring must not alter any public behavior or features of the codebase. The workspace must compile successfully and all tests must pass.
+
+## Verification Mechanisms
+
+To verify that the requirements have been successfully met, the following steps must be run:
+1. **Line Count Verification**: Verify that no Rust file in the repository (excluding `target/`, `.git/`, and `.claude/`) has more than 500 lines. This can be verified by running:
+   ```bash
+   find . -name "*.rs" -not -path "*/target/*" -not -path "*/.claude/*" | xargs wc -l | sort -rn
+   ```
+   and ensuring the highest line count for any individual file is <= 500.
+2. **Compilation Verification**: Run `cargo check --all-targets` and `cargo build --all-targets` to verify successful compilation with no new errors.
+3. **Behavioral Verification**: Run `cargo test --all-targets` to verify all tests pass.
+
+## Acceptance Criteria
+
+### Restructured Codebase
+- [ ] No `.rs` file in the codebase (excluding `target/` and `.claude/` directories) exceeds 500 lines of code.
+
+### Correctness
+- [ ] `cargo check --all-targets` completes with exit code 0.
+- [ ] `cargo build --all-targets` completes with exit code 0.
+- [ ] `cargo test --all-targets` completes with exit code 0.
+
+## Follow-up — 2026-06-05T18:37:09Z
+
+Avoid sequential or suffix-based file naming (such as `_part1.rs`, `_part2.rs`); name split module files based on their logical categorization or functionality (e.g. `metadata.rs`, `resolution.rs`). Rename any existing files that use poor naming patterns.

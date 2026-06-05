@@ -101,9 +101,10 @@ fn test_customer_service_autonomic_mesh_workflow() {
     mesh.register_hook(Box::new(CustomerServiceWorkflowHook));
 
     // Cleanup target files to ensure clean start
-    let receipt_file = std::path::Path::new("/Users/sac/tower-lsp-max/refund_receipt.txt");
+    let receipt_dir = std::env::var("MESH_RECEIPT_DIR").unwrap_or_else(|_| ".".to_string());
+    let receipt_file = std::path::Path::new(&receipt_dir).join("refund_receipt.txt");
     if receipt_file.exists() {
-        std::fs::remove_file(receipt_file).expect("Failed to clean up refund receipt file");
+        std::fs::remove_file(&receipt_file).expect("Failed to clean up refund receipt file");
     }
 
     // 1. Emit customer language state in LSP_1.
@@ -490,7 +491,10 @@ fn test_complete_customer_service_workflow_with_rpc() {
     assert!(result.is_ok());
     let vec = result.unwrap();
     // No diagnostics → no law axes evaluated → score is null (all-unknown per doctrine)
-    assert!(vec["score"].is_null(), "Initial score should be null (no axes evaluated)");
+    assert!(
+        vec["score"].is_null(),
+        "Initial score should be null (no axes evaluated)"
+    );
 
     // Add a diagnostic — score should become a number
     mesh.execute_action(MeshAction::AddDiagnostic {

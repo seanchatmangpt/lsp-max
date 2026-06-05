@@ -89,7 +89,8 @@ fn test_protocol_lawful_transition_result_round_trip() {
         }),
     };
     let s = serde_json::to_string(&ltr).expect("serialize LawfulTransitionResult");
-    let ltr2: LawfulTransitionResult = serde_json::from_str(&s).expect("deserialize LawfulTransitionResult");
+    let ltr2: LawfulTransitionResult =
+        serde_json::from_str(&s).expect("deserialize LawfulTransitionResult");
     assert_eq!(ltr2.from_phase, "Uninitialized");
     assert_eq!(ltr2.to_phase, "Initializing");
     assert!(ltr2.lawful);
@@ -130,7 +131,8 @@ fn test_protocol_release_actuation_result_round_trip() {
         }),
     };
     let s = serde_json::to_string(&rar).expect("serialize ReleaseActuationResult");
-    let rar2: ReleaseActuationResult = serde_json::from_str(&s).expect("deserialize ReleaseActuationResult");
+    let rar2: ReleaseActuationResult =
+        serde_json::from_str(&s).expect("deserialize ReleaseActuationResult");
     assert!(rar2.released);
     assert!(rar2.blocking_axes.is_empty());
     assert!(rar2.receipt.is_some());
@@ -211,7 +213,8 @@ fn test_protocol_autonomic_loop_status_round_trip() {
         }),
     };
     let s = serde_json::to_string(&als).expect("serialize AutonomicLoopStatus");
-    let als2: AutonomicLoopStatus = serde_json::from_str(&s).expect("deserialize AutonomicLoopStatus");
+    let als2: AutonomicLoopStatus =
+        serde_json::from_str(&s).expect("deserialize AutonomicLoopStatus");
     assert_eq!(als2.loop_id, "loop-001");
     assert_eq!(als2.iteration_count, 99);
     assert!(als2.active);
@@ -220,7 +223,9 @@ fn test_protocol_autonomic_loop_status_round_trip() {
 
 #[test]
 fn test_protocol_manifold_snapshot_round_trip() {
-    use tower_lsp_max_protocol::{ChainDescriptor, ConformanceVector, HookDescriptor, ManifoldSnapshot, Receipt, SnapshotId};
+    use tower_lsp_max_protocol::{
+        ChainDescriptor, ConformanceVector, HookDescriptor, ManifoldSnapshot, Receipt, SnapshotId,
+    };
     let ms = ManifoldSnapshot {
         snapshot_id: SnapshotId("snap-001".to_string()),
         conformance: ConformanceVector::default(),
@@ -539,4 +544,99 @@ fn test_3_18_selection_range_ordering_bug() {
             panic!("Expected it to deserialize as SelectionRangeOptions due to the bug, but got another variant")
         }
     }
+}
+
+#[test]
+fn test_3_18_validated_features() {
+    use lsp_3_18::{
+        Diagnostic, LogMessageParams, MarkupContent, MarkupContentOrString, MarkupKind,
+        MessageType, PatternOrRelativePattern, Position, Range, RelativePattern,
+        SemanticTokenTypes, TextDocumentFilterPattern, UriOrWorkspaceFolder,
+    };
+
+    // 1. Validate Diagnostic.message using MarkupContent
+    let diag = Diagnostic {
+        range: Range {
+            start: Position {
+                line: 0,
+                character: 0,
+            },
+            end: Position {
+                line: 0,
+                character: 5,
+            },
+        },
+        severity: None,
+        code: None,
+        code_description: None,
+        source: None,
+        message: MarkupContentOrString::MarkupContent(MarkupContent {
+            kind: MarkupKind::Markdown,
+            value: "**Bold Error**".to_string(),
+        }),
+        tags: None,
+        related_information: None,
+        data: None,
+    };
+    let diag_json = serde_json::to_value(&diag).expect("Failed to serialize Diagnostic");
+    assert_eq!(
+        diag_json.pointer("/message/kind").and_then(|v| v.as_str()),
+        Some("markdown")
+    );
+    assert_eq!(
+        diag_json.pointer("/message/value").and_then(|v| v.as_str()),
+        Some("**Bold Error**")
+    );
+    let diag_deser: Diagnostic =
+        serde_json::from_value(diag_json).expect("Failed to deserialize Diagnostic");
+    assert_eq!(diag_deser, diag);
+
+    // 2. Validate SemanticTokenTypes open-set support and LABEL constant
+    assert_eq!(SemanticTokenTypes::LABEL, "label");
+    let custom_token = SemanticTokenTypes("customTokenType".to_string());
+    let token_json =
+        serde_json::to_value(&custom_token).expect("Failed to serialize custom SemanticTokenTypes");
+    assert_eq!(token_json.as_str(), Some("customTokenType"));
+    let token_deser: SemanticTokenTypes =
+        serde_json::from_value(token_json).expect("Failed to deserialize SemanticTokenTypes");
+    assert_eq!(token_deser, custom_token);
+
+    // 3. Validate MessageType::Debug
+    let log_params = LogMessageParams {
+        type_: MessageType::Debug,
+        message: "debug message".to_string(),
+    };
+    let log_json = serde_json::to_value(&log_params).expect("Failed to serialize LogMessageParams");
+    assert_eq!(log_json.pointer("/type"), Some(&serde_json::json!(5)));
+    let log_deser: LogMessageParams =
+        serde_json::from_value(log_json).expect("Failed to deserialize LogMessageParams");
+    assert_eq!(log_deser.type_, MessageType::Debug);
+
+    // 4. Validate Relative pattern support in GlobPattern / document selectors
+    let relative = RelativePattern {
+        base_uri: UriOrWorkspaceFolder::Uri("file:///base/path".to_string()),
+        pattern: "src/**/*.rs".to_string(),
+    };
+    let filter = TextDocumentFilterPattern {
+        language: None,
+        scheme: None,
+        pattern: PatternOrRelativePattern::RelativePattern(relative),
+    };
+    let filter_json =
+        serde_json::to_value(&filter).expect("Failed to serialize TextDocumentFilterPattern");
+    assert_eq!(
+        filter_json
+            .pointer("/pattern/baseUri")
+            .and_then(|v| v.as_str()),
+        Some("file:///base/path")
+    );
+    assert_eq!(
+        filter_json
+            .pointer("/pattern/pattern")
+            .and_then(|v| v.as_str()),
+        Some("src/**/*.rs")
+    );
+    let filter_deser: TextDocumentFilterPattern = serde_json::from_value(filter_json)
+        .expect("Failed to deserialize TextDocumentFilterPattern");
+    assert_eq!(filter_deser, filter);
 }

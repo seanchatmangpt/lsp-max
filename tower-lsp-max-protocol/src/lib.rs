@@ -40,7 +40,6 @@ impl PartialEq<InstanceId> for str {
     }
 }
 
-
 impl std::fmt::Display for InstanceId {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.0)
@@ -515,7 +514,11 @@ pub enum AdmissionDecision {
 
 impl From<bool> for AdmissionDecision {
     fn from(b: bool) -> Self {
-        if b { AdmissionDecision::Admitted } else { AdmissionDecision::Refused }
+        if b {
+            AdmissionDecision::Admitted
+        } else {
+            AdmissionDecision::Refused
+        }
     }
 }
 
@@ -802,7 +805,10 @@ mod policy_state_tests {
     use super::PolicyState;
     #[test]
     fn test_policy_state_from_str_roundtrip() {
-        assert_eq!("Operational".parse::<PolicyState>(), Ok(PolicyState::Operational));
+        assert_eq!(
+            "Operational".parse::<PolicyState>(),
+            Ok(PolicyState::Operational)
+        );
         assert_eq!(
             "ClarificationRequested".parse::<PolicyState>(),
             Ok(PolicyState::ClarificationRequested)
@@ -906,13 +912,28 @@ mod tests {
 
     #[test]
     fn conformance_vector_score_recomputes_from_grade_boundaries() {
-        assert_eq!(ConformanceGrade::from_score(100.0), ConformanceGrade::Perfect);
+        assert_eq!(
+            ConformanceGrade::from_score(100.0),
+            ConformanceGrade::Perfect
+        );
         assert_eq!(ConformanceGrade::from_score(99.9), ConformanceGrade::Good);
         assert_eq!(ConformanceGrade::from_score(75.0), ConformanceGrade::Good);
-        assert_eq!(ConformanceGrade::from_score(74.9), ConformanceGrade::Degraded);
-        assert_eq!(ConformanceGrade::from_score(50.0), ConformanceGrade::Degraded);
-        assert_eq!(ConformanceGrade::from_score(49.9), ConformanceGrade::Critical);
-        assert_eq!(ConformanceGrade::from_score(0.0), ConformanceGrade::Critical);
+        assert_eq!(
+            ConformanceGrade::from_score(74.9),
+            ConformanceGrade::Degraded
+        );
+        assert_eq!(
+            ConformanceGrade::from_score(50.0),
+            ConformanceGrade::Degraded
+        );
+        assert_eq!(
+            ConformanceGrade::from_score(49.9),
+            ConformanceGrade::Critical
+        );
+        assert_eq!(
+            ConformanceGrade::from_score(0.0),
+            ConformanceGrade::Critical
+        );
     }
 
     #[test]
@@ -924,7 +945,10 @@ mod tests {
             score: None,
             strict_mode: true,
         };
-        assert!(!cv.admits_release(), "strict_mode=true must block when unknown is non-empty");
+        assert!(
+            !cv.admits_release(),
+            "strict_mode=true must block when unknown is non-empty"
+        );
     }
 
     #[test]
@@ -936,7 +960,10 @@ mod tests {
             score: None,
             strict_mode: false,
         };
-        assert!(cv.admits_release(), "strict_mode=false must allow unknown axes");
+        assert!(
+            cv.admits_release(),
+            "strict_mode=false must allow unknown axes"
+        );
     }
 
     #[test]
@@ -949,7 +976,10 @@ mod tests {
                 score: Some(0.0),
                 strict_mode: strict,
             };
-            assert!(!cv.admits_release(), "refused must block release regardless of strict_mode");
+            assert!(
+                !cv.admits_release(),
+                "refused must block release regardless of strict_mode"
+            );
         }
     }
 
@@ -972,7 +1002,10 @@ mod tests {
             hash: "abc123".to_string(),
             prev_receipt_hash: None,
         };
-        assert!(r.prev_receipt_hash.is_none(), "genesis receipt must have no prev_receipt_hash");
+        assert!(
+            r.prev_receipt_hash.is_none(),
+            "genesis receipt must have no prev_receipt_hash"
+        );
     }
 
     #[test]
@@ -1000,13 +1033,25 @@ mod tests {
             expected_receipts: vec!["r-0".to_string(), "r-1".to_string()],
         };
         let receipts = [
-            Receipt { receipt_id: "r-0".to_string(), hash: "h0".to_string(), prev_receipt_hash: None },
-            Receipt { receipt_id: "r-1".to_string(), hash: "h1".to_string(), prev_receipt_hash: Some("h0".to_string()) },
+            Receipt {
+                receipt_id: "r-0".to_string(),
+                hash: "h0".to_string(),
+                prev_receipt_hash: None,
+            },
+            Receipt {
+                receipt_id: "r-1".to_string(),
+                hash: "h1".to_string(),
+                prev_receipt_hash: Some("h0".to_string()),
+            },
         ];
         // All expected receipt ids appear in the actual receipts
         let actual_ids: Vec<&str> = receipts.iter().map(|r| r.receipt_id.as_str()).collect();
         for expected in &plan.expected_receipts {
-            assert!(actual_ids.contains(&expected.as_str()), "receipt {} missing", expected);
+            assert!(
+                actual_ids.contains(&expected.as_str()),
+                "receipt {} missing",
+                expected
+            );
         }
     }
 
@@ -1136,7 +1181,11 @@ mod tests {
             prev_receipt_hash: None,
         };
         let json = serde_json::to_string(&r).expect("serialize");
-        assert!(!json.contains("prev_receipt_hash"), "None must be omitted: {}", json);
+        assert!(
+            !json.contains("prev_receipt_hash"),
+            "None must be omitted: {}",
+            json
+        );
         let r2: Receipt = serde_json::from_str(&json).expect("deserialize");
         assert!(r2.prev_receipt_hash.is_none());
     }

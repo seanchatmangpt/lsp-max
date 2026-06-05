@@ -1,3 +1,4 @@
+use std::sync::Arc;
 /// Integration tests for LSP 3.18 capabilities (batch 1 + batch 2).
 ///
 /// Batch 1 covers: initialized, textDocument/didOpen, textDocument/didChange,
@@ -13,7 +14,6 @@
 ///   2. The process does not panic.
 ///   3. The response is well-formed JSON-RPC (either a result or an error object).
 use std::sync::Mutex;
-use std::sync::Arc;
 use std::time::Duration;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tower_lsp_max::jsonrpc::Result;
@@ -133,7 +133,9 @@ async fn boot_server_b1() -> (
     let (client_tx, server_rx) = tokio::io::duplex(1024 * 1024);
     let (server_tx, client_rx) = tokio::io::duplex(1024 * 1024);
     let server = Server::new(server_rx, server_tx, socket);
-    let server_handle = tokio::spawn(async move { server.serve(service).await.ok(); });
+    let server_handle = tokio::spawn(async move {
+        server.serve(service).await.ok();
+    });
 
     let responses: Arc<Mutex<Vec<serde_json::Value>>> = Arc::new(Mutex::new(Vec::new()));
     let responses_clone = responses.clone();
@@ -174,10 +176,16 @@ async fn boot_server_b1() -> (
 #[tokio::test(flavor = "current_thread")]
 async fn test_b1_initialized() {
     let (tx, _resp, log, _h) = boot_server_b1().await;
-    write_msg_b1(&tx, serde_json::json!({ "jsonrpc":"2.0","method":"initialized","params":{} }))
-        .await;
+    write_msg_b1(
+        &tx,
+        serde_json::json!({ "jsonrpc":"2.0","method":"initialized","params":{} }),
+    )
+    .await;
     tokio::time::sleep(Duration::from_millis(50)).await;
-    assert!(*log.initialized.lock().unwrap(), "initialized handler was not called");
+    assert!(
+        *log.initialized.lock().unwrap(),
+        "initialized handler was not called"
+    );
 }
 
 #[tokio::test(flavor = "current_thread")]
@@ -192,7 +200,10 @@ async fn test_b1_did_open() {
     )
     .await;
     tokio::time::sleep(Duration::from_millis(50)).await;
-    assert!(*log.did_open.lock().unwrap(), "did_open handler was not called");
+    assert!(
+        *log.did_open.lock().unwrap(),
+        "did_open handler was not called"
+    );
 }
 
 #[tokio::test(flavor = "current_thread")]
@@ -210,7 +221,10 @@ async fn test_b1_did_change() {
     )
     .await;
     tokio::time::sleep(Duration::from_millis(50)).await;
-    assert!(*log.did_change.lock().unwrap(), "did_change handler was not called");
+    assert!(
+        *log.did_change.lock().unwrap(),
+        "did_change handler was not called"
+    );
 }
 
 #[tokio::test(flavor = "current_thread")]
@@ -225,7 +239,10 @@ async fn test_b1_did_close() {
     )
     .await;
     tokio::time::sleep(Duration::from_millis(50)).await;
-    assert!(*log.did_close.lock().unwrap(), "did_close handler was not called");
+    assert!(
+        *log.did_close.lock().unwrap(),
+        "did_close handler was not called"
+    );
 }
 
 #[tokio::test(flavor = "current_thread")]
@@ -240,7 +257,10 @@ async fn test_b1_did_save() {
     )
     .await;
     tokio::time::sleep(Duration::from_millis(50)).await;
-    assert!(*log.did_save.lock().unwrap(), "did_save handler was not called");
+    assert!(
+        *log.did_save.lock().unwrap(),
+        "did_save handler was not called"
+    );
 }
 
 #[tokio::test(flavor = "current_thread")]
@@ -255,7 +275,10 @@ async fn test_b1_will_save() {
     )
     .await;
     tokio::time::sleep(Duration::from_millis(50)).await;
-    assert!(*log.will_save.lock().unwrap(), "will_save handler was not called");
+    assert!(
+        *log.will_save.lock().unwrap(),
+        "will_save handler was not called"
+    );
 }
 
 #[tokio::test(flavor = "current_thread")]
@@ -270,7 +293,11 @@ async fn test_b1_will_save_wait_until() {
     )
     .await;
     let r = wait_for_response_b1(resp, 10, Duration::from_secs(2)).await;
-    assert!(r.get("error").is_none(), "willSaveWaitUntil returned error: {:?}", r);
+    assert!(
+        r.get("error").is_none(),
+        "willSaveWaitUntil returned error: {:?}",
+        r
+    );
     assert!(
         *log.will_save_wait_until.lock().unwrap(),
         "will_save_wait_until handler was not called"
@@ -289,8 +316,15 @@ async fn test_b1_completion() {
     )
     .await;
     let r = wait_for_response_b1(resp, 11, Duration::from_secs(2)).await;
-    assert!(r.get("error").is_none(), "completion returned error: {:?}", r);
-    assert!(*log.completion.lock().unwrap(), "completion handler was not called");
+    assert!(
+        r.get("error").is_none(),
+        "completion returned error: {:?}",
+        r
+    );
+    assert!(
+        *log.completion.lock().unwrap(),
+        "completion handler was not called"
+    );
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -362,39 +396,27 @@ async fn roundtrip(method: &str, params: serde_json::Value) -> serde_json::Value
     let init = serde_json::json!({
         "jsonrpc":"2.0","id":1,"method":"initialize","params":{"capabilities":{}}
     });
-    client_tx
-        .write_all(&encode_message(&init))
-        .await
-        .unwrap();
+    client_tx.write_all(&encode_message(&init)).await.unwrap();
 
     // drain the initialize response
     let mut reader = tokio::io::BufReader::new(&mut client_rx);
-    let _init_resp = tokio::time::timeout(
-        Duration::from_secs(5),
-        read_message(&mut reader),
-    )
-    .await
-    .expect("timeout waiting for initialize response")
-    .unwrap();
+    let _init_resp = tokio::time::timeout(Duration::from_secs(5), read_message(&mut reader))
+        .await
+        .expect("timeout waiting for initialize response")
+        .unwrap();
 
     // send the actual request
     let req = serde_json::json!({
         "jsonrpc":"2.0","id":2,"method":method,"params":params
     });
-    client_tx
-        .write_all(&encode_message(&req))
-        .await
-        .unwrap();
+    client_tx.write_all(&encode_message(&req)).await.unwrap();
 
     // read until we get id=2
     loop {
-        let msg = tokio::time::timeout(
-            Duration::from_secs(5),
-            read_message(&mut reader),
-        )
-        .await
-        .expect("timeout waiting for response")
-        .unwrap();
+        let msg = tokio::time::timeout(Duration::from_secs(5), read_message(&mut reader))
+            .await
+            .expect("timeout waiting for response")
+            .unwrap();
         if msg.get("id").and_then(|i| i.as_i64()) == Some(2) {
             return msg;
         }
@@ -548,7 +570,11 @@ async fn test_inline_completion_dispatch() {
 /// textDocument/prepareCallHierarchy — dispatched, default impl returns method_not_found.
 #[tokio::test(flavor = "current_thread")]
 async fn test_prepare_call_hierarchy_dispatch() {
-    let resp = roundtrip("textDocument/prepareCallHierarchy", td_pos("file:///test.rs")).await;
+    let resp = roundtrip(
+        "textDocument/prepareCallHierarchy",
+        td_pos("file:///test.rs"),
+    )
+    .await;
     assert_well_formed(&resp);
 }
 
@@ -575,7 +601,11 @@ async fn test_outgoing_calls_dispatch() {
 /// textDocument/prepareTypeHierarchy — dispatched, default impl returns method_not_found.
 #[tokio::test(flavor = "current_thread")]
 async fn test_prepare_type_hierarchy_dispatch() {
-    let resp = roundtrip("textDocument/prepareTypeHierarchy", td_pos("file:///test.rs")).await;
+    let resp = roundtrip(
+        "textDocument/prepareTypeHierarchy",
+        td_pos("file:///test.rs"),
+    )
+    .await;
     assert_well_formed(&resp);
 }
 
@@ -914,7 +944,10 @@ async fn roundtrip_notification_then_shutdown(method: &str, params: serde_json::
 
     // shutdown — proves server is alive after the notification
     let shutdown = serde_json::json!({"jsonrpc":"2.0","id":2,"method":"shutdown","params":null});
-    client_tx.write_all(&encode_message(&shutdown)).await.unwrap();
+    client_tx
+        .write_all(&encode_message(&shutdown))
+        .await
+        .unwrap();
 
     let resp = loop {
         let msg = tokio::time::timeout(Duration::from_secs(5), read_message(&mut reader))
@@ -943,7 +976,10 @@ async fn test_selection_range_dispatch() {
         text_document: lsp::TextDocumentIdentifier {
             uri: lsp::Url::parse("file:///test.rs").unwrap(),
         },
-        positions: vec![lsp::Position { line: 0, character: 0 }],
+        positions: vec![lsp::Position {
+            line: 0,
+            character: 0,
+        }],
     };
     let serialized = serde_json::to_value(&params_typed).unwrap();
     assert!(serialized.is_object());
@@ -964,7 +1000,10 @@ async fn test_linked_editing_range_dispatch() {
             text_document: lsp::TextDocumentIdentifier {
                 uri: lsp::Url::parse("file:///test.rs").unwrap(),
             },
-            position: lsp::Position { line: 1, character: 5 },
+            position: lsp::Position {
+                line: 1,
+                character: 5,
+            },
         },
         work_done_progress_params: lsp::WorkDoneProgressParams::default(),
     };
@@ -1027,8 +1066,14 @@ async fn test_semantic_tokens_range_dispatch() {
             uri: lsp::Url::parse("file:///test.rs").unwrap(),
         },
         range: lsp::Range {
-            start: lsp::Position { line: 0, character: 0 },
-            end: lsp::Position { line: 10, character: 0 },
+            start: lsp::Position {
+                line: 0,
+                character: 0,
+            },
+            end: lsp::Position {
+                line: 10,
+                character: 0,
+            },
         },
     };
     let serialized = serde_json::to_value(&params_typed).unwrap();
@@ -1054,8 +1099,14 @@ async fn test_inlay_hint_dispatch() {
             uri: lsp::Url::parse("file:///test.rs").unwrap(),
         },
         range: lsp::Range {
-            start: lsp::Position { line: 0, character: 0 },
-            end: lsp::Position { line: 20, character: 0 },
+            start: lsp::Position {
+                line: 0,
+                character: 0,
+            },
+            end: lsp::Position {
+                line: 20,
+                character: 0,
+            },
         },
     };
     let serialized = serde_json::to_value(&params_typed).unwrap();
@@ -1077,7 +1128,10 @@ async fn test_inlay_hint_dispatch() {
 #[tokio::test(flavor = "current_thread")]
 async fn test_inlay_hint_resolve_dispatch() {
     let hint = lsp::InlayHint {
-        position: lsp::Position { line: 3, character: 10 },
+        position: lsp::Position {
+            line: 3,
+            character: 10,
+        },
         label: lsp::InlayHintLabel::String("i32".to_string()),
         kind: None,
         text_edits: None,
@@ -1273,10 +1327,17 @@ async fn boot_batch9() -> (
     write_msg_b9(
         &client_tx_shared,
         serde_json::json!({"jsonrpc":"2.0","method":"initialized","params":{}}),
-    ).await;
+    )
+    .await;
     tokio::time::sleep(Duration::from_millis(20)).await;
 
-    (events, client_tx_shared, responses, server_handle, reader_handle)
+    (
+        events,
+        client_tx_shared,
+        responses,
+        server_handle,
+        reader_handle,
+    )
 }
 
 async fn shutdown_b9(
@@ -1285,7 +1346,11 @@ async fn shutdown_b9(
     server_handle: tokio::task::JoinHandle<ExitedError>,
     reader_handle: tokio::task::JoinHandle<()>,
 ) {
-    write_msg_b9(&tx, serde_json::json!({"jsonrpc":"2.0","id":99,"method":"shutdown"})).await;
+    write_msg_b9(
+        &tx,
+        serde_json::json!({"jsonrpc":"2.0","id":99,"method":"shutdown"}),
+    )
+    .await;
     wait_for_response_b9(responses, 99, Duration::from_secs(2)).await;
     write_msg_b9(&tx, serde_json::json!({"jsonrpc":"2.0","method":"exit"})).await;
     {
@@ -1312,12 +1377,19 @@ async fn test_b9_notebook_document_did_save() {
                 "notebookDocument": { "uri": "file:///save_test.ipynb" }
             }
         }),
-    ).await;
+    )
+    .await;
 
     let saved = wait_for_event_b9(
-        &events.did_save, Duration::from_secs(2), "notebookDocument/didSave",
-    ).await;
-    assert_eq!(saved.notebook_document.uri.as_str(), "file:///save_test.ipynb");
+        &events.did_save,
+        Duration::from_secs(2),
+        "notebookDocument/didSave",
+    )
+    .await;
+    assert_eq!(
+        saved.notebook_document.uri.as_str(),
+        "file:///save_test.ipynb"
+    );
 
     shutdown_b9(tx, responses, server_handle, reader_handle).await;
 }
@@ -1337,12 +1409,19 @@ async fn test_b9_notebook_document_did_close() {
                 "cellTextDocuments": []
             }
         }),
-    ).await;
+    )
+    .await;
 
     let closed = wait_for_event_b9(
-        &events.did_close, Duration::from_secs(2), "notebookDocument/didClose",
-    ).await;
-    assert_eq!(closed.notebook_document.uri.as_str(), "file:///close_test.ipynb");
+        &events.did_close,
+        Duration::from_secs(2),
+        "notebookDocument/didClose",
+    )
+    .await;
+    assert_eq!(
+        closed.notebook_document.uri.as_str(),
+        "file:///close_test.ipynb"
+    );
 
     shutdown_b9(tx, responses, server_handle, reader_handle).await;
 }
@@ -1359,12 +1438,19 @@ async fn test_b9_work_done_progress_cancel() {
             "method": "window/workDoneProgress/cancel",
             "params": { "token": "cancel-token-b9" }
         }),
-    ).await;
+    )
+    .await;
 
     let cancel = wait_for_event_b9(
-        &events.work_done_cancel, Duration::from_secs(2), "window/workDoneProgress/cancel",
-    ).await;
-    assert_eq!(cancel.token, lsp318::IntegerOrString::String("cancel-token-b9".to_string()));
+        &events.work_done_cancel,
+        Duration::from_secs(2),
+        "window/workDoneProgress/cancel",
+    )
+    .await;
+    assert_eq!(
+        cancel.token,
+        lsp318::IntegerOrString::String("cancel-token-b9".to_string())
+    );
 
     shutdown_b9(tx, responses, server_handle, reader_handle).await;
 }
@@ -1384,12 +1470,14 @@ async fn test_b9_progress_notification() {
                 "value": { "kind": "begin", "title": "building" }
             }
         }),
-    ).await;
+    )
+    .await;
 
-    let prog = wait_for_event_b9(
-        &events.progress, Duration::from_secs(2), "$/progress",
-    ).await;
-    assert_eq!(prog.token, lsp318::IntegerOrString::String("progress-b9".to_string()));
+    let prog = wait_for_event_b9(&events.progress, Duration::from_secs(2), "$/progress").await;
+    assert_eq!(
+        prog.token,
+        lsp318::IntegerOrString::String("progress-b9".to_string())
+    );
 
     shutdown_b9(tx, responses, server_handle, reader_handle).await;
 }
@@ -1406,11 +1494,10 @@ async fn test_b9_set_trace_notification() {
             "method": "$/setTrace",
             "params": { "value": "messages" }
         }),
-    ).await;
+    )
+    .await;
 
-    let trace = wait_for_event_b9(
-        &events.set_trace, Duration::from_secs(2), "$/setTrace",
-    ).await;
+    let trace = wait_for_event_b9(&events.set_trace, Duration::from_secs(2), "$/setTrace").await;
     assert_eq!(trace.value, lsp318::TraceValue::Messages);
 
     shutdown_b9(tx, responses, server_handle, reader_handle).await;
@@ -1424,10 +1511,10 @@ async fn test_b9_set_trace_notification() {
 
 #[derive(Clone, Default)]
 struct Batch8Events {
-    did_create_files:    Arc<Mutex<Option<lsp::CreateFilesParams>>>,
-    did_rename_files:    Arc<Mutex<Option<lsp::RenameFilesParams>>>,
-    did_delete_files:    Arc<Mutex<Option<lsp::DeleteFilesParams>>>,
-    did_open_notebook:   Arc<Mutex<Option<lsp318::DidOpenNotebookDocumentParams>>>,
+    did_create_files: Arc<Mutex<Option<lsp::CreateFilesParams>>>,
+    did_rename_files: Arc<Mutex<Option<lsp::RenameFilesParams>>>,
+    did_delete_files: Arc<Mutex<Option<lsp::DeleteFilesParams>>>,
+    did_open_notebook: Arc<Mutex<Option<lsp318::DidOpenNotebookDocumentParams>>>,
     did_change_notebook: Arc<Mutex<Option<lsp318::DidChangeNotebookDocumentParams>>>,
 }
 
@@ -1443,13 +1530,17 @@ impl LanguageServer for Batch8Backend {
         Ok(lsp::InitializeResult::default())
     }
     async fn initialized(&self, _: lsp::InitializedParams) {}
-    async fn shutdown(&self) -> Result<()> { Ok(()) }
+    async fn shutdown(&self) -> Result<()> {
+        Ok(())
+    }
 
     async fn text_document_content(
         &self,
         _params: lsp318::TextDocumentContentParams,
     ) -> Result<lsp318::TextDocumentContentResult> {
-        Ok(lsp318::TextDocumentContentResult { text: "batch8-stub".to_string() })
+        Ok(lsp318::TextDocumentContentResult {
+            text: "batch8-stub".to_string(),
+        })
     }
 
     async fn did_create_files(&self, params: lsp::CreateFilesParams) {
@@ -1464,10 +1555,7 @@ impl LanguageServer for Batch8Backend {
     async fn did_open_notebook_document(&self, params: lsp318::DidOpenNotebookDocumentParams) {
         *self.events.did_open_notebook.lock().unwrap() = Some(params);
     }
-    async fn did_change_notebook_document(
-        &self,
-        params: lsp318::DidChangeNotebookDocumentParams,
-    ) {
+    async fn did_change_notebook_document(&self, params: lsp318::DidChangeNotebookDocumentParams) {
         *self.events.did_change_notebook.lock().unwrap() = Some(params);
     }
 }
@@ -1492,7 +1580,9 @@ async fn batch8_start(
     });
     tx.write_all(&encode_message(&init)).await.unwrap();
     let _r = tokio::time::timeout(Duration::from_secs(5), read_message(&mut reader))
-        .await.unwrap().unwrap();
+        .await
+        .unwrap()
+        .unwrap();
     let ntf = serde_json::json!({"jsonrpc":"2.0","method":"initialized","params":{}});
     tx.write_all(&encode_message(&ntf)).await.unwrap();
     (tx, reader)
@@ -1508,7 +1598,9 @@ async fn batch8_request(
     tx.write_all(&encode_message(&req)).await.unwrap();
     loop {
         let msg = tokio::time::timeout(Duration::from_secs(5), read_message(reader))
-            .await.unwrap().unwrap();
+            .await
+            .unwrap()
+            .unwrap();
         if msg.get("id").and_then(|i| i.as_i64()) == Some(2) {
             return msg;
         }
@@ -1555,12 +1647,19 @@ async fn test_workspace_text_document_content_dispatch() {
     let (mut tx, mut reader) = batch8_start(events).await;
     let params = serde_json::json!({ "uri": "file:///batch8.rs" });
     let resp = batch8_request(
-        &mut tx, &mut reader, "workspace/textDocumentContent", params,
-    ).await;
+        &mut tx,
+        &mut reader,
+        "workspace/textDocumentContent",
+        params,
+    )
+    .await;
     assert_eq!(resp.get("id").and_then(|i| i.as_i64()), Some(2));
     assert!(resp.get("error").is_none(), "Unexpected error: {:?}", resp);
     let result = resp.get("result").expect("Expected result field");
-    assert_eq!(result.get("text").and_then(|t| t.as_str()), Some("batch8-stub"));
+    assert_eq!(
+        result.get("text").and_then(|t| t.as_str()),
+        Some("batch8-stub")
+    );
 }
 
 /// workspace/didCreateFiles — notification dispatched and captured by handler.
@@ -1688,14 +1787,26 @@ async fn test_inline_value_dispatch() {
             uri: lsp::Url::parse("file:///test.rs").unwrap(),
         },
         range: lsp::Range {
-            start: lsp::Position { line: 0, character: 0 },
-            end: lsp::Position { line: 20, character: 0 },
+            start: lsp::Position {
+                line: 0,
+                character: 0,
+            },
+            end: lsp::Position {
+                line: 20,
+                character: 0,
+            },
         },
         context: lsp::InlineValueContext {
             frame_id: 1,
             stopped_location: lsp::Range {
-                start: lsp::Position { line: 5, character: 0 },
-                end: lsp::Position { line: 5, character: 0 },
+                start: lsp::Position {
+                    line: 5,
+                    character: 0,
+                },
+                end: lsp::Position {
+                    line: 5,
+                    character: 0,
+                },
             },
         },
     };

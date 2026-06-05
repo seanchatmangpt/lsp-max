@@ -32,10 +32,7 @@ impl AdmissionService {
     }
 
     /// Dispatch max/admission — query the current admission status for an instance.
-    pub fn status(
-        &self,
-        instance_id: &str,
-    ) -> std::result::Result<serde_json::Value, String> {
+    pub fn status(&self, instance_id: &str) -> std::result::Result<serde_json::Value, String> {
         let mut mesh =
             AutonomicMesh::load_from_file(&self.state_path).map_err(|e| e.to_string())?;
         let params = serde_json::json!({ "instance_id": instance_id });
@@ -61,10 +58,7 @@ impl AdmissionService {
     }
 
     /// Dispatch max/replay — replay the admission decision for an instance.
-    pub fn replay(
-        &self,
-        instance_id: &str,
-    ) -> std::result::Result<serde_json::Value, String> {
+    pub fn replay(&self, instance_id: &str) -> std::result::Result<serde_json::Value, String> {
         let mut mesh =
             AutonomicMesh::load_from_file(&self.state_path).map_err(|e| e.to_string())?;
         let params = serde_json::json!({ "instance_id": instance_id });

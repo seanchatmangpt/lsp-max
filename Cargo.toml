@@ -49,6 +49,8 @@ tokio-util = { version = "0.7", features = ["compat"] }
 ws_stream_tungstenite = { version = "0.10", features = ["tokio_io"] }
 tower-lsp-max-playground = { path = "crates/playground" }
 tempfile = "3"
+ropey = "1"
+
 
 
 [workspace]

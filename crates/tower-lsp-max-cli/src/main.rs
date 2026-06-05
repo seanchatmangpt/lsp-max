@@ -12,15 +12,12 @@ mod tests {
     use std::env;
     use std::fs;
     use std::path::Path;
-    use std::sync::{LazyLock, Mutex};
-
-    /// Serialises all tests that mutate TOWER_LSP_MAX_STATE_PATH so that
-    /// concurrent test threads cannot race on the process-global environment.
-    static ENV_LOCK: LazyLock<Mutex<()>> = LazyLock::new(|| Mutex::new(()));
 
     #[test]
     fn test_cli_nouns_integration() {
-        let _guard = ENV_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+        let _guard = crate::nouns::TEST_ENV_LOCK
+            .lock()
+            .unwrap_or_else(|e| e.into_inner());
         // Setup database file path — use tempfile for unique path to avoid cross-test state pollution
         let tmp_file = tempfile::NamedTempFile::new().expect("tempfile creation failed");
         let test_db_path = tmp_file.path().to_str().unwrap().to_string();
@@ -29,7 +26,10 @@ mod tests {
         env::set_var("TOWER_LSP_MAX_STATE_PATH", &test_db_path);
 
         // Also clean up refund receipt path if it exists
-        let refund_receipt_path = std::env::temp_dir().join("tower_lsp_max_refund_receipt.txt").to_string_lossy().into_owned();
+        let refund_receipt_path = std::env::temp_dir()
+            .join("tower_lsp_max_refund_receipt.txt")
+            .to_string_lossy()
+            .into_owned();
         if Path::new(&refund_receipt_path).exists() {
             let _ = fs::remove_file(&refund_receipt_path);
         }

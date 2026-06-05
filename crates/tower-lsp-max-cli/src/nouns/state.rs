@@ -1,8 +1,8 @@
 use clap_noun_verb::Result;
 use clap_noun_verb_macros::verb;
 use serde::Serialize;
-use tower_lsp_max_runtime::{AutonomicMesh, MeshAction, PolicyState};
 use tower_lsp_max_protocol::InstanceId;
+use tower_lsp_max_runtime::{AutonomicMesh, MeshAction, PolicyState};
 
 // ==============================================================================
 // 1. Domain Tier
@@ -328,7 +328,11 @@ pub fn restore_rpc(instance_id: String, revision: u64) -> Result<RestoreRpcResul
         .map_err(clap_noun_verb::error::NounVerbError::execution_error)?;
     mesh.save_to_file(&state_path)
         .map_err(|e| clap_noun_verb::error::NounVerbError::execution_error(e.to_string()))?;
-    Ok(RestoreRpcResult { instance_id, revision, raw })
+    Ok(RestoreRpcResult {
+        instance_id,
+        revision,
+        raw,
+    })
 }
 
 // ==============================================================================
@@ -345,7 +349,9 @@ mod tests {
         mesh.add_instance(LspInstance::new("test-inst"));
         let f = tempfile::NamedTempFile::new().unwrap();
         mesh.save_to_file(f.path().to_str().unwrap()).unwrap();
-        let svc = StateService { state_path: f.path().to_str().unwrap().to_string() };
+        let svc = StateService {
+            state_path: f.path().to_str().unwrap().to_string(),
+        };
         (f, svc)
     }
 

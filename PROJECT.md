@@ -1,23 +1,23 @@
-# Project: tower-lsp-max AMI Mesh Implementation
+# Project: tower-lsp-max Refactoring
 
 ## Architecture
 - tower-lsp-max: Main language server library. Exposes JSON-RPC layer, state machine, and registry.
-- tower-lsp-max-runtime: Core typestate machine, phases, and transition logic. We will implement the formal LSP model and hooks here.
+- tower-lsp-max-runtime: Core typestate machine, phases, and transition logic.
 - tower-lsp-max-protocol: Declares custom methods (`max/*`), capability vectors, receipts, and analysis bundle structures.
 - tower-lsp-max-cli: Actuation grammar (noun/verb CLI surface using `clap-noun-verb`).
-- E2E / Integration Tests: Located in `tests/test_autonomic_mesh.rs` demonstrating the multi-instance mesh.
+- E2E / Integration Tests: Located in `tests/` and unit tests inline.
 
 ## Milestones
 | # | Name | Scope | Dependencies | Status |
-|---|------|-------|-------------|--------|
-| 1 | Formal Representation & Hooks | Design and implement LSP_i state model, H_i Hook trait, and registry in `tower-lsp-max-runtime` and `tower-lsp-max-protocol`. | None | PLANNED |
-| 2 | 5-Layer Autonomic Architecture | Implement Grammar (CLI), Local Surface (JSON-RPC), Law-State Runtime, Hook Layer, and Autonomic Mesh controller. | M1 | PLANNED |
-| 3 | Customer Service Case & E2E Tests | Implement proof case workflow and mesh integration tests in `tests/test_autonomic_mesh.rs`. | M2 | PLANNED |
-| 4 | Workspace Verification & Audit | Workspace verification (cargo check, test, clippy, fmt) and Forensic Audit. | M3 | PLANNED |
+|---|---|---|---|---|
+| 1 | Core Test Helpers & Quick-wins | Extract common duplex-stream test helpers and refactor `tests/test_max_rpc_zero_coverage.rs`. | None | DONE |
+| 2 | Playground AST Handlers | Refactor completions and diagnostics handlers into modules under 500 LOC. | M1 | PLANNED |
+| 3 | Protocol Core Library | Refactor `tower-lsp-max-protocol/src/lib.rs` into modular sub-files. | M1 | PLANNED |
+| 4 | Runtime Library | Extract inline test modules and modularize `tower-lsp-max-runtime/src/lib.rs`. | M1 | PLANNED |
+| 5 | tower-lsp-max Core Library | Refactor `src/lib.rs`, `src/service.rs`, and `src/service/client.rs` to keep them <= 500 LOC. | M3, M4 | PLANNED |
+| 6 | Integration Tests | Split integration tests in `tests/` into smaller files. | M1 | PLANNED |
+| 7 | Code Generator & Generated Code | Refactor generator renderer and split generated schemas to be <= 500 LOC. | M1, M5 | PLANNED |
 
-## Interface Contracts
-### Hook H_i ↔ LSP State Machine
-- Event types: state transitions, diagnostics, repair plans, and receipts.
-- Trigger: when registry/state transitions or emits diagnostics/receipts, look up and execute registered Hooks.
-- Mesh communication: Hook execution in one LSP instance can trigger RPC calls or state changes in another LSP instance.
-
+## Code Layout
+- Keep files <= 500 LOC.
+- Organize submodules in subdirectories matching the module name (e.g. `src/service/client/` or similar).

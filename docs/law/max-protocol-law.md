@@ -66,6 +66,46 @@ All custom RPC methods implemented by `tower-lsp-max` are namespaced under the `
 *   **Response:** `Receipt`
 *   **Description:** Queries and retrieves the cryptographic receipt metadata (including the hash and identifier) for a previously committed transaction.
 
+### 10. `max/releaseActuation`
+*   **Method Name:** `max/releaseActuation`
+*   **Parameters:** A JSON object:
+    *   `instance_id` (String, required): The unique identifier of the target instance to actuate.
+*   **Response:** `ReleaseActuationResult`:
+    *   `released` (Boolean): True if the release succeeded.
+    *   `instance_id` (String): The ID of the instance.
+    *   `conformance_score` (Number): The current conformance score (e.g. 100.0).
+    *   `conformance_grade` (String, optional in some contexts, but present in runtime): The corresponding letter grade for compliance.
+    *   `release_receipt` (Receipt, optional): The cryptographic receipt proving the release transaction if successful.
+*   **Description:** Evaluates and actuates a release for the specified instance.
+*   **Behavior Rules:**
+    *   Release is permitted if and only if there are no active diagnostics blocking conformance for the specified instance.
+    *   A diagnostic blocks the instance if its `diagnostic_id` contains the `instance_id` substring (or exact match).
+    *   Upon successful verification, the engine increments the sequence counter (`action_seq`), issues a unique release receipt (`rcpt-release-<instance_id>`), and appends a corresponding delta record to the `conformance_delta_log` before returning the response.
+*   **Locking Mechanisms:** Acquires a write lock on the global `REGISTRY` state to thread-safely verify conformance/diagnostics, issue the receipt, update the sequence number, and write to the delta log.
+*   **Error Paths:**
+    *   Returns an error (e.g. `missing instance_id`) if parameter `instance_id` is absent.
+    *   Returns an error if the specified instance cannot be found in the registry.
+    *   Returns a transition/request failed error (e.g. `Release refused: <N> active diagnostics blocking conformance`) if there are outstanding violations blocking the release.
+
+### 11. `max/conformanceDelta`
+*   **Method Name:** `max/conformanceDelta`
+*   **Parameters:** A JSON object:
+    *   `since_seq` (Number, optional): The sequence cursor since which score updates should be retrieved. Defaults to 0 if omitted.
+*   **Response:** A JSON object:
+    *   `deltas` (Array of ConformanceDeltaEntry): A list of recent delta records, each containing:
+        *   `seq` (Number): Monotonically increasing sequence number.
+        *   `instance_id` (String): The identifier of the instance.
+        *   `old_score` (Number): The prior conformance score.
+        *   `new_score` (Number): The post-transition conformance score.
+    *   `current_seq` (Number): The latest sequence number in the global registry state.
+*   **Description:** Retrieves a sequence of conformance delta entries since the provided sequence number to support live dashboard status polling and audit trails.
+*   **Behavior Rules:**
+    *   Reads from `conformance_delta_log` (the single authoritative delta store) and filters for entries where `seq > since_seq`.
+    *   The log capacity is bounded (e.g. up to 4096 entries) and behaves as a circular buffer, evicting the oldest entries when exceeded.
+*   **Locking Mechanisms:** Acquires a read/write lock on the global `REGISTRY` state to inspect the circular `conformance_delta_log` buffer.
+*   **Error Paths:**
+    *   Defaults the `since_seq` cursor to `0` if parameters are malformed, or if `since_seq` is not a valid unsigned integer.
+
 ---
 
 ## Diagnostics as Refused Transitions

@@ -65,12 +65,18 @@ impl MetamodelService {
         if mesh_ok {
             vec![ValidationIssue {
                 level: "INFO".to_string(),
-                message: format!("Metamodel {} is structurally sound (runtime mesh validated).", id),
+                message: format!(
+                    "Metamodel {} is structurally sound (runtime mesh validated).",
+                    id
+                ),
             }]
         } else {
             vec![ValidationIssue {
                 level: "WARN".to_string(),
-                message: format!("Metamodel {} could not be fully validated: runtime mesh unavailable.", id),
+                message: format!(
+                    "Metamodel {} could not be fully validated: runtime mesh unavailable.",
+                    id
+                ),
             }]
         }
     }

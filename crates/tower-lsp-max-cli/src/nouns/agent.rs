@@ -167,10 +167,6 @@ impl Default for AgentService {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::sync::Mutex;
-
-    /// Serializes tests that mutate env vars so they do not race each other.
-    static ENV_MUTEX: Mutex<()> = Mutex::new(());
 
     /// RAII guard that saves an env var on creation and restores it on drop.
     struct EnvGuard {
@@ -212,14 +208,19 @@ mod tests {
         let svc = AgentService::new();
         // plan falls back to default steps when agent chat fails (no API key)
         let result = svc.plan("workspace-abc".to_string());
-        assert!(result.is_ok(), "plan should return Ok (uses fallback steps)");
+        assert!(
+            result.is_ok(),
+            "plan should return Ok (uses fallback steps)"
+        );
         let plan = result.unwrap();
         assert!(!plan.steps.is_empty(), "plan steps must not be empty");
     }
 
     #[test]
     fn invoke_without_api_key_returns_err() {
-        let _lock = ENV_MUTEX.lock().unwrap_or_else(|p| p.into_inner());
+        let _lock = crate::nouns::TEST_ENV_LOCK
+            .lock()
+            .unwrap_or_else(|p| p.into_inner());
         let _g1 = EnvGuard::remove("TOWER_LSP_MAX_API_KEY");
         let _g2 = EnvGuard::remove("OPENAI_API_KEY");
         let svc = AgentService::new();
@@ -230,7 +231,9 @@ mod tests {
 
     #[test]
     fn chat_without_api_key_returns_err() {
-        let _lock = ENV_MUTEX.lock().unwrap_or_else(|p| p.into_inner());
+        let _lock = crate::nouns::TEST_ENV_LOCK
+            .lock()
+            .unwrap_or_else(|p| p.into_inner());
         let _g1 = EnvGuard::remove("TOWER_LSP_MAX_API_KEY");
         let _g2 = EnvGuard::remove("OPENAI_API_KEY");
         let svc = AgentService::new();
@@ -303,8 +306,7 @@ pub struct AgentListResult {
 pub fn list() -> Result<AgentListResult> {
     // Use max/instanceList RPC for efficient polling — avoids loading full mesh state.
     let path = crate::nouns::get_state_path();
-    let mut mesh = tower_lsp_max_runtime::AutonomicMesh::load_from_file(&path)
-        .unwrap_or_default();
+    let mut mesh = tower_lsp_max_runtime::AutonomicMesh::load_from_file(&path).unwrap_or_default();
     // Pick any instance_id that exists, or fall back to full load if mesh is empty.
     let first_id = mesh.instances.keys().next().cloned();
     let agents: Vec<AgentSummary> = if let Some(ref id) = first_id {
@@ -318,7 +320,11 @@ pub fn list() -> Result<AgentListResult> {
                         .and_then(|v| v.as_str())
                         .unwrap_or("Unknown")
                         .to_string();
-                    Some(AgentSummary { id, status, current_task: None })
+                    Some(AgentSummary {
+                        id,
+                        status,
+                        current_task: None,
+                    })
                 })
                 .collect(),
             _ => mesh
@@ -376,11 +382,18 @@ pub fn release(instance_id: String) -> Result<ReleaseResult> {
     let mut mesh = tower_lsp_max_runtime::AutonomicMesh::load_from_file(&path)
         .map_err(|e| NounVerbError::execution_error(e.to_string()))?;
     let resp = mesh
-        .dispatch_rpc(&instance_id, "max/releaseActuation", serde_json::Value::Null)
+        .dispatch_rpc(
+            &instance_id,
+            "max/releaseActuation",
+            serde_json::Value::Null,
+        )
         .map_err(NounVerbError::execution_error)?;
     mesh.save_to_file(&path)
         .map_err(|e| NounVerbError::execution_error(e.to_string()))?;
-    let released = resp.get("released").and_then(|v| v.as_bool()).unwrap_or(false);
+    let released = resp
+        .get("released")
+        .and_then(|v| v.as_bool())
+        .unwrap_or(false);
     let blocking_axes = resp
         .get("blocking_axes")
         .and_then(|v| v.as_array())
@@ -406,8 +419,7 @@ pub struct AutonomicLoopResult {
 #[verb("loop")]
 pub fn autonomic_loop() -> clap_noun_verb::Result<AutonomicLoopResult> {
     let path = crate::nouns::get_state_path();
-    let mut mesh = tower_lsp_max_runtime::AutonomicMesh::load_from_file(&path)
-        .unwrap_or_default();
+    let mut mesh = tower_lsp_max_runtime::AutonomicMesh::load_from_file(&path).unwrap_or_default();
     let first_id = mesh.instances.keys().next().cloned();
     let result = if let Some(ref id) = first_id {
         mesh.dispatch_rpc(id, "max/autonomicLoop", serde_json::Value::Null)
@@ -417,6 +429,10 @@ pub fn autonomic_loop() -> clap_noun_verb::Result<AutonomicLoopResult> {
     };
     let hook_count = result["hook_count"].as_u64().unwrap_or(0) as usize;
     let instances = mesh.instances.keys().cloned().collect::<Vec<_>>();
-    mesh.save_to_file(&path).map_err(|e| clap_noun_verb::error::NounVerbError::execution_error(e.to_string()))?;
-    Ok(AutonomicLoopResult { hook_count, instances })
+    mesh.save_to_file(&path)
+        .map_err(|e| clap_noun_verb::error::NounVerbError::execution_error(e.to_string()))?;
+    Ok(AutonomicLoopResult {
+        hook_count,
+        instances,
+    })
 }

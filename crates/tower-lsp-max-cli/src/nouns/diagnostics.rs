@@ -282,12 +282,19 @@ pub struct ExportBundleResult {
 }
 
 #[verb("export-bundle")]
-pub fn export_bundle(instance_id: String, output_path: Option<String>) -> Result<ExportBundleResult> {
+pub fn export_bundle(
+    instance_id: String,
+    output_path: Option<String>,
+) -> Result<ExportBundleResult> {
     let mut mesh = AutonomicMesh::load_from_file(&crate::nouns::get_state_path())
         .map_err(|e| clap_noun_verb::error::NounVerbError::execution_error(e.to_string()))?;
 
     let bundle = mesh
-        .dispatch_rpc(&instance_id, "max/exportAnalysisBundle", serde_json::Value::Null)
+        .dispatch_rpc(
+            &instance_id,
+            "max/exportAnalysisBundle",
+            serde_json::Value::Null,
+        )
         .map_err(clap_noun_verb::error::NounVerbError::execution_error)?;
 
     if let Some(path) = output_path {
@@ -297,7 +304,10 @@ pub fn export_bundle(instance_id: String, output_path: Option<String>) -> Result
             .map_err(|e| clap_noun_verb::error::NounVerbError::execution_error(e.to_string()))?;
     }
 
-    Ok(ExportBundleResult { instance_id, bundle })
+    Ok(ExportBundleResult {
+        instance_id,
+        bundle,
+    })
 }
 
 // ==============================================================================
@@ -379,22 +389,26 @@ pub fn apply_repair(instance_id: String, transaction_id: String) -> Result<Apply
     mesh.save_to_file(&path)
         .map_err(|e| clap_noun_verb::error::NounVerbError::execution_error(e.to_string()))?;
     let success = resp["success"].as_bool().unwrap_or(true);
-    Ok(ApplyRepairResult { success, instance_id, transaction_id })
+    Ok(ApplyRepairResult {
+        success,
+        instance_id,
+        transaction_id,
+    })
 }
-
 #[cfg(test)]
 mod tests {
     use super::DiagnosticsService;
     use std::env;
-    use std::sync::Mutex;
-
-    static ENV_MUTEX: Mutex<()> = Mutex::new(());
 
     fn setup_test_state() -> (tempfile::NamedTempFile, std::sync::MutexGuard<'static, ()>) {
         let f = tempfile::NamedTempFile::new().expect("tempfile");
-        let guard = ENV_MUTEX.lock().unwrap_or_else(|p| p.into_inner());
+        let guard = crate::nouns::TEST_ENV_LOCK
+            .lock()
+            .unwrap_or_else(|p| p.into_inner());
         // SAFETY: set_var under process-wide ENV_MUTEX
-        unsafe { env::set_var("TOWER_LSP_MAX_STATE_PATH", f.path().to_str().unwrap()); }
+        unsafe {
+            env::set_var("TOWER_LSP_MAX_STATE_PATH", f.path().to_str().unwrap());
+        }
         (f, guard)
     }
 
@@ -403,7 +417,10 @@ mod tests {
         let _path = setup_test_state();
         let svc = DiagnosticsService::new();
         let result = svc.run("nonexistent-target");
-        assert!(result.is_ok(), "run should return Ok even for unknown target");
+        assert!(
+            result.is_ok(),
+            "run should return Ok even for unknown target"
+        );
         let issues = result.unwrap();
         assert_eq!(issues.len(), 0);
     }

@@ -15,7 +15,7 @@ static TEST_MUTEX: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
 use tower_lsp_max::jsonrpc::Result as RpcResult;
 use tower_lsp_max::lsp_types as lsp;
 use tower_lsp_max::max_protocol::{
-    AnalysisBundle, GateId, MaxCodeAction, MaxDiagnostic, Receipt, SnapshotId, ConformanceVector,
+    AnalysisBundle, ConformanceVector, GateId, MaxCodeAction, MaxDiagnostic, Receipt, SnapshotId,
 };
 
 // ---------------------------------------------------------------------------
@@ -109,9 +109,15 @@ async fn boot_server() -> (TxShared, RxLog, tokio::task::JoinHandle<()>, SerialG
     let _guard = TEST_MUTEX.lock().await;
     // Reset shared global registry so tests don't bleed state into each other.
     tower_lsp_max::reset_registry_for_tests();
-    let _ = std::fs::remove_file("admission.receipt");
-    let _ = std::fs::remove_file("security.receipt");
-    let _ = std::fs::remove_file("auth.receipt");
+    let temp_dir = tempfile::tempdir().unwrap();
+    let temp_path = temp_dir.path().to_path_buf();
+    std::boxed::Box::leak(std::boxed::Box::new(temp_dir));
+    if let Ok(mut reg) = tower_lsp_max::get_registry().lock() {
+        reg.root_path = temp_path.clone();
+    }
+    let _ = std::fs::remove_file(temp_path.join("admission.receipt"));
+    let _ = std::fs::remove_file(temp_path.join("security.receipt"));
+    let _ = std::fs::remove_file(temp_path.join("auth.receipt"));
 
     let (service, socket) = LspService::new(|_| TestBackend);
 
@@ -159,9 +165,12 @@ fn expect_error(resp: &serde_json::Value) -> &serde_json::Value {
 }
 
 fn cleanup_receipts() {
-    let _ = std::fs::remove_file("admission.receipt");
-    let _ = std::fs::remove_file("security.receipt");
-    let _ = std::fs::remove_file("auth.receipt");
+    if let Ok(reg) = tower_lsp_max::get_registry().lock() {
+        let temp_path = reg.root_path.clone();
+        let _ = std::fs::remove_file(temp_path.join("admission.receipt"));
+        let _ = std::fs::remove_file(temp_path.join("security.receipt"));
+        let _ = std::fs::remove_file(temp_path.join("auth.receipt"));
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -172,7 +181,11 @@ fn cleanup_receipts() {
 async fn test_max_snapshot_returns_snap_id() {
     let (tx, rx, _h, _guard) = boot_server().await;
 
-    write_msg(&tx, serde_json::json!({"jsonrpc":"2.0","id":1,"method":"max/snapshot"})).await;
+    write_msg(
+        &tx,
+        serde_json::json!({"jsonrpc":"2.0","id":1,"method":"max/snapshot"}),
+    )
+    .await;
     let resp = wait_for_response(rx, 1, Duration::from_secs(3)).await;
 
     let snap_id: SnapshotId = serde_json::from_value(expect_result(&resp).clone()).unwrap();
@@ -194,7 +207,7 @@ async fn test_max_explain_diagnostic_known_id() {
 
     write_msg(
         &tx,
-        serde_json::json!({"jsonrpc":"2.0","id":1,"method":"max/explainDiagnostic","params":"diag-uninitialized-admission"}),
+        serde_json::json!({"jsonrpc":"2.0","id":1,"method":"max/explainDiagnostic","params":"diag-missing-receipt"}),
     )
     .await;
     let resp = wait_for_response(rx, 1, Duration::from_secs(3)).await;
@@ -202,8 +215,11 @@ async fn test_max_explain_diagnostic_known_id() {
     // The diagnostic may have been cleared by a parallel test run; accept either shape.
     if resp.get("result").is_some() {
         let diag: MaxDiagnostic = serde_json::from_value(expect_result(&resp).clone()).unwrap();
-        assert_eq!(diag.diagnostic_id, "diag-uninitialized-admission");
-        assert!(!diag.lsp.message.is_empty(), "diagnostic message must not be empty");
+        assert_eq!(diag.diagnostic_id, "diag-missing-receipt");
+        assert!(
+            !diag.lsp.message.is_empty(),
+            "diagnostic message must not be empty"
+        );
     } else {
         let err = expect_error(&resp);
         assert!(err["message"].as_str().unwrap_or("").contains("not found"));
@@ -242,17 +258,21 @@ async fn test_max_repair_plan_known_diagnostic() {
 
     write_msg(
         &tx,
-        serde_json::json!({"jsonrpc":"2.0","id":1,"method":"max/repairPlan","params":"diag-uninitialized-admission"}),
+        serde_json::json!({"jsonrpc":"2.0","id":1,"method":"max/repairPlan","params":"diag-missing-receipt"}),
     )
     .await;
     let resp = wait_for_response(rx, 1, Duration::from_secs(3)).await;
 
     // If the diagnostic was cleared by a parallel test, the plan may be empty or an error.
     if resp.get("result").is_some() {
-        let plans: Vec<MaxCodeAction> = serde_json::from_value(expect_result(&resp).clone()).unwrap();
+        let plans: Vec<MaxCodeAction> =
+            serde_json::from_value(expect_result(&resp).clone()).unwrap();
         if !plans.is_empty() {
             let first = &plans[0];
-            assert!(!first.action.title.is_empty(), "action title must not be empty");
+            assert!(
+                !first.action.title.is_empty(),
+                "action title must not be empty"
+            );
         }
     } else {
         // error is also acceptable when diagnostic was cleared
@@ -277,7 +297,10 @@ async fn test_max_repair_plan_unknown_diagnostic_returns_empty_or_error() {
     if resp.get("result").is_some() {
         let plans: Vec<MaxCodeAction> =
             serde_json::from_value(expect_result(&resp).clone()).unwrap();
-        assert!(plans.is_empty(), "unknown diagnostic should yield empty plan");
+        assert!(
+            plans.is_empty(),
+            "unknown diagnostic should yield empty plan"
+        );
     } else {
         let err = expect_error(&resp);
         assert!(!err["message"].as_str().unwrap_or("").is_empty());
@@ -384,7 +407,8 @@ async fn test_max_receipt_lookup() {
     // If diag-auth-generator was cleared by a prior test, the receipt may already exist.
     // In that case we test the lookup path directly.
     let expected_hash = if resp.get("result").is_some() {
-        let plans: Vec<MaxCodeAction> = serde_json::from_value(expect_result(&resp).clone()).unwrap();
+        let plans: Vec<MaxCodeAction> =
+            serde_json::from_value(expect_result(&resp).clone()).unwrap();
         if plans.is_empty() {
             // Already cleared — just verify receipt lookup works for any existing receipt
             cleanup_receipts();
@@ -480,7 +504,11 @@ async fn test_max_run_gate_returns_bool() {
         "max/runGate must return a boolean, got: {}",
         result
     );
-    assert_eq!(result, &serde_json::Value::Bool(true), "some-gate must return true");
+    assert_eq!(
+        result,
+        &serde_json::Value::Bool(true),
+        "some-gate must return true"
+    );
     cleanup_receipts();
 }
 
@@ -493,7 +521,11 @@ async fn test_max_export_analysis_bundle() {
     let (tx, rx, _h, _guard) = boot_server().await;
 
     // Take a snapshot first
-    write_msg(&tx, serde_json::json!({"jsonrpc":"2.0","id":1,"method":"max/snapshot"})).await;
+    write_msg(
+        &tx,
+        serde_json::json!({"jsonrpc":"2.0","id":1,"method":"max/snapshot"}),
+    )
+    .await;
     let resp = wait_for_response(rx.clone(), 1, Duration::from_secs(3)).await;
     let snap_id: SnapshotId = serde_json::from_value(expect_result(&resp).clone()).unwrap();
 
@@ -509,10 +541,135 @@ async fn test_max_export_analysis_bundle() {
     .await;
     let resp = wait_for_response(rx, 2, Duration::from_secs(3)).await;
     let bundle: AnalysisBundle = serde_json::from_value(expect_result(&resp).clone()).unwrap();
-    assert_eq!(bundle.snapshot_id.0, snap_id.0, "bundle snapshot_id must match");
-    // diagnostics may be empty if a parallel test cleared them; just verify shape
+    assert_eq!(
+        bundle.snapshot_id.0, snap_id.0,
+        "bundle snapshot_id must match"
+    );
+    // gaps count must be consistent with the bundle's own diagnostics
+    let named_count = bundle.diagnostics.iter().filter(|d| {
+        !matches!(&d.law_axis, tower_lsp_max::max_protocol::LawAxis::Custom(s) if s.is_empty())
+    }).count();
+    assert_eq!(
+        bundle.capability_vector.gaps.len(),
+        named_count,
+        "gaps must equal diagnostics with a named law_axis"
+    );
+    // actions count must match total repair_actions across diagnostics
+    let expected_actions: usize = bundle
+        .diagnostics
+        .iter()
+        .map(|d| d.repair_actions.len())
+        .sum();
+    assert_eq!(
+        bundle.actions.len(),
+        expected_actions,
+        "actions must equal total repair_actions across all diagnostics"
+    );
     let _ = &bundle.conformance_vector;
     let _ = &bundle.receipts;
+    cleanup_receipts();
+}
+
+// ---------------------------------------------------------------------------
+// max/exportAnalysisBundle — gap capability_paths are non-empty strings
+// ---------------------------------------------------------------------------
+
+#[tokio::test(flavor = "current_thread")]
+async fn test_max_export_analysis_bundle_gap_paths_non_empty() {
+    let (tx, rx, _h, _guard) = boot_server().await;
+
+    write_msg(
+        &tx,
+        serde_json::json!({"jsonrpc":"2.0","id":1,"method":"max/snapshot"}),
+    )
+    .await;
+    let resp = wait_for_response(rx.clone(), 1, Duration::from_secs(3)).await;
+    let snap_id: SnapshotId = serde_json::from_value(expect_result(&resp).clone()).unwrap();
+
+    write_msg(
+        &tx,
+        serde_json::json!({
+            "jsonrpc":"2.0","id":2,
+            "method":"max/exportAnalysisBundle",
+            "params": serde_json::to_value(snap_id).unwrap()
+        }),
+    )
+    .await;
+    let resp = wait_for_response(rx.clone(), 2, Duration::from_secs(3)).await;
+    let bundle: AnalysisBundle = serde_json::from_value(expect_result(&resp).clone()).unwrap();
+
+    // Every gap must have a non-empty capability_path and reason
+    for gap in &bundle.capability_vector.gaps {
+        assert!(
+            !gap.capability_path.is_empty(),
+            "CapabilityGap capability_path must not be empty"
+        );
+        assert!(
+            !gap.reason.is_empty(),
+            "CapabilityGap reason must not be empty"
+        );
+    }
+
+    // Every action title must match a repair description in the diagnostics
+    let all_repair_descs: Vec<String> = bundle
+        .diagnostics
+        .iter()
+        .flat_map(|d| d.repair_actions.iter().map(|ra| ra.description.clone()))
+        .collect();
+    for action in &bundle.actions {
+        assert!(
+            !action.action.title.is_empty(),
+            "bundle action title must not be empty"
+        );
+        assert!(
+            all_repair_descs.contains(&action.action.title),
+            "bundle action '{}' must match a diagnostic repair description",
+            action.action.title
+        );
+    }
+    cleanup_receipts();
+}
+
+// ---------------------------------------------------------------------------
+// max/exportAnalysisBundle — actions count equals total repair_actions
+// ---------------------------------------------------------------------------
+
+#[tokio::test(flavor = "current_thread")]
+async fn test_max_export_analysis_bundle_actions_match_repair_actions() {
+    let (tx, rx, _h, _guard) = boot_server().await;
+
+    write_msg(
+        &tx,
+        serde_json::json!({"jsonrpc":"2.0","id":1,"method":"max/snapshot"}),
+    )
+    .await;
+    let resp = wait_for_response(rx.clone(), 1, Duration::from_secs(3)).await;
+    let snap_id: SnapshotId = serde_json::from_value(expect_result(&resp).clone()).unwrap();
+
+    write_msg(
+        &tx,
+        serde_json::json!({
+            "jsonrpc":"2.0","id":2,
+            "method":"max/exportAnalysisBundle",
+            "params": serde_json::to_value(snap_id).unwrap()
+        }),
+    )
+    .await;
+    let resp = wait_for_response(rx.clone(), 2, Duration::from_secs(3)).await;
+    let bundle: AnalysisBundle = serde_json::from_value(expect_result(&resp).clone()).unwrap();
+
+    let expected: usize = bundle
+        .diagnostics
+        .iter()
+        .map(|d| d.repair_actions.len())
+        .sum();
+    assert_eq!(
+        bundle.actions.len(),
+        expected,
+        "bundle.actions count ({}) must equal total repair_actions ({})",
+        bundle.actions.len(),
+        expected
+    );
     cleanup_receipts();
 }
 
@@ -525,7 +682,11 @@ async fn test_max_conformance_vector() {
     let (tx, rx, _h, _guard) = boot_server().await;
 
     // Take a snapshot
-    write_msg(&tx, serde_json::json!({"jsonrpc":"2.0","id":1,"method":"max/snapshot"})).await;
+    write_msg(
+        &tx,
+        serde_json::json!({"jsonrpc":"2.0","id":1,"method":"max/snapshot"}),
+    )
+    .await;
     let resp = wait_for_response(rx.clone(), 1, Duration::from_secs(3)).await;
     let snap_id: SnapshotId = serde_json::from_value(expect_result(&resp).clone()).unwrap();
 
@@ -565,16 +726,19 @@ async fn test_max_clear_diagnostic() {
     // Verify diagnostic exists
     write_msg(
         &tx,
-        serde_json::json!({"jsonrpc":"2.0","id":1,"method":"max/explainDiagnostic","params":"diag-uninitialized-admission"}),
+        serde_json::json!({"jsonrpc":"2.0","id":1,"method":"max/explainDiagnostic","params":"diag-missing-receipt"}),
     )
     .await;
     let resp = wait_for_response(rx.clone(), 1, Duration::from_secs(3)).await;
-    assert!(resp.get("result").is_some(), "diagnostic must exist before clearing");
+    assert!(
+        resp.get("result").is_some(),
+        "diagnostic must exist before clearing"
+    );
 
     // Clear it
     write_msg(
         &tx,
-        serde_json::json!({"jsonrpc":"2.0","id":2,"method":"max/clearDiagnostic","params":"diag-uninitialized-admission"}),
+        serde_json::json!({"jsonrpc":"2.0","id":2,"method":"max/clearDiagnostic","params":"diag-missing-receipt"}),
     )
     .await;
     let resp = wait_for_response(rx.clone(), 2, Duration::from_secs(3)).await;
@@ -583,7 +747,7 @@ async fn test_max_clear_diagnostic() {
     // Now explain must return an error
     write_msg(
         &tx,
-        serde_json::json!({"jsonrpc":"2.0","id":3,"method":"max/explainDiagnostic","params":"diag-uninitialized-admission"}),
+        serde_json::json!({"jsonrpc":"2.0","id":3,"method":"max/explainDiagnostic","params":"diag-missing-receipt"}),
     )
     .await;
     let resp = wait_for_response(rx, 3, Duration::from_secs(3)).await;
@@ -605,7 +769,11 @@ async fn test_max_clear_diagnostic() {
 async fn test_max_verify_ledger() {
     let (tx, rx, _h, _guard) = boot_server().await;
 
-    write_msg(&tx, serde_json::json!({"jsonrpc":"2.0","id":1,"method":"max/verifyLedger"})).await;
+    write_msg(
+        &tx,
+        serde_json::json!({"jsonrpc":"2.0","id":1,"method":"max/verifyLedger"}),
+    )
+    .await;
     let resp = wait_for_response(rx, 1, Duration::from_secs(3)).await;
     // verifyLedger returns Ok when receipts are valid, or an error when ledger integrity fails.
     // Either is a valid JSON-RPC response — just verify the server responds at all.
@@ -625,7 +793,11 @@ async fn test_max_verify_ledger() {
 async fn test_max_ledger_report() {
     let (tx, rx, _h, _guard) = boot_server().await;
 
-    write_msg(&tx, serde_json::json!({"jsonrpc":"2.0","id":1,"method":"max/ledgerReport"})).await;
+    write_msg(
+        &tx,
+        serde_json::json!({"jsonrpc":"2.0","id":1,"method":"max/ledgerReport"}),
+    )
+    .await;
     let resp = wait_for_response(rx, 1, Duration::from_secs(3)).await;
     // ledger report may be any JSON value (object, array, string, bool, null)
     let _ = expect_result(&resp); // just assert we got a result, not an error
@@ -640,22 +812,44 @@ async fn test_max_ledger_report() {
 async fn test_max_instance_list() {
     let (tx, rx, _h, _guard) = boot_server().await;
 
-    write_msg(&tx, serde_json::json!({"jsonrpc":"2.0","id":1,"method":"max/instanceList"})).await;
+    write_msg(
+        &tx,
+        serde_json::json!({"jsonrpc":"2.0","id":1,"method":"max/instanceList"}),
+    )
+    .await;
     let resp = wait_for_response(rx, 1, Duration::from_secs(3)).await;
     let result = expect_result(&resp);
 
     // Must be a JSON array
-    assert!(result.is_array(), "max/instanceList must return a JSON array, got: {}", result);
+    assert!(
+        result.is_array(),
+        "max/instanceList must return a JSON array, got: {}",
+        result
+    );
     let arr = result.as_array().unwrap();
 
     // Every entry must have id, phase, and conformance_score fields
     for entry in arr {
         assert!(entry.get("id").is_some(), "entry missing 'id': {}", entry);
-        assert!(entry.get("phase").is_some(), "entry missing 'phase': {}", entry);
-        assert!(entry.get("conformance_score").is_some(), "entry missing 'conformance_score': {}", entry);
+        assert!(
+            entry.get("phase").is_some(),
+            "entry missing 'phase': {}",
+            entry
+        );
+        assert!(
+            entry.get("conformance_score").is_some(),
+            "entry missing 'conformance_score': {}",
+            entry
+        );
         // conformance_score must be a number in [0, 100]
-        let score = entry["conformance_score"].as_f64().expect("conformance_score must be f64");
-        assert!((0.0..=100.0).contains(&score), "conformance_score out of range: {}", score);
+        let score = entry["conformance_score"]
+            .as_f64()
+            .expect("conformance_score must be f64");
+        assert!(
+            (0.0..=100.0).contains(&score),
+            "conformance_score out of range: {}",
+            score
+        );
     }
 
     cleanup_receipts();
@@ -709,7 +903,11 @@ async fn test_rpc_run_gate_returns_false_when_diagnostic_references_gate() {
     // observed when the server received id=2 before id=1 was fully processed.
     let resp1 = wait_for_response(rx.clone(), 1, Duration::from_secs(5)).await;
     let result1 = expect_result(&resp1);
-    assert_eq!(result1, &serde_json::Value::Bool(true), "some-gate must return true when unblocked");
+    assert_eq!(
+        result1,
+        &serde_json::Value::Bool(true),
+        "some-gate must return true when unblocked"
+    );
 
     // Second request: gate-state-check (fast path) must also return a boolean (id=2).
     write_msg(
@@ -723,6 +921,9 @@ async fn test_rpc_run_gate_returns_false_when_diagnostic_references_gate() {
     .await;
     let resp2 = wait_for_response(rx, 2, Duration::from_secs(5)).await;
     let result2 = expect_result(&resp2);
-    assert!(result2.is_boolean(), "max/runGate must return a boolean for gate-state-check");
+    assert!(
+        result2.is_boolean(),
+        "max/runGate must return a boolean for gate-state-check"
+    );
     cleanup_receipts();
 }

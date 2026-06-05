@@ -128,9 +128,15 @@ impl ServerState {
         }
         if let Some(instance) = self.mesh.lock().unwrap().instances.get_mut("LSP_1") {
             instance.phase = match state {
-                crate::service::state::State::Uninitialized => crate::max_runtime::LspPhase::Uninitialized,
-                crate::service::state::State::Initializing => crate::max_runtime::LspPhase::Initializing,
-                crate::service::state::State::Initialized => crate::max_runtime::LspPhase::Initialized,
+                crate::service::state::State::Uninitialized => {
+                    crate::max_runtime::LspPhase::Uninitialized
+                }
+                crate::service::state::State::Initializing => {
+                    crate::max_runtime::LspPhase::Initializing
+                }
+                crate::service::state::State::Initialized => {
+                    crate::max_runtime::LspPhase::Initialized
+                }
                 crate::service::state::State::ShutDown => crate::max_runtime::LspPhase::ShutDown,
                 crate::service::state::State::Exited => crate::max_runtime::LspPhase::Exited,
             };

@@ -51,15 +51,24 @@ impl WorkspaceService {
         match AutonomicMesh::load_from_file(&self.state_path) {
             Ok(mesh) => {
                 let instance_count = mesh.instances.len();
-                let total_diagnostics: usize = mesh.instances.values().map(|i| i.diagnostics.len()).sum();
+                let total_diagnostics: usize =
+                    mesh.instances.values().map(|i| i.diagnostics.len()).sum();
                 let avg_score = if instance_count > 0 {
-                    mesh.instances.values().map(|i| i.conformance_score()).sum::<f64>() / instance_count as f64
+                    mesh.instances
+                        .values()
+                        .map(|i| i.conformance_score())
+                        .sum::<f64>()
+                        / instance_count as f64
                 } else {
                     100.0
                 };
-                let error_count: usize = mesh.instances.values()
+                let error_count: usize = mesh
+                    .instances
+                    .values()
                     .flat_map(|i| i.diagnostics.iter())
-                    .filter(|d| matches!(d.lsp.severity, Some(lsp_types::DiagnosticSeverity::ERROR)))
+                    .filter(|d| {
+                        matches!(d.lsp.severity, Some(lsp_types::DiagnosticSeverity::ERROR))
+                    })
                     .count();
                 // files_scanned: count unique instance IDs (each registered instance = a workspace file/root)
                 let files_scanned = instance_count.max(1);
@@ -90,18 +99,29 @@ impl WorkspaceService {
         // Wire to runtime: count actual errors/warnings from the mesh
         match AutonomicMesh::load_from_file(&self.state_path) {
             Ok(mesh) => {
-                let errors: usize = mesh.instances.values()
+                let errors: usize = mesh
+                    .instances
+                    .values()
                     .flat_map(|i| i.diagnostics.iter())
-                    .filter(|d| matches!(d.lsp.severity, Some(lsp_types::DiagnosticSeverity::ERROR)))
+                    .filter(|d| {
+                        matches!(d.lsp.severity, Some(lsp_types::DiagnosticSeverity::ERROR))
+                    })
                     .count();
-                let warnings: usize = mesh.instances.values()
+                let warnings: usize = mesh
+                    .instances
+                    .values()
                     .flat_map(|i| i.diagnostics.iter())
-                    .filter(|d| matches!(d.lsp.severity, Some(lsp_types::DiagnosticSeverity::WARNING)))
+                    .filter(|d| {
+                        matches!(d.lsp.severity, Some(lsp_types::DiagnosticSeverity::WARNING))
+                    })
                     .count();
                 let _ = workspace;
                 WorkspaceLintResult { errors, warnings }
             }
-            Err(_) => WorkspaceLintResult { errors: 0, warnings: 0 },
+            Err(_) => WorkspaceLintResult {
+                errors: 0,
+                warnings: 0,
+            },
         }
     }
 }

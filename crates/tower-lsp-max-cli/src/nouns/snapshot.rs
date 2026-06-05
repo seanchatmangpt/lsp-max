@@ -26,10 +26,7 @@ impl SnapshotService {
     }
 
     /// Dispatch max/snapshot for a single instance.
-    pub fn take(
-        &self,
-        instance_id: &str,
-    ) -> std::result::Result<serde_json::Value, String> {
+    pub fn take(&self, instance_id: &str) -> std::result::Result<serde_json::Value, String> {
         let mut mesh =
             AutonomicMesh::load_from_file(&self.state_path).map_err(|e| e.to_string())?;
         let response = mesh.dispatch_rpc(instance_id, "max/snapshot", serde_json::Value::Null)?;
@@ -39,10 +36,7 @@ impl SnapshotService {
     }
 
     /// Dispatch max/manifoldSnapshot across all instances in the mesh.
-    pub fn manifold(
-        &self,
-        instance_id: &str,
-    ) -> std::result::Result<serde_json::Value, String> {
+    pub fn manifold(&self, instance_id: &str) -> std::result::Result<serde_json::Value, String> {
         let mut mesh =
             AutonomicMesh::load_from_file(&self.state_path).map_err(|e| e.to_string())?;
         let response =

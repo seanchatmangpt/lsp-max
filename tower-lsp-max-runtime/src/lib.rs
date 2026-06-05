@@ -136,7 +136,10 @@ pub fn validate_and_reconstruct_chain_checked(
 
     if history.len() > 1 {
         let r1 = &history[1];
-        if !r1.receipt_id.starts_with("rcpt-uninitialized-to-initializing:") {
+        if !r1
+            .receipt_id
+            .starts_with("rcpt-uninitialized-to-initializing:")
+        {
             return Err(format!(
                 "Invalid receipt ID at index 1: expected prefix                  'rcpt-uninitialized-to-initializing:', got '{}'",
                 r1.receipt_id
@@ -144,9 +147,8 @@ pub fn validate_and_reconstruct_chain_checked(
         }
         let prefix_len = "rcpt-uninitialized-to-initializing:".len();
         let json_str = &r1.receipt_id[prefix_len..];
-        client_caps = serde_json::from_str(json_str).map_err(|e| {
-            format!("Failed to parse client capabilities at index 1: {}", e)
-        })?;
+        client_caps = serde_json::from_str(json_str)
+            .map_err(|e| format!("Failed to parse client capabilities at index 1: {}", e))?;
 
         expected_hash = sha256(format!("{}:{}", expected_hash, r1.receipt_id).as_bytes());
         if r1.hash != expected_hash {
@@ -159,7 +161,10 @@ pub fn validate_and_reconstruct_chain_checked(
 
     if history.len() > 2 {
         let r2 = &history[2];
-        if !r2.receipt_id.starts_with("rcpt-initializing-to-initialized:") {
+        if !r2
+            .receipt_id
+            .starts_with("rcpt-initializing-to-initialized:")
+        {
             return Err(format!(
                 "Invalid receipt ID at index 2: expected prefix                  'rcpt-initializing-to-initialized:', got '{}'",
                 r2.receipt_id
@@ -167,9 +172,8 @@ pub fn validate_and_reconstruct_chain_checked(
         }
         let prefix_len = "rcpt-initializing-to-initialized:".len();
         let json_str = &r2.receipt_id[prefix_len..];
-        server_caps = serde_json::from_str(json_str).map_err(|e| {
-            format!("Failed to parse server capabilities at index 2: {}", e)
-        })?;
+        server_caps = serde_json::from_str(json_str)
+            .map_err(|e| format!("Failed to parse server capabilities at index 2: {}", e))?;
 
         expected_hash = sha256(format!("{}:{}", expected_hash, r2.receipt_id).as_bytes());
         if r2.hash != expected_hash {
@@ -350,7 +354,11 @@ pub enum ChainError {
     /// The chain is empty when it must not be.
     EmptyHistory,
     /// Cryptographic hash mismatch between the declared and computed hash.
-    HashMismatch { index: usize, expected: String, got: String },
+    HashMismatch {
+        index: usize,
+        expected: String,
+        got: String,
+    },
     /// Receipt ID at a given index does not match the expected value.
     ReceiptIdMismatch { index: usize, detail: String },
     /// Chain is too short to reconstruct the target phase.
@@ -365,7 +373,11 @@ impl std::fmt::Display for ChainError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             ChainError::EmptyHistory => write!(f, "Receipt chain is empty"),
-            ChainError::HashMismatch { index, expected, got } => write!(
+            ChainError::HashMismatch {
+                index,
+                expected,
+                got,
+            } => write!(
                 f,
                 "Hash mismatch at index {}: expected '{}', got '{}'",
                 index, expected, got
@@ -399,13 +411,23 @@ fn chain_err_from_str(e: String) -> ChainError {
             .split_whitespace()
             .find_map(|w| w.trim_end_matches(':').parse::<usize>().ok())
             .unwrap_or(0);
-        ChainError::HashMismatch { index, expected: String::new(), got: e }
+        ChainError::HashMismatch {
+            index,
+            expected: String::new(),
+            got: e,
+        }
     } else if e.contains("Insufficient history") {
-        ChainError::InsufficientHistory { required: 0, got: 0 }
+        ChainError::InsufficientHistory {
+            required: 0,
+            got: 0,
+        }
     } else if e.contains("unexpected") {
         ChainError::ExcessHistory { extra: 0 }
     } else {
-        ChainError::ReceiptIdMismatch { index: 0, detail: e }
+        ChainError::ReceiptIdMismatch {
+            index: 0,
+            detail: e,
+        }
     }
 }
 
@@ -537,7 +559,11 @@ impl TypestateKernel<AccessAdmissionLaw, Uninitialized, EmptyData>
         let receipt_id = "rcpt-uninitialized".to_string();
         let hash = sha256(receipt_id.as_bytes());
         // First receipt in the chain — no predecessor.
-        tower_lsp_max_protocol::Receipt { receipt_id, hash, prev_receipt_hash: None }
+        tower_lsp_max_protocol::Receipt {
+            receipt_id,
+            hash,
+            prev_receipt_hash: None,
+        }
     }
 
     fn exit(self) -> EmptyData {
@@ -545,8 +571,7 @@ impl TypestateKernel<AccessAdmissionLaw, Uninitialized, EmptyData>
     }
 
     fn replay(history: Vec<Self::Receipt>) -> Result<Self, ChainError> {
-        validate_and_reconstruct_chain_checked(&history)
-            .map_err(chain_err_from_str)?;
+        validate_and_reconstruct_chain_checked(&history).map_err(chain_err_from_str)?;
         Ok(Machine::new(Uninitialized, EmptyData::default()))
     }
 }
@@ -597,10 +622,13 @@ impl TypestateKernel<AccessAdmissionLaw, Initializing, InitializingData>
 
     fn replay(history: Vec<Self::Receipt>) -> Result<Self, ChainError> {
         if history.len() < 2 {
-            return Err(ChainError::InsufficientHistory { required: 2, got: history.len() });
+            return Err(ChainError::InsufficientHistory {
+                required: 2,
+                got: history.len(),
+            });
         }
-        let (client_caps, _) = validate_and_reconstruct_chain_checked(&history)
-            .map_err(chain_err_from_str)?;
+        let (client_caps, _) =
+            validate_and_reconstruct_chain_checked(&history).map_err(chain_err_from_str)?;
         Ok(Machine::new(
             Initializing,
             InitializingData {
@@ -660,10 +688,13 @@ impl TypestateKernel<AccessAdmissionLaw, Initialized, InitializedData>
 
     fn replay(history: Vec<Self::Receipt>) -> Result<Self, ChainError> {
         if history.len() < 3 {
-            return Err(ChainError::InsufficientHistory { required: 3, got: history.len() });
+            return Err(ChainError::InsufficientHistory {
+                required: 3,
+                got: history.len(),
+            });
         }
-        let (client_caps, server_caps) = validate_and_reconstruct_chain_checked(&history)
-            .map_err(chain_err_from_str)?;
+        let (client_caps, server_caps) =
+            validate_and_reconstruct_chain_checked(&history).map_err(chain_err_from_str)?;
         Ok(Machine::new(
             Initialized,
             InitializedData {
@@ -734,10 +765,13 @@ impl TypestateKernel<AccessAdmissionLaw, ShutDown, EmptyData>
 
     fn replay(history: Vec<Self::Receipt>) -> Result<Self, ChainError> {
         if history.len() < 4 {
-            return Err(ChainError::InsufficientHistory { required: 4, got: history.len() });
+            return Err(ChainError::InsufficientHistory {
+                required: 4,
+                got: history.len(),
+            });
         }
-        let (client_caps, server_caps) = validate_and_reconstruct_chain_checked(&history)
-            .map_err(chain_err_from_str)?;
+        let (client_caps, server_caps) =
+            validate_and_reconstruct_chain_checked(&history).map_err(chain_err_from_str)?;
         Ok(Machine::new(
             ShutDown,
             EmptyData {
@@ -810,10 +844,13 @@ impl TypestateKernel<AccessAdmissionLaw, Exited, EmptyData>
 
     fn replay(history: Vec<Self::Receipt>) -> Result<Self, ChainError> {
         if history.len() < 5 {
-            return Err(ChainError::InsufficientHistory { required: 5, got: history.len() });
+            return Err(ChainError::InsufficientHistory {
+                required: 5,
+                got: history.len(),
+            });
         }
-        let (client_caps, server_caps) = validate_and_reconstruct_chain_checked(&history)
-            .map_err(chain_err_from_str)?;
+        let (client_caps, server_caps) =
+            validate_and_reconstruct_chain_checked(&history).map_err(chain_err_from_str)?;
         Ok(Machine::new(
             Exited,
             EmptyData {
@@ -944,11 +981,19 @@ mod tests {
             );
         let replayed_exited_ok = replayed_exited.expect("replay must succeed");
         assert_eq!(
-            replayed_exited_ok.data.client_capabilities.as_ref().unwrap(),
+            replayed_exited_ok
+                .data
+                .client_capabilities
+                .as_ref()
+                .unwrap(),
             &client_caps
         );
         assert_eq!(
-            replayed_exited_ok.data.server_capabilities.as_ref().unwrap(),
+            replayed_exited_ok
+                .data
+                .server_capabilities
+                .as_ref()
+                .unwrap(),
             &server_caps
         );
 
@@ -1009,27 +1054,38 @@ pub enum MeshAction {
     },
     /// Clear all diagnostics and receipts on an instance and reset its policy
     /// state to Active, supporting test-harness teardown and chaos recycling.
-    ResetInstance {
-        instance_id: InstanceId,
-    },
+    ResetInstance { instance_id: InstanceId },
 }
 
 impl std::fmt::Display for MeshAction {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            MeshAction::TransitionPolicyState { instance_id, new_state } => {
+            MeshAction::TransitionPolicyState {
+                instance_id,
+                new_state,
+            } => {
                 write!(f, "TransitionPolicyState({}, {:?})", instance_id, new_state)
             }
-            MeshAction::ClearDiagnostic { instance_id, diagnostic_id } => {
+            MeshAction::ClearDiagnostic {
+                instance_id,
+                diagnostic_id,
+            } => {
                 write!(f, "ClearDiagnostic({}, {})", instance_id, diagnostic_id)
             }
             MeshAction::AddDiagnostic { instance_id, .. } => {
                 write!(f, "AddDiagnostic({})", instance_id)
             }
-            MeshAction::EmitReceipt { instance_id, receipt } => {
+            MeshAction::EmitReceipt {
+                instance_id,
+                receipt,
+            } => {
                 write!(f, "EmitReceipt({}, {})", instance_id, receipt.receipt_id)
             }
-            MeshAction::ExecuteBoundedAction { instance_id, action_id, .. } => {
+            MeshAction::ExecuteBoundedAction {
+                instance_id,
+                action_id,
+                ..
+            } => {
                 write!(f, "ExecuteBoundedAction({}, {})", instance_id, action_id)
             }
             MeshAction::ResetInstance { instance_id } => {
@@ -1114,7 +1170,8 @@ impl LspInstance {
     /// Returns the number of entries removed.
     pub fn remove_diagnostic(&mut self, diagnostic_id: &str) -> usize {
         let before = self.diagnostics.len();
-        self.diagnostics.retain(|d| d.diagnostic_id != diagnostic_id);
+        self.diagnostics
+            .retain(|d| d.diagnostic_id != diagnostic_id);
         let removed = before - self.diagnostics.len();
         if removed > 0 {
             self.invalidate_score_cache();
@@ -1212,7 +1269,6 @@ impl std::fmt::Display for ConformanceGrade {
     }
 }
 
-
 #[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
 pub struct AutonomicMeshState {
     pub instances: std::collections::HashMap<String, LspInstance>,
@@ -1221,7 +1277,6 @@ pub struct AutonomicMeshState {
     #[serde(flatten)]
     pub extra: std::collections::HashMap<String, serde_json::Value>,
 }
-
 
 impl std::fmt::Display for AutonomicMeshState {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -1329,7 +1384,6 @@ pub struct ConformanceDeltaEntry {
     pub old_score: f64,
     pub new_score: f64,
 }
-
 
 /// Typed enumeration of every known `max/` RPC method.
 ///
@@ -1472,11 +1526,16 @@ pub type MaxMesh = AutonomicMesh;
 /// and *unknown* if no diagnostic has been observed for that axis.
 /// Both `max/conformanceVector` and `max/exportAnalysisBundle` delegate to this function so
 /// that a bug fix needs to be applied only once.
-fn build_conformance_vector(diagnostics: &[MaxDiagnostic]) -> tower_lsp_max_protocol::ConformanceVector {
+fn build_conformance_vector(
+    diagnostics: &[MaxDiagnostic],
+) -> tower_lsp_max_protocol::ConformanceVector {
     let mut axis_map: std::collections::HashMap<tower_lsp_max_protocol::LawAxis, bool> =
         std::collections::HashMap::new(); // true = has error
     for diag in diagnostics {
-        let is_error = matches!(diag.lsp.severity, Some(lsp_types::DiagnosticSeverity::ERROR));
+        let is_error = matches!(
+            diag.lsp.severity,
+            Some(lsp_types::DiagnosticSeverity::ERROR)
+        );
         let entry = axis_map.entry(diag.law_axis.clone()).or_insert(false);
         if is_error {
             *entry = true;
@@ -1745,7 +1804,8 @@ impl AutonomicMesh {
                 description,
             } => {
                 if action_id == "act-create-refund-receipt" {
-                    let receipt_dir = std::env::var("MESH_RECEIPT_DIR").unwrap_or_else(|_| ".".to_string());
+                    let receipt_dir =
+                        std::env::var("MESH_RECEIPT_DIR").unwrap_or_else(|_| ".".to_string());
                     let file_path = std::path::Path::new(&receipt_dir).join("refund_receipt.txt");
                     let content = format!(
                         "REFUND RECEIPT\nInstance: {}\nDescription: {}\nStatus: Executed\nTimestamp: {}\n",
@@ -1757,7 +1817,11 @@ impl AutonomicMesh {
                             .as_secs()
                     );
                     if let Err(e) = std::fs::write(&file_path, content) {
-                        eprintln!("warn: failed to write receipt to {}: {}", file_path.display(), e);
+                        eprintln!(
+                            "warn: failed to write receipt to {}: {}",
+                            file_path.display(),
+                            e
+                        );
                     }
                 }
                 self.dispatch_event(HookEvent::BoundedActionExecuted {
@@ -1773,16 +1837,18 @@ impl AutonomicMesh {
                     instance.receipts.clear();
                     instance.policy_state = Some(PolicyState::Operational);
                     instance.invalidate_score_cache();
-                    self.dispatch_event(HookEvent::InstanceReset {
-                        instance_id,
-                    });
+                    self.dispatch_event(HookEvent::InstanceReset { instance_id });
                 }
             }
         }
 
         // Record conformance delta if score changed.
         if let Some(iid) = maybe_instance_id {
-            if let Some(new_score) = self.instances.get(&iid).map(|inst| inst.conformance_score()) {
+            if let Some(new_score) = self
+                .instances
+                .get(&iid)
+                .map(|inst| inst.conformance_score())
+            {
                 if let Some(old) = old_score {
                     if (new_score - old).abs() > f64::EPSILON {
                         let entry = ConformanceDeltaEntry {
@@ -1950,7 +2016,9 @@ impl AutonomicMesh {
                 serde_json::to_value(snap.id).map_err(|e| e.to_string())
             }
             MaxMethod::ConformanceVector => {
-                let instance = self.instances.get(instance_id)
+                let instance = self
+                    .instances
+                    .get(instance_id)
                     .ok_or_else(|| format!("Instance not found: {}", instance_id))?;
 
                 let vec = build_conformance_vector(&instance.diagnostics);
@@ -2084,58 +2152,74 @@ impl AutonomicMesh {
             }
             MaxMethod::Hook => {
                 // List all registered hooks with their metadata
-                let hook_names: Vec<serde_json::Value> = self.hooks.iter().map(|h| {
-                    serde_json::json!({ "name": h.name() })
-                }).collect();
+                let hook_names: Vec<serde_json::Value> = self
+                    .hooks
+                    .iter()
+                    .map(|h| serde_json::json!({ "name": h.name() }))
+                    .collect();
                 serde_json::to_value(hook_names).map_err(|e| e.to_string())
             }
 
             MaxMethod::HookGraph => {
                 // Return hook topology: for each hook, name + active diagnostic/receipt triggers
-                let inst = self.instances.get(instance_id)
+                let inst = self
+                    .instances
+                    .get(instance_id)
                     .ok_or_else(|| format!("Instance not found: {}", instance_id))?;
-                let diagnostic_ids: Vec<&str> = inst.diagnostics.iter()
+                let diagnostic_ids: Vec<&str> = inst
+                    .diagnostics
+                    .iter()
                     .map(|d| d.diagnostic_id.as_str())
                     .collect();
-                let receipt_ids: Vec<&str> = inst.receipts.iter()
+                let receipt_ids: Vec<&str> = inst
+                    .receipts
+                    .iter()
                     .map(|r| r.receipt_id.as_str())
                     .collect();
-                let graph: Vec<serde_json::Value> = self.hooks.iter().map(|h| {
-                    serde_json::json!({
-                        "hook": h.name(),
-                        "instance_id": instance_id,
-                        "active_diagnostic_triggers": diagnostic_ids,
-                        "active_receipt_triggers": receipt_ids,
-                        "pending_diagnostic_count": inst.diagnostics.len(),
-                        "pending_receipt_count": inst.receipts.len(),
+                let graph: Vec<serde_json::Value> = self
+                    .hooks
+                    .iter()
+                    .map(|h| {
+                        serde_json::json!({
+                            "hook": h.name(),
+                            "instance_id": instance_id,
+                            "active_diagnostic_triggers": diagnostic_ids,
+                            "active_receipt_triggers": receipt_ids,
+                            "pending_diagnostic_count": inst.diagnostics.len(),
+                            "pending_receipt_count": inst.receipts.len(),
+                        })
                     })
-                }).collect();
+                    .collect();
                 serde_json::to_value(graph).map_err(|e| e.to_string())
             }
 
             MaxMethod::Chain => {
                 // Return full instance state summaries for all mesh members
-                let mut chain: Vec<serde_json::Value> = self.instances.iter().map(|(id, inst)| {
-                    serde_json::json!({
-                        "id": id,
-                        "phase": inst.phase,
-                        "policy_state": inst.policy_state,
-                        "conformance_score": inst.conformance_score(),
-                        "conformance_grade": inst.conformance_grade().as_str(),
-                        "diagnostic_count": inst.diagnostics.len(),
-                        "receipt_count": inst.receipts.len(),
-                        "diagnostics": inst.diagnostics.iter().map(|d| serde_json::json!({
-                            "id": d.diagnostic_id,
-                            "law_id": d.law_id,
-                            "severity": format!("{:?}", d.lsp.severity),
-                            "message": d.lsp.message,
-                        })).collect::<Vec<_>>(),
-                        "receipts": inst.receipts.iter().map(|r| serde_json::json!({
-                            "receipt_id": r.receipt_id,
-                            "hash": r.hash,
-                        })).collect::<Vec<_>>(),
+                let mut chain: Vec<serde_json::Value> = self
+                    .instances
+                    .iter()
+                    .map(|(id, inst)| {
+                        serde_json::json!({
+                            "id": id,
+                            "phase": inst.phase,
+                            "policy_state": inst.policy_state,
+                            "conformance_score": inst.conformance_score(),
+                            "conformance_grade": inst.conformance_grade().as_str(),
+                            "diagnostic_count": inst.diagnostics.len(),
+                            "receipt_count": inst.receipts.len(),
+                            "diagnostics": inst.diagnostics.iter().map(|d| serde_json::json!({
+                                "id": d.diagnostic_id,
+                                "law_id": d.law_id,
+                                "severity": format!("{:?}", d.lsp.severity),
+                                "message": d.lsp.message,
+                            })).collect::<Vec<_>>(),
+                            "receipts": inst.receipts.iter().map(|r| serde_json::json!({
+                                "receipt_id": r.receipt_id,
+                                "hash": r.hash,
+                            })).collect::<Vec<_>>(),
+                        })
                     })
-                }).collect();
+                    .collect();
                 chain.sort_by_key(|v| v["id"].as_str().unwrap_or("").to_string());
                 serde_json::to_value(chain).map_err(|e| e.to_string())
             }
@@ -2186,32 +2270,69 @@ impl AutonomicMesh {
                 // Attempt a lawful transition: validate phase order and check blocking diagnostics
                 let target_phase: String =
                     serde_json::from_value(params).map_err(|e| format!("Invalid params: {}", e))?;
-                let inst = self.instances.get(instance_id)
+                let inst = self
+                    .instances
+                    .get(instance_id)
                     .ok_or_else(|| format!("Instance not found: {}", instance_id))?;
                 // Define lawful phase order
-                let phase_order = ["Uninitialized", "Initializing", "Initialized", "ShutDown", "Exited"];
-                let current_idx = phase_order.iter().position(|&p| p == inst.phase.to_string().as_str());
+                let phase_order = [
+                    "Uninitialized",
+                    "Initializing",
+                    "Initialized",
+                    "ShutDown",
+                    "Exited",
+                ];
+                let current_idx = phase_order
+                    .iter()
+                    .position(|&p| p == inst.phase.to_string().as_str());
                 let target_idx = phase_order.iter().position(|&p| p == target_phase.as_str());
                 let (admitted, refused_reason) = match (current_idx, target_idx) {
                     (Some(ci), Some(ti)) if ti == ci + 1 => {
                         // Check for blocking error-severity diagnostics
-                        let blocking: Vec<_> = inst.diagnostics.iter()
-                            .filter(|d| matches!(d.lsp.severity, Some(lsp_types::DiagnosticSeverity::ERROR)))
+                        let blocking: Vec<_> = inst
+                            .diagnostics
+                            .iter()
+                            .filter(|d| {
+                                matches!(d.lsp.severity, Some(lsp_types::DiagnosticSeverity::ERROR))
+                            })
                             .map(|d| d.diagnostic_id.clone())
                             .collect();
                         if blocking.is_empty() {
                             (true, None)
                         } else {
-                            (false, Some(format!("Blocked by {} error diagnostic(s): {:?}", blocking.len(), blocking)))
+                            (
+                                false,
+                                Some(format!(
+                                    "Blocked by {} error diagnostic(s): {:?}",
+                                    blocking.len(),
+                                    blocking
+                                )),
+                            )
                         }
                     }
-                    (Some(ci), Some(ti)) if ti <= ci => {
-                        (false, Some(format!("Backward transitions are not lawful: {} -> {}", inst.phase, target_phase)))
-                    }
-                    (Some(ci), Some(ti)) if ti > ci + 1 => {
-                        (false, Some(format!("Cannot skip phases: {} -> {} skips {} intermediate phase(s)", inst.phase, target_phase, ti - ci - 1)))
-                    }
-                    _ => (false, Some(format!("Unknown phase(s): current='{}', target='{}'", inst.phase, target_phase))),
+                    (Some(ci), Some(ti)) if ti <= ci => (
+                        false,
+                        Some(format!(
+                            "Backward transitions are not lawful: {} -> {}",
+                            inst.phase, target_phase
+                        )),
+                    ),
+                    (Some(ci), Some(ti)) if ti > ci + 1 => (
+                        false,
+                        Some(format!(
+                            "Cannot skip phases: {} -> {} skips {} intermediate phase(s)",
+                            inst.phase,
+                            target_phase,
+                            ti - ci - 1
+                        )),
+                    ),
+                    _ => (
+                        false,
+                        Some(format!(
+                            "Unknown phase(s): current='{}', target='{}'",
+                            inst.phase, target_phase
+                        )),
+                    ),
                 };
                 let result = serde_json::json!({
                     "instance_id": instance_id,
@@ -2230,17 +2351,20 @@ impl AutonomicMesh {
 
             MaxMethod::Admission => {
                 // Admissibility gate: returns Admitted/Refused/Unknown — NEVER collapses
-                let inst = self.instances.get(instance_id)
+                let inst = self
+                    .instances
+                    .get(instance_id)
                     .ok_or_else(|| format!("Instance not found: {}", instance_id))?;
-                let verdict = if inst.diagnostics.is_empty() {
-                    "Admitted"
-                } else if inst.diagnostics.iter().any(|d| {
-                    matches!(d.lsp.severity, Some(lsp_types::DiagnosticSeverity::ERROR))
-                }) {
-                    "Refused"
-                } else {
-                    "Unknown" // Warnings/hints present — cannot determine admissibility
-                };
+                let verdict =
+                    if inst.diagnostics.is_empty() {
+                        "Admitted"
+                    } else if inst.diagnostics.iter().any(|d| {
+                        matches!(d.lsp.severity, Some(lsp_types::DiagnosticSeverity::ERROR))
+                    }) {
+                        "Refused"
+                    } else {
+                        "Unknown" // Warnings/hints present — cannot determine admissibility
+                    };
                 Ok(serde_json::json!({
                     "instance_id": instance_id,
                     "verdict": verdict,
@@ -2254,7 +2378,11 @@ impl AutonomicMesh {
                     serde_json::from_value(params).map_err(|e| format!("Invalid params: {}", e))?;
                 let receipt_id = format!("rcpt-refusal-{}", diag_id);
                 let hash = sha256(receipt_id.as_bytes());
-                let receipt = tower_lsp_max_protocol::Receipt { receipt_id: receipt_id.clone(), hash, prev_receipt_hash: None };
+                let receipt = tower_lsp_max_protocol::Receipt {
+                    receipt_id: receipt_id.clone(),
+                    hash,
+                    prev_receipt_hash: None,
+                };
                 self.execute_action(MeshAction::EmitReceipt {
                     instance_id: InstanceId::from(instance_id),
                     receipt: receipt.clone(),
@@ -2268,16 +2396,32 @@ impl AutonomicMesh {
 
             MaxMethod::Replay => {
                 // Replay the event log for the instance
-                let inst = self.instances.get(instance_id)
+                let inst = self
+                    .instances
+                    .get(instance_id)
                     .ok_or_else(|| format!("Instance not found: {}", instance_id))?;
-                let events: Vec<serde_json::Value> = self.event_log.iter()
+                let events: Vec<serde_json::Value> = self
+                    .event_log
+                    .iter()
                     .filter(|e| match e {
-                        HookEvent::StateTransition { instance_id: id, .. } |
-                        HookEvent::DiagnosticEmitted { instance_id: id, .. } |
-                        HookEvent::DiagnosticCleared { instance_id: id, .. } |
-                        HookEvent::ReceiptEmitted { instance_id: id, .. } |
-                        HookEvent::PolicyStateChanged { instance_id: id, .. } => id.0 == instance_id,
-                        HookEvent::BoundedActionExecuted { instance_id: id, .. } => id.0 == instance_id,
+                        HookEvent::StateTransition {
+                            instance_id: id, ..
+                        }
+                        | HookEvent::DiagnosticEmitted {
+                            instance_id: id, ..
+                        }
+                        | HookEvent::DiagnosticCleared {
+                            instance_id: id, ..
+                        }
+                        | HookEvent::ReceiptEmitted {
+                            instance_id: id, ..
+                        }
+                        | HookEvent::PolicyStateChanged {
+                            instance_id: id, ..
+                        } => id.0 == instance_id,
+                        HookEvent::BoundedActionExecuted {
+                            instance_id: id, ..
+                        } => id.0 == instance_id,
                         HookEvent::InstanceReset { instance_id: id } => id.0 == instance_id,
                     })
                     .filter_map(|e| serde_json::to_value(e).ok())
@@ -2292,19 +2436,26 @@ impl AutonomicMesh {
 
             MaxMethod::ReleaseActuation => {
                 // Controlled release: only if conformance admits it
-                let inst = self.instances.get(instance_id)
+                let inst = self
+                    .instances
+                    .get(instance_id)
                     .ok_or_else(|| format!("Instance not found: {}", instance_id))?;
                 let score = inst.conformance_score();
                 let admitted = inst.diagnostics.is_empty();
                 if !admitted {
                     return Err(format!(
                         "Release refused: {} active diagnostics blocking conformance (score: {})",
-                        inst.diagnostics.len(), score
+                        inst.diagnostics.len(),
+                        score
                     ));
                 }
                 let receipt_id = format!("rcpt-release-{}", instance_id);
                 let hash = sha256(receipt_id.as_bytes());
-                let receipt = tower_lsp_max_protocol::Receipt { receipt_id: receipt_id.clone(), hash, prev_receipt_hash: None };
+                let receipt = tower_lsp_max_protocol::Receipt {
+                    receipt_id: receipt_id.clone(),
+                    hash,
+                    prev_receipt_hash: None,
+                };
                 self.execute_action(MeshAction::EmitReceipt {
                     instance_id: InstanceId::from(instance_id),
                     receipt: receipt.clone(),
@@ -2321,14 +2472,18 @@ impl AutonomicMesh {
             MaxMethod::InstanceList => {
                 // Lightweight enumeration of all live instances: id, phase, conformance_score.
                 // Callers that only need instance IDs should prefer this over max/manifoldSnapshot.
-                let mut list: Vec<serde_json::Value> = self.instances.values().map(|inst| {
-                    serde_json::json!({
-                        "id": inst.id,
-                        "phase": inst.phase,
-                        "conformance_score": inst.conformance_score(),
-                        "conformance_grade": inst.conformance_grade().as_str(),
+                let mut list: Vec<serde_json::Value> = self
+                    .instances
+                    .values()
+                    .map(|inst| {
+                        serde_json::json!({
+                            "id": inst.id,
+                            "phase": inst.phase,
+                            "conformance_score": inst.conformance_score(),
+                            "conformance_grade": inst.conformance_grade().as_str(),
+                        })
                     })
-                }).collect();
+                    .collect();
                 list.sort_by_key(|v| v["id"].as_str().unwrap_or("").to_string());
                 serde_json::to_value(list).map_err(|e| e.to_string())
             }
@@ -2376,7 +2531,6 @@ impl AutonomicMesh {
                     "current_seq": self.action_seq,
                 }))
             }
-
         }
     }
 
@@ -2398,8 +2552,11 @@ impl AutonomicMesh {
                 .instances
                 .get(instance_id)
                 .ok_or_else(|| format!("Instance not found: {}", instance_id))?;
-            let existing: std::collections::HashSet<&str> =
-                inst.receipts.iter().map(|r| r.receipt_id.as_str()).collect();
+            let existing: std::collections::HashSet<&str> = inst
+                .receipts
+                .iter()
+                .map(|r| r.receipt_id.as_str())
+                .collect();
             for expected in &code_action.receipt_plan.expected_receipts {
                 if !existing.contains(expected.as_str()) {
                     return Err(format!(
@@ -2720,11 +2877,7 @@ impl Hook for CustomerRequestClassifierHook {
                     instance_id: instance_id.clone(),
                     receipt: tower_lsp_max_protocol::Receipt {
                         receipt_id: format!("bounded-action-executed-{}", action_id),
-                        hash: format!(
-                            "sha256:bounded:{}:{}",
-                            action_id,
-                            description.len()
-                        ),
+                        hash: format!("sha256:bounded:{}:{}", action_id, description.len()),
                         prev_receipt_hash: None,
                     },
                 });
@@ -2922,7 +3075,6 @@ impl Hook for ReceiptRoutingHook {
 mod additional_hooks_tests {
     use super::*;
 
-
     #[test]
     fn test_instance_reset_clears_hook_caches() {
         let mut mesh = AutonomicMesh::new();
@@ -3117,7 +3269,10 @@ mod tests_gaps {
         assert!(result.is_ok());
         let val = result.unwrap();
         // No diagnostics → no axes evaluated → score is null (all-unknown per doctrine)
-        assert!(val["score"].is_null(), "score should be null when no diagnostics");
+        assert!(
+            val["score"].is_null(),
+            "score should be null when no diagnostics"
+        );
     }
 
     #[test]
@@ -3131,7 +3286,9 @@ mod tests_gaps {
         assert!(result.is_ok());
         let val = result.unwrap();
         // One ERROR diagnostic: admitted=0, refused=1 → score = 0%
-        let score = val["score"].as_f64().expect("score should be f64 with refused axis");
+        let score = val["score"]
+            .as_f64()
+            .expect("score should be f64 with refused axis");
         assert_eq!(score, 0.0);
     }
 
@@ -3489,9 +3646,17 @@ mod tests_gaps {
     fn test_conformance_score_cache_invalidation() {
         let mut inst = LspInstance::new("CACHE_TEST");
         // Fresh instance: score 100
-        assert_eq!(inst.conformance_score(), 100.0, "empty diags must score 100");
+        assert_eq!(
+            inst.conformance_score(),
+            100.0,
+            "empty diags must score 100"
+        );
         // Second call must use cache (same result)
-        assert_eq!(inst.conformance_score(), 100.0, "cached call must also score 100");
+        assert_eq!(
+            inst.conformance_score(),
+            100.0,
+            "cached call must also score 100"
+        );
 
         // Add an ERROR diagnostic; cache must be invalidated
         let diag = MaxDiagnostic {
@@ -3524,16 +3689,27 @@ mod tests_gaps {
         inst.diagnostics.push(diag);
         inst.invalidate_score_cache();
         // Score must drop by 30 (one ERROR)
-        assert_eq!(inst.conformance_score(), 70.0, "one ERROR must reduce score to 70");
+        assert_eq!(
+            inst.conformance_score(),
+            70.0,
+            "one ERROR must reduce score to 70"
+        );
         // Repeated reads use cache
-        assert_eq!(inst.conformance_score(), 70.0, "cached score must remain 70");
+        assert_eq!(
+            inst.conformance_score(),
+            70.0,
+            "cached score must remain 70"
+        );
 
         // Clear diagnostic; invalidate
         inst.diagnostics.clear();
         inst.invalidate_score_cache();
-        assert_eq!(inst.conformance_score(), 100.0, "after clear score must return to 100");
+        assert_eq!(
+            inst.conformance_score(),
+            100.0,
+            "after clear score must return to 100"
+        );
     }
-
 
     #[test]
     fn test_rpc_conformance_vector_warning_diagnostic() {
@@ -3567,7 +3743,9 @@ mod tests_gaps {
         assert!(result.is_ok());
         let val = result.unwrap();
         // WARNING → admitted (not refused); admitted=1, refused=0 → score = 100%
-        let score = val["score"].as_f64().expect("score should be f64 with one admitted axis");
+        let score = val["score"]
+            .as_f64()
+            .expect("score should be f64 with one admitted axis");
         assert_eq!(score, 100.0);
     }
 
@@ -3718,15 +3896,17 @@ mod tests_gaps {
     fn test_dispatch_depth_boundary_at_max_minus_one_executes_normally() {
         struct AddDiagHook;
         impl Hook for AddDiagHook {
-            fn name(&self) -> &str { "AddDiagHook" }
+            fn name(&self) -> &str {
+                "AddDiagHook"
+            }
             fn trigger(&self, event: &HookEvent) -> Vec<MeshAction> {
                 match event {
-                    HookEvent::StateTransition { instance_id, .. } => vec![
-                        MeshAction::AddDiagnostic {
+                    HookEvent::StateTransition { instance_id, .. } => {
+                        vec![MeshAction::AddDiagnostic {
                             instance_id: instance_id.clone(),
                             diagnostic: Box::new(make_error_diagnostic("boundary-diag")),
-                        },
-                    ],
+                        }]
+                    }
                     _ => vec![],
                 }
             }
@@ -3747,7 +3927,9 @@ mod tests_gaps {
         // Hook action must have executed — diagnostic present on the instance.
         let inst = mesh.instances.get("BOUND_INST").unwrap();
         assert!(
-            inst.diagnostics.iter().any(|d| d.diagnostic_id == "boundary-diag"),
+            inst.diagnostics
+                .iter()
+                .any(|d| d.diagnostic_id == "boundary-diag"),
             "Hook action at MAX_DISPATCH_DEPTH-1 must be fully executed"
         );
 
@@ -3775,7 +3957,10 @@ mod tests_gaps {
 
         // Exactly one new entry: the sentinel.
         let new_entries = mesh.event_log.len() - log_len_before;
-        assert_eq!(new_entries, 1, "Only the sentinel should be added when depth == MAX");
+        assert_eq!(
+            new_entries, 1,
+            "Only the sentinel should be added when depth == MAX"
+        );
 
         let sentinel = mesh.event_log.last().unwrap();
         assert!(
@@ -3787,8 +3972,7 @@ mod tests_gaps {
         // Guard fires without touching depth (the guard path never incremented it,
         // so there is nothing to decrement).  Depth must remain at MAX_DISPATCH_DEPTH.
         assert_eq!(
-            mesh.dispatch_depth,
-            MAX_DISPATCH_DEPTH,
+            mesh.dispatch_depth, MAX_DISPATCH_DEPTH,
             "Guard branch must leave depth unchanged (it never incremented it)"
         );
     }
@@ -3827,7 +4011,10 @@ mod tests_gaps {
             from_phase: "Uninitialized".to_string(),
             to_phase: "Initializing".to_string(),
         });
-        assert_eq!(mesh.dispatch_depth, 0, "dispatch_depth must return to 0 after normal dispatch");
+        assert_eq!(
+            mesh.dispatch_depth, 0,
+            "dispatch_depth must return to 0 after normal dispatch"
+        );
     }
 
     /// INN-12-10: sentinel fires exactly once per overflow call, not accumulated
@@ -3872,10 +4059,13 @@ mod tests_gaps {
             to_phase: "ShutDown".to_string(),
         });
 
-        let new_sentinels = mesh.event_log[log_len_before..].iter().filter(|e| {
-            matches!(e, HookEvent::DiagnosticEmitted { diagnostic, .. }
+        let new_sentinels = mesh.event_log[log_len_before..]
+            .iter()
+            .filter(|e| {
+                matches!(e, HookEvent::DiagnosticEmitted { diagnostic, .. }
                 if diagnostic.law_id == "MESH_DISPATCH_DEPTH")
-        }).count();
+            })
+            .count();
         assert_eq!(
             new_sentinels, 0,
             "hook chain at MAX-2 must not trigger sentinel, but {} were emitted",
@@ -3893,7 +4083,10 @@ mod tests_gaps {
         let mut mesh = make_mesh_with_instance("INST_A");
         // A fresh instance has no receipts — verifyLedger must report that.
         let result = mesh.dispatch_rpc("INST_A", "max/verifyLedger", json!(null));
-        assert!(result.is_err(), "max/verifyLedger on empty ledger should return Err");
+        assert!(
+            result.is_err(),
+            "max/verifyLedger on empty ledger should return Err"
+        );
         assert!(
             result.unwrap_err().contains("empty"),
             "error message should mention empty ledger"
@@ -3905,36 +4098,68 @@ mod tests_gaps {
         let mut mesh = make_mesh_with_instance("INST_A");
         // ledgerReport always succeeds and returns a diagnostic string.
         let result = mesh.dispatch_rpc("INST_A", "max/ledgerReport", json!(null));
-        assert!(result.is_ok(), "max/ledgerReport should return Ok, got: {:?}", result);
+        assert!(
+            result.is_ok(),
+            "max/ledgerReport should return Ok, got: {:?}",
+            result
+        );
         let val = result.unwrap();
-        assert!(val.is_string(), "max/ledgerReport result should be a string, got: {:?}", val);
+        assert!(
+            val.is_string(),
+            "max/ledgerReport result should be a string, got: {:?}",
+            val
+        );
     }
 
     #[test]
     fn test_rpc_hook_returns_array() {
         let mut mesh = make_mesh_with_instance("INST_A");
         let result = mesh.dispatch_rpc("INST_A", "max/hook", json!(null));
-        assert!(result.is_ok(), "max/hook should return Ok, got: {:?}", result);
+        assert!(
+            result.is_ok(),
+            "max/hook should return Ok, got: {:?}",
+            result
+        );
         let val = result.unwrap();
-        assert!(val.is_array(), "max/hook result should be an array, got: {:?}", val);
+        assert!(
+            val.is_array(),
+            "max/hook result should be an array, got: {:?}",
+            val
+        );
     }
 
     #[test]
     fn test_rpc_hook_graph_returns_array() {
         let mut mesh = make_mesh_with_instance("INST_A");
         let result = mesh.dispatch_rpc("INST_A", "max/hookGraph", json!(null));
-        assert!(result.is_ok(), "max/hookGraph should return Ok, got: {:?}", result);
+        assert!(
+            result.is_ok(),
+            "max/hookGraph should return Ok, got: {:?}",
+            result
+        );
         let val = result.unwrap();
-        assert!(val.is_array(), "max/hookGraph result should be an array, got: {:?}", val);
+        assert!(
+            val.is_array(),
+            "max/hookGraph result should be an array, got: {:?}",
+            val
+        );
     }
 
     #[test]
     fn test_rpc_chain_returns_array() {
         let mut mesh = make_mesh_with_instance("INST_A");
         let result = mesh.dispatch_rpc("INST_A", "max/chain", json!(null));
-        assert!(result.is_ok(), "max/chain should return Ok, got: {:?}", result);
+        assert!(
+            result.is_ok(),
+            "max/chain should return Ok, got: {:?}",
+            result
+        );
         let val = result.unwrap();
-        assert!(val.is_array(), "max/chain result should be an array, got: {:?}", val);
+        assert!(
+            val.is_array(),
+            "max/chain result should be an array, got: {:?}",
+            val
+        );
     }
 
     #[test]
@@ -3945,35 +4170,64 @@ mod tests_gaps {
             "hash": "abc123"
         });
         let result = mesh.dispatch_rpc("INST_A", "max/propagate", receipt_val);
-        assert!(result.is_ok(), "max/propagate should return Ok, got: {:?}", result);
+        assert!(
+            result.is_ok(),
+            "max/propagate should return Ok, got: {:?}",
+            result
+        );
         let val = result.unwrap();
-        assert_eq!(val["propagated"], json!(true), "max/propagate should report propagated=true");
+        assert_eq!(
+            val["propagated"],
+            json!(true),
+            "max/propagate should report propagated=true"
+        );
     }
 
     #[test]
     fn test_rpc_autonomic_loop_returns_status() {
         let mut mesh = make_mesh_with_instance("INST_A");
         let result = mesh.dispatch_rpc("INST_A", "max/autonomicLoop", json!(null));
-        assert!(result.is_ok(), "max/autonomicLoop should return Ok, got: {:?}", result);
+        assert!(
+            result.is_ok(),
+            "max/autonomicLoop should return Ok, got: {:?}",
+            result
+        );
         let val = result.unwrap();
-        assert!(val.get("instances").is_some(), "max/autonomicLoop result should have 'instances' key");
-        assert!(val.get("hook_count").is_some(), "max/autonomicLoop result should have 'hook_count' key");
+        assert!(
+            val.get("instances").is_some(),
+            "max/autonomicLoop result should have 'instances' key"
+        );
+        assert!(
+            val.get("hook_count").is_some(),
+            "max/autonomicLoop result should have 'hook_count' key"
+        );
     }
 
     #[test]
     fn test_rpc_manifold_snapshot_returns_snapshot() {
         let mut mesh = make_mesh_with_instance("INST_A");
         let result = mesh.dispatch_rpc("INST_A", "max/manifoldSnapshot", json!(null));
-        assert!(result.is_ok(), "max/manifoldSnapshot should return Ok, got: {:?}", result);
+        assert!(
+            result.is_ok(),
+            "max/manifoldSnapshot should return Ok, got: {:?}",
+            result
+        );
         let val = result.unwrap();
-        assert!(val.get("instances").is_some(), "max/manifoldSnapshot result should have 'instances' key");
+        assert!(
+            val.get("instances").is_some(),
+            "max/manifoldSnapshot result should have 'instances' key"
+        );
     }
 
     #[test]
     fn test_rpc_lawful_transition_returns_transition_info() {
         let mut mesh = make_mesh_with_instance("INST_A");
         let result = mesh.dispatch_rpc("INST_A", "max/lawfulTransition", json!("Initialized"));
-        assert!(result.is_ok(), "max/lawfulTransition should return Ok, got: {:?}", result);
+        assert!(
+            result.is_ok(),
+            "max/lawfulTransition should return Ok, got: {:?}",
+            result
+        );
         let val = result.unwrap();
         assert_eq!(val["instance_id"], json!("INST_A"));
         assert_eq!(val["requested_phase"], json!("Initialized"));
@@ -3983,9 +4237,17 @@ mod tests_gaps {
     fn test_rpc_admission_no_diagnostics_returns_admitted() {
         let mut mesh = make_mesh_with_instance("INST_A");
         let result = mesh.dispatch_rpc("INST_A", "max/admission", json!(null));
-        assert!(result.is_ok(), "max/admission should return Ok, got: {:?}", result);
+        assert!(
+            result.is_ok(),
+            "max/admission should return Ok, got: {:?}",
+            result
+        );
         let val = result.unwrap();
-        assert_eq!(val["verdict"], json!("Admitted"), "No diagnostics should yield Admitted");
+        assert_eq!(
+            val["verdict"],
+            json!("Admitted"),
+            "No diagnostics should yield Admitted"
+        );
         assert_eq!(val["instance_id"], json!("INST_A"));
     }
 
@@ -3998,38 +4260,67 @@ mod tests_gaps {
             diagnostic: Box::new(diag),
         });
         let result = mesh.dispatch_rpc("INST_A", "max/admission", json!(null));
-        assert!(result.is_ok(), "max/admission should return Ok even with errors, got: {:?}", result);
+        assert!(
+            result.is_ok(),
+            "max/admission should return Ok even with errors, got: {:?}",
+            result
+        );
         let val = result.unwrap();
-        assert_eq!(val["verdict"], json!("Refused"), "Error diagnostics should yield Refused");
+        assert_eq!(
+            val["verdict"],
+            json!("Refused"),
+            "Error diagnostics should yield Refused"
+        );
     }
 
     #[test]
     fn test_rpc_refusal_emits_receipt() {
         let mut mesh = make_mesh_with_instance("INST_A");
         let result = mesh.dispatch_rpc("INST_A", "max/refusal", json!("diag-some-violation"));
-        assert!(result.is_ok(), "max/refusal should return Ok, got: {:?}", result);
+        assert!(
+            result.is_ok(),
+            "max/refusal should return Ok, got: {:?}",
+            result
+        );
         let val = result.unwrap();
         assert_eq!(val["refused"], json!(true));
         assert_eq!(val["diagnostic_id"], json!("diag-some-violation"));
-        assert!(val.get("receipt").is_some(), "max/refusal should include a receipt");
+        assert!(
+            val.get("receipt").is_some(),
+            "max/refusal should include a receipt"
+        );
     }
 
     #[test]
     fn test_rpc_replay_returns_event_log() {
         let mut mesh = make_mesh_with_instance("INST_A");
         let result = mesh.dispatch_rpc("INST_A", "max/replay", json!(null));
-        assert!(result.is_ok(), "max/replay should return Ok, got: {:?}", result);
+        assert!(
+            result.is_ok(),
+            "max/replay should return Ok, got: {:?}",
+            result
+        );
         let val = result.unwrap();
         assert_eq!(val["instance_id"], json!("INST_A"));
-        assert!(val.get("event_count").is_some(), "max/replay result should have 'event_count' key");
-        assert!(val.get("events").is_some(), "max/replay result should have 'events' key");
+        assert!(
+            val.get("event_count").is_some(),
+            "max/replay result should have 'event_count' key"
+        );
+        assert!(
+            val.get("events").is_some(),
+            "max/replay result should have 'events' key"
+        );
     }
 
     #[test]
     fn test_rpc_release_actuation_no_diagnostics_succeeds() {
         let mut mesh = make_mesh_with_instance("INST_A");
         let result = mesh.dispatch_rpc("INST_A", "max/releaseActuation", json!(null));
-        assert!(result.is_ok(), "max/releaseActuation with no diagnostics should return Ok, got: {:?}", result);
+        assert!(
+            result.is_ok(),
+            "max/releaseActuation with no diagnostics should return Ok, got: {:?}",
+            result
+        );
         let val = result.unwrap();
         assert_eq!(val["released"], json!(true));
         assert_eq!(val["instance_id"], json!("INST_A"));
@@ -4044,7 +4335,11 @@ mod tests_gaps {
             diagnostic: Box::new(diag),
         });
         let result = mesh.dispatch_rpc("INST_A", "max/releaseActuation", json!(null));
-        assert!(result.is_err(), "max/releaseActuation with active diagnostics should return Err, got: {:?}", result);
+        assert!(
+            result.is_err(),
+            "max/releaseActuation with active diagnostics should return Err, got: {:?}",
+            result
+        );
     }
 
     /// INN-12-05: release on missing instance returns Err
@@ -4052,7 +4347,11 @@ mod tests_gaps {
     fn test_release_actuation_missing_instance_returns_err() {
         let mut mesh = AutonomicMesh::new();
         let result = mesh.dispatch_rpc("NONEXISTENT", "max/releaseActuation", json!(null));
-        assert!(result.is_err(), "release on missing instance must return Err, got: {:?}", result);
+        assert!(
+            result.is_err(),
+            "release on missing instance must return Err, got: {:?}",
+            result
+        );
         let err = result.unwrap_err();
         assert!(
             err.contains("not found") || err.contains("NONEXISTENT"),
@@ -4071,13 +4370,20 @@ mod tests_gaps {
             diagnostic: Box::new(diag),
         });
         let blocked = mesh.dispatch_rpc("REPAIR_INST", "max/releaseActuation", json!(null));
-        assert!(blocked.is_err(), "release must be blocked when diagnostic is active");
+        assert!(
+            blocked.is_err(),
+            "release must be blocked when diagnostic is active"
+        );
         mesh.execute_action(MeshAction::ClearDiagnostic {
             instance_id: InstanceId::from("REPAIR_INST"),
             diagnostic_id: "diag-repair-block".to_string(),
         });
         let released = mesh.dispatch_rpc("REPAIR_INST", "max/releaseActuation", json!(null));
-        assert!(released.is_ok(), "release must succeed after repair transaction, got: {:?}", released);
+        assert!(
+            released.is_ok(),
+            "release must succeed after repair transaction, got: {:?}",
+            released
+        );
         assert_eq!(released.unwrap()["released"], json!(true));
     }
 
@@ -4086,10 +4392,18 @@ mod tests_gaps {
     fn test_release_actuation_idempotent() {
         let mut mesh = make_mesh_with_instance("IDEMPOTENT_INST");
         let first = mesh.dispatch_rpc("IDEMPOTENT_INST", "max/releaseActuation", json!(null));
-        assert!(first.is_ok(), "first release must succeed, got: {:?}", first);
+        assert!(
+            first.is_ok(),
+            "first release must succeed, got: {:?}",
+            first
+        );
         assert_eq!(first.unwrap()["released"], json!(true));
         let second = mesh.dispatch_rpc("IDEMPOTENT_INST", "max/releaseActuation", json!(null));
-        assert!(second.is_ok(), "second consecutive release must also succeed (idempotent), got: {:?}", second);
+        assert!(
+            second.is_ok(),
+            "second consecutive release must also succeed (idempotent), got: {:?}",
+            second
+        );
         assert_eq!(second.unwrap()["released"], json!(true));
     }
 
@@ -4102,15 +4416,31 @@ mod tests_gaps {
         // max/refusal encodes receipt_id as "rcpt-refusal-<diag_id>"
         let expected_receipt_id = "rcpt-refusal-diag-receipt-test";
         let found = mesh.dispatch_rpc("INST_A", "max/receipt", json!(expected_receipt_id));
-        assert!(found.is_ok(), "max/receipt lookup for existing receipt should return Ok, got: {:?}", found);
+        assert!(
+            found.is_ok(),
+            "max/receipt lookup for existing receipt should return Ok, got: {:?}",
+            found
+        );
         let val = found.unwrap();
-        assert_eq!(val["receipt_id"], json!(expected_receipt_id), "returned receipt_id must match queried id");
+        assert_eq!(
+            val["receipt_id"],
+            json!(expected_receipt_id),
+            "returned receipt_id must match queried id"
+        );
 
         // Case 2: receipt does not exist — must return Err
         let not_found = mesh.dispatch_rpc("INST_A", "max/receipt", json!("rcpt-nonexistent-xyz"));
-        assert!(not_found.is_err(), "max/receipt with unknown receipt_id should return Err, got: {:?}", not_found);
+        assert!(
+            not_found.is_err(),
+            "max/receipt with unknown receipt_id should return Err, got: {:?}",
+            not_found
+        );
         let err = not_found.unwrap_err();
-        assert!(err.contains("Receipt not found"), "error message should indicate not found, got: {}", err);
+        assert!(
+            err.contains("Receipt not found"),
+            "error message should indicate not found, got: {}",
+            err
+        );
     }
 
     // --- max/repairPlan tests ---
@@ -4135,12 +4465,10 @@ mod tests_gaps {
                 tags: None,
                 data: None,
             },
-            repair_actions: vec![
-                tower_lsp_max_protocol::RepairAction {
-                    action_id: "action-1".to_string(),
-                    description: "Apply patch".to_string(),
-                },
-            ],
+            repair_actions: vec![tower_lsp_max_protocol::RepairAction {
+                action_id: "action-1".to_string(),
+                description: "Apply patch".to_string(),
+            }],
             verification_gates: vec![],
             receipt_obligation: Some(tower_lsp_max_protocol::ReceiptObligation {
                 required_receipts: vec!["receipt-abc".to_string()],
@@ -4152,9 +4480,15 @@ mod tests_gaps {
             diagnostic: Box::new(diag),
         });
         let result = mesh.dispatch_rpc("INST_A", "max/repairPlan", json!("law-repair"));
-        assert!(result.is_ok(), "max/repairPlan should return Ok, got: {:?}", result);
+        assert!(
+            result.is_ok(),
+            "max/repairPlan should return Ok, got: {:?}",
+            result
+        );
         let val = result.unwrap();
-        let arr = val.as_array().expect("max/repairPlan should return an array");
+        let arr = val
+            .as_array()
+            .expect("max/repairPlan should return an array");
         assert_eq!(arr.len(), 1, "expected 1 action for law-repair");
         assert_eq!(arr[0]["action"]["title"], json!("Apply patch"));
         let expected_receipts = &arr[0]["receipt_plan"]["expected_receipts"];
@@ -4181,12 +4515,10 @@ mod tests_gaps {
                 tags: None,
                 data: None,
             },
-            repair_actions: vec![
-                tower_lsp_max_protocol::RepairAction {
-                    action_id: "action-2".to_string(),
-                    description: "Rollback config".to_string(),
-                },
-            ],
+            repair_actions: vec![tower_lsp_max_protocol::RepairAction {
+                action_id: "action-2".to_string(),
+                description: "Rollback config".to_string(),
+            }],
             verification_gates: vec![],
             receipt_obligation: None,
             ..Default::default()
@@ -4196,9 +4528,14 @@ mod tests_gaps {
             diagnostic: Box::new(diag),
         });
         let result = mesh.dispatch_rpc("INST_A", "max/repairPlan", json!("diag-by-id"));
-        assert!(result.is_ok(), "max/repairPlan by diagnostic_id should return Ok");
+        assert!(
+            result.is_ok(),
+            "max/repairPlan by diagnostic_id should return Ok"
+        );
         let val = result.unwrap();
-        let arr = val.as_array().expect("max/repairPlan should return an array");
+        let arr = val
+            .as_array()
+            .expect("max/repairPlan should return an array");
         assert_eq!(arr.len(), 1, "expected 1 action for diag-by-id");
         assert_eq!(arr[0]["action"]["title"], json!("Rollback config"));
         let expected_receipts = &arr[0]["receipt_plan"]["expected_receipts"];
@@ -4209,9 +4546,14 @@ mod tests_gaps {
     fn test_rpc_repair_plan_empty_when_no_match() {
         let mut mesh = make_mesh_with_instance("INST_A");
         let result = mesh.dispatch_rpc("INST_A", "max/repairPlan", json!("nonexistent-id"));
-        assert!(result.is_ok(), "max/repairPlan with no match should return Ok empty array");
+        assert!(
+            result.is_ok(),
+            "max/repairPlan with no match should return Ok empty array"
+        );
         let val = result.unwrap();
-        let arr = val.as_array().expect("max/repairPlan should return an array");
+        let arr = val
+            .as_array()
+            .expect("max/repairPlan should return an array");
         assert_eq!(arr.len(), 0, "expected empty array for unmatched id");
     }
 
@@ -4221,7 +4563,11 @@ mod tests_gaps {
     fn conformance_score_in_range() {
         let inst0 = LspInstance::new("SCORE_0");
         let s0 = inst0.conformance_score();
-        assert!((0.0..=100.0).contains(&s0), "score with 0 diags out of range: {}", s0);
+        assert!(
+            (0.0..=100.0).contains(&s0),
+            "score with 0 diags out of range: {}",
+            s0
+        );
 
         let mut inst1 = LspInstance::new("SCORE_1");
         inst1.diagnostics.push(MaxDiagnostic {
@@ -4241,7 +4587,11 @@ mod tests_gaps {
             ..Default::default()
         });
         let s1 = inst1.conformance_score();
-        assert!((0.0..=100.0).contains(&s1), "score with 1 error diag out of range: {}", s1);
+        assert!(
+            (0.0..=100.0).contains(&s1),
+            "score with 1 error diag out of range: {}",
+            s1
+        );
 
         let mut inst5 = LspInstance::new("SCORE_5");
         let severities = [
@@ -4270,7 +4620,11 @@ mod tests_gaps {
             });
         }
         let s5 = inst5.conformance_score();
-        assert!((0.0..=100.0).contains(&s5), "score with 5 mixed diags out of range: {}", s5);
+        assert!(
+            (0.0..=100.0).contains(&s5),
+            "score with 5 mixed diags out of range: {}",
+            s5
+        );
     }
 
     #[test]
@@ -4338,7 +4692,10 @@ mod tests_gaps {
     fn unknown_method_always_errors() {
         let mut mesh = make_mesh_with_instance("INST_E");
         let result = mesh.dispatch_rpc("INST_E", "max/doesNotExist", json!(null));
-        assert!(result.is_err(), "dispatch_rpc with unknown method must return Err, got Ok");
+        assert!(
+            result.is_err(),
+            "dispatch_rpc with unknown method must return Err, got Ok"
+        );
     }
 
     #[test]
@@ -4356,7 +4713,11 @@ mod tests_gaps {
             });
         }
         let inst = mesh.instances.get("INST_R").unwrap();
-        let ids: Vec<&str> = inst.receipts.iter().map(|r| r.receipt_id.as_str()).collect();
+        let ids: Vec<&str> = inst
+            .receipts
+            .iter()
+            .map(|r| r.receipt_id.as_str())
+            .collect();
         let unique: std::collections::HashSet<&str> = ids.iter().cloned().collect();
         assert_eq!(
             ids.len(),
@@ -4388,14 +4749,16 @@ mod tests_gaps {
             "diagnostics list must be empty after clearing the only diagnostic"
         );
     }
-
 }
 
 #[cfg(test)]
 mod apply_repair_transaction_tests {
     use super::*;
 
-    fn make_code_action(title: &str, expected_receipts: Vec<String>) -> tower_lsp_max_protocol::MaxCodeAction {
+    fn make_code_action(
+        title: &str,
+        expected_receipts: Vec<String>,
+    ) -> tower_lsp_max_protocol::MaxCodeAction {
         tower_lsp_max_protocol::MaxCodeAction {
             action: lsp_types::CodeAction {
                 title: title.to_string(),
@@ -4409,7 +4772,9 @@ mod apply_repair_transaction_tests {
             },
             preconditions: vec![],
             validation_plan: tower_lsp_max_protocol::ValidationPlan { gates: vec![] },
-            rollback_plan: tower_lsp_max_protocol::RollbackPlan { strategy: "revert".to_string() },
+            rollback_plan: tower_lsp_max_protocol::RollbackPlan {
+                strategy: "revert".to_string(),
+            },
             receipt_plan: tower_lsp_max_protocol::ReceiptPlan { expected_receipts },
         }
     }
@@ -4432,7 +4797,10 @@ mod apply_repair_transaction_tests {
         );
 
         let inst = mesh.instances.get("INST_A").unwrap();
-        assert!(!inst.receipts.is_empty(), "Receipt should be stored in instance");
+        assert!(
+            !inst.receipts.is_empty(),
+            "Receipt should be stored in instance"
+        );
         assert_eq!(inst.receipts.last().unwrap().receipt_id, receipt_id);
     }
 
@@ -4443,7 +4811,10 @@ mod apply_repair_transaction_tests {
 
         let action = make_code_action("Fix auth", vec!["rcpt-security-auth".to_string()]);
         let result = mesh.apply_repair_transaction("INST_B", action);
-        assert!(result.is_err(), "Should fail due to missing required receipt");
+        assert!(
+            result.is_err(),
+            "Should fail due to missing required receipt"
+        );
         let err = result.unwrap_err();
         assert!(
             err.contains("Receipt integrity violation"),
@@ -4529,14 +4900,21 @@ mod max_reset_tests {
         // Confirm dirty state
         {
             let dirty = mesh.instances.get("RESET_TEST").unwrap();
-            assert!(dirty.conformance_score() < 100.0, "Expected dirty conformance before reset");
+            assert!(
+                dirty.conformance_score() < 100.0,
+                "Expected dirty conformance before reset"
+            );
             assert!(!dirty.diagnostics.is_empty());
             assert!(!dirty.receipts.is_empty());
         }
 
         // Invoke max/reset via dispatch_rpc
         let result = mesh.dispatch_rpc("RESET_TEST", "max/reset", serde_json::Value::Null);
-        assert!(result.is_ok(), "max/reset must return Ok, got: {:?}", result);
+        assert!(
+            result.is_ok(),
+            "max/reset must return Ok, got: {:?}",
+            result
+        );
 
         let resp = result.unwrap();
         assert_eq!(resp["reset"], true);
@@ -4549,8 +4927,14 @@ mod max_reset_tests {
             100.0,
             "conformance_score must be 100.0 after reset"
         );
-        assert!(clean.diagnostics.is_empty(), "diagnostics must be cleared after reset");
-        assert!(clean.receipts.is_empty(), "receipts must be cleared after reset");
+        assert!(
+            clean.diagnostics.is_empty(),
+            "diagnostics must be cleared after reset"
+        );
+        assert!(
+            clean.receipts.is_empty(),
+            "receipts must be cleared after reset"
+        );
         assert_eq!(
             clean.policy_state,
             Some(PolicyState::Operational),
@@ -4562,7 +4946,10 @@ mod max_reset_tests {
     fn test_max_reset_unknown_instance_returns_err() {
         let mut mesh = AutonomicMesh::new();
         let result = mesh.dispatch_rpc("NONEXISTENT", "max/reset", serde_json::Value::Null);
-        assert!(result.is_err(), "max/reset on unknown instance must return Err");
+        assert!(
+            result.is_err(),
+            "max/reset on unknown instance must return Err"
+        );
     }
 
     // ---- max/conformanceDelta tests ----
@@ -4572,7 +4959,11 @@ mod max_reset_tests {
         let mut mesh = AutonomicMesh::new();
         mesh.add_instance(LspInstance::new("INST_X"));
         let result = mesh
-            .dispatch_rpc("INST_X", "max/conformanceDelta", serde_json::json!({ "since_seq": 0 }))
+            .dispatch_rpc(
+                "INST_X",
+                "max/conformanceDelta",
+                serde_json::json!({ "since_seq": 0 }),
+            )
             .expect("max/conformanceDelta must succeed");
         let deltas = result["deltas"].as_array().expect("deltas must be array");
         assert!(deltas.is_empty(), "fresh mesh has no conformance deltas");
@@ -4616,16 +5007,28 @@ mod max_reset_tests {
             diagnostic: Box::new(diag),
         });
         let seq_after = mesh.action_seq;
-        assert!(seq_after > 0, "action_seq must increment after execute_action");
+        assert!(
+            seq_after > 0,
+            "action_seq must increment after execute_action"
+        );
         let result = mesh
-            .dispatch_rpc("INST_D", "max/conformanceDelta", serde_json::json!({ "since_seq": 0 }))
+            .dispatch_rpc(
+                "INST_D",
+                "max/conformanceDelta",
+                serde_json::json!({ "since_seq": 0 }),
+            )
             .expect("max/conformanceDelta must succeed");
         let deltas = result["deltas"].as_array().expect("deltas must be array");
-        assert!(!deltas.is_empty(), "adding a diagnostic must produce a delta");
+        assert!(
+            !deltas.is_empty(),
+            "adding a diagnostic must produce a delta"
+        );
         let entry = &deltas[0];
         assert_eq!(entry["instance_id"].as_str().unwrap(), "INST_D");
-        assert!(entry["old_score"].as_f64().unwrap() > entry["new_score"].as_f64().unwrap(),
-            "old_score must be higher than new_score after adding error diagnostic");
+        assert!(
+            entry["old_score"].as_f64().unwrap() > entry["new_score"].as_f64().unwrap(),
+            "old_score must be higher than new_score after adding error diagnostic"
+        );
     }
 
     #[test]
@@ -4678,12 +5081,18 @@ mod max_reset_tests {
         });
         // Query with mid_seq cursor — should only see changes after mid_seq
         let result = mesh
-            .dispatch_rpc("INST_E", "max/conformanceDelta", serde_json::json!({ "since_seq": mid_seq }))
+            .dispatch_rpc(
+                "INST_E",
+                "max/conformanceDelta",
+                serde_json::json!({ "since_seq": mid_seq }),
+            )
             .expect("max/conformanceDelta must succeed");
         let deltas = result["deltas"].as_array().expect("deltas must be array");
         for d in deltas {
-            assert!(d["seq"].as_u64().unwrap() > mid_seq,
-                "all returned deltas must have seq > since_seq");
+            assert!(
+                d["seq"].as_u64().unwrap() > mid_seq,
+                "all returned deltas must have seq > since_seq"
+            );
         }
     }
 
@@ -4699,7 +5108,11 @@ mod max_reset_tests {
         let result = mesh
             .dispatch_rpc(iid, "max/runGate", serde_json::json!("GATE_A"))
             .expect("max/runGate must succeed with no diagnostics");
-        assert_eq!(result, serde_json::json!(true), "gate should be clear when no diagnostics reference it");
+        assert_eq!(
+            result,
+            serde_json::json!(true),
+            "gate should be clear when no diagnostics reference it"
+        );
 
         // Add a diagnostic whose verification_gates contains GATE_A
         let blocking_diag = MaxDiagnostic {
@@ -4738,16 +5151,23 @@ mod max_reset_tests {
         let result = mesh
             .dispatch_rpc(iid, "max/runGate", serde_json::json!("GATE_A"))
             .expect("max/runGate must succeed with blocking diagnostic");
-        assert_eq!(result, serde_json::json!(false), "gate should be blocked when a diagnostic references it");
+        assert_eq!(
+            result,
+            serde_json::json!(false),
+            "gate should be blocked when a diagnostic references it"
+        );
 
         // A different gate string should still be clear
         let result_other = mesh
             .dispatch_rpc(iid, "max/runGate", serde_json::json!("GATE_B"))
             .expect("max/runGate must succeed for unrelated gate");
-        assert_eq!(result_other, serde_json::json!(true), "unrelated gate should remain clear");
+        assert_eq!(
+            result_other,
+            serde_json::json!(true),
+            "unrelated gate should remain clear"
+        );
     }
 }
-
 
 // NOTE: appended by innovation agent — test_rpc_dump_state_and_restore_state_roundtrip
 #[cfg(test)]
@@ -4815,7 +5235,8 @@ mod test_dump_restore {
             .find(|v| v["id"].as_str() == Some("DUMP_INST"))
             .expect("DUMP_INST must be in list")
             .clone();
-        let original_conformance = original_entry["conformance_score"].as_f64()
+        let original_conformance = original_entry["conformance_score"]
+            .as_f64()
             .expect("conformance_score must be f64");
 
         // Dump state via RPC — covers the arm at max/dumpState.
@@ -4841,7 +5262,8 @@ mod test_dump_restore {
             .iter()
             .find(|v| v["id"].as_str() == Some("DUMP_INST"))
             .expect("DUMP_INST must survive restore");
-        let restored_conformance = restored_entry["conformance_score"].as_f64()
+        let restored_conformance = restored_entry["conformance_score"]
+            .as_f64()
             .expect("restored conformance_score must be f64");
 
         assert!(
@@ -4893,7 +5315,11 @@ mod test_conformance_grade {
     fn grade_perfect() {
         let inst = LspInstance::new("GRADE_PERFECT");
         // No diagnostics: score must be 100.0
-        assert_eq!(inst.conformance_score(), 100.0, "expected score 100 with no diagnostics");
+        assert_eq!(
+            inst.conformance_score(),
+            100.0,
+            "expected score 100 with no diagnostics"
+        );
         assert_eq!(inst.conformance_grade(), ConformanceGrade::Perfect);
     }
 
@@ -4901,9 +5327,16 @@ mod test_conformance_grade {
     #[test]
     fn grade_good() {
         let mut inst = LspInstance::new("GRADE_GOOD");
-        inst.diagnostics.push(make_diag_with_severity("w1", lsp_types::DiagnosticSeverity::WARNING));
+        inst.diagnostics.push(make_diag_with_severity(
+            "w1",
+            lsp_types::DiagnosticSeverity::WARNING,
+        ));
         let score = inst.conformance_score();
-        assert!((score - 80.0).abs() < f64::EPSILON, "expected score 80, got {}", score);
+        assert!(
+            (score - 80.0).abs() < f64::EPSILON,
+            "expected score 80, got {}",
+            score
+        );
         assert_eq!(inst.conformance_grade(), ConformanceGrade::Good);
     }
 
@@ -4912,11 +5345,25 @@ mod test_conformance_grade {
     fn grade_degraded() {
         let mut inst = LspInstance::new("GRADE_DEGRADED");
         // 2 × WARNING = 40 penalty → score 60
-        inst.diagnostics.push(make_diag_with_severity("w1", lsp_types::DiagnosticSeverity::WARNING));
-        inst.diagnostics.push(make_diag_with_severity("w2", lsp_types::DiagnosticSeverity::WARNING));
+        inst.diagnostics.push(make_diag_with_severity(
+            "w1",
+            lsp_types::DiagnosticSeverity::WARNING,
+        ));
+        inst.diagnostics.push(make_diag_with_severity(
+            "w2",
+            lsp_types::DiagnosticSeverity::WARNING,
+        ));
         let score = inst.conformance_score();
-        assert!((score - 60.0).abs() < f64::EPSILON, "expected score 60, got {}", score);
-        assert!((50.0..75.0).contains(&score), "score {} not in [50, 75)", score);
+        assert!(
+            (score - 60.0).abs() < f64::EPSILON,
+            "expected score 60, got {}",
+            score
+        );
+        assert!(
+            (50.0..75.0).contains(&score),
+            "score {} not in [50, 75)",
+            score
+        );
         assert_eq!(inst.conformance_grade(), ConformanceGrade::Degraded);
     }
 
@@ -4931,7 +5378,11 @@ mod test_conformance_grade {
             ));
         }
         let score = inst.conformance_score();
-        assert!(score <= 10.0, "expected score ≤ 10 with 4 ERRORs, got {}", score);
+        assert!(
+            score <= 10.0,
+            "expected score ≤ 10 with 4 ERRORs, got {}",
+            score
+        );
         assert_eq!(inst.conformance_grade(), ConformanceGrade::Critical);
     }
 
@@ -4940,10 +5391,20 @@ mod test_conformance_grade {
     fn grade_boundary_at_75() {
         // 1 WARNING (20) + 1 HINT (5) = 25 penalty → score 75
         let mut inst = LspInstance::new("GRADE_BOUNDARY_75");
-        inst.diagnostics.push(make_diag_with_severity("w1", lsp_types::DiagnosticSeverity::WARNING));
-        inst.diagnostics.push(make_diag_with_severity("h1", lsp_types::DiagnosticSeverity::HINT));
+        inst.diagnostics.push(make_diag_with_severity(
+            "w1",
+            lsp_types::DiagnosticSeverity::WARNING,
+        ));
+        inst.diagnostics.push(make_diag_with_severity(
+            "h1",
+            lsp_types::DiagnosticSeverity::HINT,
+        ));
         let score = inst.conformance_score();
-        assert!((score - 75.0).abs() < f64::EPSILON, "expected score 75.0, got {}", score);
+        assert!(
+            (score - 75.0).abs() < f64::EPSILON,
+            "expected score 75.0, got {}",
+            score
+        );
         assert_eq!(
             inst.conformance_grade(),
             ConformanceGrade::Good,
@@ -4963,11 +5424,24 @@ mod test_conformance_grade {
         );
         // Also verify the instance path: 2×WARNING(40) + 1×INFORMATION(10) = 50 → score 50
         let mut inst = LspInstance::new("GRADE_BOUNDARY_50");
-        inst.diagnostics.push(make_diag_with_severity("w1", lsp_types::DiagnosticSeverity::WARNING));
-        inst.diagnostics.push(make_diag_with_severity("w2", lsp_types::DiagnosticSeverity::WARNING));
-        inst.diagnostics.push(make_diag_with_severity("i1", lsp_types::DiagnosticSeverity::INFORMATION));
+        inst.diagnostics.push(make_diag_with_severity(
+            "w1",
+            lsp_types::DiagnosticSeverity::WARNING,
+        ));
+        inst.diagnostics.push(make_diag_with_severity(
+            "w2",
+            lsp_types::DiagnosticSeverity::WARNING,
+        ));
+        inst.diagnostics.push(make_diag_with_severity(
+            "i1",
+            lsp_types::DiagnosticSeverity::INFORMATION,
+        ));
         let score = inst.conformance_score();
-        assert!((score - 50.0).abs() < f64::EPSILON, "expected score 50.0, got {}", score);
+        assert!(
+            (score - 50.0).abs() < f64::EPSILON,
+            "expected score 50.0, got {}",
+            score
+        );
         assert_eq!(inst.conformance_grade(), ConformanceGrade::Degraded);
     }
 
@@ -5004,14 +5478,19 @@ mod test_bounded_action_event {
             action_id: "act-test-action".to_string(),
             description: "A test bounded action".to_string(),
         });
-        let found = mesh.event_log.iter().any(|e| matches!(
-            e,
-            HookEvent::BoundedActionExecuted {
-                action_id,
-                ..
-            } if action_id == "act-test-action"
-        ));
-        assert!(found, "BoundedActionExecuted event must appear in event_log after execute_bounded_action");
+        let found = mesh.event_log.iter().any(|e| {
+            matches!(
+                e,
+                HookEvent::BoundedActionExecuted {
+                    action_id,
+                    ..
+                } if action_id == "act-test-action"
+            )
+        });
+        assert!(
+            found,
+            "BoundedActionExecuted event must appear in event_log after execute_bounded_action"
+        );
     }
 }
 
@@ -5144,7 +5623,10 @@ mod policy_and_routing_hook_unit_tests {
         let actions = hook.trigger(&event);
         assert_eq!(actions.len(), 1, "expected exactly one action");
         match &actions[0] {
-            MeshAction::TransitionPolicyState { instance_id, new_state } => {
+            MeshAction::TransitionPolicyState {
+                instance_id,
+                new_state,
+            } => {
                 assert_eq!(instance_id.0, "LSP_X");
                 assert_eq!(*new_state, PolicyState::RefundAuthorized);
             }
@@ -5171,7 +5653,10 @@ mod policy_and_routing_hook_unit_tests {
         };
 
         let actions = hook.trigger(&event);
-        assert!(actions.is_empty(), "non-proof receipt should produce no actions");
+        assert!(
+            actions.is_empty(),
+            "non-proof receipt should produce no actions"
+        );
     }
 
     // -----------------------------------------------------------------------
@@ -5193,7 +5678,11 @@ mod policy_and_routing_hook_unit_tests {
         let actions = hook.trigger(&event);
         assert_eq!(actions.len(), 1, "expected exactly one bounded action");
         match &actions[0] {
-            MeshAction::ExecuteBoundedAction { instance_id, action_id, .. } => {
+            MeshAction::ExecuteBoundedAction {
+                instance_id,
+                action_id,
+                ..
+            } => {
                 assert_eq!(instance_id.0, "LSP_Y");
                 assert_eq!(action_id, "act-create-refund-receipt");
             }
@@ -5261,7 +5750,10 @@ mod policy_and_routing_hook_unit_tests {
         {
             let diags = hook.active_diagnostics.lock().unwrap();
             assert!(
-                diags.get("LSP_1").map(|s| s.contains("diag-abc")).unwrap_or(false),
+                diags
+                    .get("LSP_1")
+                    .map(|s| s.contains("diag-abc"))
+                    .unwrap_or(false),
                 "diagnostic should be tracked after DiagnosticEmitted"
             );
         }
@@ -5283,7 +5775,10 @@ mod policy_and_routing_hook_unit_tests {
                 .get("LSP_1")
                 .map(|s| s.contains("diag-abc"))
                 .unwrap_or(false);
-            assert!(!still_present, "diagnostic should be removed after DiagnosticCleared");
+            assert!(
+                !still_present,
+                "diagnostic should be removed after DiagnosticCleared"
+            );
         }
     }
 
@@ -5460,8 +5955,14 @@ mod cache_auto_invalidation_tests {
         let removed = inst.remove_diagnostic("err1");
         assert_eq!(removed, 1);
         let score_after = inst.conformance_score();
-        assert_eq!(score_after, 100.0, "score should be 100 after removing only error");
-        assert!(score_after > score_with, "score should increase after remove");
+        assert_eq!(
+            score_after, 100.0,
+            "score should be 100 after removing only error"
+        );
+        assert!(
+            score_after > score_with,
+            "score should increase after remove"
+        );
     }
 }
 
@@ -5816,8 +6317,14 @@ mod test_d05_receipt_hash_integrity {
         assert_eq!(inst.receipts.len(), 1, "receipt must be stored");
         let stored = &inst.receipts[0];
         let expected_hash = sha256(receipt_id.as_bytes());
-        assert_ne!(stored.hash, forged_hash, "forged hash must not appear in stored receipt");
-        assert_eq!(stored.hash, expected_hash, "stored hash must equal sha256(receipt_id)");
+        assert_ne!(
+            stored.hash, forged_hash,
+            "forged hash must not appear in stored receipt"
+        );
+        assert_eq!(
+            stored.hash, expected_hash,
+            "stored hash must equal sha256(receipt_id)"
+        );
     }
 
     #[test]
@@ -5837,8 +6344,11 @@ mod test_d05_receipt_hash_integrity {
         let inst = mesh.instances.get("hash-roundtrip-inst").unwrap();
         for r in &inst.receipts {
             let expected = sha256(r.receipt_id.as_bytes());
-            assert_eq!(r.hash, expected,
-                "hash must equal sha256(receipt_id) for id={}", r.receipt_id);
+            assert_eq!(
+                r.hash, expected,
+                "hash must equal sha256(receipt_id) for id={}",
+                r.receipt_id
+            );
         }
     }
 }

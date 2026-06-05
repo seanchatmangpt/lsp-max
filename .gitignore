@@ -4,3 +4,4 @@ Cargo.lock
 generated/
 *.log
 .agents/
+vendors/
