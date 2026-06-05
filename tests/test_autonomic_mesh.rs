@@ -1,6 +1,6 @@
 use tower_lsp_max_runtime::{
-    AutonomicMesh, CustomerRequestClassifierHook, Hook, HookEvent, LspInstance, MaxDiagnostic,
-    MeshAction, PolicyEvaluationHook, PolicyState, Receipt, ReceiptRoutingHook,
+    AutonomicMesh, CustomerRequestClassifierHook, Hook, HookEvent, LspInstance, LspPhase,
+    MaxDiagnostic, MeshAction, PolicyEvaluationHook, PolicyState, Receipt, ReceiptRoutingHook,
 };
 
 struct CustomerServiceWorkflowHook;
@@ -80,12 +80,12 @@ fn test_customer_service_autonomic_mesh_workflow() {
     // Register LSP_1 (customer language server)
     let mut lsp1 = LspInstance::new("LSP_1");
     // Ensure starting phase is Uninitialized to simulate Step 1's transition
-    lsp1.phase = "Uninitialized".to_string();
+    lsp1.phase = LspPhase::Uninitialized;
     lsp1.policy_state = Some(PolicyState::Operational);
 
     // Register LSP_2 (policy/ops server)
     let mut lsp2 = LspInstance::new("LSP_2");
-    lsp2.phase = "Initialized".to_string();
+    lsp2.phase = LspPhase::Initialized;
     lsp2.policy_state = Some(PolicyState::Operational);
 
     mesh.add_instance(lsp1);
@@ -465,10 +465,10 @@ fn test_complete_customer_service_workflow_with_rpc() {
     let mut mesh = AutonomicMesh::new();
 
     let mut lsp1 = LspInstance::new("LSP_1");
-    lsp1.phase = "Initialized".to_string();
+    lsp1.phase = LspPhase::Initialized;
     lsp1.policy_state = Some(PolicyState::Operational);
     let mut lsp2 = LspInstance::new("LSP_2");
-    lsp2.phase = "Initialized".to_string();
+    lsp2.phase = LspPhase::Initialized;
     lsp2.policy_state = Some(PolicyState::Operational);
 
     mesh.add_instance(lsp1);

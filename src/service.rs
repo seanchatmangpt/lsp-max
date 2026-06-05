@@ -309,7 +309,13 @@ fn handle_mesh_rpc(
     }
     {
         let instance = mesh.instances.get_mut(instance_id).unwrap();
-        instance.phase = format!("{:?}", registry.current_state);
+        instance.phase = match registry.current_state {
+            State::Uninitialized => crate::max_runtime::LspPhase::Uninitialized,
+            State::Initializing => crate::max_runtime::LspPhase::Initializing,
+            State::Initialized => crate::max_runtime::LspPhase::Initialized,
+            State::ShutDown => crate::max_runtime::LspPhase::ShutDown,
+            State::Exited => crate::max_runtime::LspPhase::Exited,
+        };
         instance.diagnostics = registry.diagnostics.values().cloned().collect();
         let mut sorted_receipts: Vec<_> = registry.receipts.values().cloned().collect();
         sorted_receipts.sort_by_key(|r| {

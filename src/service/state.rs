@@ -69,7 +69,7 @@ impl ServerState {
     pub fn new() -> Self {
         let mut mesh = crate::max_runtime::AutonomicMesh::new();
         let mut instance = crate::max_runtime::LspInstance::new("LSP_1");
-        instance.phase = "Uninitialized".to_string();
+        instance.phase = crate::max_runtime::LspPhase::Uninitialized;
         let r0 = crate::max_protocol::Receipt {
             receipt_id: "rcpt-uninitialized".to_string(),
             hash: crate::max_runtime::sha256(b"rcpt-uninitialized"),
@@ -126,7 +126,13 @@ impl ServerState {
             reg.current_state = state;
         }
         if let Some(instance) = self.mesh.lock().unwrap().instances.get_mut("LSP_1") {
-            instance.phase = format!("{:?}", state);
+            instance.phase = match state {
+                crate::service::state::State::Uninitialized => crate::max_runtime::LspPhase::Uninitialized,
+                crate::service::state::State::Initializing => crate::max_runtime::LspPhase::Initializing,
+                crate::service::state::State::Initialized => crate::max_runtime::LspPhase::Initialized,
+                crate::service::state::State::ShutDown => crate::max_runtime::LspPhase::ShutDown,
+                crate::service::state::State::Exited => crate::max_runtime::LspPhase::Exited,
+            };
         }
 
         if state != State::Initializing {
@@ -173,7 +179,7 @@ impl ServerState {
                             .insert(receipt.receipt_id.clone(), receipt.clone());
                     }
                     if let Some(instance) = self.mesh.lock().unwrap().instances.get_mut("LSP_1") {
-                        instance.phase = "Initializing".to_string();
+                        instance.phase = crate::max_runtime::LspPhase::Initializing;
                         instance.receipts.push(receipt.clone());
                     }
 
@@ -211,7 +217,7 @@ impl ServerState {
                     let receipt = crate::max_runtime::TypestateKernel::receipt(&next);
                     *lock = StateMachine::Initialized(next);
                     if let Some(instance) = self.mesh.lock().unwrap().instances.get_mut("LSP_1") {
-                        instance.phase = "Initialized".to_string();
+                        instance.phase = crate::max_runtime::LspPhase::Initialized;
                         instance.receipts.push(receipt.clone());
                     }
                     (true, Some(receipt))
@@ -258,7 +264,7 @@ impl ServerState {
                 *lock =
                     StateMachine::Uninitialized(Machine::new(Uninitialized, EmptyData::default()));
                 if let Some(instance) = self.mesh.lock().unwrap().instances.get_mut("LSP_1") {
-                    instance.phase = "Uninitialized".to_string();
+                    instance.phase = crate::max_runtime::LspPhase::Uninitialized;
                     instance.receipts.truncate(1);
                 }
                 true
@@ -293,7 +299,7 @@ impl ServerState {
                     let receipt = crate::max_runtime::TypestateKernel::receipt(&next);
                     *lock = StateMachine::ShutDown(next);
                     if let Some(instance) = self.mesh.lock().unwrap().instances.get_mut("LSP_1") {
-                        instance.phase = "ShutDown".to_string();
+                        instance.phase = crate::max_runtime::LspPhase::ShutDown;
                         instance.receipts.push(receipt.clone());
                     }
                     (true, Some(receipt))
@@ -342,7 +348,7 @@ impl ServerState {
                     *lock = StateMachine::Exited(next);
                     self.set_exit_code(0);
                     if let Some(instance) = self.mesh.lock().unwrap().instances.get_mut("LSP_1") {
-                        instance.phase = "Exited".to_string();
+                        instance.phase = crate::max_runtime::LspPhase::Exited;
                         instance.receipts.push(receipt.clone());
                     }
                     (true, Some(receipt))
@@ -354,7 +360,7 @@ impl ServerState {
                 *lock = StateMachine::Exited(Machine::new(Exited, EmptyData::default()));
                 self.set_exit_code(1);
                 if let Some(instance) = self.mesh.lock().unwrap().instances.get_mut("LSP_1") {
-                    instance.phase = "Exited".to_string();
+                    instance.phase = crate::max_runtime::LspPhase::Exited;
                 }
                 (true, None)
             }

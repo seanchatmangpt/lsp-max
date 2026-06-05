@@ -1393,10 +1393,20 @@ pub trait LanguageServer: Send + Sync + 'static {
             Some(100.0 * admitted.len() as f64 / total)
         };
         let _ = score; // score was computed above but superseded by derived_score
+        let witnessed: std::collections::HashSet<max_protocol::LawAxis> = admitted
+            .iter()
+            .chain(refused.iter())
+            .cloned()
+            .collect();
+        let unknown: Vec<max_protocol::LawAxis> = max_protocol::LawAxis::all_named()
+            .iter()
+            .filter(|ax| !witnessed.contains(ax))
+            .cloned()
+            .collect();
         let conformance_vector = max_protocol::ConformanceVector {
             admitted,
             refused,
-            unknown: Vec::new(),
+            unknown,
             score: derived_score,
             strict_mode: true,
         };
