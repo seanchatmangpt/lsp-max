@@ -1,14 +1,14 @@
 # MAX-007 Full Status Report
 
 ## Executive Summary
-This report provides the full status verification of the `tower-lsp-max` workspace. Milestone 1 from the refactoring project roadmap has been successfully completed, and Milestones 2–7 remain in the PLANNED status. All validation checks (formatting, compilation, tests, and linting) pass cleanly for the current state of the workspace. A final conformance verdict has been reached with 393 tests passed (with 0 failures).
+This report provides the full status verification of the `tower-lsp-max` workspace. Milestones 1 and 2 from the refactoring project roadmap have been successfully completed, and Milestones 3–7 remain in the PLANNED status. All validation checks (formatting, compilation, tests, and linting) pass cleanly for the current state of the workspace. A final conformance verdict has been reached with 393 tests passed (with 0 failures).
 
 ## Milestone Status Summary Table
 
 | # | Name | Scope | Dependencies | Status |
 |---|------|-------|--------------|--------|
 | 1 | Core Test Helpers & Quick-wins | Extract common duplex-stream test helpers and refactor `tests/test_max_rpc_zero_coverage.rs`. | None | DONE |
-| 2 | Playground AST Handlers | Refactor completions and diagnostics handlers into modules under 500 LOC. | M1 | PLANNED |
+| 2 | Playground AST Handlers | Refactor completions and diagnostics handlers into modules under 500 LOC. | M1 | DONE |
 | 3 | Protocol Core Library | Refactor `tower-lsp-max-protocol/src/lib.rs` into modular sub-files. | M1 | PLANNED |
 | 4 | Runtime Library | Extract inline test modules and modularize `tower-lsp-max-runtime/src/lib.rs`. | M1 | PLANNED |
 | 5 | tower-lsp-max Core Library | Refactor `src/lib.rs`, `src/service.rs`, and `src/service/client.rs` to keep them <= 500 LOC. | M3, M4 | PLANNED |
