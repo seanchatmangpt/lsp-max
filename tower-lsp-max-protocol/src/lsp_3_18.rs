@@ -1,5 +1,6 @@
 //! Generated from the official LSP meta-model.
 //! Do not hand-edit generated protocol vocabulary.
+#![cfg_attr(rustfmt, rustfmt_skip)]
 #![allow(clippy::large_enum_variant)]
 #![allow(clippy::enum_variant_names)]
 #![allow(clippy::upper_case_acronyms)]
@@ -23,7 +24,7 @@ defined.
 
 Servers should prefer returning `DefinitionLink` over `Definition` if supported
 by the client.*/
-pub type Definition = LspAny;
+pub type Definition = LocationOrLocationArray;
 /**Information about where a symbol is defined.
 
 Provides additional metadata over normal {@link Location location} definitions, including the range of
@@ -38,9 +39,11 @@ can't be converted into JSON preserving the property name. However for
 convenience it is allowed and assumed that all these properties are
 optional as well.
 @since 3.17.0*/
-pub type LSPAny = LspAny;
+pub type LSPAny = Option<
+    BooleanOrDecimalOrIntegerOrLSPArrayOrLSPObjectOrStringOrUinteger,
+>;
 ///The declaration of a symbol representation as one or many {@link Location locations}.
-pub type Declaration = LspAny;
+pub type Declaration = LocationOrLocationArray;
 /**Information about where a symbol is declared.
 
 Provides additional metadata over normal {@link Location location} declarations, including the range of
@@ -56,7 +59,7 @@ pub type DeclarationLink = LocationLink;
 The InlineValue types combines all inline value types into one type.
 
 @since 3.17.0*/
-pub type InlineValue = LspAny;
+pub type InlineValue = InlineValueEvaluatableExpressionOrInlineValueTextOrInlineValueVariableLookup;
 /**The result of a document diagnostic pull request. A report can
 either be a full report containing all diagnostics for the
 requested document or an unchanged report indicating that nothing
@@ -64,24 +67,24 @@ has changed in terms of diagnostics in comparison to the last
 pull request.
 
 @since 3.17.0*/
-pub type DocumentDiagnosticReport = LspAny;
-pub type PrepareRenameResult = LspAny;
+pub type DocumentDiagnosticReport = RelatedFullDocumentDiagnosticReportOrRelatedUnchangedDocumentDiagnosticReport;
+pub type PrepareRenameResult = PrepareRenameDefaultBehaviorOrPrepareRenamePlaceholderOrRange;
 /**A document selector is the combination of one or many document filters.
 
 @sample `let sel:DocumentSelector = [{ language: 'typescript' }, { language: 'json', pattern: '**∕tsconfig.json' }]`;
 
 The use of a string as a document filter is deprecated @since 3.16.0.*/
 pub type DocumentSelector = Vec<DocumentFilter>;
-pub type ProgressToken = LspAny;
+pub type ProgressToken = IntegerOrString;
 ///An identifier to refer to a change annotation stored with a workspace edit.
 pub type ChangeAnnotationIdentifier = String;
 /**A workspace diagnostic document report.
 
 @since 3.17.0*/
-pub type WorkspaceDocumentDiagnosticReport = LspAny;
+pub type WorkspaceDocumentDiagnosticReport = WorkspaceFullDocumentDiagnosticReportOrWorkspaceUnchangedDocumentDiagnosticReport;
 /**An event describing a change to a text document. If only a text is provided
 it is considered to be the full content of the document.*/
-pub type TextDocumentContentChangeEvent = LspAny;
+pub type TextDocumentContentChangeEvent = TextDocumentContentChangePartialOrTextDocumentContentChangeWholeDocument;
 /**MarkedString can be used to render human readable text. It is either a markdown string
 or a code-block that provides a language and a code snippet. The language identifier
 is semantically equal to the optional language identifier in fenced code blocks in GitHub
@@ -94,27 +97,27 @@ ${value}
 
 Note that markdown strings will be sanitized - that means html will be escaped.
 @deprecated use MarkupContent instead.*/
-pub type MarkedString = LspAny;
+pub type MarkedString = MarkedStringWithLanguageOrString;
 /**A document filter describes a top level text document or
 a notebook cell document.
 
 @since 3.17.0 - support for NotebookCellTextDocumentFilter.*/
-pub type DocumentFilter = LspAny;
+pub type DocumentFilter = NotebookCellTextDocumentFilterOrTextDocumentFilter;
 /**LSP object definition.
 @since 3.17.0*/
 pub type LSPObject = std::collections::BTreeMap<String, LSPAny>;
 /**The glob pattern. Either a string pattern or a relative pattern.
 
 @since 3.17.0*/
-pub type GlobPattern = LspAny;
+pub type GlobPattern = PatternOrRelativePattern;
 #[doc = "A document filter denotes a document by different properties like\nthe {@link TextDocument.languageId language}, the {@link Uri.scheme scheme} of\nits resource, or a glob-pattern that is applied to the {@link TextDocument.fileName path}.\n\nGlob patterns can have the following syntax:\n- `*` to match zero or more characters in a path segment\n- `?` to match on one character in a path segment\n- `**` to match any number of path segments, including none\n- `{}` to group sub patterns into an OR expression. (e.g. `**\u{200b}/*.{ts,js}` matches all TypeScript and JavaScript files)\n- `[]` to declare a range of characters to match in a path segment (e.g., `example.[0-9]` to match on `example.0`, `example.1`, …)\n- `[!...]` to negate a range of characters to match in a path segment (e.g., `example.[!0-9]` to match on `example.a`, `example.b`, but not `example.0`)\n\n@sample A language filter that applies to typescript files on disk: `{ language: 'typescript', scheme: 'file' }`\n@sample A language filter that applies to all package.json paths: `{ language: 'json', pattern: '**package.json' }`\n\n@since 3.17.0"]
-pub type TextDocumentFilter = LspAny;
+pub type TextDocumentFilter = TextDocumentFilterLanguageOrTextDocumentFilterPatternOrTextDocumentFilterScheme;
 /**A notebook document filter denotes a notebook document by
 different properties. The properties will be match
 against the notebook's URI (same as with documents)
 
 @since 3.17.0*/
-pub type NotebookDocumentFilter = LspAny;
+pub type NotebookDocumentFilter = NotebookDocumentFilterNotebookTypeOrNotebookDocumentFilterPatternOrNotebookDocumentFilterScheme;
 #[doc = "The glob pattern to watch relative to the base path. Glob patterns can have the following syntax:\n- `*` to match zero or more characters in a path segment\n- `?` to match on one character in a path segment\n- `**` to match any number of path segments, including none\n- `{}` to group conditions (e.g. `**\u{200b}/*.{ts,js}` matches all TypeScript and JavaScript files)\n- `[]` to declare a range of characters to match in a path segment (e.g., `example.[0-9]` to match on `example.0`, `example.1`, …)\n- `[!...]` to negate a range of characters to match in a path segment (e.g., `example.[!0-9]` to match on `example.a`, `example.b`, but not `example.0`)\n\n@since 3.17.0"]
 pub type Pattern = String;
 pub type RegularExpressionEngineKind = String;
@@ -178,11 +181,11 @@ impl SemanticTokenModifiers {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum DocumentDiagnosticReportKind {
     /**A diagnostic report with a full
-    set of problems.*/
+set of problems.*/
     #[serde(rename = "full")]
     Full,
     /**A report indicating that the last
-    returned report is still accurate.*/
+returned report is still accurate.*/
     #[serde(rename = "unchanged")]
     Unchanged,
 }
@@ -218,45 +221,178 @@ impl FoldingRangeKind {
     pub const REGION: &'static str = "region";
 }
 ///A symbol kind.
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[serde(transparent)]
-pub struct SymbolKind(pub u32);
-impl SymbolKind {
-    pub const FILE: u32 = 1;
-    pub const MODULE: u32 = 2;
-    pub const NAMESPACE: u32 = 3;
-    pub const PACKAGE: u32 = 4;
-    pub const CLASS: u32 = 5;
-    pub const METHOD: u32 = 6;
-    pub const PROPERTY: u32 = 7;
-    pub const FIELD: u32 = 8;
-    pub const CONSTRUCTOR: u32 = 9;
-    pub const ENUM: u32 = 10;
-    pub const INTERFACE: u32 = 11;
-    pub const FUNCTION: u32 = 12;
-    pub const VARIABLE: u32 = 13;
-    pub const CONSTANT: u32 = 14;
-    pub const STRING: u32 = 15;
-    pub const NUMBER: u32 = 16;
-    pub const BOOLEAN: u32 = 17;
-    pub const ARRAY: u32 = 18;
-    pub const OBJECT: u32 = 19;
-    pub const KEY: u32 = 20;
-    pub const NULL: u32 = 21;
-    pub const ENUM_MEMBER: u32 = 22;
-    pub const STRUCT: u32 = 23;
-    pub const EVENT: u32 = 24;
-    pub const OPERATOR: u32 = 25;
-    pub const TYPE_PARAMETER: u32 = 26;
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum SymbolKind {
+    File,
+    Module,
+    Namespace,
+    Package,
+    Class,
+    Method,
+    Property,
+    Field,
+    Constructor,
+    Enum,
+    Interface,
+    Function,
+    Variable,
+    Constant,
+    String,
+    Number,
+    Boolean,
+    Array,
+    Object,
+    Key,
+    Null,
+    EnumMember,
+    Struct,
+    Event,
+    Operator,
+    TypeParameter,
+}
+impl serde::Serialize for SymbolKind {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        match self {
+            Self::File => serializer.serialize_i64(1i64),
+            Self::Module => serializer.serialize_i64(2i64),
+            Self::Namespace => serializer.serialize_i64(3i64),
+            Self::Package => serializer.serialize_i64(4i64),
+            Self::Class => serializer.serialize_i64(5i64),
+            Self::Method => serializer.serialize_i64(6i64),
+            Self::Property => serializer.serialize_i64(7i64),
+            Self::Field => serializer.serialize_i64(8i64),
+            Self::Constructor => serializer.serialize_i64(9i64),
+            Self::Enum => serializer.serialize_i64(10i64),
+            Self::Interface => serializer.serialize_i64(11i64),
+            Self::Function => serializer.serialize_i64(12i64),
+            Self::Variable => serializer.serialize_i64(13i64),
+            Self::Constant => serializer.serialize_i64(14i64),
+            Self::String => serializer.serialize_i64(15i64),
+            Self::Number => serializer.serialize_i64(16i64),
+            Self::Boolean => serializer.serialize_i64(17i64),
+            Self::Array => serializer.serialize_i64(18i64),
+            Self::Object => serializer.serialize_i64(19i64),
+            Self::Key => serializer.serialize_i64(20i64),
+            Self::Null => serializer.serialize_i64(21i64),
+            Self::EnumMember => serializer.serialize_i64(22i64),
+            Self::Struct => serializer.serialize_i64(23i64),
+            Self::Event => serializer.serialize_i64(24i64),
+            Self::Operator => serializer.serialize_i64(25i64),
+            Self::TypeParameter => serializer.serialize_i64(26i64),
+        }
+    }
+}
+impl<'de> serde::Deserialize<'de> for SymbolKind {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        struct Visitor;
+        impl<'de> serde::de::Visitor<'de> for Visitor {
+            type Value = SymbolKind;
+            fn expecting(
+                &self,
+                formatter: &mut std::fmt::Formatter,
+            ) -> std::fmt::Result {
+                formatter.write_str("a number representing the enum")
+            }
+            fn visit_i64<E>(self, value: i64) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                match value {
+                    1i64 => Ok(SymbolKind::File),
+                    2i64 => Ok(SymbolKind::Module),
+                    3i64 => Ok(SymbolKind::Namespace),
+                    4i64 => Ok(SymbolKind::Package),
+                    5i64 => Ok(SymbolKind::Class),
+                    6i64 => Ok(SymbolKind::Method),
+                    7i64 => Ok(SymbolKind::Property),
+                    8i64 => Ok(SymbolKind::Field),
+                    9i64 => Ok(SymbolKind::Constructor),
+                    10i64 => Ok(SymbolKind::Enum),
+                    11i64 => Ok(SymbolKind::Interface),
+                    12i64 => Ok(SymbolKind::Function),
+                    13i64 => Ok(SymbolKind::Variable),
+                    14i64 => Ok(SymbolKind::Constant),
+                    15i64 => Ok(SymbolKind::String),
+                    16i64 => Ok(SymbolKind::Number),
+                    17i64 => Ok(SymbolKind::Boolean),
+                    18i64 => Ok(SymbolKind::Array),
+                    19i64 => Ok(SymbolKind::Object),
+                    20i64 => Ok(SymbolKind::Key),
+                    21i64 => Ok(SymbolKind::Null),
+                    22i64 => Ok(SymbolKind::EnumMember),
+                    23i64 => Ok(SymbolKind::Struct),
+                    24i64 => Ok(SymbolKind::Event),
+                    25i64 => Ok(SymbolKind::Operator),
+                    26i64 => Ok(SymbolKind::TypeParameter),
+                    _ => Err(E::custom(format!("unknown variant: {}", value))),
+                }
+            }
+            fn visit_u64<E>(self, value: u64) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                self.visit_i64(value as i64)
+            }
+        }
+        deserializer.deserialize_i64(Visitor)
+    }
 }
 /**Symbol tags are extra annotations that tweak the rendering of a symbol.
 
 @since 3.16*/
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[serde(transparent)]
-pub struct SymbolTag(pub u32);
-impl SymbolTag {
-    pub const DEPRECATED: u32 = 1;
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum SymbolTag {
+    ///Render a symbol as obsolete, usually using a strike-out.
+    Deprecated,
+}
+impl serde::Serialize for SymbolTag {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        match self {
+            Self::Deprecated => serializer.serialize_i64(1i64),
+        }
+    }
+}
+impl<'de> serde::Deserialize<'de> for SymbolTag {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        struct Visitor;
+        impl<'de> serde::de::Visitor<'de> for Visitor {
+            type Value = SymbolTag;
+            fn expecting(
+                &self,
+                formatter: &mut std::fmt::Formatter,
+            ) -> std::fmt::Result {
+                formatter.write_str("a number representing the enum")
+            }
+            fn visit_i64<E>(self, value: i64) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                match value {
+                    1i64 => Ok(SymbolTag::Deprecated),
+                    _ => Err(E::custom(format!("unknown variant: {}", value))),
+                }
+            }
+            fn visit_u64<E>(self, value: u64) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                self.visit_i64(value as i64)
+            }
+        }
+        deserializer.deserialize_i64(Visitor)
+    }
 }
 /**Moniker uniqueness level to define scope of the moniker.
 
@@ -291,119 +427,606 @@ pub enum MonikerKind {
     #[serde(rename = "export")]
     Export,
     /**The moniker represents a symbol that is local to a project (e.g. a local
-    variable of a function, a class not visible outside the project, ...)*/
+variable of a function, a class not visible outside the project, ...)*/
     #[serde(rename = "local")]
     Local,
 }
 /**Inlay hint kinds.
 
 @since 3.17.0*/
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[serde(transparent)]
-pub struct InlayHintKind(pub u32);
-impl InlayHintKind {
-    pub const TYPE: u32 = 1;
-    pub const PARAMETER: u32 = 2;
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum InlayHintKind {
+    ///An inlay hint that for a type annotation.
+    Type,
+    ///An inlay hint that is for a parameter.
+    Parameter,
+}
+impl serde::Serialize for InlayHintKind {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        match self {
+            Self::Type => serializer.serialize_i64(1i64),
+            Self::Parameter => serializer.serialize_i64(2i64),
+        }
+    }
+}
+impl<'de> serde::Deserialize<'de> for InlayHintKind {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        struct Visitor;
+        impl<'de> serde::de::Visitor<'de> for Visitor {
+            type Value = InlayHintKind;
+            fn expecting(
+                &self,
+                formatter: &mut std::fmt::Formatter,
+            ) -> std::fmt::Result {
+                formatter.write_str("a number representing the enum")
+            }
+            fn visit_i64<E>(self, value: i64) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                match value {
+                    1i64 => Ok(InlayHintKind::Type),
+                    2i64 => Ok(InlayHintKind::Parameter),
+                    _ => Err(E::custom(format!("unknown variant: {}", value))),
+                }
+            }
+            fn visit_u64<E>(self, value: u64) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                self.visit_i64(value as i64)
+            }
+        }
+        deserializer.deserialize_i64(Visitor)
+    }
 }
 ///The message type
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[serde(transparent)]
-pub struct MessageType(pub u32);
-impl MessageType {
-    pub const ERROR: u32 = 1;
-    pub const WARNING: u32 = 2;
-    pub const INFO: u32 = 3;
-    pub const LOG: u32 = 4;
-    pub const DEBUG: u32 = 5;
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum MessageType {
+    ///An error message.
+    Error,
+    ///A warning message.
+    Warning,
+    ///An information message.
+    Info,
+    ///A log message.
+    Log,
+    /**A debug message.
+
+@since 3.18.0*/
+    Debug,
+}
+impl serde::Serialize for MessageType {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        match self {
+            Self::Error => serializer.serialize_i64(1i64),
+            Self::Warning => serializer.serialize_i64(2i64),
+            Self::Info => serializer.serialize_i64(3i64),
+            Self::Log => serializer.serialize_i64(4i64),
+            Self::Debug => serializer.serialize_i64(5i64),
+        }
+    }
+}
+impl<'de> serde::Deserialize<'de> for MessageType {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        struct Visitor;
+        impl<'de> serde::de::Visitor<'de> for Visitor {
+            type Value = MessageType;
+            fn expecting(
+                &self,
+                formatter: &mut std::fmt::Formatter,
+            ) -> std::fmt::Result {
+                formatter.write_str("a number representing the enum")
+            }
+            fn visit_i64<E>(self, value: i64) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                match value {
+                    1i64 => Ok(MessageType::Error),
+                    2i64 => Ok(MessageType::Warning),
+                    3i64 => Ok(MessageType::Info),
+                    4i64 => Ok(MessageType::Log),
+                    5i64 => Ok(MessageType::Debug),
+                    _ => Err(E::custom(format!("unknown variant: {}", value))),
+                }
+            }
+            fn visit_u64<E>(self, value: u64) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                self.visit_i64(value as i64)
+            }
+        }
+        deserializer.deserialize_i64(Visitor)
+    }
 }
 /**Defines how the host (editor) should sync
 document changes to the language server.*/
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[serde(transparent)]
-pub struct TextDocumentSyncKind(pub u32);
-impl TextDocumentSyncKind {
-    pub const NONE: u32 = 0;
-    pub const FULL: u32 = 1;
-    pub const INCREMENTAL: u32 = 2;
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum TextDocumentSyncKind {
+    ///Documents should not be synced at all.
+    None,
+    /**Documents are synced by always sending the full content
+of the document.*/
+    Full,
+    /**Documents are synced by sending the full content on open.
+After that only incremental updates to the document are
+send.*/
+    Incremental,
+}
+impl serde::Serialize for TextDocumentSyncKind {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        match self {
+            Self::None => serializer.serialize_i64(0i64),
+            Self::Full => serializer.serialize_i64(1i64),
+            Self::Incremental => serializer.serialize_i64(2i64),
+        }
+    }
+}
+impl<'de> serde::Deserialize<'de> for TextDocumentSyncKind {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        struct Visitor;
+        impl<'de> serde::de::Visitor<'de> for Visitor {
+            type Value = TextDocumentSyncKind;
+            fn expecting(
+                &self,
+                formatter: &mut std::fmt::Formatter,
+            ) -> std::fmt::Result {
+                formatter.write_str("a number representing the enum")
+            }
+            fn visit_i64<E>(self, value: i64) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                match value {
+                    0i64 => Ok(TextDocumentSyncKind::None),
+                    1i64 => Ok(TextDocumentSyncKind::Full),
+                    2i64 => Ok(TextDocumentSyncKind::Incremental),
+                    _ => Err(E::custom(format!("unknown variant: {}", value))),
+                }
+            }
+            fn visit_u64<E>(self, value: u64) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                self.visit_i64(value as i64)
+            }
+        }
+        deserializer.deserialize_i64(Visitor)
+    }
 }
 ///Represents reasons why a text document is saved.
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[serde(transparent)]
-pub struct TextDocumentSaveReason(pub u32);
-impl TextDocumentSaveReason {
-    pub const MANUAL: u32 = 1;
-    pub const AFTER_DELAY: u32 = 2;
-    pub const FOCUS_OUT: u32 = 3;
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum TextDocumentSaveReason {
+    /**Manually triggered, e.g. by the user pressing save, by starting debugging,
+or by an API call.*/
+    Manual,
+    ///Automatic after a delay.
+    AfterDelay,
+    ///When the editor lost focus.
+    FocusOut,
+}
+impl serde::Serialize for TextDocumentSaveReason {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        match self {
+            Self::Manual => serializer.serialize_i64(1i64),
+            Self::AfterDelay => serializer.serialize_i64(2i64),
+            Self::FocusOut => serializer.serialize_i64(3i64),
+        }
+    }
+}
+impl<'de> serde::Deserialize<'de> for TextDocumentSaveReason {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        struct Visitor;
+        impl<'de> serde::de::Visitor<'de> for Visitor {
+            type Value = TextDocumentSaveReason;
+            fn expecting(
+                &self,
+                formatter: &mut std::fmt::Formatter,
+            ) -> std::fmt::Result {
+                formatter.write_str("a number representing the enum")
+            }
+            fn visit_i64<E>(self, value: i64) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                match value {
+                    1i64 => Ok(TextDocumentSaveReason::Manual),
+                    2i64 => Ok(TextDocumentSaveReason::AfterDelay),
+                    3i64 => Ok(TextDocumentSaveReason::FocusOut),
+                    _ => Err(E::custom(format!("unknown variant: {}", value))),
+                }
+            }
+            fn visit_u64<E>(self, value: u64) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                self.visit_i64(value as i64)
+            }
+        }
+        deserializer.deserialize_i64(Visitor)
+    }
 }
 ///The kind of a completion entry.
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[serde(transparent)]
-pub struct CompletionItemKind(pub u32);
-impl CompletionItemKind {
-    pub const TEXT: u32 = 1;
-    pub const METHOD: u32 = 2;
-    pub const FUNCTION: u32 = 3;
-    pub const CONSTRUCTOR: u32 = 4;
-    pub const FIELD: u32 = 5;
-    pub const VARIABLE: u32 = 6;
-    pub const CLASS: u32 = 7;
-    pub const INTERFACE: u32 = 8;
-    pub const MODULE: u32 = 9;
-    pub const PROPERTY: u32 = 10;
-    pub const UNIT: u32 = 11;
-    pub const VALUE: u32 = 12;
-    pub const ENUM: u32 = 13;
-    pub const KEYWORD: u32 = 14;
-    pub const SNIPPET: u32 = 15;
-    pub const COLOR: u32 = 16;
-    pub const FILE: u32 = 17;
-    pub const REFERENCE: u32 = 18;
-    pub const FOLDER: u32 = 19;
-    pub const ENUM_MEMBER: u32 = 20;
-    pub const CONSTANT: u32 = 21;
-    pub const STRUCT: u32 = 22;
-    pub const EVENT: u32 = 23;
-    pub const OPERATOR: u32 = 24;
-    pub const TYPE_PARAMETER: u32 = 25;
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum CompletionItemKind {
+    Text,
+    Method,
+    Function,
+    Constructor,
+    Field,
+    Variable,
+    Class,
+    Interface,
+    Module,
+    Property,
+    Unit,
+    Value,
+    Enum,
+    Keyword,
+    Snippet,
+    Color,
+    File,
+    Reference,
+    Folder,
+    EnumMember,
+    Constant,
+    Struct,
+    Event,
+    Operator,
+    TypeParameter,
+}
+impl serde::Serialize for CompletionItemKind {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        match self {
+            Self::Text => serializer.serialize_i64(1i64),
+            Self::Method => serializer.serialize_i64(2i64),
+            Self::Function => serializer.serialize_i64(3i64),
+            Self::Constructor => serializer.serialize_i64(4i64),
+            Self::Field => serializer.serialize_i64(5i64),
+            Self::Variable => serializer.serialize_i64(6i64),
+            Self::Class => serializer.serialize_i64(7i64),
+            Self::Interface => serializer.serialize_i64(8i64),
+            Self::Module => serializer.serialize_i64(9i64),
+            Self::Property => serializer.serialize_i64(10i64),
+            Self::Unit => serializer.serialize_i64(11i64),
+            Self::Value => serializer.serialize_i64(12i64),
+            Self::Enum => serializer.serialize_i64(13i64),
+            Self::Keyword => serializer.serialize_i64(14i64),
+            Self::Snippet => serializer.serialize_i64(15i64),
+            Self::Color => serializer.serialize_i64(16i64),
+            Self::File => serializer.serialize_i64(17i64),
+            Self::Reference => serializer.serialize_i64(18i64),
+            Self::Folder => serializer.serialize_i64(19i64),
+            Self::EnumMember => serializer.serialize_i64(20i64),
+            Self::Constant => serializer.serialize_i64(21i64),
+            Self::Struct => serializer.serialize_i64(22i64),
+            Self::Event => serializer.serialize_i64(23i64),
+            Self::Operator => serializer.serialize_i64(24i64),
+            Self::TypeParameter => serializer.serialize_i64(25i64),
+        }
+    }
+}
+impl<'de> serde::Deserialize<'de> for CompletionItemKind {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        struct Visitor;
+        impl<'de> serde::de::Visitor<'de> for Visitor {
+            type Value = CompletionItemKind;
+            fn expecting(
+                &self,
+                formatter: &mut std::fmt::Formatter,
+            ) -> std::fmt::Result {
+                formatter.write_str("a number representing the enum")
+            }
+            fn visit_i64<E>(self, value: i64) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                match value {
+                    1i64 => Ok(CompletionItemKind::Text),
+                    2i64 => Ok(CompletionItemKind::Method),
+                    3i64 => Ok(CompletionItemKind::Function),
+                    4i64 => Ok(CompletionItemKind::Constructor),
+                    5i64 => Ok(CompletionItemKind::Field),
+                    6i64 => Ok(CompletionItemKind::Variable),
+                    7i64 => Ok(CompletionItemKind::Class),
+                    8i64 => Ok(CompletionItemKind::Interface),
+                    9i64 => Ok(CompletionItemKind::Module),
+                    10i64 => Ok(CompletionItemKind::Property),
+                    11i64 => Ok(CompletionItemKind::Unit),
+                    12i64 => Ok(CompletionItemKind::Value),
+                    13i64 => Ok(CompletionItemKind::Enum),
+                    14i64 => Ok(CompletionItemKind::Keyword),
+                    15i64 => Ok(CompletionItemKind::Snippet),
+                    16i64 => Ok(CompletionItemKind::Color),
+                    17i64 => Ok(CompletionItemKind::File),
+                    18i64 => Ok(CompletionItemKind::Reference),
+                    19i64 => Ok(CompletionItemKind::Folder),
+                    20i64 => Ok(CompletionItemKind::EnumMember),
+                    21i64 => Ok(CompletionItemKind::Constant),
+                    22i64 => Ok(CompletionItemKind::Struct),
+                    23i64 => Ok(CompletionItemKind::Event),
+                    24i64 => Ok(CompletionItemKind::Operator),
+                    25i64 => Ok(CompletionItemKind::TypeParameter),
+                    _ => Err(E::custom(format!("unknown variant: {}", value))),
+                }
+            }
+            fn visit_u64<E>(self, value: u64) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                self.visit_i64(value as i64)
+            }
+        }
+        deserializer.deserialize_i64(Visitor)
+    }
 }
 /**Completion item tags are extra annotations that tweak the rendering of a completion
 item.
 
 @since 3.15.0*/
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[serde(transparent)]
-pub struct CompletionItemTag(pub u32);
-impl CompletionItemTag {
-    pub const DEPRECATED: u32 = 1;
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum CompletionItemTag {
+    ///Render a completion as obsolete, usually using a strike-out.
+    Deprecated,
+}
+impl serde::Serialize for CompletionItemTag {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        match self {
+            Self::Deprecated => serializer.serialize_i64(1i64),
+        }
+    }
+}
+impl<'de> serde::Deserialize<'de> for CompletionItemTag {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        struct Visitor;
+        impl<'de> serde::de::Visitor<'de> for Visitor {
+            type Value = CompletionItemTag;
+            fn expecting(
+                &self,
+                formatter: &mut std::fmt::Formatter,
+            ) -> std::fmt::Result {
+                formatter.write_str("a number representing the enum")
+            }
+            fn visit_i64<E>(self, value: i64) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                match value {
+                    1i64 => Ok(CompletionItemTag::Deprecated),
+                    _ => Err(E::custom(format!("unknown variant: {}", value))),
+                }
+            }
+            fn visit_u64<E>(self, value: u64) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                self.visit_i64(value as i64)
+            }
+        }
+        deserializer.deserialize_i64(Visitor)
+    }
 }
 /**Defines whether the insert text in a completion item should be interpreted as
 plain text or a snippet.*/
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[serde(transparent)]
-pub struct InsertTextFormat(pub u32);
-impl InsertTextFormat {
-    pub const PLAIN_TEXT: u32 = 1;
-    pub const SNIPPET: u32 = 2;
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum InsertTextFormat {
+    ///The primary text to be inserted is treated as a plain string.
+    PlainText,
+    /**The primary text to be inserted is treated as a snippet.
+
+A snippet can define tab stops and placeholders with `$1`, `$2`
+and `${3:foo}`. `$0` defines the final tab stop, it defaults to
+the end of the snippet. Placeholders with equal identifiers are linked,
+that is typing in one will update others too.
+
+See also: https://microsoft.github.io/language-server-protocol/specifications/specification-current/#snippet_syntax*/
+    Snippet,
+}
+impl serde::Serialize for InsertTextFormat {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        match self {
+            Self::PlainText => serializer.serialize_i64(1i64),
+            Self::Snippet => serializer.serialize_i64(2i64),
+        }
+    }
+}
+impl<'de> serde::Deserialize<'de> for InsertTextFormat {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        struct Visitor;
+        impl<'de> serde::de::Visitor<'de> for Visitor {
+            type Value = InsertTextFormat;
+            fn expecting(
+                &self,
+                formatter: &mut std::fmt::Formatter,
+            ) -> std::fmt::Result {
+                formatter.write_str("a number representing the enum")
+            }
+            fn visit_i64<E>(self, value: i64) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                match value {
+                    1i64 => Ok(InsertTextFormat::PlainText),
+                    2i64 => Ok(InsertTextFormat::Snippet),
+                    _ => Err(E::custom(format!("unknown variant: {}", value))),
+                }
+            }
+            fn visit_u64<E>(self, value: u64) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                self.visit_i64(value as i64)
+            }
+        }
+        deserializer.deserialize_i64(Visitor)
+    }
 }
 /**How whitespace and indentation is handled during completion
 item insertion.
 
 @since 3.16.0*/
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[serde(transparent)]
-pub struct InsertTextMode(pub u32);
-impl InsertTextMode {
-    pub const AS_IS: u32 = 1;
-    pub const ADJUST_INDENTATION: u32 = 2;
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum InsertTextMode {
+    /**The insertion or replace strings is taken as it is. If the
+value is multi line the lines below the cursor will be
+inserted using the indentation defined in the string value.
+The client will not apply any kind of adjustments to the
+string.*/
+    AsIs,
+    /**The editor adjusts leading whitespace of new lines so that
+they match the indentation up to the cursor of the line for
+which the item is accepted.
+
+Consider a line like this: <2tabs><cursor><3tabs>foo. Accepting a
+multi line completion item is indented using 2 tabs and all
+following lines inserted will be indented using 2 tabs as well.*/
+    AdjustIndentation,
+}
+impl serde::Serialize for InsertTextMode {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        match self {
+            Self::AsIs => serializer.serialize_i64(1i64),
+            Self::AdjustIndentation => serializer.serialize_i64(2i64),
+        }
+    }
+}
+impl<'de> serde::Deserialize<'de> for InsertTextMode {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        struct Visitor;
+        impl<'de> serde::de::Visitor<'de> for Visitor {
+            type Value = InsertTextMode;
+            fn expecting(
+                &self,
+                formatter: &mut std::fmt::Formatter,
+            ) -> std::fmt::Result {
+                formatter.write_str("a number representing the enum")
+            }
+            fn visit_i64<E>(self, value: i64) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                match value {
+                    1i64 => Ok(InsertTextMode::AsIs),
+                    2i64 => Ok(InsertTextMode::AdjustIndentation),
+                    _ => Err(E::custom(format!("unknown variant: {}", value))),
+                }
+            }
+            fn visit_u64<E>(self, value: u64) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                self.visit_i64(value as i64)
+            }
+        }
+        deserializer.deserialize_i64(Visitor)
+    }
 }
 ///A document highlight kind.
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[serde(transparent)]
-pub struct DocumentHighlightKind(pub u32);
-impl DocumentHighlightKind {
-    pub const TEXT: u32 = 1;
-    pub const READ: u32 = 2;
-    pub const WRITE: u32 = 3;
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum DocumentHighlightKind {
+    ///A textual occurrence.
+    Text,
+    ///Read-access of a symbol, like reading a variable.
+    Read,
+    ///Write-access of a symbol, like writing to a variable.
+    Write,
+}
+impl serde::Serialize for DocumentHighlightKind {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        match self {
+            Self::Text => serializer.serialize_i64(1i64),
+            Self::Read => serializer.serialize_i64(2i64),
+            Self::Write => serializer.serialize_i64(3i64),
+        }
+    }
+}
+impl<'de> serde::Deserialize<'de> for DocumentHighlightKind {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        struct Visitor;
+        impl<'de> serde::de::Visitor<'de> for Visitor {
+            type Value = DocumentHighlightKind;
+            fn expecting(
+                &self,
+                formatter: &mut std::fmt::Formatter,
+            ) -> std::fmt::Result {
+                formatter.write_str("a number representing the enum")
+            }
+            fn visit_i64<E>(self, value: i64) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                match value {
+                    1i64 => Ok(DocumentHighlightKind::Text),
+                    2i64 => Ok(DocumentHighlightKind::Read),
+                    3i64 => Ok(DocumentHighlightKind::Write),
+                    _ => Err(E::custom(format!("unknown variant: {}", value))),
+                }
+            }
+            fn visit_u64<E>(self, value: u64) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                self.visit_i64(value as i64)
+            }
+        }
+        deserializer.deserialize_i64(Visitor)
+    }
 }
 ///A set of predefined code action kinds
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -425,11 +1048,53 @@ impl CodeActionKind {
 /**Code action tags are extra annotations that tweak the behavior of a code action.
 
 @since 3.18.0 - proposed*/
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[serde(transparent)]
-pub struct CodeActionTag(pub u32);
-impl CodeActionTag {
-    pub const LLM_GENERATED: u32 = 1;
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum CodeActionTag {
+    ///Marks the code action as LLM-generated.
+    LlmGenerated,
+}
+impl serde::Serialize for CodeActionTag {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        match self {
+            Self::LlmGenerated => serializer.serialize_i64(1i64),
+        }
+    }
+}
+impl<'de> serde::Deserialize<'de> for CodeActionTag {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        struct Visitor;
+        impl<'de> serde::de::Visitor<'de> for Visitor {
+            type Value = CodeActionTag;
+            fn expecting(
+                &self,
+                formatter: &mut std::fmt::Formatter,
+            ) -> std::fmt::Result {
+                formatter.write_str("a number representing the enum")
+            }
+            fn visit_i64<E>(self, value: i64) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                match value {
+                    1i64 => Ok(CodeActionTag::LlmGenerated),
+                    _ => Err(E::custom(format!("unknown variant: {}", value))),
+                }
+            }
+            fn visit_u64<E>(self, value: u64) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                self.visit_i64(value as i64)
+            }
+        }
+        deserializer.deserialize_i64(Visitor)
+    }
 }
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum TraceValue {
@@ -529,12 +1194,57 @@ impl LanguageKind {
 /**Describes how an {@link InlineCompletionItemProvider inline completion provider} was triggered.
 
 @since 3.18.0*/
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[serde(transparent)]
-pub struct InlineCompletionTriggerKind(pub u32);
-impl InlineCompletionTriggerKind {
-    pub const INVOKED: u32 = 1;
-    pub const AUTOMATIC: u32 = 2;
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum InlineCompletionTriggerKind {
+    ///Completion was triggered explicitly by a user gesture.
+    Invoked,
+    ///Completion was triggered automatically while editing.
+    Automatic,
+}
+impl serde::Serialize for InlineCompletionTriggerKind {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        match self {
+            Self::Invoked => serializer.serialize_i64(1i64),
+            Self::Automatic => serializer.serialize_i64(2i64),
+        }
+    }
+}
+impl<'de> serde::Deserialize<'de> for InlineCompletionTriggerKind {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        struct Visitor;
+        impl<'de> serde::de::Visitor<'de> for Visitor {
+            type Value = InlineCompletionTriggerKind;
+            fn expecting(
+                &self,
+                formatter: &mut std::fmt::Formatter,
+            ) -> std::fmt::Result {
+                formatter.write_str("a number representing the enum")
+            }
+            fn visit_i64<E>(self, value: i64) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                match value {
+                    1i64 => Ok(InlineCompletionTriggerKind::Invoked),
+                    2i64 => Ok(InlineCompletionTriggerKind::Automatic),
+                    _ => Err(E::custom(format!("unknown variant: {}", value))),
+                }
+            }
+            fn visit_u64<E>(self, value: u64) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                self.visit_i64(value as i64)
+            }
+        }
+        deserializer.deserialize_i64(Visitor)
+    }
 }
 /**A set of predefined position encoding kinds.
 
@@ -548,13 +1258,61 @@ impl PositionEncodingKind {
     pub const UTF32: &'static str = "utf-32";
 }
 ///The file event type
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[serde(transparent)]
-pub struct FileChangeType(pub u32);
-impl FileChangeType {
-    pub const CREATED: u32 = 1;
-    pub const CHANGED: u32 = 2;
-    pub const DELETED: u32 = 3;
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum FileChangeType {
+    ///The file got created.
+    Created,
+    ///The file got changed.
+    Changed,
+    ///The file got deleted.
+    Deleted,
+}
+impl serde::Serialize for FileChangeType {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        match self {
+            Self::Created => serializer.serialize_i64(1i64),
+            Self::Changed => serializer.serialize_i64(2i64),
+            Self::Deleted => serializer.serialize_i64(3i64),
+        }
+    }
+}
+impl<'de> serde::Deserialize<'de> for FileChangeType {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        struct Visitor;
+        impl<'de> serde::de::Visitor<'de> for Visitor {
+            type Value = FileChangeType;
+            fn expecting(
+                &self,
+                formatter: &mut std::fmt::Formatter,
+            ) -> std::fmt::Result {
+                formatter.write_str("a number representing the enum")
+            }
+            fn visit_i64<E>(self, value: i64) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                match value {
+                    1i64 => Ok(FileChangeType::Created),
+                    2i64 => Ok(FileChangeType::Changed),
+                    3i64 => Ok(FileChangeType::Deleted),
+                    _ => Err(E::custom(format!("unknown variant: {}", value))),
+                }
+            }
+            fn visit_u64<E>(self, value: u64) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                self.visit_i64(value as i64)
+            }
+        }
+        deserializer.deserialize_i64(Visitor)
+    }
 }
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(transparent)]
@@ -565,65 +1323,361 @@ impl WatchKind {
     pub const DELETE: u32 = 4;
 }
 ///The diagnostic's severity.
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[serde(transparent)]
-pub struct DiagnosticSeverity(pub u32);
-impl DiagnosticSeverity {
-    pub const ERROR: u32 = 1;
-    pub const WARNING: u32 = 2;
-    pub const INFORMATION: u32 = 3;
-    pub const HINT: u32 = 4;
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum DiagnosticSeverity {
+    ///Reports an error.
+    Error,
+    ///Reports a warning.
+    Warning,
+    ///Reports an information.
+    Information,
+    ///Reports a hint.
+    Hint,
+}
+impl serde::Serialize for DiagnosticSeverity {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        match self {
+            Self::Error => serializer.serialize_i64(1i64),
+            Self::Warning => serializer.serialize_i64(2i64),
+            Self::Information => serializer.serialize_i64(3i64),
+            Self::Hint => serializer.serialize_i64(4i64),
+        }
+    }
+}
+impl<'de> serde::Deserialize<'de> for DiagnosticSeverity {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        struct Visitor;
+        impl<'de> serde::de::Visitor<'de> for Visitor {
+            type Value = DiagnosticSeverity;
+            fn expecting(
+                &self,
+                formatter: &mut std::fmt::Formatter,
+            ) -> std::fmt::Result {
+                formatter.write_str("a number representing the enum")
+            }
+            fn visit_i64<E>(self, value: i64) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                match value {
+                    1i64 => Ok(DiagnosticSeverity::Error),
+                    2i64 => Ok(DiagnosticSeverity::Warning),
+                    3i64 => Ok(DiagnosticSeverity::Information),
+                    4i64 => Ok(DiagnosticSeverity::Hint),
+                    _ => Err(E::custom(format!("unknown variant: {}", value))),
+                }
+            }
+            fn visit_u64<E>(self, value: u64) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                self.visit_i64(value as i64)
+            }
+        }
+        deserializer.deserialize_i64(Visitor)
+    }
 }
 /**The diagnostic tags.
 
 @since 3.15.0*/
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[serde(transparent)]
-pub struct DiagnosticTag(pub u32);
-impl DiagnosticTag {
-    pub const UNNECESSARY: u32 = 1;
-    pub const DEPRECATED: u32 = 2;
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum DiagnosticTag {
+    /**Unused or unnecessary code.
+
+Clients are allowed to render diagnostics with this tag faded out instead of having
+an error squiggle.*/
+    Unnecessary,
+    /**Deprecated or obsolete code.
+
+Clients are allowed to rendered diagnostics with this tag strike through.*/
+    Deprecated,
+}
+impl serde::Serialize for DiagnosticTag {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        match self {
+            Self::Unnecessary => serializer.serialize_i64(1i64),
+            Self::Deprecated => serializer.serialize_i64(2i64),
+        }
+    }
+}
+impl<'de> serde::Deserialize<'de> for DiagnosticTag {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        struct Visitor;
+        impl<'de> serde::de::Visitor<'de> for Visitor {
+            type Value = DiagnosticTag;
+            fn expecting(
+                &self,
+                formatter: &mut std::fmt::Formatter,
+            ) -> std::fmt::Result {
+                formatter.write_str("a number representing the enum")
+            }
+            fn visit_i64<E>(self, value: i64) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                match value {
+                    1i64 => Ok(DiagnosticTag::Unnecessary),
+                    2i64 => Ok(DiagnosticTag::Deprecated),
+                    _ => Err(E::custom(format!("unknown variant: {}", value))),
+                }
+            }
+            fn visit_u64<E>(self, value: u64) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                self.visit_i64(value as i64)
+            }
+        }
+        deserializer.deserialize_i64(Visitor)
+    }
 }
 ///How a completion was triggered
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[serde(transparent)]
-pub struct CompletionTriggerKind(pub u32);
-impl CompletionTriggerKind {
-    pub const INVOKED: u32 = 1;
-    pub const TRIGGER_CHARACTER: u32 = 2;
-    pub const TRIGGER_FOR_INCOMPLETE_COMPLETIONS: u32 = 3;
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum CompletionTriggerKind {
+    /**Completion was triggered by typing an identifier (24x7 code
+complete), manual invocation (e.g Ctrl+Space) or via API.*/
+    Invoked,
+    /**Completion was triggered by a trigger character specified by
+the `triggerCharacters` properties of the `CompletionRegistrationOptions`.*/
+    TriggerCharacter,
+    ///Completion was re-triggered as current completion list is incomplete
+    TriggerForIncompleteCompletions,
+}
+impl serde::Serialize for CompletionTriggerKind {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        match self {
+            Self::Invoked => serializer.serialize_i64(1i64),
+            Self::TriggerCharacter => serializer.serialize_i64(2i64),
+            Self::TriggerForIncompleteCompletions => serializer.serialize_i64(3i64),
+        }
+    }
+}
+impl<'de> serde::Deserialize<'de> for CompletionTriggerKind {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        struct Visitor;
+        impl<'de> serde::de::Visitor<'de> for Visitor {
+            type Value = CompletionTriggerKind;
+            fn expecting(
+                &self,
+                formatter: &mut std::fmt::Formatter,
+            ) -> std::fmt::Result {
+                formatter.write_str("a number representing the enum")
+            }
+            fn visit_i64<E>(self, value: i64) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                match value {
+                    1i64 => Ok(CompletionTriggerKind::Invoked),
+                    2i64 => Ok(CompletionTriggerKind::TriggerCharacter),
+                    3i64 => Ok(CompletionTriggerKind::TriggerForIncompleteCompletions),
+                    _ => Err(E::custom(format!("unknown variant: {}", value))),
+                }
+            }
+            fn visit_u64<E>(self, value: u64) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                self.visit_i64(value as i64)
+            }
+        }
+        deserializer.deserialize_i64(Visitor)
+    }
 }
 /**Defines how values from a set of defaults and an individual item will be
 merged.
 
 @since 3.18.0*/
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[serde(transparent)]
-pub struct ApplyKind(pub u32);
-impl ApplyKind {
-    pub const REPLACE: u32 = 1;
-    pub const MERGE: u32 = 2;
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum ApplyKind {
+    /**The value from the individual item (if provided and not `null`) will be
+used instead of the default.*/
+    Replace,
+    /**The value from the item will be merged with the default.
+
+The specific rules for mergeing values are defined against each field
+that supports merging.*/
+    Merge,
+}
+impl serde::Serialize for ApplyKind {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        match self {
+            Self::Replace => serializer.serialize_i64(1i64),
+            Self::Merge => serializer.serialize_i64(2i64),
+        }
+    }
+}
+impl<'de> serde::Deserialize<'de> for ApplyKind {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        struct Visitor;
+        impl<'de> serde::de::Visitor<'de> for Visitor {
+            type Value = ApplyKind;
+            fn expecting(
+                &self,
+                formatter: &mut std::fmt::Formatter,
+            ) -> std::fmt::Result {
+                formatter.write_str("a number representing the enum")
+            }
+            fn visit_i64<E>(self, value: i64) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                match value {
+                    1i64 => Ok(ApplyKind::Replace),
+                    2i64 => Ok(ApplyKind::Merge),
+                    _ => Err(E::custom(format!("unknown variant: {}", value))),
+                }
+            }
+            fn visit_u64<E>(self, value: u64) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                self.visit_i64(value as i64)
+            }
+        }
+        deserializer.deserialize_i64(Visitor)
+    }
 }
 /**How a signature help was triggered.
 
 @since 3.15.0*/
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[serde(transparent)]
-pub struct SignatureHelpTriggerKind(pub u32);
-impl SignatureHelpTriggerKind {
-    pub const INVOKED: u32 = 1;
-    pub const TRIGGER_CHARACTER: u32 = 2;
-    pub const CONTENT_CHANGE: u32 = 3;
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum SignatureHelpTriggerKind {
+    ///Signature help was invoked manually by the user or by a command.
+    Invoked,
+    ///Signature help was triggered by a trigger character.
+    TriggerCharacter,
+    ///Signature help was triggered by the cursor moving or by the document content changing.
+    ContentChange,
+}
+impl serde::Serialize for SignatureHelpTriggerKind {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        match self {
+            Self::Invoked => serializer.serialize_i64(1i64),
+            Self::TriggerCharacter => serializer.serialize_i64(2i64),
+            Self::ContentChange => serializer.serialize_i64(3i64),
+        }
+    }
+}
+impl<'de> serde::Deserialize<'de> for SignatureHelpTriggerKind {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        struct Visitor;
+        impl<'de> serde::de::Visitor<'de> for Visitor {
+            type Value = SignatureHelpTriggerKind;
+            fn expecting(
+                &self,
+                formatter: &mut std::fmt::Formatter,
+            ) -> std::fmt::Result {
+                formatter.write_str("a number representing the enum")
+            }
+            fn visit_i64<E>(self, value: i64) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                match value {
+                    1i64 => Ok(SignatureHelpTriggerKind::Invoked),
+                    2i64 => Ok(SignatureHelpTriggerKind::TriggerCharacter),
+                    3i64 => Ok(SignatureHelpTriggerKind::ContentChange),
+                    _ => Err(E::custom(format!("unknown variant: {}", value))),
+                }
+            }
+            fn visit_u64<E>(self, value: u64) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                self.visit_i64(value as i64)
+            }
+        }
+        deserializer.deserialize_i64(Visitor)
+    }
 }
 /**The reason why code actions were requested.
 
 @since 3.17.0*/
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[serde(transparent)]
-pub struct CodeActionTriggerKind(pub u32);
-impl CodeActionTriggerKind {
-    pub const INVOKED: u32 = 1;
-    pub const AUTOMATIC: u32 = 2;
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum CodeActionTriggerKind {
+    ///Code actions were explicitly requested by the user or by an extension.
+    Invoked,
+    /**Code actions were requested automatically.
+
+This typically happens when current selection in a file changes, but can
+also be triggered when file content changes.*/
+    Automatic,
+}
+impl serde::Serialize for CodeActionTriggerKind {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        match self {
+            Self::Invoked => serializer.serialize_i64(1i64),
+            Self::Automatic => serializer.serialize_i64(2i64),
+        }
+    }
+}
+impl<'de> serde::Deserialize<'de> for CodeActionTriggerKind {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        struct Visitor;
+        impl<'de> serde::de::Visitor<'de> for Visitor {
+            type Value = CodeActionTriggerKind;
+            fn expecting(
+                &self,
+                formatter: &mut std::fmt::Formatter,
+            ) -> std::fmt::Result {
+                formatter.write_str("a number representing the enum")
+            }
+            fn visit_i64<E>(self, value: i64) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                match value {
+                    1i64 => Ok(CodeActionTriggerKind::Invoked),
+                    2i64 => Ok(CodeActionTriggerKind::Automatic),
+                    _ => Err(E::custom(format!("unknown variant: {}", value))),
+                }
+            }
+            fn visit_u64<E>(self, value: u64) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                self.visit_i64(value as i64)
+            }
+        }
+        deserializer.deserialize_i64(Visitor)
+    }
 }
 /**A pattern kind describing if a glob pattern matches a file a folder or
 both.
@@ -641,12 +1695,57 @@ pub enum FileOperationPatternKind {
 /**A notebook cell kind.
 
 @since 3.17.0*/
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[serde(transparent)]
-pub struct NotebookCellKind(pub u32);
-impl NotebookCellKind {
-    pub const MARKUP: u32 = 1;
-    pub const CODE: u32 = 2;
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum NotebookCellKind {
+    ///A markup-cell is formatted source that is used for display.
+    Markup,
+    ///A code-cell is source code.
+    Code,
+}
+impl serde::Serialize for NotebookCellKind {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        match self {
+            Self::Markup => serializer.serialize_i64(1i64),
+            Self::Code => serializer.serialize_i64(2i64),
+        }
+    }
+}
+impl<'de> serde::Deserialize<'de> for NotebookCellKind {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        struct Visitor;
+        impl<'de> serde::de::Visitor<'de> for Visitor {
+            type Value = NotebookCellKind;
+            fn expecting(
+                &self,
+                formatter: &mut std::fmt::Formatter,
+            ) -> std::fmt::Result {
+                formatter.write_str("a number representing the enum")
+            }
+            fn visit_i64<E>(self, value: i64) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                match value {
+                    1i64 => Ok(NotebookCellKind::Markup),
+                    2i64 => Ok(NotebookCellKind::Code),
+                    _ => Err(E::custom(format!("unknown variant: {}", value))),
+                }
+            }
+            fn visit_u64<E>(self, value: u64) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                self.visit_i64(value as i64)
+            }
+        }
+        deserializer.deserialize_i64(Visitor)
+    }
 }
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum ResourceOperationKind {
@@ -663,28 +1762,71 @@ pub enum ResourceOperationKind {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum FailureHandlingKind {
     /**Applying the workspace change is simply aborted if one of the changes provided
-    fails. All operations executed before the failing operation stay executed.*/
+fails. All operations executed before the failing operation stay executed.*/
     #[serde(rename = "abort")]
     Abort,
     /**All operations are executed transactional. That means they either all
-    succeed or no changes at all are applied to the workspace.*/
+succeed or no changes at all are applied to the workspace.*/
     #[serde(rename = "transactional")]
     Transactional,
     /**If the workspace edit contains only textual file changes they are executed transactional.
-    If resource changes (create, rename or delete file) are part of the change the failure
-    handling strategy is abort.*/
+If resource changes (create, rename or delete file) are part of the change the failure
+handling strategy is abort.*/
     #[serde(rename = "textOnlyTransactional")]
     TextOnlyTransactional,
     /**The client tries to undo the operations already executed. But there is no
-    guarantee that this is succeeding.*/
+guarantee that this is succeeding.*/
     #[serde(rename = "undo")]
     Undo,
 }
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[serde(transparent)]
-pub struct PrepareSupportDefaultBehavior(pub u32);
-impl PrepareSupportDefaultBehavior {
-    pub const IDENTIFIER: u32 = 1;
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum PrepareSupportDefaultBehavior {
+    /**The client's default behavior is to select the identifier
+according the to language's syntax rule.*/
+    Identifier,
+}
+impl serde::Serialize for PrepareSupportDefaultBehavior {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        match self {
+            Self::Identifier => serializer.serialize_i64(1i64),
+        }
+    }
+}
+impl<'de> serde::Deserialize<'de> for PrepareSupportDefaultBehavior {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        struct Visitor;
+        impl<'de> serde::de::Visitor<'de> for Visitor {
+            type Value = PrepareSupportDefaultBehavior;
+            fn expecting(
+                &self,
+                formatter: &mut std::fmt::Formatter,
+            ) -> std::fmt::Result {
+                formatter.write_str("a number representing the enum")
+            }
+            fn visit_i64<E>(self, value: i64) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                match value {
+                    1i64 => Ok(PrepareSupportDefaultBehavior::Identifier),
+                    _ => Err(E::custom(format!("unknown variant: {}", value))),
+                }
+            }
+            fn visit_u64<E>(self, value: u64) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                self.visit_i64(value as i64)
+            }
+        }
+        deserializer.deserialize_i64(Visitor)
+    }
 }
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum TokenFormat {
@@ -746,7 +1888,7 @@ pub struct WorkspaceFolder {
     ///The associated URI for this workspace folder.
     pub uri: URI,
     /**The name of the workspace folder. Used to refer to this
-    workspace folder in the user interface.*/
+workspace folder in the user interface.*/
     pub name: String,
 }
 ///The parameters of a `workspace/didChangeWorkspaceFolders` notification.
@@ -813,17 +1955,17 @@ pub struct ColorPresentationParams {
 #[serde(rename_all = "camelCase")]
 pub struct ColorPresentation {
     /**The label of this color presentation. It will be shown on the color
-    picker header. By default this is also the text that is inserted when selecting
-    this color presentation.*/
+picker header. By default this is also the text that is inserted when selecting
+this color presentation.*/
     pub label: String,
     /**An {@link TextEdit edit} which is applied to a document when selecting
-    this presentation for the color.  When `falsy` the {@link ColorPresentation.label label}
-    is used.*/
+this presentation for the color.  When `falsy` the {@link ColorPresentation.label label}
+is used.*/
     #[serde(rename = "textEdit")]
     #[serde(default)]
     pub text_edit: Option<TextEdit>,
     /**An optional array of additional {@link TextEdit text edits} that are applied when
-    selecting this color presentation. Edits must not overlap with the main {@link ColorPresentation.textEdit edit} nor with themselves.*/
+selecting this color presentation. Edits must not overlap with the main {@link ColorPresentation.textEdit edit} nor with themselves.*/
     #[serde(rename = "additionalTextEdits")]
     #[serde(default)]
     pub additional_text_edits: Option<Vec<TextEdit>>,
@@ -840,9 +1982,9 @@ pub struct WorkDoneProgressOptions {
 #[serde(rename_all = "camelCase")]
 pub struct TextDocumentRegistrationOptions {
     /**A document selector to identify the scope of the registration. If set to null
-    the document selector provided on the client side will be used.*/
+the document selector provided on the client side will be used.*/
     #[serde(rename = "documentSelector")]
-    pub document_selector: LspAny,
+    pub document_selector: Option<DocumentSelector>,
 }
 ///Parameters for a {@link FoldingRangeRequest}.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -862,7 +2004,7 @@ than the number of lines in the document. Clients are free to ignore invalid ran
 #[serde(rename_all = "camelCase")]
 pub struct FoldingRange {
     /**The zero-based start line of the range to fold. The folded area starts after the line's last character.
-    To be valid, the end must be zero or larger and smaller than the number of lines in the document.*/
+To be valid, the end must be zero or larger and smaller than the number of lines in the document.*/
     #[serde(rename = "startLine")]
     pub start_line: Uinteger,
     ///The zero-based character offset from where the folded range starts. If not defined, defaults to the length of the start line.
@@ -870,7 +2012,7 @@ pub struct FoldingRange {
     #[serde(default)]
     pub start_character: Option<Uinteger>,
     /**The zero-based end line of the range to fold. The folded area ends with the line's last character.
-    To be valid, the end must be zero or larger and smaller than the number of lines in the document.*/
+To be valid, the end must be zero or larger and smaller than the number of lines in the document.*/
     #[serde(rename = "endLine")]
     pub end_line: Uinteger,
     ///The zero-based character offset before the folded range ends. If not defined, defaults to the length of the end line.
@@ -878,15 +2020,15 @@ pub struct FoldingRange {
     #[serde(default)]
     pub end_character: Option<Uinteger>,
     /**Describes the kind of the folding range such as 'comment' or 'region'. The kind
-    is used to categorize folding ranges and used by commands like 'Fold all comments'.
-    See {@link FoldingRangeKind} for an enumeration of standardized kinds.*/
+is used to categorize folding ranges and used by commands like 'Fold all comments'.
+See {@link FoldingRangeKind} for an enumeration of standardized kinds.*/
     #[serde(default)]
     pub kind: Option<FoldingRangeKind>,
     /**The text that the client should show when the specified range is
-    collapsed. If not defined or not supported by the client, a default
-    will be chosen by the client.
+collapsed. If not defined or not supported by the client, a default
+will be chosen by the client.
 
-    @since 3.17.0*/
+@since 3.17.0*/
     #[serde(rename = "collapsedText")]
     #[serde(default)]
     pub collapsed_text: Option<String>,
@@ -1001,11 +2143,11 @@ pub struct CallHierarchyItem {
     ///The range enclosing this symbol not including leading/trailing whitespace but everything else, e.g. comments and code.
     pub range: Range,
     /**The range that should be selected and revealed when this symbol is being picked, e.g. the name of a function.
-    Must be contained by the {@link CallHierarchyItem.range `range`}.*/
+Must be contained by the {@link CallHierarchyItem.range `range`}.*/
     #[serde(rename = "selectionRange")]
     pub selection_range: Range,
     /**A data entry field that is preserved between a call hierarchy prepare and
-    incoming calls or outgoing calls requests.*/
+incoming calls or outgoing calls requests.*/
     #[serde(default)]
     pub data: Option<LSPAny>,
 }
@@ -1043,7 +2185,7 @@ pub struct CallHierarchyIncomingCall {
     ///The item that makes the call.
     pub from: CallHierarchyItem,
     /**The ranges at which the calls appear. This is relative to the caller
-    denoted by {@link CallHierarchyIncomingCall.from `this.from`}.*/
+denoted by {@link CallHierarchyIncomingCall.from `this.from`}.*/
     #[serde(rename = "fromRanges")]
     pub from_ranges: Vec<Range>,
 }
@@ -1068,8 +2210,8 @@ pub struct CallHierarchyOutgoingCall {
     ///The item that is called.
     pub to: CallHierarchyItem,
     /**The range at which this item is called. This is the range relative to the caller, e.g the item
-    passed to {@link CallHierarchyItemProvider.provideCallHierarchyOutgoingCalls `provideCallHierarchyOutgoingCalls`}
-    and not {@link CallHierarchyOutgoingCall.to `this.to`}.*/
+passed to {@link CallHierarchyItemProvider.provideCallHierarchyOutgoingCalls `provideCallHierarchyOutgoingCalls`}
+and not {@link CallHierarchyOutgoingCall.to `this.to`}.*/
     #[serde(rename = "fromRanges")]
     pub from_ranges: Vec<Range>,
 }
@@ -1090,9 +2232,9 @@ pub struct SemanticTokensParams {
 #[serde(rename_all = "camelCase")]
 pub struct SemanticTokens {
     /**An optional result id. If provided and clients support delta updating
-    the client will include the result id in the next semantic token request.
-    A server can then instead of computing all semantic tokens again simply
-    send a delta.*/
+the client will include the result id in the next semantic token request.
+A server can then instead of computing all semantic tokens again simply
+send a delta.*/
     #[serde(rename = "resultId")]
     #[serde(default)]
     pub result_id: Option<String>,
@@ -1128,7 +2270,7 @@ pub struct SemanticTokensDeltaParams {
     #[serde(rename = "textDocument")]
     pub text_document: TextDocumentIdentifier,
     /**The result id of a previous response. The result Id can either point to a full response
-    or a delta response depending on what was received last.*/
+or a delta response depending on what was received last.*/
     #[serde(rename = "previousResultId")]
     pub previous_result_id: String,
 }
@@ -1171,21 +2313,21 @@ pub struct ShowDocumentParams {
     ///The uri to show.
     pub uri: URI,
     /**Indicates to show the resource in an external program.
-    To show, for example, `https://code.visualstudio.com/`
-    in the default WEB browser set `external` to `true`.*/
+To show, for example, `https://code.visualstudio.com/`
+in the default WEB browser set `external` to `true`.*/
     #[serde(default)]
     pub external: Option<bool>,
     /**An optional property to indicate whether the editor
-    showing the document should take focus or not.
-    Clients might ignore this property if an external
-    program is started.*/
+showing the document should take focus or not.
+Clients might ignore this property if an external
+program is started.*/
     #[serde(rename = "takeFocus")]
     #[serde(default)]
     pub take_focus: Option<bool>,
     /**An optional selection range if the document is a text
-    document. Clients might ignore the property if an
-    external program is started or the file is not a text
-    file.*/
+document. Clients might ignore the property if an
+external program is started or the file is not a text
+file.*/
     #[serde(default)]
     pub selection: Option<Range>,
 }
@@ -1213,11 +2355,11 @@ pub struct LinkedEditingRangeParams {
 #[serde(rename_all = "camelCase")]
 pub struct LinkedEditingRanges {
     /**A list of ranges that can be edited together. The ranges must have
-    identical length and contain identical text content. The ranges cannot overlap.*/
+identical length and contain identical text content. The ranges cannot overlap.*/
     pub ranges: Vec<Range>,
     /**An optional word pattern (regular expression) that describes valid contents for
-    the given ranges. If no pattern is provided, the client configuration's word
-    pattern will be used.*/
+the given ranges. If no pattern is provided, the client configuration's word
+pattern will be used.*/
     #[serde(rename = "wordPattern")]
     #[serde(default)]
     pub word_pattern: Option<String>,
@@ -1259,29 +2401,33 @@ the client capability: `workspace.workspaceEdit.failureHandling`*/
 pub struct WorkspaceEdit {
     ///Holds changes to existing resources.
     #[serde(default)]
-    pub changes: Option<std::collections::BTreeMap<String, Vec<TextEdit>>>,
+    pub changes: Option<std::collections::BTreeMap<DocumentUri, Vec<TextEdit>>>,
     /**Depending on the client capability `workspace.workspaceEdit.resourceOperations` document changes
-    are either an array of `TextDocumentEdit`s to express changes to n different text documents
-    where each text document edit addresses a specific version of a text document. Or it can contain
-    above `TextDocumentEdit`s mixed with create, rename and delete file / folder operations.
+are either an array of `TextDocumentEdit`s to express changes to n different text documents
+where each text document edit addresses a specific version of a text document. Or it can contain
+above `TextDocumentEdit`s mixed with create, rename and delete file / folder operations.
 
-    Whether a client supports versioned document edits is expressed via
-    `workspace.workspaceEdit.documentChanges` client capability.
+Whether a client supports versioned document edits is expressed via
+`workspace.workspaceEdit.documentChanges` client capability.
 
-    If a client neither supports `documentChanges` nor `workspace.workspaceEdit.resourceOperations` then
-    only plain `TextEdit`s using the `changes` property are supported.*/
+If a client neither supports `documentChanges` nor `workspace.workspaceEdit.resourceOperations` then
+only plain `TextEdit`s using the `changes` property are supported.*/
     #[serde(rename = "documentChanges")]
     #[serde(default)]
-    pub document_changes: Option<Vec<LspAny>>,
+    pub document_changes: Option<
+        Vec<CreateFileOrDeleteFileOrRenameFileOrTextDocumentEdit>,
+    >,
     /**A map of change annotations that can be referenced in `AnnotatedTextEdit`s or create, rename and
-    delete file / folder operations.
+delete file / folder operations.
 
-    Whether clients honor this property depends on the client capability `workspace.changeAnnotationSupport`.
+Whether clients honor this property depends on the client capability `workspace.changeAnnotationSupport`.
 
-    @since 3.16.0*/
+@since 3.16.0*/
     #[serde(rename = "changeAnnotations")]
     #[serde(default)]
-    pub change_annotations: Option<std::collections::BTreeMap<String, ChangeAnnotation>>,
+    pub change_annotations: Option<
+        std::collections::BTreeMap<ChangeAnnotationIdentifier, ChangeAnnotation>,
+    >,
 }
 /**The options to register for file operations.
 
@@ -1300,7 +2446,7 @@ files.
 #[serde(rename_all = "camelCase")]
 pub struct RenameFilesParams {
     /**An array of all files/folders renamed in this operation. When a folder is renamed, only
-    the folder will be included, and not its children.*/
+the folder will be included, and not its children.*/
     pub files: Vec<FileRename>,
 }
 /**The parameters sent in notifications/requests for user-initiated deletes of
@@ -1332,7 +2478,7 @@ pub struct Moniker {
     ///The scheme of the moniker. For example tsc or .Net
     pub scheme: String,
     /**The identifier of the moniker. The value is opaque in LSIF however
-    schema owners are allowed to define the structure if they want.*/
+schema owners are allowed to define the structure if they want.*/
     pub identifier: String,
     ///The scope in which the moniker is unique
     pub unique: UniquenessLevel,
@@ -1376,17 +2522,17 @@ pub struct TypeHierarchyItem {
     ///The resource identifier of this item.
     pub uri: DocumentUri,
     /**The range enclosing this symbol not including leading/trailing whitespace
-    but everything else, e.g. comments and code.*/
+but everything else, e.g. comments and code.*/
     pub range: Range,
     /**The range that should be selected and revealed when this symbol is being
-    picked, e.g. the name of a function. Must be contained by the
-    {@link TypeHierarchyItem.range `range`}.*/
+picked, e.g. the name of a function. Must be contained by the
+{@link TypeHierarchyItem.range `range`}.*/
     #[serde(rename = "selectionRange")]
     pub selection_range: Range,
     /**A data entry field that is preserved between a type hierarchy prepare and
-    supertypes or subtypes requests. It could also be used to identify the
-    type hierarchy in the server, helping improve the performance on
-    resolving supertypes and subtypes.*/
+supertypes or subtypes requests. It could also be used to identify the
+type hierarchy in the server, helping improve the performance on
+resolving supertypes and subtypes.*/
     #[serde(default)]
     pub data: Option<LSPAny>,
 }
@@ -1478,47 +2624,47 @@ pub struct InlayHintParams {
 pub struct InlayHint {
     /**The position of this hint.
 
-    If multiple hints have the same position, they will be shown in the order
-    they appear in the response.*/
+If multiple hints have the same position, they will be shown in the order
+they appear in the response.*/
     pub position: Position,
     /**The label of this hint. A human readable string or an array of
-    InlayHintLabelPart label parts.
+InlayHintLabelPart label parts.
 
-    *Note* that neither the string nor the label part can be empty.*/
-    pub label: LspAny,
+*Note* that neither the string nor the label part can be empty.*/
+    pub label: InlayHintLabelPartArrayOrString,
     /**The kind of this hint. Can be omitted in which case the client
-    should fall back to a reasonable default.*/
+should fall back to a reasonable default.*/
     #[serde(default)]
     pub kind: Option<InlayHintKind>,
     /**Optional text edits that are performed when accepting this inlay hint.
 
-    *Note* that edits are expected to change the document so that the inlay
-    hint (or its nearest variant) is now part of the document and the inlay
-    hint itself is now obsolete.*/
+*Note* that edits are expected to change the document so that the inlay
+hint (or its nearest variant) is now part of the document and the inlay
+hint itself is now obsolete.*/
     #[serde(rename = "textEdits")]
     #[serde(default)]
     pub text_edits: Option<Vec<TextEdit>>,
     ///The tooltip text when you hover over this item.
     #[serde(default)]
-    pub tooltip: Option<LspAny>,
+    pub tooltip: Option<MarkupContentOrString>,
     /**Render padding before the hint.
 
-    Note: Padding should use the editor's background color, not the
-    background color of the hint itself. That means padding can be used
-    to visually align/separate an inlay hint.*/
+Note: Padding should use the editor's background color, not the
+background color of the hint itself. That means padding can be used
+to visually align/separate an inlay hint.*/
     #[serde(rename = "paddingLeft")]
     #[serde(default)]
     pub padding_left: Option<bool>,
     /**Render padding after the hint.
 
-    Note: Padding should use the editor's background color, not the
-    background color of the hint itself. That means padding can be used
-    to visually align/separate an inlay hint.*/
+Note: Padding should use the editor's background color, not the
+background color of the hint itself. That means padding can be used
+to visually align/separate an inlay hint.*/
     #[serde(rename = "paddingRight")]
     #[serde(default)]
     pub padding_right: Option<bool>,
     /**A data entry field that is preserved on an inlay hint between
-    a `textDocument/inlayHint` and a `inlayHint/resolve` request.*/
+a `textDocument/inlayHint` and a `inlayHint/resolve` request.*/
     #[serde(default)]
     pub data: Option<LSPAny>,
 }
@@ -1563,7 +2709,10 @@ pub struct DocumentDiagnosticParams {
 #[serde(rename_all = "camelCase")]
 pub struct DocumentDiagnosticReportPartialResult {
     #[serde(rename = "relatedDocuments")]
-    pub related_documents: std::collections::BTreeMap<String, LspAny>,
+    pub related_documents: std::collections::BTreeMap<
+        DocumentUri,
+        FullDocumentDiagnosticReportOrUnchangedDocumentDiagnosticReport,
+    >,
 }
 /**Cancellation data returned from a diagnostic request.
 
@@ -1601,7 +2750,7 @@ pub struct WorkspaceDiagnosticParams {
     #[serde(default)]
     pub identifier: Option<String>,
     /**The currently known diagnostic reports with their
-    previous result ids.*/
+previous result ids.*/
     #[serde(rename = "previousResultIds")]
     pub previous_result_ids: Vec<PreviousResultId>,
 }
@@ -1631,7 +2780,7 @@ pub struct DidOpenNotebookDocumentParams {
     #[serde(rename = "notebookDocument")]
     pub notebook_document: NotebookDocument,
     /**The text documents that represent the content
-    of a notebook cell.*/
+of a notebook cell.*/
     #[serde(rename = "cellTextDocuments")]
     pub cell_text_documents: Vec<TextDocumentItem>,
 }
@@ -1653,24 +2802,24 @@ pub struct NotebookDocumentSyncRegistrationOptions {
 #[serde(rename_all = "camelCase")]
 pub struct DidChangeNotebookDocumentParams {
     /**The notebook document that did change. The version number points
-    to the version after all provided changes have been applied. If
-    only the text document content of a cell changes the notebook version
-    doesn't necessarily have to change.*/
+to the version after all provided changes have been applied. If
+only the text document content of a cell changes the notebook version
+doesn't necessarily have to change.*/
     #[serde(rename = "notebookDocument")]
     pub notebook_document: VersionedNotebookDocumentIdentifier,
     /**The actual changes to the notebook document.
 
-    The changes describe single state changes to the notebook document.
-    So if there are two changes c1 (at array index 0) and c2 (at array
-    index 1) for a notebook in state S then c1 moves the notebook from
-    S to S' and c2 from S' to S''. So c1 is computed on the state S and
-    c2 is computed on the state S'.
+The changes describe single state changes to the notebook document.
+So if there are two changes c1 (at array index 0) and c2 (at array
+index 1) for a notebook in state S then c1 moves the notebook from
+S to S' and c2 from S' to S''. So c1 is computed on the state S and
+c2 is computed on the state S'.
 
-    To mirror the content of a notebook using change events use the following approach:
-    - start with the same initial content
-    - apply the 'notebookDocument/didChange' notifications in the order you receive them.
-    - apply the `NotebookChangeEvent`s in a single notification in the order
-      you receive them.*/
+To mirror the content of a notebook using change events use the following approach:
+- start with the same initial content
+- apply the 'notebookDocument/didChange' notifications in the order you receive them.
+- apply the `NotebookChangeEvent`s in a single notification in the order
+  you receive them.*/
     pub change: NotebookDocumentChangeEvent,
 }
 /**The params sent in a save notebook document notification.
@@ -1693,7 +2842,7 @@ pub struct DidCloseNotebookDocumentParams {
     #[serde(rename = "notebookDocument")]
     pub notebook_document: NotebookDocumentIdentifier,
     /**The text documents that represent the content
-    of a notebook cell that got closed.*/
+of a notebook cell that got closed.*/
     #[serde(rename = "cellTextDocuments")]
     pub cell_text_documents: Vec<TextDocumentIdentifier>,
 }
@@ -1708,7 +2857,7 @@ pub struct InlineCompletionParams {
     #[serde(flatten)]
     pub work_done_progress_params_mixin: WorkDoneProgressParams,
     /**Additional information about the context in which inline completions were
-    requested.*/
+requested.*/
     pub context: InlineCompletionContext,
 }
 /**Represents a collection of {@link InlineCompletionItem inline completion items} to be presented in the editor.
@@ -1728,7 +2877,7 @@ pub struct InlineCompletionList {
 pub struct InlineCompletionItem {
     ///The text to replace the range with. Must be set.
     #[serde(rename = "insertText")]
-    pub insert_text: LspAny,
+    pub insert_text: StringOrStringValue,
     ///A text that is used to decide if this inline completion should be shown. When `falsy` the {@link InlineCompletionItem.insertText} is used.
     #[serde(rename = "filterText")]
     #[serde(default)]
@@ -1769,9 +2918,9 @@ pub struct TextDocumentContentParams {
 #[serde(rename_all = "camelCase")]
 pub struct TextDocumentContentResult {
     /**The text content of the text document. Please note, that the content of
-    any subsequent open notifications for the text document might differ
-    from the returned content due to whitespace and line ending
-    normalizations done on the client*/
+any subsequent open notifications for the text document might differ
+from the returned content due to whitespace and line ending
+normalizations done on the client*/
     pub text: String,
 }
 /**Text document content provider registration options.
@@ -1820,7 +2969,7 @@ pub struct InitializeResult {
     pub capabilities: ServerCapabilities,
     /**Information about the server.
 
-    @since 3.15.0*/
+@since 3.15.0*/
     #[serde(rename = "serverInfo")]
     #[serde(default)]
     pub server_info: Option<ServerInfo>,
@@ -1831,9 +2980,9 @@ initialize request fails.*/
 #[serde(rename_all = "camelCase")]
 pub struct InitializeError {
     /**Indicates whether the client execute the following retry logic:
-    (1) show the message provided by the ResponseError to the user
-    (2) user selects retry or cancel
-    (3) if user selected retry the initialize method is sent again.*/
+(1) show the message provided by the ResponseError to the user
+(2) user selects retry or cancel
+(3) if user selected retry the initialize method is sent again.*/
     pub retry: bool,
 }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -1850,7 +2999,7 @@ pub struct DidChangeConfigurationParams {
 #[serde(rename_all = "camelCase")]
 pub struct DidChangeConfigurationRegistrationOptions {
     #[serde(default)]
-    pub section: Option<LspAny>,
+    pub section: Option<StringOrStringArray>,
 }
 ///The parameters of a notification message.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -1900,21 +3049,21 @@ pub struct DidOpenTextDocumentParams {
 #[serde(rename_all = "camelCase")]
 pub struct DidChangeTextDocumentParams {
     /**The document that did change. The version number points
-    to the version after all provided content changes have
-    been applied.*/
+to the version after all provided content changes have
+been applied.*/
     #[serde(rename = "textDocument")]
     pub text_document: VersionedTextDocumentIdentifier,
     /**The actual content changes. The content changes describe single state changes
-    to the document. So if there are two content changes c1 (at array index 0) and
-    c2 (at array index 1) for a document in state S then c1 moves the document from
-    S to S' and c2 from S' to S''. So c1 is computed on the state S and c2 is computed
-    on the state S'.
+to the document. So if there are two content changes c1 (at array index 0) and
+c2 (at array index 1) for a document in state S then c1 moves the document from
+S to S' and c2 from S' to S''. So c1 is computed on the state S and c2 is computed
+on the state S'.
 
-    To mirror the content of a document using change events use the following approach:
-    - start with the same initial content
-    - apply the 'textDocument/didChange' notifications in the order you receive them.
-    - apply the `TextDocumentContentChangeEvent`s in a single notification in the order
-      you receive them.*/
+To mirror the content of a document using change events use the following approach:
+- start with the same initial content
+- apply the 'textDocument/didChange' notifications in the order you receive them.
+- apply the `TextDocumentContentChangeEvent`s in a single notification in the order
+  you receive them.*/
     #[serde(rename = "contentChanges")]
     pub content_changes: Vec<TextDocumentContentChangeEvent>,
 }
@@ -1944,7 +3093,7 @@ pub struct DidSaveTextDocumentParams {
     #[serde(rename = "textDocument")]
     pub text_document: TextDocumentIdentifier,
     /**Optional the content when saved. Depends on the includeText value
-    when the save notification was requested.*/
+when the save notification was requested.*/
     #[serde(default)]
     pub text: Option<String>,
 }
@@ -1972,10 +3121,10 @@ pub struct WillSaveTextDocumentParams {
 #[serde(rename_all = "camelCase")]
 pub struct TextEdit {
     /**The range of the text document to be manipulated. To insert
-    text into a document create a range where start === end.*/
+text into a document create a range where start === end.*/
     pub range: Range,
     /**The string to be inserted. For delete operations use an
-    empty string.*/
+empty string.*/
     #[serde(rename = "newText")]
     pub new_text: String,
 }
@@ -2001,7 +3150,7 @@ pub struct PublishDiagnosticsParams {
     pub uri: DocumentUri,
     /**Optional the version number of the document the diagnostics are published for.
 
-    @since 3.15.0*/
+@since 3.15.0*/
     #[serde(default)]
     pub version: Option<Integer>,
     ///An array of diagnostic information items.
@@ -2018,7 +3167,7 @@ pub struct CompletionParams {
     #[serde(flatten)]
     pub partial_result_params_mixin: PartialResultParams,
     /**The completion context. This is only available it the client specifies
-    to send this using the client capability `textDocument.completion.contextSupport === true`*/
+to send this using the client capability `textDocument.completion.contextSupport === true`*/
     #[serde(default)]
     pub context: Option<CompletionContext>,
 }
@@ -2029,147 +3178,147 @@ proposed to complete text that is being typed.*/
 pub struct CompletionItem {
     /**The label of this completion item.
 
-    The label property is also by default the text that
-    is inserted when selecting this completion.
+The label property is also by default the text that
+is inserted when selecting this completion.
 
-    If label details are provided the label itself should
-    be an unqualified name of the completion item.*/
+If label details are provided the label itself should
+be an unqualified name of the completion item.*/
     pub label: String,
     /**Additional details for the label
 
-    @since 3.17.0*/
+@since 3.17.0*/
     #[serde(rename = "labelDetails")]
     #[serde(default)]
     pub label_details: Option<CompletionItemLabelDetails>,
     /**The kind of this completion item. Based of the kind
-    an icon is chosen by the editor.*/
+an icon is chosen by the editor.*/
     #[serde(default)]
     pub kind: Option<CompletionItemKind>,
     /**Tags for this completion item.
 
-    @since 3.15.0*/
+@since 3.15.0*/
     #[serde(default)]
     pub tags: Option<Vec<CompletionItemTag>>,
     /**A human-readable string with additional information
-    about this item, like type or symbol information.*/
+about this item, like type or symbol information.*/
     #[serde(default)]
     pub detail: Option<String>,
     ///A human-readable string that represents a doc-comment.
     #[serde(default)]
-    pub documentation: Option<LspAny>,
+    pub documentation: Option<MarkupContentOrString>,
     /**Indicates if this item is deprecated.
-    @deprecated Use `tags` instead.*/
+@deprecated Use `tags` instead.*/
     #[serde(default)]
     pub deprecated: Option<bool>,
     /**Select this item when showing.
 
-    *Note* that only one completion item can be selected and that the
-    tool / client decides which item that is. The rule is that the *first*
-    item of those that match best is selected.*/
+*Note* that only one completion item can be selected and that the
+tool / client decides which item that is. The rule is that the *first*
+item of those that match best is selected.*/
     #[serde(default)]
     pub preselect: Option<bool>,
     /**A string that should be used when comparing this item
-    with other items. When `falsy` the {@link CompletionItem.label label}
-    is used.*/
+with other items. When `falsy` the {@link CompletionItem.label label}
+is used.*/
     #[serde(rename = "sortText")]
     #[serde(default)]
     pub sort_text: Option<String>,
     /**A string that should be used when filtering a set of
-    completion items. When `falsy` the {@link CompletionItem.label label}
-    is used.*/
+completion items. When `falsy` the {@link CompletionItem.label label}
+is used.*/
     #[serde(rename = "filterText")]
     #[serde(default)]
     pub filter_text: Option<String>,
     /**A string that should be inserted into a document when selecting
-    this completion. When `falsy` the {@link CompletionItem.label label}
-    is used.
+this completion. When `falsy` the {@link CompletionItem.label label}
+is used.
 
-    The `insertText` is subject to interpretation by the client side.
-    Some tools might not take the string literally. For example
-    VS Code when code complete is requested in this example
-    `con<cursor position>` and a completion item with an `insertText` of
-    `console` is provided it will only insert `sole`. Therefore it is
-    recommended to use `textEdit` instead since it avoids additional client
-    side interpretation.*/
+The `insertText` is subject to interpretation by the client side.
+Some tools might not take the string literally. For example
+VS Code when code complete is requested in this example
+`con<cursor position>` and a completion item with an `insertText` of
+`console` is provided it will only insert `sole`. Therefore it is
+recommended to use `textEdit` instead since it avoids additional client
+side interpretation.*/
     #[serde(rename = "insertText")]
     #[serde(default)]
     pub insert_text: Option<String>,
     /**The format of the insert text. The format applies to both the
-    `insertText` property and the `newText` property of a provided
-    `textEdit`. If omitted defaults to `InsertTextFormat.PlainText`.
+`insertText` property and the `newText` property of a provided
+`textEdit`. If omitted defaults to `InsertTextFormat.PlainText`.
 
-    Please note that the insertTextFormat doesn't apply to
-    `additionalTextEdits`.*/
+Please note that the insertTextFormat doesn't apply to
+`additionalTextEdits`.*/
     #[serde(rename = "insertTextFormat")]
     #[serde(default)]
     pub insert_text_format: Option<InsertTextFormat>,
     /**How whitespace and indentation is handled during completion
-    item insertion. If not provided the clients default value depends on
-    the `textDocument.completion.insertTextMode` client capability.
+item insertion. If not provided the clients default value depends on
+the `textDocument.completion.insertTextMode` client capability.
 
-    @since 3.16.0*/
+@since 3.16.0*/
     #[serde(rename = "insertTextMode")]
     #[serde(default)]
     pub insert_text_mode: Option<InsertTextMode>,
     /**An {@link TextEdit edit} which is applied to a document when selecting
-    this completion. When an edit is provided the value of
-    {@link CompletionItem.insertText insertText} is ignored.
+this completion. When an edit is provided the value of
+{@link CompletionItem.insertText insertText} is ignored.
 
-    Most editors support two different operations when accepting a completion
-    item. One is to insert a completion text and the other is to replace an
-    existing text with a completion text. Since this can usually not be
-    predetermined by a server it can report both ranges. Clients need to
-    signal support for `InsertReplaceEdits` via the
-    `textDocument.completion.insertReplaceSupport` client capability
-    property.
+Most editors support two different operations when accepting a completion
+item. One is to insert a completion text and the other is to replace an
+existing text with a completion text. Since this can usually not be
+predetermined by a server it can report both ranges. Clients need to
+signal support for `InsertReplaceEdits` via the
+`textDocument.completion.insertReplaceSupport` client capability
+property.
 
-    *Note 1:* The text edit's range as well as both ranges from an insert
-    replace edit must be a [single line] and they must contain the position
-    at which completion has been requested.
-    *Note 2:* If an `InsertReplaceEdit` is returned the edit's insert range
-    must be a prefix of the edit's replace range, that means it must be
-    contained and starting at the same position.
+*Note 1:* The text edit's range as well as both ranges from an insert
+replace edit must be a [single line] and they must contain the position
+at which completion has been requested.
+*Note 2:* If an `InsertReplaceEdit` is returned the edit's insert range
+must be a prefix of the edit's replace range, that means it must be
+contained and starting at the same position.
 
-    @since 3.16.0 additional type `InsertReplaceEdit`*/
+@since 3.16.0 additional type `InsertReplaceEdit`*/
     #[serde(rename = "textEdit")]
     #[serde(default)]
-    pub text_edit: Option<LspAny>,
+    pub text_edit: Option<InsertReplaceEditOrTextEdit>,
     /**The edit text used if the completion item is part of a CompletionList and
-    CompletionList defines an item default for the text edit range.
+CompletionList defines an item default for the text edit range.
 
-    Clients will only honor this property if they opt into completion list
-    item defaults using the capability `completionList.itemDefaults`.
+Clients will only honor this property if they opt into completion list
+item defaults using the capability `completionList.itemDefaults`.
 
-    If not provided and a list's default range is provided the label
-    property is used as a text.
+If not provided and a list's default range is provided the label
+property is used as a text.
 
-    @since 3.17.0*/
+@since 3.17.0*/
     #[serde(rename = "textEditText")]
     #[serde(default)]
     pub text_edit_text: Option<String>,
     /**An optional array of additional {@link TextEdit text edits} that are applied when
-    selecting this completion. Edits must not overlap (including the same insert position)
-    with the main {@link CompletionItem.textEdit edit} nor with themselves.
+selecting this completion. Edits must not overlap (including the same insert position)
+with the main {@link CompletionItem.textEdit edit} nor with themselves.
 
-    Additional text edits should be used to change text unrelated to the current cursor position
-    (for example adding an import statement at the top of the file if the completion item will
-    insert an unqualified type).*/
+Additional text edits should be used to change text unrelated to the current cursor position
+(for example adding an import statement at the top of the file if the completion item will
+insert an unqualified type).*/
     #[serde(rename = "additionalTextEdits")]
     #[serde(default)]
     pub additional_text_edits: Option<Vec<TextEdit>>,
     /**An optional set of characters that when pressed while this completion is active will accept it first and
-    then type that character. *Note* that all commit characters should have `length=1` and that superfluous
-    characters will be ignored.*/
+then type that character. *Note* that all commit characters should have `length=1` and that superfluous
+characters will be ignored.*/
     #[serde(rename = "commitCharacters")]
     #[serde(default)]
     pub commit_characters: Option<Vec<String>>,
     /**An optional {@link Command command} that is executed *after* inserting this completion. *Note* that
-    additional modifications to the current document should be described with the
-    {@link CompletionItem.additionalTextEdits additionalTextEdits}-property.*/
+additional modifications to the current document should be described with the
+{@link CompletionItem.additionalTextEdits additionalTextEdits}-property.*/
     #[serde(default)]
     pub command: Option<Command>,
     /**A data entry field that is preserved on a completion item between a
-    {@link CompletionRequest} and a {@link CompletionResolveRequest}.*/
+{@link CompletionRequest} and a {@link CompletionResolveRequest}.*/
     #[serde(default)]
     pub data: Option<LSPAny>,
 }
@@ -2180,45 +3329,45 @@ in the editor.*/
 pub struct CompletionList {
     /**This list it not complete. Further typing results in recomputing this list.
 
-    Recomputed lists have all their items replaced (not appended) in the
-    incomplete completion sessions.*/
+Recomputed lists have all their items replaced (not appended) in the
+incomplete completion sessions.*/
     #[serde(rename = "isIncomplete")]
     pub is_incomplete: bool,
     /**In many cases the items of an actual completion result share the same
-    value for properties like `commitCharacters` or the range of a text
-    edit. A completion list can therefore define item defaults which will
-    be used if a completion item itself doesn't specify the value.
+value for properties like `commitCharacters` or the range of a text
+edit. A completion list can therefore define item defaults which will
+be used if a completion item itself doesn't specify the value.
 
-    If a completion list specifies a default value and a completion item
-    also specifies a corresponding value, the rules for combining these are
-    defined by `applyKinds` (if the client supports it), defaulting to
-    ApplyKind.Replace.
+If a completion list specifies a default value and a completion item
+also specifies a corresponding value, the rules for combining these are
+defined by `applyKinds` (if the client supports it), defaulting to
+ApplyKind.Replace.
 
-    Servers are only allowed to return default values if the client
-    signals support for this via the `completionList.itemDefaults`
-    capability.
+Servers are only allowed to return default values if the client
+signals support for this via the `completionList.itemDefaults`
+capability.
 
-    @since 3.17.0*/
+@since 3.17.0*/
     #[serde(rename = "itemDefaults")]
     #[serde(default)]
     pub item_defaults: Option<CompletionItemDefaults>,
     /**Specifies how fields from a completion item should be combined with those
-    from `completionList.itemDefaults`.
+from `completionList.itemDefaults`.
 
-    If unspecified, all fields will be treated as ApplyKind.Replace.
+If unspecified, all fields will be treated as ApplyKind.Replace.
 
-    If a field's value is ApplyKind.Replace, the value from a completion item
-    (if provided and not `null`) will always be used instead of the value
-    from `completionItem.itemDefaults`.
+If a field's value is ApplyKind.Replace, the value from a completion item
+(if provided and not `null`) will always be used instead of the value
+from `completionItem.itemDefaults`.
 
-    If a field's value is ApplyKind.Merge, the values will be merged using
-    the rules defined against each field below.
+If a field's value is ApplyKind.Merge, the values will be merged using
+the rules defined against each field below.
 
-    Servers are only allowed to return `applyKind` if the client
-    signals support for this via the `completionList.applyKindSupport`
-    capability.
+Servers are only allowed to return `applyKind` if the client
+signals support for this via the `completionList.applyKindSupport`
+capability.
 
-    @since 3.18.0*/
+@since 3.18.0*/
     #[serde(rename = "applyKind")]
     #[serde(default)]
     pub apply_kind: Option<CompletionItemApplyKinds>,
@@ -2248,9 +3397,9 @@ pub struct HoverParams {
 #[serde(rename_all = "camelCase")]
 pub struct Hover {
     ///The hover's content
-    pub contents: LspAny,
+    pub contents: MarkedStringOrMarkedStringArrayOrMarkupContent,
     /**An optional range inside the text document that is used to
-    visualize the hover, e.g. by changing the background color.*/
+visualize the hover, e.g. by changing the background color.*/
     #[serde(default)]
     pub range: Option<Range>,
 }
@@ -2272,9 +3421,9 @@ pub struct SignatureHelpParams {
     #[serde(flatten)]
     pub work_done_progress_params_mixin: WorkDoneProgressParams,
     /**The signature help context. This is only available if the client specifies
-    to send this using the client capability `textDocument.signatureHelp.contextSupport === true`
+to send this using the client capability `textDocument.signatureHelp.contextSupport === true`
 
-    @since 3.15.0*/
+@since 3.15.0*/
     #[serde(default)]
     pub context: Option<SignatureHelpContext>,
 }
@@ -2287,39 +3436,39 @@ pub struct SignatureHelp {
     ///One or more signatures.
     pub signatures: Vec<SignatureInformation>,
     /**The active signature. If omitted or the value lies outside the
-    range of `signatures` the value defaults to zero or is ignored if
-    the `SignatureHelp` has no signatures.
+range of `signatures` the value defaults to zero or is ignored if
+the `SignatureHelp` has no signatures.
 
-    Whenever possible implementors should make an active decision about
-    the active signature and shouldn't rely on a default value.
+Whenever possible implementors should make an active decision about
+the active signature and shouldn't rely on a default value.
 
-    In future version of the protocol this property might become
-    mandatory to better express this.*/
+In future version of the protocol this property might become
+mandatory to better express this.*/
     #[serde(rename = "activeSignature")]
     #[serde(default)]
     pub active_signature: Option<Uinteger>,
     /**The active parameter of the active signature.
 
-    If `null`, no parameter of the signature is active (for example a named
-    argument that does not match any declared parameters). This is only valid
-    if the client specifies the client capability
-    `textDocument.signatureHelp.noActiveParameterSupport === true`
+If `null`, no parameter of the signature is active (for example a named
+argument that does not match any declared parameters). This is only valid
+if the client specifies the client capability
+`textDocument.signatureHelp.noActiveParameterSupport === true`
 
-    If omitted or the value lies outside the range of
-    `signatures[activeSignature].parameters` defaults to 0 if the active
-    signature has parameters.
+If omitted or the value lies outside the range of
+`signatures[activeSignature].parameters` defaults to 0 if the active
+signature has parameters.
 
-    If the active signature has no parameters it is ignored.
+If the active signature has no parameters it is ignored.
 
-    In future version of the protocol this property might become
-    mandatory (but still nullable) to better express the active parameter if
-    the active signature does have any.
+In future version of the protocol this property might become
+mandatory (but still nullable) to better express the active parameter if
+the active signature does have any.
 
-    Since version 3.16.0 the `SignatureInformation` itself provides a
-    `activeParameter` property and it should be used instead of this one.*/
+Since version 3.16.0 the `SignatureInformation` itself provides a
+`activeParameter` property and it should be used instead of this one.*/
     #[serde(rename = "activeParameter")]
     #[serde(default)]
-    pub active_parameter: Option<LspAny>,
+    pub active_parameter: Option<Option<Uinteger>>,
 }
 ///Registration options for a {@link SignatureHelpRequest}.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -2424,18 +3573,18 @@ pub struct SymbolInformation {
     pub base_symbol_information_base: BaseSymbolInformation,
     /**Indicates if this symbol is deprecated.
 
-    @deprecated Use tags instead*/
+@deprecated Use tags instead*/
     #[serde(default)]
     pub deprecated: Option<bool>,
     /**The location of this symbol. The location's range is used by a tool
-    to reveal the location in the editor. If the symbol is selected in the
-    tool the range's start information is used to position the cursor. So
-    the range usually spans more than the actual symbol's name and does
-    normally include things like visibility modifiers.
+to reveal the location in the editor. If the symbol is selected in the
+tool the range's start information is used to position the cursor. So
+the range usually spans more than the actual symbol's name and does
+normally include things like visibility modifiers.
 
-    The range doesn't have to denote a node range in the sense of an abstract
-    syntax tree. It can therefore not be used to re-construct a hierarchy of
-    the symbols.*/
+The range doesn't have to denote a node range in the sense of an abstract
+syntax tree. It can therefore not be used to re-construct a hierarchy of
+the symbols.*/
     pub location: Location,
 }
 /**Represents programming constructs like variables, classes, interfaces etc.
@@ -2446,7 +3595,7 @@ its most interesting range, e.g. the range of an identifier.*/
 #[serde(rename_all = "camelCase")]
 pub struct DocumentSymbol {
     /**The name of this symbol. Will be displayed in the user interface and therefore must not be
-    an empty string or a string only consisting of white spaces.*/
+an empty string or a string only consisting of white spaces.*/
     pub name: String,
     ///More detail for this symbol, e.g the signature of a function.
     #[serde(default)]
@@ -2455,20 +3604,20 @@ pub struct DocumentSymbol {
     pub kind: SymbolKind,
     /**Tags for this document symbol.
 
-    @since 3.16.0*/
+@since 3.16.0*/
     #[serde(default)]
     pub tags: Option<Vec<SymbolTag>>,
     /**Indicates if this symbol is deprecated.
 
-    @deprecated Use tags instead*/
+@deprecated Use tags instead*/
     #[serde(default)]
     pub deprecated: Option<bool>,
     /**The range enclosing this symbol not including leading/trailing whitespace but everything else
-    like comments. This information is typically used to determine if the clients cursor is
-    inside the symbol to reveal in the symbol in the UI.*/
+like comments. This information is typically used to determine if the clients cursor is
+inside the symbol to reveal in the symbol in the UI.*/
     pub range: Range,
     /**The range that should be selected and revealed when this symbol is being picked, e.g the name of a function.
-    Must be contained by the `range`.*/
+Must be contained by the `range`.*/
     #[serde(rename = "selectionRange")]
     pub selection_range: Range,
     ///Children of this symbol, e.g. properties of a class.
@@ -2511,13 +3660,13 @@ pub struct Command {
     pub title: String,
     /**An optional tooltip.
 
-    @since 3.18.0*/
+@since 3.18.0*/
     #[serde(default)]
     pub tooltip: Option<String>,
     ///The identifier of the actual command handler.
     pub command: String,
     /**Arguments that the command handler should be
-    invoked with.*/
+invoked with.*/
     #[serde(default)]
     pub arguments: Option<Vec<LSPAny>>,
 }
@@ -2532,56 +3681,56 @@ pub struct CodeAction {
     pub title: String,
     /**The kind of the code action.
 
-    Used to filter code actions.*/
+Used to filter code actions.*/
     #[serde(default)]
     pub kind: Option<CodeActionKind>,
     ///The diagnostics that this code action resolves.
     #[serde(default)]
     pub diagnostics: Option<Vec<Diagnostic>>,
     /**Marks this as a preferred action. Preferred actions are used by the `auto fix` command and can be targeted
-    by keybindings.
+by keybindings.
 
-    A quick fix should be marked preferred if it properly addresses the underlying error.
-    A refactoring should be marked preferred if it is the most reasonable choice of actions to take.
+A quick fix should be marked preferred if it properly addresses the underlying error.
+A refactoring should be marked preferred if it is the most reasonable choice of actions to take.
 
-    @since 3.15.0*/
+@since 3.15.0*/
     #[serde(rename = "isPreferred")]
     #[serde(default)]
     pub is_preferred: Option<bool>,
     /**Marks that the code action cannot currently be applied.
 
-    Clients should follow the following guidelines regarding disabled code actions:
+Clients should follow the following guidelines regarding disabled code actions:
 
-      - Disabled code actions are not shown in automatic [lightbulbs](https://code.visualstudio.com/docs/editor/editingevolved#_code-action)
-        code action menus.
+  - Disabled code actions are not shown in automatic [lightbulbs](https://code.visualstudio.com/docs/editor/editingevolved#_code-action)
+    code action menus.
 
-      - Disabled actions are shown as faded out in the code action menu when the user requests a more specific type
-        of code action, such as refactorings.
+  - Disabled actions are shown as faded out in the code action menu when the user requests a more specific type
+    of code action, such as refactorings.
 
-      - If the user has a [keybinding](https://code.visualstudio.com/docs/editor/refactoring#_keybindings-for-code-actions)
-        that auto applies a code action and only disabled code actions are returned, the client should show the user an
-        error message with `reason` in the editor.
+  - If the user has a [keybinding](https://code.visualstudio.com/docs/editor/refactoring#_keybindings-for-code-actions)
+    that auto applies a code action and only disabled code actions are returned, the client should show the user an
+    error message with `reason` in the editor.
 
-    @since 3.16.0*/
+@since 3.16.0*/
     #[serde(default)]
     pub disabled: Option<CodeActionDisabled>,
     ///The workspace edit this code action performs.
     #[serde(default)]
     pub edit: Option<WorkspaceEdit>,
     /**A command this code action executes. If a code action
-    provides an edit and a command, first the edit is
-    executed and then the command.*/
+provides an edit and a command, first the edit is
+executed and then the command.*/
     #[serde(default)]
     pub command: Option<Command>,
     /**A data entry field that is preserved on a code action between
-    a `textDocument/codeAction` and a `codeAction/resolve` request.
+a `textDocument/codeAction` and a `codeAction/resolve` request.
 
-    @since 3.16.0*/
+@since 3.16.0*/
     #[serde(default)]
     pub data: Option<LSPAny>,
     /**Tags for this code action.
 
-    @since 3.18.0 - proposed*/
+@since 3.18.0 - proposed*/
     #[serde(default)]
     pub tags: Option<Vec<CodeActionTag>>,
 }
@@ -2603,13 +3752,13 @@ pub struct WorkspaceSymbolParams {
     #[serde(flatten)]
     pub partial_result_params_mixin: PartialResultParams,
     /**A query string to filter symbols by. Clients may send an empty
-    string here to request all symbols.
+string here to request all symbols.
 
-    The `query`-parameter should be interpreted in a *relaxed way* as editors
-    will apply their own highlighting and scoring on the results. A good rule
-    of thumb is to match case-insensitive and to simply check that the
-    characters of *query* appear in their order in a candidate symbol.
-    Servers shouldn't use prefix, substring, or similar strict matching.*/
+The `query`-parameter should be interpreted in a *relaxed way* as editors
+will apply their own highlighting and scoring on the results. A good rule
+of thumb is to match case-insensitive and to simply check that the
+characters of *query* appear in their order in a candidate symbol.
+Servers shouldn't use prefix, substring, or similar strict matching.*/
     pub query: String,
 }
 /**A special workspace symbol that supports locations without a range.
@@ -2623,13 +3772,13 @@ pub struct WorkspaceSymbol {
     #[serde(flatten)]
     pub base_symbol_information_base: BaseSymbolInformation,
     /**The location of the symbol. Whether a server is allowed to
-    return a location without a range depends on the client
-    capability `workspace.symbol.resolveSupport`.
+return a location without a range depends on the client
+capability `workspace.symbol.resolveSupport`.
 
-    See SymbolInformation#location for more details.*/
-    pub location: LspAny,
+See SymbolInformation#location for more details.*/
+    pub location: LocationOrLocationUriOnly,
     /**A data entry field that is preserved on a workspace symbol between a
-    workspace symbol request and a workspace symbol resolve request.*/
+workspace symbol request and a workspace symbol resolve request.*/
     #[serde(default)]
     pub data: Option<LSPAny>,
 }
@@ -2666,7 +3815,7 @@ pub struct CodeLens {
     #[serde(default)]
     pub command: Option<Command>,
     /**A data entry field that is preserved on a code lens item between
-    a {@link CodeLensRequest} and a {@link CodeLensResolveRequest}*/
+a {@link CodeLensRequest} and a {@link CodeLensResolveRequest}*/
     #[serde(default)]
     pub data: Option<LSPAny>,
 }
@@ -2703,15 +3852,15 @@ pub struct DocumentLink {
     pub target: Option<URI>,
     /**The tooltip text when you hover over this link.
 
-    If a tooltip is provided, is will be displayed in a string that includes instructions on how to
-    trigger the link, such as `{0} (ctrl + click)`. The specific instructions vary depending on OS,
-    user settings, and localization.
+If a tooltip is provided, is will be displayed in a string that includes instructions on how to
+trigger the link, such as `{0} (ctrl + click)`. The specific instructions vary depending on OS,
+user settings, and localization.
 
-    @since 3.15.0*/
+@since 3.15.0*/
     #[serde(default)]
     pub tooltip: Option<String>,
     /**A data entry field that is preserved on a document link between a
-    DocumentLinkRequest and a DocumentLinkResolveRequest.*/
+DocumentLinkRequest and a DocumentLinkResolveRequest.*/
     #[serde(default)]
     pub data: Option<LSPAny>,
 }
@@ -2792,13 +3941,13 @@ pub struct DocumentOnTypeFormattingParams {
     #[serde(rename = "textDocument")]
     pub text_document: TextDocumentIdentifier,
     /**The position around which the on type formatting should happen.
-    This is not necessarily the exact position where the character denoted
-    by the property `ch` got typed.*/
+This is not necessarily the exact position where the character denoted
+by the property `ch` got typed.*/
     pub position: Position,
     /**The character that has been typed that triggered the formatting
-    on type request. That is not necessarily the last character that
-    got inserted into the document since the client could auto insert
-    characters as well (e.g. like automatic brace completion).*/
+on type request. That is not necessarily the last character that
+got inserted into the document since the client could auto insert
+characters as well (e.g. like automatic brace completion).*/
     pub ch: String,
     ///The formatting options.
     pub options: FormattingOptions,
@@ -2821,8 +3970,8 @@ pub struct RenameParams {
     #[serde(flatten)]
     pub work_done_progress_params_mixin: WorkDoneProgressParams,
     /**The new name of the symbol. If the given name is not valid the
-    request must return a {@link ResponseError} with an
-    appropriate message set.*/
+request must return a {@link ResponseError} with an
+appropriate message set.*/
     #[serde(rename = "newName")]
     pub new_name: String,
 }
@@ -2867,15 +4016,15 @@ pub struct ExecuteCommandRegistrationOptions {
 #[serde(rename_all = "camelCase")]
 pub struct ApplyWorkspaceEditParams {
     /**An optional label of the workspace edit. This label is
-    presented in the user interface for example on an undo
-    stack to undo the workspace edit.*/
+presented in the user interface for example on an undo
+stack to undo the workspace edit.*/
     #[serde(default)]
     pub label: Option<String>,
     ///The edits to apply.
     pub edit: WorkspaceEdit,
     /**Additional data about the edit.
 
-    @since 3.18.0*/
+@since 3.18.0*/
     #[serde(default)]
     pub metadata: Option<WorkspaceEditMetadata>,
 }
@@ -2888,14 +4037,14 @@ pub struct ApplyWorkspaceEditResult {
     ///Indicates whether the edit was applied or not.
     pub applied: bool,
     /**An optional textual description for why the edit was not applied.
-    This may be used by the server for diagnostic logging or to provide
-    a suitable error for a request that triggered the edit.*/
+This may be used by the server for diagnostic logging or to provide
+a suitable error for a request that triggered the edit.*/
     #[serde(rename = "failureReason")]
     #[serde(default)]
     pub failure_reason: Option<String>,
     /**Depending on the client's failure handling strategy `failedChange` might
-    contain the index of the change that failed. This property is only available
-    if the client signals a `failureHandlingStrategy` in its client capabilities.*/
+contain the index of the change that failed. This property is only available
+if the client signals a `failureHandlingStrategy` in its client capabilities.*/
     #[serde(rename = "failedChange")]
     #[serde(default)]
     pub failed_change: Option<Uinteger>,
@@ -2905,28 +4054,28 @@ pub struct ApplyWorkspaceEditResult {
 pub struct WorkDoneProgressBegin {
     pub kind: String,
     /**Mandatory title of the progress operation. Used to briefly inform about
-    the kind of operation being performed.
+the kind of operation being performed.
 
-    Examples: "Indexing" or "Linking dependencies".*/
+Examples: "Indexing" or "Linking dependencies".*/
     pub title: String,
     /**Controls if a cancel button should show to allow the user to cancel the
-    long running operation. Clients that don't support cancellation are allowed
-    to ignore the setting.*/
+long running operation. Clients that don't support cancellation are allowed
+to ignore the setting.*/
     #[serde(default)]
     pub cancellable: Option<bool>,
     /**Optional, more detailed associated progress message. Contains
-    complementary information to the `title`.
+complementary information to the `title`.
 
-    Examples: "3/25 files", "project/src/module2", "node_modules/some_dep".
-    If unset, the previous progress message (if any) is still valid.*/
+Examples: "3/25 files", "project/src/module2", "node_modules/some_dep".
+If unset, the previous progress message (if any) is still valid.*/
     #[serde(default)]
     pub message: Option<String>,
     /**Optional progress percentage to display (value 100 is considered 100%).
-    If not provided infinite progress is assumed and clients are allowed
-    to ignore the `percentage` value in subsequent in report notifications.
+If not provided infinite progress is assumed and clients are allowed
+to ignore the `percentage` value in subsequent in report notifications.
 
-    The value should be steadily rising. Clients are free to ignore values
-    that are not following this rule. The value range is [0, 100].*/
+The value should be steadily rising. Clients are free to ignore values
+that are not following this rule. The value range is [0, 100].*/
     #[serde(default)]
     pub percentage: Option<Uinteger>,
 }
@@ -2936,23 +4085,23 @@ pub struct WorkDoneProgressReport {
     pub kind: String,
     /**Controls enablement state of a cancel button.
 
-    Clients that don't support cancellation or don't support controlling the button's
-    enablement state are allowed to ignore the property.*/
+Clients that don't support cancellation or don't support controlling the button's
+enablement state are allowed to ignore the property.*/
     #[serde(default)]
     pub cancellable: Option<bool>,
     /**Optional, more detailed associated progress message. Contains
-    complementary information to the `title`.
+complementary information to the `title`.
 
-    Examples: "3/25 files", "project/src/module2", "node_modules/some_dep".
-    If unset, the previous progress message (if any) is still valid.*/
+Examples: "3/25 files", "project/src/module2", "node_modules/some_dep".
+If unset, the previous progress message (if any) is still valid.*/
     #[serde(default)]
     pub message: Option<String>,
     /**Optional progress percentage to display (value 100 is considered 100%).
-    If not provided infinite progress is assumed and clients are allowed
-    to ignore the `percentage` value in subsequent in report notifications.
+If not provided infinite progress is assumed and clients are allowed
+to ignore the `percentage` value in subsequent in report notifications.
 
-    The value should be steadily rising. Clients are free to ignore values
-    that are not following this rule. The value range is [0, 100]*/
+The value should be steadily rising. Clients are free to ignore values
+that are not following this rule. The value range is [0, 100]*/
     #[serde(default)]
     pub percentage: Option<Uinteger>,
 }
@@ -2961,7 +4110,7 @@ pub struct WorkDoneProgressReport {
 pub struct WorkDoneProgressEnd {
     pub kind: String,
     /**Optional, a final message indicating to for example indicate the outcome
-    of the operation.*/
+of the operation.*/
     #[serde(default)]
     pub message: Option<String>,
 }
@@ -2981,7 +4130,7 @@ pub struct LogTraceParams {
 #[serde(rename_all = "camelCase")]
 pub struct CancelParams {
     ///The request id to cancel.
-    pub id: LspAny,
+    pub id: IntegerOrString,
 }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -3014,7 +4163,7 @@ pub struct WorkDoneProgressParams {
 #[serde(rename_all = "camelCase")]
 pub struct PartialResultParams {
     /**An optional token that a server can use to report partial results (e.g. streaming) to
-    the client.*/
+the client.*/
     #[serde(rename = "partialResultToken")]
     #[serde(default)]
     pub partial_result_token: Option<ProgressToken>,
@@ -3026,8 +4175,8 @@ including an origin range.*/
 pub struct LocationLink {
     /**Span of the origin of this link.
 
-    Used as the underlined span for mouse interaction. Defaults to the word range at
-    the definition position.*/
+Used as the underlined span for mouse interaction. Defaults to the word range at
+the definition position.*/
     #[serde(rename = "originSelectionRange")]
     #[serde(default)]
     pub origin_selection_range: Option<Range>,
@@ -3035,12 +4184,12 @@ pub struct LocationLink {
     #[serde(rename = "targetUri")]
     pub target_uri: DocumentUri,
     /**The full target range of this link. If the target for example is a symbol then target range is the
-    range enclosing this symbol not including leading/trailing whitespace but everything else
-    like comments. This information is typically used to highlight the range in the editor.*/
+range enclosing this symbol not including leading/trailing whitespace but everything else
+like comments. This information is typically used to highlight the range in the editor.*/
     #[serde(rename = "targetRange")]
     pub target_range: Range,
     /**The range that should be selected and revealed when this link is being followed, e.g the name of a function.
-    Must be contained by the `targetRange`. See also `DocumentSymbol#range`*/
+Must be contained by the `targetRange`. See also `DocumentSymbol#range`*/
     #[serde(rename = "targetSelectionRange")]
     pub target_selection_range: Range,
 }
@@ -3075,7 +4224,7 @@ request.*/
 #[serde(rename_all = "camelCase")]
 pub struct StaticRegistrationOptions {
     /**The id used to register the request. The id can be used to deregister
-    the request again. See also Registration#id.*/
+the request again. See also Registration#id.*/
     #[serde(default)]
     pub id: Option<String>,
 }
@@ -3177,8 +4326,8 @@ pub struct Position {
     pub line: Uinteger,
     /**Character offset on a line in a document (zero-based).
 
-    The meaning of this offset is determined by the negotiated
-    `PositionEncodingKind`.*/
+The meaning of this offset is determined by the negotiated
+`PositionEncodingKind`.*/
     pub character: Uinteger,
 }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -3205,12 +4354,12 @@ pub struct SemanticTokensOptions {
     ///The legend used by the server
     pub legend: SemanticTokensLegend,
     /**Server supports providing semantic tokens for a specific range
-    of a document.*/
+of a document.*/
     #[serde(default)]
-    pub range: Option<LspAny>,
+    pub range: Option<BooleanOrLiteral57f9bf6390bb37d9>,
     ///Server supports providing semantic tokens for a full document.
     #[serde(default)]
-    pub full: Option<LspAny>,
+    pub full: Option<BooleanOrSemanticTokensFullDelta>,
 }
 ///@since 3.16.0
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -3252,12 +4401,12 @@ pub struct TextDocumentEdit {
     pub text_document: OptionalVersionedTextDocumentIdentifier,
     /**The edits to be applied.
 
-    @since 3.16.0 - support for AnnotatedTextEdit. This is guarded using a
-    client capability.
+@since 3.16.0 - support for AnnotatedTextEdit. This is guarded using a
+client capability.
 
-    @since 3.18.0 - support for SnippetTextEdit. This is guarded using a
-    client capability.*/
-    pub edits: Vec<LspAny>,
+@since 3.18.0 - support for SnippetTextEdit. This is guarded using a
+client capability.*/
+    pub edits: Vec<AnnotatedTextEditOrSnippetTextEditOrTextEdit>,
 }
 ///Create file operation.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -3312,15 +4461,15 @@ pub struct DeleteFile {
 #[serde(rename_all = "camelCase")]
 pub struct ChangeAnnotation {
     /**A human-readable string describing the actual change. The string
-    is rendered prominent in the user interface.*/
+is rendered prominent in the user interface.*/
     pub label: String,
     /**A flag which indicates that user confirmation is needed
-    before applying the change.*/
+before applying the change.*/
     #[serde(rename = "needsConfirmation")]
     #[serde(default)]
     pub needs_confirmation: Option<bool>,
     /**A human-readable string which is rendered less prominent in
-    the user interface.*/
+the user interface.*/
     #[serde(default)]
     pub description: Option<String>,
 }
@@ -3382,7 +4531,7 @@ pub struct InlineValueContext {
     #[serde(rename = "frameId")]
     pub frame_id: Integer,
     /**The document range where execution has stopped.
-    Typically the end position of the range denotes the line where the inline values are shown.*/
+Typically the end position of the range denotes the line where the inline values are shown.*/
     #[serde(rename = "stoppedLocation")]
     pub stopped_location: Range,
 }
@@ -3411,8 +4560,8 @@ of the extracted name.
 pub struct InlineValueVariableLookup {
     /**The document range for which the inline value applies.
 
-    The range could be used to extract the variable name
-    from the underlying document.*/
+The range could be used to extract the variable name
+from the underlying document.*/
     pub range: Range,
     ///If specified the name of the variable to look up.
     #[serde(rename = "variableName")]
@@ -3436,8 +4585,8 @@ the extracted expression.
 pub struct InlineValueEvaluatableExpression {
     /**The document range for which the inline value applies.
 
-    The range could be used to extract the evaluatable expression
-    from the underlying document.*/
+The range could be used to extract the evaluatable expression
+from the underlying document.*/
     pub range: Range,
     ///If specified the expression could be evaluated instead.
     #[serde(default)]
@@ -3462,27 +4611,27 @@ pub struct InlayHintLabelPart {
     ///The value of this label part.
     pub value: String,
     /**The tooltip text when you hover over this label part. Depending on
-    the client capability `inlayHint.resolveSupport` clients might resolve
-    this property late using the resolve request.*/
+the client capability `inlayHint.resolveSupport` clients might resolve
+this property late using the resolve request.*/
     #[serde(default)]
-    pub tooltip: Option<LspAny>,
+    pub tooltip: Option<MarkupContentOrString>,
     /**An optional source code location that represents this
-    label part.
+label part.
 
-    The editor will use this location for the hover and for code navigation
-    features: This part will become a clickable link that resolves to the
-    definition of the symbol at the given location (not necessarily the
-    location itself), it shows the hover that shows at the given location,
-    and it shows a context menu with further code navigation commands.
+The editor will use this location for the hover and for code navigation
+features: This part will become a clickable link that resolves to the
+definition of the symbol at the given location (not necessarily the
+location itself), it shows the hover that shows at the given location,
+and it shows a context menu with further code navigation commands.
 
-    Depending on the client capability `inlayHint.resolveSupport` clients
-    might resolve this property late using the resolve request.*/
+Depending on the client capability `inlayHint.resolveSupport` clients
+might resolve this property late using the resolve request.*/
     #[serde(default)]
     pub location: Option<Location>,
     /**An optional command for this label part.
 
-    Depending on the client capability `inlayHint.resolveSupport` clients
-    might resolve this property late using the resolve request.*/
+Depending on the client capability `inlayHint.resolveSupport` clients
+might resolve this property late using the resolve request.*/
     #[serde(default)]
     pub command: Option<Command>,
 }
@@ -3525,7 +4674,7 @@ pub struct InlayHintOptions {
     #[serde(flatten)]
     pub work_done_progress_options_mixin: WorkDoneProgressOptions,
     /**The server provides support to resolve additional
-    information for an inlay hint item.*/
+information for an inlay hint item.*/
     #[serde(rename = "resolveProvider")]
     #[serde(default)]
     pub resolve_provider: Option<bool>,
@@ -3539,15 +4688,20 @@ pub struct RelatedFullDocumentDiagnosticReport {
     #[serde(flatten)]
     pub full_document_diagnostic_report_base: FullDocumentDiagnosticReport,
     /**Diagnostics of related documents. This information is useful
-    in programming languages where code in a file A can generate
-    diagnostics in a file B which A depends on. An example of
-    such a language is C/C++ where marco definitions in a file
-    a.cpp and result in errors in a header file b.hpp.
+in programming languages where code in a file A can generate
+diagnostics in a file B which A depends on. An example of
+such a language is C/C++ where marco definitions in a file
+a.cpp and result in errors in a header file b.hpp.
 
-    @since 3.17.0*/
+@since 3.17.0*/
     #[serde(rename = "relatedDocuments")]
     #[serde(default)]
-    pub related_documents: Option<std::collections::BTreeMap<String, LspAny>>,
+    pub related_documents: Option<
+        std::collections::BTreeMap<
+            DocumentUri,
+            FullDocumentDiagnosticReportOrUnchangedDocumentDiagnosticReport,
+        >,
+    >,
 }
 /**An unchanged diagnostic report with a set of related documents.
 
@@ -3558,15 +4712,20 @@ pub struct RelatedUnchangedDocumentDiagnosticReport {
     #[serde(flatten)]
     pub unchanged_document_diagnostic_report_base: UnchangedDocumentDiagnosticReport,
     /**Diagnostics of related documents. This information is useful
-    in programming languages where code in a file A can generate
-    diagnostics in a file B which A depends on. An example of
-    such a language is C/C++ where marco definitions in a file
-    a.cpp and result in errors in a header file b.hpp.
+in programming languages where code in a file A can generate
+diagnostics in a file B which A depends on. An example of
+such a language is C/C++ where marco definitions in a file
+a.cpp and result in errors in a header file b.hpp.
 
-    @since 3.17.0*/
+@since 3.17.0*/
     #[serde(rename = "relatedDocuments")]
     #[serde(default)]
-    pub related_documents: Option<std::collections::BTreeMap<String, LspAny>>,
+    pub related_documents: Option<
+        std::collections::BTreeMap<
+            DocumentUri,
+            FullDocumentDiagnosticReportOrUnchangedDocumentDiagnosticReport,
+        >,
+    >,
 }
 /**A diagnostic report with a full set of problems.
 
@@ -3577,8 +4736,8 @@ pub struct FullDocumentDiagnosticReport {
     ///A full document diagnostic report.
     pub kind: String,
     /**An optional result id. If provided it will
-    be sent on the next diagnostic request for the
-    same document.*/
+be sent on the next diagnostic request for the
+same document.*/
     #[serde(rename = "resultId")]
     #[serde(default)]
     pub result_id: Option<String>,
@@ -3593,12 +4752,12 @@ report is still accurate.
 #[serde(rename_all = "camelCase")]
 pub struct UnchangedDocumentDiagnosticReport {
     /**A document diagnostic report indicating
-    no changes to the last result. A server can
-    only return `unchanged` if result ids are
-    provided.*/
+no changes to the last result. A server can
+only return `unchanged` if result ids are
+provided.*/
     pub kind: String,
     /**A result id which will be sent on the next
-    diagnostic request for the same document.*/
+diagnostic request for the same document.*/
     #[serde(rename = "resultId")]
     pub result_id: String,
 }
@@ -3611,13 +4770,13 @@ pub struct DiagnosticOptions {
     #[serde(flatten)]
     pub work_done_progress_options_mixin: WorkDoneProgressOptions,
     /**An optional identifier under which the diagnostics are
-    managed by the client.*/
+managed by the client.*/
     #[serde(default)]
     pub identifier: Option<String>,
     /**Whether the language has inter file dependencies meaning that
-    editing code in one file can result in a different diagnostic
-    set in another file. Inter file dependencies are common for
-    most programming languages and typically uncommon for linters.*/
+editing code in one file can result in a different diagnostic
+set in another file. Inter file dependencies are common for
+most programming languages and typically uncommon for linters.*/
     #[serde(rename = "interFileDependencies")]
     pub inter_file_dependencies: bool,
     ///The server provides support for workspace diagnostics as well.
@@ -3631,7 +4790,7 @@ pub struct DiagnosticOptions {
 #[serde(rename_all = "camelCase")]
 pub struct PreviousResultId {
     /**The URI for which the client knowns a
-    result id.*/
+result id.*/
     pub uri: DocumentUri,
     ///The value of the previous result id.
     pub value: String,
@@ -3648,12 +4807,12 @@ pub struct NotebookDocument {
     #[serde(rename = "notebookType")]
     pub notebook_type: String,
     /**The version number of this document (it will increase after each
-    change, including undo/redo).*/
+change, including undo/redo).*/
     pub version: Integer,
     /**Additional metadata stored with the notebook
-    document.
+document.
 
-    Note: should always be an object literal (e.g. LSPObject)*/
+Note: should always be an object literal (e.g. LSPObject)*/
     #[serde(default)]
     pub metadata: Option<LSPObject>,
     ///The cells of a notebook.
@@ -3670,7 +4829,7 @@ pub struct TextDocumentItem {
     #[serde(rename = "languageId")]
     pub language_id: LanguageKind,
     /**The version number of this document (it will increase after each
-    change, including undo/redo).*/
+change, including undo/redo).*/
     pub version: Integer,
     ///The content of the opened text document.
     pub text: String,
@@ -3693,9 +4852,11 @@ cell will be synced.
 pub struct NotebookDocumentSyncOptions {
     ///The notebooks to be synced
     #[serde(rename = "notebookSelector")]
-    pub notebook_selector: Vec<LspAny>,
+    pub notebook_selector: Vec<
+        NotebookDocumentFilterWithCellsOrNotebookDocumentFilterWithNotebook,
+    >,
     /**Whether save notification should be forwarded to
-    the server. Will only be honored if mode === `notebook`.*/
+the server. Will only be honored if mode === `notebook`.*/
     #[serde(default)]
     pub save: Option<bool>,
 }
@@ -3718,7 +4879,7 @@ pub struct VersionedNotebookDocumentIdentifier {
 pub struct NotebookDocumentChangeEvent {
     /**The changed meta data if any.
 
-    Note: should always be an object literal (e.g. LSPObject)*/
+Note: should always be an object literal (e.g. LSPObject)*/
     #[serde(default)]
     pub metadata: Option<LSPObject>,
     ///Changes to cells
@@ -3788,7 +4949,7 @@ pub struct TextDocumentContentOptions {
 #[serde(rename_all = "camelCase")]
 pub struct Registration {
     /**The id used to register the request. The id can be used to deregister
-    the request again.*/
+the request again.*/
     pub id: String,
     ///The method / capability to register for.
     pub method: String,
@@ -3802,7 +4963,7 @@ pub struct Registration {
 #[serde(rename_all = "camelCase")]
 pub struct Unregistration {
     /**The id used to unregister the request or notification. Usually an id
-    provided during the register request.*/
+provided during the register request.*/
     pub id: String,
     ///The method to unregister for.
     pub method: String,
@@ -3814,42 +4975,42 @@ pub struct _InitializeParams {
     #[serde(flatten)]
     pub work_done_progress_params_mixin: WorkDoneProgressParams,
     /**The process Id of the parent process that started
-    the server.
+the server.
 
-    Is `null` if the process has not been started by another process.
-    If the parent process is not alive then the server should exit.*/
+Is `null` if the process has not been started by another process.
+If the parent process is not alive then the server should exit.*/
     #[serde(rename = "processId")]
-    pub process_id: LspAny,
+    pub process_id: Option<Integer>,
     /**Information about the client
 
-    @since 3.15.0*/
+@since 3.15.0*/
     #[serde(rename = "clientInfo")]
     #[serde(default)]
     pub client_info: Option<ClientInfo>,
     /**The locale the client is currently showing the user interface
-    in. This must not necessarily be the locale of the operating
-    system.
+in. This must not necessarily be the locale of the operating
+system.
 
-    Uses IETF language tags as the value's syntax
-    (See https://en.wikipedia.org/wiki/IETF_language_tag)
+Uses IETF language tags as the value's syntax
+(See https://en.wikipedia.org/wiki/IETF_language_tag)
 
-    @since 3.16.0*/
+@since 3.16.0*/
     #[serde(default)]
     pub locale: Option<String>,
     /**The rootPath of the workspace. Is null
-    if no folder is open.
+if no folder is open.
 
-    @deprecated in favour of rootUri.*/
+@deprecated in favour of rootUri.*/
     #[serde(rename = "rootPath")]
     #[serde(default)]
-    pub root_path: Option<LspAny>,
+    pub root_path: Option<Option<String>>,
     /**The rootUri of the workspace. Is null if no
-    folder is open. If both `rootPath` and `rootUri` are set
-    `rootUri` wins.
+folder is open. If both `rootPath` and `rootUri` are set
+`rootUri` wins.
 
-    @deprecated in favour of workspaceFolders.*/
+@deprecated in favour of workspaceFolders.*/
     #[serde(rename = "rootUri")]
-    pub root_uri: LspAny,
+    pub root_uri: Option<DocumentUri>,
     ///The capabilities provided by the client (editor or tool)
     pub capabilities: ClientCapabilities,
     ///User provided initialization options.
@@ -3865,14 +5026,14 @@ pub struct _InitializeParams {
 pub struct WorkspaceFoldersInitializeParams {
     /**The workspace folders configured in the client when the server starts.
 
-    This property is only available if the client supports workspace folders.
-    It can be `null` if the client supports workspace folders but none are
-    configured.
+This property is only available if the client supports workspace folders.
+It can be `null` if the client supports workspace folders but none are
+configured.
 
-    @since 3.6.0*/
+@since 3.6.0*/
     #[serde(rename = "workspaceFolders")]
     #[serde(default)]
-    pub workspace_folders: Option<LspAny>,
+    pub workspace_folders: Option<Option<Vec<WorkspaceFolder>>>,
 }
 /**Defines the capabilities provided by a language
 server.*/
@@ -3880,29 +5041,31 @@ server.*/
 #[serde(rename_all = "camelCase")]
 pub struct ServerCapabilities {
     /**The position encoding the server picked from the encodings offered
-    by the client via the client capability `general.positionEncodings`.
+by the client via the client capability `general.positionEncodings`.
 
-    If the client didn't provide any position encodings the only valid
-    value that a server can return is 'utf-16'.
+If the client didn't provide any position encodings the only valid
+value that a server can return is 'utf-16'.
 
-    If omitted it defaults to 'utf-16'.
+If omitted it defaults to 'utf-16'.
 
-    @since 3.17.0*/
+@since 3.17.0*/
     #[serde(rename = "positionEncoding")]
     #[serde(default)]
     pub position_encoding: Option<PositionEncodingKind>,
     /**Defines how text documents are synced. Is either a detailed structure
-    defining each notification or for backwards compatibility the
-    TextDocumentSyncKind number.*/
+defining each notification or for backwards compatibility the
+TextDocumentSyncKind number.*/
     #[serde(rename = "textDocumentSync")]
     #[serde(default)]
-    pub text_document_sync: Option<LspAny>,
+    pub text_document_sync: Option<TextDocumentSyncKindOrTextDocumentSyncOptions>,
     /**Defines how notebook documents are synced.
 
-    @since 3.17.0*/
+@since 3.17.0*/
     #[serde(rename = "notebookDocumentSync")]
     #[serde(default)]
-    pub notebook_document_sync: Option<LspAny>,
+    pub notebook_document_sync: Option<
+        NotebookDocumentSyncOptionsOrNotebookDocumentSyncRegistrationOptions,
+    >,
     ///The server provides completion support.
     #[serde(rename = "completionProvider")]
     #[serde(default)]
@@ -3910,7 +5073,7 @@ pub struct ServerCapabilities {
     ///The server provides hover support.
     #[serde(rename = "hoverProvider")]
     #[serde(default)]
-    pub hover_provider: Option<LspAny>,
+    pub hover_provider: Option<BooleanOrHoverOptions>,
     ///The server provides signature help support.
     #[serde(rename = "signatureHelpProvider")]
     #[serde(default)]
@@ -3918,37 +5081,43 @@ pub struct ServerCapabilities {
     ///The server provides Goto Declaration support.
     #[serde(rename = "declarationProvider")]
     #[serde(default)]
-    pub declaration_provider: Option<LspAny>,
+    pub declaration_provider: Option<
+        BooleanOrDeclarationOptionsOrDeclarationRegistrationOptions,
+    >,
     ///The server provides goto definition support.
     #[serde(rename = "definitionProvider")]
     #[serde(default)]
-    pub definition_provider: Option<LspAny>,
+    pub definition_provider: Option<BooleanOrDefinitionOptions>,
     ///The server provides Goto Type Definition support.
     #[serde(rename = "typeDefinitionProvider")]
     #[serde(default)]
-    pub type_definition_provider: Option<LspAny>,
+    pub type_definition_provider: Option<
+        BooleanOrTypeDefinitionOptionsOrTypeDefinitionRegistrationOptions,
+    >,
     ///The server provides Goto Implementation support.
     #[serde(rename = "implementationProvider")]
     #[serde(default)]
-    pub implementation_provider: Option<LspAny>,
+    pub implementation_provider: Option<
+        BooleanOrImplementationOptionsOrImplementationRegistrationOptions,
+    >,
     ///The server provides find references support.
     #[serde(rename = "referencesProvider")]
     #[serde(default)]
-    pub references_provider: Option<LspAny>,
+    pub references_provider: Option<BooleanOrReferenceOptions>,
     ///The server provides document highlight support.
     #[serde(rename = "documentHighlightProvider")]
     #[serde(default)]
-    pub document_highlight_provider: Option<LspAny>,
+    pub document_highlight_provider: Option<BooleanOrDocumentHighlightOptions>,
     ///The server provides document symbol support.
     #[serde(rename = "documentSymbolProvider")]
     #[serde(default)]
-    pub document_symbol_provider: Option<LspAny>,
+    pub document_symbol_provider: Option<BooleanOrDocumentSymbolOptions>,
     /**The server provides code actions. CodeActionOptions may only be
-    specified if the client states that it supports
-    `codeActionLiteralSupport` in its initial `initialize` request.*/
+specified if the client states that it supports
+`codeActionLiteralSupport` in its initial `initialize` request.*/
     #[serde(rename = "codeActionProvider")]
     #[serde(default)]
-    pub code_action_provider: Option<LspAny>,
+    pub code_action_provider: Option<BooleanOrCodeActionOptions>,
     ///The server provides code lens.
     #[serde(rename = "codeLensProvider")]
     #[serde(default)]
@@ -3960,95 +5129,115 @@ pub struct ServerCapabilities {
     ///The server provides color provider support.
     #[serde(rename = "colorProvider")]
     #[serde(default)]
-    pub color_provider: Option<LspAny>,
+    pub color_provider: Option<
+        BooleanOrDocumentColorOptionsOrDocumentColorRegistrationOptions,
+    >,
     ///The server provides workspace symbol support.
     #[serde(rename = "workspaceSymbolProvider")]
     #[serde(default)]
-    pub workspace_symbol_provider: Option<LspAny>,
+    pub workspace_symbol_provider: Option<BooleanOrWorkspaceSymbolOptions>,
     ///The server provides document formatting.
     #[serde(rename = "documentFormattingProvider")]
     #[serde(default)]
-    pub document_formatting_provider: Option<LspAny>,
+    pub document_formatting_provider: Option<BooleanOrDocumentFormattingOptions>,
     ///The server provides document range formatting.
     #[serde(rename = "documentRangeFormattingProvider")]
     #[serde(default)]
-    pub document_range_formatting_provider: Option<LspAny>,
+    pub document_range_formatting_provider: Option<
+        BooleanOrDocumentRangeFormattingOptions,
+    >,
     ///The server provides document formatting on typing.
     #[serde(rename = "documentOnTypeFormattingProvider")]
     #[serde(default)]
     pub document_on_type_formatting_provider: Option<DocumentOnTypeFormattingOptions>,
     /**The server provides rename support. RenameOptions may only be
-    specified if the client states that it supports
-    `prepareSupport` in its initial `initialize` request.*/
+specified if the client states that it supports
+`prepareSupport` in its initial `initialize` request.*/
     #[serde(rename = "renameProvider")]
     #[serde(default)]
-    pub rename_provider: Option<LspAny>,
+    pub rename_provider: Option<BooleanOrRenameOptions>,
     ///The server provides folding provider support.
     #[serde(rename = "foldingRangeProvider")]
     #[serde(default)]
-    pub folding_range_provider: Option<LspAny>,
+    pub folding_range_provider: Option<
+        BooleanOrFoldingRangeOptionsOrFoldingRangeRegistrationOptions,
+    >,
     ///The server provides selection range support.
     #[serde(rename = "selectionRangeProvider")]
     #[serde(default)]
-    pub selection_range_provider: Option<LspAny>,
+    pub selection_range_provider: Option<
+        BooleanOrSelectionRangeOptionsOrSelectionRangeRegistrationOptions,
+    >,
     ///The server provides execute command support.
     #[serde(rename = "executeCommandProvider")]
     #[serde(default)]
     pub execute_command_provider: Option<ExecuteCommandOptions>,
     /**The server provides call hierarchy support.
 
-    @since 3.16.0*/
+@since 3.16.0*/
     #[serde(rename = "callHierarchyProvider")]
     #[serde(default)]
-    pub call_hierarchy_provider: Option<LspAny>,
+    pub call_hierarchy_provider: Option<
+        BooleanOrCallHierarchyOptionsOrCallHierarchyRegistrationOptions,
+    >,
     /**The server provides linked editing range support.
 
-    @since 3.16.0*/
+@since 3.16.0*/
     #[serde(rename = "linkedEditingRangeProvider")]
     #[serde(default)]
-    pub linked_editing_range_provider: Option<LspAny>,
+    pub linked_editing_range_provider: Option<
+        BooleanOrLinkedEditingRangeOptionsOrLinkedEditingRangeRegistrationOptions,
+    >,
     /**The server provides semantic tokens support.
 
-    @since 3.16.0*/
+@since 3.16.0*/
     #[serde(rename = "semanticTokensProvider")]
     #[serde(default)]
-    pub semantic_tokens_provider: Option<LspAny>,
+    pub semantic_tokens_provider: Option<
+        SemanticTokensOptionsOrSemanticTokensRegistrationOptions,
+    >,
     /**The server provides moniker support.
 
-    @since 3.16.0*/
+@since 3.16.0*/
     #[serde(rename = "monikerProvider")]
     #[serde(default)]
-    pub moniker_provider: Option<LspAny>,
+    pub moniker_provider: Option<BooleanOrMonikerOptionsOrMonikerRegistrationOptions>,
     /**The server provides type hierarchy support.
 
-    @since 3.17.0*/
+@since 3.17.0*/
     #[serde(rename = "typeHierarchyProvider")]
     #[serde(default)]
-    pub type_hierarchy_provider: Option<LspAny>,
+    pub type_hierarchy_provider: Option<
+        BooleanOrTypeHierarchyOptionsOrTypeHierarchyRegistrationOptions,
+    >,
     /**The server provides inline values.
 
-    @since 3.17.0*/
+@since 3.17.0*/
     #[serde(rename = "inlineValueProvider")]
     #[serde(default)]
-    pub inline_value_provider: Option<LspAny>,
+    pub inline_value_provider: Option<
+        BooleanOrInlineValueOptionsOrInlineValueRegistrationOptions,
+    >,
     /**The server provides inlay hints.
 
-    @since 3.17.0*/
+@since 3.17.0*/
     #[serde(rename = "inlayHintProvider")]
     #[serde(default)]
-    pub inlay_hint_provider: Option<LspAny>,
+    pub inlay_hint_provider: Option<
+        BooleanOrInlayHintOptionsOrInlayHintRegistrationOptions,
+    >,
     /**The server has support for pull model diagnostics.
 
-    @since 3.17.0*/
+@since 3.17.0*/
     #[serde(rename = "diagnosticProvider")]
     #[serde(default)]
-    pub diagnostic_provider: Option<LspAny>,
+    pub diagnostic_provider: Option<DiagnosticOptionsOrDiagnosticRegistrationOptions>,
     /**Inline completion options used during static registration.
 
-    @since 3.18.0*/
+@since 3.18.0*/
     #[serde(rename = "inlineCompletionProvider")]
     #[serde(default)]
-    pub inline_completion_provider: Option<LspAny>,
+    pub inline_completion_provider: Option<BooleanOrInlineCompletionOptions>,
     ///Workspace specific server capabilities.
     #[serde(default)]
     pub workspace: Option<WorkspaceOptions>,
@@ -4101,12 +5290,12 @@ pub struct FileEvent {
 pub struct FileSystemWatcher {
     /**The glob pattern to watch. See {@link GlobPattern glob pattern} for more detail.
 
-    @since 3.17.0 support for relative patterns.*/
+@since 3.17.0 support for relative patterns.*/
     #[serde(rename = "globPattern")]
     pub glob_pattern: GlobPattern,
     /**The kind of events of interest. If omitted it defaults
-    to WatchKind.Create | WatchKind.Change | WatchKind.Delete
-    which is 7.*/
+to WatchKind.Create | WatchKind.Change | WatchKind.Delete
+which is 7.*/
     #[serde(default)]
     pub kind: Option<WatchKind>,
 }
@@ -4118,44 +5307,44 @@ pub struct Diagnostic {
     ///The range at which the message applies
     pub range: Range,
     /**The diagnostic's severity. To avoid interpretation mismatches when a
-    server is used with different clients it is highly recommended that servers
-    always provide a severity value.*/
+server is used with different clients it is highly recommended that servers
+always provide a severity value.*/
     #[serde(default)]
     pub severity: Option<DiagnosticSeverity>,
     ///The diagnostic's code, which usually appear in the user interface.
     #[serde(default)]
-    pub code: Option<LspAny>,
+    pub code: Option<IntegerOrString>,
     /**An optional property to describe the error code.
-    Requires the code field (above) to be present/not null.
+Requires the code field (above) to be present/not null.
 
-    @since 3.16.0*/
+@since 3.16.0*/
     #[serde(rename = "codeDescription")]
     #[serde(default)]
     pub code_description: Option<CodeDescription>,
     /**A human-readable string describing the source of this
-    diagnostic, e.g. 'typescript' or 'super lint'. It usually
-    appears in the user interface.*/
+diagnostic, e.g. 'typescript' or 'super lint'. It usually
+appears in the user interface.*/
     #[serde(default)]
     pub source: Option<String>,
     /**The diagnostic's message. It usually appears in the user interface.
 
-    @since 3.18.0 - support for MarkupContent. This is guarded by the client
-    capability `textDocument.diagnostic.markupMessageSupport`.*/
-    pub message: LspAny,
+@since 3.18.0 - support for MarkupContent. This is guarded by the client
+capability `textDocument.diagnostic.markupMessageSupport`.*/
+    pub message: MarkupContentOrString,
     /**Additional metadata about the diagnostic.
 
-    @since 3.15.0*/
+@since 3.15.0*/
     #[serde(default)]
     pub tags: Option<Vec<DiagnosticTag>>,
     /**An array of related diagnostic information, e.g. when symbol-names within
-    a scope collide all definitions can be marked via this property.*/
+a scope collide all definitions can be marked via this property.*/
     #[serde(rename = "relatedInformation")]
     #[serde(default)]
     pub related_information: Option<Vec<DiagnosticRelatedInformation>>,
     /**A data entry field that is preserved between a `textDocument/publishDiagnostics`
-    notification and `textDocument/codeAction` request.
+notification and `textDocument/codeAction` request.
 
-    @since 3.16.0*/
+@since 3.16.0*/
     #[serde(default)]
     pub data: Option<LSPAny>,
 }
@@ -4167,7 +5356,7 @@ pub struct CompletionContext {
     #[serde(rename = "triggerKind")]
     pub trigger_kind: CompletionTriggerKind,
     /**The trigger character (a single character) that has trigger code complete.
-    Is undefined if `triggerKind !== CompletionTriggerKind.TriggerCharacter`*/
+Is undefined if `triggerKind !== CompletionTriggerKind.TriggerCharacter`*/
     #[serde(rename = "triggerCharacter")]
     #[serde(default)]
     pub trigger_character: Option<String>,
@@ -4179,11 +5368,11 @@ pub struct CompletionContext {
 #[serde(rename_all = "camelCase")]
 pub struct CompletionItemLabelDetails {
     /**An optional string which is rendered less prominently directly after {@link CompletionItem.label label},
-    without any spacing. Should be used for function signatures and type annotations.*/
+without any spacing. Should be used for function signatures and type annotations.*/
     #[serde(default)]
     pub detail: Option<String>,
     /**An optional string which is rendered less prominently after {@link CompletionItem.detail}. Should be used
-    for fully qualified names and file paths.*/
+for fully qualified names and file paths.*/
     #[serde(default)]
     pub description: Option<String>,
 }
@@ -4221,31 +5410,31 @@ capability.
 pub struct CompletionItemDefaults {
     /**A default commit character set.
 
-    @since 3.17.0*/
+@since 3.17.0*/
     #[serde(rename = "commitCharacters")]
     #[serde(default)]
     pub commit_characters: Option<Vec<String>>,
     /**A default edit range.
 
-    @since 3.17.0*/
+@since 3.17.0*/
     #[serde(rename = "editRange")]
     #[serde(default)]
-    pub edit_range: Option<LspAny>,
+    pub edit_range: Option<EditRangeWithInsertReplaceOrRange>,
     /**A default insert text format.
 
-    @since 3.17.0*/
+@since 3.17.0*/
     #[serde(rename = "insertTextFormat")]
     #[serde(default)]
     pub insert_text_format: Option<InsertTextFormat>,
     /**A default insert text mode.
 
-    @since 3.17.0*/
+@since 3.17.0*/
     #[serde(rename = "insertTextMode")]
     #[serde(default)]
     pub insert_text_mode: Option<InsertTextMode>,
     /**A default data value.
 
-    @since 3.17.0*/
+@since 3.17.0*/
     #[serde(default)]
     pub data: Option<LSPAny>,
 }
@@ -4270,45 +5459,45 @@ capability.
 #[serde(rename_all = "camelCase")]
 pub struct CompletionItemApplyKinds {
     /**Specifies whether commitCharacters on a completion will replace or be
-    merged with those in `completionList.itemDefaults.commitCharacters`.
+merged with those in `completionList.itemDefaults.commitCharacters`.
 
-    If ApplyKind.Replace, the commit characters from the completion item will
-    always be used unless not provided, in which case those from
-    `completionList.itemDefaults.commitCharacters` will be used. An
-    empty list can be used if a completion item does not have any commit
-    characters and also should not use those from
-    `completionList.itemDefaults.commitCharacters`.
+If ApplyKind.Replace, the commit characters from the completion item will
+always be used unless not provided, in which case those from
+`completionList.itemDefaults.commitCharacters` will be used. An
+empty list can be used if a completion item does not have any commit
+characters and also should not use those from
+`completionList.itemDefaults.commitCharacters`.
 
-    If ApplyKind.Merge the commitCharacters for the completion will be the
-    union of all values in both `completionList.itemDefaults.commitCharacters`
-    and the completion's own `commitCharacters`.
+If ApplyKind.Merge the commitCharacters for the completion will be the
+union of all values in both `completionList.itemDefaults.commitCharacters`
+and the completion's own `commitCharacters`.
 
-    @since 3.18.0*/
+@since 3.18.0*/
     #[serde(rename = "commitCharacters")]
     #[serde(default)]
     pub commit_characters: Option<ApplyKind>,
     /**Specifies whether the `data` field on a completion will replace or
-    be merged with data from `completionList.itemDefaults.data`.
+be merged with data from `completionList.itemDefaults.data`.
 
-    If ApplyKind.Replace, the data from the completion item will be used if
-    provided (and not `null`), otherwise
-    `completionList.itemDefaults.data` will be used. An empty object can
-    be used if a completion item does not have any data but also should
-    not use the value from `completionList.itemDefaults.data`.
+If ApplyKind.Replace, the data from the completion item will be used if
+provided (and not `null`), otherwise
+`completionList.itemDefaults.data` will be used. An empty object can
+be used if a completion item does not have any data but also should
+not use the value from `completionList.itemDefaults.data`.
 
-    If ApplyKind.Merge, a shallow merge will be performed between
-    `completionList.itemDefaults.data` and the completion's own data
-    using the following rules:
+If ApplyKind.Merge, a shallow merge will be performed between
+`completionList.itemDefaults.data` and the completion's own data
+using the following rules:
 
-    - If a completion's `data` field is not provided (or `null`), the
-      entire `data` field from `completionList.itemDefaults.data` will be
-      used as-is.
-    - If a completion's `data` field is provided, each field will
-      overwrite the field of the same name in
-      `completionList.itemDefaults.data` but no merging of nested fields
-      within that value will occur.
+- If a completion's `data` field is not provided (or `null`), the
+  entire `data` field from `completionList.itemDefaults.data` will be
+  used as-is.
+- If a completion's `data` field is provided, each field will
+  overwrite the field of the same name in
+  `completionList.itemDefaults.data` but no merging of nested fields
+  within that value will occur.
 
-    @since 3.18.0*/
+@since 3.18.0*/
     #[serde(default)]
     pub data: Option<ApplyKind>,
 }
@@ -4319,36 +5508,36 @@ pub struct CompletionOptions {
     #[serde(flatten)]
     pub work_done_progress_options_mixin: WorkDoneProgressOptions,
     /**Most tools trigger completion request automatically without explicitly requesting
-    it using a keyboard shortcut (e.g. Ctrl+Space). Typically they do so when the user
-    starts to type an identifier. For example if the user types `c` in a JavaScript file
-    code complete will automatically pop up present `console` besides others as a
-    completion item. Characters that make up identifiers don't need to be listed here.
+it using a keyboard shortcut (e.g. Ctrl+Space). Typically they do so when the user
+starts to type an identifier. For example if the user types `c` in a JavaScript file
+code complete will automatically pop up present `console` besides others as a
+completion item. Characters that make up identifiers don't need to be listed here.
 
-    If code complete should automatically be trigger on characters not being valid inside
-    an identifier (for example `.` in JavaScript) list them in `triggerCharacters`.*/
+If code complete should automatically be trigger on characters not being valid inside
+an identifier (for example `.` in JavaScript) list them in `triggerCharacters`.*/
     #[serde(rename = "triggerCharacters")]
     #[serde(default)]
     pub trigger_characters: Option<Vec<String>>,
     /**The list of all possible characters that commit a completion. This field can be used
-    if clients don't support individual commit characters per completion item. See
-    `ClientCapabilities.textDocument.completion.completionItem.commitCharactersSupport`
+if clients don't support individual commit characters per completion item. See
+`ClientCapabilities.textDocument.completion.completionItem.commitCharactersSupport`
 
-    If a server provides both `allCommitCharacters` and commit characters on an individual
-    completion item the ones on the completion item win.
+If a server provides both `allCommitCharacters` and commit characters on an individual
+completion item the ones on the completion item win.
 
-    @since 3.2.0*/
+@since 3.2.0*/
     #[serde(rename = "allCommitCharacters")]
     #[serde(default)]
     pub all_commit_characters: Option<Vec<String>>,
     /**The server provides support to resolve additional
-    information for a completion item.*/
+information for a completion item.*/
     #[serde(rename = "resolveProvider")]
     #[serde(default)]
     pub resolve_provider: Option<bool>,
     /**The server supports the following `CompletionItem` specific
-    capabilities.
+capabilities.
 
-    @since 3.17.0*/
+@since 3.17.0*/
     #[serde(rename = "completionItem")]
     #[serde(default)]
     pub completion_item: Option<ServerCompletionItemOptions>,
@@ -4371,20 +5560,20 @@ pub struct SignatureHelpContext {
     pub trigger_kind: SignatureHelpTriggerKind,
     /**Character that caused signature help to be triggered.
 
-    This is undefined when `triggerKind !== SignatureHelpTriggerKind.TriggerCharacter`*/
+This is undefined when `triggerKind !== SignatureHelpTriggerKind.TriggerCharacter`*/
     #[serde(rename = "triggerCharacter")]
     #[serde(default)]
     pub trigger_character: Option<String>,
     /**`true` if signature help was already showing when it was triggered.
 
-    Retriggers occurs when the signature help is already active and can be caused by actions such as
-    typing a trigger character, a cursor move, or document content changes.*/
+Retriggers occurs when the signature help is already active and can be caused by actions such as
+typing a trigger character, a cursor move, or document content changes.*/
     #[serde(rename = "isRetrigger")]
     pub is_retrigger: bool,
     /**The currently active `SignatureHelp`.
 
-    The `activeSignatureHelp` has its `SignatureHelp.activeSignature` field updated based on
-    the user navigating through available signatures.*/
+The `activeSignatureHelp` has its `SignatureHelp.activeSignature` field updated based on
+the user navigating through available signatures.*/
     #[serde(rename = "activeSignatureHelp")]
     #[serde(default)]
     pub active_signature_help: Option<SignatureHelp>,
@@ -4396,29 +5585,29 @@ a set of parameters.*/
 #[serde(rename_all = "camelCase")]
 pub struct SignatureInformation {
     /**The label of this signature. Will be shown in
-    the UI.*/
+the UI.*/
     pub label: String,
     /**The human-readable doc-comment of this signature. Will be shown
-    in the UI but can be omitted.*/
+in the UI but can be omitted.*/
     #[serde(default)]
-    pub documentation: Option<LspAny>,
+    pub documentation: Option<MarkupContentOrString>,
     ///The parameters of this signature.
     #[serde(default)]
     pub parameters: Option<Vec<ParameterInformation>>,
     /**The index of the active parameter.
 
-    If `null`, no parameter of the signature is active (for example a named
-    argument that does not match any declared parameters). This is only valid
-    if the client specifies the client capability
-    `textDocument.signatureHelp.noActiveParameterSupport === true`
+If `null`, no parameter of the signature is active (for example a named
+argument that does not match any declared parameters). This is only valid
+if the client specifies the client capability
+`textDocument.signatureHelp.noActiveParameterSupport === true`
 
-    If provided (or `null`), this is used in place of
-    `SignatureHelp.activeParameter`.
+If provided (or `null`), this is used in place of
+`SignatureHelp.activeParameter`.
 
-    @since 3.16.0*/
+@since 3.16.0*/
     #[serde(rename = "activeParameter")]
     #[serde(default)]
-    pub active_parameter: Option<LspAny>,
+    pub active_parameter: Option<Option<Uinteger>>,
 }
 ///Server Capabilities for a {@link SignatureHelpRequest}.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -4432,10 +5621,10 @@ pub struct SignatureHelpOptions {
     pub trigger_characters: Option<Vec<String>>,
     /**List of characters that re-trigger signature help.
 
-    These trigger characters are only active when signature help is already showing. All trigger characters
-    are also counted as re-trigger characters.
+These trigger characters are only active when signature help is already showing. All trigger characters
+are also counted as re-trigger characters.
 
-    @since 3.15.0*/
+@since 3.15.0*/
     #[serde(rename = "retriggerCharacters")]
     #[serde(default)]
     pub retrigger_characters: Option<Vec<String>>,
@@ -4480,13 +5669,13 @@ pub struct BaseSymbolInformation {
     pub kind: SymbolKind,
     /**Tags for this symbol.
 
-    @since 3.16.0*/
+@since 3.16.0*/
     #[serde(default)]
     pub tags: Option<Vec<SymbolTag>>,
     /**The name of the symbol containing this symbol. This information is for
-    user interface purposes (e.g. to render a qualifier in the user interface
-    if necessary). It can't be used to re-infer a hierarchy for the document
-    symbols.*/
+user interface purposes (e.g. to render a qualifier in the user interface
+if necessary). It can't be used to re-infer a hierarchy for the document
+symbols.*/
     #[serde(rename = "containerName")]
     #[serde(default)]
     pub container_name: Option<String>,
@@ -4498,9 +5687,9 @@ pub struct DocumentSymbolOptions {
     #[serde(flatten)]
     pub work_done_progress_options_mixin: WorkDoneProgressOptions,
     /**A human-readable string that is shown when multiple outlines trees
-    are shown for the same document.
+are shown for the same document.
 
-    @since 3.16.0*/
+@since 3.16.0*/
     #[serde(default)]
     pub label: Option<String>,
 }
@@ -4510,20 +5699,20 @@ a {@link CodeActionProvider.provideCodeActions code action} is run.*/
 #[serde(rename_all = "camelCase")]
 pub struct CodeActionContext {
     /**An array of diagnostics known on the client side overlapping the range provided to the
-    `textDocument/codeAction` request. They are provided so that the server knows which
-    errors are currently presented to the user for the given range. There is no guarantee
-    that these accurately reflect the error state of the resource. The primary parameter
-    to compute code actions is the provided range.*/
+`textDocument/codeAction` request. They are provided so that the server knows which
+errors are currently presented to the user for the given range. There is no guarantee
+that these accurately reflect the error state of the resource. The primary parameter
+to compute code actions is the provided range.*/
     pub diagnostics: Vec<Diagnostic>,
     /**Requested kind of actions to return.
 
-    Actions not of this kind are filtered out by the client before being shown. So servers
-    can omit computing them.*/
+Actions not of this kind are filtered out by the client before being shown. So servers
+can omit computing them.*/
     #[serde(default)]
     pub only: Option<Vec<CodeActionKind>>,
     /**The reason why code actions were requested.
 
-    @since 3.17.0*/
+@since 3.17.0*/
     #[serde(rename = "triggerKind")]
     #[serde(default)]
     pub trigger_kind: Option<CodeActionTriggerKind>,
@@ -4536,7 +5725,7 @@ pub struct CodeActionContext {
 pub struct CodeActionDisabled {
     /**Human readable description of why the code action is currently disabled.
 
-    This is displayed in the code actions UI.*/
+This is displayed in the code actions UI.*/
     pub reason: String,
 }
 ///Provider options for a {@link CodeActionRequest}.
@@ -4547,31 +5736,31 @@ pub struct CodeActionOptions {
     pub work_done_progress_options_mixin: WorkDoneProgressOptions,
     /**CodeActionKinds that this server may return.
 
-    The list of kinds may be generic, such as `CodeActionKind.Refactor`, or the server
-    may list out every specific kind they provide.*/
+The list of kinds may be generic, such as `CodeActionKind.Refactor`, or the server
+may list out every specific kind they provide.*/
     #[serde(rename = "codeActionKinds")]
     #[serde(default)]
     pub code_action_kinds: Option<Vec<CodeActionKind>>,
     /**Static documentation for a class of code actions.
 
-    Documentation from the provider should be shown in the code actions menu if either:
+Documentation from the provider should be shown in the code actions menu if either:
 
-    - Code actions of `kind` are requested by the editor. In this case, the editor will show the documentation that
-      most closely matches the requested code action kind. For example, if a provider has documentation for
-      both `Refactor` and `RefactorExtract`, when the user requests code actions for `RefactorExtract`,
-      the editor will use the documentation for `RefactorExtract` instead of the documentation for `Refactor`.
+- Code actions of `kind` are requested by the editor. In this case, the editor will show the documentation that
+  most closely matches the requested code action kind. For example, if a provider has documentation for
+  both `Refactor` and `RefactorExtract`, when the user requests code actions for `RefactorExtract`,
+  the editor will use the documentation for `RefactorExtract` instead of the documentation for `Refactor`.
 
-    - Any code actions of `kind` are returned by the provider.
+- Any code actions of `kind` are returned by the provider.
 
-    At most one documentation entry should be shown per provider.
+At most one documentation entry should be shown per provider.
 
-    @since 3.18.0*/
+@since 3.18.0*/
     #[serde(default)]
     pub documentation: Option<Vec<CodeActionKindDocumentation>>,
     /**The server provides support to resolve additional
-    information for a code action.
+information for a code action.
 
-    @since 3.16.0*/
+@since 3.16.0*/
     #[serde(rename = "resolveProvider")]
     #[serde(default)]
     pub resolve_provider: Option<bool>,
@@ -4591,9 +5780,9 @@ pub struct WorkspaceSymbolOptions {
     #[serde(flatten)]
     pub work_done_progress_options_mixin: WorkDoneProgressOptions,
     /**The server provides support to resolve additional
-    information for a workspace symbol.
+information for a workspace symbol.
 
-    @since 3.17.0*/
+@since 3.17.0*/
     #[serde(rename = "resolveProvider")]
     #[serde(default)]
     pub resolve_provider: Option<bool>,
@@ -4632,19 +5821,19 @@ pub struct FormattingOptions {
     pub insert_spaces: bool,
     /**Trim trailing whitespace on a line.
 
-    @since 3.15.0*/
+@since 3.15.0*/
     #[serde(rename = "trimTrailingWhitespace")]
     #[serde(default)]
     pub trim_trailing_whitespace: Option<bool>,
     /**Insert a newline character at the end of the file if one does not exist.
 
-    @since 3.15.0*/
+@since 3.15.0*/
     #[serde(rename = "insertFinalNewline")]
     #[serde(default)]
     pub insert_final_newline: Option<bool>,
     /**Trim all newlines after the final newline at the end of the file.
 
-    @since 3.15.0*/
+@since 3.15.0*/
     #[serde(rename = "trimFinalNewlines")]
     #[serde(default)]
     pub trim_final_newlines: Option<bool>,
@@ -4664,7 +5853,7 @@ pub struct DocumentRangeFormattingOptions {
     pub work_done_progress_options_mixin: WorkDoneProgressOptions,
     /**Whether the server supports formatting multiple ranges at once.
 
-    @since 3.18.0*/
+@since 3.18.0*/
     #[serde(rename = "rangesSupport")]
     #[serde(default)]
     pub ranges_support: Option<bool>,
@@ -4689,7 +5878,7 @@ pub struct RenameOptions {
     pub work_done_progress_options_mixin: WorkDoneProgressOptions,
     /**Renames should be checked and tested before being executed.
 
-    @since version 3.12.0*/
+@since version 3.12.0*/
     #[serde(rename = "prepareProvider")]
     #[serde(default)]
     pub prepare_provider: Option<bool>,
@@ -4756,11 +5945,11 @@ pub struct OptionalVersionedTextDocumentIdentifier {
     #[serde(flatten)]
     pub text_document_identifier_base: TextDocumentIdentifier,
     /**The version number of this document. If a versioned text document identifier
-    is sent from the server to the client and the file is not open in the editor
-    (the server has not received an open notification before) the server can send
-    `null` to indicate that the version is unknown and the content on disk is the
-    truth (as specified with document content ownership).*/
-    pub version: LspAny,
+is sent from the server to the client and the file is not open in the editor
+(the server has not received an open notification before) the server can send
+`null` to indicate that the version is unknown and the content on disk is the
+truth (as specified with document content ownership).*/
+    pub version: Option<Integer>,
 }
 /**A special text edit with an additional change annotation.
 
@@ -4797,7 +5986,7 @@ pub struct ResourceOperation {
     pub kind: String,
     /**An optional annotation identifier describing the operation.
 
-    @since 3.16.0*/
+@since 3.16.0*/
     #[serde(rename = "annotationId")]
     #[serde(default)]
     pub annotation_id: Option<ChangeAnnotationIdentifier>,
@@ -4849,7 +6038,7 @@ pub struct FileOperationPattern {
     pub glob: String,
     /**Whether to match files or folders with this pattern.
 
-    Matches both if undefined.*/
+Matches both if undefined.*/
     #[serde(default)]
     pub matches: Option<FileOperationPatternKind>,
     ///Additional options used during matching.
@@ -4867,8 +6056,8 @@ pub struct WorkspaceFullDocumentDiagnosticReport {
     ///The URI for which diagnostic information is reported.
     pub uri: DocumentUri,
     /**The version number for which the diagnostics are reported.
-    If the document is not marked as open `null` can be provided.*/
-    pub version: LspAny,
+If the document is not marked as open `null` can be provided.*/
+    pub version: Option<Integer>,
 }
 /**An unchanged document diagnostic report for a workspace diagnostic result.
 
@@ -4881,8 +6070,8 @@ pub struct WorkspaceUnchangedDocumentDiagnosticReport {
     ///The URI for which diagnostic information is reported.
     pub uri: DocumentUri,
     /**The version number for which the diagnostics are reported.
-    If the document is not marked as open `null` can be provided.*/
-    pub version: LspAny,
+If the document is not marked as open `null` can be provided.*/
+    pub version: Option<Integer>,
 }
 /**A notebook cell.
 
@@ -4897,15 +6086,15 @@ pub struct NotebookCell {
     ///The cell's kind
     pub kind: NotebookCellKind,
     /**The URI of the cell's text document
-    content.*/
+content.*/
     pub document: DocumentUri,
     /**Additional metadata stored with the cell.
 
-    Note: should always be an object literal (e.g. LSPObject)*/
+Note: should always be an object literal (e.g. LSPObject)*/
     #[serde(default)]
     pub metadata: Option<LSPObject>,
     /**Additional execution summary information
-    if supported by the client.*/
+if supported by the client.*/
     #[serde(rename = "executionSummary")]
     #[serde(default)]
     pub execution_summary: Option<ExecutionSummary>,
@@ -4915,9 +6104,9 @@ pub struct NotebookCell {
 #[serde(rename_all = "camelCase")]
 pub struct NotebookDocumentFilterWithNotebook {
     /**The notebook to be synced If a string
-    value is provided it matches against the
-    notebook type. '*' matches every notebook.*/
-    pub notebook: LspAny,
+value is provided it matches against the
+notebook type. '*' matches every notebook.*/
+    pub notebook: NotebookDocumentFilterOrString,
     ///The cells of the matching notebook to be synced.
     #[serde(default)]
     pub cells: Option<Vec<NotebookCellLanguage>>,
@@ -4927,10 +6116,10 @@ pub struct NotebookDocumentFilterWithNotebook {
 #[serde(rename_all = "camelCase")]
 pub struct NotebookDocumentFilterWithCells {
     /**The notebook to be synced If a string
-    value is provided it matches against the
-    notebook type. '*' matches every notebook.*/
+value is provided it matches against the
+notebook type. '*' matches every notebook.*/
     #[serde(default)]
-    pub notebook: Option<LspAny>,
+    pub notebook: Option<NotebookDocumentFilterOrString>,
     ///The cells of the matching notebook to be synced.
     pub cells: Vec<NotebookCellLanguage>,
 }
@@ -4941,11 +6130,11 @@ pub struct NotebookDocumentFilterWithCells {
 #[serde(rename_all = "camelCase")]
 pub struct NotebookDocumentCellChanges {
     /**Changes to the cell structure to add or
-    remove cells.*/
+remove cells.*/
     #[serde(default)]
     pub structure: Option<NotebookDocumentCellChangeStructure>,
     /**Changes to notebook cells properties like its
-    kind, execution summary or metadata.*/
+kind, execution summary or metadata.*/
     #[serde(default)]
     pub data: Option<Vec<NotebookCell>>,
     ///Changes to the text content of notebook cells.
@@ -4990,7 +6179,7 @@ pub struct ClientCapabilities {
     pub text_document: Option<TextDocumentClientCapabilities>,
     /**Capabilities specific to the notebook document support.
 
-    @since 3.17.0*/
+@since 3.17.0*/
     #[serde(rename = "notebookDocument")]
     #[serde(default)]
     pub notebook_document: Option<NotebookDocumentClientCapabilities>,
@@ -4999,7 +6188,7 @@ pub struct ClientCapabilities {
     pub window: Option<WindowClientCapabilities>,
     /**General client capabilities.
 
-    @since 3.16.0*/
+@since 3.16.0*/
     #[serde(default)]
     pub general: Option<GeneralClientCapabilities>,
     ///Experimental client capabilities.
@@ -5010,28 +6199,28 @@ pub struct ClientCapabilities {
 #[serde(rename_all = "camelCase")]
 pub struct TextDocumentSyncOptions {
     /**Open and close notifications are sent to the server. If omitted open close notification should not
-    be sent.*/
+be sent.*/
     #[serde(rename = "openClose")]
     #[serde(default)]
     pub open_close: Option<bool>,
     /**Change notifications are sent to the server. See TextDocumentSyncKind.None, TextDocumentSyncKind.Full
-    and TextDocumentSyncKind.Incremental. If omitted it defaults to TextDocumentSyncKind.None.*/
+and TextDocumentSyncKind.Incremental. If omitted it defaults to TextDocumentSyncKind.None.*/
     #[serde(default)]
     pub change: Option<TextDocumentSyncKind>,
     /**If present will save notifications are sent to the server. If omitted the notification should not be
-    sent.*/
+sent.*/
     #[serde(rename = "willSave")]
     #[serde(default)]
     pub will_save: Option<bool>,
     /**If present will save wait until requests are sent to the server. If omitted the request should not be
-    sent.*/
+sent.*/
     #[serde(rename = "willSaveWaitUntil")]
     #[serde(default)]
     pub will_save_wait_until: Option<bool>,
     /**If present save notifications are sent to the server. If omitted the notification should not be
-    sent.*/
+sent.*/
     #[serde(default)]
-    pub save: Option<LspAny>,
+    pub save: Option<BooleanOrSaveOptions>,
 }
 /**Defines workspace specific capabilities of the server.
 
@@ -5041,22 +6230,24 @@ pub struct TextDocumentSyncOptions {
 pub struct WorkspaceOptions {
     /**The server supports workspace folder.
 
-    @since 3.6.0*/
+@since 3.6.0*/
     #[serde(rename = "workspaceFolders")]
     #[serde(default)]
     pub workspace_folders: Option<WorkspaceFoldersServerCapabilities>,
     /**The server is interested in notifications/requests for operations on files.
 
-    @since 3.16.0*/
+@since 3.16.0*/
     #[serde(rename = "fileOperations")]
     #[serde(default)]
     pub file_operations: Option<FileOperationOptions>,
     /**The server supports the `workspace/textDocumentContent` request.
 
-    @since 3.18.0*/
+@since 3.18.0*/
     #[serde(rename = "textDocumentContent")]
     #[serde(default)]
-    pub text_document_content: Option<LspAny>,
+    pub text_document_content: Option<
+        TextDocumentContentOptionsOrTextDocumentContentRegistrationOptions,
+    >,
 }
 ///@since 3.18.0
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -5066,7 +6257,7 @@ pub struct TextDocumentContentChangePartial {
     pub range: Range,
     /**The optional length of the range that got replaced.
 
-    @deprecated use range instead.*/
+@deprecated use range instead.*/
     #[serde(rename = "rangeLength")]
     #[serde(default)]
     pub range_length: Option<Uinteger>,
@@ -5114,10 +6305,10 @@ pub struct EditRangeWithInsertReplace {
 #[serde(rename_all = "camelCase")]
 pub struct ServerCompletionItemOptions {
     /**The server has support for completion item label
-    details (see also `CompletionItemLabelDetails`) when
-    receiving a completion item in a resolve call.
+details (see also `CompletionItemLabelDetails`) when
+receiving a completion item in a resolve call.
 
-    @since 3.17.0*/
+@since 3.17.0*/
     #[serde(rename = "labelDetailsSupport")]
     #[serde(default)]
     pub label_details_support: Option<bool>,
@@ -5137,21 +6328,21 @@ have a label and a doc-comment.*/
 pub struct ParameterInformation {
     /**The label of this parameter information.
 
-    Either a string or an inclusive start and exclusive end offsets within its containing
-    signature label. (see SignatureInformation.label). The offsets are based on a UTF-16
-    string representation as `Position` and `Range` does.
+Either a string or an inclusive start and exclusive end offsets within its containing
+signature label. (see SignatureInformation.label). The offsets are based on a UTF-16
+string representation as `Position` and `Range` does.
 
-    To avoid ambiguities a server should use the [start, end] offset value instead of using
-    a substring. Whether a client support this is controlled via `labelOffsetSupport` client
-    capability.
+To avoid ambiguities a server should use the [start, end] offset value instead of using
+a substring. Whether a client support this is controlled via `labelOffsetSupport` client
+capability.
 
-    *Note*: a label of type string should be a substring of its containing signature label.
-    Its intended use case is to highlight the parameter label part in the `SignatureInformation.label`.*/
-    pub label: LspAny,
+*Note*: a label of type string should be a substring of its containing signature label.
+Its intended use case is to highlight the parameter label part in the `SignatureInformation.label`.*/
+    pub label: StringOrTupleOfUintegerAndUinteger,
     /**The human-readable doc-comment of this parameter. Will be shown
-    in the UI but can be omitted.*/
+in the UI but can be omitted.*/
     #[serde(default)]
-    pub documentation: Option<LspAny>,
+    pub documentation: Option<MarkupContentOrString>,
 }
 /**Documentation for a class of code actions.
 
@@ -5161,13 +6352,13 @@ pub struct ParameterInformation {
 pub struct CodeActionKindDocumentation {
     /**The kind of the code action being documented.
 
-    If the kind is generic, such as `CodeActionKind.Refactor`, the documentation will be shown whenever any
-    refactorings are returned. If the kind if more specific, such as `CodeActionKind.RefactorExtract`, the
-    documentation will only be shown when extract refactoring code actions are returned.*/
+If the kind is generic, such as `CodeActionKind.Refactor`, the documentation will be shown whenever any
+refactorings are returned. If the kind if more specific, such as `CodeActionKind.RefactorExtract`, the
+documentation will only be shown when extract refactoring code actions are returned.*/
     pub kind: CodeActionKind,
     /**Command that is ued to display the documentation to the user.
 
-    The title of this documentation code action is taken from {@linkcode Command.title}*/
+The title of this documentation code action is taken from {@linkcode Command.title}*/
     pub command: Command,
 }
 /**A notebook cell text document filter denotes a cell text
@@ -5178,14 +6369,14 @@ document by different properties.
 #[serde(rename_all = "camelCase")]
 pub struct NotebookCellTextDocumentFilter {
     /**A filter that matches against the notebook
-    containing the notebook cell. If a string
-    value is provided it matches against the
-    notebook type. '*' matches every notebook.*/
-    pub notebook: LspAny,
+containing the notebook cell. If a string
+value is provided it matches against the
+notebook type. '*' matches every notebook.*/
+    pub notebook: NotebookDocumentFilterOrString,
     /**A language id like `python`.
 
-    Will be matched against the language id of the
-    notebook cell document. '*' matches every language.*/
+Will be matched against the language id of the
+notebook cell document. '*' matches every language.*/
     #[serde(default)]
     pub language: Option<String>,
 }
@@ -5204,12 +6395,12 @@ pub struct FileOperationPatternOptions {
 #[serde(rename_all = "camelCase")]
 pub struct ExecutionSummary {
     /**A strict monotonically increasing value
-    indicating the execution order of a cell
-    inside a notebook.*/
+indicating the execution order of a cell
+inside a notebook.*/
     #[serde(rename = "executionOrder")]
     pub execution_order: Uinteger,
     /**Whether the execution was successful or
-    not if known by the client.*/
+not if known by the client.*/
     #[serde(default)]
     pub success: Option<bool>,
 }
@@ -5250,8 +6441,8 @@ pub struct NotebookDocumentCellContentChanges {
 #[serde(rename_all = "camelCase")]
 pub struct WorkspaceClientCapabilities {
     /**The client supports applying batch edits
-    to the workspace by supporting the request
-    'workspace/applyEdit'*/
+to the workspace by supporting the request
+'workspace/applyEdit'*/
     #[serde(rename = "applyEdit")]
     #[serde(default)]
     pub apply_edit: Option<bool>,
@@ -5276,64 +6467,64 @@ pub struct WorkspaceClientCapabilities {
     pub execute_command: Option<ExecuteCommandClientCapabilities>,
     /**The client has support for workspace folders.
 
-    @since 3.6.0*/
+@since 3.6.0*/
     #[serde(rename = "workspaceFolders")]
     #[serde(default)]
     pub workspace_folders: Option<bool>,
     /**The client supports `workspace/configuration` requests.
 
-    @since 3.6.0*/
+@since 3.6.0*/
     #[serde(default)]
     pub configuration: Option<bool>,
     /**Capabilities specific to the semantic token requests scoped to the
-    workspace.
+workspace.
 
-    @since 3.16.0.*/
+@since 3.16.0.*/
     #[serde(rename = "semanticTokens")]
     #[serde(default)]
     pub semantic_tokens: Option<SemanticTokensWorkspaceClientCapabilities>,
     /**Capabilities specific to the code lens requests scoped to the
-    workspace.
+workspace.
 
-    @since 3.16.0.*/
+@since 3.16.0.*/
     #[serde(rename = "codeLens")]
     #[serde(default)]
     pub code_lens: Option<CodeLensWorkspaceClientCapabilities>,
     /**The client has support for file notifications/requests for user operations on files.
 
-    Since 3.16.0*/
+Since 3.16.0*/
     #[serde(rename = "fileOperations")]
     #[serde(default)]
     pub file_operations: Option<FileOperationClientCapabilities>,
     /**Capabilities specific to the inline values requests scoped to the
-    workspace.
+workspace.
 
-    @since 3.17.0.*/
+@since 3.17.0.*/
     #[serde(rename = "inlineValue")]
     #[serde(default)]
     pub inline_value: Option<InlineValueWorkspaceClientCapabilities>,
     /**Capabilities specific to the inlay hint requests scoped to the
-    workspace.
+workspace.
 
-    @since 3.17.0.*/
+@since 3.17.0.*/
     #[serde(rename = "inlayHint")]
     #[serde(default)]
     pub inlay_hint: Option<InlayHintWorkspaceClientCapabilities>,
     /**Capabilities specific to the diagnostic requests scoped to the
-    workspace.
+workspace.
 
-    @since 3.17.0.*/
+@since 3.17.0.*/
     #[serde(default)]
     pub diagnostics: Option<DiagnosticWorkspaceClientCapabilities>,
     /**Capabilities specific to the folding range requests scoped to the workspace.
 
-    @since 3.18.0*/
+@since 3.18.0*/
     #[serde(rename = "foldingRange")]
     #[serde(default)]
     pub folding_range: Option<FoldingRangeWorkspaceClientCapabilities>,
     /**Capabilities specific to the `workspace/textDocumentContent` request.
 
-    @since 3.18.0*/
+@since 3.18.0*/
     #[serde(rename = "textDocumentContent")]
     #[serde(default)]
     pub text_document_content: Option<TextDocumentContentClientCapabilities>,
@@ -5347,7 +6538,7 @@ pub struct TextDocumentClientCapabilities {
     pub synchronization: Option<TextDocumentSyncClientCapabilities>,
     /**Defines which filters the client supports.
 
-    @since 3.18.0*/
+@since 3.18.0*/
     #[serde(default)]
     pub filters: Option<TextDocumentFilterClientCapabilities>,
     ///Capabilities specific to the `textDocument/completion` request.
@@ -5362,7 +6553,7 @@ pub struct TextDocumentClientCapabilities {
     pub signature_help: Option<SignatureHelpClientCapabilities>,
     /**Capabilities specific to the `textDocument/declaration` request.
 
-    @since 3.14.0*/
+@since 3.14.0*/
     #[serde(default)]
     pub declaration: Option<DeclarationClientCapabilities>,
     ///Capabilities specific to the `textDocument/definition` request.
@@ -5370,13 +6561,13 @@ pub struct TextDocumentClientCapabilities {
     pub definition: Option<DefinitionClientCapabilities>,
     /**Capabilities specific to the `textDocument/typeDefinition` request.
 
-    @since 3.6.0*/
+@since 3.6.0*/
     #[serde(rename = "typeDefinition")]
     #[serde(default)]
     pub type_definition: Option<TypeDefinitionClientCapabilities>,
     /**Capabilities specific to the `textDocument/implementation` request.
 
-    @since 3.6.0*/
+@since 3.6.0*/
     #[serde(default)]
     pub implementation: Option<ImplementationClientCapabilities>,
     ///Capabilities specific to the `textDocument/references` request.
@@ -5403,9 +6594,9 @@ pub struct TextDocumentClientCapabilities {
     #[serde(default)]
     pub document_link: Option<DocumentLinkClientCapabilities>,
     /**Capabilities specific to the `textDocument/documentColor` and the
-    `textDocument/colorPresentation` request.
+`textDocument/colorPresentation` request.
 
-    @since 3.6.0*/
+@since 3.6.0*/
     #[serde(rename = "colorProvider")]
     #[serde(default)]
     pub color_provider: Option<DocumentColorClientCapabilities>,
@@ -5425,13 +6616,13 @@ pub struct TextDocumentClientCapabilities {
     pub rename: Option<RenameClientCapabilities>,
     /**Capabilities specific to the `textDocument/foldingRange` request.
 
-    @since 3.10.0*/
+@since 3.10.0*/
     #[serde(rename = "foldingRange")]
     #[serde(default)]
     pub folding_range: Option<FoldingRangeClientCapabilities>,
     /**Capabilities specific to the `textDocument/selectionRange` request.
 
-    @since 3.15.0*/
+@since 3.15.0*/
     #[serde(rename = "selectionRange")]
     #[serde(default)]
     pub selection_range: Option<SelectionRangeClientCapabilities>,
@@ -5441,53 +6632,53 @@ pub struct TextDocumentClientCapabilities {
     pub publish_diagnostics: Option<PublishDiagnosticsClientCapabilities>,
     /**Capabilities specific to the various call hierarchy requests.
 
-    @since 3.16.0*/
+@since 3.16.0*/
     #[serde(rename = "callHierarchy")]
     #[serde(default)]
     pub call_hierarchy: Option<CallHierarchyClientCapabilities>,
     /**Capabilities specific to the various semantic token request.
 
-    @since 3.16.0*/
+@since 3.16.0*/
     #[serde(rename = "semanticTokens")]
     #[serde(default)]
     pub semantic_tokens: Option<SemanticTokensClientCapabilities>,
     /**Capabilities specific to the `textDocument/linkedEditingRange` request.
 
-    @since 3.16.0*/
+@since 3.16.0*/
     #[serde(rename = "linkedEditingRange")]
     #[serde(default)]
     pub linked_editing_range: Option<LinkedEditingRangeClientCapabilities>,
     /**Client capabilities specific to the `textDocument/moniker` request.
 
-    @since 3.16.0*/
+@since 3.16.0*/
     #[serde(default)]
     pub moniker: Option<MonikerClientCapabilities>,
     /**Capabilities specific to the various type hierarchy requests.
 
-    @since 3.17.0*/
+@since 3.17.0*/
     #[serde(rename = "typeHierarchy")]
     #[serde(default)]
     pub type_hierarchy: Option<TypeHierarchyClientCapabilities>,
     /**Capabilities specific to the `textDocument/inlineValue` request.
 
-    @since 3.17.0*/
+@since 3.17.0*/
     #[serde(rename = "inlineValue")]
     #[serde(default)]
     pub inline_value: Option<InlineValueClientCapabilities>,
     /**Capabilities specific to the `textDocument/inlayHint` request.
 
-    @since 3.17.0*/
+@since 3.17.0*/
     #[serde(rename = "inlayHint")]
     #[serde(default)]
     pub inlay_hint: Option<InlayHintClientCapabilities>,
     /**Capabilities specific to the diagnostic pull model.
 
-    @since 3.17.0*/
+@since 3.17.0*/
     #[serde(default)]
     pub diagnostic: Option<DiagnosticClientCapabilities>,
     /**Client capabilities specific to inline completions.
 
-    @since 3.18.0*/
+@since 3.18.0*/
     #[serde(rename = "inlineCompletion")]
     #[serde(default)]
     pub inline_completion: Option<InlineCompletionClientCapabilities>,
@@ -5500,33 +6691,33 @@ pub struct TextDocumentClientCapabilities {
 pub struct NotebookDocumentClientCapabilities {
     /**Capabilities specific to notebook document synchronization
 
-    @since 3.17.0*/
+@since 3.17.0*/
     pub synchronization: NotebookDocumentSyncClientCapabilities,
 }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct WindowClientCapabilities {
     /**It indicates whether the client supports server initiated
-    progress using the `window/workDoneProgress/create` request.
+progress using the `window/workDoneProgress/create` request.
 
-    The capability also controls Whether client supports handling
-    of progress notifications. If set servers are allowed to report a
-    `workDoneProgress` property in the request specific server
-    capabilities.
+The capability also controls Whether client supports handling
+of progress notifications. If set servers are allowed to report a
+`workDoneProgress` property in the request specific server
+capabilities.
 
-    @since 3.15.0*/
+@since 3.15.0*/
     #[serde(rename = "workDoneProgress")]
     #[serde(default)]
     pub work_done_progress: Option<bool>,
     /**Capabilities specific to the showMessage request.
 
-    @since 3.16.0*/
+@since 3.16.0*/
     #[serde(rename = "showMessage")]
     #[serde(default)]
     pub show_message: Option<ShowMessageRequestClientCapabilities>,
     /**Capabilities specific to the showDocument request.
 
-    @since 3.16.0*/
+@since 3.16.0*/
     #[serde(rename = "showDocument")]
     #[serde(default)]
     pub show_document: Option<ShowDocumentClientCapabilities>,
@@ -5538,43 +6729,43 @@ pub struct WindowClientCapabilities {
 #[serde(rename_all = "camelCase")]
 pub struct GeneralClientCapabilities {
     /**Client capability that signals how the client
-    handles stale requests (e.g. a request
-    for which the client will not process the response
-    anymore since the information is outdated).
+handles stale requests (e.g. a request
+for which the client will not process the response
+anymore since the information is outdated).
 
-    @since 3.17.0*/
+@since 3.17.0*/
     #[serde(rename = "staleRequestSupport")]
     #[serde(default)]
     pub stale_request_support: Option<StaleRequestSupportOptions>,
     /**Client capabilities specific to regular expressions.
 
-    @since 3.16.0*/
+@since 3.16.0*/
     #[serde(rename = "regularExpressions")]
     #[serde(default)]
     pub regular_expressions: Option<RegularExpressionsClientCapabilities>,
     /**Client capabilities specific to the client's markdown parser.
 
-    @since 3.16.0*/
+@since 3.16.0*/
     #[serde(default)]
     pub markdown: Option<MarkdownClientCapabilities>,
     /**The position encodings supported by the client. Client and server
-    have to agree on the same position encoding to ensure that offsets
-    (e.g. character position in a line) are interpreted the same on both
-    sides.
+have to agree on the same position encoding to ensure that offsets
+(e.g. character position in a line) are interpreted the same on both
+sides.
 
-    To keep the protocol backwards compatible the following applies: if
-    the value 'utf-16' is missing from the array of position encodings
-    servers can assume that the client supports UTF-16. UTF-16 is
-    therefore a mandatory encoding.
+To keep the protocol backwards compatible the following applies: if
+the value 'utf-16' is missing from the array of position encodings
+servers can assume that the client supports UTF-16. UTF-16 is
+therefore a mandatory encoding.
 
-    If omitted it defaults to ['utf-16'].
+If omitted it defaults to ['utf-16'].
 
-    Implementation considerations: since the conversion from one encoding
-    into another requires the content of the file / line the conversion
-    is best done where the file is read which is usually on the server
-    side.
+Implementation considerations: since the conversion from one encoding
+into another requires the content of the file / line the conversion
+is best done where the file is read which is usually on the server
+side.
 
-    @since 3.17.0*/
+@since 3.17.0*/
     #[serde(rename = "positionEncodings")]
     #[serde(default)]
     pub position_encodings: Option<Vec<PositionEncodingKind>>,
@@ -5586,15 +6777,15 @@ pub struct WorkspaceFoldersServerCapabilities {
     #[serde(default)]
     pub supported: Option<bool>,
     /**Whether the server wants to receive workspace folder
-    change notifications.
+change notifications.
 
-    If a string is provided the string is treated as an ID
-    under which the notification is registered on the client
-    side. The ID can be used to unregister for these events
-    using the `client/unregisterCapability` request.*/
+If a string is provided the string is treated as an ID
+under which the notification is registered on the client
+side. The ID can be used to unregister for these events
+using the `client/unregisterCapability` request.*/
     #[serde(rename = "changeNotifications")]
     #[serde(default)]
-    pub change_notifications: Option<LspAny>,
+    pub change_notifications: Option<BooleanOrString>,
 }
 /**Options for notifications/requests for user operations on files.
 
@@ -5636,9 +6827,9 @@ folder root, but it can be another absolute URI as well.
 #[serde(rename_all = "camelCase")]
 pub struct RelativePattern {
     /**A workspace folder or a base URI to which this pattern will be matched
-    against relatively.*/
+against relatively.*/
     #[serde(rename = "baseUri")]
-    pub base_uri: LspAny,
+    pub base_uri: UriOrWorkspaceFolder,
     ///The actual glob pattern;
     pub pattern: Pattern,
 }
@@ -5759,45 +6950,45 @@ pub struct WorkspaceEditClientCapabilities {
     #[serde(default)]
     pub document_changes: Option<bool>,
     /**The resource operations the client supports. Clients should at least
-    support 'create', 'rename' and 'delete' files and folders.
+support 'create', 'rename' and 'delete' files and folders.
 
-    @since 3.13.0*/
+@since 3.13.0*/
     #[serde(rename = "resourceOperations")]
     #[serde(default)]
     pub resource_operations: Option<Vec<ResourceOperationKind>>,
     /**The failure handling strategy of a client if applying the workspace edit
-    fails.
+fails.
 
-    @since 3.13.0*/
+@since 3.13.0*/
     #[serde(rename = "failureHandling")]
     #[serde(default)]
     pub failure_handling: Option<FailureHandlingKind>,
     /**Whether the client normalizes line endings to the client specific
-    setting.
-    If set to `true` the client will normalize line ending characters
-    in a workspace edit to the client-specified new line
-    character.
+setting.
+If set to `true` the client will normalize line ending characters
+in a workspace edit to the client-specified new line
+character.
 
-    @since 3.16.0*/
+@since 3.16.0*/
     #[serde(rename = "normalizesLineEndings")]
     #[serde(default)]
     pub normalizes_line_endings: Option<bool>,
     /**Whether the client in general supports change annotations on text edits,
-    create file, rename file and delete file changes.
+create file, rename file and delete file changes.
 
-    @since 3.16.0*/
+@since 3.16.0*/
     #[serde(rename = "changeAnnotationSupport")]
     #[serde(default)]
     pub change_annotation_support: Option<ChangeAnnotationsSupportOptions>,
     /**Whether the client supports `WorkspaceEditMetadata` in `WorkspaceEdit`s.
 
-    @since 3.18.0*/
+@since 3.18.0*/
     #[serde(rename = "metadataSupport")]
     #[serde(default)]
     pub metadata_support: Option<bool>,
     /**Whether the client supports snippets as text edits.
 
-    @since 3.18.0*/
+@since 3.18.0*/
     #[serde(rename = "snippetEditSupport")]
     #[serde(default)]
     pub snippet_edit_support: Option<bool>,
@@ -5814,15 +7005,15 @@ pub struct DidChangeConfigurationClientCapabilities {
 #[serde(rename_all = "camelCase")]
 pub struct DidChangeWatchedFilesClientCapabilities {
     /**Did change watched files notification supports dynamic registration. Please note
-    that the current protocol doesn't support static configuration for file changes
-    from the server side.*/
+that the current protocol doesn't support static configuration for file changes
+from the server side.*/
     #[serde(rename = "dynamicRegistration")]
     #[serde(default)]
     pub dynamic_registration: Option<bool>,
     /**Whether the client has support for {@link  RelativePattern relative pattern}
-    or not.
+or not.
 
-    @since 3.17.0*/
+@since 3.17.0*/
     #[serde(rename = "relativePatternSupport")]
     #[serde(default)]
     pub relative_pattern_support: Option<bool>,
@@ -5840,17 +7031,17 @@ pub struct WorkspaceSymbolClientCapabilities {
     #[serde(default)]
     pub symbol_kind: Option<ClientSymbolKindOptions>,
     /**The client supports tags on `SymbolInformation`.
-    Clients supporting tags have to handle unknown tags gracefully.
+Clients supporting tags have to handle unknown tags gracefully.
 
-    @since 3.16.0*/
+@since 3.16.0*/
     #[serde(rename = "tagSupport")]
     #[serde(default)]
     pub tag_support: Option<ClientSymbolTagOptions>,
     /**The client support partial workspace symbols. The client will send the
-    request `workspaceSymbol/resolve` to the server to resolve additional
-    properties.
+request `workspaceSymbol/resolve` to the server to resolve additional
+properties.
 
-    @since 3.17.0*/
+@since 3.17.0*/
     #[serde(rename = "resolveSupport")]
     #[serde(default)]
     pub resolve_support: Option<ClientSymbolResolveOptions>,
@@ -5869,12 +7060,12 @@ pub struct ExecuteCommandClientCapabilities {
 #[serde(rename_all = "camelCase")]
 pub struct SemanticTokensWorkspaceClientCapabilities {
     /**Whether the client implementation supports a refresh request sent from
-    the server to the client.
+the server to the client.
 
-    Note that this event is global and will force the client to refresh all
-    semantic tokens currently shown. It should be used with absolute care
-    and is useful for situation where a server for example detects a project
-    wide change that requires such a calculation.*/
+Note that this event is global and will force the client to refresh all
+semantic tokens currently shown. It should be used with absolute care
+and is useful for situation where a server for example detects a project
+wide change that requires such a calculation.*/
     #[serde(rename = "refreshSupport")]
     #[serde(default)]
     pub refresh_support: Option<bool>,
@@ -5884,12 +7075,12 @@ pub struct SemanticTokensWorkspaceClientCapabilities {
 #[serde(rename_all = "camelCase")]
 pub struct CodeLensWorkspaceClientCapabilities {
     /**Whether the client implementation supports a refresh request sent from the
-    server to the client.
+server to the client.
 
-    Note that this event is global and will force the client to refresh all
-    code lenses currently shown. It should be used with absolute care and is
-    useful for situation where a server for example detect a project wide
-    change that requires such a calculation.*/
+Note that this event is global and will force the client to refresh all
+code lenses currently shown. It should be used with absolute care and is
+useful for situation where a server for example detect a project wide
+change that requires such a calculation.*/
     #[serde(rename = "refreshSupport")]
     #[serde(default)]
     pub refresh_support: Option<bool>,
@@ -5939,12 +7130,12 @@ pub struct FileOperationClientCapabilities {
 #[serde(rename_all = "camelCase")]
 pub struct InlineValueWorkspaceClientCapabilities {
     /**Whether the client implementation supports a refresh request sent from the
-    server to the client.
+server to the client.
 
-    Note that this event is global and will force the client to refresh all
-    inline values currently shown. It should be used with absolute care and is
-    useful for situation where a server for example detects a project wide
-    change that requires such a calculation.*/
+Note that this event is global and will force the client to refresh all
+inline values currently shown. It should be used with absolute care and is
+useful for situation where a server for example detects a project wide
+change that requires such a calculation.*/
     #[serde(rename = "refreshSupport")]
     #[serde(default)]
     pub refresh_support: Option<bool>,
@@ -5956,12 +7147,12 @@ pub struct InlineValueWorkspaceClientCapabilities {
 #[serde(rename_all = "camelCase")]
 pub struct InlayHintWorkspaceClientCapabilities {
     /**Whether the client implementation supports a refresh request sent from
-    the server to the client.
+the server to the client.
 
-    Note that this event is global and will force the client to refresh all
-    inlay hints currently shown. It should be used with absolute care and
-    is useful for situation where a server for example detects a project wide
-    change that requires such a calculation.*/
+Note that this event is global and will force the client to refresh all
+inlay hints currently shown. It should be used with absolute care and
+is useful for situation where a server for example detects a project wide
+change that requires such a calculation.*/
     #[serde(rename = "refreshSupport")]
     #[serde(default)]
     pub refresh_support: Option<bool>,
@@ -5973,12 +7164,12 @@ pub struct InlayHintWorkspaceClientCapabilities {
 #[serde(rename_all = "camelCase")]
 pub struct DiagnosticWorkspaceClientCapabilities {
     /**Whether the client implementation supports a refresh request sent from
-    the server to the client.
+the server to the client.
 
-    Note that this event is global and will force the client to refresh all
-    pulled diagnostics currently shown. It should be used with absolute care and
-    is useful for situation where a server for example detects a project wide
-    change that requires such a calculation.*/
+Note that this event is global and will force the client to refresh all
+pulled diagnostics currently shown. It should be used with absolute care and
+is useful for situation where a server for example detects a project wide
+change that requires such a calculation.*/
     #[serde(rename = "refreshSupport")]
     #[serde(default)]
     pub refresh_support: Option<bool>,
@@ -5990,14 +7181,14 @@ pub struct DiagnosticWorkspaceClientCapabilities {
 #[serde(rename_all = "camelCase")]
 pub struct FoldingRangeWorkspaceClientCapabilities {
     /**Whether the client implementation supports a refresh request sent from the
-    server to the client.
+server to the client.
 
-    Note that this event is global and will force the client to refresh all
-    folding ranges currently shown. It should be used with absolute care and is
-    useful for situation where a server for example detects a project wide
-    change that requires such a calculation.
+Note that this event is global and will force the client to refresh all
+folding ranges currently shown. It should be used with absolute care and is
+useful for situation where a server for example detects a project wide
+change that requires such a calculation.
 
-    @since 3.18.0*/
+@since 3.18.0*/
     #[serde(rename = "refreshSupport")]
     #[serde(default)]
     pub refresh_support: Option<bool>,
@@ -6025,8 +7216,8 @@ pub struct TextDocumentSyncClientCapabilities {
     #[serde(default)]
     pub will_save: Option<bool>,
     /**The client supports sending a will save request and
-    waits for a response providing text edits which will
-    be applied to the document before it is saved.*/
+waits for a response providing text edits which will
+be applied to the document before it is saved.*/
     #[serde(rename = "willSaveWaitUntil")]
     #[serde(default)]
     pub will_save_wait_until: Option<bool>,
@@ -6040,7 +7231,7 @@ pub struct TextDocumentSyncClientCapabilities {
 pub struct TextDocumentFilterClientCapabilities {
     /**The client supports Relative Patterns.
 
-    @since 3.18.0*/
+@since 3.18.0*/
     #[serde(rename = "relativePatternSupport")]
     #[serde(default)]
     pub relative_pattern_support: Option<bool>,
@@ -6054,7 +7245,7 @@ pub struct CompletionClientCapabilities {
     #[serde(default)]
     pub dynamic_registration: Option<bool>,
     /**The client supports the following `CompletionItem` specific
-    capabilities.*/
+capabilities.*/
     #[serde(rename = "completionItem")]
     #[serde(default)]
     pub completion_item: Option<ClientCompletionItemOptions>,
@@ -6063,22 +7254,22 @@ pub struct CompletionClientCapabilities {
     #[serde(default)]
     pub completion_item_kind: Option<ClientCompletionItemOptionsKind>,
     /**Defines how the client handles whitespace and indentation
-    when accepting a completion item that uses multi line
-    text in either `insertText` or `textEdit`.
+when accepting a completion item that uses multi line
+text in either `insertText` or `textEdit`.
 
-    @since 3.17.0*/
+@since 3.17.0*/
     #[serde(rename = "insertTextMode")]
     #[serde(default)]
     pub insert_text_mode: Option<InsertTextMode>,
     /**The client supports to send additional context information for a
-    `textDocument/completion` request.*/
+`textDocument/completion` request.*/
     #[serde(rename = "contextSupport")]
     #[serde(default)]
     pub context_support: Option<bool>,
     /**The client supports the following `CompletionList` specific
-    capabilities.
+capabilities.
 
-    @since 3.17.0*/
+@since 3.17.0*/
     #[serde(rename = "completionList")]
     #[serde(default)]
     pub completion_list: Option<CompletionListCapabilities>,
@@ -6091,7 +7282,7 @@ pub struct HoverClientCapabilities {
     #[serde(default)]
     pub dynamic_registration: Option<bool>,
     /**Client supports the following content formats for the content
-    property. The order describes the preferred format of the client.*/
+property. The order describes the preferred format of the client.*/
     #[serde(rename = "contentFormat")]
     #[serde(default)]
     pub content_format: Option<Vec<MarkupKind>>,
@@ -6105,16 +7296,16 @@ pub struct SignatureHelpClientCapabilities {
     #[serde(default)]
     pub dynamic_registration: Option<bool>,
     /**The client supports the following `SignatureInformation`
-    specific properties.*/
+specific properties.*/
     #[serde(rename = "signatureInformation")]
     #[serde(default)]
     pub signature_information: Option<ClientSignatureInformationOptions>,
     /**The client supports to send additional context information for a
-    `textDocument/signatureHelp` request. A client that opts into
-    contextSupport will also support the `retriggerCharacters` on
-    `SignatureHelpOptions`.
+`textDocument/signatureHelp` request. A client that opts into
+contextSupport will also support the `retriggerCharacters` on
+`SignatureHelpOptions`.
 
-    @since 3.15.0*/
+@since 3.15.0*/
     #[serde(rename = "contextSupport")]
     #[serde(default)]
     pub context_support: Option<bool>,
@@ -6124,8 +7315,8 @@ pub struct SignatureHelpClientCapabilities {
 #[serde(rename_all = "camelCase")]
 pub struct DeclarationClientCapabilities {
     /**Whether declaration supports dynamic registration. If this is set to `true`
-    the client supports the new `DeclarationRegistrationOptions` return value
-    for the corresponding server capability as well.*/
+the client supports the new `DeclarationRegistrationOptions` return value
+for the corresponding server capability as well.*/
     #[serde(rename = "dynamicRegistration")]
     #[serde(default)]
     pub dynamic_registration: Option<bool>,
@@ -6144,7 +7335,7 @@ pub struct DefinitionClientCapabilities {
     pub dynamic_registration: Option<bool>,
     /**The client supports additional metadata in the form of definition links.
 
-    @since 3.14.0*/
+@since 3.14.0*/
     #[serde(rename = "linkSupport")]
     #[serde(default)]
     pub link_support: Option<bool>,
@@ -6154,14 +7345,14 @@ pub struct DefinitionClientCapabilities {
 #[serde(rename_all = "camelCase")]
 pub struct TypeDefinitionClientCapabilities {
     /**Whether implementation supports dynamic registration. If this is set to `true`
-    the client supports the new `TypeDefinitionRegistrationOptions` return value
-    for the corresponding server capability as well.*/
+the client supports the new `TypeDefinitionRegistrationOptions` return value
+for the corresponding server capability as well.*/
     #[serde(rename = "dynamicRegistration")]
     #[serde(default)]
     pub dynamic_registration: Option<bool>,
     /**The client supports additional metadata in the form of definition links.
 
-    Since 3.14.0*/
+Since 3.14.0*/
     #[serde(rename = "linkSupport")]
     #[serde(default)]
     pub link_support: Option<bool>,
@@ -6171,14 +7362,14 @@ pub struct TypeDefinitionClientCapabilities {
 #[serde(rename_all = "camelCase")]
 pub struct ImplementationClientCapabilities {
     /**Whether implementation supports dynamic registration. If this is set to `true`
-    the client supports the new `ImplementationRegistrationOptions` return value
-    for the corresponding server capability as well.*/
+the client supports the new `ImplementationRegistrationOptions` return value
+for the corresponding server capability as well.*/
     #[serde(rename = "dynamicRegistration")]
     #[serde(default)]
     pub dynamic_registration: Option<bool>,
     /**The client supports additional metadata in the form of definition links.
 
-    @since 3.14.0*/
+@since 3.14.0*/
     #[serde(rename = "linkSupport")]
     #[serde(default)]
     pub link_support: Option<bool>,
@@ -6210,7 +7401,7 @@ pub struct DocumentSymbolClientCapabilities {
     #[serde(default)]
     pub dynamic_registration: Option<bool>,
     /**Specific capabilities for the `SymbolKind` in the
-    `textDocument/documentSymbol` request.*/
+`textDocument/documentSymbol` request.*/
     #[serde(rename = "symbolKind")]
     #[serde(default)]
     pub symbol_kind: Option<ClientSymbolKindOptions>,
@@ -6219,17 +7410,17 @@ pub struct DocumentSymbolClientCapabilities {
     #[serde(default)]
     pub hierarchical_document_symbol_support: Option<bool>,
     /**The client supports tags on `SymbolInformation`. Tags are supported on
-    `DocumentSymbol` if `hierarchicalDocumentSymbolSupport` is set to true.
-    Clients supporting tags have to handle unknown tags gracefully.
+`DocumentSymbol` if `hierarchicalDocumentSymbolSupport` is set to true.
+Clients supporting tags have to handle unknown tags gracefully.
 
-    @since 3.16.0*/
+@since 3.16.0*/
     #[serde(rename = "tagSupport")]
     #[serde(default)]
     pub tag_support: Option<ClientSymbolTagOptions>,
     /**The client supports an additional label presented in the UI when
-    registering a document symbol provider.
+registering a document symbol provider.
 
-    @since 3.16.0*/
+@since 3.16.0*/
     #[serde(rename = "labelSupport")]
     #[serde(default)]
     pub label_support: Option<bool>,
@@ -6243,61 +7434,61 @@ pub struct CodeActionClientCapabilities {
     #[serde(default)]
     pub dynamic_registration: Option<bool>,
     /**The client support code action literals of type `CodeAction` as a valid
-    response of the `textDocument/codeAction` request. If the property is not
-    set the request can only return `Command` literals.
+response of the `textDocument/codeAction` request. If the property is not
+set the request can only return `Command` literals.
 
-    @since 3.8.0*/
+@since 3.8.0*/
     #[serde(rename = "codeActionLiteralSupport")]
     #[serde(default)]
     pub code_action_literal_support: Option<ClientCodeActionLiteralOptions>,
     /**Whether code action supports the `isPreferred` property.
 
-    @since 3.15.0*/
+@since 3.15.0*/
     #[serde(rename = "isPreferredSupport")]
     #[serde(default)]
     pub is_preferred_support: Option<bool>,
     /**Whether code action supports the `disabled` property.
 
-    @since 3.16.0*/
+@since 3.16.0*/
     #[serde(rename = "disabledSupport")]
     #[serde(default)]
     pub disabled_support: Option<bool>,
     /**Whether code action supports the `data` property which is
-    preserved between a `textDocument/codeAction` and a
-    `codeAction/resolve` request.
+preserved between a `textDocument/codeAction` and a
+`codeAction/resolve` request.
 
-    @since 3.16.0*/
+@since 3.16.0*/
     #[serde(rename = "dataSupport")]
     #[serde(default)]
     pub data_support: Option<bool>,
     /**Whether the client supports resolving additional code action
-    properties via a separate `codeAction/resolve` request.
+properties via a separate `codeAction/resolve` request.
 
-    @since 3.16.0*/
+@since 3.16.0*/
     #[serde(rename = "resolveSupport")]
     #[serde(default)]
     pub resolve_support: Option<ClientCodeActionResolveOptions>,
     /**Whether the client honors the change annotations in
-    text edits and resource operations returned via the
-    `CodeAction#edit` property by for example presenting
-    the workspace edit in the user interface and asking
-    for confirmation.
+text edits and resource operations returned via the
+`CodeAction#edit` property by for example presenting
+the workspace edit in the user interface and asking
+for confirmation.
 
-    @since 3.16.0*/
+@since 3.16.0*/
     #[serde(rename = "honorsChangeAnnotations")]
     #[serde(default)]
     pub honors_change_annotations: Option<bool>,
     /**Whether the client supports documentation for a class of
-    code actions.
+code actions.
 
-    @since 3.18.0*/
+@since 3.18.0*/
     #[serde(rename = "documentationSupport")]
     #[serde(default)]
     pub documentation_support: Option<bool>,
     /**Client supports the tag property on a code action. Clients
-    supporting tags have to handle unknown tags gracefully.
+supporting tags have to handle unknown tags gracefully.
 
-    @since 3.18.0 - proposed*/
+@since 3.18.0 - proposed*/
     #[serde(rename = "tagSupport")]
     #[serde(default)]
     pub tag_support: Option<CodeActionTagOptions>,
@@ -6311,9 +7502,9 @@ pub struct CodeLensClientCapabilities {
     #[serde(default)]
     pub dynamic_registration: Option<bool>,
     /**Whether the client supports resolving additional code lens
-    properties via a separate `codeLens/resolve` request.
+properties via a separate `codeLens/resolve` request.
 
-    @since 3.18.0*/
+@since 3.18.0*/
     #[serde(rename = "resolveSupport")]
     #[serde(default)]
     pub resolve_support: Option<ClientCodeLensResolveOptions>,
@@ -6328,7 +7519,7 @@ pub struct DocumentLinkClientCapabilities {
     pub dynamic_registration: Option<bool>,
     /**Whether the client supports the `tooltip` property on `DocumentLink`.
 
-    @since 3.15.0*/
+@since 3.15.0*/
     #[serde(rename = "tooltipSupport")]
     #[serde(default)]
     pub tooltip_support: Option<bool>,
@@ -6337,8 +7528,8 @@ pub struct DocumentLinkClientCapabilities {
 #[serde(rename_all = "camelCase")]
 pub struct DocumentColorClientCapabilities {
     /**Whether implementation supports dynamic registration. If this is set to `true`
-    the client supports the new `DocumentColorRegistrationOptions` return value
-    for the corresponding server capability as well.*/
+the client supports the new `DocumentColorRegistrationOptions` return value
+for the corresponding server capability as well.*/
     #[serde(rename = "dynamicRegistration")]
     #[serde(default)]
     pub dynamic_registration: Option<bool>,
@@ -6362,7 +7553,7 @@ pub struct DocumentRangeFormattingClientCapabilities {
     pub dynamic_registration: Option<bool>,
     /**Whether the client supports formatting multiple ranges at once.
 
-    @since 3.18.0*/
+@since 3.18.0*/
     #[serde(rename = "rangesSupport")]
     #[serde(default)]
     pub ranges_support: Option<bool>,
@@ -6384,28 +7575,28 @@ pub struct RenameClientCapabilities {
     #[serde(default)]
     pub dynamic_registration: Option<bool>,
     /**Client supports testing for validity of rename operations
-    before execution.
+before execution.
 
-    @since 3.12.0*/
+@since 3.12.0*/
     #[serde(rename = "prepareSupport")]
     #[serde(default)]
     pub prepare_support: Option<bool>,
     /**Client supports the default behavior result.
 
-    The value indicates the default behavior used by the
-    client.
+The value indicates the default behavior used by the
+client.
 
-    @since 3.16.0*/
+@since 3.16.0*/
     #[serde(rename = "prepareSupportDefaultBehavior")]
     #[serde(default)]
     pub prepare_support_default_behavior: Option<PrepareSupportDefaultBehavior>,
     /**Whether the client honors the change annotations in
-    text edits and resource operations returned via the
-    rename request's workspace edit by for example presenting
-    the workspace edit in the user interface and asking
-    for confirmation.
+text edits and resource operations returned via the
+rename request's workspace edit by for example presenting
+the workspace edit in the user interface and asking
+for confirmation.
 
-    @since 3.16.0*/
+@since 3.16.0*/
     #[serde(rename = "honorsChangeAnnotations")]
     #[serde(default)]
     pub honors_change_annotations: Option<bool>,
@@ -6414,33 +7605,33 @@ pub struct RenameClientCapabilities {
 #[serde(rename_all = "camelCase")]
 pub struct FoldingRangeClientCapabilities {
     /**Whether implementation supports dynamic registration for folding range
-    providers. If this is set to `true` the client supports the new
-    `FoldingRangeRegistrationOptions` return value for the corresponding
-    server capability as well.*/
+providers. If this is set to `true` the client supports the new
+`FoldingRangeRegistrationOptions` return value for the corresponding
+server capability as well.*/
     #[serde(rename = "dynamicRegistration")]
     #[serde(default)]
     pub dynamic_registration: Option<bool>,
     /**The maximum number of folding ranges that the client prefers to receive
-    per document. The value serves as a hint, servers are free to follow the
-    limit.*/
+per document. The value serves as a hint, servers are free to follow the
+limit.*/
     #[serde(rename = "rangeLimit")]
     #[serde(default)]
     pub range_limit: Option<Uinteger>,
     /**If set, the client signals that it only supports folding complete lines.
-    If set, client will ignore specified `startCharacter` and `endCharacter`
-    properties in a FoldingRange.*/
+If set, client will ignore specified `startCharacter` and `endCharacter`
+properties in a FoldingRange.*/
     #[serde(rename = "lineFoldingOnly")]
     #[serde(default)]
     pub line_folding_only: Option<bool>,
     /**Specific options for the folding range kind.
 
-    @since 3.17.0*/
+@since 3.17.0*/
     #[serde(rename = "foldingRangeKind")]
     #[serde(default)]
     pub folding_range_kind: Option<ClientFoldingRangeKindOptions>,
     /**Specific options for the folding range.
 
-    @since 3.17.0*/
+@since 3.17.0*/
     #[serde(rename = "foldingRange")]
     #[serde(default)]
     pub folding_range: Option<ClientFoldingRangeOptions>,
@@ -6449,8 +7640,8 @@ pub struct FoldingRangeClientCapabilities {
 #[serde(rename_all = "camelCase")]
 pub struct SelectionRangeClientCapabilities {
     /**Whether implementation supports dynamic registration for selection range providers. If this is set to `true`
-    the client supports the new `SelectionRangeRegistrationOptions` return value for the corresponding server
-    capability as well.*/
+the client supports the new `SelectionRangeRegistrationOptions` return value for the corresponding server
+capability as well.*/
     #[serde(rename = "dynamicRegistration")]
     #[serde(default)]
     pub dynamic_registration: Option<bool>,
@@ -6462,9 +7653,9 @@ pub struct PublishDiagnosticsClientCapabilities {
     #[serde(flatten)]
     pub diagnostics_capabilities_base: DiagnosticsCapabilities,
     /**Whether the client interprets the version property of the
-    `textDocument/publishDiagnostics` notification's parameter.
+`textDocument/publishDiagnostics` notification's parameter.
 
-    @since 3.15.0*/
+@since 3.15.0*/
     #[serde(rename = "versionSupport")]
     #[serde(default)]
     pub version_support: Option<bool>,
@@ -6474,8 +7665,8 @@ pub struct PublishDiagnosticsClientCapabilities {
 #[serde(rename_all = "camelCase")]
 pub struct CallHierarchyClientCapabilities {
     /**Whether implementation supports dynamic registration. If this is set to `true`
-    the client supports the new `(TextDocumentRegistrationOptions & StaticRegistrationOptions)`
-    return value for the corresponding server capability as well.*/
+the client supports the new `(TextDocumentRegistrationOptions & StaticRegistrationOptions)`
+return value for the corresponding server capability as well.*/
     #[serde(rename = "dynamicRegistration")]
     #[serde(default)]
     pub dynamic_registration: Option<bool>,
@@ -6485,19 +7676,19 @@ pub struct CallHierarchyClientCapabilities {
 #[serde(rename_all = "camelCase")]
 pub struct SemanticTokensClientCapabilities {
     /**Whether implementation supports dynamic registration. If this is set to `true`
-    the client supports the new `(TextDocumentRegistrationOptions & StaticRegistrationOptions)`
-    return value for the corresponding server capability as well.*/
+the client supports the new `(TextDocumentRegistrationOptions & StaticRegistrationOptions)`
+return value for the corresponding server capability as well.*/
     #[serde(rename = "dynamicRegistration")]
     #[serde(default)]
     pub dynamic_registration: Option<bool>,
     /**Which requests the client supports and might send to the server
-    depending on the server's capability. Please note that clients might not
-    show semantic tokens or degrade some of the user experience if a range
-    or full request is advertised by the client but not provided by the
-    server. If for example the client capability `requests.full` and
-    `request.range` are both set to true but the server only provides a
-    range provider the client might not render a minimap correctly or might
-    even decide to not show any semantic tokens at all.*/
+depending on the server's capability. Please note that clients might not
+show semantic tokens or degrade some of the user experience if a range
+or full request is advertised by the client but not provided by the
+server. If for example the client capability `requests.full` and
+`request.range` are both set to true but the server only provides a
+range provider the client might not render a minimap correctly or might
+even decide to not show any semantic tokens at all.*/
     pub requests: ClientSemanticTokensRequestOptions,
     ///The token types that the client supports.
     #[serde(rename = "tokenTypes")]
@@ -6516,24 +7707,24 @@ pub struct SemanticTokensClientCapabilities {
     #[serde(default)]
     pub multiline_token_support: Option<bool>,
     /**Whether the client allows the server to actively cancel a
-    semantic token request, e.g. supports returning
-    LSPErrorCodes.ServerCancelled. If a server does the client
-    needs to retrigger the request.
+semantic token request, e.g. supports returning
+LSPErrorCodes.ServerCancelled. If a server does the client
+needs to retrigger the request.
 
-    @since 3.17.0*/
+@since 3.17.0*/
     #[serde(rename = "serverCancelSupport")]
     #[serde(default)]
     pub server_cancel_support: Option<bool>,
     /**Whether the client uses semantic tokens to augment existing
-    syntax tokens. If set to `true` client side created syntax
-    tokens and semantic tokens are both used for colorization. If
-    set to `false` the client only uses the returned semantic tokens
-    for colorization.
+syntax tokens. If set to `true` client side created syntax
+tokens and semantic tokens are both used for colorization. If
+set to `false` the client only uses the returned semantic tokens
+for colorization.
 
-    If the value is `undefined` then the client behavior is not
-    specified.
+If the value is `undefined` then the client behavior is not
+specified.
 
-    @since 3.17.0*/
+@since 3.17.0*/
     #[serde(rename = "augmentsSyntaxTokens")]
     #[serde(default)]
     pub augments_syntax_tokens: Option<bool>,
@@ -6545,8 +7736,8 @@ pub struct SemanticTokensClientCapabilities {
 #[serde(rename_all = "camelCase")]
 pub struct LinkedEditingRangeClientCapabilities {
     /**Whether implementation supports dynamic registration. If this is set to `true`
-    the client supports the new `(TextDocumentRegistrationOptions & StaticRegistrationOptions)`
-    return value for the corresponding server capability as well.*/
+the client supports the new `(TextDocumentRegistrationOptions & StaticRegistrationOptions)`
+return value for the corresponding server capability as well.*/
     #[serde(rename = "dynamicRegistration")]
     #[serde(default)]
     pub dynamic_registration: Option<bool>,
@@ -6558,8 +7749,8 @@ pub struct LinkedEditingRangeClientCapabilities {
 #[serde(rename_all = "camelCase")]
 pub struct MonikerClientCapabilities {
     /**Whether moniker supports dynamic registration. If this is set to `true`
-    the client supports the new `MonikerRegistrationOptions` return value
-    for the corresponding server capability as well.*/
+the client supports the new `MonikerRegistrationOptions` return value
+for the corresponding server capability as well.*/
     #[serde(rename = "dynamicRegistration")]
     #[serde(default)]
     pub dynamic_registration: Option<bool>,
@@ -6569,8 +7760,8 @@ pub struct MonikerClientCapabilities {
 #[serde(rename_all = "camelCase")]
 pub struct TypeHierarchyClientCapabilities {
     /**Whether implementation supports dynamic registration. If this is set to `true`
-    the client supports the new `(TextDocumentRegistrationOptions & StaticRegistrationOptions)`
-    return value for the corresponding server capability as well.*/
+the client supports the new `(TextDocumentRegistrationOptions & StaticRegistrationOptions)`
+return value for the corresponding server capability as well.*/
     #[serde(rename = "dynamicRegistration")]
     #[serde(default)]
     pub dynamic_registration: Option<bool>,
@@ -6597,7 +7788,7 @@ pub struct InlayHintClientCapabilities {
     #[serde(default)]
     pub dynamic_registration: Option<bool>,
     /**Indicates which properties a client can resolve lazily on an inlay
-    hint.*/
+hint.*/
     #[serde(rename = "resolveSupport")]
     #[serde(default)]
     pub resolve_support: Option<ClientInlayHintResolveOptions>,
@@ -6611,8 +7802,8 @@ pub struct DiagnosticClientCapabilities {
     #[serde(flatten)]
     pub diagnostics_capabilities_base: DiagnosticsCapabilities,
     /**Whether implementation supports dynamic registration. If this is set to `true`
-    the client supports the new `(TextDocumentRegistrationOptions & StaticRegistrationOptions)`
-    return value for the corresponding server capability as well.*/
+the client supports the new `(TextDocumentRegistrationOptions & StaticRegistrationOptions)`
+return value for the corresponding server capability as well.*/
     #[serde(rename = "dynamicRegistration")]
     #[serde(default)]
     pub dynamic_registration: Option<bool>,
@@ -6622,7 +7813,7 @@ pub struct DiagnosticClientCapabilities {
     pub related_document_support: Option<bool>,
     /**Whether the client supports `MarkupContent` in diagnostic messages.
 
-    @since 3.18.0*/
+@since 3.18.0*/
     #[serde(rename = "markupMessageSupport")]
     #[serde(default)]
     pub markup_message_support: Option<bool>,
@@ -6645,9 +7836,9 @@ pub struct InlineCompletionClientCapabilities {
 #[serde(rename_all = "camelCase")]
 pub struct NotebookDocumentSyncClientCapabilities {
     /**Whether implementation supports dynamic registration. If this is
-    set to `true` the client supports the new
-    `(TextDocumentRegistrationOptions & StaticRegistrationOptions)`
-    return value for the corresponding server capability as well.*/
+set to `true` the client supports the new
+`(TextDocumentRegistrationOptions & StaticRegistrationOptions)`
+return value for the corresponding server capability as well.*/
     #[serde(rename = "dynamicRegistration")]
     #[serde(default)]
     pub dynamic_registration: Option<bool>,
@@ -6672,7 +7863,7 @@ pub struct ShowMessageRequestClientCapabilities {
 #[serde(rename_all = "camelCase")]
 pub struct ShowDocumentClientCapabilities {
     /**The client has support for the showDocument
-    request.*/
+request.*/
     pub support: bool,
 }
 ///@since 3.18.0
@@ -6682,8 +7873,8 @@ pub struct StaleRequestSupportOptions {
     ///The client will actively cancel the request.
     pub cancel: bool,
     /**The list of requests for which the client
-    will retry the request if it receives a
-    response with error code `ContentModified`*/
+will retry the request if it receives a
+response with error code `ContentModified`*/
     #[serde(rename = "retryOnContentModified")]
     pub retry_on_content_modified: Vec<String>,
 }
@@ -6711,9 +7902,9 @@ pub struct MarkdownClientCapabilities {
     #[serde(default)]
     pub version: Option<String>,
     /**A list of HTML tags that the client allows / supports in
-    Markdown.
+Markdown.
 
-    @since 3.17.0*/
+@since 3.17.0*/
     #[serde(rename = "allowedTags")]
     #[serde(default)]
     pub allowed_tags: Option<Vec<String>>,
@@ -6723,8 +7914,8 @@ pub struct MarkdownClientCapabilities {
 #[serde(rename_all = "camelCase")]
 pub struct ChangeAnnotationsSupportOptions {
     /**Whether the client groups edits with equal labels into tree nodes,
-    for instance all edits labelled with "Changes in Strings" would
-    be a tree node.*/
+for instance all edits labelled with "Changes in Strings" would
+be a tree node.*/
     #[serde(rename = "groupsOnLabel")]
     #[serde(default)]
     pub groups_on_label: Option<bool>,
@@ -6734,13 +7925,13 @@ pub struct ChangeAnnotationsSupportOptions {
 #[serde(rename_all = "camelCase")]
 pub struct ClientSymbolKindOptions {
     /**The symbol kind values the client supports. When this
-    property exists the client also guarantees that it will
-    handle values outside its set gracefully and falls back
-    to a default value when unknown.
+property exists the client also guarantees that it will
+handle values outside its set gracefully and falls back
+to a default value when unknown.
 
-    If this property is not present the client only supports
-    the symbol kinds from `File` to `Array` as defined in
-    the initial version of the protocol.*/
+If this property is not present the client only supports
+the symbol kinds from `File` to `Array` as defined in
+the initial version of the protocol.*/
     #[serde(rename = "valueSet")]
     #[serde(default)]
     pub value_set: Option<Vec<SymbolKind>>,
@@ -6758,7 +7949,7 @@ pub struct ClientSymbolTagOptions {
 #[serde(rename_all = "camelCase")]
 pub struct ClientSymbolResolveOptions {
     /**The properties that a client can resolve lazily. Usually
-    `location.range`*/
+`location.range`*/
     pub properties: Vec<String>,
 }
 ///@since 3.18.0
@@ -6767,10 +7958,10 @@ pub struct ClientSymbolResolveOptions {
 pub struct ClientCompletionItemOptions {
     /**Client supports snippets as insert text.
 
-    A snippet can define tab stops and placeholders with `$1`, `$2`
-    and `${3:foo}`. `$0` defines the final tab stop, it defaults to
-    the end of the snippet. Placeholders with equal identifiers are linked,
-    that is typing in one will update others too.*/
+A snippet can define tab stops and placeholders with `$1`, `$2`
+and `${3:foo}`. `$0` defines the final tab stop, it defaults to
+the end of the snippet. Placeholders with equal identifiers are linked,
+that is typing in one will update others too.*/
     #[serde(rename = "snippetSupport")]
     #[serde(default)]
     pub snippet_support: Option<bool>,
@@ -6779,7 +7970,7 @@ pub struct ClientCompletionItemOptions {
     #[serde(default)]
     pub commit_characters_support: Option<bool>,
     /**Client supports the following content formats for the documentation
-    property. The order describes the preferred format of the client.*/
+property. The order describes the preferred format of the client.*/
     #[serde(rename = "documentationFormat")]
     #[serde(default)]
     pub documentation_format: Option<Vec<MarkupKind>>,
@@ -6792,41 +7983,41 @@ pub struct ClientCompletionItemOptions {
     #[serde(default)]
     pub preselect_support: Option<bool>,
     /**Client supports the tag property on a completion item. Clients supporting
-    tags have to handle unknown tags gracefully. Clients especially need to
-    preserve unknown tags when sending a completion item back to the server in
-    a resolve call.
+tags have to handle unknown tags gracefully. Clients especially need to
+preserve unknown tags when sending a completion item back to the server in
+a resolve call.
 
-    @since 3.15.0*/
+@since 3.15.0*/
     #[serde(rename = "tagSupport")]
     #[serde(default)]
     pub tag_support: Option<CompletionItemTagOptions>,
     /**Client support insert replace edit to control different behavior if a
-    completion item is inserted in the text or should replace text.
+completion item is inserted in the text or should replace text.
 
-    @since 3.16.0*/
+@since 3.16.0*/
     #[serde(rename = "insertReplaceSupport")]
     #[serde(default)]
     pub insert_replace_support: Option<bool>,
     /**Indicates which properties a client can resolve lazily on a completion
-    item. Before version 3.16.0 only the predefined properties `documentation`
-    and `details` could be resolved lazily.
+item. Before version 3.16.0 only the predefined properties `documentation`
+and `details` could be resolved lazily.
 
-    @since 3.16.0*/
+@since 3.16.0*/
     #[serde(rename = "resolveSupport")]
     #[serde(default)]
     pub resolve_support: Option<ClientCompletionItemResolveOptions>,
     /**The client supports the `insertTextMode` property on
-    a completion item to override the whitespace handling mode
-    as defined by the client (see `insertTextMode`).
+a completion item to override the whitespace handling mode
+as defined by the client (see `insertTextMode`).
 
-    @since 3.16.0*/
+@since 3.16.0*/
     #[serde(rename = "insertTextModeSupport")]
     #[serde(default)]
     pub insert_text_mode_support: Option<ClientCompletionItemInsertTextModeOptions>,
     /**The client has support for completion item label
-    details (see also `CompletionItemLabelDetails`).
+details (see also `CompletionItemLabelDetails`).
 
-    @since 3.17.0*/
+@since 3.17.0*/
     #[serde(rename = "labelDetailsSupport")]
     #[serde(default)]
     pub label_details_support: Option<bool>,
@@ -6836,13 +8027,13 @@ pub struct ClientCompletionItemOptions {
 #[serde(rename_all = "camelCase")]
 pub struct ClientCompletionItemOptionsKind {
     /**The completion item kind values the client supports. When this
-    property exists the client also guarantees that it will
-    handle values outside its set gracefully and falls back
-    to a default value when unknown.
+property exists the client also guarantees that it will
+handle values outside its set gracefully and falls back
+to a default value when unknown.
 
-    If this property is not present the client only supports
-    the completion items kinds from `Text` to `Reference` as defined in
-    the initial version of the protocol.*/
+If this property is not present the client only supports
+the completion items kinds from `Text` to `Reference` as defined in
+the initial version of the protocol.*/
     #[serde(rename = "valueSet")]
     #[serde(default)]
     pub value_set: Option<Vec<CompletionItemKind>>,
@@ -6855,27 +8046,27 @@ capabilities.
 #[serde(rename_all = "camelCase")]
 pub struct CompletionListCapabilities {
     /**The client supports the following itemDefaults on
-    a completion list.
+a completion list.
 
-    The value lists the supported property names of the
-    `CompletionList.itemDefaults` object. If omitted
-    no properties are supported.
+The value lists the supported property names of the
+`CompletionList.itemDefaults` object. If omitted
+no properties are supported.
 
-    @since 3.17.0*/
+@since 3.17.0*/
     #[serde(rename = "itemDefaults")]
     #[serde(default)]
     pub item_defaults: Option<Vec<String>>,
     /**Specifies whether the client supports `CompletionList.applyKind` to
-    indicate how supported values from `completionList.itemDefaults`
-    and `completion` will be combined.
+indicate how supported values from `completionList.itemDefaults`
+and `completion` will be combined.
 
-    If a client supports `applyKind` it must support it for all fields
-    that it supports that are listed in `CompletionList.applyKind`. This
-    means when clients add support for new/future fields in completion
-    items the MUST also support merge for them if those fields are
-    defined in `CompletionList.applyKind`.
+If a client supports `applyKind` it must support it for all fields
+that it supports that are listed in `CompletionList.applyKind`. This
+means when clients add support for new/future fields in completion
+items the MUST also support merge for them if those fields are
+defined in `CompletionList.applyKind`.
 
-    @since 3.18.0*/
+@since 3.18.0*/
     #[serde(rename = "applyKindSupport")]
     #[serde(default)]
     pub apply_kind_support: Option<bool>,
@@ -6885,7 +8076,7 @@ pub struct CompletionListCapabilities {
 #[serde(rename_all = "camelCase")]
 pub struct ClientSignatureInformationOptions {
     /**Client supports the following content formats for the documentation
-    property. The order describes the preferred format of the client.*/
+property. The order describes the preferred format of the client.*/
     #[serde(rename = "documentationFormat")]
     #[serde(default)]
     pub documentation_format: Option<Vec<MarkupKind>>,
@@ -6894,17 +8085,17 @@ pub struct ClientSignatureInformationOptions {
     #[serde(default)]
     pub parameter_information: Option<ClientSignatureParameterInformationOptions>,
     /**The client supports the `activeParameter` property on `SignatureInformation`
-    literal.
+literal.
 
-    @since 3.16.0*/
+@since 3.16.0*/
     #[serde(rename = "activeParameterSupport")]
     #[serde(default)]
     pub active_parameter_support: Option<bool>,
     /**The client supports the `activeParameter` property on
-    `SignatureHelp`/`SignatureInformation` being set to `null` to
-    indicate that no parameter should be active.
+`SignatureHelp`/`SignatureInformation` being set to `null` to
+indicate that no parameter should be active.
 
-    @since 3.18.0*/
+@since 3.18.0*/
     #[serde(rename = "noActiveParameterSupport")]
     #[serde(default)]
     pub no_active_parameter_support: Option<bool>,
@@ -6914,7 +8105,7 @@ pub struct ClientSignatureInformationOptions {
 #[serde(rename_all = "camelCase")]
 pub struct ClientCodeActionLiteralOptions {
     /**The code action kind is support with the following value
-    set.*/
+set.*/
     #[serde(rename = "codeActionKind")]
     pub code_action_kind: ClientCodeActionKindOptions,
 }
@@ -6945,9 +8136,9 @@ pub struct ClientCodeLensResolveOptions {
 #[serde(rename_all = "camelCase")]
 pub struct ClientFoldingRangeKindOptions {
     /**The folding range kind values the client supports. When this
-    property exists the client also guarantees that it will
-    handle values outside its set gracefully and falls back
-    to a default value when unknown.*/
+property exists the client also guarantees that it will
+handle values outside its set gracefully and falls back
+to a default value when unknown.*/
     #[serde(rename = "valueSet")]
     #[serde(default)]
     pub value_set: Option<Vec<FoldingRangeKind>>,
@@ -6957,9 +8148,9 @@ pub struct ClientFoldingRangeKindOptions {
 #[serde(rename_all = "camelCase")]
 pub struct ClientFoldingRangeOptions {
     /**If set, the client signals that it supports setting collapsedText on
-    folding ranges to display custom labels instead of the default text.
+folding ranges to display custom labels instead of the default text.
 
-    @since 3.17.0*/
+@since 3.17.0*/
     #[serde(rename = "collapsedText")]
     #[serde(default)]
     pub collapsed_text: Option<bool>,
@@ -6973,23 +8164,23 @@ pub struct DiagnosticsCapabilities {
     #[serde(default)]
     pub related_information: Option<bool>,
     /**Client supports the tag property to provide meta data about a diagnostic.
-    Clients supporting tags have to handle unknown tags gracefully.
+Clients supporting tags have to handle unknown tags gracefully.
 
-    @since 3.15.0*/
+@since 3.15.0*/
     #[serde(rename = "tagSupport")]
     #[serde(default)]
     pub tag_support: Option<ClientDiagnosticsTagOptions>,
     /**Client supports a codeDescription property
 
-    @since 3.16.0*/
+@since 3.16.0*/
     #[serde(rename = "codeDescriptionSupport")]
     #[serde(default)]
     pub code_description_support: Option<bool>,
     /**Whether code action supports the `data` property which is
-    preserved between a `textDocument/publishDiagnostics` and
-    `textDocument/codeAction` request.
+preserved between a `textDocument/publishDiagnostics` and
+`textDocument/codeAction` request.
 
-    @since 3.16.0*/
+@since 3.16.0*/
     #[serde(rename = "dataSupport")]
     #[serde(default)]
     pub data_support: Option<bool>,
@@ -6999,13 +8190,13 @@ pub struct DiagnosticsCapabilities {
 #[serde(rename_all = "camelCase")]
 pub struct ClientSemanticTokensRequestOptions {
     /**The client will send the `textDocument/semanticTokens/range` request if
-    the server provides a corresponding handler.*/
+the server provides a corresponding handler.*/
     #[serde(default)]
-    pub range: Option<LspAny>,
+    pub range: Option<BooleanOrLiteral57f9bf6390bb37d9>,
     /**The client will send the `textDocument/semanticTokens/full` request if
-    the server provides a corresponding handler.*/
+the server provides a corresponding handler.*/
     #[serde(default)]
-    pub full: Option<LspAny>,
+    pub full: Option<BooleanOrClientSemanticTokensRequestFullDelta>,
 }
 ///@since 3.18.0
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -7019,8 +8210,8 @@ pub struct ClientInlayHintResolveOptions {
 #[serde(rename_all = "camelCase")]
 pub struct ClientShowMessageActionItemOptions {
     /**Whether the client supports additional attributes which
-    are preserved and send back to the server in the
-    request's response.*/
+are preserved and send back to the server in the
+request's response.*/
     #[serde(rename = "additionalPropertiesSupport")]
     #[serde(default)]
     pub additional_properties_support: Option<bool>,
@@ -7052,9 +8243,9 @@ pub struct ClientCompletionItemInsertTextModeOptions {
 #[serde(rename_all = "camelCase")]
 pub struct ClientSignatureParameterInformationOptions {
     /**The client supports processing label offsets instead of a
-    simple label string.
+simple label string.
 
-    @since 3.14.0*/
+@since 3.14.0*/
     #[serde(rename = "labelOffsetSupport")]
     #[serde(default)]
     pub label_offset_support: Option<bool>,
@@ -7064,9 +8255,9 @@ pub struct ClientSignatureParameterInformationOptions {
 #[serde(rename_all = "camelCase")]
 pub struct ClientCodeActionKindOptions {
     /**The code action kind values the client supports. When this
-    property exists the client also guarantees that it will
-    handle values outside its set gracefully and falls back
-    to a default value when unknown.*/
+property exists the client also guarantees that it will
+handle values outside its set gracefully and falls back
+to a default value when unknown.*/
     #[serde(rename = "valueSet")]
     pub value_set: Vec<CodeActionKind>,
 }
@@ -7083,9 +8274,453 @@ pub struct ClientDiagnosticsTagOptions {
 #[serde(rename_all = "camelCase")]
 pub struct ClientSemanticTokensRequestFullDelta {
     /**The client will send the `textDocument/semanticTokens/full/delta` request if
-    the server provides a corresponding handler.*/
+the server provides a corresponding handler.*/
     #[serde(default)]
     pub delta: Option<bool>,
+}
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum AnnotatedTextEditOrSnippetTextEditOrTextEdit {
+    TextEdit(TextEdit),
+    AnnotatedTextEdit(AnnotatedTextEdit),
+    SnippetTextEdit(SnippetTextEdit),
+}
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum BooleanOrCallHierarchyOptionsOrCallHierarchyRegistrationOptions {
+    Boolean(bool),
+    CallHierarchyOptions(CallHierarchyOptions),
+    CallHierarchyRegistrationOptions(CallHierarchyRegistrationOptions),
+}
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum BooleanOrClientSemanticTokensRequestFullDelta {
+    Boolean(bool),
+    ClientSemanticTokensRequestFullDelta(ClientSemanticTokensRequestFullDelta),
+}
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum BooleanOrCodeActionOptions {
+    Boolean(bool),
+    CodeActionOptions(CodeActionOptions),
+}
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum BooleanOrDecimalOrIntegerOrLSPArrayOrLSPObjectOrStringOrUinteger {
+    LSPObject(LSPObject),
+    LSPArray(LSPArray),
+    String(String),
+    Integer(Integer),
+    Uinteger(Uinteger),
+    Decimal(Decimal),
+    Boolean(bool),
+}
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum BooleanOrDeclarationOptionsOrDeclarationRegistrationOptions {
+    Boolean(bool),
+    DeclarationOptions(DeclarationOptions),
+    DeclarationRegistrationOptions(DeclarationRegistrationOptions),
+}
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum BooleanOrDefinitionOptions {
+    Boolean(bool),
+    DefinitionOptions(DefinitionOptions),
+}
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum BooleanOrDocumentColorOptionsOrDocumentColorRegistrationOptions {
+    Boolean(bool),
+    DocumentColorOptions(DocumentColorOptions),
+    DocumentColorRegistrationOptions(DocumentColorRegistrationOptions),
+}
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum BooleanOrDocumentFormattingOptions {
+    Boolean(bool),
+    DocumentFormattingOptions(DocumentFormattingOptions),
+}
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum BooleanOrDocumentHighlightOptions {
+    Boolean(bool),
+    DocumentHighlightOptions(DocumentHighlightOptions),
+}
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum BooleanOrDocumentRangeFormattingOptions {
+    Boolean(bool),
+    DocumentRangeFormattingOptions(DocumentRangeFormattingOptions),
+}
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum BooleanOrDocumentSymbolOptions {
+    Boolean(bool),
+    DocumentSymbolOptions(DocumentSymbolOptions),
+}
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum BooleanOrFoldingRangeOptionsOrFoldingRangeRegistrationOptions {
+    Boolean(bool),
+    FoldingRangeOptions(FoldingRangeOptions),
+    FoldingRangeRegistrationOptions(FoldingRangeRegistrationOptions),
+}
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum BooleanOrHoverOptions {
+    Boolean(bool),
+    HoverOptions(HoverOptions),
+}
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum BooleanOrImplementationOptionsOrImplementationRegistrationOptions {
+    Boolean(bool),
+    ImplementationOptions(ImplementationOptions),
+    ImplementationRegistrationOptions(ImplementationRegistrationOptions),
+}
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum BooleanOrInlayHintOptionsOrInlayHintRegistrationOptions {
+    Boolean(bool),
+    InlayHintOptions(InlayHintOptions),
+    InlayHintRegistrationOptions(InlayHintRegistrationOptions),
+}
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum BooleanOrInlineCompletionOptions {
+    Boolean(bool),
+    InlineCompletionOptions(InlineCompletionOptions),
+}
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum BooleanOrInlineValueOptionsOrInlineValueRegistrationOptions {
+    Boolean(bool),
+    InlineValueOptions(InlineValueOptions),
+    InlineValueRegistrationOptions(InlineValueRegistrationOptions),
+}
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum BooleanOrLinkedEditingRangeOptionsOrLinkedEditingRangeRegistrationOptions {
+    Boolean(bool),
+    LinkedEditingRangeOptions(LinkedEditingRangeOptions),
+    LinkedEditingRangeRegistrationOptions(LinkedEditingRangeRegistrationOptions),
+}
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum BooleanOrLiteral57f9bf6390bb37d9 {
+    Boolean(bool),
+    Literal57f9bf6390bb37d9(Literal57f9bf6390bb37d9),
+}
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum BooleanOrMonikerOptionsOrMonikerRegistrationOptions {
+    Boolean(bool),
+    MonikerOptions(MonikerOptions),
+    MonikerRegistrationOptions(MonikerRegistrationOptions),
+}
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum BooleanOrReferenceOptions {
+    Boolean(bool),
+    ReferenceOptions(ReferenceOptions),
+}
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum BooleanOrRenameOptions {
+    Boolean(bool),
+    RenameOptions(RenameOptions),
+}
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum BooleanOrSaveOptions {
+    Boolean(bool),
+    SaveOptions(SaveOptions),
+}
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum BooleanOrSelectionRangeOptionsOrSelectionRangeRegistrationOptions {
+    Boolean(bool),
+    SelectionRangeOptions(SelectionRangeOptions),
+    SelectionRangeRegistrationOptions(SelectionRangeRegistrationOptions),
+}
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum BooleanOrSemanticTokensFullDelta {
+    Boolean(bool),
+    SemanticTokensFullDelta(SemanticTokensFullDelta),
+}
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum BooleanOrString {
+    String(String),
+    Boolean(bool),
+}
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum BooleanOrTypeDefinitionOptionsOrTypeDefinitionRegistrationOptions {
+    Boolean(bool),
+    TypeDefinitionOptions(TypeDefinitionOptions),
+    TypeDefinitionRegistrationOptions(TypeDefinitionRegistrationOptions),
+}
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum BooleanOrTypeHierarchyOptionsOrTypeHierarchyRegistrationOptions {
+    Boolean(bool),
+    TypeHierarchyOptions(TypeHierarchyOptions),
+    TypeHierarchyRegistrationOptions(TypeHierarchyRegistrationOptions),
+}
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum BooleanOrWorkspaceSymbolOptions {
+    Boolean(bool),
+    WorkspaceSymbolOptions(WorkspaceSymbolOptions),
+}
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum CodeActionOrCommand {
+    Command(Command),
+    CodeAction(CodeAction),
+}
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum CompletionItemArrayOrCompletionList {
+    CompletionItemArray(Vec<CompletionItem>),
+    CompletionList(CompletionList),
+}
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum CreateFileOrDeleteFileOrRenameFileOrTextDocumentEdit {
+    TextDocumentEdit(TextDocumentEdit),
+    CreateFile(CreateFile),
+    RenameFile(RenameFile),
+    DeleteFile(DeleteFile),
+}
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum DeclarationOrDeclarationLinkArray {
+    Declaration(Declaration),
+    DeclarationLinkArray(Vec<DeclarationLink>),
+}
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum DefinitionOrDefinitionLinkArray {
+    Definition(Definition),
+    DefinitionLinkArray(Vec<DefinitionLink>),
+}
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum DiagnosticOptionsOrDiagnosticRegistrationOptions {
+    DiagnosticOptions(DiagnosticOptions),
+    DiagnosticRegistrationOptions(DiagnosticRegistrationOptions),
+}
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum DocumentSymbolArrayOrSymbolInformationArray {
+    SymbolInformationArray(Vec<SymbolInformation>),
+    DocumentSymbolArray(Vec<DocumentSymbol>),
+}
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum EditRangeWithInsertReplaceOrRange {
+    Range(Range),
+    EditRangeWithInsertReplace(EditRangeWithInsertReplace),
+}
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum FullDocumentDiagnosticReportOrUnchangedDocumentDiagnosticReport {
+    FullDocumentDiagnosticReport(FullDocumentDiagnosticReport),
+    UnchangedDocumentDiagnosticReport(UnchangedDocumentDiagnosticReport),
+}
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum InlayHintLabelPartArrayOrString {
+    String(String),
+    InlayHintLabelPartArray(Vec<InlayHintLabelPart>),
+}
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum InlineCompletionItemArrayOrInlineCompletionList {
+    InlineCompletionList(InlineCompletionList),
+    InlineCompletionItemArray(Vec<InlineCompletionItem>),
+}
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum InlineValueEvaluatableExpressionOrInlineValueTextOrInlineValueVariableLookup {
+    InlineValueText(InlineValueText),
+    InlineValueVariableLookup(InlineValueVariableLookup),
+    InlineValueEvaluatableExpression(InlineValueEvaluatableExpression),
+}
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum InsertReplaceEditOrTextEdit {
+    TextEdit(TextEdit),
+    InsertReplaceEdit(InsertReplaceEdit),
+}
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum IntegerOrString {
+    Integer(Integer),
+    String(String),
+}
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Literal57f9bf6390bb37d9 {}
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum LocationOrLocationArray {
+    Location(Location),
+    LocationArray(Vec<Location>),
+}
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum LocationOrLocationUriOnly {
+    Location(Location),
+    LocationUriOnly(LocationUriOnly),
+}
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum MarkedStringOrMarkedStringArrayOrMarkupContent {
+    MarkupContent(MarkupContent),
+    MarkedString(MarkedString),
+    MarkedStringArray(Vec<MarkedString>),
+}
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum MarkedStringWithLanguageOrString {
+    String(String),
+    MarkedStringWithLanguage(MarkedStringWithLanguage),
+}
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum MarkupContentOrString {
+    String(String),
+    MarkupContent(MarkupContent),
+}
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum NotebookCellTextDocumentFilterOrTextDocumentFilter {
+    TextDocumentFilter(TextDocumentFilter),
+    NotebookCellTextDocumentFilter(NotebookCellTextDocumentFilter),
+}
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum NotebookDocumentFilterNotebookTypeOrNotebookDocumentFilterPatternOrNotebookDocumentFilterScheme {
+    NotebookDocumentFilterNotebookType(NotebookDocumentFilterNotebookType),
+    NotebookDocumentFilterScheme(NotebookDocumentFilterScheme),
+    NotebookDocumentFilterPattern(NotebookDocumentFilterPattern),
+}
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum NotebookDocumentFilterOrString {
+    String(String),
+    NotebookDocumentFilter(NotebookDocumentFilter),
+}
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum NotebookDocumentFilterWithCellsOrNotebookDocumentFilterWithNotebook {
+    NotebookDocumentFilterWithNotebook(NotebookDocumentFilterWithNotebook),
+    NotebookDocumentFilterWithCells(NotebookDocumentFilterWithCells),
+}
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum NotebookDocumentSyncOptionsOrNotebookDocumentSyncRegistrationOptions {
+    NotebookDocumentSyncOptions(NotebookDocumentSyncOptions),
+    NotebookDocumentSyncRegistrationOptions(NotebookDocumentSyncRegistrationOptions),
+}
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum PatternOrRelativePattern {
+    Pattern(Pattern),
+    RelativePattern(RelativePattern),
+}
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum PrepareRenameDefaultBehaviorOrPrepareRenamePlaceholderOrRange {
+    Range(Range),
+    PrepareRenamePlaceholder(PrepareRenamePlaceholder),
+    PrepareRenameDefaultBehavior(PrepareRenameDefaultBehavior),
+}
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum RelatedFullDocumentDiagnosticReportOrRelatedUnchangedDocumentDiagnosticReport {
+    RelatedFullDocumentDiagnosticReport(RelatedFullDocumentDiagnosticReport),
+    RelatedUnchangedDocumentDiagnosticReport(RelatedUnchangedDocumentDiagnosticReport),
+}
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum SemanticTokensOptionsOrSemanticTokensRegistrationOptions {
+    SemanticTokensOptions(SemanticTokensOptions),
+    SemanticTokensRegistrationOptions(SemanticTokensRegistrationOptions),
+}
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum SemanticTokensOrSemanticTokensDelta {
+    SemanticTokens(SemanticTokens),
+    SemanticTokensDelta(SemanticTokensDelta),
+}
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum StringOrStringArray {
+    String(String),
+    StringArray(Vec<String>),
+}
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum StringOrStringValue {
+    String(String),
+    StringValue(StringValue),
+}
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum StringOrTupleOfUintegerAndUinteger {
+    String(String),
+    TupleOfUintegerAndUinteger((Uinteger, Uinteger)),
+}
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum SymbolInformationArrayOrWorkspaceSymbolArray {
+    SymbolInformationArray(Vec<SymbolInformation>),
+    WorkspaceSymbolArray(Vec<WorkspaceSymbol>),
+}
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum TextDocumentContentChangePartialOrTextDocumentContentChangeWholeDocument {
+    TextDocumentContentChangePartial(TextDocumentContentChangePartial),
+    TextDocumentContentChangeWholeDocument(TextDocumentContentChangeWholeDocument),
+}
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum TextDocumentContentOptionsOrTextDocumentContentRegistrationOptions {
+    TextDocumentContentOptions(TextDocumentContentOptions),
+    TextDocumentContentRegistrationOptions(TextDocumentContentRegistrationOptions),
+}
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum TextDocumentFilterLanguageOrTextDocumentFilterPatternOrTextDocumentFilterScheme {
+    TextDocumentFilterLanguage(TextDocumentFilterLanguage),
+    TextDocumentFilterScheme(TextDocumentFilterScheme),
+    TextDocumentFilterPattern(TextDocumentFilterPattern),
+}
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum TextDocumentSyncKindOrTextDocumentSyncOptions {
+    TextDocumentSyncOptions(TextDocumentSyncOptions),
+    TextDocumentSyncKind(TextDocumentSyncKind),
+}
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum UriOrWorkspaceFolder {
+    WorkspaceFolder(WorkspaceFolder),
+    Uri(URI),
+}
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum WorkspaceFullDocumentDiagnosticReportOrWorkspaceUnchangedDocumentDiagnosticReport {
+    WorkspaceFullDocumentDiagnosticReport(WorkspaceFullDocumentDiagnosticReport),
+    WorkspaceUnchangedDocumentDiagnosticReport(
+        WorkspaceUnchangedDocumentDiagnosticReport,
+    ),
 }
 pub trait LspRequest {
     type Params: Serialize + for<'de> Deserialize<'de>;
@@ -7095,19 +8730,19 @@ pub trait LspRequest {
 pub struct ImplementationRequest;
 impl LspRequest for ImplementationRequest {
     type Params = ImplementationParams;
-    type Result = LspAny;
+    type Result = Option<DefinitionOrDefinitionLinkArray>;
     const METHOD: &'static str = "textDocument/implementation";
 }
 pub struct TypeDefinitionRequest;
 impl LspRequest for TypeDefinitionRequest {
     type Params = TypeDefinitionParams;
-    type Result = LspAny;
+    type Result = Option<DefinitionOrDefinitionLinkArray>;
     const METHOD: &'static str = "textDocument/typeDefinition";
 }
 pub struct WorkspaceFoldersRequest;
 impl LspRequest for WorkspaceFoldersRequest {
     type Params = ();
-    type Result = LspAny;
+    type Result = Option<Vec<WorkspaceFolder>>;
     const METHOD: &'static str = "workspace/workspaceFolders";
 }
 pub struct ConfigurationRequest;
@@ -7131,7 +8766,7 @@ impl LspRequest for ColorPresentationRequest {
 pub struct FoldingRangeRequest;
 impl LspRequest for FoldingRangeRequest {
     type Params = FoldingRangeParams;
-    type Result = LspAny;
+    type Result = Option<Vec<FoldingRange>>;
     const METHOD: &'static str = "textDocument/foldingRange";
 }
 pub struct FoldingRangeRefreshRequest;
@@ -7140,16 +8775,21 @@ impl LspRequest for FoldingRangeRefreshRequest {
     type Result = ();
     const METHOD: &'static str = "workspace/foldingRange/refresh";
 }
+impl lsp_types::request::Request for FoldingRangeRefreshRequest {
+    type Params = ();
+    type Result = ();
+    const METHOD: &'static str = "workspace/foldingRange/refresh";
+}
 pub struct DeclarationRequest;
 impl LspRequest for DeclarationRequest {
     type Params = DeclarationParams;
-    type Result = LspAny;
+    type Result = Option<DeclarationOrDeclarationLinkArray>;
     const METHOD: &'static str = "textDocument/declaration";
 }
 pub struct SelectionRangeRequest;
 impl LspRequest for SelectionRangeRequest {
     type Params = SelectionRangeParams;
-    type Result = LspAny;
+    type Result = Option<Vec<SelectionRange>>;
     const METHOD: &'static str = "textDocument/selectionRange";
 }
 pub struct WorkDoneProgressCreateRequest;
@@ -7161,37 +8801,37 @@ impl LspRequest for WorkDoneProgressCreateRequest {
 pub struct CallHierarchyPrepareRequest;
 impl LspRequest for CallHierarchyPrepareRequest {
     type Params = CallHierarchyPrepareParams;
-    type Result = LspAny;
+    type Result = Option<Vec<CallHierarchyItem>>;
     const METHOD: &'static str = "textDocument/prepareCallHierarchy";
 }
 pub struct CallHierarchyIncomingCallsRequest;
 impl LspRequest for CallHierarchyIncomingCallsRequest {
     type Params = CallHierarchyIncomingCallsParams;
-    type Result = LspAny;
+    type Result = Option<Vec<CallHierarchyIncomingCall>>;
     const METHOD: &'static str = "callHierarchy/incomingCalls";
 }
 pub struct CallHierarchyOutgoingCallsRequest;
 impl LspRequest for CallHierarchyOutgoingCallsRequest {
     type Params = CallHierarchyOutgoingCallsParams;
-    type Result = LspAny;
+    type Result = Option<Vec<CallHierarchyOutgoingCall>>;
     const METHOD: &'static str = "callHierarchy/outgoingCalls";
 }
 pub struct SemanticTokensRequest;
 impl LspRequest for SemanticTokensRequest {
     type Params = SemanticTokensParams;
-    type Result = LspAny;
+    type Result = Option<SemanticTokens>;
     const METHOD: &'static str = "textDocument/semanticTokens/full";
 }
 pub struct SemanticTokensDeltaRequest;
 impl LspRequest for SemanticTokensDeltaRequest {
     type Params = SemanticTokensDeltaParams;
-    type Result = LspAny;
+    type Result = Option<SemanticTokensOrSemanticTokensDelta>;
     const METHOD: &'static str = "textDocument/semanticTokens/full/delta";
 }
 pub struct SemanticTokensRangeRequest;
 impl LspRequest for SemanticTokensRangeRequest {
     type Params = SemanticTokensRangeParams;
-    type Result = LspAny;
+    type Result = Option<SemanticTokens>;
     const METHOD: &'static str = "textDocument/semanticTokens/range";
 }
 pub struct SemanticTokensRefreshRequest;
@@ -7209,55 +8849,55 @@ impl LspRequest for ShowDocumentRequest {
 pub struct LinkedEditingRangeRequest;
 impl LspRequest for LinkedEditingRangeRequest {
     type Params = LinkedEditingRangeParams;
-    type Result = LspAny;
+    type Result = Option<LinkedEditingRanges>;
     const METHOD: &'static str = "textDocument/linkedEditingRange";
 }
 pub struct WillCreateFilesRequest;
 impl LspRequest for WillCreateFilesRequest {
     type Params = CreateFilesParams;
-    type Result = LspAny;
+    type Result = Option<WorkspaceEdit>;
     const METHOD: &'static str = "workspace/willCreateFiles";
 }
 pub struct WillRenameFilesRequest;
 impl LspRequest for WillRenameFilesRequest {
     type Params = RenameFilesParams;
-    type Result = LspAny;
+    type Result = Option<WorkspaceEdit>;
     const METHOD: &'static str = "workspace/willRenameFiles";
 }
 pub struct WillDeleteFilesRequest;
 impl LspRequest for WillDeleteFilesRequest {
     type Params = DeleteFilesParams;
-    type Result = LspAny;
+    type Result = Option<WorkspaceEdit>;
     const METHOD: &'static str = "workspace/willDeleteFiles";
 }
 pub struct MonikerRequest;
 impl LspRequest for MonikerRequest {
     type Params = MonikerParams;
-    type Result = LspAny;
+    type Result = Option<Vec<Moniker>>;
     const METHOD: &'static str = "textDocument/moniker";
 }
 pub struct TypeHierarchyPrepareRequest;
 impl LspRequest for TypeHierarchyPrepareRequest {
     type Params = TypeHierarchyPrepareParams;
-    type Result = LspAny;
+    type Result = Option<Vec<TypeHierarchyItem>>;
     const METHOD: &'static str = "textDocument/prepareTypeHierarchy";
 }
 pub struct TypeHierarchySupertypesRequest;
 impl LspRequest for TypeHierarchySupertypesRequest {
     type Params = TypeHierarchySupertypesParams;
-    type Result = LspAny;
+    type Result = Option<Vec<TypeHierarchyItem>>;
     const METHOD: &'static str = "typeHierarchy/supertypes";
 }
 pub struct TypeHierarchySubtypesRequest;
 impl LspRequest for TypeHierarchySubtypesRequest {
     type Params = TypeHierarchySubtypesParams;
-    type Result = LspAny;
+    type Result = Option<Vec<TypeHierarchyItem>>;
     const METHOD: &'static str = "typeHierarchy/subtypes";
 }
 pub struct InlineValueRequest;
 impl LspRequest for InlineValueRequest {
     type Params = InlineValueParams;
-    type Result = LspAny;
+    type Result = Option<Vec<InlineValue>>;
     const METHOD: &'static str = "textDocument/inlineValue";
 }
 pub struct InlineValueRefreshRequest;
@@ -7269,7 +8909,7 @@ impl LspRequest for InlineValueRefreshRequest {
 pub struct InlayHintRequest;
 impl LspRequest for InlayHintRequest {
     type Params = InlayHintParams;
-    type Result = LspAny;
+    type Result = Option<Vec<InlayHint>>;
     const METHOD: &'static str = "textDocument/inlayHint";
 }
 pub struct InlayHintResolveRequest;
@@ -7305,7 +8945,7 @@ impl LspRequest for DiagnosticRefreshRequest {
 pub struct InlineCompletionRequest;
 impl LspRequest for InlineCompletionRequest {
     type Params = InlineCompletionParams;
-    type Result = LspAny;
+    type Result = Option<InlineCompletionItemArrayOrInlineCompletionList>;
     const METHOD: &'static str = "textDocument/inlineCompletion";
 }
 pub struct TextDocumentContentRequest;
@@ -7316,6 +8956,11 @@ impl LspRequest for TextDocumentContentRequest {
 }
 pub struct TextDocumentContentRefreshRequest;
 impl LspRequest for TextDocumentContentRefreshRequest {
+    type Params = TextDocumentContentRefreshParams;
+    type Result = ();
+    const METHOD: &'static str = "workspace/textDocumentContent/refresh";
+}
+impl lsp_types::request::Request for TextDocumentContentRefreshRequest {
     type Params = TextDocumentContentRefreshParams;
     type Result = ();
     const METHOD: &'static str = "workspace/textDocumentContent/refresh";
@@ -7347,19 +8992,19 @@ impl LspRequest for ShutdownRequest {
 pub struct ShowMessageRequest;
 impl LspRequest for ShowMessageRequest {
     type Params = ShowMessageRequestParams;
-    type Result = LspAny;
+    type Result = Option<MessageActionItem>;
     const METHOD: &'static str = "window/showMessageRequest";
 }
 pub struct WillSaveTextDocumentWaitUntilRequest;
 impl LspRequest for WillSaveTextDocumentWaitUntilRequest {
     type Params = WillSaveTextDocumentParams;
-    type Result = LspAny;
+    type Result = Option<Vec<TextEdit>>;
     const METHOD: &'static str = "textDocument/willSaveWaitUntil";
 }
 pub struct CompletionRequest;
 impl LspRequest for CompletionRequest {
     type Params = CompletionParams;
-    type Result = LspAny;
+    type Result = Option<CompletionItemArrayOrCompletionList>;
     const METHOD: &'static str = "textDocument/completion";
 }
 pub struct CompletionResolveRequest;
@@ -7371,43 +9016,43 @@ impl LspRequest for CompletionResolveRequest {
 pub struct HoverRequest;
 impl LspRequest for HoverRequest {
     type Params = HoverParams;
-    type Result = LspAny;
+    type Result = Option<Hover>;
     const METHOD: &'static str = "textDocument/hover";
 }
 pub struct SignatureHelpRequest;
 impl LspRequest for SignatureHelpRequest {
     type Params = SignatureHelpParams;
-    type Result = LspAny;
+    type Result = Option<SignatureHelp>;
     const METHOD: &'static str = "textDocument/signatureHelp";
 }
 pub struct DefinitionRequest;
 impl LspRequest for DefinitionRequest {
     type Params = DefinitionParams;
-    type Result = LspAny;
+    type Result = Option<DefinitionOrDefinitionLinkArray>;
     const METHOD: &'static str = "textDocument/definition";
 }
 pub struct ReferencesRequest;
 impl LspRequest for ReferencesRequest {
     type Params = ReferenceParams;
-    type Result = LspAny;
+    type Result = Option<Vec<Location>>;
     const METHOD: &'static str = "textDocument/references";
 }
 pub struct DocumentHighlightRequest;
 impl LspRequest for DocumentHighlightRequest {
     type Params = DocumentHighlightParams;
-    type Result = LspAny;
+    type Result = Option<Vec<DocumentHighlight>>;
     const METHOD: &'static str = "textDocument/documentHighlight";
 }
 pub struct DocumentSymbolRequest;
 impl LspRequest for DocumentSymbolRequest {
     type Params = DocumentSymbolParams;
-    type Result = LspAny;
+    type Result = Option<DocumentSymbolArrayOrSymbolInformationArray>;
     const METHOD: &'static str = "textDocument/documentSymbol";
 }
 pub struct CodeActionRequest;
 impl LspRequest for CodeActionRequest {
     type Params = CodeActionParams;
-    type Result = LspAny;
+    type Result = Option<Vec<CodeActionOrCommand>>;
     const METHOD: &'static str = "textDocument/codeAction";
 }
 pub struct CodeActionResolveRequest;
@@ -7419,7 +9064,7 @@ impl LspRequest for CodeActionResolveRequest {
 pub struct WorkspaceSymbolRequest;
 impl LspRequest for WorkspaceSymbolRequest {
     type Params = WorkspaceSymbolParams;
-    type Result = LspAny;
+    type Result = Option<SymbolInformationArrayOrWorkspaceSymbolArray>;
     const METHOD: &'static str = "workspace/symbol";
 }
 pub struct WorkspaceSymbolResolveRequest;
@@ -7431,7 +9076,7 @@ impl LspRequest for WorkspaceSymbolResolveRequest {
 pub struct CodeLensRequest;
 impl LspRequest for CodeLensRequest {
     type Params = CodeLensParams;
-    type Result = LspAny;
+    type Result = Option<Vec<CodeLens>>;
     const METHOD: &'static str = "textDocument/codeLens";
 }
 pub struct CodeLensResolveRequest;
@@ -7449,7 +9094,7 @@ impl LspRequest for CodeLensRefreshRequest {
 pub struct DocumentLinkRequest;
 impl LspRequest for DocumentLinkRequest {
     type Params = DocumentLinkParams;
-    type Result = LspAny;
+    type Result = Option<Vec<DocumentLink>>;
     const METHOD: &'static str = "textDocument/documentLink";
 }
 pub struct DocumentLinkResolveRequest;
@@ -7461,43 +9106,43 @@ impl LspRequest for DocumentLinkResolveRequest {
 pub struct DocumentFormattingRequest;
 impl LspRequest for DocumentFormattingRequest {
     type Params = DocumentFormattingParams;
-    type Result = LspAny;
+    type Result = Option<Vec<TextEdit>>;
     const METHOD: &'static str = "textDocument/formatting";
 }
 pub struct DocumentRangeFormattingRequest;
 impl LspRequest for DocumentRangeFormattingRequest {
     type Params = DocumentRangeFormattingParams;
-    type Result = LspAny;
+    type Result = Option<Vec<TextEdit>>;
     const METHOD: &'static str = "textDocument/rangeFormatting";
 }
 pub struct DocumentRangesFormattingRequest;
 impl LspRequest for DocumentRangesFormattingRequest {
     type Params = DocumentRangesFormattingParams;
-    type Result = LspAny;
+    type Result = Option<Vec<TextEdit>>;
     const METHOD: &'static str = "textDocument/rangesFormatting";
 }
 pub struct DocumentOnTypeFormattingRequest;
 impl LspRequest for DocumentOnTypeFormattingRequest {
     type Params = DocumentOnTypeFormattingParams;
-    type Result = LspAny;
+    type Result = Option<Vec<TextEdit>>;
     const METHOD: &'static str = "textDocument/onTypeFormatting";
 }
 pub struct RenameRequest;
 impl LspRequest for RenameRequest {
     type Params = RenameParams;
-    type Result = LspAny;
+    type Result = Option<WorkspaceEdit>;
     const METHOD: &'static str = "textDocument/rename";
 }
 pub struct PrepareRenameRequest;
 impl LspRequest for PrepareRenameRequest {
     type Params = PrepareRenameParams;
-    type Result = LspAny;
+    type Result = Option<PrepareRenameResult>;
     const METHOD: &'static str = "textDocument/prepareRename";
 }
 pub struct ExecuteCommandRequest;
 impl LspRequest for ExecuteCommandRequest {
     type Params = ExecuteCommandParams;
-    type Result = LspAny;
+    type Result = Option<LSPAny>;
     const METHOD: &'static str = "workspace/executeCommand";
 }
 pub struct ApplyWorkspaceEditRequest;

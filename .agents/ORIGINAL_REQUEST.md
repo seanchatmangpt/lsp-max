@@ -888,5 +888,80 @@ The repository is either admitted by conformance calculation or refused with nam
 
 # BEGIN NOW
 
-Start with the Coordinator initial snapshot.
 
+
+## Follow-up — 2026-06-04T21:27:15-07:00
+
+Verify and close the protocol vocabulary generation logic, ensuring every LSP 3.18 meta-model type kind has an explicit Rust lowering policy in `tower-lsp-max-specgen` and passes all workspace checks.
+
+Working directory: /Users/sac/tower-lsp-max
+Integrity mode: development
+
+## Requirements
+
+### R1. Lowering Policy Mapping & Audit
+- Analyze all types, structures, type aliases, enums, unions, and intersections in the LSP 3.18 meta-model.
+- Document an explicit lowering policy for each category:
+  - Native Rust type
+  - Boxed recursive type
+  - Transparent newtype
+  - Tagged/untagged enum
+  - Intentional `LspAny` / `serde_json::Value` fallback
+  - Refused/unsupported form
+- Save this analysis in a comprehensive lowering report.
+
+### R2. Specgen Alignment
+- Update the generator logic in `crates/tower-lsp-max-specgen` to enforce these explicit mapping policies.
+- Ensure that any silent or undocumented fallback conversions are replaced by explicit structural lowerings or documented fallback policies.
+- Regenerate the protocol types if generator policies are modified, and ensure compilation integrity.
+
+### R3. Workspace Verification
+- Run full verification checks on the entire workspace.
+- The workspace must build cleanly with no formatting violations, no test failures, and no Clippy warnings under `-D warnings`.
+
+## Acceptance Criteria
+
+### Verification and Conformance
+- [ ] The generated report `docs/reports/MAX-002-lowering-conformance.md` exists and details the explicit lowering policy for each meta-model type variant.
+- [ ] `cargo check --workspace` compiles successfully.
+- [ ] `cargo test --workspace` executes successfully.
+- [ ] `cargo clippy --workspace --all-targets -- -D warnings` passes with zero warnings or errors.
+- [ ] `cargo fmt --check` passes successfully.
+
+## Follow-up — 2026-06-04T21:35:31-07:00
+
+Implement the 5-layer Autonomic Manufactured Intelligence (AMI) mesh and Knowledge Hook Layer in `tower-lsp-max`, enabling chained LSP instances to coordinate state transitions, diagnostics, and repairs self-regulated by the A = μ(O*) equation.
+
+Working directory: /Users/sac/tower-lsp-max
+Integrity mode: benchmark
+
+## Requirements
+
+### R1. Formal LSP Representation & Hook Layer
+- Implement the formal LSP model representation: `LSP_i = ⟨O_i*, H_i, Φ_i, D_i, R_i, A_i, ρ_i⟩`.
+- Define a reusable `Hook` / `H_i` interface representing state-triggered knowledge/action routing.
+- Enable hooks to be registered for specific state changes, diagnostics (`D_i`), repair plans (`R_i`), or receipts (`ρ_i`).
+
+### R2. 5-Layer Autonomic Architecture
+- **Actuation Grammar**: CLI command parser linking noun/verbs and `#[verb]` actions.
+- **Local LSP Surface**: JSON-RPC layer exposing diagnostics, code actions, workspace edits, and custom `max/*` methods.
+- **Law-State Runtime**: Transition validation, compliance evaluation `Φ(O*)`, and emission of receipts (`ρ`) or diagnostics (`D`).
+- **Knowledge Hook Layer**: Event routing routing events (diagnostics, receipts) to hook interfaces.
+- **Autonomic LSP Mesh**: Mesh controller running multiple chained LSPs where consequence/events of one trigger hooks of another.
+
+### R3. Customer Service Proof Case
+- Realize the customer service flow as a verification proof case:
+  `customer language → old-AI parse/classify → missing-state diagnostics → clarifying question → policy/process transition → bounded action → receipt → knowledge hook`
+- Show how a diagnostic event in `LSP_1` hooks into `LSP_2` to synthesize a repair plan, update state, and emit a receipt.
+
+### R4. Workspace Verification
+- Ensure the entire workspace compiles, format-checks, and tests cleanly.
+
+## Acceptance Criteria
+
+### Execution & Integration
+- [ ] A multi-LSP integration test (`tests/test_autonomic_mesh.rs`) demonstrates that a diagnostic or receipt in `LSP_1` triggers a hook in `LSP_2`, generating a repair plan and updating its state.
+- [ ] `cargo check --workspace` compiles successfully.
+- [ ] `cargo test --workspace` executes successfully.
+- [ ] `cargo clippy --workspace --all-targets -- -D warnings` passes with zero warnings.
+- [ ] `cargo fmt --check` passes successfully.
