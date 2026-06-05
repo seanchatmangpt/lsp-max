@@ -36,8 +36,9 @@ impl TelemetryService {
         let params = serde_json::json!({ "destination": destination, "data_id": data_id });
         // Wire to runtime: exportAnalysisBundle for the first instance that matches data_id,
         // or emit a receipt recording the export event.
-        let instance_id = mesh.instances.keys().next().cloned()
+        let instance_id_str = mesh.instances.keys().next().cloned()
             .unwrap_or_else(|| "default".to_string());
+        let instance_id = tower_lsp_max_runtime::InstanceId::from(instance_id_str.clone());
         // Record export as a bounded action
         mesh.execute_action(tower_lsp_max_runtime::MeshAction::ExecuteBoundedAction {
             instance_id: instance_id.clone(),
@@ -57,8 +58,9 @@ impl TelemetryService {
 
     pub fn trace(&self, span_name: &str) -> std::result::Result<TelemetryStatus, String> {
         let mut mesh = AutonomicMesh::load_from_file(&self.state_path).map_err(|e| e.to_string())?;
-        let instance_id = mesh.instances.keys().next().cloned()
+        let instance_id_str = mesh.instances.keys().next().cloned()
             .unwrap_or_else(|| "default".to_string());
+        let instance_id = tower_lsp_max_runtime::InstanceId::from(instance_id_str.clone());
         mesh.execute_action(tower_lsp_max_runtime::MeshAction::ExecuteBoundedAction {
             instance_id,
             action_id: format!("telemetry-trace-{}", span_name),
@@ -74,8 +76,9 @@ impl TelemetryService {
         value: f64,
     ) -> std::result::Result<TelemetryStatus, String> {
         let mut mesh = AutonomicMesh::load_from_file(&self.state_path).map_err(|e| e.to_string())?;
-        let instance_id = mesh.instances.keys().next().cloned()
+        let instance_id_str = mesh.instances.keys().next().cloned()
             .unwrap_or_else(|| "default".to_string());
+        let instance_id = tower_lsp_max_runtime::InstanceId::from(instance_id_str.clone());
         mesh.execute_action(tower_lsp_max_runtime::MeshAction::ExecuteBoundedAction {
             instance_id,
             action_id: format!("telemetry-metric-{}", metric_name),

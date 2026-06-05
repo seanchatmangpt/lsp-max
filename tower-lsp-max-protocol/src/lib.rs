@@ -11,6 +11,43 @@ use lsp_types::{ClientCapabilities, CodeAction, Diagnostic, ServerCapabilities};
 use serde::{Deserialize, Serialize};
 
 // ---------------------------------------------------------------------------
+// InstanceId — newtype for LSP instance identifiers
+// ---------------------------------------------------------------------------
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct InstanceId(pub String);
+
+impl From<String> for InstanceId {
+    fn from(s: String) -> Self {
+        InstanceId(s)
+    }
+}
+
+impl From<&str> for InstanceId {
+    fn from(s: &str) -> Self {
+        InstanceId(s.to_string())
+    }
+}
+
+impl PartialEq<str> for InstanceId {
+    fn eq(&self, other: &str) -> bool {
+        self.0 == other
+    }
+}
+impl PartialEq<InstanceId> for str {
+    fn eq(&self, other: &InstanceId) -> bool {
+        self == other.0
+    }
+}
+
+
+impl std::fmt::Display for InstanceId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+// ---------------------------------------------------------------------------
 // LawAxis — replaces ad-hoc string law_ids
 // ---------------------------------------------------------------------------
 
@@ -627,7 +664,7 @@ mod policy_state_tests {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LspStateModel {
-    pub instance_id: String,
+    pub instance_id: InstanceId,
     pub phase: String, // e.g. "Uninitialized", "Initializing", "Initialized", etc.
     pub diagnostics: Vec<MaxDiagnostic>,
     pub receipts: Vec<Receipt>,
@@ -637,24 +674,24 @@ pub struct LspStateModel {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum HookEvent {
     StateTransition {
-        instance_id: String,
+        instance_id: InstanceId,
         from_phase: String,
         to_phase: String,
     },
     DiagnosticEmitted {
-        instance_id: String,
+        instance_id: InstanceId,
         diagnostic: Box<MaxDiagnostic>,
     },
     DiagnosticCleared {
-        instance_id: String,
+        instance_id: InstanceId,
         diagnostic_id: String,
     },
     ReceiptEmitted {
-        instance_id: String,
+        instance_id: InstanceId,
         receipt: Receipt,
     },
     PolicyStateChanged {
-        instance_id: String,
+        instance_id: InstanceId,
         from_state: PolicyState,
         to_state: PolicyState,
     },

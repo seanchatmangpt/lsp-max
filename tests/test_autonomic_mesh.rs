@@ -1,6 +1,7 @@
 use tower_lsp_max_runtime::{
-    AutonomicMesh, CustomerRequestClassifierHook, Hook, HookEvent, LspInstance, LspPhase,
-    MaxDiagnostic, MeshAction, PolicyEvaluationHook, PolicyState, Receipt, ReceiptRoutingHook,
+    AutonomicMesh, CustomerRequestClassifierHook, Hook, HookEvent, InstanceId, LspInstance,
+    LspPhase, MaxDiagnostic, MeshAction, PolicyEvaluationHook, PolicyState, Receipt,
+    ReceiptRoutingHook,
 };
 
 struct CustomerServiceWorkflowHook;
@@ -20,7 +21,7 @@ impl Hook for CustomerServiceWorkflowHook {
             } => {
                 if instance_id == "LSP_1" && receipt.receipt_id == "rcpt-customer-proof" {
                     actions.push(MeshAction::EmitReceipt {
-                        instance_id: "LSP_2".to_string(),
+                        instance_id: InstanceId::from("LSP_2"),
                         receipt: Receipt {
                             receipt_id: "rcpt-customer-proof".to_string(),
                             hash: receipt.hash.clone(),
@@ -31,11 +32,11 @@ impl Hook for CustomerServiceWorkflowHook {
                 // Step 8: The receipt event triggers the hook to notify LSP_1 to clear its diagnostic and mark state as successfully transitioned.
                 if instance_id == "LSP_2" && receipt.receipt_id == "rcpt-refund-executed" {
                     actions.push(MeshAction::ClearDiagnostic {
-                        instance_id: "LSP_1".to_string(),
+                        instance_id: InstanceId::from("LSP_1"),
                         diagnostic_id: "damaged-proof".to_string(),
                     });
                     actions.push(MeshAction::TransitionPolicyState {
-                        instance_id: "LSP_1".to_string(),
+                        instance_id: InstanceId::from("LSP_1"),
                         new_state: PolicyState::RefundAuthorized,
                     });
                 }
@@ -48,7 +49,7 @@ impl Hook for CustomerServiceWorkflowHook {
                 // If LSP_1 transitioned to ClarificationRequested, propagate state to LSP_2
                 if instance_id == "LSP_1" && to_state == &PolicyState::ClarificationRequested {
                     actions.push(MeshAction::TransitionPolicyState {
-                        instance_id: "LSP_2".to_string(),
+                        instance_id: InstanceId::from("LSP_2"),
                         new_state: PolicyState::ClarificationRequested,
                     });
                 }
@@ -58,7 +59,7 @@ impl Hook for CustomerServiceWorkflowHook {
                     && to_state == &PolicyState::RefundAuthorized
                 {
                     actions.push(MeshAction::EmitReceipt {
-                        instance_id: "LSP_2".to_string(),
+                        instance_id: InstanceId::from("LSP_2"),
                         receipt: Receipt {
                             receipt_id: "rcpt-refund-executed".to_string(),
                             hash: "sha256-cryptographic-proof-of-refund-executed-successfully-0xdeadbeef".to_string(),
@@ -106,7 +107,7 @@ fn test_customer_service_autonomic_mesh_workflow() {
     // 1. Emit customer language state in LSP_1.
     // Transition LSP_1 from Uninitialized to Initialized.
     mesh.dispatch_event(HookEvent::StateTransition {
-        instance_id: "LSP_1".to_string(),
+        instance_id: InstanceId::from("LSP_1"),
         from_phase: "Uninitialized".to_string(),
         to_phase: "Initialized".to_string(),
     });
@@ -151,7 +152,7 @@ fn test_customer_service_autonomic_mesh_workflow() {
 
     // 4. Customer submits the proof, triggering state transition in LSP_1.
     mesh.execute_action(MeshAction::EmitReceipt {
-        instance_id: "LSP_1".to_string(),
+        instance_id: InstanceId::from("LSP_1"),
         receipt: Receipt {
             receipt_id: "rcpt-customer-proof".to_string(),
             hash: "sha256-cryptographic-customer-proof-of-damaged-item-verification-hash"
@@ -252,13 +253,13 @@ fn test_save_load_preserves_instances() {
 
     // Add a diagnostic to "A"
     mesh.execute_action(MeshAction::AddDiagnostic {
-        instance_id: "A".to_string(),
+        instance_id: InstanceId::from("A"),
         diagnostic: Box::new(make_test_diagnostic("diag-save-load", "law-save-load")),
     });
 
     // Add a receipt to "B"
     mesh.execute_action(MeshAction::EmitReceipt {
-        instance_id: "B".to_string(),
+        instance_id: InstanceId::from("B"),
         receipt: Receipt {
             receipt_id: "rcpt-save-load".to_string(),
             hash: "hash-save-load".to_string(),
@@ -332,7 +333,7 @@ fn test_hooks_not_persisted_must_be_reregistered() {
     // Dispatch DiagnosticEmitted on LSP_1 with law-intake-validation
     // IntakeDiagnosticHook should transition LSP_2 to ClarificationRequested
     mesh.dispatch_event(HookEvent::DiagnosticEmitted {
-        instance_id: "LSP_1".to_string(),
+        instance_id: InstanceId::from("LSP_1"),
         diagnostic: Box::new(make_test_diagnostic("diag-intake", "law-intake-validation")),
     });
 
@@ -356,11 +357,11 @@ fn test_receipt_routing_hook_partial_clear() {
 
     // Add two diagnostics to LSP_1 via execute_action so they are registered and tracked
     mesh.execute_action(MeshAction::AddDiagnostic {
-        instance_id: "LSP_1".to_string(),
+        instance_id: InstanceId::from("LSP_1"),
         diagnostic: Box::new(make_test_diagnostic("diag-a", "law-test")),
     });
     mesh.execute_action(MeshAction::AddDiagnostic {
-        instance_id: "LSP_1".to_string(),
+        instance_id: InstanceId::from("LSP_1"),
         diagnostic: Box::new(make_test_diagnostic("diag-b", "law-test")),
     });
 
@@ -368,7 +369,7 @@ fn test_receipt_routing_hook_partial_clear() {
 
     // Dispatch ReceiptEmitted from LSP_2 — ReceiptRoutingHook should clear both diags on LSP_1
     mesh.dispatch_event(HookEvent::ReceiptEmitted {
-        instance_id: "LSP_2".to_string(),
+        instance_id: InstanceId::from("LSP_2"),
         receipt: Receipt {
             receipt_id: "rcpt-routing-test".to_string(),
             hash: "hash-routing-test".to_string(),
@@ -395,16 +396,16 @@ fn test_receipt_routing_hook_clear_fires_event_per_diag() {
     mesh.register_hook(Box::new(ReceiptRoutingHook::new()));
 
     mesh.execute_action(MeshAction::AddDiagnostic {
-        instance_id: "LSP_1".to_string(),
+        instance_id: InstanceId::from("LSP_1"),
         diagnostic: Box::new(make_test_diagnostic("diag-a", "law-test")),
     });
     mesh.execute_action(MeshAction::AddDiagnostic {
-        instance_id: "LSP_1".to_string(),
+        instance_id: InstanceId::from("LSP_1"),
         diagnostic: Box::new(make_test_diagnostic("diag-b", "law-test")),
     });
 
     mesh.dispatch_event(HookEvent::ReceiptEmitted {
-        instance_id: "LSP_2".to_string(),
+        instance_id: InstanceId::from("LSP_2"),
         receipt: Receipt {
             receipt_id: "rcpt-routing-test".to_string(),
             hash: "hash-routing-test".to_string(),
@@ -483,7 +484,7 @@ fn test_complete_customer_service_workflow_with_rpc() {
 
     // Add a diagnostic — score should become a number
     mesh.execute_action(MeshAction::AddDiagnostic {
-        instance_id: "LSP_1".to_string(),
+        instance_id: InstanceId::from("LSP_1"),
         diagnostic: Box::new(make_test_diagnostic("rpc-test-diag", "law-rpc-test")),
     });
 
