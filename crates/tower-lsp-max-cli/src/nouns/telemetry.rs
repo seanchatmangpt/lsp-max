@@ -171,13 +171,20 @@ pub fn flush() -> Result<FlushResult> {
 mod tests {
     use super::*;
     use std::env;
+    use std::sync::Mutex;
 
-    fn with_isolated_state<F: FnOnce()>(path: &str, f: F) {
+    // Process-wide lock to prevent concurrent env::set_var races between telemetry tests.
+    static ENV_LOCK: Mutex<()> = Mutex::new(());
+
+    fn with_isolated_state<F: FnOnce()>(f: F) {
+        let _guard = ENV_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+        let tmp = tempfile::NamedTempFile::new().expect("tempfile");
+        let path = tmp.path().to_str().unwrap().to_string();
         let prev = env::var("TOWER_LSP_MAX_STATE_PATH").ok();
-        env::set_var("TOWER_LSP_MAX_STATE_PATH", path);
-        let _ = std::fs::remove_file(path);
+        env::set_var("TOWER_LSP_MAX_STATE_PATH", &path);
+        let _ = std::fs::remove_file(&path);
         f();
-        let _ = std::fs::remove_file(path);
+        let _ = std::fs::remove_file(&path);
         match prev {
             Some(v) => env::set_var("TOWER_LSP_MAX_STATE_PATH", v),
             None => env::remove_var("TOWER_LSP_MAX_STATE_PATH"),
@@ -186,7 +193,7 @@ mod tests {
 
     #[test]
     fn test_export_returns_exported_status() {
-        with_isolated_state("/tmp/telemetry_export_test.json", || {
+        with_isolated_state(|| {
             let result = export("s3://bucket".to_string(), "data-001".to_string()).unwrap();
             assert!(matches!(result.status, TelemetryStatus::Exported));
             assert_eq!(result.destination, "s3://bucket");
@@ -196,7 +203,7 @@ mod tests {
 
     #[test]
     fn test_trace_returns_traced_status() {
-        with_isolated_state("/tmp/telemetry_trace_test.json", || {
+        with_isolated_state(|| {
             let result = trace("my-span".to_string()).unwrap();
             assert!(matches!(result.status, TelemetryStatus::Traced));
             assert_eq!(result.span_name, "my-span");
@@ -205,7 +212,7 @@ mod tests {
 
     #[test]
     fn test_metrics_returns_metrics_collected_status() {
-        with_isolated_state("/tmp/telemetry_metrics_test.json", || {
+        with_isolated_state(|| {
             let result = metrics("cpu.usage".to_string(), 42.5).unwrap();
             assert!(matches!(result.status, TelemetryStatus::MetricsCollected));
             assert_eq!(result.metric_name, "cpu.usage");
@@ -215,7 +222,7 @@ mod tests {
 
     #[test]
     fn test_flush_returns_flushed_status() {
-        with_isolated_state("/tmp/telemetry_flush_test.json", || {
+        with_isolated_state(|| {
             let result = flush().unwrap();
             assert!(matches!(result.status, TelemetryStatus::Flushed));
         });

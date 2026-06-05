@@ -244,6 +244,93 @@ pub fn action(instance_id: String, action_id: String, description: String) -> Re
     })
 }
 
+#[derive(Serialize)]
+pub struct LawfulTransitionResult {
+    pub instance_id: String,
+    pub from_state: String,
+    pub to_state: String,
+    pub lawful: bool,
+    pub response: serde_json::Value,
+}
+
+#[verb("lawful-transition")]
+pub fn lawful_transition(
+    instance_id: String,
+    from_state: String,
+    to_state: String,
+) -> Result<LawfulTransitionResult> {
+    let mut mesh = AutonomicMesh::load_from_file(&crate::nouns::get_state_path())
+        .map_err(|e| clap_noun_verb::error::NounVerbError::execution_error(e.to_string()))?;
+
+    let params = serde_json::json!({
+        "from_state": from_state,
+        "to_state": to_state,
+    });
+
+    let response = mesh
+        .dispatch_rpc(&instance_id, "max/lawfulTransition", params)
+        .map_err(clap_noun_verb::error::NounVerbError::execution_error)?;
+
+    mesh.save_to_file(&crate::nouns::get_state_path())
+        .map_err(|e| clap_noun_verb::error::NounVerbError::execution_error(e.to_string()))?;
+
+    let lawful = response
+        .get("lawful")
+        .and_then(|v| v.as_bool())
+        .unwrap_or(true);
+
+    Ok(LawfulTransitionResult {
+        instance_id,
+        from_state,
+        to_state,
+        lawful,
+        response,
+    })
+}
+
+/// Result type for the  verb (RPC-backed).
+#[derive(Serialize)]
+pub struct DumpRpcResult {
+    pub instance_id: String,
+    pub raw: serde_json::Value,
+}
+
+#[verb("dump-rpc")]
+pub fn dump_rpc(instance_id: String) -> Result<DumpRpcResult> {
+    let state_path = crate::nouns::get_state_path();
+    let mut mesh = AutonomicMesh::load_from_file(&state_path)
+        .map_err(|e| clap_noun_verb::error::NounVerbError::execution_error(e.to_string()))?;
+    let params = serde_json::json!({ "instance_id": instance_id });
+    let raw = mesh
+        .dispatch_rpc(&instance_id, "max/dumpState", params)
+        .map_err(clap_noun_verb::error::NounVerbError::execution_error)?;
+    mesh.save_to_file(&state_path)
+        .map_err(|e| clap_noun_verb::error::NounVerbError::execution_error(e.to_string()))?;
+    Ok(DumpRpcResult { instance_id, raw })
+}
+
+/// Result type for the  verb (RPC-backed).
+#[derive(Serialize)]
+pub struct RestoreRpcResult {
+    pub instance_id: String,
+    pub revision: u64,
+    pub raw: serde_json::Value,
+}
+
+#[verb("restore-rpc")]
+pub fn restore_rpc(instance_id: String, revision: u64) -> Result<RestoreRpcResult> {
+    let state_path = crate::nouns::get_state_path();
+    let mut mesh = AutonomicMesh::load_from_file(&state_path)
+        .map_err(|e| clap_noun_verb::error::NounVerbError::execution_error(e.to_string()))?;
+    let params = serde_json::json!({ "instance_id": instance_id, "revision": revision });
+    let raw = mesh
+        .dispatch_rpc(&instance_id, "max/restoreState", params)
+        .map_err(clap_noun_verb::error::NounVerbError::execution_error)?;
+    mesh.save_to_file(&state_path)
+        .map_err(|e| clap_noun_verb::error::NounVerbError::execution_error(e.to_string()))?;
+    Ok(RestoreRpcResult { instance_id, revision, raw })
+}
+
 // ==============================================================================
 // 4. Tests
 // ==============================================================================

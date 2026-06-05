@@ -85,3 +85,41 @@ pub fn verify(instance_id: String) -> Result<ReceiptVerifyResult> {
         .map_err(clap_noun_verb::error::NounVerbError::execution_error)?;
     Ok(ReceiptVerifyResult { count, chain_valid })
 }
+
+#[derive(Serialize)]
+pub struct VerifyLedgerResult {
+    pub instance_id: String,
+    pub raw: serde_json::Value,
+}
+
+#[verb("verify-ledger")]
+pub fn verify_ledger(instance_id: String) -> Result<VerifyLedgerResult> {
+    let state_path = crate::nouns::get_state_path();
+    let mut mesh = AutonomicMesh::load_from_file(&state_path)
+        .map_err(|e| clap_noun_verb::error::NounVerbError::execution_error(e.to_string()))?;
+    let raw = mesh
+        .dispatch_rpc(&instance_id, "max/verifyLedger", serde_json::Value::Null)
+        .map_err(clap_noun_verb::error::NounVerbError::execution_error)?;
+    mesh.save_to_file(&state_path)
+        .map_err(|e| clap_noun_verb::error::NounVerbError::execution_error(e.to_string()))?;
+    Ok(VerifyLedgerResult { instance_id, raw })
+}
+
+#[derive(Serialize)]
+pub struct LedgerReportResult {
+    pub instance_id: String,
+    pub raw: serde_json::Value,
+}
+
+#[verb("ledger-report")]
+pub fn ledger_report(instance_id: String) -> Result<LedgerReportResult> {
+    let state_path = crate::nouns::get_state_path();
+    let mut mesh = AutonomicMesh::load_from_file(&state_path)
+        .map_err(|e| clap_noun_verb::error::NounVerbError::execution_error(e.to_string()))?;
+    let raw = mesh
+        .dispatch_rpc(&instance_id, "max/ledgerReport", serde_json::Value::Null)
+        .map_err(clap_noun_verb::error::NounVerbError::execution_error)?;
+    mesh.save_to_file(&state_path)
+        .map_err(|e| clap_noun_verb::error::NounVerbError::execution_error(e.to_string()))?;
+    Ok(LedgerReportResult { instance_id, raw })
+}

@@ -275,21 +275,127 @@ pub fn diagnose(
     })
 }
 
+#[derive(Serialize)]
+pub struct ExportBundleResult {
+    pub instance_id: String,
+    pub bundle: serde_json::Value,
+}
+
+#[verb("export-bundle")]
+pub fn export_bundle(instance_id: String, output_path: Option<String>) -> Result<ExportBundleResult> {
+    let mut mesh = AutonomicMesh::load_from_file(&crate::nouns::get_state_path())
+        .map_err(|e| clap_noun_verb::error::NounVerbError::execution_error(e.to_string()))?;
+
+    let bundle = mesh
+        .dispatch_rpc(&instance_id, "max/exportAnalysisBundle", serde_json::Value::Null)
+        .map_err(clap_noun_verb::error::NounVerbError::execution_error)?;
+
+    if let Some(path) = output_path {
+        let json_str = serde_json::to_string_pretty(&bundle)
+            .map_err(|e| clap_noun_verb::error::NounVerbError::execution_error(e.to_string()))?;
+        std::fs::write(&path, json_str)
+            .map_err(|e| clap_noun_verb::error::NounVerbError::execution_error(e.to_string()))?;
+    }
+
+    Ok(ExportBundleResult { instance_id, bundle })
+}
+
 // ==============================================================================
-// 4. Tests
+// 4. Additional verbs: explain and repair-plan
 // ==============================================================================
+
+#[derive(Serialize)]
+pub struct ExplainResult {
+    pub instance_id: String,
+    pub diagnostic_id: String,
+    pub explanation: serde_json::Value,
+}
+
+#[verb("explain")]
+pub fn explain(instance_id: String, diagnostic_id: String) -> Result<ExplainResult> {
+    let path = crate::nouns::get_state_path();
+    let mut mesh = AutonomicMesh::load_from_file(&path)
+        .map_err(|e| clap_noun_verb::error::NounVerbError::execution_error(e.to_string()))?;
+    let explanation = mesh
+        .dispatch_rpc(
+            &instance_id,
+            "max/explainDiagnostic",
+            serde_json::Value::String(diagnostic_id.clone()),
+        )
+        .map_err(clap_noun_verb::error::NounVerbError::execution_error)?;
+    Ok(ExplainResult {
+        instance_id,
+        diagnostic_id,
+        explanation,
+    })
+}
+
+#[derive(Serialize)]
+pub struct RepairPlanResult {
+    pub instance_id: String,
+    pub diagnostic_id: String,
+    pub actions: serde_json::Value,
+}
+
+#[verb("repair-plan")]
+pub fn repair_plan(instance_id: String, diagnostic_id: String) -> Result<RepairPlanResult> {
+    let path = crate::nouns::get_state_path();
+    let mut mesh = AutonomicMesh::load_from_file(&path)
+        .map_err(|e| clap_noun_verb::error::NounVerbError::execution_error(e.to_string()))?;
+    let actions = mesh
+        .dispatch_rpc(
+            &instance_id,
+            "max/repairPlan",
+            serde_json::Value::String(diagnostic_id.clone()),
+        )
+        .map_err(clap_noun_verb::error::NounVerbError::execution_error)?;
+    Ok(RepairPlanResult {
+        instance_id,
+        diagnostic_id,
+        actions,
+    })
+}
+
+// ==============================================================================
+// apply-repair verb — calls max/applyRepairTransaction RPC
+// ==============================================================================
+
+#[derive(Serialize)]
+pub struct ApplyRepairResult {
+    pub success: bool,
+    pub instance_id: String,
+    pub transaction_id: String,
+}
+
+#[verb("apply-repair")]
+pub fn apply_repair(instance_id: String, transaction_id: String) -> Result<ApplyRepairResult> {
+    let path = crate::nouns::get_state_path();
+    let mut mesh = AutonomicMesh::load_from_file(&path)
+        .map_err(|e| clap_noun_verb::error::NounVerbError::execution_error(e.to_string()))?;
+    let payload = serde_json::json!({ "transaction_id": transaction_id });
+    let resp = mesh
+        .dispatch_rpc(&instance_id, "max/applyRepairTransaction", payload)
+        .map_err(clap_noun_verb::error::NounVerbError::execution_error)?;
+    mesh.save_to_file(&path)
+        .map_err(|e| clap_noun_verb::error::NounVerbError::execution_error(e.to_string()))?;
+    let success = resp["success"].as_bool().unwrap_or(true);
+    Ok(ApplyRepairResult { success, instance_id, transaction_id })
+}
 
 #[cfg(test)]
 mod tests {
     use super::DiagnosticsService;
     use std::env;
+    use std::sync::Mutex;
 
-    fn setup_test_state() -> String {
-        let path = format!("/tmp/test_diagnostics_{}.json", std::process::id());
-        // Remove stale file if present
-        let _ = std::fs::remove_file(&path);
-        env::set_var("TOWER_LSP_MAX_STATE_PATH", &path);
-        path
+    static ENV_MUTEX: Mutex<()> = Mutex::new(());
+
+    fn setup_test_state() -> (tempfile::NamedTempFile, std::sync::MutexGuard<'static, ()>) {
+        let f = tempfile::NamedTempFile::new().expect("tempfile");
+        let guard = ENV_MUTEX.lock().unwrap_or_else(|p| p.into_inner());
+        // SAFETY: set_var under process-wide ENV_MUTEX
+        unsafe { env::set_var("TOWER_LSP_MAX_STATE_PATH", f.path().to_str().unwrap()); }
+        (f, guard)
     }
 
     #[test]

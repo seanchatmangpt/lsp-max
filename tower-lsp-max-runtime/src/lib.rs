@@ -928,6 +928,31 @@ pub enum MeshAction {
     },
 }
 
+impl std::fmt::Display for MeshAction {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            MeshAction::TransitionPolicyState { instance_id, new_state } => {
+                write!(f, "TransitionPolicyState({}, {:?})", instance_id, new_state)
+            }
+            MeshAction::ClearDiagnostic { instance_id, diagnostic_id } => {
+                write!(f, "ClearDiagnostic({}, {})", instance_id, diagnostic_id)
+            }
+            MeshAction::AddDiagnostic { instance_id, .. } => {
+                write!(f, "AddDiagnostic({})", instance_id)
+            }
+            MeshAction::EmitReceipt { instance_id, receipt } => {
+                write!(f, "EmitReceipt({}, {})", instance_id, receipt.receipt_id)
+            }
+            MeshAction::ExecuteBoundedAction { instance_id, action_id, .. } => {
+                write!(f, "ExecuteBoundedAction({}, {})", instance_id, action_id)
+            }
+            MeshAction::ResetInstance { instance_id } => {
+                write!(f, "ResetInstance({})", instance_id)
+            }
+        }
+    }
+}
+
 pub trait Hook: Send + Sync {
     fn name(&self) -> &str;
     fn trigger(&self, event: &HookEvent) -> Vec<MeshAction>;
@@ -1003,8 +1028,20 @@ impl LspInstance {
     }
 }
 
+impl Default for LspInstance {
+    fn default() -> Self {
+        Self {
+            id: String::new(),
+            phase: LspPhase::Uninitialized,
+            diagnostics: Vec::new(),
+            receipts: Vec::new(),
+            policy_state: None,
+        }
+    }
+}
+
 /// Coarse quality bucket derived from a conformance score.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
 pub enum ConformanceGrade {
     /// Score == 100: zero active diagnostics.
     Perfect,
@@ -1040,14 +1077,32 @@ impl ConformanceGrade {
         }
     }
 }
+impl std::fmt::Display for ConformanceGrade {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.as_str())
+    }
+}
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+
+#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
 pub struct AutonomicMeshState {
     pub instances: std::collections::HashMap<String, LspInstance>,
     pub event_log: Vec<HookEvent>,
     pub executed_bounded_actions: Vec<String>,
     #[serde(flatten)]
     pub extra: std::collections::HashMap<String, serde_json::Value>,
+}
+
+
+impl std::fmt::Display for AutonomicMeshState {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "AutonomicMeshState {{ instances: {}, event_log: {} }}",
+            self.instances.len(),
+            self.event_log.len()
+        )
+    }
 }
 
 pub struct IntakeDiagnosticHook;
@@ -1137,7 +1192,7 @@ const MAX_CONFORMANCE_DELTA_LOG: usize = 4096;
 
 /// A single recorded conformance score change on a mesh instance.
 /// Returned by `max/conformanceDelta` to enable live-dashboard polling.
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
 pub struct ConformanceDeltaEntry {
     /// Monotonically-increasing sequence number assigned at the moment of the change.
     pub seq: u64,
@@ -1167,6 +1222,9 @@ impl Default for AutonomicMesh {
         Self::new()
     }
 }
+
+/// Type alias for ergonomic use in tests and short-form code.
+pub type MaxMesh = AutonomicMesh;
 
 /// Build a [`tower_lsp_max_protocol::ConformanceVector`] from a slice of diagnostics.
 ///
@@ -1284,6 +1342,11 @@ impl AutonomicMesh {
 
     pub fn add_instance(&mut self, instance: LspInstance) {
         self.instances.insert(instance.id.clone(), instance);
+    }
+
+    /// Convenience: create and register a bare `LspInstance` by id string.
+    pub fn register_instance(&mut self, id: String) {
+        self.add_instance(LspInstance::new(&id));
     }
 
     pub fn register_hook(&mut self, hook: Box<dyn Hook>) {
@@ -1454,6 +1517,11 @@ impl AutonomicMesh {
                         eprintln!("warn: failed to write receipt to {}: {}", file_path.display(), e);
                     }
                 }
+                self.dispatch_event(HookEvent::BoundedActionExecuted {
+                    instance_id,
+                    action_id: action_id.clone(),
+                    description: description.clone(),
+                });
                 self.executed_bounded_actions.push(action_id);
             }
             MeshAction::ResetInstance { instance_id } => {
@@ -1462,6 +1530,9 @@ impl AutonomicMesh {
                     instance.receipts.clear();
                     instance.policy_state = Some(PolicyState::Operational);
                 }
+                self.dispatch_event(HookEvent::InstanceReset {
+                    instance_id,
+                });
             }
         }
 
@@ -1957,6 +2028,8 @@ impl AutonomicMesh {
                         HookEvent::DiagnosticCleared { instance_id: id, .. } |
                         HookEvent::ReceiptEmitted { instance_id: id, .. } |
                         HookEvent::PolicyStateChanged { instance_id: id, .. } => id.0 == instance_id,
+                        HookEvent::BoundedActionExecuted { instance_id: id, .. } => id.0 == instance_id,
+                        HookEvent::InstanceReset { instance_id: id } => id.0 == instance_id,
                     })
                     .filter_map(|e| serde_json::to_value(e).ok())
                     .collect();
@@ -4270,5 +4343,239 @@ mod test_conformance_grade {
         let score = inst.conformance_score();
         assert!((score - 50.0).abs() < f64::EPSILON, "expected score 50.0, got {}", score);
         assert_eq!(inst.conformance_grade(), ConformanceGrade::Degraded);
+    }
+
+    #[test]
+    fn reset_instance_emits_instance_reset_hook_event() {
+        let mut mesh = MaxMesh::new();
+        mesh.register_instance("INST_RESET".to_string());
+        // Clear the event log so we observe only the reset event
+        mesh.event_log.clear();
+        let result = mesh.dispatch_rpc("INST_RESET", "max/reset", serde_json::json!(null));
+        assert!(result.is_ok(), "max/reset must succeed: {:?}", result);
+        // The event_log should contain an InstanceReset event for the instance
+        let reset_event = mesh.event_log.iter().find(|e| {
+            matches!(e, HookEvent::InstanceReset { instance_id } if instance_id.0 == "INST_RESET")
+        });
+        assert!(
+            reset_event.is_some(),
+            "expected InstanceReset in event_log after max/reset, got: {:?}",
+            mesh.event_log
+        );
+    }
+}
+
+#[cfg(test)]
+mod test_bounded_action_event {
+    use super::*;
+
+    #[test]
+    fn test_execute_bounded_action_emits_hook_event() {
+        let mut mesh = AutonomicMesh::new();
+        mesh.add_instance(LspInstance::new("bounded-test"));
+        mesh.execute_action(MeshAction::ExecuteBoundedAction {
+            instance_id: InstanceId::from("bounded-test"),
+            action_id: "act-test-action".to_string(),
+            description: "A test bounded action".to_string(),
+        });
+        let found = mesh.event_log.iter().any(|e| matches!(
+            e,
+            HookEvent::BoundedActionExecuted {
+                action_id,
+                ..
+            } if action_id == "act-test-action"
+        ));
+        assert!(found, "BoundedActionExecuted event must appear in event_log after execute_bounded_action");
+    }
+}
+
+#[cfg(test)]
+mod policy_and_routing_hook_unit_tests {
+    use super::*;
+
+    // -----------------------------------------------------------------------
+    // PolicyEvaluationHook — ReceiptEmitted arm
+    // -----------------------------------------------------------------------
+
+    /// ReceiptEmitted with a matching proof receipt_id while policy is
+    /// ClarificationRequested → returns TransitionPolicyState(RefundAuthorized).
+    #[test]
+    fn policy_hook_receipt_emitted_matching_id_returns_transition() {
+        let hook = PolicyEvaluationHook::new();
+        {
+            let mut states = hook.policy_states.lock().unwrap();
+            states.insert("LSP_X".to_string(), PolicyState::ClarificationRequested);
+        }
+
+        let event = HookEvent::ReceiptEmitted {
+            instance_id: InstanceId::from("LSP_X"),
+            receipt: Receipt {
+                receipt_id: "rcpt-customer-proof".to_string(),
+                hash: "h".to_string(),
+                prev_receipt_hash: None,
+            },
+        };
+
+        let actions = hook.trigger(&event);
+        assert_eq!(actions.len(), 1, "expected exactly one action");
+        match &actions[0] {
+            MeshAction::TransitionPolicyState { instance_id, new_state } => {
+                assert_eq!(instance_id.0, "LSP_X");
+                assert_eq!(*new_state, PolicyState::RefundAuthorized);
+            }
+            other => panic!("unexpected action: {:?}", other),
+        }
+    }
+
+    /// ReceiptEmitted with a non-proof receipt_id → returns no actions.
+    #[test]
+    fn policy_hook_receipt_emitted_non_matching_id_returns_empty() {
+        let hook = PolicyEvaluationHook::new();
+        {
+            let mut states = hook.policy_states.lock().unwrap();
+            states.insert("LSP_X".to_string(), PolicyState::ClarificationRequested);
+        }
+
+        let event = HookEvent::ReceiptEmitted {
+            instance_id: InstanceId::from("LSP_X"),
+            receipt: Receipt {
+                receipt_id: "rcpt-unrelated".to_string(),
+                hash: "h".to_string(),
+                prev_receipt_hash: None,
+            },
+        };
+
+        let actions = hook.trigger(&event);
+        assert!(actions.is_empty(), "non-proof receipt should produce no actions");
+    }
+
+    // -----------------------------------------------------------------------
+    // PolicyEvaluationHook — StateTransition arm (via PolicyStateChanged)
+    // -----------------------------------------------------------------------
+
+    /// PolicyStateChanged from ClarificationRequested to RefundAuthorized
+    /// → returns ExecuteBoundedAction(act-create-refund-receipt).
+    #[test]
+    fn policy_hook_state_transition_clarification_to_refund_emits_bounded_action() {
+        let hook = PolicyEvaluationHook::new();
+
+        let event = HookEvent::PolicyStateChanged {
+            instance_id: InstanceId::from("LSP_Y"),
+            from_state: PolicyState::ClarificationRequested,
+            to_state: PolicyState::RefundAuthorized,
+        };
+
+        let actions = hook.trigger(&event);
+        assert_eq!(actions.len(), 1, "expected exactly one bounded action");
+        match &actions[0] {
+            MeshAction::ExecuteBoundedAction { instance_id, action_id, .. } => {
+                assert_eq!(instance_id.0, "LSP_Y");
+                assert_eq!(action_id, "act-create-refund-receipt");
+            }
+            other => panic!("unexpected action: {:?}", other),
+        }
+    }
+
+    /// PolicyStateChanged with a transition that does NOT match
+    /// ClarificationRequested→RefundAuthorized → returns no actions.
+    #[test]
+    fn policy_hook_state_transition_other_transition_returns_empty() {
+        let hook = PolicyEvaluationHook::new();
+
+        let event = HookEvent::PolicyStateChanged {
+            instance_id: InstanceId::from("LSP_Y"),
+            from_state: PolicyState::Operational,
+            to_state: PolicyState::ClarificationRequested,
+        };
+
+        let actions = hook.trigger(&event);
+        assert!(
+            actions.is_empty(),
+            "non-refund transition should produce no bounded actions"
+        );
+    }
+
+    // -----------------------------------------------------------------------
+    // ReceiptRoutingHook — DiagnosticCleared arm
+    // -----------------------------------------------------------------------
+
+    /// DiagnosticCleared for a diagnostic that was previously tracked
+    /// → removes it from the internal set (the arm produces no external actions).
+    #[test]
+    fn routing_hook_diagnostic_cleared_removes_tracked_diagnostic() {
+        let hook = ReceiptRoutingHook::new();
+
+        let diag = MaxDiagnostic {
+            diagnostic_id: "diag-abc".to_string(),
+            law_id: "law-test".to_string(),
+            attempted_transition: None,
+            violated_axes: vec![],
+            doc_routes: vec![],
+            lsp: lsp_types::Diagnostic {
+                range: lsp_types::Range::default(),
+                severity: Some(lsp_types::DiagnosticSeverity::ERROR),
+                code: None,
+                code_description: None,
+                source: None,
+                message: "test".to_string(),
+                related_information: None,
+                tags: None,
+                data: None,
+            },
+            repair_actions: vec![],
+            verification_gates: vec![],
+            receipt_obligation: None,
+            ..Default::default()
+        };
+        let emit_event = HookEvent::DiagnosticEmitted {
+            instance_id: InstanceId::from("LSP_1"),
+            diagnostic: Box::new(diag),
+        };
+        hook.trigger(&emit_event);
+
+        {
+            let diags = hook.active_diagnostics.lock().unwrap();
+            assert!(
+                diags.get("LSP_1").map(|s| s.contains("diag-abc")).unwrap_or(false),
+                "diagnostic should be tracked after DiagnosticEmitted"
+            );
+        }
+
+        let clear_event = HookEvent::DiagnosticCleared {
+            instance_id: InstanceId::from("LSP_1"),
+            diagnostic_id: "diag-abc".to_string(),
+        };
+        let actions = hook.trigger(&clear_event);
+
+        assert!(
+            actions.is_empty(),
+            "DiagnosticCleared arm should return no MeshActions"
+        );
+
+        {
+            let diags = hook.active_diagnostics.lock().unwrap();
+            let still_present = diags
+                .get("LSP_1")
+                .map(|s| s.contains("diag-abc"))
+                .unwrap_or(false);
+            assert!(!still_present, "diagnostic should be removed after DiagnosticCleared");
+        }
+    }
+
+    /// DiagnosticCleared for an unknown diagnostic_id → returns no actions and does not panic.
+    #[test]
+    fn routing_hook_diagnostic_cleared_wrong_id_returns_empty() {
+        let hook = ReceiptRoutingHook::new();
+
+        let event = HookEvent::DiagnosticCleared {
+            instance_id: InstanceId::from("LSP_1"),
+            diagnostic_id: "no-such-diag".to_string(),
+        };
+
+        let actions = hook.trigger(&event);
+        assert!(
+            actions.is_empty(),
+            "clearing unknown diagnostic should produce no actions"
+        );
     }
 }

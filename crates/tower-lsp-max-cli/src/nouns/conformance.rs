@@ -238,6 +238,38 @@ pub fn vector_rpc(instance_id: String) -> Result<ConformanceVectorRpcResult> {
     })
 }
 
+/// Result type for the  verb.
+#[derive(Serialize)]
+pub struct RunGateResult {
+    pub instance_id: String,
+    pub gate_id: String,
+    pub passed: bool,
+    pub raw: serde_json::Value,
+}
+
+#[verb("run-gate")]
+pub fn run_gate(instance_id: String, gate_id: String) -> Result<RunGateResult> {
+    let state_path = crate::nouns::get_state_path();
+    let mut mesh = AutonomicMesh::load_from_file(&state_path)
+        .map_err(NounVerbError::execution_error)?;
+    let params = serde_json::json!({ "gate_id": gate_id });
+    let response = mesh
+        .dispatch_rpc(&instance_id, "max/runGate", params)
+        .map_err(NounVerbError::execution_error)?;
+    mesh.save_to_file(&state_path)
+        .map_err(NounVerbError::execution_error)?;
+    let passed = response
+        .as_bool()
+        .or_else(|| response.get("passed").and_then(|v| v.as_bool()))
+        .unwrap_or(false);
+    Ok(RunGateResult {
+        instance_id,
+        gate_id,
+        passed,
+        raw: response,
+    })
+}
+
 // ==============================================================================
 // 4. Tests
 // ==============================================================================
@@ -290,4 +322,23 @@ mod tests {
             assert_eq!(axis.unknown, 1);
         }
     }
+}
+
+#[derive(Serialize)]
+pub struct ConformanceDeltaResult {
+    pub instance_id: String,
+    pub raw: serde_json::Value,
+}
+
+#[verb("delta")]
+pub fn delta(instance_id: String) -> Result<ConformanceDeltaResult> {
+    let state_path = crate::nouns::get_state_path();
+    let mut mesh = AutonomicMesh::load_from_file(&state_path)
+        .map_err(NounVerbError::execution_error)?;
+    let raw = mesh
+        .dispatch_rpc(&instance_id, "max/conformanceDelta", serde_json::Value::Null)
+        .map_err(NounVerbError::execution_error)?;
+    mesh.save_to_file(&state_path)
+        .map_err(NounVerbError::execution_error)?;
+    Ok(ConformanceDeltaResult { instance_id, raw })
 }

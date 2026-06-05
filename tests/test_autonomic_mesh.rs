@@ -247,7 +247,8 @@ fn make_test_diagnostic(id: &str, law_id: &str) -> MaxDiagnostic {
 
 #[test]
 fn test_save_load_preserves_instances() {
-    let path = "/tmp/mesh_test_state_save_load.json";
+    let tmp = tempfile::NamedTempFile::new().expect("tempfile creation failed");
+    let path = tmp.path().to_str().unwrap();
     let _ = std::fs::remove_file(path);
 
     let mut mesh = AutonomicMesh::new();
@@ -304,7 +305,9 @@ fn test_save_load_preserves_instances() {
 
 #[test]
 fn test_load_from_file_creates_defaults_when_missing() {
-    let path = "/tmp/mesh_missing_UNIQUE_TEST.json";
+    let tmp = tempfile::NamedTempFile::new().expect("tempfile creation failed");
+    let path_owned = tmp.path().to_str().unwrap().to_string();
+    let path = &path_owned;
     let _ = std::fs::remove_file(path);
 
     let mesh = AutonomicMesh::load_from_file(path)
@@ -322,7 +325,8 @@ fn test_load_from_file_creates_defaults_when_missing() {
 
 #[test]
 fn test_hooks_not_persisted_must_be_reregistered() {
-    let path = "/tmp/mesh_hooks_reregister_test.json";
+    let tmp = tempfile::NamedTempFile::new().expect("tempfile creation failed");
+    let path = tmp.path().to_str().unwrap();
     let _ = std::fs::remove_file(path);
 
     // Create and save a mesh (load_from_file auto-registers IntakeDiagnosticHook)
@@ -528,4 +532,89 @@ fn test_complete_customer_service_workflow_with_rpc() {
         result3.unwrap()["score"].is_null(),
         "Conformance score should be null after clearing all diagnostics"
     );
+}
+
+// ---------------------------------------------------------------------------
+// TQ-007: Additional coverage — unicode IDs, save/load round-trips, concurrency
+// ---------------------------------------------------------------------------
+
+#[test]
+fn test_round_trip_with_non_ascii_instance_id() {
+    // Verify that save/load preserves instances with unicode IDs (emoji, CJK, etc.)
+    let tmp = tempfile::NamedTempFile::new().expect("tempfile");
+    let path = tmp.path().to_str().unwrap();
+
+    let mut mesh = AutonomicMesh::new();
+    let unicode_id = "ＬＳＰ＿测试_🦀";
+    mesh.add_instance(LspInstance::new(unicode_id));
+
+    mesh.save_to_file(path).expect("save with unicode id");
+
+    let loaded = AutonomicMesh::load_from_file(path).expect("load with unicode id");
+    assert!(
+        loaded.instances.contains_key(unicode_id),
+        "Instance with unicode id '{}' must survive a save/load round-trip",
+        unicode_id
+    );
+}
+
+#[test]
+fn test_save_does_not_corrupt_existing_data_on_partial_write() {
+    // Write a valid mesh, save it, then verify the file on disk is well-formed JSON.
+    // This is a proxy for the write-then-rename pattern: the file must never be
+    // partially written (i.e., a JSON parse must succeed after every save call).
+    let tmp = tempfile::NamedTempFile::new().expect("tempfile");
+    let path = tmp.path().to_str().unwrap();
+
+    let mut mesh = AutonomicMesh::new();
+    mesh.add_instance(LspInstance::new("LSP_A"));
+    mesh.save_to_file(path).expect("first save");
+
+    // Add more data and save again to simulate a second write
+    mesh.add_instance(LspInstance::new("LSP_B"));
+    mesh.save_to_file(path).expect("second save");
+
+    let raw = std::fs::read_to_string(path).expect("read back");
+    serde_json::from_str::<serde_json::Value>(&raw)
+        .expect("file on disk must be valid JSON after every save");
+
+    let loaded = AutonomicMesh::load_from_file(path).expect("load after second save");
+    assert!(loaded.instances.contains_key("LSP_A"));
+    assert!(loaded.instances.contains_key("LSP_B"));
+}
+
+#[test]
+fn test_concurrent_add_instance_does_not_panic() {
+    // Smoke-test that add_instance from multiple threads does not cause data races.
+    // AutonomicMesh is not Send, so each thread owns its own mesh and writes to
+    // its own file. The intent is to verify the serialisation path is sound under
+    // concurrent I/O (multiple threads writing different files simultaneously).
+    use std::thread;
+
+    let results: Vec<_> = thread::scope(|s| {
+        (0..8)
+            .map(|i| {
+                s.spawn(move || {
+                    let tmp = tempfile::NamedTempFile::new().expect("tempfile");
+                    let path = tmp.path().to_str().unwrap().to_owned();
+                    let mut mesh = AutonomicMesh::new();
+                    mesh.add_instance(LspInstance::new(&format!("LSP_THREAD_{}", i)));
+                    mesh.save_to_file(&path).expect("concurrent save");
+                    AutonomicMesh::load_from_file(&path).expect("concurrent load")
+                })
+            })
+            .collect::<Vec<_>>()
+            .into_iter()
+            .map(|h| h.join().expect("thread panicked"))
+            .collect()
+    });
+
+    assert_eq!(results.len(), 8, "All 8 threads must complete successfully");
+    for (i, loaded) in results.iter().enumerate() {
+        assert!(
+            loaded.instances.contains_key(&format!("LSP_THREAD_{}", i)),
+            "Thread {} result must contain its own instance",
+            i
+        );
+    }
 }

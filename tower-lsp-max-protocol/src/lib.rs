@@ -130,11 +130,17 @@ pub enum Terminality {
     NonTerminal,
 }
 
+impl std::fmt::Display for Terminality {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Core types
 // ---------------------------------------------------------------------------
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct MaxCapabilityVector {
     pub client: ClientCapabilities,
     pub server: ServerCapabilities,
@@ -168,6 +174,24 @@ pub struct RepairAction {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct GateId(pub String);
+
+impl std::fmt::Display for GateId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl From<String> for GateId {
+    fn from(s: String) -> Self {
+        Self(s)
+    }
+}
+
+impl From<&str> for GateId {
+    fn from(s: &str) -> Self {
+        Self(s.to_owned())
+    }
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ReceiptObligation {
@@ -251,7 +275,7 @@ impl MaxDiagnostic {
 /// DfLSS CTQ requires grade-level branching to be compiler-enforced rather
 /// than stringly typed.  Use [`ConformanceGrade::from_score`] to convert the
 /// raw `f64` produced by `LspInstance::conformance_score()`.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum ConformanceGrade {
     /// Score ≥ 100.0 — zero defects, fully conformant.
@@ -367,7 +391,7 @@ impl Default for ConformanceVector {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct Receipt {
     pub receipt_id: String,
     pub hash: String,
@@ -387,6 +411,25 @@ pub struct AnalysisBundle {
     pub actions: Vec<MaxCodeAction>,
     pub conformance_vector: ConformanceVector,
     pub receipts: Vec<Receipt>,
+}
+
+impl Default for AnalysisBundle {
+    fn default() -> Self {
+        Self {
+            snapshot_id: SnapshotId(String::new()),
+            capability_vector: MaxCapabilityVector {
+                client: lsp_types::ClientCapabilities::default(),
+                server: lsp_types::ServerCapabilities::default(),
+                negotiated: serde_json::Value::Null,
+                experimental: serde_json::Value::Null,
+                gaps: Vec::new(),
+            },
+            diagnostics: Vec::new(),
+            actions: Vec::new(),
+            conformance_vector: ConformanceVector::default(),
+            receipts: Vec::new(),
+        }
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -449,6 +492,18 @@ pub struct ManifoldSnapshot {
     pub receipts: Vec<Receipt>,
 }
 
+impl Default for ManifoldSnapshot {
+    fn default() -> Self {
+        Self {
+            snapshot_id: SnapshotId(String::new()),
+            conformance: ConformanceVector::default(),
+            hooks: Vec::new(),
+            chains: Vec::new(),
+            receipts: Vec::new(),
+        }
+    }
+}
+
 /// Admission decision — must be Admitted, Refused, or Unknown. Never a bool.
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
 pub enum AdmissionDecision {
@@ -467,6 +522,12 @@ impl From<bool> for AdmissionDecision {
 impl From<AdmissionDecision> for bool {
     fn from(d: AdmissionDecision) -> bool {
         matches!(d, AdmissionDecision::Admitted)
+    }
+}
+
+impl std::fmt::Display for AdmissionDecision {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self)
     }
 }
 
@@ -725,6 +786,17 @@ impl std::str::FromStr for PolicyState {
     }
 }
 
+impl std::fmt::Display for PolicyState {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            PolicyState::Operational => write!(f, "Operational"),
+            PolicyState::ClarificationRequested => write!(f, "ClarificationRequested"),
+            PolicyState::RefundAuthorized => write!(f, "RefundAuthorized"),
+            PolicyState::Active => write!(f, "Active"),
+        }
+    }
+}
+
 #[cfg(test)]
 mod policy_state_tests {
     use super::PolicyState;
@@ -775,5 +847,13 @@ pub enum HookEvent {
         instance_id: InstanceId,
         from_state: PolicyState,
         to_state: PolicyState,
+    },
+    BoundedActionExecuted {
+        instance_id: InstanceId,
+        action_id: String,
+        description: String,
+    },
+    InstanceReset {
+        instance_id: InstanceId,
     },
 }
