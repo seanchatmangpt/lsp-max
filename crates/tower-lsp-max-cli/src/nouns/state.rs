@@ -242,3 +242,66 @@ pub fn action(instance_id: String, action_id: String, description: String) -> Re
         success: true,
     })
 }
+
+// ==============================================================================
+// 4. Tests
+// ==============================================================================
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use tower_lsp_max_runtime::{AutonomicMesh, LspInstance};
+
+    fn make_temp_mesh() -> (tempfile::NamedTempFile, StateService) {
+        let mut mesh = AutonomicMesh::new();
+        mesh.add_instance(LspInstance::new("test-inst"));
+        let f = tempfile::NamedTempFile::new().unwrap();
+        mesh.save_to_file(f.path().to_str().unwrap()).unwrap();
+        let svc = StateService { state_path: f.path().to_str().unwrap().to_string() };
+        (f, svc)
+    }
+
+    #[test]
+    fn dump_all_returns_ok() {
+        let (_f, svc) = make_temp_mesh();
+        assert!(svc.dump("all").is_ok());
+    }
+
+    #[test]
+    fn dump_instance_returns_ok() {
+        let (_f, svc) = make_temp_mesh();
+        assert!(svc.dump("test-inst").is_ok());
+    }
+
+    #[test]
+    fn dump_unknown_instance_returns_err() {
+        let (_f, svc) = make_temp_mesh();
+        assert!(svc.dump("no-such").is_err());
+    }
+
+    #[test]
+    fn restore_known_instance_returns_true() {
+        let (_f, svc) = make_temp_mesh();
+        assert!(svc.restore("test-inst", 0));
+    }
+
+    #[test]
+    fn restore_unknown_instance_returns_false() {
+        let (_f, svc) = make_temp_mesh();
+        assert!(!svc.restore("no-such", 0));
+    }
+
+    #[test]
+    fn verify_known_instance_returns_bool() {
+        let (_f, svc) = make_temp_mesh();
+        // just assert it doesn't panic; result depends on conformance_score
+        let _ = svc.verify("test-inst");
+    }
+
+    #[test]
+    fn patch_no_status_returns_ok_false() {
+        let (_f, svc) = make_temp_mesh();
+        let result = svc.patch("test-inst", StatePatch { status: None });
+        assert!(!result.unwrap());
+    }
+}

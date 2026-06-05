@@ -35,29 +35,19 @@ impl Default for LawAxis {
 // Repairability / Terminality
 // ---------------------------------------------------------------------------
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub enum Repairability {
     Repairable,
     NotRepairable,
+    #[default]
     Unknown,
 }
 
-impl Default for Repairability {
-    fn default() -> Self {
-        Repairability::Unknown
-    }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub enum Terminality {
     Terminal,
+    #[default]
     NonTerminal,
-}
-
-impl Default for Terminality {
-    fn default() -> Self {
-        Terminality::NonTerminal
-    }
 }
 
 // ---------------------------------------------------------------------------
@@ -264,7 +254,7 @@ pub struct AnalysisBundle {
 // New protocol response structs (11 stubs)
 // ---------------------------------------------------------------------------
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct HookDescriptor {
     pub hook_id: String,
     pub name: String,
@@ -280,22 +270,7 @@ pub struct HookDescriptor {
     pub failure_mode: String,
 }
 
-impl Default for HookDescriptor {
-    fn default() -> Self {
-        Self {
-            hook_id: String::new(),
-            name: String::new(),
-            description: String::new(),
-            axes: Vec::new(),
-            trigger_law: LawAxis::default(),
-            input_type: String::new(),
-            output_type: String::new(),
-            failure_mode: String::new(),
-        }
-    }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct HookGraphNode {
     pub node_id: String,
     pub hook: HookDescriptor,
@@ -303,35 +278,14 @@ pub struct HookGraphNode {
     pub successors: Vec<String>,
 }
 
-impl Default for HookGraphNode {
-    fn default() -> Self {
-        Self {
-            node_id: String::new(),
-            hook: HookDescriptor::default(),
-            predecessors: Vec::new(),
-            successors: Vec::new(),
-        }
-    }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct ChainDescriptor {
     pub chain_id: String,
     pub nodes: Vec<HookGraphNode>,
     pub law_axis: LawAxis,
 }
 
-impl Default for ChainDescriptor {
-    fn default() -> Self {
-        Self {
-            chain_id: String::new(),
-            nodes: Vec::new(),
-            law_axis: LawAxis::default(),
-        }
-    }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct PropagationResult {
     pub propagation_id: String,
     pub affected_nodes: Vec<String>,
@@ -339,34 +293,12 @@ pub struct PropagationResult {
     pub success: bool,
 }
 
-impl Default for PropagationResult {
-    fn default() -> Self {
-        Self {
-            propagation_id: String::new(),
-            affected_nodes: Vec::new(),
-            receipts: Vec::new(),
-            success: false,
-        }
-    }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct AutonomicLoopStatus {
     pub loop_id: String,
     pub active: bool,
     pub iteration_count: u64,
     pub last_receipt: Option<Receipt>,
-}
-
-impl Default for AutonomicLoopStatus {
-    fn default() -> Self {
-        Self {
-            loop_id: String::new(),
-            active: false,
-            iteration_count: 0,
-            last_receipt: None,
-        }
-    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -379,30 +311,20 @@ pub struct ManifoldSnapshot {
 }
 
 /// Admission decision — must be Admitted, Refused, or Unknown. Never a bool.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
 pub enum AdmissionDecision {
     Admitted,
     Refused,
+    #[default]
     Unknown,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct AdmissionResult {
     pub decision: AdmissionDecision,
     pub law_axis: LawAxis,
     pub rationale: String,
     pub receipt: Option<Receipt>,
-}
-
-impl Default for AdmissionResult {
-    fn default() -> Self {
-        Self {
-            decision: AdmissionDecision::Unknown,
-            law_axis: LawAxis::default(),
-            rationale: String::new(),
-            receipt: None,
-        }
-    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -413,7 +335,7 @@ pub struct RefusalResult {
     pub repair_actions: Vec<RepairAction>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct LawfulTransitionResult {
     pub from_phase: String,
     pub to_phase: String,
@@ -422,19 +344,7 @@ pub struct LawfulTransitionResult {
     pub receipt: Option<Receipt>,
 }
 
-impl Default for LawfulTransitionResult {
-    fn default() -> Self {
-        Self {
-            from_phase: String::new(),
-            to_phase: String::new(),
-            lawful: false,
-            violated_laws: Vec::new(),
-            receipt: None,
-        }
-    }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct ReplayResult {
     pub replay_id: String,
     pub events_replayed: u64,
@@ -442,34 +352,12 @@ pub struct ReplayResult {
     pub receipts: Vec<Receipt>,
 }
 
-impl Default for ReplayResult {
-    fn default() -> Self {
-        Self {
-            replay_id: String::new(),
-            events_replayed: 0,
-            conformance: ConformanceVector::default(),
-            receipts: Vec::new(),
-        }
-    }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct ReleaseActuationResult {
     pub released: bool,
     pub conformance: ConformanceVector,
     pub blocking_axes: Vec<LawAxis>,
     pub receipt: Option<Receipt>,
-}
-
-impl Default for ReleaseActuationResult {
-    fn default() -> Self {
-        Self {
-            released: false,
-            conformance: ConformanceVector::default(),
-            blocking_axes: Vec::new(),
-            receipt: None,
-        }
-    }
 }
 
 // ---------------------------------------------------------------------------
