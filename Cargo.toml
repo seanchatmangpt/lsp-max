@@ -32,7 +32,7 @@ lsp-types = "0.94.1"
 memchr = "2.5"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-tokio = { version = "1.17", optional = true }
+tokio = { version = "1.17", optional = true, features = ["time", "macros"] }
 tokio-util = { version = "0.7", optional = true, features = ["codec"] }
 tower-lsp-max-macros = { version = "26.6.4", path = "./tower-lsp-max-macros" }
 tower-lsp-max-protocol = { version = "26.6.4", path = "./tower-lsp-max-protocol" }
@@ -44,9 +44,11 @@ tracing = "0.1"
 [dev-dependencies]
 async-tungstenite = { version = "0.22", features = ["tokio-runtime"] }
 tracing-subscriber = "0.3"
-tokio = { version = "1.17", features = ["io-util", "io-std", "macros", "rt-multi-thread"] }
+tokio = { version = "1.17", features = ["io-util", "io-std", "macros", "rt-multi-thread", "time"] }
 tokio-util = { version = "0.7", features = ["compat"] }
 ws_stream_tungstenite = { version = "0.10", features = ["tokio_io"] }
+tower-lsp-max-playground = { path = "crates/playground" }
+
 
 [workspace]
 members = [
@@ -57,5 +59,6 @@ members = [
     "./tower-lsp-max-agent",
     "crates/tower-lsp-max-specgen",
     "crates/tower-lsp-max-cli",
+    "crates/playground",
 ]
 default-members = ["."]

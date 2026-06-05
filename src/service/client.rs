@@ -174,6 +174,16 @@ impl Client {
         .await;
     }
 
+    /// Notifies the client to log a trace.
+    ///
+    /// This corresponds to the [`$/logTrace`] notification.
+    ///
+    /// [`$/logTrace`]: https://microsoft.github.io/language-server-protocol/specification#logTrace
+    pub async fn log_trace(&self, params: LogTraceParams) {
+        use lsp_types::notification::LogTrace;
+        self.send_notification_unchecked::<LogTrace>(params).await;
+    }
+
     /// Asks the client to display a particular resource referenced by a URI in the user interface.
     ///
     /// Returns `Ok(true)` if the document was successfully shown, or `Ok(false)` otherwise.
@@ -198,8 +208,22 @@ impl Client {
         Ok(response.success)
     }
 
-    // TODO: Add `work_done_progress_create()` here (since 3.15.0) when supported by `tower-lsp`.
-    // https://github.com/ebkalderon/tower-lsp/issues/176
+    /// Asks the client to create a work done progress token.
+    ///
+    /// This corresponds to the [`window/workDoneProgress/create`] request.
+    ///
+    /// [`window/workDoneProgress/create`]: https://microsoft.github.io/language-server-protocol/specification#window_workDoneProgress_create
+    ///
+    /// # Compatibility
+    ///
+    /// This request was introduced in specification version 3.15.0.
+    pub async fn work_done_progress_create(
+        &self,
+        params: WorkDoneProgressCreateParams,
+    ) -> jsonrpc::Result<()> {
+        use lsp_types::request::WorkDoneProgressCreate;
+        self.send_request::<WorkDoneProgressCreate>(params).await
+    }
 
     /// Notifies the client to log a telemetry event.
     ///
@@ -325,6 +349,26 @@ impl Client {
     pub async fn inlay_hint_refresh(&self) -> jsonrpc::Result<()> {
         use lsp_types::request::InlayHintRefreshRequest;
         self.send_request::<InlayHintRefreshRequest>(()).await
+    }
+
+    /// Asks the client to refresh all folding ranges.
+    ///
+    /// This corresponds to the [`workspace/foldingRange/refresh`] request.
+    ///
+    /// [`workspace/foldingRange/refresh`]: https://microsoft.github.io/language-server-protocol/specification#workspace_foldingRange_refresh
+    ///
+    /// # Initialization
+    ///
+    /// If the request is sent to the client before the server has been initialized, this will
+    /// immediately return `Err` with JSON-RPC error code `-32002` ([read more]).
+    ///
+    /// [read more]: https://microsoft.github.io/language-server-protocol/specification#initialize
+    ///
+    /// # Compatibility
+    ///
+    /// This request was introduced in specification version 3.18.0.
+    pub async fn folding_range_refresh(&self) -> jsonrpc::Result<()> {
+        self.send_request::<FoldingRangeRefresh>(()).await
     }
 
     /// Asks the client to refresh all needed document and workspace diagnostics.
@@ -633,12 +677,23 @@ impl Service<Request> for Client {
     }
 }
 
+#[derive(Debug)]
+struct FoldingRangeRefresh;
+
+impl lsp_types::request::Request for FoldingRangeRefresh {
+    type Params = ();
+    type Result = ();
+    const METHOD: &'static str = "workspace/foldingRange/refresh";
+}
+
 #[cfg(test)]
 mod tests {
     use std::future::Future;
 
     use futures::stream::StreamExt;
-    use lsp_types::notification::{LogMessage, PublishDiagnostics, ShowMessage, TelemetryEvent};
+    use lsp_types::notification::{
+        LogMessage, LogTrace, PublishDiagnostics, ShowMessage, TelemetryEvent,
+    };
     use serde_json::json;
 
     use super::*;
@@ -667,6 +722,17 @@ mod tests {
         });
 
         assert_client_message(|p| async move { p.log_message(typ, msg).await }, expected).await;
+    }
+
+    #[tokio::test(flavor = "current_thread")]
+    async fn log_trace() {
+        let params = LogTraceParams {
+            message: "foo bar".to_owned(),
+            verbose: Some("verbose info".to_owned()),
+        };
+        let expected = Request::from_notification::<LogTrace>(params.clone());
+
+        assert_client_message(|p| async move { p.log_trace(params).await }, expected).await;
     }
 
     #[tokio::test(flavor = "current_thread")]

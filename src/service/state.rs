@@ -60,11 +60,27 @@ pub struct ServerState {
     machine: Mutex<StateMachine>,
     wakers: Mutex<Vec<Waker>>,
     exit_code: AtomicI32,
+    /// The autonomic mesh manager for monitoring the workspace state.
+    pub mesh: Mutex<crate::max_runtime::AutonomicMesh>,
 }
 
 impl ServerState {
     /// Creates a new `ServerState` initialized to `State::Uninitialized`.
-    pub const fn new() -> Self {
+    pub fn new() -> Self {
+        let mut mesh = crate::max_runtime::AutonomicMesh::new();
+        let mut instance = crate::max_runtime::LspInstance::new("LSP_1");
+        instance.phase = "Uninitialized".to_string();
+        let r0 = crate::max_protocol::Receipt {
+            receipt_id: "rcpt-uninitialized".to_string(),
+            hash: crate::max_runtime::sha256(b"rcpt-uninitialized"),
+        };
+        instance.receipts.push(r0.clone());
+        mesh.add_instance(instance);
+
+        if let Ok(mut reg) = crate::get_registry().lock() {
+            reg.receipts.insert(r0.receipt_id.clone(), r0);
+        }
+
         ServerState {
             machine: Mutex::new(StateMachine::Uninitialized(Machine {
                 _law: std::marker::PhantomData,
@@ -76,6 +92,7 @@ impl ServerState {
             })),
             wakers: Mutex::new(Vec::new()),
             exit_code: AtomicI32::new(1),
+            mesh: Mutex::new(mesh),
         }
     }
 
@@ -107,6 +124,9 @@ impl ServerState {
         *lock = next_machine;
         if let Ok(mut reg) = crate::get_registry().lock() {
             reg.current_state = state;
+        }
+        if let Some(instance) = self.mesh.lock().unwrap().instances.get_mut("LSP_1") {
+            instance.phase = format!("{:?}", state);
         }
 
         if state != State::Initializing {
@@ -144,10 +164,30 @@ impl ServerState {
                     StateMachine::Exited(Machine::new(Exited, EmptyData::default())),
                 );
                 if let StateMachine::Uninitialized(m) = old {
-                    *lock = StateMachine::Initializing(m.admit_initialize(client_caps));
+                    let next = m.admit_initialize(client_caps);
+                    let receipt = crate::max_runtime::TypestateKernel::receipt(&next);
+                    *lock = StateMachine::Initializing(next);
                     if let Ok(mut reg) = crate::get_registry().lock() {
                         reg.current_state = State::Initializing;
+                        reg.receipts
+                            .insert(receipt.receipt_id.clone(), receipt.clone());
                     }
+                    if let Some(instance) = self.mesh.lock().unwrap().instances.get_mut("LSP_1") {
+                        instance.phase = "Initializing".to_string();
+                        instance.receipts.push(receipt.clone());
+                    }
+
+                    let mut mesh = self.mesh.lock().unwrap();
+                    mesh.dispatch_event(crate::max_protocol::HookEvent::StateTransition {
+                        instance_id: "LSP_1".to_string(),
+                        from_phase: "Uninitialized".to_string(),
+                        to_phase: "Initializing".to_string(),
+                    });
+                    mesh.dispatch_event(crate::max_protocol::HookEvent::ReceiptEmitted {
+                        instance_id: "LSP_1".to_string(),
+                        receipt,
+                    });
+                    let _ = mesh.verify_instance_ledger("LSP_1");
                     true
                 } else {
                     unreachable!()
@@ -160,24 +200,46 @@ impl ServerState {
     /// Transitions from `Initializing` to `Initialized` phase.
     pub fn transition_to_initialized(&self, server_caps: serde_json::Value) -> bool {
         let mut lock = self.machine.lock().unwrap();
-        let success = match &*lock {
+        let (success, receipt) = match &*lock {
             StateMachine::Initializing(_) => {
                 let old = std::mem::replace(
                     &mut *lock,
                     StateMachine::Exited(Machine::new(Exited, EmptyData::default())),
                 );
                 if let StateMachine::Initializing(m) = old {
-                    *lock = StateMachine::Initialized(m.admit_initialized(server_caps));
-                    true
+                    let next = m.admit_initialized(server_caps);
+                    let receipt = crate::max_runtime::TypestateKernel::receipt(&next);
+                    *lock = StateMachine::Initialized(next);
+                    if let Some(instance) = self.mesh.lock().unwrap().instances.get_mut("LSP_1") {
+                        instance.phase = "Initialized".to_string();
+                        instance.receipts.push(receipt.clone());
+                    }
+                    (true, Some(receipt))
                 } else {
                     unreachable!()
                 }
             }
-            _ => false,
+            _ => (false, None),
         };
         if success {
             if let Ok(mut reg) = crate::get_registry().lock() {
                 reg.current_state = State::Initialized;
+                if let Some(ref r) = receipt {
+                    reg.receipts.insert(r.receipt_id.clone(), r.clone());
+                }
+            }
+            if let Some(ref r) = receipt {
+                let mut mesh = self.mesh.lock().unwrap();
+                mesh.dispatch_event(crate::max_protocol::HookEvent::StateTransition {
+                    instance_id: "LSP_1".to_string(),
+                    from_phase: "Initializing".to_string(),
+                    to_phase: "Initialized".to_string(),
+                });
+                mesh.dispatch_event(crate::max_protocol::HookEvent::ReceiptEmitted {
+                    instance_id: "LSP_1".to_string(),
+                    receipt: r.clone(),
+                });
+                let _ = mesh.verify_instance_ledger("LSP_1");
             }
             let mut wakers = self.wakers.lock().unwrap();
             let wakers_to_wake = std::mem::take(&mut *wakers);
@@ -195,6 +257,10 @@ impl ServerState {
             StateMachine::Initializing(_) => {
                 *lock =
                     StateMachine::Uninitialized(Machine::new(Uninitialized, EmptyData::default()));
+                if let Some(instance) = self.mesh.lock().unwrap().instances.get_mut("LSP_1") {
+                    instance.phase = "Uninitialized".to_string();
+                    instance.receipts.truncate(1);
+                }
                 true
             }
             _ => false,
@@ -202,6 +268,7 @@ impl ServerState {
         if success {
             if let Ok(mut reg) = crate::get_registry().lock() {
                 reg.current_state = State::Uninitialized;
+                reg.receipts.retain(|k, _| k == "rcpt-uninitialized");
             }
             let mut wakers = self.wakers.lock().unwrap();
             let wakers_to_wake = std::mem::take(&mut *wakers);
@@ -215,39 +282,70 @@ impl ServerState {
     /// Transitions from `Initialized` to `ShutDown` phase.
     pub fn transition_to_shutdown(&self) -> bool {
         let mut lock = self.machine.lock().unwrap();
-        match &*lock {
+        let (success, receipt) = match &*lock {
             StateMachine::Initialized(_) => {
                 let old = std::mem::replace(
                     &mut *lock,
                     StateMachine::Exited(Machine::new(Exited, EmptyData::default())),
                 );
                 if let StateMachine::Initialized(m) = old {
-                    *lock = StateMachine::ShutDown(m.admit_shutdown());
-                    if let Ok(mut reg) = crate::get_registry().lock() {
-                        reg.current_state = State::ShutDown;
+                    let next = m.admit_shutdown();
+                    let receipt = crate::max_runtime::TypestateKernel::receipt(&next);
+                    *lock = StateMachine::ShutDown(next);
+                    if let Some(instance) = self.mesh.lock().unwrap().instances.get_mut("LSP_1") {
+                        instance.phase = "ShutDown".to_string();
+                        instance.receipts.push(receipt.clone());
                     }
-                    true
+                    (true, Some(receipt))
                 } else {
                     unreachable!()
                 }
             }
-            _ => false,
+            _ => (false, None),
+        };
+        if success {
+            if let Ok(mut reg) = crate::get_registry().lock() {
+                reg.current_state = State::ShutDown;
+                if let Some(ref r) = receipt {
+                    reg.receipts.insert(r.receipt_id.clone(), r.clone());
+                }
+            }
+            if let Some(ref r) = receipt {
+                let mut mesh = self.mesh.lock().unwrap();
+                mesh.dispatch_event(crate::max_protocol::HookEvent::StateTransition {
+                    instance_id: "LSP_1".to_string(),
+                    from_phase: "Initialized".to_string(),
+                    to_phase: "ShutDown".to_string(),
+                });
+                mesh.dispatch_event(crate::max_protocol::HookEvent::ReceiptEmitted {
+                    instance_id: "LSP_1".to_string(),
+                    receipt: r.clone(),
+                });
+                let _ = mesh.verify_instance_ledger("LSP_1");
+            }
         }
+        success
     }
 
     /// Transitions to `Exited` phase.
     pub fn transition_to_exited(&self) -> bool {
         let mut lock = self.machine.lock().unwrap();
-        let res = match &*lock {
-            StateMachine::ShutDown(_) => {
+        let (res, receipt) = match &*lock {
+            StateMachine::ShutDown(_m) => {
                 let old = std::mem::replace(
                     &mut *lock,
                     StateMachine::Exited(Machine::new(Exited, EmptyData::default())),
                 );
                 if let StateMachine::ShutDown(m) = old {
-                    *lock = StateMachine::Exited(m.admit_exit());
+                    let next = m.admit_exit();
+                    let receipt = crate::max_runtime::TypestateKernel::receipt(&next);
+                    *lock = StateMachine::Exited(next);
                     self.set_exit_code(0);
-                    true
+                    if let Some(instance) = self.mesh.lock().unwrap().instances.get_mut("LSP_1") {
+                        instance.phase = "Exited".to_string();
+                        instance.receipts.push(receipt.clone());
+                    }
+                    (true, Some(receipt))
                 } else {
                     unreachable!()
                 }
@@ -255,11 +353,30 @@ impl ServerState {
             _ => {
                 *lock = StateMachine::Exited(Machine::new(Exited, EmptyData::default()));
                 self.set_exit_code(1);
-                true
+                if let Some(instance) = self.mesh.lock().unwrap().instances.get_mut("LSP_1") {
+                    instance.phase = "Exited".to_string();
+                }
+                (true, None)
             }
         };
         if let Ok(mut reg) = crate::get_registry().lock() {
             reg.current_state = State::Exited;
+            if let Some(ref r) = receipt {
+                reg.receipts.insert(r.receipt_id.clone(), r.clone());
+            }
+        }
+        if let Some(ref r) = receipt {
+            let mut mesh = self.mesh.lock().unwrap();
+            mesh.dispatch_event(crate::max_protocol::HookEvent::StateTransition {
+                instance_id: "LSP_1".to_string(),
+                from_phase: "ShutDown".to_string(),
+                to_phase: "Exited".to_string(),
+            });
+            mesh.dispatch_event(crate::max_protocol::HookEvent::ReceiptEmitted {
+                instance_id: "LSP_1".to_string(),
+                receipt: r.clone(),
+            });
+            let _ = mesh.verify_instance_ledger("LSP_1");
         }
         res
     }

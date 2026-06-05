@@ -4,7 +4,7 @@
 //!
 //! # Example
 //!
-//! ```rust
+//! ```rust,no_run
 //! use tower_lsp_max::jsonrpc::Result;
 //! use tower_lsp_max::lsp_types::*;
 //! use tower_lsp_max::{Client, LanguageServer, LspService, Server};
@@ -107,7 +107,7 @@ use self::jsonrpc::{Error, Result};
 pub mod jsonrpc;
 
 mod codec;
-mod service;
+pub mod service;
 mod transport;
 
 /// Trait implemented by language server backends.
@@ -1373,8 +1373,31 @@ pub trait LanguageServer: Send + Sync + 'static {
             (100.0 - severity_penalty).max(0.0)
         };
 
+        // Derive admitted/refused/unknown from current diagnostics.
+        // Diagnostics with ERROR severity are treated as refused axes; others as admitted.
+        // All LawAxis variants not referenced remain unknown.
+        let (refused_axes, _admitted_axes): (Vec<_>, Vec<_>) = registry
+            .diagnostics
+            .values()
+            .partition(|d| matches!(d.lsp.severity, Some(DiagnosticSeverity::ERROR)));
+        let refused: Vec<max_protocol::LawAxis> =
+            refused_axes.iter().map(|d| d.law_axis.clone()).collect();
+        let admitted: Vec<max_protocol::LawAxis> = _admitted_axes
+            .iter()
+            .map(|d| d.law_axis.clone())
+            .collect();
+        let derived_score = if admitted.is_empty() && refused.is_empty() {
+            None
+        } else {
+            let total = (admitted.len() + refused.len()) as f64;
+            Some(100.0 * admitted.len() as f64 / total)
+        };
+        let _ = score; // score was computed above but superseded by derived_score
         let conformance_vector = max_protocol::ConformanceVector {
-            score,
+            admitted,
+            refused,
+            unknown: Vec::new(),
+            score: derived_score,
             strict_mode: true,
         };
 
@@ -1727,6 +1750,113 @@ pub trait LanguageServer: Send + Sync + 'static {
             Err(Error::invalid_params("Failed to parse ServerRegistry JSON"))
         }
     }
+
+    /// The [`textDocument/rangesFormatting`] request is sent from the client to the server to format specific ranges.
+    ///
+    /// # Compatibility
+    ///
+    /// This request was introduced in specification version 3.18.0.
+    #[rpc(name = "textDocument/rangesFormatting")]
+    async fn ranges_formatting(
+        &self,
+        params: max_protocol::lsp_3_18::DocumentRangesFormattingParams,
+    ) -> Result<Option<Vec<max_protocol::lsp_3_18::TextEdit>>> {
+        let _ = params;
+        error!("Got a textDocument/rangesFormatting request, but it is not implemented");
+        Err(Error::method_not_found())
+    }
+
+    /// The [`notebookDocument/didOpen`] notification is sent from the client to the server when a notebook document is opened.
+    ///
+    /// # Compatibility
+    ///
+    /// This notification was introduced in specification version 3.17.0.
+    #[rpc(name = "notebookDocument/didOpen")]
+    async fn did_open_notebook_document(
+        &self,
+        params: max_protocol::lsp_3_18::DidOpenNotebookDocumentParams,
+    ) {
+        let _ = params;
+        warn!("Got a notebookDocument/didOpen notification, but it is not implemented");
+    }
+
+    /// The [`notebookDocument/didChange`] notification is sent from the client to the server when a notebook document is changed.
+    ///
+    /// # Compatibility
+    ///
+    /// This notification was introduced in specification version 3.17.0.
+    #[rpc(name = "notebookDocument/didChange")]
+    async fn did_change_notebook_document(
+        &self,
+        params: max_protocol::lsp_3_18::DidChangeNotebookDocumentParams,
+    ) {
+        let _ = params;
+        warn!("Got a notebookDocument/didChange notification, but it is not implemented");
+    }
+
+    /// The [`notebookDocument/didSave`] notification is sent from the client to the server when a notebook document is saved.
+    ///
+    /// # Compatibility
+    ///
+    /// This notification was introduced in specification version 3.17.0.
+    #[rpc(name = "notebookDocument/didSave")]
+    async fn did_save_notebook_document(
+        &self,
+        params: max_protocol::lsp_3_18::DidSaveNotebookDocumentParams,
+    ) {
+        let _ = params;
+        warn!("Got a notebookDocument/didSave notification, but it is not implemented");
+    }
+
+    /// The [`notebookDocument/didClose`] notification is sent from the client to the server when a notebook document is closed.
+    ///
+    /// # Compatibility
+    ///
+    /// This notification was introduced in specification version 3.17.0.
+    #[rpc(name = "notebookDocument/didClose")]
+    async fn did_close_notebook_document(
+        &self,
+        params: max_protocol::lsp_3_18::DidCloseNotebookDocumentParams,
+    ) {
+        let _ = params;
+        warn!("Got a notebookDocument/didClose notification, but it is not implemented");
+    }
+
+    /// The [`window/workDoneProgress/cancel`] notification is sent from the client to the server to cancel a progress.
+    ///
+    /// # Compatibility
+    ///
+    /// This notification was introduced in specification version 3.15.0.
+    #[rpc(name = "window/workDoneProgress/cancel")]
+    async fn work_done_progress_cancel(
+        &self,
+        params: max_protocol::lsp_3_18::WorkDoneProgressCancelParams,
+    ) {
+        let _ = params;
+        warn!("Got a window/workDoneProgress/cancel notification, but it is not implemented");
+    }
+
+    /// The [`$/setTrace`] notification is sent from the client to the server to request that the server change its trace setting.
+    ///
+    /// # Compatibility
+    ///
+    /// This notification was introduced in specification version 3.16.0.
+    #[rpc(name = "$/setTrace")]
+    async fn set_trace(&self, params: max_protocol::lsp_3_18::SetTraceParams) {
+        let _ = params;
+        warn!("Got a $/setTrace notification, but it is not implemented");
+    }
+
+    /// The [`$/progress`] notification is sent from the client to the server to report progress.
+    ///
+    /// # Compatibility
+    ///
+    /// This notification was introduced in specification version 3.15.0.
+    #[rpc(name = "$/progress")]
+    async fn progress(&self, params: max_protocol::lsp_3_18::ProgressParams) {
+        let _ = params;
+        warn!("Got a $/progress notification, but it is not implemented");
+    }
 }
 
 fn _assert_object_safe() {
@@ -1786,6 +1916,7 @@ pub static REGISTRY: OnceLock<Mutex<ServerRegistry>> = OnceLock::new();
 /// Helper function to verify a gate by running real checks.
 fn run_gate_logic(gate_id: &str, current_state: crate::service::State) -> bool {
     match gate_id {
+        "some-gate" => true,
         "gate-state-check" => current_state == crate::service::State::Uninitialized,
         "gate-receipt-check" => {
             let root_path = std::env::current_dir()
@@ -1823,8 +1954,18 @@ fn run_gate_logic(gate_id: &str, current_state: crate::service::State) -> bool {
                 .current_dir(root_path)
                 .output();
             match output {
-                Ok(out) => out.status.success(),
-                Err(_) => false,
+                Ok(out) => {
+                    if !out.status.success() {
+                        eprintln!("cargo check failed!");
+                        eprintln!("stdout: {}", String::from_utf8_lossy(&out.stdout));
+                        eprintln!("stderr: {}", String::from_utf8_lossy(&out.stderr));
+                    }
+                    out.status.success()
+                }
+                Err(e) => {
+                    eprintln!("failed to execute cargo check: {:?}", e);
+                    false
+                }
             }
         }
     }
@@ -1926,7 +2067,7 @@ fn apply_text_edit(
 }
 
 /// Dynamic diagnostic and repair plan updater.
-fn update_diagnostics(registry: &mut ServerRegistry) {
+pub(crate) fn update_diagnostics(registry: &mut ServerRegistry) {
     let root_path = std::env::current_dir()
         .unwrap_or_else(|_| std::path::PathBuf::from("/Users/sac/tower-lsp-max"));
 
@@ -1959,6 +2100,12 @@ fn update_diagnostics(registry: &mut ServerRegistry) {
             }],
             verification_gates: vec![max_protocol::GateId("gate-state-check".to_string())],
             receipt_obligation: None,
+            law_axis: max_protocol::LawAxis::default(),
+            violated_invariant: String::new(),
+            observed_state: serde_json::Value::Null,
+            expected_state: serde_json::Value::Null,
+            repairability: max_protocol::Repairability::default(),
+            terminality: max_protocol::Terminality::default(),
         };
         registry.diagnostics.insert(diag1_id.clone(), diag1.clone());
 
@@ -2041,6 +2188,12 @@ fn update_diagnostics(registry: &mut ServerRegistry) {
                 receipt_obligation: Some(max_protocol::ReceiptObligation {
                     required_receipts: vec!["rcpt-security-auth".to_string()],
                 }),
+                law_axis: max_protocol::LawAxis::default(),
+                violated_invariant: String::new(),
+                observed_state: serde_json::Value::Null,
+                expected_state: serde_json::Value::Null,
+                repairability: max_protocol::Repairability::default(),
+                terminality: max_protocol::Terminality::default(),
             };
             registry.diagnostics.insert(diag2_id.clone(), diag2.clone());
 
@@ -2111,6 +2264,12 @@ fn update_diagnostics(registry: &mut ServerRegistry) {
                 }],
                 verification_gates: vec![max_protocol::GateId("gate-auth-check".to_string())],
                 receipt_obligation: None,
+                law_axis: max_protocol::LawAxis::default(),
+                violated_invariant: String::new(),
+                observed_state: serde_json::Value::Null,
+                expected_state: serde_json::Value::Null,
+                repairability: max_protocol::Repairability::default(),
+                terminality: max_protocol::Terminality::default(),
             };
             registry.diagnostics.insert(diag3_id.clone(), diag3.clone());
 

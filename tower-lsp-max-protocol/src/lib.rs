@@ -4,6 +4,66 @@ pub use lsp_3_18 as generated_3_18;
 use lsp_types::{ClientCapabilities, CodeAction, Diagnostic, ServerCapabilities};
 use serde::{Deserialize, Serialize};
 
+// ---------------------------------------------------------------------------
+// LawAxis — replaces ad-hoc string law_ids
+// ---------------------------------------------------------------------------
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum LawAxis {
+    Protocol,
+    Type,
+    Fixture,
+    Documentation,
+    Release,
+    Hook,
+    Repair,
+    Receipt,
+    Security,
+    Autopoiesis,
+    Domain,
+    Custom(String),
+}
+
+impl Default for LawAxis {
+    fn default() -> Self {
+        LawAxis::Custom(String::new())
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Repairability / Terminality
+// ---------------------------------------------------------------------------
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum Repairability {
+    Repairable,
+    NotRepairable,
+    Unknown,
+}
+
+impl Default for Repairability {
+    fn default() -> Self {
+        Repairability::Unknown
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum Terminality {
+    Terminal,
+    NonTerminal,
+}
+
+impl Default for Terminality {
+    fn default() -> Self {
+        Terminality::NonTerminal
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Core types
+// ---------------------------------------------------------------------------
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MaxCapabilityVector {
     pub client: ClientCapabilities,
@@ -44,6 +104,10 @@ pub struct ReceiptObligation {
     pub required_receipts: Vec<String>,
 }
 
+// ---------------------------------------------------------------------------
+// MaxDiagnostic — extended with doctrine fields
+// ---------------------------------------------------------------------------
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MaxDiagnostic {
     pub lsp: Diagnostic,
@@ -55,6 +119,42 @@ pub struct MaxDiagnostic {
     pub repair_actions: Vec<RepairAction>,
     pub verification_gates: Vec<GateId>,
     pub receipt_obligation: Option<ReceiptObligation>,
+
+    // Doctrine extensions (serde(default) preserves backward compatibility)
+    #[serde(default)]
+    pub law_axis: LawAxis,
+    #[serde(default)]
+    pub violated_invariant: String,
+    #[serde(default)]
+    pub observed_state: serde_json::Value,
+    #[serde(default)]
+    pub expected_state: serde_json::Value,
+    #[serde(default)]
+    pub repairability: Repairability,
+    #[serde(default)]
+    pub terminality: Terminality,
+}
+
+impl Default for MaxDiagnostic {
+    fn default() -> Self {
+        Self {
+            lsp: Diagnostic::default(),
+            diagnostic_id: String::new(),
+            law_id: String::new(),
+            attempted_transition: None,
+            violated_axes: Vec::new(),
+            doc_routes: Vec::new(),
+            repair_actions: Vec::new(),
+            verification_gates: Vec::new(),
+            receipt_obligation: None,
+            law_axis: LawAxis::default(),
+            violated_invariant: String::new(),
+            observed_state: serde_json::Value::Null,
+            expected_state: serde_json::Value::Null,
+            repairability: Repairability::default(),
+            terminality: Terminality::default(),
+        }
+    }
 }
 
 impl MaxDiagnostic {
@@ -104,10 +204,44 @@ pub struct MaxCodeAction {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SnapshotId(pub String);
 
+// ---------------------------------------------------------------------------
+// ConformanceVector — doctrine-correct: Admitted/Refused/Unknown are distinct
+// ---------------------------------------------------------------------------
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ConformanceVector {
-    pub score: f64,
+    /// Law axes that have been admitted (evidence present and valid)
+    pub admitted: Vec<LawAxis>,
+    /// Law axes that have been explicitly refused (evidence present, violation confirmed)
+    pub refused: Vec<LawAxis>,
+    /// Law axes where admissibility cannot be determined (NEVER collapsed into admitted or refused)
+    pub unknown: Vec<LawAxis>,
+    /// Derived score: 100 * admitted / (admitted + refused + unknown), None if all unknown
+    pub score: Option<f64>,
+    /// Whether unknown axes block release actuation
     pub strict_mode: bool,
+}
+
+impl ConformanceVector {
+    pub fn all_admitted(&self) -> bool {
+        self.refused.is_empty() && self.unknown.is_empty()
+    }
+
+    pub fn admits_release(&self) -> bool {
+        self.refused.is_empty() && (!self.strict_mode || self.unknown.is_empty())
+    }
+}
+
+impl Default for ConformanceVector {
+    fn default() -> Self {
+        Self {
+            admitted: Vec::new(),
+            refused: Vec::new(),
+            unknown: Vec::new(),
+            score: None,
+            strict_mode: true,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -125,6 +259,259 @@ pub struct AnalysisBundle {
     pub conformance_vector: ConformanceVector,
     pub receipts: Vec<Receipt>,
 }
+
+// ---------------------------------------------------------------------------
+// New protocol response structs (11 stubs)
+// ---------------------------------------------------------------------------
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct HookDescriptor {
+    pub hook_id: String,
+    pub name: String,
+    pub description: String,
+    pub axes: Vec<LawAxis>,
+    /// The primary LawAxis that triggers this hook.
+    pub trigger_law: LawAxis,
+    /// Fully-qualified type name of the hook's input payload.
+    pub input_type: String,
+    /// Fully-qualified type name of the hook's output payload.
+    pub output_type: String,
+    /// Describes the failure mode if the hook cannot execute (e.g. "Refused", "Unknown", "Panic").
+    pub failure_mode: String,
+}
+
+impl Default for HookDescriptor {
+    fn default() -> Self {
+        Self {
+            hook_id: String::new(),
+            name: String::new(),
+            description: String::new(),
+            axes: Vec::new(),
+            trigger_law: LawAxis::default(),
+            input_type: String::new(),
+            output_type: String::new(),
+            failure_mode: String::new(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct HookGraphNode {
+    pub node_id: String,
+    pub hook: HookDescriptor,
+    pub predecessors: Vec<String>,
+    pub successors: Vec<String>,
+}
+
+impl Default for HookGraphNode {
+    fn default() -> Self {
+        Self {
+            node_id: String::new(),
+            hook: HookDescriptor::default(),
+            predecessors: Vec::new(),
+            successors: Vec::new(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ChainDescriptor {
+    pub chain_id: String,
+    pub nodes: Vec<HookGraphNode>,
+    pub law_axis: LawAxis,
+}
+
+impl Default for ChainDescriptor {
+    fn default() -> Self {
+        Self {
+            chain_id: String::new(),
+            nodes: Vec::new(),
+            law_axis: LawAxis::default(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PropagationResult {
+    pub propagation_id: String,
+    pub affected_nodes: Vec<String>,
+    pub receipts: Vec<Receipt>,
+    pub success: bool,
+}
+
+impl Default for PropagationResult {
+    fn default() -> Self {
+        Self {
+            propagation_id: String::new(),
+            affected_nodes: Vec::new(),
+            receipts: Vec::new(),
+            success: false,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AutonomicLoopStatus {
+    pub loop_id: String,
+    pub active: bool,
+    pub iteration_count: u64,
+    pub last_receipt: Option<Receipt>,
+}
+
+impl Default for AutonomicLoopStatus {
+    fn default() -> Self {
+        Self {
+            loop_id: String::new(),
+            active: false,
+            iteration_count: 0,
+            last_receipt: None,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ManifoldSnapshot {
+    pub snapshot_id: SnapshotId,
+    pub conformance: ConformanceVector,
+    pub hooks: Vec<HookDescriptor>,
+    pub chains: Vec<ChainDescriptor>,
+    pub receipts: Vec<Receipt>,
+}
+
+/// Admission decision — must be Admitted, Refused, or Unknown. Never a bool.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub enum AdmissionDecision {
+    Admitted,
+    Refused,
+    Unknown,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AdmissionResult {
+    pub decision: AdmissionDecision,
+    pub law_axis: LawAxis,
+    pub rationale: String,
+    pub receipt: Option<Receipt>,
+}
+
+impl Default for AdmissionResult {
+    fn default() -> Self {
+        Self {
+            decision: AdmissionDecision::Unknown,
+            law_axis: LawAxis::default(),
+            rationale: String::new(),
+            receipt: None,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RefusalResult {
+    pub law_axis: LawAxis,
+    pub rationale: String,
+    pub receipt: Receipt,
+    pub repair_actions: Vec<RepairAction>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LawfulTransitionResult {
+    pub from_phase: String,
+    pub to_phase: String,
+    pub lawful: bool,
+    pub violated_laws: Vec<LawAxis>,
+    pub receipt: Option<Receipt>,
+}
+
+impl Default for LawfulTransitionResult {
+    fn default() -> Self {
+        Self {
+            from_phase: String::new(),
+            to_phase: String::new(),
+            lawful: false,
+            violated_laws: Vec::new(),
+            receipt: None,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ReplayResult {
+    pub replay_id: String,
+    pub events_replayed: u64,
+    pub conformance: ConformanceVector,
+    pub receipts: Vec<Receipt>,
+}
+
+impl Default for ReplayResult {
+    fn default() -> Self {
+        Self {
+            replay_id: String::new(),
+            events_replayed: 0,
+            conformance: ConformanceVector::default(),
+            receipts: Vec::new(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ReleaseActuationResult {
+    pub released: bool,
+    pub conformance: ConformanceVector,
+    pub blocking_axes: Vec<LawAxis>,
+    pub receipt: Option<Receipt>,
+}
+
+impl Default for ReleaseActuationResult {
+    fn default() -> Self {
+        Self {
+            released: false,
+            conformance: ConformanceVector::default(),
+            blocking_axes: Vec::new(),
+            receipt: None,
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Method name constants for the 11 new max/* methods
+// ---------------------------------------------------------------------------
+
+/// max/hook — Register or query hook descriptors. Returns all hooks if no id given.
+pub const METHOD_HOOK: &str = "max/hook";
+
+/// max/hookGraph — Return the directed hook dependency graph rooted at an optional node.
+pub const METHOD_HOOK_GRAPH: &str = "max/hookGraph";
+
+/// max/chain — Return chain descriptors. Returns all chains if no chain_id given.
+pub const METHOD_CHAIN: &str = "max/chain";
+
+/// max/propagate — Propagate a signal through a chain or from a hook. Returns affected nodes and receipts.
+pub const METHOD_PROPAGATE: &str = "max/propagate";
+
+/// max/autonomicLoop — Query or trigger an autonomic (self-regulating) loop. Returns loop status.
+pub const METHOD_AUTONOMIC_LOOP: &str = "max/autonomicLoop";
+
+/// max/manifoldSnapshot — Return a full manifold snapshot: conformance, hooks, chains, receipts.
+pub const METHOD_MANIFOLD_SNAPSHOT: &str = "max/manifoldSnapshot";
+
+/// max/lawfulTransition — Assert a phase transition is lawful against all active LawAxes. Returns violated laws.
+pub const METHOD_LAWFUL_TRANSITION: &str = "max/lawfulTransition";
+
+/// max/admission — Admissibility gate. Returns Admitted/Refused/Unknown. Never collapses Unknown.
+pub const METHOD_ADMISSION: &str = "max/admission";
+
+/// max/refusal — Explicit refusal gate. Records a refused LawAxis with rationale and receipt.
+pub const METHOD_REFUSAL: &str = "max/refusal";
+
+/// max/replay — Replay an event log against a snapshot and return conformance evidence.
+pub const METHOD_REPLAY: &str = "max/replay";
+
+/// max/releaseActuation — Actuate a release if and only if the ConformanceVector admits it. Strict mode blocks on Unknown.
+pub const METHOD_RELEASE_ACTUATION: &str = "max/releaseActuation";
+
+// ---------------------------------------------------------------------------
+// Custom LSP methods
+// ---------------------------------------------------------------------------
 
 pub mod custom_methods {
     use super::*;
@@ -192,4 +579,159 @@ pub mod custom_methods {
         type Result = Receipt;
         const METHOD: &'static str = "max/receipt";
     }
+
+    // New doctrine methods
+
+    pub enum MaxHook {}
+    impl Request for MaxHook {
+        type Params = Option<String>; // optional hook_id; None = list all
+        type Result = Vec<HookDescriptor>;
+        const METHOD: &'static str = "max/hook";
+    }
+
+    pub enum MaxHookGraph {}
+    impl Request for MaxHookGraph {
+        type Params = Option<String>; // optional root node_id
+        type Result = Vec<HookGraphNode>;
+        const METHOD: &'static str = "max/hookGraph";
+    }
+
+    pub enum MaxChain {}
+    impl Request for MaxChain {
+        type Params = Option<String>; // optional chain_id
+        type Result = Vec<ChainDescriptor>;
+        const METHOD: &'static str = "max/chain";
+    }
+
+    pub enum MaxPropagate {}
+    impl Request for MaxPropagate {
+        type Params = String; // chain_id or hook_id to propagate from
+        type Result = PropagationResult;
+        const METHOD: &'static str = "max/propagate";
+    }
+
+    pub enum MaxAutonomicLoop {}
+    impl Request for MaxAutonomicLoop {
+        type Params = Option<String>; // optional loop_id
+        type Result = AutonomicLoopStatus;
+        const METHOD: &'static str = "max/autonomicLoop";
+    }
+
+    pub enum MaxManifoldSnapshot {}
+    impl Request for MaxManifoldSnapshot {
+        type Params = SnapshotId;
+        type Result = ManifoldSnapshot;
+        const METHOD: &'static str = "max/manifoldSnapshot";
+    }
+
+    pub enum MaxLawfulTransition {}
+    impl Request for MaxLawfulTransition {
+        type Params = TransitionAttempt;
+        type Result = LawfulTransitionResult;
+        const METHOD: &'static str = "max/lawfulTransition";
+    }
+
+    pub enum MaxAdmission {}
+    impl Request for MaxAdmission {
+        type Params = LawAxis;
+        type Result = AdmissionResult;
+        const METHOD: &'static str = "max/admission";
+    }
+
+    pub enum MaxRefusal {}
+    impl Request for MaxRefusal {
+        type Params = LawAxis;
+        type Result = RefusalResult;
+        const METHOD: &'static str = "max/refusal";
+    }
+
+    pub enum MaxReplay {}
+    impl Request for MaxReplay {
+        type Params = SnapshotId;
+        type Result = ReplayResult;
+        const METHOD: &'static str = "max/replay";
+    }
+
+    pub enum MaxReleaseActuation {}
+    impl Request for MaxReleaseActuation {
+        type Params = SnapshotId;
+        type Result = ReleaseActuationResult;
+        const METHOD: &'static str = "max/releaseActuation";
+    }
+}
+
+// ---------------------------------------------------------------------------
+// PolicyState
+// ---------------------------------------------------------------------------
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub enum PolicyState {
+    Operational,
+    ClarificationRequested,
+    RefundAuthorized,
+}
+
+impl std::str::FromStr for PolicyState {
+    type Err = String;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "Operational" => Ok(Self::Operational),
+            "ClarificationRequested" => Ok(Self::ClarificationRequested),
+            "RefundAuthorized" => Ok(Self::RefundAuthorized),
+            other => Err(format!("Unknown policy state: {other}")),
+        }
+    }
+}
+
+#[cfg(test)]
+mod policy_state_tests {
+    use super::PolicyState;
+    #[test]
+    fn test_policy_state_from_str_roundtrip() {
+        assert_eq!("Operational".parse::<PolicyState>(), Ok(PolicyState::Operational));
+        assert_eq!(
+            "ClarificationRequested".parse::<PolicyState>(),
+            Ok(PolicyState::ClarificationRequested)
+        );
+        assert_eq!(
+            "RefundAuthorized".parse::<PolicyState>(),
+            Ok(PolicyState::RefundAuthorized)
+        );
+        assert!("Bogus".parse::<PolicyState>().is_err());
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LspStateModel {
+    pub instance_id: String,
+    pub phase: String, // e.g. "Uninitialized", "Initializing", "Initialized", etc.
+    pub diagnostics: Vec<MaxDiagnostic>,
+    pub receipts: Vec<Receipt>,
+    pub policy_state: Option<PolicyState>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum HookEvent {
+    StateTransition {
+        instance_id: String,
+        from_phase: String,
+        to_phase: String,
+    },
+    DiagnosticEmitted {
+        instance_id: String,
+        diagnostic: Box<MaxDiagnostic>,
+    },
+    DiagnosticCleared {
+        instance_id: String,
+        diagnostic_id: String,
+    },
+    ReceiptEmitted {
+        instance_id: String,
+        receipt: Receipt,
+    },
+    PolicyStateChanged {
+        instance_id: String,
+        from_state: PolicyState,
+        to_state: PolicyState,
+    },
 }

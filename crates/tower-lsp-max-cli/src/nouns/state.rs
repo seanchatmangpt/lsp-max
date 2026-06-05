@@ -1,73 +1,83 @@
 use clap_noun_verb::Result;
 use clap_noun_verb_macros::verb;
 use serde::Serialize;
+use tower_lsp_max_runtime::{AutonomicMesh, MeshAction, PolicyState};
 
 // ==============================================================================
 // 1. Domain Tier
 // ==============================================================================
 
-/// Represents the overall state in the domain.
-#[derive(Debug, Clone, Serialize)]
-pub struct ServerState {
-    pub id: String,
-    pub status: StateStatus,
-    pub revision: u64,
-}
-
-#[derive(Debug, Clone, Serialize)]
-pub enum StateStatus {
-    Uninitialized,
-    Running,
-    Stopped,
-}
-
 /// Represents a patch payload for modifying state.
 #[derive(Debug, Clone)]
 pub struct StatePatch {
-    pub status: Option<StateStatus>,
+    pub status: Option<String>,
 }
 
 // ==============================================================================
 // 2. Service Tier
 // ==============================================================================
 
-/// Service for managing ServerState lifecycle and operations.
-pub struct StateService;
+/// Service for managing AutonomicMesh lifecycle and operations.
+pub struct StateService {
+    state_path: String,
+}
 
 impl StateService {
     pub fn new() -> Self {
-        Self
-    }
-
-    pub fn dump(&self, state_id: &str) -> ServerState {
-        // Mock implementation
-        ServerState {
-            id: state_id.to_string(),
-            status: StateStatus::Running,
-            revision: 1,
+        Self {
+            state_path: crate::nouns::get_state_path(),
         }
     }
 
-    pub fn restore(&self, state_id: &str, revision: u64) -> ServerState {
-        // Mock implementation
-        ServerState {
-            id: state_id.to_string(),
-            status: StateStatus::Uninitialized,
-            revision,
+    pub fn dump(&self, state_id: &str) -> std::result::Result<String, String> {
+        let mesh = AutonomicMesh::load_from_file(&self.state_path).map_err(|e| e.to_string())?;
+
+        let state = if state_id == "all" || state_id.is_empty() {
+            serde_json::to_string_pretty(&mesh.to_state()).map_err(|e| e.to_string())?
+        } else {
+            let inst = mesh
+                .instances
+                .get(state_id)
+                .ok_or_else(|| format!("Instance not found: {}", state_id))?;
+            serde_json::to_string_pretty(inst).map_err(|e| e.to_string())?
+        };
+
+        Ok(state)
+    }
+
+    pub fn restore(&self, state_id: &str, _revision: u64) -> bool {
+        if let Ok(mut mesh) = AutonomicMesh::load_from_file(&self.state_path) {
+            if let Some(inst) = mesh.instances.get_mut(state_id) {
+                inst.diagnostics.clear();
+                inst.receipts.clear();
+                inst.policy_state = Some(tower_lsp_max_runtime::PolicyState::Operational);
+                return mesh.save_to_file(&self.state_path).is_ok();
+            }
         }
+        false
     }
 
     pub fn verify(&self, state_id: &str) -> bool {
-        // Mock implementation
-        !state_id.is_empty()
+        if let Ok(mesh) = AutonomicMesh::load_from_file(&self.state_path) {
+            if let Some(inst) = mesh.instances.get(state_id) {
+                return inst.conformance_score() > 50.0;
+            }
+        }
+        false
     }
 
-    pub fn patch(&self, state_id: &str, _patch: StatePatch) -> ServerState {
-        // Mock implementation
-        ServerState {
-            id: state_id.to_string(),
-            status: StateStatus::Running,
-            revision: 2,
+    pub fn patch(&self, state_id: &str, patch: StatePatch) -> std::result::Result<bool, String> {
+        let mut mesh =
+            AutonomicMesh::load_from_file(&self.state_path).map_err(|e| e.to_string())?;
+
+        if let Some(status) = patch.status {
+            let cmd = format!("patch {} {}", state_id, status);
+            mesh.run_command(&cmd)?;
+            mesh.save_to_file(&self.state_path)
+                .map_err(|e| e.to_string())?;
+            Ok(true)
+        } else {
+            Ok(false)
         }
     }
 }
@@ -84,30 +94,28 @@ impl Default for StateService {
 
 #[derive(Serialize)]
 pub struct DumpResult {
-    pub state: ServerState,
+    pub state: String,
 }
 
 #[verb("dump")]
 pub fn dump(state_id: String) -> Result<DumpResult> {
     let service = StateService::new();
-    let state = service.dump(&state_id);
+    let state = service
+        .dump(&state_id)
+        .map_err(clap_noun_verb::error::NounVerbError::execution_error)?;
     Ok(DumpResult { state })
 }
 
 #[derive(Serialize)]
 pub struct RestoreResult {
-    pub state: ServerState,
-    pub restored_revision: u64,
+    pub success: bool,
 }
 
 #[verb("restore")]
 pub fn restore(state_id: String, revision: u64) -> Result<RestoreResult> {
     let service = StateService::new();
-    let state = service.restore(&state_id, revision);
-    Ok(RestoreResult {
-        state,
-        restored_revision: revision,
-    })
+    let success = service.restore(&state_id, revision);
+    Ok(RestoreResult { success })
 }
 
 #[derive(Serialize)]
@@ -125,24 +133,112 @@ pub fn verify(state_id: String) -> Result<VerifyResult> {
 
 #[derive(Serialize)]
 pub struct PatchResult {
-    pub state: ServerState,
+    pub success: bool,
 }
 
 #[verb("patch")]
 pub fn patch(state_id: String, status_override: Option<String>) -> Result<PatchResult> {
     let service = StateService::new();
 
-    let parsed_status = match status_override.as_deref() {
-        Some("running") => Some(StateStatus::Running),
-        Some("stopped") => Some(StateStatus::Stopped),
-        Some("uninitialized") => Some(StateStatus::Uninitialized),
-        _ => None,
-    };
-
     let state_patch = StatePatch {
-        status: parsed_status,
+        status: status_override,
     };
 
-    let state = service.patch(&state_id, state_patch);
-    Ok(PatchResult { state })
+    let success = service
+        .patch(&state_id, state_patch)
+        .map_err(clap_noun_verb::error::NounVerbError::execution_error)?;
+    Ok(PatchResult { success })
+}
+
+#[derive(Serialize)]
+pub struct StateResult {
+    pub instance_id: String,
+    pub phase: String,
+    pub conformance_score: f64,
+    pub policy_state: Option<String>,
+    pub diagnostics_count: usize,
+    pub receipts_count: usize,
+}
+
+#[verb("state")]
+pub fn state(instance_id: String) -> Result<StateResult> {
+    let mesh = AutonomicMesh::load_from_file(&crate::nouns::get_state_path())
+        .map_err(|e| clap_noun_verb::error::NounVerbError::execution_error(e.to_string()))?;
+
+    let inst = mesh.instances.get(&instance_id).ok_or_else(|| {
+        clap_noun_verb::error::NounVerbError::execution_error(format!(
+            "Instance not found: {}",
+            instance_id
+        ))
+    })?;
+
+    let policy_state = inst.policy_state.as_ref().map(|p| format!("{:?}", p));
+
+    Ok(StateResult {
+        instance_id: inst.id.clone(),
+        phase: inst.phase.clone(),
+        conformance_score: inst.conformance_score(),
+        policy_state,
+        diagnostics_count: inst.diagnostics.len(),
+        receipts_count: inst.receipts.len(),
+    })
+}
+
+#[derive(Serialize)]
+pub struct TransitionResult {
+    pub instance_id: String,
+    pub new_state: String,
+    pub success: bool,
+}
+
+#[verb("transition")]
+pub fn transition(instance_id: String, new_state: String) -> Result<TransitionResult> {
+    let policy_state: PolicyState = new_state
+        .parse()
+        .map_err(|e: String| clap_noun_verb::error::NounVerbError::execution_error(e))?;
+
+    let mut mesh = AutonomicMesh::load_from_file(&crate::nouns::get_state_path())
+        .map_err(|e| clap_noun_verb::error::NounVerbError::execution_error(e.to_string()))?;
+
+    mesh.execute_action(MeshAction::TransitionPolicyState {
+        instance_id: instance_id.clone(),
+        new_state: policy_state,
+    });
+
+    mesh.save_to_file(&crate::nouns::get_state_path())
+        .map_err(|e| clap_noun_verb::error::NounVerbError::execution_error(e.to_string()))?;
+
+    Ok(TransitionResult {
+        instance_id,
+        new_state,
+        success: true,
+    })
+}
+
+#[derive(Serialize)]
+pub struct ActionResult {
+    pub instance_id: String,
+    pub action_id: String,
+    pub success: bool,
+}
+
+#[verb("action")]
+pub fn action(instance_id: String, action_id: String, description: String) -> Result<ActionResult> {
+    let mut mesh = AutonomicMesh::load_from_file(&crate::nouns::get_state_path())
+        .map_err(|e| clap_noun_verb::error::NounVerbError::execution_error(e.to_string()))?;
+
+    mesh.execute_action(MeshAction::ExecuteBoundedAction {
+        instance_id: instance_id.clone(),
+        action_id: action_id.clone(),
+        description,
+    });
+
+    mesh.save_to_file(&crate::nouns::get_state_path())
+        .map_err(|e| clap_noun_verb::error::NounVerbError::execution_error(e.to_string()))?;
+
+    Ok(ActionResult {
+        instance_id,
+        action_id,
+        success: true,
+    })
 }
