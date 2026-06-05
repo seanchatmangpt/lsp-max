@@ -15,8 +15,8 @@ mod tests {
 
     #[test]
     fn test_cli_nouns_integration() {
-        // Setup database file path
-        let test_db_path = "test_mesh_state.json";
+        // Setup database file path — use a unique path to avoid cross-test state pollution
+        let test_db_path = "/tmp/test_mesh_state_integration.json";
         if Path::new(test_db_path).exists() {
             let _ = fs::remove_file(test_db_path);
         }
@@ -235,7 +235,7 @@ mod tests {
         let output = registry.execute_single_step(args).unwrap();
         assert_eq!(output.data["message"]["body"], "hello mesh");
 
-        // Cleanup
+        // Cleanup — remove integration test state file
         if Path::new(test_db_path).exists() {
             let _ = fs::remove_file(test_db_path);
         }
