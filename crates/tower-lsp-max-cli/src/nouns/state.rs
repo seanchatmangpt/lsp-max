@@ -176,7 +176,7 @@ pub fn state(instance_id: String) -> Result<StateResult> {
 
     Ok(StateResult {
         instance_id: inst.id.clone(),
-        phase: inst.phase.clone(),
+        phase: inst.phase.to_string(),
         conformance_score: inst.conformance_score(),
         policy_state,
         diagnostics_count: inst.diagnostics.len(),

@@ -869,10 +869,32 @@ pub trait Hook: Send + Sync {
     fn trigger(&self, event: &HookEvent) -> Vec<MeshAction>;
 }
 
+/// Lifecycle phase of an LSP instance.
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+pub enum LspPhase {
+    Uninitialized,
+    Initializing,
+    Initialized,
+    ShutDown,
+    Exited,
+}
+
+impl std::fmt::Display for LspPhase {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            LspPhase::Uninitialized => write!(f, "Uninitialized"),
+            LspPhase::Initializing => write!(f, "Initializing"),
+            LspPhase::Initialized => write!(f, "Initialized"),
+            LspPhase::ShutDown => write!(f, "ShutDown"),
+            LspPhase::Exited => write!(f, "Exited"),
+        }
+    }
+}
+
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct LspInstance {
     pub id: String,
-    pub phase: String,
+    pub phase: LspPhase,
     pub diagnostics: Vec<MaxDiagnostic>,
     pub receipts: Vec<Receipt>,
     pub policy_state: Option<PolicyState>,
@@ -882,7 +904,7 @@ impl LspInstance {
     pub fn new(id: &str) -> Self {
         Self {
             id: id.to_string(),
-            phase: "Uninitialized".to_string(),
+            phase: LspPhase::Uninitialized,
             diagnostics: Vec::new(),
             receipts: Vec::new(),
             policy_state: None,
@@ -1049,9 +1071,9 @@ impl AutonomicMesh {
             }
         } else {
             let mut lsp1 = LspInstance::new("LSP_1");
-            lsp1.phase = "Initialized".to_string();
+            lsp1.phase = LspPhase::Initialized;
             let mut lsp2 = LspInstance::new("LSP_2");
-            lsp2.phase = "Initialized".to_string();
+            lsp2.phase = LspPhase::Initialized;
             lsp2.policy_state = Some(PolicyState::Operational);
 
             mesh.add_instance(lsp1);
@@ -1401,10 +1423,19 @@ impl AutonomicMesh {
                     Some(100.0 * admitted.len() as f64 / total as f64)
                 };
 
+                let witnessed: std::collections::HashSet<tower_lsp_max_protocol::LawAxis> =
+                    axis_map.keys().cloned().collect();
+                let unknown: Vec<tower_lsp_max_protocol::LawAxis> =
+                    tower_lsp_max_protocol::LawAxis::all_named()
+                        .iter()
+                        .filter(|ax| !witnessed.contains(ax))
+                        .cloned()
+                        .collect();
+
                 let vec = tower_lsp_max_protocol::ConformanceVector {
                     admitted,
                     refused,
-                    unknown: Vec::new(),
+                    unknown,
                     score: derived_score,
                     strict_mode: true,
                 };
@@ -1525,6 +1556,26 @@ impl AutonomicMesh {
                     .get(instance_id)
                     .ok_or_else(|| format!("Instance not found: {}", instance_id))?;
                 let score = inst.conformance_score();
+                let mut bundle_axis_map: std::collections::HashMap<tower_lsp_max_protocol::LawAxis, bool> =
+                    std::collections::HashMap::new();
+                for diag in &inst.diagnostics {
+                    let is_error = matches!(diag.lsp.severity, Some(lsp_types::DiagnosticSeverity::ERROR));
+                    let entry = bundle_axis_map.entry(diag.law_axis.clone()).or_insert(false);
+                    if is_error { *entry = true; }
+                }
+                let mut bundle_admitted = vec![];
+                let mut bundle_refused = vec![];
+                for (axis, has_error) in &bundle_axis_map {
+                    if *has_error { bundle_refused.push(axis.clone()); } else { bundle_admitted.push(axis.clone()); }
+                }
+                let bundle_witnessed: std::collections::HashSet<tower_lsp_max_protocol::LawAxis> =
+                    bundle_axis_map.keys().cloned().collect();
+                let bundle_unknown: Vec<tower_lsp_max_protocol::LawAxis> =
+                    tower_lsp_max_protocol::LawAxis::all_named()
+                        .iter()
+                        .filter(|ax| !bundle_witnessed.contains(ax))
+                        .cloned()
+                        .collect();
                 let bundle = tower_lsp_max_protocol::AnalysisBundle {
                     snapshot_id,
                     capability_vector: tower_lsp_max_protocol::MaxCapabilityVector {
@@ -1537,9 +1588,9 @@ impl AutonomicMesh {
                     diagnostics: inst.diagnostics.clone(),
                     actions: vec![],
                     conformance_vector: tower_lsp_max_protocol::ConformanceVector {
-                        admitted: Vec::new(),
-                        refused: Vec::new(),
-                        unknown: Vec::new(),
+                        admitted: bundle_admitted,
+                        refused: bundle_refused,
+                        unknown: bundle_unknown,
                         score: Some(score),
                         strict_mode: true,
                     },
@@ -1680,7 +1731,7 @@ impl AutonomicMesh {
                     .ok_or_else(|| format!("Instance not found: {}", instance_id))?;
                 // Define lawful phase order
                 let phase_order = ["Uninitialized", "Initializing", "Initialized", "ShutDown", "Exited"];
-                let current_idx = phase_order.iter().position(|&p| p == inst.phase);
+                let current_idx = phase_order.iter().position(|&p| p == inst.phase.to_string().as_str());
                 let target_idx = phase_order.iter().position(|&p| p == target_phase.as_str());
                 let (admitted, refused_reason) = match (current_idx, target_idx) {
                     (Some(ci), Some(ti)) if ti == ci + 1 => {
@@ -1917,11 +1968,11 @@ impl AutonomicMesh {
 
             // Cross-verify phase matches the ledger length
             let expected_phase = match history.len() {
-                1 => "Uninitialized",
-                2 => "Initializing",
-                3 => "Initialized",
-                4 => "ShutDown",
-                5 => "Exited",
+                1 => LspPhase::Uninitialized,
+                2 => LspPhase::Initializing,
+                3 => LspPhase::Initialized,
+                4 => LspPhase::ShutDown,
+                5 => LspPhase::Exited,
                 _ => unreachable!(),
             };
 

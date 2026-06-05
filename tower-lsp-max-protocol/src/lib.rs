@@ -37,6 +37,24 @@ impl Default for LawAxis {
     }
 }
 
+impl LawAxis {
+    pub fn all_named() -> &'static [LawAxis] {
+        &[
+            LawAxis::Protocol,
+            LawAxis::Type,
+            LawAxis::Fixture,
+            LawAxis::Documentation,
+            LawAxis::Release,
+            LawAxis::Hook,
+            LawAxis::Repair,
+            LawAxis::Receipt,
+            LawAxis::Security,
+            LawAxis::Autopoiesis,
+            LawAxis::Domain,
+        ]
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Repairability / Terminality
 // ---------------------------------------------------------------------------
