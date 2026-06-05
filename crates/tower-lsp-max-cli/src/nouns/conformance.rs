@@ -194,6 +194,50 @@ pub fn vector(instance_id: String) -> Result<ConformanceVectorResult> {
     })
 }
 
+/// Result type for the `vector-rpc` verb (dispatch_rpc-based).
+#[derive(Serialize)]
+pub struct ConformanceVectorRpcResult {
+    pub instance_id: String,
+    pub admitted: usize,
+    pub refused: usize,
+    pub unknown: usize,
+    pub raw: serde_json::Value,
+}
+
+#[verb("vector-rpc")]
+pub fn vector_rpc(instance_id: String) -> Result<ConformanceVectorRpcResult> {
+    let state_path = crate::nouns::get_state_path();
+    let mut mesh = AutonomicMesh::load_from_file(&state_path)
+        .map_err(NounVerbError::execution_error)?;
+    let response = mesh
+        .dispatch_rpc(&instance_id, "max/conformanceVector", serde_json::Value::Null)
+        .map_err(NounVerbError::execution_error)?;
+    mesh.save_to_file(&state_path)
+        .map_err(NounVerbError::execution_error)?;
+    let admitted = response
+        .get("admitted")
+        .and_then(|v| v.as_array())
+        .map(|a| a.len())
+        .unwrap_or(0);
+    let refused = response
+        .get("refused")
+        .and_then(|v| v.as_array())
+        .map(|a| a.len())
+        .unwrap_or(0);
+    let unknown = response
+        .get("unknown")
+        .and_then(|v| v.as_array())
+        .map(|a| a.len())
+        .unwrap_or(0);
+    Ok(ConformanceVectorRpcResult {
+        instance_id,
+        admitted,
+        refused,
+        unknown,
+        raw: response,
+    })
+}
+
 // ==============================================================================
 // 4. Tests
 // ==============================================================================

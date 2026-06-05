@@ -6,5 +6,11 @@
       "Step 3: Clear resolved diagnostics and emit receipts"
     ]
   },
+  "agents": {
+    "agent-42": {
+      "id": "agent-42",
+      "status": "Halted"
+    }
+  },
   "instances": {}
 }

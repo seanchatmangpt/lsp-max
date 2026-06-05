@@ -92,6 +92,25 @@ impl LawAxis {
     }
 }
 
+impl std::fmt::Display for LawAxis {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            LawAxis::Protocol => write!(f, "Protocol"),
+            LawAxis::Type => write!(f, "Type"),
+            LawAxis::Fixture => write!(f, "Fixture"),
+            LawAxis::Documentation => write!(f, "Documentation"),
+            LawAxis::Release => write!(f, "Release"),
+            LawAxis::Hook => write!(f, "Hook"),
+            LawAxis::Repair => write!(f, "Repair"),
+            LawAxis::Receipt => write!(f, "Receipt"),
+            LawAxis::Security => write!(f, "Security"),
+            LawAxis::Autopoiesis => write!(f, "Autopoiesis"),
+            LawAxis::Domain => write!(f, "Domain"),
+            LawAxis::Custom(s) => write!(f, "Custom({})", s),
+        }
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Repairability / Terminality
 // ---------------------------------------------------------------------------
@@ -147,7 +166,7 @@ pub struct RepairAction {
     pub description: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct GateId(pub String);
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -220,6 +239,59 @@ impl MaxDiagnostic {
             }
         }
         d
+    }
+}
+
+// ---------------------------------------------------------------------------
+// ConformanceGrade — DfLSS CTQ compiler-enforced grade levels
+// ---------------------------------------------------------------------------
+
+/// Typed grade derived from a raw conformance score.
+///
+/// DfLSS CTQ requires grade-level branching to be compiler-enforced rather
+/// than stringly typed.  Use [`ConformanceGrade::from_score`] to convert the
+/// raw `f64` produced by `LspInstance::conformance_score()`.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum ConformanceGrade {
+    /// Score ≥ 100.0 — zero defects, fully conformant.
+    Perfect,
+    /// Score ≥ 75.0 — within acceptable operating bounds.
+    Good,
+    /// Score ≥ 50.0 — degraded; corrective action recommended.
+    Degraded,
+    /// Score < 50.0 — critical; immediate intervention required.
+    Critical,
+}
+
+impl ConformanceGrade {
+    /// Map a raw conformance score to its grade level.
+    pub fn from_score(s: f64) -> Self {
+        if s >= 100.0 {
+            ConformanceGrade::Perfect
+        } else if s >= 75.0 {
+            ConformanceGrade::Good
+        } else if s >= 50.0 {
+            ConformanceGrade::Degraded
+        } else {
+            ConformanceGrade::Critical
+        }
+    }
+
+    /// Return the canonical string label used in JSON responses.
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            ConformanceGrade::Perfect => "perfect",
+            ConformanceGrade::Good => "good",
+            ConformanceGrade::Degraded => "degraded",
+            ConformanceGrade::Critical => "critical",
+        }
+    }
+}
+
+impl std::fmt::Display for ConformanceGrade {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.as_str())
     }
 }
 
