@@ -1,3 +1,4 @@
+use std::str::FromStr;
 use std::sync::Arc;
 /// Integration tests for LSP 3.18 capabilities (batch 1 + batch 2).
 ///
@@ -974,7 +975,7 @@ async fn test_selection_range_dispatch() {
         work_done_progress_params: lsp::WorkDoneProgressParams::default(),
         partial_result_params: lsp::PartialResultParams::default(),
         text_document: lsp::TextDocumentIdentifier {
-            uri: lsp::Url::parse("file:///test.rs").unwrap(),
+            uri: lsp::Uri::from_str("file:///test.rs").unwrap(),
         },
         positions: vec![lsp::Position {
             line: 0,
@@ -998,7 +999,7 @@ async fn test_linked_editing_range_dispatch() {
     let params_typed = lsp::LinkedEditingRangeParams {
         text_document_position_params: lsp::TextDocumentPositionParams {
             text_document: lsp::TextDocumentIdentifier {
-                uri: lsp::Url::parse("file:///test.rs").unwrap(),
+                uri: lsp::Uri::from_str("file:///test.rs").unwrap(),
             },
             position: lsp::Position {
                 line: 1,
@@ -1021,7 +1022,7 @@ async fn test_semantic_tokens_full_dispatch() {
         work_done_progress_params: lsp::WorkDoneProgressParams::default(),
         partial_result_params: lsp::PartialResultParams::default(),
         text_document: lsp::TextDocumentIdentifier {
-            uri: lsp::Url::parse("file:///test.rs").unwrap(),
+            uri: lsp::Uri::from_str("file:///test.rs").unwrap(),
         },
     };
     let serialized = serde_json::to_value(&params_typed).unwrap();
@@ -1041,7 +1042,7 @@ async fn test_semantic_tokens_full_delta_dispatch() {
         work_done_progress_params: lsp::WorkDoneProgressParams::default(),
         partial_result_params: lsp::PartialResultParams::default(),
         text_document: lsp::TextDocumentIdentifier {
-            uri: lsp::Url::parse("file:///test.rs").unwrap(),
+            uri: lsp::Uri::from_str("file:///test.rs").unwrap(),
         },
         previous_result_id: "prev-result-id".to_string(),
     };
@@ -1063,7 +1064,7 @@ async fn test_semantic_tokens_range_dispatch() {
         work_done_progress_params: lsp::WorkDoneProgressParams::default(),
         partial_result_params: lsp::PartialResultParams::default(),
         text_document: lsp::TextDocumentIdentifier {
-            uri: lsp::Url::parse("file:///test.rs").unwrap(),
+            uri: lsp::Uri::from_str("file:///test.rs").unwrap(),
         },
         range: lsp::Range {
             start: lsp::Position {
@@ -1096,7 +1097,7 @@ async fn test_inlay_hint_dispatch() {
     let params_typed = lsp::InlayHintParams {
         work_done_progress_params: lsp::WorkDoneProgressParams::default(),
         text_document: lsp::TextDocumentIdentifier {
-            uri: lsp::Url::parse("file:///test.rs").unwrap(),
+            uri: lsp::Uri::from_str("file:///test.rs").unwrap(),
         },
         range: lsp::Range {
             start: lsp::Position {
@@ -1158,7 +1159,7 @@ async fn test_document_diagnostic_dispatch() {
         work_done_progress_params: lsp::WorkDoneProgressParams::default(),
         partial_result_params: lsp::PartialResultParams::default(),
         text_document: lsp::TextDocumentIdentifier {
-            uri: lsp::Url::parse("file:///test.rs").unwrap(),
+            uri: lsp::Uri::from_str("file:///test.rs").unwrap(),
         },
         identifier: None,
         previous_result_id: None,
@@ -1784,7 +1785,7 @@ async fn test_inline_value_dispatch() {
     let params_typed = lsp::InlineValueParams {
         work_done_progress_params: lsp::WorkDoneProgressParams::default(),
         text_document: lsp::TextDocumentIdentifier {
-            uri: lsp::Url::parse("file:///test.rs").unwrap(),
+            uri: lsp::Uri::from_str("file:///test.rs").unwrap(),
         },
         range: lsp::Range {
             start: lsp::Position {

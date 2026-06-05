@@ -1,3 +1,4 @@
+use std::str::FromStr;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
@@ -108,11 +109,11 @@ fn test_rpc_attribute_parsing_stress() {
         "#,
     ];
 
-    let url = Url::parse("file:///Users/sac/test.rs").unwrap();
+    let url = Uri::from_str("file:///Users/sac/test.rs").unwrap();
     for (i, text) in test_cases.iter().enumerate() {
-        let result = std::panic::catch_unwind(|| {
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
             get_diagnostics(text, &url);
-        });
+        }));
         assert!(
             result.is_ok(),
             "get_diagnostics panicked on test case {}: {:?}",
@@ -164,16 +165,16 @@ fn test_stack_based_brace_parsing_comments_strings() {
     }
     "#;
 
-    let url = Url::parse("file:///Users/sac/test.rs").unwrap();
+    let url = Uri::from_str("file:///Users/sac/test.rs").unwrap();
 
     for (name, text) in &[
         ("comment_braces", text_comment_braces),
         ("string_braces", text_string_braces),
         ("mismatched_braces", text_mismatched_braces),
     ] {
-        let result = std::panic::catch_unwind(|| {
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
             get_diagnostics(text, &url);
-        });
+        }));
         assert!(
             result.is_ok(),
             "get_diagnostics panicked on brace parsing test: {}",
@@ -188,7 +189,7 @@ fn test_stack_based_brace_parsing_comments_strings() {
 
 #[test]
 fn test_nested_diagnostics_detection_options() {
-    let url = Url::parse("file:///Users/sac/test.rs").unwrap();
+    let url = Uri::from_str("file:///Users/sac/test.rs").unwrap();
 
     // 1. Valid nesting
     let text_valid = r#"

@@ -16,7 +16,7 @@ pub const TYPO_IN_METHOD_NAME: &str = "TLM005";
 pub const INVALID_RPC_NAME: &str = "TLM006";
 
 /// Public entry point taking raw source text. Matches the spec signature so tests can call it directly.
-pub fn get_diagnostics(text: &str, _uri: &Url) -> Vec<Diagnostic> {
+pub fn get_diagnostics(text: &str, _uri: &Uri) -> Vec<Diagnostic> {
     let ast = match syn::parse_file(text) {
         Ok(ast) => ast,
         Err(_) => return vec![],

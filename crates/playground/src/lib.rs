@@ -4,6 +4,8 @@
 //! against an in-memory rope store; useful for verifying runtime behaviour
 //! without a production language server.
 
+#![allow(clippy::mutable_key_type)]
+
 pub mod capabilities;
 pub mod handlers;
 
@@ -26,7 +28,7 @@ pub struct Document {
 pub struct Backend {
     pub client: Client,
     /// Open documents indexed by URI.
-    pub docs: Arc<DashMap<Url, Document>>,
+    pub docs: Arc<DashMap<Uri, Document>>,
 }
 
 impl Backend {
@@ -137,7 +139,7 @@ impl LanguageServer for Backend {
 
 impl Backend {
     /// Re-runs the diagnostic engine and publishes results via the client.
-    pub async fn publish_diagnostics(&self, uri: Url) {
+    pub async fn publish_diagnostics(&self, uri: Uri) {
         let diags = handlers::diagnostics::compute(self, &uri).await;
         self.client.publish_diagnostics(uri, diags, None).await;
     }

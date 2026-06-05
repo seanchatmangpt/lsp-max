@@ -14,7 +14,7 @@ use crate::Backend;
 /// Code action entry point called from `lib.rs`.
 pub async fn code_actions(
     backend: &Backend,
-    uri: &Url,
+    uri: &Uri,
     diagnostics: &[Diagnostic],
 ) -> Option<CodeActionResponse> {
     let doc = backend.docs.get(uri);
@@ -305,7 +305,7 @@ fn generate_method_stub(entry: &crate::handlers::completions::MethodEntry) -> St
     }
 }
 
-fn workspace_edit_insert(uri: &Url, pos: Position, text: &str) -> WorkspaceEdit {
+fn workspace_edit_insert(uri: &Uri, pos: Position, text: &str) -> WorkspaceEdit {
     let edit = TextEdit {
         range: Range {
             start: pos,

@@ -1,3 +1,4 @@
+use std::str::FromStr;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
@@ -129,7 +130,7 @@ fn helper_function() {
 
 #[test]
 fn test_nested_capabilities_no_false_positive_warning() {
-    let url = Url::parse("file:///Users/sac/test.rs").unwrap();
+    let url = Uri::from_str("file:///Users/sac/test.rs").unwrap();
     let text = r#"
 struct Dummy;
 impl LanguageServer for Dummy {

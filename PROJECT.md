@@ -11,8 +11,8 @@
 | # | Name | Scope | Dependencies | Status |
 |---|---|---|---|---|
 | 1 | Core Test Helpers & Quick-wins | Extract common duplex-stream test helpers and refactor `tests/test_max_rpc_zero_coverage.rs`. | None | DONE |
-| 2 | Playground AST Handlers | Refactor completions and diagnostics handlers into modules under 500 LOC. | M1 | PLANNED |
-| 3 | Protocol Core Library | Refactor `tower-lsp-max-protocol/src/lib.rs` into modular sub-files. | M1 | PLANNED |
+| 2 | Playground AST Handlers | Refactor completions and diagnostics handlers into modules under 500 LOC. | M1 | DONE |
+| 3 | Protocol Core Library | Refactor `tower-lsp-max-protocol/src/lib.rs` into modular sub-files. | M1 | DONE |
 | 4 | Runtime Library | Extract inline test modules and modularize `tower-lsp-max-runtime/src/lib.rs`. | M1 | PLANNED |
 | 5 | tower-lsp-max Core Library | Refactor `src/lib.rs`, `src/service.rs`, and `src/service/client.rs` to keep them <= 500 LOC. | M3, M4 | PLANNED |
 | 6 | Integration Tests | Split integration tests in `tests/` into smaller files. | M1 | PLANNED |

@@ -890,7 +890,7 @@ fn test_methods_and_capabilities_table_consistency() {
 
 #[test]
 fn test_challenger_diagnostics_false_positives() {
-    use tower_lsp_max::lsp_types::Url;
+    use tower_lsp_max::lsp_types::Uri;
     use tower_lsp_max_playground::handlers::diagnostics::rules::get_diagnostics;
 
     let code = r#"
@@ -919,7 +919,7 @@ impl LanguageServer for Backend {
     }
 }
 "#;
-    let uri = Url::parse("file:///dummy.rs").unwrap();
+    let uri = <Uri as std::str::FromStr>::from_str("file:///dummy.rs").unwrap();
     let diags = get_diagnostics(code, &uri);
 
     // Let's see if we get a warning for did_change_workspace_folders (TLM002)

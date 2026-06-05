@@ -21,63 +21,63 @@ Feature | `tower-lsp-max` | `vscode-languageserver-node` | Correspondence
 
 ## 2. Lifecycle Management
 
-### tower-lsp-max (Current Implementation)
-The lifecycle is governed by the `Machine<L, P, D>` typestate kernel and the `ServerState` middleware.
-- **Phases:** `Uninitialized`, `Initializing`, `Initialized`, `ShutDown`, `Exited`.
-- **Enforcement:** Middleware layers (`Initialize`, `Normal`, `Shutdown`, `Exit`) wrap the inner service and reject requests that arrive in the wrong phase (e.g., rejecting `textDocument/hover` if not in `Initialized` state).
-- **Integrity:** Every state transition is recorded in a SHA-256 ledger of receipts, allowing for state replay and verification.
+### Deep Dive: tower-lsp-max
+- **Typestate Machine:** The implementation uses a high-assurance state machine (`Uninitialized` -> `Initializing` -> `Initialized` -> `ShutDown` -> `Exited`).
+- **Middleware Guards:** Standard LSP requests are strictly guarded. Attempting to call `textDocument/hover` before `initialize` results in a `ServerNotInitialized` (-32002) error.
+- **Bypass Warning:** Current analysis shows that `max/*` prefixed RPCs (e.g., `max/snapshot`) bypass these lifecycle guards and can be executed as long as the server is not in the `Exited` state.
+- **Poll Ready:** During the `initialize` request processing, the service returns `Poll::Pending`, effectively pausing the intake of other messages to ensure sequential handshake completion.
 
-### vscode-languageserver-node (Reference)
-- **States:** `New`, `Listening`, `Closed`, `Disposed`.
-- **Mechanism:** The `Connection` object tracks state internally and throws `ConnectionError` if `sendRequest` is called on a closed or disposed connection.
-- **Initialization:** Strictly follows the LSP sequence, but enforcement is often left to the implementation of the `onInitialize` handler rather than being baked into the transport layer as deeply as in `tower-lsp-max`.
+### Deep Dive: vscode-languageserver-node
+- **Watchdog:** Includes a `watchDog` component that monitors the parent process ID. If the parent dies, the server terminates automatically.
+- **Connection State:** Uses an internal `ConnectionState` (`New`, `Listening`, `Closed`, `Disposed`) to manage the low-level transport.
+- **Capability Filling:** Dynamically merges capabilities from all registered "remotes" (e.g., Configuration, WorkspaceFolders) during the `initialize` response construction.
 
 ---
 
 ## 3. Cancellation Semantics
 
-### tower-lsp-max
-- **Mechanism:** Uses a `Pending` request tracker. When a `$/cancelRequest` notification is received, the corresponding request's future is dropped (cancelled).
-- **Handler Impact:** Since Rust futures are lazy, dropping the future naturally stops execution. This provides "automatic" cancellation for any async handler that doesn't block the executor.
+### Deep Dive: tower-lsp-max
+- **Automatic Interruption:** By using `futures::future::abortable`, `tower-lsp-max` ensures that when a client sends `$/cancelRequest`, the future running the handler is **immediately dropped**.
+- **Resource Safety:** Because Rust's `Drop` trait is deterministic, resources (locks, file handles) are released as soon as the future is aborted, provided the handler is "cancellation-safe" (i.e., doesn't block the thread).
+- **Tracking:** Active requests are tracked in a `DashMap` within `src/service/pending.rs`.
 
-### vscode-languageserver-node
-- **Mechanism:** Uses `CancellationTokenSource` and `CancellationToken`.
-- **Handler Impact:** Handlers receive a `CancellationToken` as their last argument. They must explicitly check `token.isCancellationRequested` or subscribe to `token.onCancellationRequested` to stop long-running work.
-
----
-
-## 4. Error Handling
-
-### tower-lsp-max
-- **Typing:** Leverages Rust's `Result<T, Error>` for all handlers.
-- **Codes:** Implements standard JSON-RPC codes (-32700 to -32603) and LSP-specific codes like `RequestCancelled` (-32800) and `ContentModified` (-32801).
-- **Post-Exit:** Explicit `ExitedError(i32)` type used to signal that the server has terminated, carrying the exit code.
-
-### vscode-languageserver-node
-- **Typing:** Uses the `ResponseError` class. Handlers can return a value, a `Thenable`, or a `ResponseError`.
-- **Codes:** Standardized in `ErrorCodes` enum.
-- **Mechanism:** Emits errors via an `onError` event emitter on the connection.
+### Deep Dive: vscode-languageserver-node
+- **Cooperative Cancellation:** The reference implementation uses a `CancellationToken`. The server signals cancellation, but the handler **must manually check** `token.isCancellationRequested`.
+- **Latency:** If a handler is performing a heavy synchronous computation and doesn't check the token, it will continue to consume resources even after the client has cancelled.
 
 ---
 
-## 5. Concurrency and Parallelism
+## 4. Error Handling and Resilience
 
-### tower-lsp-max
-- **Model:** Built on `tower::Service` and `tokio`. Requests are processed concurrently as separate tasks.
-- **Limit:** Can be easily limited using standard `tower` middleware (e.g., `ConcurrencyLimitLayer`), though the default is unrestricted parallel futures.
+### Deep Dive: tower-lsp-max
+- **Panic Avoidance:** The project maintains a strict policy against `unwrap()` and `expect()` in critical paths. `Result` is used pervasively to handle errors gracefully.
+- **Missing Boundary:** There is no global `catch_unwind` middleware. While Tokio isolates task panics, a panic in a handler polled directly by the transport loop could potentially destabilize the server thread.
+- **Consistency:** Error codes for `ContentModified` and `RequestCancelled` are integrated directly into the core `Error` type.
 
-### vscode-languageserver-node
-- **Model:** Single-threaded Node.js event loop, but supports "parallel" execution of async handlers.
-- **Limit:** Features a `maxParallelism` option in `ConnectionOptions`. It uses a `Semaphore` to limit the number of "in-flight" requests being processed by handlers.
+### Deep Dive: vscode-languageserver-node
+- **Global Catch:** The `jsonrpc` layer wraps handler execution in `try/catch`. Any uncaught exception is converted to an `InternalError` (-32603) with the stack trace or message, preventing connection drops.
+- **State Validation:** Explicitly checks and returns `ServerNotInitialized` if requests are received before the handshake completes.
 
 ---
 
-## 6. Synthesis Plan (Next Steps)
+## 5. Concurrency and Ordering
 
-This report will be finalized following the detailed findings from the specialized agents:
-- **Lifecycle Agent:** Deep dive into typestate transition edge cases.
-- **Cancellation Agent:** Verification of resource cleanup during future drops.
-- **Error Handling Agent:** Audit of error code coverage against LSP 3.18.
-- **Concurrency Agent:** Performance analysis of parallel request dispatch.
+### Deep Dive: tower-lsp-max
+- **Parallelism:** Processes up to `max_concurrency` (default 4) requests concurrently using `buffer_unordered`.
+- **Notification Ordering:** Does **not** currently guarantee sequential processing of notifications for the same document (e.g., `didChange` then `didSave`) if multiple threads pick up the tasks. This responsibility is delegated to the `LanguageServer` implementation or achieved by setting concurrency to 1.
 
-(Further sections to be populated as agent reports are received).
+### Deep Dive: vscode-languageserver-node
+- **Event Loop Ordering:** Naturally serializes notifications because Node.js is single-threaded. It processes one message from the queue at a time, ensuring that document state updates are always sequential.
+- **Semaphore:** Uses a semaphore to limit parallelism for requests, while notifications are generally processed in receipt order.
+
+---
+
+## 7. Actionable Recommendations
+
+Based on this deep implementation analysis, the following improvements are recommended for `tower-lsp-max`:
+
+1.  **Global Panic Middleware:** Implement a `Tower` layer using `std::panic::catch_unwind` to wrap request handlers. This would convert handler panics into JSON-RPC `InternalError` responses, matching the resilience of the Node implementation.
+2.  **Lifecycle Guard for `max/*` RPCs:** Extend the `ServerState` middleware to apply lifecycle guards to internal `max/` RPCs to prevent premature snapshots or mesh operations before the server is fully initialized.
+3.  **Document-Specific Serialization:** Introduce an optional middleware or utility that serializes notifications/requests based on a `URI` key. This would provide the ordering guarantees of Node.js while maintaining the throughput of a multi-threaded Rust backend.
+4.  **Watchdog Integration:** Add a feature to monitor a parent process ID (standard in LSP) and trigger a graceful `shutdown` if the parent terminates unexpectedly.
+5.  **Cancellation-Safe Primitives:** Provide documentation or helpers for backend implementors to ensure their handlers are "cancellation-safe" when the underlying future is dropped.

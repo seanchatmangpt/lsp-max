@@ -13,7 +13,7 @@ pub use rules::get_diagnostics;
 ///
 /// Parses the document with `syn`, locates the `impl LanguageServer` block,
 /// and checks the capability-method contract.
-pub async fn compute(backend: &Backend, uri: &Url) -> Vec<Diagnostic> {
+pub async fn compute(backend: &Backend, uri: &Uri) -> Vec<Diagnostic> {
     let doc = backend.docs.get(uri);
     let doc = match doc {
         Some(d) if d.language_id == "rust" => d,

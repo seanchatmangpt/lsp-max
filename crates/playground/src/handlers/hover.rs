@@ -4,7 +4,7 @@ use super::completions::{CAPABILITY_FIELDS, METHODS};
 use crate::Backend;
 
 /// Hover entry point called from `lib.rs`.
-pub async fn compute(backend: &Backend, uri: &Url, pos: Position) -> Option<Hover> {
+pub async fn compute(backend: &Backend, uri: &Uri, pos: Position) -> Option<Hover> {
     let doc = backend.docs.get(uri)?;
     if doc.language_id != "rust" {
         return None;

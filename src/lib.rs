@@ -76,6 +76,7 @@
 #![deny(missing_debug_implementations)]
 #![deny(missing_docs)]
 #![forbid(unsafe_code)]
+#![allow(clippy::mutable_key_type)]
 
 pub extern crate lsp_types;
 
@@ -99,6 +100,7 @@ use lsp_types::request::{
 };
 use lsp_types::*;
 use serde_json::Value;
+use std::str::FromStr;
 use tower_lsp_max_macros::rpc;
 use tracing::{error, warn};
 
@@ -1564,13 +1566,15 @@ pub trait LanguageServer: Send + Sync + 'static {
         if let Some(ref edit) = workspace_edit {
             if let Some(ref changes) = edit.changes {
                 for url in changes.keys() {
-                    if let Ok(path) = url.to_file_path() {
-                        let content = if path.exists() {
-                            std::fs::read_to_string(&path).ok()
-                        } else {
-                            None
-                        };
-                        backups.insert(path, content);
+                    if let Ok(parsed_url) = url::Url::parse(url.as_str()) {
+                        if let Ok(path) = parsed_url.to_file_path() {
+                            let content = if path.exists() {
+                                std::fs::read_to_string(&path).ok()
+                            } else {
+                                None
+                            };
+                            backups.insert(path, content);
+                        }
                     }
                 }
             }
@@ -2362,12 +2366,14 @@ fn run_gate_logic(
 fn apply_workspace_edit(edit: &lsp_types::WorkspaceEdit) -> std::result::Result<(), String> {
     if let Some(changes) = &edit.changes {
         for (url, edits) in changes {
-            if url.scheme() != "file" {
-                return Err(format!("Unsupported URL scheme: {}", url.scheme()));
+            let parsed_url = url::Url::parse(url.as_str())
+                .map_err(|e| format!("Invalid URL '{}': {}", url.as_str(), e))?;
+            if parsed_url.scheme() != "file" {
+                return Err(format!("Unsupported URL scheme: {}", parsed_url.scheme()));
             }
-            let path = url
+            let path = parsed_url
                 .to_file_path()
-                .map_err(|_| format!("Invalid file path for URL: {}", url))?;
+                .map_err(|_| format!("Invalid file path for URL: {}", url.as_str()))?;
 
             let mut content = if path.exists() {
                 std::fs::read_to_string(&path)
@@ -2497,7 +2503,12 @@ pub(crate) fn update_diagnostics(registry: &mut ServerRegistry) {
         };
         registry.diagnostics.insert(diag1_id.clone(), diag1.clone());
 
-        let uri1 = lsp_types::Url::from_file_path(root_path.join("admission.receipt")).unwrap();
+        let uri1 = lsp_types::Uri::from_str(
+            url::Url::from_file_path(root_path.join("admission.receipt"))
+                .unwrap()
+                .as_str(),
+        )
+        .unwrap();
         let mut changes1 = HashMap::new();
         changes1.insert(
             uri1,
@@ -2585,7 +2596,12 @@ pub(crate) fn update_diagnostics(registry: &mut ServerRegistry) {
             };
             registry.diagnostics.insert(diag2_id.clone(), diag2.clone());
 
-            let uri2 = lsp_types::Url::from_file_path(root_path.join("security.receipt")).unwrap();
+            let uri2 = lsp_types::Uri::from_str(
+                url::Url::from_file_path(root_path.join("security.receipt"))
+                    .unwrap()
+                    .as_str(),
+            )
+            .unwrap();
             let mut changes2 = HashMap::new();
             changes2.insert(
                 uri2,
@@ -2661,7 +2677,12 @@ pub(crate) fn update_diagnostics(registry: &mut ServerRegistry) {
             };
             registry.diagnostics.insert(diag3_id.clone(), diag3.clone());
 
-            let uri3 = lsp_types::Url::from_file_path(root_path.join("auth.receipt")).unwrap();
+            let uri3 = lsp_types::Uri::from_str(
+                url::Url::from_file_path(root_path.join("auth.receipt"))
+                    .unwrap()
+                    .as_str(),
+            )
+            .unwrap();
             let mut changes3 = HashMap::new();
             changes3.insert(
                 uri3,

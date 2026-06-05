@@ -14,7 +14,7 @@ pub use table::{Domain, MethodEntry, CAPABILITY_FIELDS, METHODS};
 // ---------------------------------------------------------------------------
 
 /// Completion entry point called from `lib.rs`.
-pub async fn compute(backend: &Backend, uri: &Url, pos: Position) -> Option<CompletionResponse> {
+pub async fn compute(backend: &Backend, uri: &Uri, pos: Position) -> Option<CompletionResponse> {
     let doc = backend.docs.get(uri)?;
     if doc.language_id != "rust" {
         return None;

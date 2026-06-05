@@ -12,7 +12,7 @@ tokio = { version = "1.17", features = ["full"] }
 linkme = "0.3.36"
 tower-lsp-max = { path = "../.." }
 tower-lsp-max-protocol = { path = "../../tower-lsp-max-protocol" }
-lsp-types = "0.94.1"
+lsp-types = "0.97.0"
 tower-lsp-max-agent = { path = "../../tower-lsp-max-agent", version = "26.6.4" }
 tower-lsp-max-runtime = { path = "../../tower-lsp-max-runtime", version = "26.6.4" }
 tracing = "0.1"
