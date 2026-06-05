@@ -155,6 +155,57 @@ impl Default for AgentService {
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn halt_returns_halted_state_with_matching_id() {
+        let svc = AgentService::new();
+        let result = svc.halt("agent-42".to_string());
+        assert!(result.is_ok(), "halt should return Ok");
+        let state = result.unwrap();
+        assert_eq!(state.id, "agent-42");
+        assert!(matches!(state.status, AgentStatus::Halted));
+    }
+
+    #[test]
+    fn plan_returns_non_empty_steps_for_new_id() {
+        let svc = AgentService::new();
+        // plan falls back to default steps when agent chat fails (no API key)
+        let result = svc.plan("workspace-abc".to_string());
+        assert!(result.is_ok(), "plan should return Ok (uses fallback steps)");
+        let plan = result.unwrap();
+        assert!(!plan.steps.is_empty(), "plan steps must not be empty");
+    }
+
+    #[test]
+    fn invoke_without_api_key_returns_err() {
+        // Unset any API key env vars for this test
+        let _guard1 = std::env::var("TOWER_LSP_MAX_API_KEY").ok();
+        let _guard2 = std::env::var("OPENAI_API_KEY").ok();
+        unsafe {
+            std::env::remove_var("TOWER_LSP_MAX_API_KEY");
+            std::env::remove_var("OPENAI_API_KEY");
+        }
+        let svc = AgentService::new();
+        let result = svc.invoke("test task".to_string());
+        // Without an API key the service must return Err
+        assert!(result.is_err(), "invoke without API key should return Err");
+    }
+
+    #[test]
+    fn chat_without_api_key_returns_err() {
+        unsafe {
+            std::env::remove_var("TOWER_LSP_MAX_API_KEY");
+            std::env::remove_var("OPENAI_API_KEY");
+        }
+        let svc = AgentService::new();
+        let result = svc.chat("agent-1".to_string(), "hello".to_string());
+        assert!(result.is_err(), "chat without API key should return Err");
+    }
+}
+
 // --- CLI Tier ---
 
 #[derive(Serialize)]

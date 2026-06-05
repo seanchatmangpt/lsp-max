@@ -1337,7 +1337,7 @@ pub trait LanguageServer: Send + Sync + 'static {
     /// The `max/snapshot` request returns a deterministic snapshot of the workspace state.
     #[rpc(name = "max/snapshot")]
     async fn max_snapshot(&self) -> Result<max_protocol::SnapshotId> {
-        let mut registry = get_registry().lock().unwrap();
+        let mut registry = lock_registry()?;
         update_diagnostics(&mut registry);
 
         let snapshot = max_runtime::DeterministicSnapshot::new();
@@ -1423,7 +1423,7 @@ pub trait LanguageServer: Send + Sync + 'static {
         &self,
         params: max_protocol::SnapshotId,
     ) -> Result<max_protocol::ConformanceVector> {
-        let mut registry = get_registry().lock().unwrap();
+        let mut registry = lock_registry()?;
         update_diagnostics(&mut registry);
         if let Some(snap) = registry.snapshots.get(&params.0) {
             Ok(snap.conformance_vector.clone())
@@ -1438,7 +1438,7 @@ pub trait LanguageServer: Send + Sync + 'static {
     /// The `max/explainDiagnostic` request returns a full MaxDiagnostic by ID.
     #[rpc(name = "max/explainDiagnostic")]
     async fn max_explain_diagnostic(&self, params: String) -> Result<max_protocol::MaxDiagnostic> {
-        let mut registry = get_registry().lock().unwrap();
+        let mut registry = lock_registry()?;
         update_diagnostics(&mut registry);
         if let Some(diag) = registry.diagnostics.get(&params) {
             Ok(diag.clone())
@@ -1453,7 +1453,7 @@ pub trait LanguageServer: Send + Sync + 'static {
     /// The `max/repairPlan` request returns repair actions for a specific diagnostic or law.
     #[rpc(name = "max/repairPlan")]
     async fn max_repair_plan(&self, params: String) -> Result<Vec<max_protocol::MaxCodeAction>> {
-        let mut registry = get_registry().lock().unwrap();
+        let mut registry = lock_registry()?;
         update_diagnostics(&mut registry);
 
         if let Some(plans) = registry.repair_plans.get(&params) {
@@ -1495,7 +1495,7 @@ pub trait LanguageServer: Send + Sync + 'static {
         &self,
         params: max_protocol::MaxCodeAction,
     ) -> Result<max_protocol::Receipt> {
-        let mut registry = get_registry().lock().unwrap();
+        let mut registry = lock_registry()?;
         update_diagnostics(&mut registry);
 
         // Preconditions check
@@ -1554,7 +1554,7 @@ pub trait LanguageServer: Send + Sync + 'static {
         let mut validation_failed = false;
         let mut failed_gate = String::new();
         for gate in &params.validation_plan.gates {
-            if !run_gate_logic(&gate.0, registry.current_state) {
+            if !run_gate_logic(&gate.0, registry.current_state, registry.root_path.clone()) {
                 validation_failed = true;
                 failed_gate = gate.0.clone();
                 break;
@@ -1601,7 +1601,7 @@ pub trait LanguageServer: Send + Sync + 'static {
         // Update diagnostics dynamic state
         update_diagnostics(&mut registry);
 
-        let serialized = serde_json::to_vec(&params).unwrap();
+        let serialized = serde_json::to_vec(&params).map_err(|e| { let _ = e; Error::internal_error() })?;
         let hash = sha256(&serialized);
 
         let receipt_id = if params.action.title.contains("security authorization") {
@@ -1627,7 +1627,7 @@ pub trait LanguageServer: Send + Sync + 'static {
         &self,
         params: max_protocol::SnapshotId,
     ) -> Result<max_protocol::AnalysisBundle> {
-        let mut registry = get_registry().lock().unwrap();
+        let mut registry = lock_registry()?;
         update_diagnostics(&mut registry);
         if let Some(snap) = registry.snapshots.get(&params.0) {
             Ok(max_protocol::AnalysisBundle {
@@ -1649,9 +1649,9 @@ pub trait LanguageServer: Send + Sync + 'static {
     /// The `max/runGate` request executes a validation gate.
     #[rpc(name = "max/runGate")]
     async fn max_run_gate(&self, params: max_protocol::GateId) -> Result<bool> {
-        let mut registry = get_registry().lock().unwrap();
+        let mut registry = lock_registry()?;
         update_diagnostics(&mut registry);
-        let success = run_gate_logic(&params.0, registry.current_state);
+        let success = run_gate_logic(&params.0, registry.current_state, registry.root_path.clone());
         registry.gates.insert(params.0.clone(), success);
         Ok(success)
     }
@@ -1659,7 +1659,7 @@ pub trait LanguageServer: Send + Sync + 'static {
     /// The `max/clearDiagnostic` request forcibly clears a diagnostic.
     #[rpc(name = "max/clearDiagnostic")]
     async fn max_clear_diagnostic(&self, params: String) -> Result<()> {
-        let mut registry = get_registry().lock().unwrap();
+        let mut registry = lock_registry()?;
         update_diagnostics(&mut registry);
         registry.cleared_diagnostics.insert(params.clone());
         if registry.diagnostics.remove(&params).is_some() {
@@ -1676,7 +1676,7 @@ pub trait LanguageServer: Send + Sync + 'static {
     /// The `max/receipt` request returns a receipt by ID.
     #[rpc(name = "max/receipt")]
     async fn max_receipt(&self, params: String) -> Result<max_protocol::Receipt> {
-        let registry = get_registry().lock().unwrap();
+        let registry = lock_registry()?;
         if let Some(rcpt) = registry.receipts.get(&params) {
             Ok(rcpt.clone())
         } else {
@@ -1735,14 +1735,14 @@ pub trait LanguageServer: Send + Sync + 'static {
     /// Dumps the current server registry state.
     #[rpc(name = "max/dumpState")]
     async fn max_dump_state(&self) -> Result<serde_json::Value> {
-        let registry = get_registry().lock().unwrap();
-        Ok(serde_json::to_value(&*registry).unwrap())
+        let registry = lock_registry()?;
+        serde_json::to_value(&*registry).map_err(|e| { tracing::error!("registry serialization failed: {}", e); Error::internal_error() })
     }
 
     /// Restores the server registry state.
     #[rpc(name = "max/restoreState")]
     async fn max_restore_state(&self, params: serde_json::Value) -> Result<()> {
-        let mut registry = get_registry().lock().unwrap();
+        let mut registry = lock_registry()?;
         if let Ok(restored) = serde_json::from_value::<ServerRegistry>(params) {
             *registry = restored;
             Ok(())
@@ -1908,19 +1908,19 @@ pub struct ServerRegistry {
     pub cleared_diagnostics: std::collections::HashSet<String>,
     /// Current server lifecycle phase state.
     pub current_state: crate::service::State,
+    /// Root path for gate and diagnostic file resolution.
+    pub root_path: std::path::PathBuf,
 }
 
 /// Global static instance of the server registry.
 pub static REGISTRY: OnceLock<Mutex<ServerRegistry>> = OnceLock::new();
 
 /// Helper function to verify a gate by running real checks.
-fn run_gate_logic(gate_id: &str, current_state: crate::service::State) -> bool {
+fn run_gate_logic(gate_id: &str, current_state: crate::service::State, root_path: std::path::PathBuf) -> bool {
     match gate_id {
         "some-gate" => true,
         "gate-state-check" => current_state == crate::service::State::Uninitialized,
         "gate-receipt-check" => {
-            let root_path = std::env::current_dir()
-                .unwrap_or_else(|_| std::path::PathBuf::from("/Users/sac/tower-lsp-max"));
             let path = root_path.join("security.receipt");
             if path.exists() {
                 if let Ok(content) = std::fs::read_to_string(&path) {
@@ -1933,8 +1933,6 @@ fn run_gate_logic(gate_id: &str, current_state: crate::service::State) -> bool {
             }
         }
         "gate-auth-check" => {
-            let root_path = std::env::current_dir()
-                .unwrap_or_else(|_| std::path::PathBuf::from("/Users/sac/tower-lsp-max"));
             let path = root_path.join("auth.receipt");
             if path.exists() {
                 if let Ok(content) = std::fs::read_to_string(&path) {
@@ -1947,8 +1945,6 @@ fn run_gate_logic(gate_id: &str, current_state: crate::service::State) -> bool {
             }
         }
         _ => {
-            let root_path = std::env::current_dir()
-                .unwrap_or_else(|_| std::path::PathBuf::from("/Users/sac/tower-lsp-max"));
             let output = std::process::Command::new("cargo")
                 .arg("check")
                 .current_dir(root_path)
@@ -2068,8 +2064,7 @@ fn apply_text_edit(
 
 /// Dynamic diagnostic and repair plan updater.
 pub(crate) fn update_diagnostics(registry: &mut ServerRegistry) {
-    let root_path = std::env::current_dir()
-        .unwrap_or_else(|_| std::path::PathBuf::from("/Users/sac/tower-lsp-max"));
+    let root_path = registry.root_path.clone();
 
     // 1. Check for diag-uninitialized-admission
     let diag1_id = "diag-uninitialized-admission".to_string();
@@ -2339,8 +2334,15 @@ pub fn get_registry() -> &'static Mutex<ServerRegistry> {
             snapshots: HashMap::new(),
             cleared_diagnostics: std::collections::HashSet::new(),
             current_state: crate::service::State::Uninitialized,
+            root_path: std::env::current_dir().unwrap_or_else(|_| std::path::PathBuf::from(".")),
         })
     })
+}
+
+fn lock_registry() -> Result<std::sync::MutexGuard<'static, ServerRegistry>> {
+    get_registry()
+        .lock()
+        .map_err(|_| Error::internal_error())
 }
 
 fn sha256(data: &[u8]) -> String {

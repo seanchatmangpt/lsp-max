@@ -978,7 +978,7 @@ fn detect_context(source: &str, pos: Position) -> CompletionContext {
         if line.contains("impl LanguageServer for") {
             let partial = prefix
                 .split(|c: char| !c.is_alphanumeric() && c != '_' && c != '/' && c != '$')
-                .last()
+                .next_back()
                 .unwrap_or("")
                 .to_string();
             return CompletionContext::ImplLanguageServerMethod { partial };
@@ -1023,9 +1023,14 @@ fn complete_ls_methods(partial: &str) -> Vec<CompletionItem> {
             } else {
                 format!("params: {}", entry.params_type)
             };
+            let stub_body = if entry.return_type.starts_with("Result<") {
+                format!("Err(tower_lsp::jsonrpc::Error::method_not_found()) // TODO: implement {}", entry.fn_name)
+            } else {
+                format!("// TODO: implement {}", entry.fn_name)
+            };
             let stub = format!(
-                "async fn {}(&self, {}) -> {} {{\n    todo!(\"implement {}\")\n}}",
-                entry.fn_name, params_arg, entry.return_type, entry.fn_name
+                "async fn {}(&self, {}) -> {} {{\n    {}\n}}",
+                entry.fn_name, params_arg, entry.return_type, stub_body
             );
             let cap_note = entry
                 .capability_field

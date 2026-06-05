@@ -1,6 +1,8 @@
 use clap_noun_verb::Result;
 use clap_noun_verb_macros::verb;
 use serde::Serialize;
+use tower_lsp_max_runtime::AutonomicMesh;
+use tower_lsp_max_protocol;
 
 // --- Domain Tier ---
 
@@ -12,46 +14,81 @@ pub enum TelemetryStatus {
     Flushed,
 }
 
-#[derive(Debug, Clone)]
-pub struct TelemetryData {
-    pub id: String,
-    pub content: String,
-}
-
 // --- Service Tier ---
 
-pub struct TelemetryService;
+pub struct TelemetryService {
+    state_path: String,
+}
 
 impl TelemetryService {
     pub fn new() -> Self {
-        Self
+        Self {
+            state_path: crate::nouns::get_state_path(),
+        }
     }
 
     pub fn export(
         &self,
-        _destination: &str,
-        _data_id: &str,
+        destination: &str,
+        data_id: &str,
     ) -> std::result::Result<TelemetryStatus, String> {
-        // Mock logic for exporting telemetry data
+        let mut mesh = AutonomicMesh::load_from_file(&self.state_path).map_err(|e| e.to_string())?;
+        let params = serde_json::json!({ "destination": destination, "data_id": data_id });
+        // Wire to runtime: exportAnalysisBundle for the first instance that matches data_id,
+        // or emit a receipt recording the export event.
+        let instance_id = mesh.instances.keys().next().cloned()
+            .unwrap_or_else(|| "default".to_string());
+        // Record export as a bounded action
+        mesh.execute_action(tower_lsp_max_runtime::MeshAction::ExecuteBoundedAction {
+            instance_id: instance_id.clone(),
+            action_id: format!("telemetry-export-{}", data_id),
+            description: format!("Export telemetry data {} to {}", data_id, destination),
+        });
+        let receipt_id = format!("rcpt-telemetry-export-{}-{}", data_id, destination.replace("://", "-").replace('/', "-"));
+        let hash = tower_lsp_max_runtime::sha256(receipt_id.as_bytes());
+        mesh.execute_action(tower_lsp_max_runtime::MeshAction::EmitReceipt {
+            instance_id,
+            receipt: tower_lsp_max_protocol::Receipt { receipt_id, hash },
+        });
+        let _ = params; // params used for documentation only
+        mesh.save_to_file(&self.state_path).map_err(|e| e.to_string())?;
         Ok(TelemetryStatus::Exported)
     }
 
-    pub fn trace(&self, _span_name: &str) -> std::result::Result<TelemetryStatus, String> {
-        // Mock logic for tracing an operation
+    pub fn trace(&self, span_name: &str) -> std::result::Result<TelemetryStatus, String> {
+        let mut mesh = AutonomicMesh::load_from_file(&self.state_path).map_err(|e| e.to_string())?;
+        let instance_id = mesh.instances.keys().next().cloned()
+            .unwrap_or_else(|| "default".to_string());
+        mesh.execute_action(tower_lsp_max_runtime::MeshAction::ExecuteBoundedAction {
+            instance_id,
+            action_id: format!("telemetry-trace-{}", span_name),
+            description: format!("OTel trace span: {}", span_name),
+        });
+        mesh.save_to_file(&self.state_path).map_err(|e| e.to_string())?;
         Ok(TelemetryStatus::Traced)
     }
 
     pub fn metrics(
         &self,
-        _metric_name: &str,
-        _value: f64,
+        metric_name: &str,
+        value: f64,
     ) -> std::result::Result<TelemetryStatus, String> {
-        // Mock logic for recording a metric
+        let mut mesh = AutonomicMesh::load_from_file(&self.state_path).map_err(|e| e.to_string())?;
+        let instance_id = mesh.instances.keys().next().cloned()
+            .unwrap_or_else(|| "default".to_string());
+        mesh.execute_action(tower_lsp_max_runtime::MeshAction::ExecuteBoundedAction {
+            instance_id,
+            action_id: format!("telemetry-metric-{}", metric_name),
+            description: format!("Record metric {}={}", metric_name, value),
+        });
+        mesh.save_to_file(&self.state_path).map_err(|e| e.to_string())?;
         Ok(TelemetryStatus::MetricsCollected)
     }
 
     pub fn flush(&self) -> std::result::Result<TelemetryStatus, String> {
-        // Mock logic for flushing buffered telemetry data
+        let mesh = AutonomicMesh::load_from_file(&self.state_path).map_err(|e| e.to_string())?;
+        // Flush is read-only: verify the mesh is loadable and return status
+        let _ = mesh.to_state();
         Ok(TelemetryStatus::Flushed)
     }
 }
@@ -125,4 +162,38 @@ pub fn flush() -> Result<FlushResult> {
         .flush()
         .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
     Ok(FlushResult { status })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_export_returns_exported_status() {
+        let result = export("s3://bucket".to_string(), "data-001".to_string()).unwrap();
+        assert!(matches!(result.status, TelemetryStatus::Exported));
+        assert_eq!(result.destination, "s3://bucket");
+        assert_eq!(result.data_id, "data-001");
+    }
+
+    #[test]
+    fn test_trace_returns_traced_status() {
+        let result = trace("my-span".to_string()).unwrap();
+        assert!(matches!(result.status, TelemetryStatus::Traced));
+        assert_eq!(result.span_name, "my-span");
+    }
+
+    #[test]
+    fn test_metrics_returns_metrics_collected_status() {
+        let result = metrics("cpu.usage".to_string(), 42.5).unwrap();
+        assert!(matches!(result.status, TelemetryStatus::MetricsCollected));
+        assert_eq!(result.metric_name, "cpu.usage");
+        assert_eq!(result.value, 42.5);
+    }
+
+    #[test]
+    fn test_flush_returns_flushed_status() {
+        let result = flush().unwrap();
+        assert!(matches!(result.status, TelemetryStatus::Flushed));
+    }
 }

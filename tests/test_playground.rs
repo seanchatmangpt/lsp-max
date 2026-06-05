@@ -126,7 +126,7 @@ async fn test_playground_integration() {
     let client_received_notifications_clone = client_received_notifications.clone();
 
     let mut reader = tokio::io::BufReader::new(client_rx);
-    let client_reader_task = tokio::spawn(async move {
+    let _client_reader_task = tokio::spawn(async move {
         loop {
             let msg = match read_message(&mut reader).await {
                 Ok(m) => m,
@@ -382,7 +382,7 @@ impl LanguageServer for DummyServer {
 #[tokio::test(flavor = "current_thread")]
 async fn test_rpc_attribute_diagnostics() {
     // 1. Set up the LspService
-    let (service, socket) = LspService::new(|client| Backend::new(client));
+    let (service, socket) = LspService::new(Backend::new);
 
     let (client_tx, server_rx) = tokio::io::duplex(1024 * 1024);
     let (server_tx, client_rx) = tokio::io::duplex(1024 * 1024);
@@ -531,7 +531,7 @@ pub trait TestServer {
     assert!(!action_result.is_empty(), "Expected code actions, got none");
     let has_fix_action = action_result.iter().any(|action| {
         let title = action.get("title").and_then(|t| t.as_str());
-        title.map_or(false, |t| t.contains("Correct RPC name to `textDocument/didChange`"))
+        title.is_some_and(|t| t.contains("Correct RPC name to `textDocument/didChange`"))
     });
     assert!(
         has_fix_action,
@@ -564,7 +564,7 @@ pub trait TestServer {
 #[tokio::test(flavor = "current_thread")]
 async fn test_rpc_completion() {
     // 1. Set up the LspService
-    let (service, socket) = LspService::new(|client| Backend::new(client));
+    let (service, socket) = LspService::new(Backend::new);
 
     let (client_tx, server_rx) = tokio::io::duplex(1024 * 1024);
     let (server_tx, client_rx) = tokio::io::duplex(1024 * 1024);
@@ -574,7 +574,7 @@ async fn test_rpc_completion() {
 
     let client_received_responses = Arc::new(Mutex::new(Vec::new()));
     let client_tx_shared = Arc::new(tokio::sync::Mutex::new(Some(client_tx)));
-    let client_tx_shared_clone = client_tx_shared.clone();
+    let _client_tx_shared_clone = client_tx_shared.clone();
     let client_received_responses_clone = client_received_responses.clone();
 
     let mut reader = tokio::io::BufReader::new(client_rx);

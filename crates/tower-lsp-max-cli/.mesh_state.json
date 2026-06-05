@@ -1,0 +1,10 @@
+{
+  "agent_plans": {
+    "workspace-abc": [
+      "Step 1: Check instances and diagnostics in workspace-abc",
+      "Step 2: Verify policy rules conformance",
+      "Step 3: Clear resolved diagnostics and emit receipts"
+    ]
+  },
+  "instances": {}
+}

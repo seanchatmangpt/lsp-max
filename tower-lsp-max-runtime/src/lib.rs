@@ -1,3 +1,9 @@
+//! Runtime utilities for tower-lsp-max servers.
+//!
+//! Provides SHA-256 hashing, the `ConformanceVector` (Admitted/Refused/Unknown
+//! tallies), and the `MaxServer` wrapper that wires a `LanguageServer` impl into
+//! the five-layer AMI execution model used by tower-lsp-max.
+
 use std::fmt::{Debug, Formatter};
 use std::marker::PhantomData;
 
@@ -1369,24 +1375,32 @@ impl AutonomicMesh {
                 Ok(serde_json::to_value(snap.id).unwrap())
             }
             "max/conformanceVector" => {
-                let inst = self.instances.get(instance_id).unwrap();
-                let (refused_diags, admitted_diags): (Vec<_>, Vec<_>) = inst
-                    .diagnostics
-                    .iter()
-                    .partition(|d| {
-                        matches!(d.lsp.severity, Some(lsp_types::DiagnosticSeverity::ERROR))
-                    });
-                let refused: Vec<tower_lsp_max_protocol::LawAxis> =
-                    refused_diags.iter().map(|d| d.law_axis.clone()).collect();
-                let admitted: Vec<tower_lsp_max_protocol::LawAxis> =
-                    admitted_diags.iter().map(|d| d.law_axis.clone()).collect();
-                // null when no diagnostics (all-unknown); ratio score otherwise
-                let derived_score = if admitted.is_empty() && refused.is_empty() {
+                let instance = self.instances.get(instance_id)
+                    .ok_or_else(|| format!("Instance not found: {}", instance_id))?;
+
+                // Aggregate per LawAxis: refused if any ERROR, admitted if non-ERROR present, unknown if absent
+                let mut axis_map: std::collections::HashMap<tower_lsp_max_protocol::LawAxis, bool> =
+                    std::collections::HashMap::new(); // true = has error
+                for diag in &instance.diagnostics {
+                    let is_error = matches!(diag.lsp.severity, Some(lsp_types::DiagnosticSeverity::ERROR));
+                    let entry = axis_map.entry(diag.law_axis.clone()).or_insert(false);
+                    if is_error { *entry = true; }
+                }
+
+                let mut admitted = vec![];
+                let mut refused = vec![];
+                // Each axis appears in exactly one of admitted/refused; guarantees disjoint partition
+                for (axis, has_error) in &axis_map {
+                    if *has_error { refused.push(axis.clone()); } else { admitted.push(axis.clone()); }
+                }
+
+                let total = admitted.len() + refused.len();
+                let derived_score = if total == 0 {
                     None
                 } else {
-                    let total = (admitted.len() + refused.len()) as f64;
-                    Some(100.0 * admitted.len() as f64 / total)
+                    Some(100.0 * admitted.len() as f64 / total as f64)
                 };
+
                 let vec = tower_lsp_max_protocol::ConformanceVector {
                     admitted,
                     refused,
@@ -1552,19 +1566,51 @@ impl AutonomicMesh {
             }
 
             "max/hookGraph" => {
-                // Return hook topology: for each hook, which events trigger it
+                // Return hook topology: for each hook, name + active diagnostic/receipt triggers
+                let inst = self.instances.get(instance_id)
+                    .ok_or_else(|| format!("Instance not found: {}", instance_id))?;
+                let diagnostic_ids: Vec<&str> = inst.diagnostics.iter()
+                    .map(|d| d.diagnostic_id.as_str())
+                    .collect();
+                let receipt_ids: Vec<&str> = inst.receipts.iter()
+                    .map(|r| r.receipt_id.as_str())
+                    .collect();
                 let graph: Vec<serde_json::Value> = self.hooks.iter().map(|h| {
                     serde_json::json!({
                         "hook": h.name(),
                         "instance_id": instance_id,
+                        "active_diagnostic_triggers": diagnostic_ids,
+                        "active_receipt_triggers": receipt_ids,
+                        "pending_diagnostic_count": inst.diagnostics.len(),
+                        "pending_receipt_count": inst.receipts.len(),
                     })
                 }).collect();
                 Ok(serde_json::to_value(graph).unwrap())
             }
 
             "max/chain" => {
-                // Return the list of known instances (the "chain" of LSPs)
-                let chain: Vec<String> = self.instances.keys().cloned().collect();
+                // Return full instance state summaries for all mesh members
+                let mut chain: Vec<serde_json::Value> = self.instances.iter().map(|(id, inst)| {
+                    serde_json::json!({
+                        "id": id,
+                        "phase": inst.phase,
+                        "policy_state": inst.policy_state,
+                        "conformance_score": inst.conformance_score(),
+                        "diagnostic_count": inst.diagnostics.len(),
+                        "receipt_count": inst.receipts.len(),
+                        "diagnostics": inst.diagnostics.iter().map(|d| serde_json::json!({
+                            "id": d.diagnostic_id,
+                            "law_id": d.law_id,
+                            "severity": format!("{:?}", d.lsp.severity),
+                            "message": d.lsp.message,
+                        })).collect::<Vec<_>>(),
+                        "receipts": inst.receipts.iter().map(|r| serde_json::json!({
+                            "receipt_id": r.receipt_id,
+                            "hash": r.hash,
+                        })).collect::<Vec<_>>(),
+                    })
+                }).collect();
+                chain.sort_by_key(|v| v["id"].as_str().unwrap_or("").to_string());
                 Ok(serde_json::to_value(chain).unwrap())
             }
 
@@ -1610,16 +1656,46 @@ impl AutonomicMesh {
             }
 
             "max/lawfulTransition" => {
-                // Attempt a lawful transition: validate then execute
+                // Attempt a lawful transition: validate phase order and check blocking diagnostics
                 let target_phase: String =
                     serde_json::from_value(params).map_err(|e| format!("Invalid params: {}", e))?;
                 let inst = self.instances.get(instance_id)
                     .ok_or_else(|| format!("Instance not found: {}", instance_id))?;
+                // Define lawful phase order
+                let phase_order = ["Uninitialized", "Initializing", "Initialized", "ShutDown", "Exited"];
+                let current_idx = phase_order.iter().position(|&p| p == inst.phase);
+                let target_idx = phase_order.iter().position(|&p| p == target_phase.as_str());
+                let (admitted, refused_reason) = match (current_idx, target_idx) {
+                    (Some(ci), Some(ti)) if ti == ci + 1 => {
+                        // Check for blocking error-severity diagnostics
+                        let blocking: Vec<_> = inst.diagnostics.iter()
+                            .filter(|d| matches!(d.lsp.severity, Some(lsp_types::DiagnosticSeverity::ERROR)))
+                            .map(|d| d.diagnostic_id.clone())
+                            .collect();
+                        if blocking.is_empty() {
+                            (true, None)
+                        } else {
+                            (false, Some(format!("Blocked by {} error diagnostic(s): {:?}", blocking.len(), blocking)))
+                        }
+                    }
+                    (Some(ci), Some(ti)) if ti <= ci => {
+                        (false, Some(format!("Backward transitions are not lawful: {} -> {}", inst.phase, target_phase)))
+                    }
+                    (Some(ci), Some(ti)) if ti > ci + 1 => {
+                        (false, Some(format!("Cannot skip phases: {} -> {} skips {} intermediate phase(s)", inst.phase, target_phase, ti - ci - 1)))
+                    }
+                    _ => (false, Some(format!("Unknown phase(s): current='{}', target='{}'", inst.phase, target_phase))),
+                };
                 let result = serde_json::json!({
                     "instance_id": instance_id,
                     "current_phase": inst.phase,
                     "requested_phase": target_phase,
-                    "admitted": true, // Future: full admissibility check
+                    "admitted": admitted,
+                    "refused_reason": refused_reason,
+                    "blocking_diagnostic_count": inst.diagnostics.iter()
+                        .filter(|d| matches!(d.lsp.severity, Some(lsp_types::DiagnosticSeverity::ERROR)))
+                        .count(),
+                    "conformance_score": inst.conformance_score(),
                 });
                 Ok(result)
             }
@@ -2839,5 +2915,164 @@ mod tests_gaps {
 
         // Depth counter must be reset to zero after dispatch unwinds.
         assert_eq!(mesh.dispatch_depth, 0, "dispatch_depth must reset to 0");
+    }
+
+    #[test]
+    fn test_rpc_verify_ledger_empty_returns_err() {
+        let mut mesh = make_mesh_with_instance("INST_A");
+        // A fresh instance has no receipts — verifyLedger must report that.
+        let result = mesh.dispatch_rpc("INST_A", "max/verifyLedger", json!(null));
+        assert!(result.is_err(), "max/verifyLedger on empty ledger should return Err");
+        assert!(
+            result.unwrap_err().contains("empty"),
+            "error message should mention empty ledger"
+        );
+    }
+
+    #[test]
+    fn test_rpc_ledger_report_returns_ok_string() {
+        let mut mesh = make_mesh_with_instance("INST_A");
+        // ledgerReport always succeeds and returns a diagnostic string.
+        let result = mesh.dispatch_rpc("INST_A", "max/ledgerReport", json!(null));
+        assert!(result.is_ok(), "max/ledgerReport should return Ok, got: {:?}", result);
+        let val = result.unwrap();
+        assert!(val.is_string(), "max/ledgerReport result should be a string, got: {:?}", val);
+    }
+
+    #[test]
+    fn test_rpc_hook_returns_array() {
+        let mut mesh = make_mesh_with_instance("INST_A");
+        let result = mesh.dispatch_rpc("INST_A", "max/hook", json!(null));
+        assert!(result.is_ok(), "max/hook should return Ok, got: {:?}", result);
+        let val = result.unwrap();
+        assert!(val.is_array(), "max/hook result should be an array, got: {:?}", val);
+    }
+
+    #[test]
+    fn test_rpc_hook_graph_returns_array() {
+        let mut mesh = make_mesh_with_instance("INST_A");
+        let result = mesh.dispatch_rpc("INST_A", "max/hookGraph", json!(null));
+        assert!(result.is_ok(), "max/hookGraph should return Ok, got: {:?}", result);
+        let val = result.unwrap();
+        assert!(val.is_array(), "max/hookGraph result should be an array, got: {:?}", val);
+    }
+
+    #[test]
+    fn test_rpc_chain_returns_array() {
+        let mut mesh = make_mesh_with_instance("INST_A");
+        let result = mesh.dispatch_rpc("INST_A", "max/chain", json!(null));
+        assert!(result.is_ok(), "max/chain should return Ok, got: {:?}", result);
+        let val = result.unwrap();
+        assert!(val.is_array(), "max/chain result should be an array, got: {:?}", val);
+    }
+
+    #[test]
+    fn test_rpc_propagate_returns_propagated_true() {
+        let mut mesh = make_mesh_with_instance("INST_A");
+        let receipt_val = json!({
+            "receipt_id": "rcpt-propagate-test",
+            "hash": "abc123"
+        });
+        let result = mesh.dispatch_rpc("INST_A", "max/propagate", receipt_val);
+        assert!(result.is_ok(), "max/propagate should return Ok, got: {:?}", result);
+        let val = result.unwrap();
+        assert_eq!(val["propagated"], json!(true), "max/propagate should report propagated=true");
+    }
+
+    #[test]
+    fn test_rpc_autonomic_loop_returns_status() {
+        let mut mesh = make_mesh_with_instance("INST_A");
+        let result = mesh.dispatch_rpc("INST_A", "max/autonomicLoop", json!(null));
+        assert!(result.is_ok(), "max/autonomicLoop should return Ok, got: {:?}", result);
+        let val = result.unwrap();
+        assert!(val.get("instances").is_some(), "max/autonomicLoop result should have 'instances' key");
+        assert!(val.get("hook_count").is_some(), "max/autonomicLoop result should have 'hook_count' key");
+    }
+
+    #[test]
+    fn test_rpc_manifold_snapshot_returns_snapshot() {
+        let mut mesh = make_mesh_with_instance("INST_A");
+        let result = mesh.dispatch_rpc("INST_A", "max/manifoldSnapshot", json!(null));
+        assert!(result.is_ok(), "max/manifoldSnapshot should return Ok, got: {:?}", result);
+        let val = result.unwrap();
+        assert!(val.get("instances").is_some(), "max/manifoldSnapshot result should have 'instances' key");
+    }
+
+    #[test]
+    fn test_rpc_lawful_transition_returns_transition_info() {
+        let mut mesh = make_mesh_with_instance("INST_A");
+        let result = mesh.dispatch_rpc("INST_A", "max/lawfulTransition", json!("Initialized"));
+        assert!(result.is_ok(), "max/lawfulTransition should return Ok, got: {:?}", result);
+        let val = result.unwrap();
+        assert_eq!(val["instance_id"], json!("INST_A"));
+        assert_eq!(val["requested_phase"], json!("Initialized"));
+    }
+
+    #[test]
+    fn test_rpc_admission_no_diagnostics_returns_admitted() {
+        let mut mesh = make_mesh_with_instance("INST_A");
+        let result = mesh.dispatch_rpc("INST_A", "max/admission", json!(null));
+        assert!(result.is_ok(), "max/admission should return Ok, got: {:?}", result);
+        let val = result.unwrap();
+        assert_eq!(val["verdict"], json!("Admitted"), "No diagnostics should yield Admitted");
+        assert_eq!(val["instance_id"], json!("INST_A"));
+    }
+
+    #[test]
+    fn test_rpc_admission_with_error_diagnostic_returns_refused() {
+        let mut mesh = make_mesh_with_instance("INST_A");
+        let diag = make_error_diagnostic("diag-admission-error");
+        mesh.execute_action(MeshAction::AddDiagnostic {
+            instance_id: "INST_A".to_string(),
+            diagnostic: Box::new(diag),
+        });
+        let result = mesh.dispatch_rpc("INST_A", "max/admission", json!(null));
+        assert!(result.is_ok(), "max/admission should return Ok even with errors, got: {:?}", result);
+        let val = result.unwrap();
+        assert_eq!(val["verdict"], json!("Refused"), "Error diagnostics should yield Refused");
+    }
+
+    #[test]
+    fn test_rpc_refusal_emits_receipt() {
+        let mut mesh = make_mesh_with_instance("INST_A");
+        let result = mesh.dispatch_rpc("INST_A", "max/refusal", json!("diag-some-violation"));
+        assert!(result.is_ok(), "max/refusal should return Ok, got: {:?}", result);
+        let val = result.unwrap();
+        assert_eq!(val["refused"], json!(true));
+        assert_eq!(val["diagnostic_id"], json!("diag-some-violation"));
+        assert!(val.get("receipt").is_some(), "max/refusal should include a receipt");
+    }
+
+    #[test]
+    fn test_rpc_replay_returns_event_log() {
+        let mut mesh = make_mesh_with_instance("INST_A");
+        let result = mesh.dispatch_rpc("INST_A", "max/replay", json!(null));
+        assert!(result.is_ok(), "max/replay should return Ok, got: {:?}", result);
+        let val = result.unwrap();
+        assert_eq!(val["instance_id"], json!("INST_A"));
+        assert!(val.get("event_count").is_some(), "max/replay result should have 'event_count' key");
+        assert!(val.get("events").is_some(), "max/replay result should have 'events' key");
+    }
+
+    #[test]
+    fn test_rpc_release_actuation_no_diagnostics_succeeds() {
+        let mut mesh = make_mesh_with_instance("INST_A");
+        let result = mesh.dispatch_rpc("INST_A", "max/releaseActuation", json!(null));
+        assert!(result.is_ok(), "max/releaseActuation with no diagnostics should return Ok, got: {:?}", result);
+        let val = result.unwrap();
+        assert_eq!(val["released"], json!(true));
+        assert_eq!(val["instance_id"], json!("INST_A"));
+    }
+
+    #[test]
+    fn test_rpc_release_actuation_with_diagnostics_returns_err() {
+        let mut mesh = make_mesh_with_instance("INST_A");
+        let diag = make_error_diagnostic("diag-release-block");
+        mesh.execute_action(MeshAction::AddDiagnostic {
+            instance_id: "INST_A".to_string(),
+            diagnostic: Box::new(diag),
+        });
+        let result = mesh.dispatch_rpc("INST_A", "max/releaseActuation", json!(null));
+        assert!(result.is_err(), "max/releaseActuation with active diagnostics should return Err, got: {:?}", result);
     }
 }

@@ -274,3 +274,65 @@ pub fn diagnose(
         message,
     })
 }
+
+// ==============================================================================
+// 4. Tests
+// ==============================================================================
+
+#[cfg(test)]
+mod tests {
+    use super::DiagnosticsService;
+    use std::env;
+
+    fn setup_test_state() -> String {
+        let path = format!("/tmp/test_diagnostics_{}.json", std::process::id());
+        // Remove stale file if present
+        let _ = std::fs::remove_file(&path);
+        env::set_var("TOWER_LSP_MAX_STATE_PATH", &path);
+        path
+    }
+
+    #[test]
+    fn test_run_returns_ok_with_empty_issues_for_unknown_target() {
+        let _path = setup_test_state();
+        let svc = DiagnosticsService::new();
+        let result = svc.run("nonexistent-target");
+        assert!(result.is_ok(), "run should return Ok even for unknown target");
+        let issues = result.unwrap();
+        assert_eq!(issues.len(), 0);
+    }
+
+    #[test]
+    fn test_report_json_returns_ok_string() {
+        let _path = setup_test_state();
+        let svc = DiagnosticsService::new();
+        let result = svc.report("json");
+        assert!(result.is_ok(), "report(json) should return Ok");
+        let content = result.unwrap();
+        // JSON output should at least be a valid JSON object/array
+        assert!(!content.is_empty());
+        serde_json::from_str::<serde_json::Value>(&content)
+            .expect("report(json) output must be valid JSON");
+    }
+
+    #[test]
+    fn test_report_text_returns_ok_string() {
+        let _path = setup_test_state();
+        let svc = DiagnosticsService::new();
+        let result = svc.report("text");
+        assert!(result.is_ok(), "report(text) should return Ok");
+    }
+
+    #[test]
+    fn test_clear_returns_ok_for_nonexistent_ids() {
+        let _path = setup_test_state();
+        let svc = DiagnosticsService::new();
+        // clear on nonexistent ids should either succeed or return an Err — just must not panic
+        let result = svc.clear("inst-1", "diag-1");
+        // The mesh run_command may return Ok(true) even when no-op
+        match result {
+            Ok(v) => assert!(v, "clear returned Ok but value was false"),
+            Err(_) => { /* acceptable: command rejected unknown ids */ }
+        }
+    }
+}

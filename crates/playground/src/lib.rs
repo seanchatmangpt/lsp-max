@@ -1,3 +1,9 @@
+//! Playground LSP backend for manual integration testing of tower-lsp-max.
+//!
+//! Implements a minimal `LanguageServer` (document sync, hover, diagnostics)
+//! against an in-memory rope store; useful for verifying runtime behaviour
+//! without a production language server.
+
 pub mod capabilities;
 pub mod handlers;
 

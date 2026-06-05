@@ -34,6 +34,7 @@ struct DeclaredCapability {
     span: proc_macro2::Span,
 }
 
+#[derive(Default)]
 struct ImplAnalysis {
     overridden_methods: Vec<OverriddenMethod>,
     declared_capabilities: Vec<DeclaredCapability>,
@@ -46,21 +47,6 @@ struct ImplAnalysis {
     server_capabilities_open_brace_span: Option<proc_macro2::Span>,
 }
 
-impl Default for ImplAnalysis {
-    fn default() -> Self {
-        Self {
-            overridden_methods: Vec::new(),
-            declared_capabilities: Vec::new(),
-            invalid_rpc_names: Vec::new(),
-            has_initialize: false,
-            has_shutdown: false,
-            has_initialized: false,
-            impl_trait_span: None,
-            impl_close_brace_span: None,
-            server_capabilities_open_brace_span: None,
-        }
-    }
-}
 
 /// Public entry point taking raw source text. Matches the spec signature so tests can call it directly.
 pub fn get_diagnostics(text: &str, _uri: &Url) -> Vec<Diagnostic> {
@@ -650,9 +636,14 @@ fn generate_method_stub(entry: &super::completions::MethodEntry) -> String {
         } else {
             format!("_params: {}", entry.params_type)
         };
+        let body = if entry.return_type.starts_with("Result<") {
+            format!("Err(tower_lsp::jsonrpc::Error::method_not_found()) // TODO: implement {}", entry.fn_name)
+        } else {
+            format!("// TODO: implement {}", entry.fn_name)
+        };
         format!(
-            "\n    async fn {}(&self, {}) -> {} {{\n        todo!(\"implement {}\")\n    }}\n",
-            entry.fn_name, params, entry.return_type, entry.fn_name
+            "\n    async fn {}(&self, {}) -> {} {{\n        {}\n    }}\n",
+            entry.fn_name, params, entry.return_type, body
         )
     }
 }
@@ -715,11 +706,11 @@ fn levenshtein_distance(a: &str, b: &str) -> usize {
 
     let mut dp = vec![vec![0; num_b + 1]; num_a + 1];
 
-    for i in 0..=num_a {
-        dp[i][0] = i;
+    for (i, row) in dp.iter_mut().enumerate() {
+        row[0] = i;
     }
-    for j in 0..=num_b {
-        dp[0][j] = j;
+    for (j, cell) in dp[0].iter_mut().enumerate() {
+        *cell = j;
     }
 
     for i in 1..=num_a {
