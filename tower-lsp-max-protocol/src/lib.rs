@@ -325,6 +325,18 @@ pub enum AdmissionDecision {
     Unknown,
 }
 
+impl From<bool> for AdmissionDecision {
+    fn from(b: bool) -> Self {
+        if b { AdmissionDecision::Admitted } else { AdmissionDecision::Refused }
+    }
+}
+
+impl From<AdmissionDecision> for bool {
+    fn from(d: AdmissionDecision) -> bool {
+        matches!(d, AdmissionDecision::Admitted)
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct AdmissionResult {
     pub decision: AdmissionDecision,
