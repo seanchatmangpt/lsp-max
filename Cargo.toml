@@ -55,7 +55,7 @@ ws_stream_tungstenite = { version = "0.10", features = ["tokio_io"] }
 tower-lsp-max-playground = { path = "crates/playground" }
 tempfile = "3"
 ropey = "1"
-oxigraph = "0.5.8"
+oxigraph = { version = "0.5.8", default-features = false }
 wasm4pm-compat = { path = "../wasm4pm-compat", version = "26.6.5", features = ["formats", "strict", "wasm4pm"] }
 uuid = { version = "1.0", features = ["v4"] }
 ed25519-dalek = "2.0"

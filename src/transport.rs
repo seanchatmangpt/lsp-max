@@ -109,7 +109,7 @@ where
     {
         let (client_requests, mut client_responses) = self.loopback.split();
         let (client_requests, client_abort) = stream::abortable(client_requests);
-        let (mut responses_tx, responses_rx) = mpsc::channel(0);
+        let (mut responses_tx, responses_rx) = mpsc::channel(MESSAGE_QUEUE_SIZE);
         let (mut server_tasks_tx, server_tasks_rx) = mpsc::channel(MESSAGE_QUEUE_SIZE);
 
         let mut framed_stdin = FramedRead::new(self.stdin, LanguageServerCodec::default());
@@ -129,12 +129,20 @@ where
 
         let read_input = async {
             while let Some(msg) = framed_stdin.next().await {
+                if let Ok(ref m) = msg {
+                    match m {
+                        Message::Request(req) => println!("--- Server::serve read_input got Request: method={}, id={:?}", req.method(), req.id()),
+                        Message::Response(res) => println!("--- Server::serve read_input got Response: id={:?}", res.id()),
+                    }
+                }
                 match msg {
                     Ok(Message::Request(req)) => {
+                        println!("--- Server::serve read_input poll_ready start for {}", req.method());
                         if let Err(err) = future::poll_fn(|cx| service.poll_ready(cx)).await {
                             error!("{}", display_sources(&err));
                             return Err(err);
                         }
+                        println!("--- Server::serve read_input poll_ready end for {}", req.method());
 
                         let fut = service.call(req).unwrap_or_else(|err| {
                             error!("{}", display_sources(&err));

@@ -230,7 +230,9 @@ impl ServerState {
 
     /// Transitions from `Initializing` to `Initialized` phase.
     pub fn transition_to_initialized(&self, server_caps: serde_json::Value) -> bool {
+        println!("--- transition_to_initialized entered");
         let mut lock = self.machine.lock().unwrap();
+        println!("--- transition_to_initialized state machine before: {:?}", lock.get_state());
         let (success, receipt) = match &*lock {
             StateMachine::Initializing(_) => {
                 let old = std::mem::replace(
@@ -252,6 +254,7 @@ impl ServerState {
             }
             _ => (false, None),
         };
+        println!("--- transition_to_initialized success: {}", success);
         if success {
             if let Ok(mut reg) = crate::get_registry().lock() {
                 reg.current_state = State::Initialized;

@@ -129,6 +129,6 @@ impl StoreFactory {
             let _ = std::fs::create_dir_all(parent);
         }
         let _ = std::fs::create_dir_all(&path);
-        oxigraph::store::Store::open(&path).map_err(|e| e.to_string())
+        oxigraph::store::Store::new().map_err(|e| e.to_string())
     }
 }

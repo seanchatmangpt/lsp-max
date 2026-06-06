@@ -120,14 +120,20 @@ impl<S: LanguageServer> Service<Request> for LspService<S> {
     type Future = BoxFuture<'static, Result<Self::Response, Self::Error>>;
 
     fn poll_ready(&mut self, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
-        if self.state.get() == State::Exited {
+        let cur_state = self.state.get();
+        println!("--- LspService::poll_ready called, state = {:?}", cur_state);
+        if cur_state == State::Exited {
             let code = self.state.get_exit_code();
             return Poll::Ready(Err(ExitedError(code)));
         }
         if self.state.poll_initializing(cx).is_pending() {
+            println!("--- LspService::poll_ready returning Pending because poll_initializing is pending");
             return Poll::Pending;
         }
-        self.inner.poll_ready(cx)
+        println!("--- LspService::poll_ready delegating to inner");
+        let res = self.inner.poll_ready(cx);
+        println!("--- LspService::poll_ready inner returned {:?}", res);
+        res
     }
 
     fn call(&mut self, req: Request) -> Self::Future {

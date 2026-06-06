@@ -58,14 +58,14 @@
 //! async fn main() {
 //! #   tracing_subscriber::fmt().init();
 //! #
-//! #   #[cfg(feature = "runtime-agnostic")]
+//! #   #[cfg(all(feature = "runtime-agnostic", not(feature = "runtime-tokio")))]
 //! #   use tokio_util::compat::{TokioAsyncReadCompatExt, TokioAsyncWriteCompatExt};
 //! #   use std::io::Cursor;
 //!     let stdin = tokio::io::stdin();
 //!     let stdout = tokio::io::stdout();
 //! #   let message = r#"{"jsonrpc":"2.0","method":"exit"}"#;
 //! #   let (stdin, stdout) = (Cursor::new(format!("Content-Length: {}\r\n\r\n{}", message.len(), message).into_bytes()), Cursor::new(Vec::new()));
-//! #   #[cfg(feature = "runtime-agnostic")]
+//! #   #[cfg(all(feature = "runtime-agnostic", not(feature = "runtime-tokio")))]
 //! #   let (stdin, stdout) = (stdin.compat(), stdout.compat_write());
 //!
 //!     let (service, socket) = LspService::new(|client| Backend { client });

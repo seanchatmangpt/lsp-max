@@ -115,9 +115,14 @@ impl PersistentUpstream {
 
         // Background writer task
         let mut writer_half = writer_half;
+        let source_id_writer = source_id.clone();
         tokio::spawn(async move {
             while let Some(msg) = write_rx.recv().await {
+                if let Ok(msg_str) = String::from_utf8(msg.clone()) {
+                    println!("--- PersistentUpstream [{}] writing: {}", source_id_writer, msg_str.trim());
+                }
                 if write_lsp_message(&mut writer_half, &msg).await.is_err() {
+                    println!("--- PersistentUpstream [{}] write failed", source_id_writer);
                     break;
                 }
             }
@@ -136,21 +141,27 @@ impl PersistentUpstream {
                             Ok(v) => v,
                             Err(_) => continue,
                         };
+                        println!("--- PersistentUpstream [{}] read message: {}", source_id_clone, msg);
                         // Check if this is a response to a pending request
                         if let Some(id) = msg.get("id").and_then(|v| v.as_i64()) {
                             let mut map = pending_clone.lock().await;
                             if let Some(tx) = map.remove(&id) {
+                                println!("--- PersistentUpstream [{}] matched pending response id: {}", source_id_clone, id);
                                 let _ = tx.send(msg);
                                 continue;
                             }
                         }
                         // Not a matched response: it's an unsolicited notification or request
+                        println!("--- PersistentUpstream [{}] forwarding unsolicited message", source_id_clone);
                         let _ = unsolicited_tx_clone.send(UpstreamNotification {
                             source_id: source_id_clone.clone(),
                             message: msg,
                         });
                     }
-                    _ => break, // Connection closed or error
+                    _ => {
+                        println!("--- PersistentUpstream [{}] read loop terminated", source_id_clone);
+                        break; // Connection closed or error
+                    }
                 }
             }
         });
@@ -178,11 +189,14 @@ impl PersistentUpstream {
         let body = serde_json::to_vec(&req).map_err(|e| e.to_string())?;
         let (resp_tx, resp_rx) = oneshot::channel();
         self.pending.lock().await.insert(id, resp_tx);
+        println!("--- PersistentUpstream [{}] sending request id: {}, method: {}", self.source_id, id, method);
         self.write_tx.send(body).await.map_err(|e| e.to_string())?;
+        println!("--- PersistentUpstream [{}] awaiting response for id: {}", self.source_id, id);
         let resp = tokio::time::timeout(Duration::from_millis(timeout_ms), resp_rx)
             .await
             .map_err(|_| format!("Timeout waiting for response to {method} from {}", self.address))?
             .map_err(|_| "Response channel closed".to_string())?;
+        println!("--- PersistentUpstream [{}] got response for id: {}", self.source_id, id);
         if let Some(err) = resp.get("error") {
             return Err(format!("Upstream error: {err}"));
         }
@@ -193,11 +207,13 @@ impl PersistentUpstream {
     pub async fn notify(&self, method: &str, params: Value) -> std::result::Result<(), String> {
         let notif = json!({"jsonrpc":"2.0","method":method,"params":params});
         let body = serde_json::to_vec(&notif).map_err(|e| e.to_string())?;
+        println!("--- PersistentUpstream [{}] sending notification method: {}", self.source_id, method);
         self.write_tx.send(body).await.map_err(|e| e.to_string())
     }
 
     pub async fn send_raw(&self, msg: serde_json::Value) -> std::result::Result<(), String> {
         let body = serde_json::to_vec(&msg).map_err(|e| e.to_string())?;
+        println!("--- PersistentUpstream [{}] sending raw msg: {}", self.source_id, msg);
         self.write_tx.send(body).await.map_err(|e| e.to_string())
     }
 }
@@ -936,6 +952,15 @@ pub fn extract_all_uris(edit_val: &serde_json::Value, proposed_uri: &str) -> Vec
 }
 
 pub fn extract_version_from_edit(edit_val: &Value, target_uri: &str) -> Option<i32> {
+    if let Some(arr) = edit_val.as_array() {
+        for item in arr {
+            if let Some(edit) = item.get("edit") {
+                if let Some(version) = extract_version_from_edit(edit, target_uri) {
+                    return Some(version);
+                }
+            }
+        }
+    }
     if let Some(changes) = edit_val.get("changes").and_then(|v| v.as_object()) {
         if let Some(edits) = changes.get(target_uri).and_then(|v| v.as_array()) {
             for edit in edits {
@@ -979,8 +1004,10 @@ pub fn extract_ranges_for_uri(edit_val: &Value, target_uri: &str) -> Vec<(lsp_ty
     };
 
     if let Some(arr) = edit_val.as_array() {
-        for edit in arr {
-            if let Some(r) = parse_edit(edit) {
+        for item in arr {
+            if let Some(edit_field) = item.get("edit") {
+                ranges.extend(extract_ranges_for_uri(edit_field, target_uri));
+            } else if let Some(r) = parse_edit(item) {
                 ranges.push(r);
             }
         }
@@ -1150,6 +1177,10 @@ impl TransactionEditGate {
 
     pub fn accept(&mut self, proposed: ProposedEdit) {
         self.pending.insert((proposed.uri.clone(), proposed.source_id.clone()), proposed);
+    }
+
+    pub fn remove(&mut self, uri: &str, source_id: &str) {
+        self.pending.remove(&(uri.to_string(), source_id.to_string()));
     }
 
     pub fn clear_for_uri(&mut self, uri: &str) {
@@ -1617,10 +1648,13 @@ impl ComposedServer {
         P: serde::Serialize,
         R: serde::de::DeserializeOwned,
     {
+        println!("--- route_request [{}] start", method);
         let params_val = serde_json::to_value(params).unwrap_or(Value::Null);
         
+        println!("--- route_request [{}] locking state at start", method);
         let (request_id, strategy_str, uri_opt, doc_version) = {
             let mut s = self.state.lock().await;
+            println!("--- route_request [{}] locked state at start inside block", method);
             s.request_counter += 1;
             let counter = s.request_counter;
             let strategy = method_strategy(method);
@@ -1636,6 +1670,7 @@ impl ComposedServer {
             let ver = uri.as_ref().and_then(|u| s.doc_tracker.current_version(u));
             (format!("req_{}", counter), format!("{:?}", strategy), uri, ver)
         };
+        println!("--- route_request [{}] strategy: {}", method, strategy_str);
 
         let sources_contacted = Arc::new(std::sync::Mutex::new(Vec::<String>::new()));
         let sources_returned = Arc::new(std::sync::Mutex::new(Vec::<String>::new()));
@@ -2091,6 +2126,7 @@ impl ComposedServer {
             CompositionStrategy::TransactionalEditGate => {
                 let uri = uri_opt.clone().unwrap_or_default();
                 let mut merged_res = Value::Null;
+                let mut accepted_proposals = Vec::new();
                 for source_id in routable_sources {
                     if let Some(conn) = self.upstreams.get(&source_id) {
                         match conn.request(method, params_val.clone(), timeout_ms).await {
@@ -2104,7 +2140,12 @@ impl ComposedServer {
                                 if !res.is_null() {
                                     sources_returned.lock().unwrap().push(source_id.clone());
                                     let mut s = self.state.lock().await;
-                                    let version = extract_version_from_edit(&res, &uri)
+                                    let client_version = params_val.get("context")
+                                        .and_then(|c| c.get("version"))
+                                        .and_then(|v| v.as_i64())
+                                        .map(|v| v as i32);
+                                    let version = client_version
+                                        .or_else(|| extract_version_from_edit(&res, &uri))
                                         .or_else(|| s.doc_tracker.current_version(&uri))
                                         .unwrap_or(0);
                                     let proposed = ProposedEdit {
@@ -2118,8 +2159,12 @@ impl ComposedServer {
                                     *gate_outcome.lock().unwrap() = Some(format!("{:?}", outcome));
                                     if outcome == EditGateOutcome::Accepted {
                                         s.edit_gate.accept(proposed);
+                                        accepted_proposals.push(source_id.clone());
                                         merged_res = merge_edits(merged_res, res);
                                     } else {
+                                        for src_id in &accepted_proposals {
+                                            s.edit_gate.remove(&uri, src_id);
+                                        }
                                         return Err(Error::invalid_params(format!("Edit gate rejected edit: {:?}", outcome)));
                                     }
                                 }
@@ -2174,6 +2219,7 @@ impl ComposedServer {
     where
         P: serde::Serialize,
     {
+        println!("--- route_notification [{}] start", method);
         let params_val = serde_json::to_value(params).unwrap_or(Value::Null);
         let uri_opt = params_val.get("textDocument")
             .and_then(|td| td.get("uri"))
@@ -2181,40 +2227,53 @@ impl ComposedServer {
             .map(|s| s.to_string());
             
         if let Some(uri) = &uri_opt {
+            println!("--- route_notification [{}] locking state for uri", method);
             let mut s = self.state.lock().await;
+            println!("--- route_notification [{}] locked state for uri", method);
             if method == "textDocument/didOpen" {
                 let version = params_val.get("textDocument")
                     .and_then(|td| td.get("version"))
                     .and_then(|v| v.as_i64())
                     .unwrap_or(1) as i32;
                 s.doc_tracker.did_open(uri, version);
+                s.edit_gate.clear_for_uri(uri);
             } else if method == "textDocument/didChange" {
                 let version = params_val.get("textDocument")
                     .and_then(|td| td.get("version"))
                     .and_then(|v| v.as_i64())
                     .unwrap_or(1) as i32;
                 if let VersionCheckResult::OutOfOrder { .. } = s.doc_tracker.did_change(uri, version) {
+                    println!("--- route_notification [{}] out of order return", method);
                     return;
                 }
+                s.edit_gate.clear_for_uri(uri);
             } else if method == "textDocument/didClose" {
                 s.doc_tracker.did_close(uri);
+                s.edit_gate.clear_for_uri(uri);
             }
         }
         
+        println!("--- route_notification [{}] locking state for routable_sources", method);
         let routable_sources = {
             let s = self.state.lock().await;
+            println!("--- route_notification [{}] locked state for routable_sources inside block", method);
             s.capability_tracker.routable_sources_for_method(method)
         };
+        println!("--- route_notification [{}] routable_sources: {:?}", method, routable_sources);
         for source_id in routable_sources {
             if let Some(conn) = self.upstreams.get(&source_id) {
+                println!("--- route_notification [{}] calling conn.notify for {}", method, source_id);
                 if conn.notify(method, params_val.clone()).await.is_ok() {
+                    println!("--- route_notification [{}] locking state for source health updating", method);
                     let mut s = self.state.lock().await;
+                    println!("--- route_notification [{}] locked state for source health updating", method);
                     if let Some(src) = s.capability_tracker.sources.get_mut(&source_id) {
                         src.health = SourceHealth::Healthy;
                     }
                 }
             }
         }
+        println!("--- route_notification [{}] end", method);
     }
 }
 
@@ -2225,7 +2284,9 @@ impl LanguageServer for ComposedServer {
     }
 
     async fn initialized(&self, params: InitializedParams) {
+        println!("--- ComposedServer::initialized start");
         self.route_notification("initialized", params).await;
+        println!("--- ComposedServer::initialized end");
     }
 
     async fn shutdown(&self) -> Result<()> {
