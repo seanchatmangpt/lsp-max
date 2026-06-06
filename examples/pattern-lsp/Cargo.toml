@@ -1,0 +1,26 @@
+[package]
+name = "pattern-lsp"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+clap = { version = "4.4", features = ["derive"] }
+clap-noun-verb = "26.6.2"
+clap-noun-verb-macros = "26.6.2"
+linkme = "0.3"
+tokio = { version = "1", features = ["full"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+toml = "0.8"
+regex = "1.10"
+glob = "0.3"
+tower-lsp-max = { path = "../../" }
+lsp-types-max = { path = "../../../lsp-types-max", version = "26.6.5", features = ["proposed"] }
+chrono = { version = "0.4", features = ["serde"] }
+url = "2.5.8"
+
+[dev-dependencies]
+assert_cmd = "2.2.2"
+predicates = "3.1.4"
+tower-lsp-max-playground = { path = "../../crates/playground" }

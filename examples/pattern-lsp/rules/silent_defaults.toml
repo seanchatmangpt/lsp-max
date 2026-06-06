@@ -1,0 +1,9 @@
+[[rules]]
+id = "DUMMY-${file}"
+name = "Dummy rule"
+severity = "warning"
+pattern = "DUMMY_PATTERN_NEVER_MATCH"
+path_globs = ["src/**"]
+exclude_globs = ["target/**"]
+message = "Dummy message"
+rationale = "Dummy rationale"

@@ -1,0 +1,19 @@
+[[rules]]
+id = "ANTI-FAKE-001"
+name = "Anti-fake and placeholder tokens"
+severity = "error"
+pattern = "TODO|FIXME|todo!|unimplemented!|panic!|unwrap\\(|expect\\(|serde_json::Value|json!\\(|Default::default\\(\\)"
+path_globs = ["src/**", "tests/**", "examples/**", "benches/**", "playground/**", "crates/**"]
+exclude_globs = ["target/**", ".git/**"]
+message = "Found placeholder, fake completion, or untyped fallback."
+rationale = "Code must be fully implemented without panics or untyped fallbacks."
+
+[[rules]]
+id = "ANTI-FAKE-002"
+name = "Fake completion language"
+severity = "error"
+pattern = "In a real system|In production|In a production version|would eventually|left as an exercise|placeholder|mock only"
+path_globs = ["src/**", "tests/**", "examples/**", "benches/**", "playground/**", "crates/**", "README.md", "*.md"]
+exclude_globs = ["target/**", ".git/**"]
+message = "Found language implying fake completion."
+rationale = "We do not leave tasks for later."

@@ -1,0 +1,9 @@
+[[rules]]
+id = "RAW-PROTOCOL-001"
+name = "Raw protocol fallback"
+severity = "warning"
+pattern = "serde_json::Value|json!\\("
+path_globs = ["src/**", "tests/**", "examples/**", "benches/**", "playground/**", "crates/**"]
+exclude_globs = ["target/**", ".git/**"]
+message = "Raw JSON protocol fallback detected. Confirm this is not bypassing typed LSP structures."
+rationale = "Protocol completeness must not be faked with untyped serde_json fallback."
