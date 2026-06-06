@@ -76,4 +76,5 @@ members = [
     "crates/tower-lsp-max-live",
     "crates/tower-lsp-max-lsif",
     "crates/tower-lsp-max-adapters/auto_lsp_adapter",
+    "examples/pattern-lsp",
 ]

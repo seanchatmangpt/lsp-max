@@ -1,5 +1,6 @@
 use std::sync::Arc;
 use std::collections::HashMap;
+use std::str::FromStr;
 use serde_json::{json, Value};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tower_lsp_max::lsp_types::*;
@@ -33,7 +34,8 @@ impl SimpleWorkspaceIndex {
                         }
                     } else if p.is_file() && p.extension().map_or(false, |ext| ext == "rs") {
                         if let Ok(content) = std::fs::read_to_string(&p) {
-                            let uri = Url::from_file_path(&p).unwrap();
+                            let url = url::Url::from_file_path(&p).unwrap();
+                            let uri = DocumentUri::from_str(url.as_str()).unwrap();
                             for (line_idx, line) in content.lines().enumerate() {
                                 if let Some(struct_name) = extract_name(line, "struct ") {
                                     let loc = make_location(&uri, line_idx, line, &struct_name);
@@ -90,7 +92,7 @@ fn extract_name(line: &str, keyword: &str) -> Option<String> {
     None
 }
 
-fn make_location(uri: &Url, line: usize, line_content: &str, word: &str) -> Location {
+fn make_location(uri: &DocumentUri, line: usize, line_content: &str, word: &str) -> Location {
     let col = line_content.find(word).unwrap_or(0);
     Location {
         uri: uri.clone(),
@@ -180,22 +182,24 @@ impl tower_lsp_max::LanguageServer for StaticGraphBackend {
     async fn hover(&self, params: HoverParams) -> tower_lsp_max::jsonrpc::Result<Option<Hover>> {
         let uri = &params.text_document_position_params.text_document.uri;
         let pos = params.text_document_position_params.position;
-        if let Ok(path) = uri.to_file_path() {
-            if let Some(word) = get_word_at_pos(&path, pos) {
-                let idx = self.index.lock().unwrap();
-                let defs_count = idx.definitions.get(&word).map_or(0, |v| v.len());
-                let refs_count = idx.references.get(&word).map_or(0, |v| v.len());
-                let hover_text = format!(
-                    "### Symbol: {}\n- Definitions in index: {}\n- References in index: {}",
-                    word, defs_count, refs_count
-                );
-                return Ok(Some(Hover {
-                    contents: HoverContents::Markup(MarkupContent {
-                        kind: MarkupKind::Markdown,
-                        value: hover_text,
-                    }),
-                    range: None,
-                }));
+        if let Ok(url) = url::Url::parse(uri.as_str()) {
+            if let Ok(path) = url.to_file_path() {
+                if let Some(word) = get_word_at_pos(&path, pos) {
+                    let idx = self.index.lock().unwrap();
+                    let defs_count = idx.definitions.get(&word).map_or(0, |v| v.len());
+                    let refs_count = idx.references.get(&word).map_or(0, |v| v.len());
+                    let hover_text = format!(
+                        "### Symbol: {}\n- Definitions in index: {}\n- References in index: {}",
+                        word, defs_count, refs_count
+                    );
+                    return Ok(Some(Hover {
+                        contents: HoverContents::Markup(MarkupContent {
+                            kind: MarkupKind::Markdown,
+                            value: hover_text,
+                        }),
+                        range: None,
+                    }));
+                }
             }
         }
         Ok(None)
@@ -204,18 +208,20 @@ impl tower_lsp_max::LanguageServer for StaticGraphBackend {
     async fn goto_definition(&self, params: GotoDefinitionParams) -> tower_lsp_max::jsonrpc::Result<Option<GotoDefinitionResponse>> {
         let uri = &params.text_document_position_params.text_document.uri;
         let pos = params.text_document_position_params.position;
-        if let Ok(path) = uri.to_file_path() {
-            if let Some(word) = get_word_at_pos(&path, pos) {
-                let idx = self.index.lock().unwrap();
-                if let Some(locs) = idx.definitions.get(&word) {
-                    if !locs.is_empty() {
-                        let response_locs: Vec<Location> = locs.iter().map(|loc| {
-                            Location {
-                                uri: loc.uri.clone(),
-                                range: loc.range,
-                            }
-                        }).collect();
-                        return Ok(Some(GotoDefinitionResponse::Array(response_locs)));
+        if let Ok(url) = url::Url::parse(uri.as_str()) {
+            if let Ok(path) = url.to_file_path() {
+                if let Some(word) = get_word_at_pos(&path, pos) {
+                    let idx = self.index.lock().unwrap();
+                    if let Some(locs) = idx.definitions.get(&word) {
+                        if !locs.is_empty() {
+                            let response_locs: Vec<Location> = locs.iter().map(|loc| {
+                                Location {
+                                    uri: loc.uri.clone(),
+                                    range: loc.range,
+                                }
+                            }).collect();
+                            return Ok(Some(GotoDefinitionResponse::Array(response_locs)));
+                        }
                     }
                 }
             }
@@ -226,17 +232,19 @@ impl tower_lsp_max::LanguageServer for StaticGraphBackend {
     async fn references(&self, params: ReferenceParams) -> tower_lsp_max::jsonrpc::Result<Option<Vec<Location>>> {
         let uri = &params.text_document_position.text_document.uri;
         let pos = params.text_document_position.position;
-        if let Ok(path) = uri.to_file_path() {
-            if let Some(word) = get_word_at_pos(&path, pos) {
-                let idx = self.index.lock().unwrap();
-                if let Some(locs) = idx.references.get(&word) {
-                    let response_locs: Vec<Location> = locs.iter().map(|loc| {
-                        Location {
-                            uri: loc.uri.clone(),
-                            range: loc.range,
-                        }
-                    }).collect();
-                    return Ok(Some(response_locs));
+        if let Ok(url) = url::Url::parse(uri.as_str()) {
+            if let Ok(path) = url.to_file_path() {
+                if let Some(word) = get_word_at_pos(&path, pos) {
+                    let idx = self.index.lock().unwrap();
+                    if let Some(locs) = idx.references.get(&word) {
+                        let response_locs: Vec<Location> = locs.iter().map(|loc| {
+                            Location {
+                                uri: loc.uri.clone(),
+                                range: loc.range,
+                            }
+                        }).collect();
+                        return Ok(Some(response_locs));
+                    }
                 }
             }
         }
@@ -260,7 +268,7 @@ impl tower_lsp_max::LanguageServer for MockPeerBackend {
         caps.completion_provider = Some(CompletionOptions::default());
         caps.rename_provider = Some(OneOf::Left(true));
         caps.document_formatting_provider = Some(OneOf::Left(true));
-        caps.code_action_provider = Some(OneOf::Left(CodeActionProviderCapability::Simple(true)));
+        caps.code_action_provider = Some(CodeActionProviderCapability::Simple(true));
         caps.text_document_sync = Some(TextDocumentSyncCapability::Kind(TextDocumentSyncKind::FULL));
         Ok(InitializeResult {
             capabilities: caps,
@@ -301,12 +309,16 @@ impl tower_lsp_max::LanguageServer for MockPeerBackend {
 
         let uri = &params.text_document_position_params.text_document.uri;
         let pos = params.text_document_position_params.position;
-        let hover_text = if let Ok(path) = uri.to_file_path() {
-            if let Some(word) = get_word_at_pos(&path, pos) {
-                format!(
-                    "### Dynamic Documentation for symbol: {}\nThis is served dynamically by `mock-peer`.",
-                    word
-                )
+        let hover_text = if let Ok(url) = url::Url::parse(uri.as_str()) {
+            if let Ok(path) = url.to_file_path() {
+                if let Some(word) = get_word_at_pos(&path, pos) {
+                    format!(
+                        "### Dynamic Documentation for symbol: {}\nThis is served dynamically by `mock-peer`.",
+                        word
+                    )
+                } else {
+                    "### Hover from mock-peer".to_string()
+                }
             } else {
                 "### Hover from mock-peer".to_string()
             }
@@ -333,14 +345,24 @@ impl tower_lsp_max::LanguageServer for MockPeerBackend {
     }
 
     async fn rename(&self, params: RenameParams) -> tower_lsp_max::jsonrpc::Result<Option<WorkspaceEdit>> {
+        let delay_ms = self.delay.load(std::sync::atomic::Ordering::Relaxed);
+        if delay_ms > 0 {
+            tokio::time::sleep(std::time::Duration::from_millis(delay_ms)).await;
+        }
+
         let uri = params.text_document_position.text_document.uri;
         let pos = params.text_document_position.position;
-        let new_name = params.newName;
+        let new_name = params.new_name;
 
         let version = if new_name.contains("stale") {
             Some(0)
         } else {
             Some(1)
+        };
+
+        let end_pos = Position {
+            line: pos.line,
+            character: pos.character + 7,
         };
 
         let doc_edit = TextDocumentEdit {
@@ -349,8 +371,8 @@ impl tower_lsp_max::LanguageServer for MockPeerBackend {
                 version,
             },
             edits: vec![
-                OneOf::Left(TextEdit {
-                    range: Range { start: pos, end: pos },
+                OneOf3::A(TextEdit {
+                    range: Range { start: pos, end: end_pos },
                     new_text: new_name,
                 })
             ],
@@ -360,6 +382,7 @@ impl tower_lsp_max::LanguageServer for MockPeerBackend {
             changes: None,
             document_changes: Some(DocumentChanges::Edits(vec![doc_edit])),
             change_annotations: None,
+            metadata: None,
         }))
     }
 
@@ -592,13 +615,13 @@ async fn main() {
     let (client_io, server_io) = tokio::io::duplex(1024 * 1024);
     
     // We will extract the composed server state by wrapping the server
-    let composed_state_holder = Arc::new(tokio::sync::Mutex::new(None));
+    let composed_state_holder = Arc::new(std::sync::Mutex::new(None));
     let composed_state_holder_clone = composed_state_holder.clone();
 
     let (service, socket) = tower_lsp_max::LspService::new(|client| {
         let server = ComposedServer::new(client, upstreams.clone());
-        let composed_state = server.state.clone();
-        let mut holder = composed_state_holder_clone.blocking_lock();
+        let composed_state = server.state().clone();
+        let mut holder = composed_state_holder_clone.lock().unwrap();
         *holder = Some(composed_state);
         server
     });
@@ -613,7 +636,7 @@ async fn main() {
 
     // Extract the state pointer set in the factory closure
     let composed_state = {
-        let mut holder = composed_state_holder.lock().await;
+        let mut holder = composed_state_holder.lock().unwrap();
         holder.take().expect("ComposedServer state not captured during construction")
     };
 
@@ -775,35 +798,46 @@ async fn main() {
 
     // 10. Verify SourceDegraded rejection
     println!("Step 10: Degrading mock-peer source health and querying rename...");
-    {
-        let mut s = composed_state.lock().await;
-        if let Some(src) = s.capability_tracker.sources.get_mut("mock-peer") {
-            src.health = tower_lsp_max::composition::SourceHealth::Crashed;
-        }
-    }
+    mock_delay.store(120, std::sync::atomic::Ordering::Relaxed);
 
-    let degraded_rename_resp = client.send_request("textDocument/rename", json!({
-        "textDocument": { "uri": real_file_uri },
-        "position": { "line": hover_line, "character": hover_col },
-        "newName": "Backend_Degraded"
-    })).await;
-    println!("-> Rename result (degraded source): {:?}", degraded_rename_resp.get("error").unwrap());
-    assert!(degraded_rename_resp.get("error").is_some());
+    let rename_req_id = 999;
+    let rename_req = json!({
+        "jsonrpc": "2.0",
+        "id": rename_req_id,
+        "method": "textDocument/rename",
+        "params": {
+            "textDocument": { "uri": real_file_uri },
+            "position": { "line": hover_line, "character": hover_col },
+            "newName": "Backend_Degraded"
+        }
+    });
+
+    let msg = encode_message(&rename_req);
+    client.stream.write_all(&msg).await.unwrap();
+
+    tokio::time::sleep(std::time::Duration::from_millis(30)).await;
+    println!("  * Removing mock-peer from capability tracker while rename is in flight...");
+    let mock_peer_backup = {
+        let mut s = composed_state.lock().await;
+        s.capability_tracker.sources.remove("mock-peer").unwrap()
+    };
+
+    let degraded_rename_resp = client.read_response(rename_req_id).await;
+    println!("-> Rename result (degraded source) raw: {:?}", degraded_rename_resp);
+    println!("-> Rename result (degraded source) error: {:?}", degraded_rename_resp.get("error"));
     assert!(degraded_rename_resp.get("error").unwrap().get("message").unwrap().as_str().unwrap().contains("SourceDegraded"));
 
     {
         let mut s = composed_state.lock().await;
-        if let Some(src) = s.capability_tracker.sources.get_mut("mock-peer") {
-            src.health = tower_lsp_max::composition::SourceHealth::Healthy;
-        }
+        s.capability_tracker.sources.insert("mock-peer".to_string(), mock_peer_backup);
         s.edit_gate.clear_for_uri(real_file_uri);
     }
+    mock_delay.store(0, std::sync::atomic::Ordering::Relaxed);
 
     // 11. Verify stale-response refusal (version increment during slow query)
     println!("Step 11: Verifying stale-response refusal during slow query...");
-    mock_delay.store(500, std::sync::atomic::Ordering::Relaxed);
+    mock_delay.store(120, std::sync::atomic::Ordering::Relaxed);
 
-    let client_stream_clone = client.stream.clone();
     let hover_req_id = 889;
     let hover_req = json!({
         "jsonrpc": "2.0",
@@ -815,13 +849,10 @@ async fn main() {
         }
     });
 
-    let mut client_stream_clone_writer = client_stream_clone.clone();
-    tokio::spawn(async move {
-        let msg = encode_message(&hover_req);
-        client_stream_clone_writer.write_all(&msg).await.unwrap();
-    });
+    let msg = encode_message(&hover_req);
+    client.stream.write_all(&msg).await.unwrap();
 
-    tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+    tokio::time::sleep(std::time::Duration::from_millis(30)).await;
     println!("  * Bumping document version to 2 while hover is in flight...");
     client.send_notification("textDocument/didChange", json!({
         "textDocument": {
@@ -841,10 +872,11 @@ async fn main() {
 
     // 12. Retrieve traces and write JSONL receipt
     println!("Step 12: Generating JSONL transcript...");
-    let traces = {
+    let request_traces_arc = {
         let s = composed_state.lock().await;
-        s.request_traces.lock().unwrap().clone()
+        s.request_traces.clone()
     };
+    let traces = request_traces_arc.lock().unwrap().clone();
 
     println!("Total recorded request traces: {}", traces.len());
     let timestamp = std::time::SystemTime::now()

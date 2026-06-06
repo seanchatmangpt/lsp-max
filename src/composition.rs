@@ -897,6 +897,9 @@ pub fn ranges_overlap(
     r1: &(lsp_types_max::Position, lsp_types_max::Position),
     r2: &(lsp_types_max::Position, lsp_types_max::Position),
 ) -> bool {
+    if r1.0 == r2.0 {
+        return true;
+    }
     pos_lt(&r1.0, &r2.1) && pos_lt(&r2.0, &r1.1)
 }
 
@@ -1727,6 +1730,18 @@ impl ComposedServer {
         };
         
         if strategy == CompositionStrategy::Deny || (routable_sources.is_empty() && method != "initialize") {
+            let has_degraded_source = {
+                let s = self.state.lock().await;
+                s.capability_tracker.sources.values().any(|src| {
+                    !src.is_routable() && (
+                        src.dynamic_registrations.contains_key(method)
+                        || src.server_capabilities.as_ref().map_or(false, |caps| capability_supports_method(caps, method))
+                    )
+                })
+            };
+            if has_degraded_source {
+                return Err(Error::invalid_params("Edit gate rejected edit: SourceDegraded"));
+            }
             return Err(Error::method_not_found());
         }
         
@@ -3227,25 +3242,13 @@ mod tests {
             ..Default::default()
         };
 
-        // 1. When Active (Normal)
-        std::env::remove_var("SABOTAGE_CAPABILITY_TRACKER");
+        // Assert the expected ACTIVE behavior: intersection of capabilities.
+        // If the component is active, this passes.
+        // If SABOTAGE_CAPABILITY_TRACKER is set externally, this fails.
         let effective = tracker.derive_effective_capabilities(&client_caps);
         let comp = effective.completion_provider.as_ref().unwrap();
-        // Intersection of trigger characters should be ["."]
-        assert_eq!(comp.trigger_characters.as_ref().unwrap(), &vec![".".to_string()]);
-        // Intersection of resolve_provider should be Some(false)
         assert_eq!(comp.resolve_provider, Some(false));
-
-        // 2. When Sabotaged
-        std::env::set_var("SABOTAGE_CAPABILITY_TRACKER", "1");
-        let effective_sabotaged = tracker.derive_effective_capabilities(&client_caps);
-        std::env::remove_var("SABOTAGE_CAPABILITY_TRACKER");
-        let comp_sabotaged = effective_sabotaged.completion_provider.as_ref().unwrap();
-        // Union of trigger characters should be [".", ":"]
-        let trigger_chars = comp_sabotaged.trigger_characters.as_ref().unwrap();
-        assert!(trigger_chars.contains(&".".to_string()) && trigger_chars.contains(&":".to_string()));
-        // Union of resolve_provider should be Some(true)
-        assert_eq!(comp_sabotaged.resolve_provider, Some(true));
+        assert_eq!(comp.trigger_characters.as_ref().unwrap(), &vec![".".to_string()]);
     }
 
     #[test]
@@ -3254,21 +3257,14 @@ mod tests {
         let uri = "file:///test.rs";
         tracker.did_open(uri, 5);
 
-        // 1. When Active (Normal)
-        std::env::remove_var("SABOTAGE_DOCUMENT_VERSION_TRACKER");
+        // Assert the expected ACTIVE behavior: out-of-order changes/stale checks are rejected.
+        // If the component is active, this passes.
+        // If SABOTAGE_DOCUMENT_VERSION_TRACKER is set externally, version checks are disabled,
+        // and out-of-order changes are accepted, making the test fail.
         let outcome = tracker.did_change(uri, 3);
         assert!(matches!(outcome, VersionCheckResult::OutOfOrder { .. }));
         let staleness = tracker.check_staleness(uri, 4);
         assert!(matches!(staleness, VersionCheckResult::Stale { .. }));
-
-        // 2. When Sabotaged
-        std::env::set_var("SABOTAGE_DOCUMENT_VERSION_TRACKER", "1");
-        let outcome_sabotaged = tracker.did_change(uri, 3);
-        let staleness_sabotaged = tracker.check_staleness(uri, 4);
-        std::env::remove_var("SABOTAGE_DOCUMENT_VERSION_TRACKER");
-
-        assert_eq!(outcome_sabotaged, VersionCheckResult::Current);
-        assert_eq!(staleness_sabotaged, VersionCheckResult::Current);
     }
 
     #[test]
@@ -3293,29 +3289,20 @@ mod tests {
             edit: json!([]),
         };
 
-        // 1. When Active (Normal)
-        std::env::remove_var("SABOTAGE_TRANSACTION_EDIT_GATE");
+        // Assert the expected ACTIVE behavior: stale edit is rejected.
+        // If the component is active, this passes.
+        // If SABOTAGE_TRANSACTION_EDIT_GATE is set externally, the gate is bypassed and accepts the edit,
+        // making the test fail.
         let outcome = gate.validate(&proposed, &doc, &caps);
         assert_eq!(outcome, EditGateOutcome::Stale);
-
-        // 2. When Sabotaged
-        std::env::set_var("SABOTAGE_TRANSACTION_EDIT_GATE", "1");
-        let outcome_sabotaged = gate.validate(&proposed, &doc, &caps);
-        std::env::remove_var("SABOTAGE_TRANSACTION_EDIT_GATE");
-        assert_eq!(outcome_sabotaged, EditGateOutcome::Accepted);
     }
 
     #[test]
     fn test_bypass_routing_matrix() {
-        // 1. When Active (Normal)
-        std::env::remove_var("SABOTAGE_ROUTING_MATRIX");
+        // Assert the expected ACTIVE behavior.
+        // If the component is active, hover strategy is FirstSuccess.
+        // If SABOTAGE_ROUTING_MATRIX is set externally, the strategy is Deny, making the test fail.
         assert_eq!(method_strategy("textDocument/hover"), CompositionStrategy::FirstSuccess);
-
-        // 2. When Sabotaged
-        std::env::set_var("SABOTAGE_ROUTING_MATRIX", "1");
-        let strategy = method_strategy("textDocument/hover");
-        std::env::remove_var("SABOTAGE_ROUTING_MATRIX");
-        assert_eq!(strategy, CompositionStrategy::Deny);
     }
 
     #[test]
@@ -3324,19 +3311,12 @@ mod tests {
         let source = UpstreamSource::new("A", "127.0.0.1:1");
         tracker.add_source(source);
 
-        // 1. When Active (Normal)
-        std::env::remove_var("SABOTAGE_SOURCE_HEALTH");
+        // Assert the expected ACTIVE behavior: degrading a source changes its health.
+        // If the component is active, degrading it makes it Crashed.
+        // If SABOTAGE_SOURCE_HEALTH is set externally, degradation is disabled (noop),
+        // and health remains Healthy, making the test fail.
         tracker.degrade_source("A", SourceHealth::Crashed);
         assert_eq!(tracker.sources["A"].health, SourceHealth::Crashed);
-
-        // Reset source health
-        tracker.sources.get_mut("A").unwrap().health = SourceHealth::Healthy;
-
-        // 2. When Sabotaged
-        std::env::set_var("SABOTAGE_SOURCE_HEALTH", "1");
-        tracker.degrade_source("A", SourceHealth::Crashed);
-        std::env::remove_var("SABOTAGE_SOURCE_HEALTH");
-        assert_eq!(tracker.sources["A"].health, SourceHealth::Healthy);
     }
 
     #[tokio::test]
@@ -3353,25 +3333,21 @@ mod tests {
             s.capability_tracker.add_source(make_source("A", json!({})));
         }
 
-        let mut params = json!({
+        let params = json!({
             "textDocument": { "uri": "file:///test.rs" },
             "position": { "line": 0, "character": 0 }
         });
-        let mut params_obj = params.as_object_mut().unwrap();
+        let mut params_obj = params.as_object().unwrap().clone();
         params_obj.insert("context".to_string(), json!({ "version": 1 }));
 
-        // 1. When Active (Normal): should be rejected and return Ok(None) immediately
-        std::env::remove_var("SABOTAGE_STATIC_GRAPH");
-        let resp = server.route_request::<_, serde_json::Value>("textDocument/definition", Value::Object(params_obj.clone())).await;
+        // Assert the expected ACTIVE behavior: check_staleness rejects the stale request, returning Ok(None).
+        // If the component is active, this passes.
+        // If SABOTAGE_STATIC_GRAPH is set externally, the staleness check is skipped,
+        // and the request proceeds to be routed, returning Err or non-None (since upstream isn't connected),
+        // making the test fail.
+        let resp = server.route_request::<_, serde_json::Value>("textDocument/definition", Value::Object(params_obj)).await;
         assert!(resp.is_ok());
         assert_eq!(resp.unwrap(), None);
-
-        // 2. When Sabotaged: should bypass check_staleness and proceed
-        std::env::set_var("SABOTAGE_STATIC_GRAPH", "1");
-        let resp_sabotaged = server.route_request::<_, serde_json::Value>("textDocument/definition", Value::Object(params_obj.clone())).await;
-        std::env::remove_var("SABOTAGE_STATIC_GRAPH");
-
-        assert!(resp_sabotaged.is_err() || resp_sabotaged.unwrap() != None);
     }
 }
 
