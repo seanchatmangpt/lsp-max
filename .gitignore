@@ -9,3 +9,4 @@ vendors/
 **/refund_receipt.txt
 **/target_e2e/
 **/lsif_dump.json
+**/receipts/
