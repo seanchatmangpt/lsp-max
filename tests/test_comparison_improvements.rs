@@ -1,11 +1,9 @@
-use tower_lsp_max::jsonrpc::{Result, Response, Error, ErrorCode, Request};
+use serde_json::{json, Value};
+use std::time::Duration;
+use tower::{Service, ServiceExt};
+use tower_lsp_max::jsonrpc::{ErrorCode, Request, Result};
 use tower_lsp_max::lsp_types::*;
 use tower_lsp_max::{LanguageServer, LspService};
-use tower_lsp_max::service::State;
-use serde_json::{json, Value};
-use std::sync::Arc;
-use tower::{Service, ServiceExt};
-use std::time::Duration;
 
 struct Mock;
 
@@ -44,8 +42,15 @@ async fn test_panic_handling() {
     let _ = service.ready().await.unwrap().call(init_req).await.unwrap();
 
     let panic_req = Request::build("test/panic").id(2).finish();
-    let response = service.ready().await.unwrap().call(panic_req).await.unwrap().unwrap();
-    
+    let response = service
+        .ready()
+        .await
+        .unwrap()
+        .call(panic_req)
+        .await
+        .unwrap()
+        .unwrap();
+
     assert_eq!(response.error().unwrap().code, ErrorCode::InternalError);
     assert!(response.error().unwrap().message.contains("panic"));
 }
@@ -57,9 +62,19 @@ async fn test_max_rpc_lifecycle_guards() {
 
     // Call max/snapshot before initialization
     let req = Request::build("max/snapshot").id(1).finish();
-    let response = service.ready().await.unwrap().call(req).await.unwrap().unwrap();
-    
-    assert_eq!(response.error().unwrap().code, ErrorCode::ServerNotInitialized);
+    let response = service
+        .ready()
+        .await
+        .unwrap()
+        .call(req)
+        .await
+        .unwrap()
+        .unwrap();
+
+    assert_eq!(
+        response.error().unwrap().code,
+        ErrorCode::ServerNotInitialized
+    );
 }
 
 #[tokio::test]
@@ -104,9 +119,9 @@ async fn test_watchdog_exit() {
 
     // Use a PID that is likely to exist but we can "simulate" death if we had a way to mock.
     // For now, let's just test that it extracts the PID correctly and we can trigger it.
-    // Since we can't easily kill a process in a test without side effects, 
+    // Since we can't easily kill a process in a test without side effects,
     // we'll just verify the server state transition if we manually trigger it.
-    
+
     let init_req = Request::build("initialize")
         .params(json!({"capabilities": {}, "processId": std::process::id()}))
         .id(1)
@@ -116,6 +131,13 @@ async fn test_watchdog_exit() {
     // Check that state is Initialized
     // (We'd need to expose state more directly or check via another RPC)
     let snapshot_req = Request::build("max/snapshot").id(2).finish();
-    let res = service.ready().await.unwrap().call(snapshot_req).await.unwrap().unwrap();
+    let res = service
+        .ready()
+        .await
+        .unwrap()
+        .call(snapshot_req)
+        .await
+        .unwrap()
+        .unwrap();
     assert!(res.is_ok());
 }

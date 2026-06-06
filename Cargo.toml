@@ -1,6 +1,6 @@
 [package]
 name = "tower-lsp-max"
-version = "26.6.4"
+version = "26.6.5"
 authors = ["Eyal Kalderon <ebkalderon@gmail.com>"]
 edition = "2021"
 rust-version = "1.70.0"
@@ -18,7 +18,7 @@ exclude = ["FEATURES.md"]
 default = ["runtime-tokio"]
 runtime-agnostic = ["async-codec-lite"]
 runtime-tokio = ["tokio", "tokio-util"]
-proposed = ["lsp-types/proposed"]
+proposed = ["lsp-types-max/proposed"]
 
 [dependencies]
 async-codec-lite = { version = "0.0", optional = true }
@@ -29,7 +29,7 @@ dashmap = "5.1"
 futures = { version = "0.3", default-features = false, features = ["std", "async-await"] }
 httparse = "1.8"
 libc = "0.2"
-lsp-types = "0.97.0"
+lsp-types-max = { path = "/Users/sac/lsp-types-max" }
 url = { version = "2.5", features = ["serde"] }
 memchr = "2.5"
 windows-sys = { version = "0.52", features = ["Win32_System_Threading", "Win32_Foundation"] }
@@ -37,11 +37,12 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 tokio = { version = "1.17", optional = true, features = ["time", "macros", "rt"] }
 tokio-util = { version = "0.7", optional = true, features = ["codec"] }
-tower-lsp-max-macros = { version = "26.6.4", path = "./tower-lsp-max-macros" }
-tower-lsp-max-protocol = { version = "26.6.4", path = "./tower-lsp-max-protocol" }
+tower-lsp-max-macros = { version = "26.6.5", path = "./tower-lsp-max-macros" }
+tower-lsp-max-protocol = { version = "26.6.5", path = "./tower-lsp-max-protocol" }
 tower-lsp-max-lsif = { path = "./crates/tower-lsp-max-lsif" }
-tower-lsp-max-runtime = { version = "26.6.4", path = "./tower-lsp-max-runtime" }
-tower-lsp-max-agent = { version = "26.6.4", path = "./tower-lsp-max-agent" }
+tower-lsp-max-runtime = { version = "26.6.5", path = "./tower-lsp-max-runtime" }
+tower-lsp-max-agent = { version = "26.6.5", path = "./tower-lsp-max-agent" }
+tower-lsp-max-base = { path = "./crates/tower-lsp-max-base" }
 tower = { version = "0.4", default-features = false, features = ["util"] }
 tracing = "0.1"
 
@@ -54,6 +55,10 @@ ws_stream_tungstenite = { version = "0.10", features = ["tokio_io"] }
 tower-lsp-max-playground = { path = "crates/playground" }
 tempfile = "3"
 ropey = "1"
+oxigraph = "0.5.8"
+wasm4pm-compat = { path = "/Users/sac/wasm4pm-compat", version = "26.6.5", features = ["formats", "strict", "wasm4pm"] }
+uuid = { version = "1.0", features = ["v4"] }
+ed25519-dalek = "2.0"
 
 
 
@@ -69,7 +74,4 @@ members = [
     "crates/playground", "crates/tower-lsp-max-client", "crates/tower-lsp-max-base", "crates/tower-lsp-max-live", "crates/tower-lsp-max-lsif", "crates/tower-lsp-max-adapters/auto_lsp_adapter", 
 ]
 default-members = ["."]
-
-[patch.crates-io]
-lsp-types = { path = "/Users/sac/lsp-types-max" }
 

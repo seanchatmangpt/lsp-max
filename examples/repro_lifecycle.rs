@@ -1,10 +1,7 @@
-
-use std::sync::Arc;
-use std::time::Duration;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
-use tower_lsp_max::{LanguageServer, LspService, Server};
 use tower_lsp_max::jsonrpc::Result as RpcResult;
 use tower_lsp_max::lsp_types as lsp;
+use tower_lsp_max::{LanguageServer, LspService, Server};
 
 struct TestBackend;
 
@@ -67,14 +64,14 @@ async fn main() {
     // Test max/snapshot BEFORE initialization
     let req = serde_json::json!({"jsonrpc":"2.0","id":1,"method":"max/snapshot"});
     client_tx.write_all(&encode_message(&req)).await.unwrap();
-    
+
     let resp = read_message(&mut client_rx).await.unwrap();
     println!("max/snapshot response before init: {}", resp);
 
     // Test max/explainDiagnostic BEFORE initialization
     let req = serde_json::json!({"jsonrpc":"2.0","id":2,"method":"max/explainDiagnostic","params":"diag-missing-receipt"});
     client_tx.write_all(&encode_message(&req)).await.unwrap();
-    
+
     let resp = read_message(&mut client_rx).await.unwrap();
     println!("max/explainDiagnostic response before init: {}", resp);
 }

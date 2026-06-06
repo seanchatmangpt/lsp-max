@@ -230,7 +230,6 @@ impl<P: DeserializeOwned + Send + 'static> FromParams for (P,) {
     }
 }
 
-
 /// A trait implemented by all JSON-RPC response types.
 pub trait IntoResponse: private::Sealed + Send + 'static {
     /// Attempts to construct a [`Response`] using `Self` and a corresponding [`Id`].

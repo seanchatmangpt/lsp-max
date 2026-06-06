@@ -1,80 +1,10 @@
-//! Types for sending data to and from the language client.
-
-pub use self::socket::{ClientSocket, RequestStream, ResponseSink};
-
-use std::fmt::{self, Debug, Display, Formatter};
-use std::sync::atomic::{AtomicU32, Ordering};
-use std::sync::Arc;
-use std::task::{Context, Poll};
-
-use futures::channel::mpsc::{self, Sender};
-use futures::future::BoxFuture;
-use futures::sink::SinkExt;
-use lsp_types::*;
+use std::fmt::Display;
 use serde::Serialize;
 use serde_json::Value;
-use tower::Service;
-use tracing::{error, trace};
+use lsp_types::*;
 
-use self::pending::Pending;
-use self::progress::Progress;
-use super::state::{ServerState, State};
-use super::ExitedError;
-use crate::jsonrpc::{self, Error, ErrorCode, Id, Request, Response};
-
-pub mod progress;
-
-mod pending;
-mod socket;
-
-struct ClientInner {
-    tx: Sender<Request>,
-    request_id: AtomicU32,
-    pending: Arc<Pending>,
-    state: Arc<ServerState>,
-}
-
-/// Handle for communicating with the language client.
-///
-/// This type provides a very cheap implementation of [`Clone`] so API consumers can cheaply clone
-/// and pass it around as needed.
-///
-/// It also implements [`tower::Service`] in order to remain independent from the underlying
-/// transport and to facilitate further abstraction with middleware.
-#[derive(Clone)]
-pub struct Client {
-    inner: Arc<ClientInner>,
-}
-
-impl Client {
-    pub(super) fn new(state: Arc<ServerState>) -> (Self, ClientSocket) {
-        let (tx, rx) = mpsc::channel(1);
-        let pending = Arc::new(Pending::new());
-
-        let client = Client {
-            inner: Arc::new(ClientInner {
-                tx,
-                request_id: AtomicU32::new(0),
-                pending: pending.clone(),
-                state: state.clone(),
-            }),
-        };
-
-        (client, ClientSocket { rx, pending, state })
-    }
-
-    /// Disconnects the `Client` from its corresponding `LspService`.
-    ///
-    /// Closing the client is not required, but doing so will ensure that no more messages can be
-    /// produced. The receiver of the messages will be able to consume any in-flight messages and
-    /// then will observe the end of the stream.
-    ///
-    /// If the client is never closed and never dropped, the receiver of the messages will never
-    /// observe the end of the stream.
-    pub(crate) fn close(&self) {
-        self.inner.tx.clone().close_channel();
-    }
-}
+use super::Client;
+use crate::jsonrpc;
 
 impl Client {
     // Lifecycle Messages
@@ -233,7 +163,7 @@ impl Client {
     pub async fn telemetry_event<S: Serialize>(&self, data: S) {
         use lsp_types::notification::TelemetryEvent;
         match serde_json::to_value(data) {
-            Err(e) => error!("invalid JSON in `telemetry/event` notification: {}", e),
+            Err(e) => tracing::error!("invalid JSON in `telemetry/event` notification: {}", e),
             Ok(mut value) => {
                 if !value.is_null() && !value.is_array() && !value.is_object() {
                     value = Value::Array(vec![value]);
@@ -373,7 +303,7 @@ impl Client {
     ///
     /// This request was introduced in specification version 3.18.0.
     pub async fn folding_range_refresh(&self) -> jsonrpc::Result<()> {
-        self.send_request::<FoldingRangeRefresh>(()).await
+        self.send_request::<super::FoldingRangeRefresh>(()).await
     }
 
     /// Asks the client to refresh all needed document and workspace diagnostics.
@@ -398,6 +328,16 @@ impl Client {
     pub async fn workspace_diagnostic_refresh(&self) -> jsonrpc::Result<()> {
         use lsp_types::request::WorkspaceDiagnosticRefresh;
         self.send_request::<WorkspaceDiagnosticRefresh>(()).await
+    }
+
+    /// Asks the client to refresh the content of a text document.
+    ///
+    /// This corresponds to the [`workspace/textDocumentContent/refresh`] request.
+    pub async fn text_document_content_refresh(
+        &self,
+        params: crate::max_protocol::lsp_3_18::TextDocumentContentRefreshParams,
+    ) -> jsonrpc::Result<()> {
+        self.send_request::<crate::max_protocol::lsp_3_18::TextDocumentContentRefreshRequest>(params).await
     }
 
     /// Submits validation diagnostics for an open file with the given URI.
@@ -510,284 +450,10 @@ impl Client {
     /// # Initialization
     ///
     /// These notifications will only be sent if the server is initialized.
-    ///
-    /// # Examples
-    ///
-    /// ```no_run
-    /// # use tower_lsp_max::{lsp_types::*, Client};
-    /// #
-    /// # struct Mock {
-    /// #     client: Client,
-    /// # }
-    /// #
-    /// # impl Mock {
-    /// # async fn completion(&self, params: CompletionParams) {
-    /// # let work_done_token = ProgressToken::Number(1);
-    /// #
-    /// let progress = self
-    ///     .client
-    ///     .progress(work_done_token, "Progress Title")
-    ///     .with_message("Working...")
-    ///     .with_percentage(0)
-    ///     .begin()
-    ///     .await;
-    ///
-    /// for percent in 1..=100 {
-    ///     let msg = format!("Working... [{percent}/100]");
-    ///     progress.report_with_message(msg, percent).await;
-    /// }
-    ///
-    /// progress.finish_with_message("Done!").await;
-    /// # }
-    /// # }
-    /// ```
-    pub fn progress<T>(&self, token: ProgressToken, title: T) -> Progress
+    pub fn progress<T>(&self, token: ProgressToken, title: T) -> super::Progress
     where
         T: Into<String>,
     {
-        Progress::new(self.clone(), token, title.into())
-    }
-
-    /// Sends a custom notification to the client.
-    ///
-    /// # Initialization
-    ///
-    /// This notification will only be sent if the server is initialized.
-    pub async fn send_notification<N>(&self, params: N::Params)
-    where
-        N: lsp_types::notification::Notification,
-    {
-        if let State::Initialized | State::ShutDown = self.inner.state.get() {
-            self.send_notification_unchecked::<N>(params).await;
-        } else {
-            let msg = Request::from_notification::<N>(params);
-            trace!("server not initialized, supressing message: {}", msg);
-        }
-    }
-
-    async fn send_notification_unchecked<N>(&self, params: N::Params)
-    where
-        N: lsp_types::notification::Notification,
-    {
-        let request = Request::from_notification::<N>(params);
-        if self.clone().call(request).await.is_err() {
-            error!("failed to send notification");
-        }
-    }
-
-    /// Sends a custom request to the client.
-    ///
-    /// # Initialization
-    ///
-    /// If the request is sent to the client before the server has been initialized, this will
-    /// immediately return `Err` with JSON-RPC error code `-32002` ([read more]).
-    ///
-    /// [read more]: https://microsoft.github.io/language-server-protocol/specification#initialize
-    pub async fn send_request<R>(&self, params: R::Params) -> jsonrpc::Result<R::Result>
-    where
-        R: lsp_types::request::Request,
-    {
-        if let State::Initialized | State::ShutDown = self.inner.state.get() {
-            self.send_request_unchecked::<R>(params).await
-        } else {
-            let id = self.inner.request_id.load(Ordering::SeqCst) as i64 + 1;
-            let msg = Request::from_request::<R>(id.into(), params);
-            trace!("server not initialized, supressing message: {}", msg);
-            Err(jsonrpc::not_initialized_error())
-        }
-    }
-
-    async fn send_request_unchecked<R>(&self, params: R::Params) -> jsonrpc::Result<R::Result>
-    where
-        R: lsp_types::request::Request,
-    {
-        let id = self.next_request_id();
-        let request = Request::from_request::<R>(id, params);
-
-        let response = match self.clone().call(request).await {
-            Ok(Some(response)) => response,
-            Ok(None) | Err(_) => return Err(Error::internal_error()),
-        };
-
-        let (_, result) = response.into_parts();
-        result.and_then(|v| {
-            serde_json::from_value(v).map_err(|e| Error {
-                code: ErrorCode::ParseError,
-                message: e.to_string().into(),
-                data: None,
-            })
-        })
-    }
-}
-
-impl Client {
-    /// Increments the internal request ID counter and returns the previous value.
-    ///
-    /// This method can be used to build custom [`Request`] objects with numeric IDs that are
-    /// guaranteed to be unique every time.
-    pub fn next_request_id(&self) -> Id {
-        let num = self.inner.request_id.fetch_add(1, Ordering::Relaxed);
-        Id::Number(num as i64)
-    }
-}
-
-impl Debug for Client {
-    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        f.debug_struct("Client")
-            .field("tx", &self.inner.tx)
-            .field("pending", &self.inner.pending)
-            .field("request_id", &self.inner.request_id)
-            .field("state", &self.inner.state)
-            .finish()
-    }
-}
-
-impl Service<Request> for Client {
-    type Response = Option<Response>;
-    type Error = ExitedError;
-    type Future = BoxFuture<'static, Result<Self::Response, Self::Error>>;
-
-    fn poll_ready(&mut self, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
-        let state = self.inner.state.clone();
-        self.inner.tx.clone().poll_ready(cx).map_err(move |_| {
-            let code = if state.get() == State::Exited {
-                state.get_exit_code()
-            } else {
-                1
-            };
-            ExitedError(code)
-        })
-    }
-
-    fn call(&mut self, req: Request) -> Self::Future {
-        let mut tx = self.inner.tx.clone();
-        let response_waiter = req.id().cloned().map(|id| self.inner.pending.wait(id));
-        let state = self.inner.state.clone();
-
-        Box::pin(async move {
-            if tx.send(req).await.is_err() {
-                let code = if state.get() == State::Exited {
-                    state.get_exit_code()
-                } else {
-                    1
-                };
-                return Err(ExitedError(code));
-            }
-
-            match response_waiter {
-                Some(fut) => Ok(Some(fut.await)),
-                None => Ok(None),
-            }
-        })
-    }
-}
-
-#[derive(Debug)]
-struct FoldingRangeRefresh;
-
-impl lsp_types::request::Request for FoldingRangeRefresh {
-    type Params = ();
-    type Result = ();
-    const METHOD: &'static str = "workspace/foldingRange/refresh";
-}
-
-#[cfg(test)]
-mod tests {
-    use std::future::Future;
-
-    use futures::stream::StreamExt;
-    use lsp_types::notification::{
-        LogMessage, LogTrace, PublishDiagnostics, ShowMessage, TelemetryEvent,
-    };
-    use serde_json::json;
-
-    use super::*;
-
-    async fn assert_client_message<F, Fut>(f: F, expected: Request)
-    where
-        F: FnOnce(Client) -> Fut,
-        Fut: Future,
-    {
-        let state = Arc::new(ServerState::new());
-        state.set(State::Initialized);
-
-        let (client, socket) = Client::new(state);
-        f(client).await;
-
-        let messages: Vec<_> = socket.collect().await;
-        assert_eq!(messages, vec![expected]);
-    }
-
-    #[tokio::test(flavor = "current_thread")]
-    async fn log_message() {
-        let (typ, msg) = (MessageType::LOG, "foo bar".to_owned());
-        let expected = Request::from_notification::<LogMessage>(LogMessageParams {
-            typ,
-            message: msg.clone(),
-        });
-
-        assert_client_message(|p| async move { p.log_message(typ, msg).await }, expected).await;
-    }
-
-    #[tokio::test(flavor = "current_thread")]
-    async fn log_trace() {
-        let params = LogTraceParams {
-            message: "foo bar".to_owned(),
-            verbose: Some("verbose info".to_owned()),
-        };
-        let expected = Request::from_notification::<LogTrace>(params.clone());
-
-        assert_client_message(|p| async move { p.log_trace(params).await }, expected).await;
-    }
-
-    #[tokio::test(flavor = "current_thread")]
-    async fn show_message() {
-        let (typ, msg) = (MessageType::LOG, "foo bar".to_owned());
-        let expected = Request::from_notification::<ShowMessage>(ShowMessageParams {
-            typ,
-            message: msg.clone(),
-        });
-
-        assert_client_message(|p| async move { p.show_message(typ, msg).await }, expected).await;
-    }
-
-    #[tokio::test(flavor = "current_thread")]
-    async fn telemetry_event() {
-        let null = json!(null);
-        let expected = Request::from_notification::<TelemetryEvent>(OneOf::Right(Vec::new()));
-        assert_client_message(|p| async move { p.telemetry_event(null).await }, expected).await;
-
-        let array = json!([1, 2, 3]);
-        let expected = Request::from_notification::<TelemetryEvent>(OneOf::Right(vec![
-            1.into(),
-            2.into(),
-            3.into(),
-        ]));
-        assert_client_message(|p| async move { p.telemetry_event(array).await }, expected).await;
-
-        let object = json!({});
-        let expected =
-            Request::from_notification::<TelemetryEvent>(OneOf::Left(serde_json::Map::new()));
-        assert_client_message(|p| async move { p.telemetry_event(object).await }, expected).await;
-
-        let other = json!("hello");
-        let expected =
-            Request::from_notification::<TelemetryEvent>(OneOf::Right(vec![other.clone()]));
-        assert_client_message(|p| async move { p.telemetry_event(other).await }, expected).await;
-    }
-
-    #[tokio::test(flavor = "current_thread")]
-    async fn publish_diagnostics() {
-        let uri: Uri = "file:///path/to/file".parse().unwrap();
-        let diagnostics = vec![Diagnostic::new_simple(Default::default(), "example".into())];
-
-        let params = PublishDiagnosticsParams::new(uri.clone(), diagnostics.clone(), None);
-        let expected = Request::from_notification::<PublishDiagnostics>(params);
-
-        assert_client_message(
-            |p| async move { p.publish_diagnostics(uri, diagnostics, None).await },
-            expected,
-        )
-        .await;
+        super::Progress::new(self.clone(), token, title.into())
     }
 }

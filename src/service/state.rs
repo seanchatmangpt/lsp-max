@@ -65,6 +65,12 @@ pub struct ServerState {
     parent_pid: Mutex<Option<u32>>,
 }
 
+impl Default for ServerState {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ServerState {
     /// Creates a new `ServerState` initialized to `State::Uninitialized`.
     pub fn new() -> Self {

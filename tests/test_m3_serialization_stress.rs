@@ -3,14 +3,13 @@
 //! Specifically verifies round-trip compatibility, edge cases (empty values, complex nested
 //! structures), and backward compatibility (deserializing older schemas without the new fields).
 
-use tower_lsp_max::max_protocol::{
-    ConformanceVector, LawAxis, Receipt, MaxDiagnostic, ManifoldSnapshot,
-    ChainDescriptor, HookDescriptor, HookGraphNode, Repairability, Terminality,
-    TransitionAttempt, DocRoute, RepairAction, GateId, ReceiptObligation,
-    SnapshotId,
-};
-use tower_lsp_max::lsp_types::{Diagnostic, Range, Position, DiagnosticSeverity};
 use serde_json::{json, Value};
+use tower_lsp_max::lsp_types::{Diagnostic, DiagnosticSeverity, Position, Range};
+use tower_lsp_max::max_protocol::{
+    ChainDescriptor, ConformanceVector, DocRoute, GateId, HookDescriptor, HookGraphNode, LawAxis,
+    ManifoldSnapshot, MaxDiagnostic, Receipt, ReceiptObligation, RepairAction, Repairability,
+    SnapshotId, Terminality, TransitionAttempt,
+};
 
 #[test]
 fn test_conformance_vector_edge_cases() {
@@ -23,7 +22,8 @@ fn test_conformance_vector_edge_cases() {
         strict_mode: false,
     };
     let json_empty = serde_json::to_string(&cv_empty).expect("serialize empty ConformanceVector");
-    let cv_empty_dec: ConformanceVector = serde_json::from_str(&json_empty).expect("deserialize empty ConformanceVector");
+    let cv_empty_dec: ConformanceVector =
+        serde_json::from_str(&json_empty).expect("deserialize empty ConformanceVector");
     assert!(cv_empty_dec.admitted.is_empty());
     assert!(cv_empty_dec.refused.is_empty());
     assert!(cv_empty_dec.unknown.is_empty());
@@ -32,17 +32,25 @@ fn test_conformance_vector_edge_cases() {
 
     // 2. Vector with complex LawAxis types, including Custom variants
     let cv_complex = ConformanceVector {
-        admitted: vec![LawAxis::Protocol, LawAxis::Type, LawAxis::Custom("arbitraryAxis".to_string())],
+        admitted: vec![
+            LawAxis::Protocol,
+            LawAxis::Type,
+            LawAxis::Custom("arbitraryAxis".to_string()),
+        ],
         refused: vec![LawAxis::Security],
         unknown: vec![LawAxis::Autopoiesis, LawAxis::Custom("".to_string())],
         score: Some(75.5),
         strict_mode: true,
     };
-    let json_complex = serde_json::to_string(&cv_complex).expect("serialize complex ConformanceVector");
-    let cv_complex_dec: ConformanceVector = serde_json::from_str(&json_complex).expect("deserialize complex ConformanceVector");
+    let json_complex =
+        serde_json::to_string(&cv_complex).expect("serialize complex ConformanceVector");
+    let cv_complex_dec: ConformanceVector =
+        serde_json::from_str(&json_complex).expect("deserialize complex ConformanceVector");
     assert_eq!(cv_complex_dec.admitted.len(), 3);
     assert!(cv_complex_dec.admitted.contains(&LawAxis::Protocol));
-    assert!(cv_complex_dec.admitted.contains(&LawAxis::Custom("arbitraryAxis".to_string())));
+    assert!(cv_complex_dec
+        .admitted
+        .contains(&LawAxis::Custom("arbitraryAxis".to_string())));
     assert_eq!(cv_complex_dec.score, Some(75.5));
     assert!(cv_complex_dec.strict_mode);
 }
@@ -51,14 +59,18 @@ fn test_conformance_vector_edge_cases() {
 fn test_receipt_backward_compatibility_and_defaults() {
     // 1. Missing prev_receipt_hash field entirely should deserialize cleanly with None
     let json_str = r#"{"receipt_id": "rcpt-1", "hash": "abc"}"#;
-    let receipt: Receipt = serde_json::from_str(json_str).expect("deserialize receipt without prev_receipt_hash");
+    let receipt: Receipt =
+        serde_json::from_str(json_str).expect("deserialize receipt without prev_receipt_hash");
     assert_eq!(receipt.receipt_id, "rcpt-1");
     assert_eq!(receipt.hash, "abc");
     assert_eq!(receipt.prev_receipt_hash, None);
 
     // 2. Completely empty JSON object should yield defaults if allowed (since fields are not optional, this might error or succeed depending on #[serde(default)] on fields)
     let res_empty: std::result::Result<Receipt, _> = serde_json::from_str("{}");
-    assert!(res_empty.is_err(), "empty json should fail to deserialize Receipt because receipt_id and hash are required");
+    assert!(
+        res_empty.is_err(),
+        "empty json should fail to deserialize Receipt because receipt_id and hash are required"
+    );
 
     // 3. Receipt with Some prev_receipt_hash round-trip
     let r_full = Receipt {
@@ -92,7 +104,8 @@ fn test_max_diagnostic_backward_compatibility() {
         "verification_gates": []
     }"#;
 
-    let d: MaxDiagnostic = serde_json::from_str(old_json).expect("deserialize old-style MaxDiagnostic");
+    let d: MaxDiagnostic =
+        serde_json::from_str(old_json).expect("deserialize old-style MaxDiagnostic");
     assert_eq!(d.diagnostic_id, "diag-old");
     assert_eq!(d.law_id, "LAW-0");
     assert_eq!(d.violated_invariant, "");
@@ -112,7 +125,7 @@ fn test_max_diagnostic_extreme_values() {
             "value": 42.0
         }
     });
-    
+
     let complex_expected = json!({
         "nested": {
             "array": [1, "two", true],
@@ -123,11 +136,19 @@ fn test_max_diagnostic_extreme_values() {
     let d = MaxDiagnostic {
         lsp: Diagnostic {
             range: Range {
-                start: Position { line: 123456789, character: 987654321 },
-                end: Position { line: 123456790, character: 0 },
+                start: Position {
+                    line: 123456789,
+                    character: 987654321,
+                },
+                end: Position {
+                    line: 123456790,
+                    character: 0,
+                },
             },
             severity: Some(DiagnosticSeverity::ERROR),
-            code: Some(tower_lsp_max::lsp_types::NumberOrString::String("ERR_404".to_string())),
+            code: Some(tower_lsp_max::lsp_types::NumberOrString::String(
+                "ERR_404".to_string(),
+            )),
             source: Some("SystemCheck".to_string()),
             message: "Violated manifold integrity bounds".to_string(),
             ..Diagnostic::default()
@@ -139,7 +160,9 @@ fn test_max_diagnostic_extreme_values() {
             to_state: "Initialized".to_string(),
         }),
         violated_axes: vec!["Security".to_string(), "Type".to_string()],
-        doc_routes: vec![DocRoute { path: "/docs/laws/security.md".to_string() }],
+        doc_routes: vec![DocRoute {
+            path: "/docs/laws/security.md".to_string(),
+        }],
         repair_actions: vec![RepairAction {
             action_id: "act-reauth".to_string(),
             description: "Re-authenticate token session".to_string(),
@@ -157,7 +180,8 @@ fn test_max_diagnostic_extreme_values() {
     };
 
     let serialized = serde_json::to_string(&d).expect("serialize extreme MaxDiagnostic");
-    let d_dec: MaxDiagnostic = serde_json::from_str(&serialized).expect("deserialize extreme MaxDiagnostic");
+    let d_dec: MaxDiagnostic =
+        serde_json::from_str(&serialized).expect("deserialize extreme MaxDiagnostic");
 
     assert_eq!(d_dec.lsp.range.start.line, 123456789);
     assert_eq!(d_dec.diagnostic_id, "diag-extreme-999");
@@ -167,7 +191,10 @@ fn test_max_diagnostic_extreme_values() {
     assert!(matches!(d_dec.repairability, Repairability::Repairable));
     assert!(matches!(d_dec.terminality, Terminality::Terminal));
     assert!(d_dec.attempted_transition.is_some());
-    assert_eq!(d_dec.attempted_transition.unwrap().from_state, "Initializing");
+    assert_eq!(
+        d_dec.attempted_transition.unwrap().from_state,
+        "Initializing"
+    );
 }
 
 #[test]
@@ -186,9 +213,10 @@ fn test_manifold_snapshot_serialization_extremes() {
         chains: vec![],
         receipts: vec![],
     };
-    
+
     let ser_empty = serde_json::to_string(&ms_empty).expect("serialize empty ManifoldSnapshot");
-    let dec_empty: ManifoldSnapshot = serde_json::from_str(&ser_empty).expect("deserialize empty ManifoldSnapshot");
+    let dec_empty: ManifoldSnapshot =
+        serde_json::from_str(&ser_empty).expect("deserialize empty ManifoldSnapshot");
     assert_eq!(dec_empty.snapshot_id.0, "snap-empty");
     assert!(dec_empty.hooks.is_empty());
 
@@ -202,43 +230,37 @@ fn test_manifold_snapshot_serialization_extremes() {
             score: Some(100.0),
             strict_mode: true,
         },
-        hooks: vec![
-            HookDescriptor {
-                hook_id: "hook-1".to_string(),
-                name: "HookOne".to_string(),
-                description: "Desc".to_string(),
-                axes: vec![LawAxis::Protocol],
-                trigger_law: LawAxis::Protocol,
-                input_type: "Diagnostic".to_string(),
-                output_type: "Receipt".to_string(),
-                failure_mode: "Block".to_string(),
-            }
-        ],
-        chains: vec![
-            ChainDescriptor {
-                chain_id: "chain-1".to_string(),
-                nodes: vec![
-                    HookGraphNode {
-                        node_id: "node-1".to_string(),
-                        hook: HookDescriptor::default(),
-                        predecessors: vec![],
-                        successors: vec![],
-                    }
-                ],
-                law_axis: LawAxis::Protocol,
-            }
-        ],
-        receipts: vec![
-            Receipt {
-                receipt_id: "rcpt-1".to_string(),
-                hash: "h1".to_string(),
-                prev_receipt_hash: None,
-            }
-        ],
+        hooks: vec![HookDescriptor {
+            hook_id: "hook-1".to_string(),
+            name: "HookOne".to_string(),
+            description: "Desc".to_string(),
+            axes: vec![LawAxis::Protocol],
+            trigger_law: LawAxis::Protocol,
+            input_type: "Diagnostic".to_string(),
+            output_type: "Receipt".to_string(),
+            failure_mode: "Block".to_string(),
+        }],
+        chains: vec![ChainDescriptor {
+            chain_id: "chain-1".to_string(),
+            nodes: vec![HookGraphNode {
+                node_id: "node-1".to_string(),
+                hook: HookDescriptor::default(),
+                predecessors: vec![],
+                successors: vec![],
+            }],
+            law_axis: LawAxis::Protocol,
+        }],
+        receipts: vec![Receipt {
+            receipt_id: "rcpt-1".to_string(),
+            hash: "h1".to_string(),
+            prev_receipt_hash: None,
+        }],
     };
 
-    let ser_complex = serde_json::to_string(&ms_complex).expect("serialize complex ManifoldSnapshot");
-    let dec_complex: ManifoldSnapshot = serde_json::from_str(&ser_complex).expect("deserialize complex ManifoldSnapshot");
+    let ser_complex =
+        serde_json::to_string(&ms_complex).expect("serialize complex ManifoldSnapshot");
+    let dec_complex: ManifoldSnapshot =
+        serde_json::from_str(&ser_complex).expect("deserialize complex ManifoldSnapshot");
     assert_eq!(dec_complex.snapshot_id.0, "snap-complex-101");
     assert_eq!(dec_complex.hooks.len(), 1);
     assert_eq!(dec_complex.chains.len(), 1);

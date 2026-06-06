@@ -1,161 +1,6 @@
-use lsp_types::{NumberOrString, Position, Range};
+pub use crate::lsif_types::*;
+use lsp_types::Position;
 use serde::{Deserialize, Serialize};
-
-/// The identifier of an element.
-pub type Id = NumberOrString;
-/// A document or project URI.
-pub type Uri = String;
-
-/// Always "vertex"
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub enum VertexType {
-    #[serde(rename = "vertex")]
-    Vertex,
-}
-
-impl Default for VertexType {
-    fn default() -> Self {
-        VertexType::Vertex
-    }
-}
-
-/// Always "edge"
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub enum EdgeType {
-    #[serde(rename = "edge")]
-    Edge,
-}
-
-impl Default for EdgeType {
-    fn default() -> Self {
-        EdgeType::Edge
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct ToolInfo {
-    pub name: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub version: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub args: Option<Vec<String>>,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub enum PositionEncoding {
-    #[serde(rename = "utf-8")]
-    Utf8,
-    #[serde(rename = "utf-16")]
-    Utf16,
-    #[serde(rename = "utf-32")]
-    Utf32,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct Repository {
-    #[serde(rename = "type")]
-    pub type_: String,
-    pub url: String,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub enum MonikerKind {
-    Import,
-    Export,
-    Local,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub enum UniquenessLevel {
-    Document,
-    Project,
-    Workspace,
-    Scheme,
-    Global,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(untagged)]
-pub enum HoverContents {
-    Markup(lsp_types::MarkupContent),
-    String(String),
-    MarkedString(lsp_types::MarkedString),
-    MarkedStringArray(Vec<lsp_types::MarkedString>),
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct HoverResultData {
-    pub contents: HoverContents,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub range: Option<Range>,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(untagged)]
-pub enum DocumentSymbolResultData {
-    DocumentSymbols(Vec<lsp_types::DocumentSymbol>),
-    RangeBased(Vec<RangeBasedDocumentSymbol>),
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct RangeBasedDocumentSymbol {
-    pub id: Id,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub children: Option<Vec<RangeBasedDocumentSymbol>>,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct SemanticTokensData {
-    pub data: Vec<u32>,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub enum EventKind {
-    Begin,
-    End,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub enum EventScope {
-    Project,
-    Document,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(tag = "type")]
-pub enum RangeTag {
-    #[serde(rename = "declaration")]
-    Declaration {
-        text: String,
-        kind: lsp_types::SymbolKind,
-        #[serde(rename = "fullRange")]
-        full_range: Range,
-        #[serde(skip_serializing_if = "Option::is_none")]
-        detail: Option<String>,
-    },
-    #[serde(rename = "definition")]
-    Definition {
-        text: String,
-        kind: lsp_types::SymbolKind,
-        #[serde(rename = "fullRange")]
-        full_range: Range,
-        #[serde(skip_serializing_if = "Option::is_none")]
-        detail: Option<String>,
-    },
-    #[serde(rename = "reference")]
-    Reference {
-        text: String,
-    },
-    #[serde(rename = "unknown")]
-    Unknown {
-        text: String,
-    },
-}
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "label")]
@@ -166,6 +11,8 @@ pub enum Vertex {
         #[serde(rename = "type")]
         type_: VertexType,
         version: String,
+        #[serde(rename = "projectRoot")]
+        project_root: Uri,
         #[serde(rename = "positionEncoding")]
         position_encoding: PositionEncoding,
         #[serde(rename = "toolInfo", skip_serializing_if = "Option::is_none")]
@@ -186,7 +33,9 @@ pub enum Vertex {
         id: Id,
         #[serde(rename = "type")]
         type_: VertexType,
-        kind: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        #[serde(default)]
+        kind: Option<String>,
         #[serde(skip_serializing_if = "Option::is_none")]
         resource: Option<Uri>,
         #[serde(skip_serializing_if = "Option::is_none")]
@@ -285,6 +134,18 @@ pub enum Vertex {
         #[serde(rename = "type")]
         type_: VertexType,
     },
+    #[serde(rename = "callHierarchyResult")]
+    CallHierarchyResult {
+        id: Id,
+        #[serde(rename = "type")]
+        type_: VertexType,
+    },
+    #[serde(rename = "typeHierarchyResult")]
+    TypeHierarchyResult {
+        id: Id,
+        #[serde(rename = "type")]
+        type_: VertexType,
+    },
     #[serde(rename = "foldingRangeResult")]
     FoldingRangeResult {
         id: Id,
@@ -339,6 +200,7 @@ pub enum ItemEdgeProperty {
     References,
     ReferenceResults,
     ImplementationResults,
+    #[serde(rename = "typeDefinitionResults")]
     TypeDefinitions,
     ReferenceLinks,
 }
@@ -469,6 +331,26 @@ pub enum Edge {
         #[serde(rename = "inV")]
         in_v: Id,
     },
+    #[serde(rename = "textDocument/callHierarchy")]
+    TextDocumentCallHierarchy {
+        id: Id,
+        #[serde(rename = "type")]
+        type_: EdgeType,
+        #[serde(rename = "outV")]
+        out_v: Id,
+        #[serde(rename = "inV")]
+        in_v: Id,
+    },
+    #[serde(rename = "textDocument/typeHierarchy")]
+    TextDocumentTypeHierarchy {
+        id: Id,
+        #[serde(rename = "type")]
+        type_: EdgeType,
+        #[serde(rename = "outV")]
+        out_v: Id,
+        #[serde(rename = "inV")]
+        in_v: Id,
+    },
     #[serde(rename = "textDocument/foldingRange")]
     TextDocumentFoldingRange {
         id: Id,
@@ -509,7 +391,7 @@ pub enum Edge {
         #[serde(rename = "inV")]
         in_v: Id,
     },
-    #[serde(rename = "textDocument/semanticTokens")]
+    #[serde(rename = "textDocument/semanticTokens/full")]
     TextDocumentSemanticTokens {
         id: Id,
         #[serde(rename = "type")]
@@ -540,6 +422,7 @@ mod tests {
             id: NumberOrString::Number(1),
             type_: VertexType::Vertex,
             version: "0.6.0".to_string(),
+            project_root: "file:///".to_string(),
             position_encoding: PositionEncoding::Utf16,
             tool_info: Some(ToolInfo {
                 name: "tower-lsp-max".to_string(),
@@ -552,6 +435,7 @@ mod tests {
         assert!(json.contains(r#""label":"metaData""#));
         assert!(json.contains(r#""type":"vertex""#));
         assert!(json.contains(r#""version":"0.6.0""#));
+        assert!(json.contains(r#""projectRoot":"file:///""#));
     }
 
     #[test]

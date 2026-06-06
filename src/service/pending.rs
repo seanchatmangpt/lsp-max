@@ -12,6 +12,7 @@ use super::ExitedError;
 use crate::jsonrpc::{Error, Id, Response};
 
 /// A hashmap containing pending server requests, keyed by request ID.
+#[derive(Default)]
 pub struct Pending(Arc<DashMap<Id, future::AbortHandle>>);
 
 impl Pending {

@@ -58,6 +58,22 @@ impl LanguageServer for DogfoodBackend {
                 refresh_res
             );
 
+            println!("Server task: sending text_document_content_refresh");
+            let refresh_content_res = client
+                .text_document_content_refresh(lsp318::TextDocumentContentRefreshParams {
+                    uri: "file:///dogfood.rs".to_string(),
+                })
+                .await;
+            println!(
+                "Server task: text_document_content_refresh res = {:?}",
+                refresh_content_res
+            );
+            assert!(
+                refresh_content_res.is_ok(),
+                "Server failed to send workspace/textDocumentContent/refresh request: {:?}",
+                refresh_content_res
+            );
+
             println!("Server task: sending log_trace");
             client
                 .log_trace(lsp::LogTraceParams {

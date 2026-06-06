@@ -35,7 +35,7 @@ impl<F: FnOnce()> Drop for CancellationGuard<F> {
 
 /// A trait for types that can be wrapped in a [`CancellationGuard`].
 pub trait OnDrop: Sized {
-    /// Wraps this value in a [`CancellationGuard`] that will call the given 
+    /// Wraps this value in a [`CancellationGuard`] that will call the given
     /// closure when dropped.
     fn on_drop<F: FnOnce()>(self, on_drop: F) -> (Self, CancellationGuard<F>) {
         (self, CancellationGuard::new(on_drop))

@@ -93,7 +93,7 @@ impl Renderer {
         let mut generated_out = TokenStream::new();
         {
             let gen = self.generated_types.borrow();
-            for (_, tokens) in gen.iter() {
+            for tokens in gen.values() {
                 generated_out.extend(tokens.clone());
             }
         }
@@ -764,8 +764,26 @@ impl Renderer {
                         let complexity = self.type_complexity(item, ctx, &mut visited);
                         items_with_info.push((item, name, complexity));
                     }
+                    
+                    let mut name_for_union_debug = non_null_items.iter().map(|item| self.type_to_string(item).unwrap_or_default()).collect::<Vec<_>>();
+                    name_for_union_debug.sort();
+                    let debug_gen_name = name_for_union_debug.join("Or");
+                    if debug_gen_name.contains("TextEdit") || debug_gen_name.contains("CallHierarchy") || debug_gen_name.contains("SelectionRange") {
+                        eprintln!("DEBUG UNION: {}", debug_gen_name);
+                        for (_, name, comp) in &items_with_info {
+                            eprintln!("  - {}: complexity = {}", name, comp);
+                        }
+                    }
+
                     // Sort descending by complexity, then alphabetically by name for deterministic ordering
                     items_with_info.sort_by(|a, b| b.2.cmp(&a.2).then_with(|| a.1.cmp(&b.1)));
+                    
+                    if debug_gen_name.contains("TextEdit") || debug_gen_name.contains("CallHierarchy") || debug_gen_name.contains("SelectionRange") {
+                        eprintln!("  SORTED:");
+                        for (_, name, comp) in &items_with_info {
+                            eprintln!("    - {}: complexity = {}", name, comp);
+                        }
+                    }
 
                     let mut item_names = Vec::new();
                     for (_, name, _) in &items_with_info {

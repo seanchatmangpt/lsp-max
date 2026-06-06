@@ -25,7 +25,10 @@ pub trait LanguageClient: Send + Sync + 'static {
     }
 
     /// `window/showMessageRequest` request
-    async fn show_message_request(&self, params: ShowMessageRequestParams) -> Result<Option<MessageActionItem>, ClientError> {
+    async fn show_message_request(
+        &self,
+        params: ShowMessageRequestParams,
+    ) -> Result<Option<MessageActionItem>, ClientError> {
         let _ = params;
         Ok(None)
     }
@@ -36,13 +39,19 @@ pub trait LanguageClient: Send + Sync + 'static {
     }
 
     /// `window/workDoneProgress/create` request
-    async fn work_done_progress_create(&self, params: WorkDoneProgressCreateParams) -> Result<(), ClientError> {
+    async fn work_done_progress_create(
+        &self,
+        params: WorkDoneProgressCreateParams,
+    ) -> Result<(), ClientError> {
         let _ = params;
         Ok(())
     }
 
     /// `window/showDocument` request
-    async fn show_document(&self, params: ShowDocumentParams) -> Result<ShowDocumentResult, ClientError> {
+    async fn show_document(
+        &self,
+        params: ShowDocumentParams,
+    ) -> Result<ShowDocumentResult, ClientError> {
         let _ = params;
         Ok(ShowDocumentResult { success: false })
     }
@@ -80,18 +89,35 @@ pub trait LanguageClient: Send + Sync + 'static {
     }
 
     /// `workspace/applyEdit` request
-    async fn apply_edit(&self, params: ApplyWorkspaceEditParams) -> Result<ApplyWorkspaceEditResponse, ClientError> {
+    async fn apply_edit(
+        &self,
+        params: ApplyWorkspaceEditParams,
+    ) -> Result<ApplyWorkspaceEditResponse, ClientError> {
         let _ = params;
-        Ok(ApplyWorkspaceEditResponse { applied: false, failure_reason: None, failed_change: None })
+        Ok(ApplyWorkspaceEditResponse {
+            applied: false,
+            failure_reason: None,
+            failed_change: None,
+        })
     }
 
     // --- Refresh Requests ---
 
-    async fn code_lens_refresh(&self) -> Result<(), ClientError> { Ok(()) }
-    async fn semantic_tokens_refresh(&self) -> Result<(), ClientError> { Ok(()) }
-    async fn inlay_hint_refresh(&self) -> Result<(), ClientError> { Ok(()) }
-    async fn inline_value_refresh(&self) -> Result<(), ClientError> { Ok(()) }
-    async fn workspace_diagnostic_refresh(&self) -> Result<(), ClientError> { Ok(()) }
+    async fn code_lens_refresh(&self) -> Result<(), ClientError> {
+        Ok(())
+    }
+    async fn semantic_tokens_refresh(&self) -> Result<(), ClientError> {
+        Ok(())
+    }
+    async fn inlay_hint_refresh(&self) -> Result<(), ClientError> {
+        Ok(())
+    }
+    async fn inline_value_refresh(&self) -> Result<(), ClientError> {
+        Ok(())
+    }
+    async fn workspace_diagnostic_refresh(&self) -> Result<(), ClientError> {
+        Ok(())
+    }
 
     // --- Diagnostics ---
 

@@ -12,9 +12,6 @@ pub mod core;
 pub mod custom_methods;
 pub mod diagnostics;
 pub mod hooks;
-pub mod lsif;
-pub mod lsif_builder;
-pub mod lsif_reader;
 pub mod policy;
 
 // Re-export all types so they are visible at the crate root level exactly as before.
@@ -34,8 +31,8 @@ pub use hooks::{
 
 pub use custom_methods::{
     METHOD_ADMISSION, METHOD_AUTONOMIC_LOOP, METHOD_CHAIN, METHOD_HOOK, METHOD_HOOK_GRAPH,
-    METHOD_LAWFUL_TRANSITION, METHOD_MANIFOLD_SNAPSHOT, METHOD_PROPAGATE, METHOD_REFUSAL,
-    METHOD_RELEASE_ACTUATION, METHOD_REPLAY, METHOD_LSIF_EXPORT,
+    METHOD_LAWFUL_TRANSITION, METHOD_LSIF_EXPORT, METHOD_MANIFOLD_SNAPSHOT, METHOD_PROPAGATE,
+    METHOD_REFUSAL, METHOD_RELEASE_ACTUATION, METHOD_REPLAY,
 };
 
 pub use policy::PolicyState;
