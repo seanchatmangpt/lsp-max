@@ -1603,6 +1603,15 @@ impl ComposedServer {
                                                     if src.is_routable() {
                                                         if let Some(diags_arr) = diags_value.as_array() {
                                                             for diag in diags_arr {
+                                                                if src_id == "ggen-lsp" {
+                                                                    let has_source_id = diag
+                                                                        .get("data")
+                                                                        .and_then(|data| data.get("source_id"))
+                                                                        .is_some();
+                                                                    if !has_source_id {
+                                                                        continue;
+                                                                    }
+                                                                }
                                                                 let mut diag_clone = diag.clone();
                                                                 if let Some(obj) = diag_clone.as_object_mut() {
                                                                     obj.insert("source".to_string(), Value::String(src_id.clone()));
