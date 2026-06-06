@@ -1,14 +1,15 @@
-use super::types::*;
+use super::super::invariants::VerificationReport;
+use super::super::receipts::{Blake3Hash, CryptographicReceipt};
 use super::admitter::*;
 use super::mapping::*;
-use super::validation::*;
 use super::mapping_helpers::*;
-use oxigraph::store::Store;
-use tower_lsp_max_lsif::lsif::{Element, PositionEncoding, Vertex, VertexType, Edge, EdgeType};
-use tower_lsp_max_protocol::MaxDiagnostic;
+use super::types::*;
+use super::validation::*;
 use crate::Machine;
-use super::super::receipts::{Blake3Hash, CryptographicReceipt};
-use super::super::invariants::VerificationReport;
+use oxigraph::store::Store;
+use tower_lsp_max_base::abstractions::RelationAdmitter;
+use tower_lsp_max_lsif::lsif::{Edge, EdgeType, Element, PositionEncoding, Vertex, VertexType};
+use tower_lsp_max_protocol::MaxDiagnostic;
 
 fn make_meta_element() -> Element {
     Element::Vertex(Vertex::MetaData {

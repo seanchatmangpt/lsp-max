@@ -1,4 +1,5 @@
 use lsp_types::request::Request;
+use lsp_types_max as lsp_types;
 use tower_lsp_max_protocol::custom_methods::*;
 use tower_lsp_max_protocol::{
     ChainDescriptor, ConformanceVector, HookDescriptor, HookGraphNode, LawAxis, ManifoldSnapshot,

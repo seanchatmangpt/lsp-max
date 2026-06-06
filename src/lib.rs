@@ -79,6 +79,7 @@
 #![allow(clippy::mutable_key_type)]
 
 pub extern crate lsp_types_max;
+pub use lsp_types_max as lsp_types;
 
 pub extern crate tower_lsp_max_agent as max_agent;
 pub extern crate tower_lsp_max_protocol as max_protocol;
@@ -116,6 +117,11 @@ mod transport;
 pub mod language_server;
 pub use language_server::LanguageServer;
 pub(crate) use language_server::generated;
+
+pub use tower_lsp_max_lsif as lsif;
+
+mod composition;
+pub use composition::ComposedServer;
 
 
 /// Module containing validation gate logic.

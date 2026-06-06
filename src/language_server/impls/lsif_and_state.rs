@@ -3,6 +3,9 @@
 use crate::jsonrpc::{Error, Result};
 use crate::{lock_registry, update_diagnostics, ServerRegistry};
 use serde_json::Value;
+use tower_lsp_max_lsif::lsif::*;
+use tower_lsp_max_lsif::lsif_builder::LsifBuilder;
+use url::Url;
 
 /// Dumps the current server registry state.
 pub async fn max_dump_state() -> Result<serde_json::Value> {
@@ -49,23 +52,36 @@ pub async fn max_reset() -> Result<()> {
 pub async fn max_lsif() -> Result<String> {
     let mut registry = lock_registry()?;
     update_diagnostics(&mut registry);
-    
+
     let mut buffer = Vec::new();
-    let mut builder = tower_lsp_max_lsif::lsif_builder::LsifBuilder::new(&mut buffer);
-    
-    builder.emit_metadata("0.6.0", "file:///", tower_lsp_max_lsif::lsif::ToolInfo {
-        name: "tower-lsp-max".to_string(),
-        version: Some("26.6.5".to_string()),
-        args: None,
-    }).map_err(|_| Error::internal_error())?;
-    
-    let project_id = builder.emit_project(Some("rust"), Some("file:///".to_string())).map_err(|_| Error::internal_error())?;
-    
+    let mut builder = LsifBuilder::new(&mut buffer);
+
+    builder
+        .emit_metadata(
+            "0.6.0",
+            "file:///",
+            ToolInfo {
+                name: "tower-lsp-max".to_string(),
+                version: Some("26.6.5".to_string()),
+                args: Some(vec![]),
+            },
+        )
+        .map_err(|_| Error::internal_error())?;
+
+    let project_id = builder
+        .emit_project(Some("rust"), Some("file:///".to_string()))
+        .map_err(|_| Error::internal_error())?;
+
     // Export documents and diagnostics
     for (uri_str, _version) in &registry.document_versions {
-        let doc_id = builder.emit_document(uri_str.as_str(), "rust").map_err(|_| Error::internal_error())?;
-        builder.bind_next(project_id.clone(), doc_id.clone()).map_err(|_| Error::internal_error())?;
+        let doc_id = builder
+            .emit_document(uri_str.as_str(), "rust")
+            .map_err(|_| Error::internal_error())?;
         
+        builder
+            .contains(project_id.clone(), vec![doc_id.clone()])
+            .map_err(|_| Error::internal_error())?;
+
         // Map diagnostics related to this document
         let mut diags = Vec::new();
         for max_d in registry.diagnostics.values() {
@@ -73,28 +89,21 @@ pub async fn max_lsif() -> Result<String> {
                 diags.push(max_d.lsp.clone());
             }
         }
-        
+
         if !diags.is_empty() {
-            let diag_result_id = builder.next_id();
-            builder.emit(tower_lsp_max_lsif::lsif::Element::Vertex(tower_lsp_max_lsif::lsif::Vertex::DiagnosticResult {
-                id: diag_result_id.clone(),
-                type_: tower_lsp_max_lsif::lsif::VertexType::Vertex,
-                result: diags,
-            })).map_err(|_| Error::internal_error())?;
-            
-            let diag_edge_id = builder.next_id();
-            builder.emit(tower_lsp_max_lsif::lsif::Element::Edge(tower_lsp_max_lsif::lsif::Edge::TextDocumentDiagnostic {
-                id: diag_edge_id,
-                type_: tower_lsp_max_lsif::lsif::EdgeType::Edge,
-                out_v: doc_id.clone(),
-                in_v: diag_result_id,
-            })).map_err(|_| Error::internal_error())?;
+            let diag_result_id = builder
+                .diagnostic_result(diags)
+                .map_err(|_| Error::internal_error())?;
+
+            builder
+                .diagnostic_edge(doc_id.clone(), diag_result_id)
+                .map_err(|_| Error::internal_error())?;
         }
-        
+
         builder.end_document(doc_id).map_err(|_| Error::internal_error())?;
     }
-    
+
     builder.end_project(project_id).map_err(|_| Error::internal_error())?;
-    
+
     Ok(String::from_utf8(buffer).map_err(|_| Error::internal_error())?)
 }

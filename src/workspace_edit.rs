@@ -3,7 +3,7 @@
 /// Applies a list of changes defined in a `WorkspaceEdit` to files in the local filesystem.
 ///
 /// Returns `Ok(())` on success, or an `Err` describing the failure.
-pub fn apply_workspace_edit(edit: &lsp_types::WorkspaceEdit) -> Result<(), String> {
+pub fn apply_workspace_edit(edit: &lsp_types_max::WorkspaceEdit) -> Result<(), String> {
     if let Some(changes) = &edit.changes {
         for (url, edits) in changes {
             let parsed_url = url::Url::parse(url.as_str())
@@ -48,10 +48,7 @@ pub fn apply_workspace_edit(edit: &lsp_types::WorkspaceEdit) -> Result<(), Strin
     Ok(())
 }
 
-fn apply_text_edit(
-    content: &str,
-    edit: &lsp_types::TextEdit,
-) -> Result<String, String> {
+fn apply_text_edit(content: &str, edit: &lsp_types_max::TextEdit) -> Result<String, String> {
     let lines: Vec<&str> = content.split('\n').collect();
 
     let start_line = edit.range.start.line as usize;
@@ -59,9 +56,7 @@ fn apply_text_edit(
     let end_line = edit.range.end.line as usize;
     let end_char = edit.range.end.character as usize;
 
-    let get_char_offset = |line_idx: usize,
-                           char_idx: usize|
-     -> Result<usize, String> {
+    let get_char_offset = |line_idx: usize, char_idx: usize| -> Result<usize, String> {
         if line_idx > lines.len() {
             return Err(format!("Line index {} out of bounds", line_idx));
         }

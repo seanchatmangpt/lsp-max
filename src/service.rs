@@ -189,7 +189,7 @@ impl<S: LanguageServer> LspServiceBuilder<S> {
     /// ```rust,no_run
     /// use serde_json::{json, Value};
     /// use tower_lsp_max::jsonrpc::Result;
-    /// use tower_lsp_max::lsp_types::*;
+    /// use tower_lsp_max::lsp_types_max::*;
     /// use tower_lsp_max::{LanguageServer, LspService};
     ///
     /// struct Mock;
@@ -382,8 +382,8 @@ fn handle_mesh_rpc(
                 .diagnostics
                 .values()
                 .map(|d| match d.lsp.severity {
-                    Some(crate::lsp_types::DiagnosticSeverity::ERROR) => 30.0,
-                    Some(crate::lsp_types::DiagnosticSeverity::WARNING) => 15.0,
+                    Some(crate::lsp_types_max::DiagnosticSeverity::ERROR) => 30.0,
+                    Some(crate::lsp_types_max::DiagnosticSeverity::WARNING) => 15.0,
                     _ => 5.0,
                 })
                 .sum();
@@ -394,12 +394,12 @@ fn handle_mesh_rpc(
             registry.diagnostics.values().partition(|d| {
                 matches!(
                     d.lsp.severity,
-                    Some(crate::lsp_types::DiagnosticSeverity::ERROR)
+                    Some(crate::lsp_types_max::DiagnosticSeverity::ERROR)
                 )
             });
-        let refused: Vec<crate::max_protocol::LawAxis> =
+        let refused: Vec<max_protocol::LawAxis> =
             refused_diags.iter().map(|d| d.law_axis.clone()).collect();
-        let admitted: Vec<crate::max_protocol::LawAxis> =
+        let admitted: Vec<max_protocol::LawAxis> =
             admitted_diags.iter().map(|d| d.law_axis.clone()).collect();
         let derived_score = if admitted.is_empty() && refused.is_empty() {
             None

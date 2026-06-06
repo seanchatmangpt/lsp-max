@@ -1,7 +1,7 @@
-use crate::mesh::{AutonomicMesh, build_conformance_vector};
-use crate::mesh_types::{MeshAction, MaxMethod, InstanceId};
-use crate::typestate::DeterministicSnapshot;
+use crate::mesh::{build_conformance_vector, AutonomicMesh};
+use crate::mesh_types::{InstanceId, MaxMethod, MeshAction};
 use crate::sha256::sha256;
+use crate::typestate::DeterministicSnapshot;
 
 impl AutonomicMesh {
     pub fn dispatch_rpc(
@@ -152,7 +152,10 @@ impl AutonomicMesh {
                 let verdict = if inst.diagnostics.is_empty() {
                     "Admitted"
                 } else if inst.diagnostics.iter().any(|d| {
-                    matches!(d.lsp.severity, Some(lsp_types_max::DiagnosticSeverity::ERROR))
+                    matches!(
+                        d.lsp.severity,
+                        Some(lsp_types_max::DiagnosticSeverity::ERROR)
+                    )
                 }) {
                     "Refused"
                 } else {

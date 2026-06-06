@@ -1,12 +1,12 @@
 use super::*;
+use crate::jsonrpc::{Request, Response};
+use crate::service::{ExitedError, Pending, ServerState, State};
+use futures::future::BoxFuture;
+use serde_json::json;
 use std::sync::Arc;
 use std::task::{Context, Poll};
-use futures::future::BoxFuture;
-use tower::{Layer, Service};
-use crate::jsonrpc::{Request, Response};
-use crate::service::{Pending, ServerState, State, ExitedError};
-use serde_json::json;
 use tower::ServiceExt;
+use tower::{Layer, Service};
 
 #[derive(Clone)]
 struct DummyService;
@@ -16,10 +16,7 @@ impl Service<Request> for DummyService {
     type Error = ExitedError;
     type Future = BoxFuture<'static, std::result::Result<Self::Response, Self::Error>>;
 
-    fn poll_ready(
-        &mut self,
-        _: &mut Context<'_>,
-    ) -> Poll<std::result::Result<(), Self::Error>> {
+    fn poll_ready(&mut self, _: &mut Context<'_>) -> Poll<std::result::Result<(), Self::Error>> {
         Poll::Ready(Ok(()))
     }
 
@@ -141,6 +138,9 @@ async fn test_catch_unwind_layer() {
     assert!(res.is_some());
     let response = res.unwrap();
     assert!(response.error().is_some());
-    assert_eq!(response.error().unwrap().code, crate::jsonrpc::ErrorCode::InternalError);
+    assert_eq!(
+        response.error().unwrap().code,
+        crate::jsonrpc::ErrorCode::InternalError
+    );
     assert_eq!(response.error().unwrap().message, "panic occurred");
 }

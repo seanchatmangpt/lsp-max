@@ -15,6 +15,7 @@ use std::collections::HashSet;
 use std::sync::Mutex;
 
 use lsp_types::NumberOrString;
+use lsp_types_max as lsp_types;
 use tower_lsp_max_base::abstractions::RelationAdmitter;
 use tower_lsp_max_lsif::lsif::{Element, PositionEncoding, Vertex, VertexType};
 use tower_lsp_max_runtime::control_plane::admission::{AdmittedGraph, StoreFactory};
@@ -178,7 +179,10 @@ fn test_wasm4pm_admission_lifecycle() {
     assert!(admission_err.is_err());
     let refusal = admission_err.unwrap_err();
     assert_eq!(refusal.reason, OcelRefusal::MissingObject);
-    assert_eq!(refusal.to_string(), "Refusal: OCEL refused by law: MissingObject");
+    assert_eq!(
+        refusal.to_string(),
+        "Refusal: OCEL refused by law: MissingObject"
+    );
 }
 
 #[test]

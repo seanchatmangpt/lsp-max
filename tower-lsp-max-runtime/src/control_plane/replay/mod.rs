@@ -1,11 +1,11 @@
-pub mod rng;
 pub mod clock;
+pub mod rng;
 pub mod verifier;
 
-pub use rng::{XorshiftRng, deterministic_uuid};
-pub use clock::{ReplayEntropy, ReplayClock, preprocess_query, hash_query_results};
+pub use clock::{hash_query_results, preprocess_query, ReplayClock, ReplayEntropy};
+pub use rng::{deterministic_uuid, XorshiftRng};
 pub use verifier::{
-    ReplayDetail, ReplaySummary, QueryConsequenceReplayVerifier, ReplayVerifier, verify_replay,
+    verify_replay, QueryConsequenceReplayVerifier, ReplayDetail, ReplaySummary, ReplayVerifier,
 };
 
 #[cfg(test)]

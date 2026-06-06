@@ -1,6 +1,6 @@
 use clap_noun_verb::Result;
 use clap_noun_verb_macros::verb;
-use lsp_types;
+use lsp_types_max;
 use serde::Serialize;
 use tower_lsp_max_runtime::AutonomicMesh;
 
@@ -67,7 +67,10 @@ impl WorkspaceService {
                     .values()
                     .flat_map(|i| i.diagnostics.iter())
                     .filter(|d| {
-                        matches!(d.lsp.severity, Some(lsp_types::DiagnosticSeverity::ERROR))
+                        matches!(
+                            d.lsp.severity,
+                            Some(lsp_types_max::DiagnosticSeverity::ERROR)
+                        )
                     })
                     .count();
                 // files_scanned: count unique instance IDs (each registered instance = a workspace file/root)
@@ -104,7 +107,10 @@ impl WorkspaceService {
                     .values()
                     .flat_map(|i| i.diagnostics.iter())
                     .filter(|d| {
-                        matches!(d.lsp.severity, Some(lsp_types::DiagnosticSeverity::ERROR))
+                        matches!(
+                            d.lsp.severity,
+                            Some(lsp_types_max::DiagnosticSeverity::ERROR)
+                        )
                     })
                     .count();
                 let warnings: usize = mesh
@@ -112,7 +118,10 @@ impl WorkspaceService {
                     .values()
                     .flat_map(|i| i.diagnostics.iter())
                     .filter(|d| {
-                        matches!(d.lsp.severity, Some(lsp_types::DiagnosticSeverity::WARNING))
+                        matches!(
+                            d.lsp.severity,
+                            Some(lsp_types_max::DiagnosticSeverity::WARNING)
+                        )
                     })
                     .count();
                 let _ = workspace;

@@ -1,12 +1,12 @@
+use crate::mesh_hooks::{IntakeClearHook, IntakeDiagnosticHook};
+use crate::mesh_types::{
+    AutonomicMeshState, ConformanceDeltaEntry, ConformanceGrade, Hook, HookEvent, InstanceId,
+    LspInstance, LspPhase, MaxDiagnostic, MeshAction, PolicyState, Receipt,
+};
+use crate::sha256::sha256;
 use std::collections::{HashMap, VecDeque};
 use std::io;
 use std::path::Path;
-use crate::mesh_types::{
-    MeshAction, Hook, LspPhase, LspInstance, ConformanceGrade, AutonomicMeshState,
-    ConformanceDeltaEntry, HookEvent, InstanceId, MaxDiagnostic, PolicyState, Receipt
-};
-use crate::mesh_hooks::{IntakeDiagnosticHook, IntakeClearHook};
-use crate::sha256::sha256;
 
 const MAX_EVENT_LOG: usize = 1000;
 const MAX_DISPATCH_DEPTH: usize = 16;
@@ -136,8 +136,8 @@ impl AutonomicMesh {
 
     pub fn save_to_file(&self, path: &str) -> io::Result<()> {
         let state = self.to_state();
-        let serialized = serde_json::to_string_pretty(&state)
-            .map_err(|e| io::Error::other(e.to_string()))?;
+        let serialized =
+            serde_json::to_string_pretty(&state).map_err(|e| io::Error::other(e.to_string()))?;
         std::fs::write(path, serialized)?;
         Ok(())
     }
@@ -314,7 +314,11 @@ impl AutonomicMesh {
                             .as_secs()
                     );
                     if let Err(e) = std::fs::write(&file_path, content) {
-                        eprintln!("warn: failed to write receipt to {}: {}", file_path.display(), e);
+                        eprintln!(
+                            "warn: failed to write receipt to {}: {}",
+                            file_path.display(),
+                            e
+                        );
                     }
                 }
                 self.dispatch_event(HookEvent::BoundedActionExecuted {

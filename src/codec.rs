@@ -6,7 +6,7 @@ use bytes::BytesMut;
 use serde::{de::DeserializeOwned, Serialize};
 use tracing::trace;
 
-#[cfg(feature = "runtime-agnostic")]
+#[cfg(all(feature = "runtime-agnostic", not(feature = "runtime-tokio")))]
 use async_codec_lite::{Decoder, Encoder};
 #[cfg(feature = "runtime-tokio")]
 use tokio_util::codec::{Decoder, Encoder};
@@ -28,7 +28,7 @@ impl<T> Default for LanguageServerCodec<T> {
     }
 }
 
-#[cfg(feature = "runtime-agnostic")]
+#[cfg(all(feature = "runtime-agnostic", not(feature = "runtime-tokio")))]
 impl<T: Serialize> Encoder for LanguageServerCodec<T> {
     type Item = T;
     type Error = ParseError;
@@ -66,6 +66,11 @@ mod tests {
     use serde_json::Value;
 
     use super::*;
+
+    #[cfg(all(feature = "runtime-agnostic", not(feature = "runtime-tokio")))]
+    use async_codec_lite::{Decoder, Encoder};
+    #[cfg(feature = "runtime-tokio")]
+    use tokio_util::codec::{Decoder, Encoder};
 
     macro_rules! assert_err {
         ($expression:expr, $($pattern:tt)+) => {
@@ -159,10 +164,7 @@ mod tests {
 
         let mut codec = LanguageServerCodec::<Value>::default();
         let mut buffer = BytesMut::from(encoded.as_str());
-        assert_err!(
-            codec.decode(&mut buffer),
-            Err(ParseError::EmptyMessage)
-        );
+        assert_err!(codec.decode(&mut buffer), Err(ParseError::EmptyMessage));
     }
 
     #[test]

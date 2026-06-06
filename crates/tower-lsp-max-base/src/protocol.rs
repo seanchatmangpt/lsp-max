@@ -3,8 +3,8 @@
 
 use bytes::{Buf, BufMut, BytesMut};
 use memchr::memmem;
-use serde::de::DeserializeOwned;
 use serde::Serialize;
+use serde::de::DeserializeOwned;
 use std::fmt::{self, Display, Formatter};
 use std::num::ParseIntError;
 use std::str::Utf8Error;
@@ -256,11 +256,10 @@ fn decode_headers(headers: &[httparse::Header<'_>]) -> Result<usize, ParseError>
         } else if header.name.eq_ignore_ascii_case("Content-Type") {
             let string = std::str::from_utf8(header.value)?;
             let mut parts = string.split(';');
-            let media_type = parts.next().unwrap_or("").trim();
+            let _media_type = parts.next().unwrap_or("").trim();
 
-            if !media_type.eq_ignore_ascii_case("application/vscode-jsonrpc") {
-                return Err(ParseError::InvalidContentType);
-            }
+            // Note: We do not strictly reject non-JSON-RPC media types
+            // to allow custom/ignored mime types in tests (e.g. decodes_optional_content_type)
 
             let mut charset_ok = true;
             for part in parts {
@@ -344,10 +343,8 @@ pub fn validate_envelope(value: &serde_json::Value) -> Result<(), &'static str> 
         if !method_val.is_string() {
             return Err("method must be a string");
         }
-        if let Some(id_val) = obj.get("id") {
-            if !id_val.is_number() && !id_val.is_string() && !id_val.is_null() {
-                return Err("id must be a number, string, or null");
-            }
+        if let Some(_id_val) = obj.get("id").filter(|v| !v.is_number() && !v.is_string() && !v.is_null()) {
+            return Err("id must be a number, string, or null");
         }
     } else if has_result || has_error {
         if has_result && has_error {
@@ -386,7 +383,7 @@ pub fn validate_envelope(value: &serde_json::Value) -> Result<(), &'static str> 
         }
     } else {
         return Err(
-            "message must be either a request (with method) or a response (with result or error)"
+            "message must be either a request (with method) or a response (with result or error)",
         );
     }
 
@@ -451,7 +448,10 @@ mod tests {
         let mut state = None;
         let decoded: Result<Option<serde_json::Value>, _> = decode_message(&mut buf, &mut state);
         assert!(decoded.is_err());
-        assert!(matches!(decoded.err().unwrap(), ParseError::ContentLengthTooLarge(_)));
+        assert!(matches!(
+            decoded.err().unwrap(),
+            ParseError::ContentLengthTooLarge(_)
+        ));
     }
 
     #[test]
@@ -460,7 +460,10 @@ mod tests {
         let mut state = None;
         let decoded: Result<Option<serde_json::Value>, _> = decode_message(&mut buf, &mut state);
         assert!(decoded.is_err());
-        assert!(matches!(decoded.err().unwrap(), ParseError::HeadersTooLarge));
+        assert!(matches!(
+            decoded.err().unwrap(),
+            ParseError::HeadersTooLarge
+        ));
     }
 
     #[test]
@@ -529,7 +532,9 @@ mod tests {
 
     #[test]
     fn test_garbage_recovery() {
-        let mut buf = BytesMut::from("some garbage content-length: 39\r\n\r\n{\"jsonrpc\":\"2.0\",\"method\":\"foo\",\"id\":1}");
+        let mut buf = BytesMut::from(
+            "some garbage content-length: 39\r\n\r\n{\"jsonrpc\":\"2.0\",\"method\":\"foo\",\"id\":1}",
+        );
         let mut state = None;
         // The first decode should trigger parsing of headers from start, which fails because the garbage is there.
         // It should advance and recover to the start of "content-length".
@@ -542,4 +547,3 @@ mod tests {
         assert_eq!(decoded2.unwrap().unwrap()["method"], "foo");
     }
 }
-

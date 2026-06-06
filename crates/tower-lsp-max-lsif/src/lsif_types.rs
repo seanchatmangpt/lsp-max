@@ -1,4 +1,4 @@
-use lsp_types::{NumberOrString, Range};
+use lsp_types_max::{NumberOrString, Range};
 use serde::{Deserialize, Serialize};
 
 /// The identifier of an element.
@@ -70,10 +70,10 @@ pub enum UniquenessLevel {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum HoverContents {
-    Markup(lsp_types::MarkupContent),
+    Markup(lsp_types_max::MarkupContent),
     String(String),
-    MarkedString(lsp_types::MarkedString),
-    MarkedStringArray(Vec<lsp_types::MarkedString>),
+    MarkedString(lsp_types_max::MarkedString),
+    MarkedStringArray(Vec<lsp_types_max::MarkedString>),
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -86,7 +86,7 @@ pub struct HoverResultData {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum DocumentSymbolResultData {
-    DocumentSymbols(Vec<lsp_types::DocumentSymbol>),
+    DocumentSymbols(Vec<lsp_types_max::DocumentSymbol>),
     RangeBased(Vec<RangeBasedDocumentSymbol>),
 }
 
@@ -122,7 +122,7 @@ pub enum RangeTag {
     #[serde(rename = "declaration")]
     Declaration {
         text: String,
-        kind: lsp_types::SymbolKind,
+        kind: lsp_types_max::SymbolKind,
         #[serde(rename = "fullRange")]
         full_range: Range,
         #[serde(skip_serializing_if = "Option::is_none")]
@@ -131,7 +131,7 @@ pub enum RangeTag {
     #[serde(rename = "definition")]
     Definition {
         text: String,
-        kind: lsp_types::SymbolKind,
+        kind: lsp_types_max::SymbolKind,
         #[serde(rename = "fullRange")]
         full_range: Range,
         #[serde(skip_serializing_if = "Option::is_none")]

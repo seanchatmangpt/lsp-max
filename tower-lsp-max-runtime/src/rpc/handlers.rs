@@ -1,12 +1,17 @@
-use crate::mesh::{AutonomicMesh, build_conformance_vector};
-use crate::mesh_types::{MeshAction, ConformanceGrade, InstanceId, HookEvent};
+use crate::mesh::{build_conformance_vector, AutonomicMesh};
+use crate::mesh_types::{ConformanceGrade, HookEvent, InstanceId, MeshAction};
 use crate::sha256::sha256;
 
 impl AutonomicMesh {
     // --- Private RPC Helpers for Modularization ---
 
-    pub(super) fn handle_repair_plan(&self, instance_id: &str, params: serde_json::Value) -> Result<serde_json::Value, String> {
-        let id: String = serde_json::from_value(params).map_err(|e| format!("Invalid params: {}", e))?;
+    pub(super) fn handle_repair_plan(
+        &self,
+        instance_id: &str,
+        params: serde_json::Value,
+    ) -> Result<serde_json::Value, String> {
+        let id: String =
+            serde_json::from_value(params).map_err(|e| format!("Invalid params: {}", e))?;
         let inst = self
             .instances
             .get(instance_id)
@@ -16,17 +21,12 @@ impl AutonomicMesh {
             .iter()
             .filter(|d| d.diagnostic_id == id || d.law_id == id)
             .flat_map(|d| {
-                d.repair_actions.iter().map(move |ra| {
-                    tower_lsp_max_protocol::MaxCodeAction {
+                d.repair_actions
+                    .iter()
+                    .map(move |ra| tower_lsp_max_protocol::MaxCodeAction {
                         action: lsp_types_max::CodeAction {
                             title: ra.description.clone(),
-                            kind: None,
-                            diagnostics: None,
-                            edit: None,
-                            command: None,
-                            is_preferred: None,
-                            disabled: None,
-                            data: None,
+                            ..Default::default()
                         },
                         preconditions: vec![],
                         validation_plan: tower_lsp_max_protocol::ValidationPlan {
@@ -42,14 +42,17 @@ impl AutonomicMesh {
                                 .map(|ro| ro.required_receipts.clone())
                                 .unwrap_or_default(),
                         },
-                    }
-                })
+                    })
             })
             .collect();
         serde_json::to_value(actions).map_err(|e| e.to_string())
     }
 
-    pub(super) fn handle_export_bundle(&self, instance_id: &str, params: serde_json::Value) -> Result<serde_json::Value, String> {
+    pub(super) fn handle_export_bundle(
+        &self,
+        instance_id: &str,
+        params: serde_json::Value,
+    ) -> Result<serde_json::Value, String> {
         let snapshot_id: tower_lsp_max_protocol::SnapshotId =
             serde_json::from_value(params).map_err(|e| format!("Invalid params: {}", e))?;
         let inst = self
@@ -137,7 +140,11 @@ impl AutonomicMesh {
         serde_json::to_value(chain).map_err(|e| e.to_string())
     }
 
-    pub(super) fn handle_lawful_transition(&self, instance_id: &str, params: serde_json::Value) -> Result<serde_json::Value, String> {
+    pub(super) fn handle_lawful_transition(
+        &self,
+        instance_id: &str,
+        params: serde_json::Value,
+    ) -> Result<serde_json::Value, String> {
         let target_phase: String =
             serde_json::from_value(params).map_err(|e| format!("Invalid params: {}", e))?;
         let inst = self
@@ -161,7 +168,10 @@ impl AutonomicMesh {
                     .diagnostics
                     .iter()
                     .filter(|d| {
-                        matches!(d.lsp.severity, Some(lsp_types_max::DiagnosticSeverity::ERROR))
+                        matches!(
+                            d.lsp.severity,
+                            Some(lsp_types_max::DiagnosticSeverity::ERROR)
+                        )
                     })
                     .map(|d| d.diagnostic_id.clone())
                     .collect();
@@ -256,7 +266,10 @@ impl AutonomicMesh {
         }))
     }
 
-    pub(super) fn handle_release_actuation(&mut self, instance_id: &str) -> Result<serde_json::Value, String> {
+    pub(super) fn handle_release_actuation(
+        &mut self,
+        instance_id: &str,
+    ) -> Result<serde_json::Value, String> {
         let inst = self
             .instances
             .get(instance_id)

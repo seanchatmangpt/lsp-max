@@ -164,9 +164,9 @@ fn gen_server_router(trait_name: &syn::Ident, methods: &[MethodCall]) -> proc_ma
             use std::sync::Arc;
             use std::future::{Future, Ready};
 
-            use lsp_types::*;
-            use lsp_types::notification::*;
-            use lsp_types::request::*;
+            use lsp_types_max::*;
+            use lsp_types_max::notification::*;
+            use lsp_types_max::request::*;
             use serde_json::Value;
 
             use super::#trait_name;

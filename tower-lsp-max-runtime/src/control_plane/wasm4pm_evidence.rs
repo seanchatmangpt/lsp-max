@@ -3,8 +3,8 @@
 //! Types and converters live in [`evidence_types`].
 //! Oxigraph store extractors live in [`evidence_extractors`].
 
-pub use super::evidence_types::*;
 pub use super::evidence_extractors::*;
+pub use super::evidence_types::*;
 
 #[cfg(test)]
 mod tests {
@@ -49,7 +49,12 @@ mod tests {
             severity: Some("Error".to_string()),
             code: Some("E0308".to_string()),
             source: Some("rustc".to_string()),
-            range: Some(RangeEvidencePayload { start_line: 1, start_character: 0, end_line: 1, end_character: 10 }),
+            range: Some(RangeEvidencePayload {
+                start_line: 1,
+                start_character: 0,
+                end_line: 1,
+                end_character: 10,
+            }),
         };
 
         let raw_ev = to_raw_evidence::<_, Ocel20>(diag.clone());

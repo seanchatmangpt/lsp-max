@@ -1,7 +1,7 @@
 use std::future::Future;
 
 use futures::stream::StreamExt;
-use lsp_types::notification::{
+use lsp_types_max::notification::{
     LogMessage, LogTrace, PublishDiagnostics, ShowMessage, TelemetryEvent,
 };
 use serde_json::json;
@@ -76,8 +76,7 @@ async fn telemetry_event() {
     assert_client_message(|p| async move { p.telemetry_event(object).await }, expected).await;
 
     let other = json!("hello");
-    let expected =
-        Request::from_notification::<TelemetryEvent>(OneOf::Right(vec![other.clone()]));
+    let expected = Request::from_notification::<TelemetryEvent>(OneOf::Right(vec![other.clone()]));
     assert_client_message(|p| async move { p.telemetry_event(other).await }, expected).await;
 }
 

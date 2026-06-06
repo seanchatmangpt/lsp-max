@@ -1,6 +1,9 @@
-use lsp_types_max::{Position, Range, Location, Hover, Diagnostic, CallHierarchyItem, CallHierarchyIncomingCall, CallHierarchyOutgoingCall, TypeHierarchyItem};
-use url::Url;
 use super::types::MaterializedViewStore;
+use lsp_types_max::{
+    CallHierarchyIncomingCall, CallHierarchyItem, CallHierarchyOutgoingCall, Diagnostic, Hover,
+    Location, Position, Range, TypeHierarchyItem,
+};
+use url::Url;
 
 pub fn contains_position(range: &Range, pos: Position) -> bool {
     let after_start = if pos.line > range.start.line {

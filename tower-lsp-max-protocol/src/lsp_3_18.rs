@@ -8775,7 +8775,7 @@ impl LspRequest for FoldingRangeRefreshRequest {
     type Result = ();
     const METHOD: &'static str = "workspace/foldingRange/refresh";
 }
-impl lsp_types::request::Request for FoldingRangeRefreshRequest {
+impl lsp_types_max::request::Request for FoldingRangeRefreshRequest {
     type Params = ();
     type Result = ();
     const METHOD: &'static str = "workspace/foldingRange/refresh";
@@ -8960,7 +8960,7 @@ impl LspRequest for TextDocumentContentRefreshRequest {
     type Result = ();
     const METHOD: &'static str = "workspace/textDocumentContent/refresh";
 }
-impl lsp_types::request::Request for TextDocumentContentRefreshRequest {
+impl lsp_types_max::request::Request for TextDocumentContentRefreshRequest {
     type Params = TextDocumentContentRefreshParams;
     type Result = ();
     const METHOD: &'static str = "workspace/textDocumentContent/refresh";

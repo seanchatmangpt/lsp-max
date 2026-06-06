@@ -1,7 +1,7 @@
+use lsp_types_max::SymbolKind;
 use oxigraph::model::Term;
 use oxigraph::sparql::{QueryResults, QuerySolution, SparqlEvaluator};
 use oxigraph::store::Store;
-use lsp_types_max::SymbolKind;
 
 pub fn term_to_string(term: &Term) -> String {
     match term {

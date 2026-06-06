@@ -3,7 +3,7 @@ use oxigraph::sparql::QueryResults;
 use rand_core::RngCore;
 use uuid::Uuid;
 
-use super::rng::{XorshiftRng, deterministic_uuid};
+use super::rng::{deterministic_uuid, XorshiftRng};
 
 /// Stubbed entropy source for deterministic replay.
 #[derive(Debug, Clone)]

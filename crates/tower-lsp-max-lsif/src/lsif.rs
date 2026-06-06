@@ -1,5 +1,5 @@
 pub use crate::lsif_types::*;
-use lsp_types::Position;
+use lsp_types_max::Position;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -151,14 +151,14 @@ pub enum Vertex {
         id: Id,
         #[serde(rename = "type")]
         type_: VertexType,
-        result: Vec<lsp_types::FoldingRange>,
+        result: Vec<lsp_types_max::FoldingRange>,
     },
     #[serde(rename = "documentLinkResult")]
     DocumentLinkResult {
         id: Id,
         #[serde(rename = "type")]
         type_: VertexType,
-        result: Vec<lsp_types::DocumentLink>,
+        result: Vec<lsp_types_max::DocumentLink>,
     },
     #[serde(rename = "documentSymbolResult")]
     DocumentSymbolResult {
@@ -172,7 +172,7 @@ pub enum Vertex {
         id: Id,
         #[serde(rename = "type")]
         type_: VertexType,
-        result: Vec<lsp_types::Diagnostic>,
+        result: Vec<lsp_types_max::Diagnostic>,
     },
     #[serde(rename = "semanticTokensResult")]
     SemanticTokensResult {
@@ -414,7 +414,7 @@ pub enum Element {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use lsp_types::NumberOrString;
+    use lsp_types_max::NumberOrString;
 
     #[test]
     fn test_serialize_metadata() {

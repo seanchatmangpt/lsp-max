@@ -51,6 +51,7 @@ impl LanguageServer for Backend {
                 name: "tower-lsp-max-playground".to_string(),
                 version: Some(env!("CARGO_PKG_VERSION").to_string()),
             }),
+            offset_encoding: None,
         })
     }
 

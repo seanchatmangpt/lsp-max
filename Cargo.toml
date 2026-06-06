@@ -29,13 +29,13 @@ dashmap = "5.1"
 futures = { version = "0.3", default-features = false, features = ["std", "async-await"] }
 httparse = "1.8"
 libc = "0.2"
-lsp-types-max = { path = "/Users/sac/lsp-types-max" }
+lsp-types-max = { path = "../lsp-types-max", version = "26.6.5", features = ["proposed"] }
 url = { version = "2.5", features = ["serde"] }
 memchr = "2.5"
 windows-sys = { version = "0.52", features = ["Win32_System_Threading", "Win32_Foundation"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-tokio = { version = "1.17", optional = true, features = ["time", "macros", "rt"] }
+tokio = { version = "1.17", optional = true, features = ["time", "macros", "rt", "io-util", "net"] }
 tokio-util = { version = "0.7", optional = true, features = ["codec"] }
 tower-lsp-max-macros = { version = "26.6.5", path = "./tower-lsp-max-macros" }
 tower-lsp-max-protocol = { version = "26.6.5", path = "./tower-lsp-max-protocol" }
@@ -56,22 +56,24 @@ tower-lsp-max-playground = { path = "crates/playground" }
 tempfile = "3"
 ropey = "1"
 oxigraph = "0.5.8"
-wasm4pm-compat = { path = "/Users/sac/wasm4pm-compat", version = "26.6.5", features = ["formats", "strict", "wasm4pm"] }
+wasm4pm-compat = { path = "../wasm4pm-compat", version = "26.6.5", features = ["formats", "strict", "wasm4pm"] }
 uuid = { version = "1.0", features = ["v4"] }
 ed25519-dalek = "2.0"
 
-
-
 [workspace]
+resolver = "3"
 members = [
     ".",
-    "./tower-lsp-max-macros",
-    "./tower-lsp-max-protocol",
-    "./tower-lsp-max-runtime",
-    "./tower-lsp-max-agent",
+    "tower-lsp-max-macros",
+    "tower-lsp-max-protocol",
+    "tower-lsp-max-runtime",
+    "tower-lsp-max-agent",
     "crates/tower-lsp-max-specgen",
     "crates/tower-lsp-max-cli",
-    "crates/playground", "crates/tower-lsp-max-client", "crates/tower-lsp-max-base", "crates/tower-lsp-max-live", "crates/tower-lsp-max-lsif", "crates/tower-lsp-max-adapters/auto_lsp_adapter", 
+    "crates/playground",
+    "crates/tower-lsp-max-client",
+    "crates/tower-lsp-max-base",
+    "crates/tower-lsp-max-live",
+    "crates/tower-lsp-max-lsif",
+    "crates/tower-lsp-max-adapters/auto_lsp_adapter",
 ]
-default-members = ["."]
-

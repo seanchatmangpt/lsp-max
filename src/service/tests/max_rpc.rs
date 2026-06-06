@@ -1,10 +1,10 @@
 use async_trait::async_trait;
-use lsp_types::*;
+use lsp_types_max::*;
 use serde_json::json;
 use tower::ServiceExt;
 
-use super::*;
 use super::super::*;
+use super::*;
 use crate::jsonrpc::Result;
 
 #[derive(Debug)]
@@ -22,15 +22,19 @@ impl LanguageServer for MockLsp318 {
 
     async fn inline_completion(
         &self,
-        _params: crate::max_protocol::lsp_3_18::InlineCompletionParams,
-    ) -> Result<Option<serde_json::Value>> {
-        Ok(Some(json!({
-            "items": [
-                {
-                    "insertText": "hello_world",
-                }
-            ]
-        })))
+        _params: lsp_types_max::InlineCompletionParams,
+    ) -> Result<Option<lsp_types_max::InlineCompletionResponse>> {
+        Ok(Some(lsp_types_max::InlineCompletionResponse::List(
+            lsp_types_max::InlineCompletionList {
+                items: vec![lsp_types_max::InlineCompletionItem {
+                    insert_text: lsp_types_max::StringOrStringValue::String("hello_world".to_string()),
+                    filter_text: None,
+                    range: None,
+                    command: None,
+                    insert_text_format: None,
+                }],
+            },
+        )))
     }
 
     async fn text_document_content(
@@ -40,13 +44,6 @@ impl LanguageServer for MockLsp318 {
         Ok(crate::max_protocol::lsp_3_18::TextDocumentContentResult {
             text: "test content".to_string(),
         })
-    }
-
-    async fn text_document_content_refresh(
-        &self,
-        _params: crate::max_protocol::lsp_3_18::TextDocumentContentRefreshParams,
-    ) -> Result<()> {
-        Ok(())
     }
 }
 
@@ -134,8 +131,7 @@ async fn test_max_rpc_endpoints() {
         .unwrap()
         .unwrap();
     let (_, res) = response.into_parts();
-    let plans2: Vec<max_protocol::MaxCodeAction> =
-        serde_json::from_value(res.unwrap()).unwrap();
+    let plans2: Vec<max_protocol::MaxCodeAction> = serde_json::from_value(res.unwrap()).unwrap();
     let action_with_dep = plans2[0].clone();
 
     // Attempting to apply it fails because expected_receipts has "rcpt-security-auth" which is not registered yet
@@ -169,8 +165,7 @@ async fn test_max_rpc_endpoints() {
         .unwrap()
         .unwrap();
     let (_, res) = response.into_parts();
-    let plans3: Vec<max_protocol::MaxCodeAction> =
-        serde_json::from_value(res.unwrap()).unwrap();
+    let plans3: Vec<max_protocol::MaxCodeAction> = serde_json::from_value(res.unwrap()).unwrap();
     let gen_action = plans3[0].clone();
 
     // Apply generator action to obtain "rcpt-security-auth"
@@ -408,5 +403,5 @@ async fn test_lsp_3_18_methods_routing() {
         .unwrap()
         .unwrap();
     let (_, res) = response.into_parts();
-    assert!(res.is_ok());
+    assert_eq!(res.unwrap_err().code, ErrorCode::MethodNotFound);
 }

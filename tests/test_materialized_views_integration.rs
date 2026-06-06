@@ -1,4 +1,5 @@
 use lsp_types::{Diagnostic, Position, Range, SymbolKind};
+use lsp_types_max as lsp_types;
 use oxigraph::model::GraphName;
 use oxigraph::model::NamedNode;
 use oxigraph::store::Store;

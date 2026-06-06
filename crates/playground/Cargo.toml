@@ -2,7 +2,7 @@
 name = "tower-lsp-max-playground"
 version = "0.1.0"
 edition = "2021"
-description = "LSP server providing IDE support for writing tower-lsp-max servers"
+publish = false
 
 [[bin]]
 name = "tower-lsp-max-playground"
@@ -12,25 +12,23 @@ path = "src/main.rs"
 name = "lsif_demo"
 path = "src/bin/lsif_demo.rs"
 
-[lib]
-name = "tower_lsp_max_playground"
-path = "src/lib.rs"
-
 [dependencies]
-tower-lsp-max = { path = "../..", features = ["runtime-tokio"] }
-tower-lsp-max-protocol = { path = "../../tower-lsp-max-protocol" }
-tower-lsp-max-runtime = { path = "../../tower-lsp-max-runtime" }
-tokio = { version = "1.17", features = ["io-std", "macros", "rt-multi-thread"] }
+async-trait = "0.1"
+dashmap = "5.1"
+ropey = "1.5"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+tokio = { version = "1.17", features = ["full"] }
+tower-lsp-max = { path = "../..", features = ["proposed"] }
+lsp-types-max = { path = "../../../lsp-types-max", features = ["proposed"] }
+url = "2.5"
+syn = { version = "2.0", features = ["full", "visit"] }
+proc-macro2 = { version = "1.0", features = ["span-locations"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
-serde = { version = "1", features = ["derive"] }
-serde_json = "1"
-syn = { version = "2", features = ["full", "visit", "extra-traits"] }
-proc-macro2 = { version = "1", features = ["span-locations"] }
-toml = "0.8"
-ropey = "1"
-dashmap = "5"
-tower-lsp-max-lsif = { path = "../tower-lsp-max-lsif" }
 
-[dev-dependencies]
-tokio-test = "0.4"
+[features]
+proposed = ["tower-lsp-max/proposed", "lsp-types-max/proposed"]
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(feature, values("proposed"))'] }

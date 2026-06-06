@@ -1,3 +1,4 @@
+use lsp_types_max as lsp_types;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Barrier, Mutex};
 use tower_lsp_max_base::abstractions::RelationAdmitter;

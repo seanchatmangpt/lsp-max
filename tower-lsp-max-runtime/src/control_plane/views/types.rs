@@ -1,7 +1,10 @@
 use dashmap::DashMap;
-use url::Url;
+use lsp_types_max::{
+    CallHierarchyIncomingCall, CallHierarchyItem, CallHierarchyOutgoingCall, Diagnostic, Hover,
+    Location, Position, Range, TypeHierarchyItem,
+};
 use std::sync::Arc;
-use lsp_types_max::{Range, Location, Hover, Diagnostic, Position, CallHierarchyItem, CallHierarchyIncomingCall, CallHierarchyOutgoingCall, TypeHierarchyItem};
+use url::Url;
 
 #[derive(Debug, Clone)]
 pub struct DefinitionEntry {
@@ -60,7 +63,7 @@ pub struct MaterializedViewStore {
     pub references: DashMap<Url, Vec<(Range, Vec<Location>)>>,
     pub hovers: DashMap<Url, Vec<(Range, Hover)>>,
     pub diagnostics: DashMap<Url, Vec<Diagnostic>>,
-    
+
     // Call and Type Hierarchy maps
     pub call_hierarchy_prepare: DashMap<Url, Vec<(Range, Vec<CallHierarchyItem>)>>,
     pub call_hierarchy_incoming: DashMap<Url, Vec<(Range, Vec<CallHierarchyIncomingCall>)>>,
@@ -88,7 +91,7 @@ impl MaterializedViewStore {
             references: DashMap::new(),
             hovers: DashMap::new(),
             diagnostics: DashMap::new(),
-            
+
             call_hierarchy_prepare: DashMap::new(),
             call_hierarchy_incoming: DashMap::new(),
             call_hierarchy_outgoing: DashMap::new(),
@@ -108,7 +111,7 @@ impl MaterializedViewStore {
         self.references.clear();
         self.hovers.clear();
         self.diagnostics.clear();
-        
+
         self.call_hierarchy_prepare.clear();
         self.call_hierarchy_incoming.clear();
         self.call_hierarchy_outgoing.clear();

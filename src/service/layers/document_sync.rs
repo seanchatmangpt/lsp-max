@@ -1,8 +1,8 @@
-use std::sync::Arc;
-use std::task::{Context, Poll};
 use dashmap::DashMap;
 use futures::future::{BoxFuture, FutureExt};
 use futures::lock::Mutex;
+use std::sync::Arc;
+use std::task::{Context, Poll};
 use tower::{Layer, Service, ServiceExt};
 use url::Url;
 
@@ -69,44 +69,76 @@ where
         let mut inner = self.inner.clone();
 
         Box::pin(async move {
+            let is_read_query = match method.as_str() {
+                "textDocument/hover"
+                | "textDocument/completion"
+                | "textDocument/definition"
+                | "textDocument/references"
+                | "textDocument/documentHighlight"
+                | "textDocument/documentSymbol"
+                | "textDocument/codeAction"
+                | "textDocument/codeLens"
+                | "textDocument/documentLink"
+                | "textDocument/formatting"
+                | "textDocument/rangeFormatting"
+                | "textDocument/onTypeFormatting"
+                | "textDocument/rename"
+                | "textDocument/prepareRename"
+                | "textDocument/foldingRange"
+                | "textDocument/selectionRange"
+                | "textDocument/prepareCallHierarchy"
+                | "textDocument/callHierarchyIncomingCalls"
+                | "textDocument/callHierarchyOutgoingCalls"
+                | "textDocument/inlayHint"
+                | "textDocument/inlineValue"
+                | "textDocument/moniker" => true,
+                m if m.starts_with("textDocument/semanticTokens") => true,
+                _ => false,
+            };
+            let should_lock = !is_read_query;
+
             if let Some(uri) = uri {
-                let lock = locks
-                    .entry(uri.clone())
-                    .or_insert_with(|| Arc::new(Mutex::new(())))
-                    .value()
-                    .clone();
-                let _guard = lock.lock().await;
+                if should_lock {
+                    let lock = locks
+                        .entry(uri.clone())
+                        .or_insert_with(|| Arc::new(Mutex::new(())))
+                        .value()
+                        .clone();
+                    let _guard = lock.lock().await;
 
-                // Update version if this is a didOpen or didChange notification
-                match method.as_str() {
-                    "textDocument/didOpen" => {
-                        if let Some(version) = params
-                            .as_ref()
-                            .and_then(|p| p.get("textDocument"))
-                            .and_then(|t| t.get("version"))
-                            .and_then(|v| v.as_i64())
-                        {
-                            if let Ok(mut reg) = crate::get_registry().lock() {
-                                reg.document_versions.insert(uri, version as i32);
+                    // Update version if this is a didOpen or didChange notification
+                    match method.as_str() {
+                        "textDocument/didOpen" => {
+                            if let Some(version) = params
+                                .as_ref()
+                                .and_then(|p| p.get("textDocument"))
+                                .and_then(|t| t.get("version"))
+                                .and_then(|v| v.as_i64())
+                            {
+                                if let Ok(mut reg) = crate::get_registry().lock() {
+                                    reg.document_versions.insert(uri, version as i32);
+                                }
                             }
                         }
-                    }
-                    "textDocument/didChange" => {
-                        if let Some(version) = params
-                            .as_ref()
-                            .and_then(|p| p.get("textDocument"))
-                            .and_then(|t| t.get("version"))
-                            .and_then(|v| v.as_i64())
-                        {
-                            if let Ok(mut reg) = crate::get_registry().lock() {
-                                reg.document_versions.insert(uri, version as i32);
+                        "textDocument/didChange" => {
+                            if let Some(version) = params
+                                .as_ref()
+                                .and_then(|p| p.get("textDocument"))
+                                .and_then(|t| t.get("version"))
+                                .and_then(|v| v.as_i64())
+                            {
+                                if let Ok(mut reg) = crate::get_registry().lock() {
+                                    reg.document_versions.insert(uri, version as i32);
+                                }
                             }
                         }
+                        _ => {}
                     }
-                    _ => {}
+
+                    inner.ready().await?.call(req).await
+                } else {
+                    inner.ready().await?.call(req).await
                 }
-
-                inner.ready().await?.call(req).await
             } else {
                 inner.ready().await?.call(req).await
             }

@@ -1,5 +1,10 @@
 use super::*;
+use crate::control_plane::receipts::{Blake3Hash, CryptographicReceipt};
 use ed25519_dalek::Signer;
+use oxigraph::model::{GraphName, Literal, NamedNode, NamedOrBlankNode, Quad, Term};
+use oxigraph::sparql::{QueryResults, SparqlEvaluator};
+use oxigraph::store::Store;
+use rand_core::RngCore;
 
 #[test]
 fn test_xorshift_rng_determinism() {
@@ -47,8 +52,7 @@ fn test_verifier_end_to_end() {
     let store = Store::new().unwrap();
 
     // 1. Setup a graph snapshot
-    let snap_graph =
-        GraphName::NamedNode(NamedNode::new("urn:project:local:snapshot:g1").unwrap());
+    let snap_graph = GraphName::NamedNode(NamedNode::new("urn:project:local:snapshot:g1").unwrap());
     store
         .insert(&Quad::new(
             NamedOrBlankNode::NamedNode(NamedNode::new("urn:project:s1").unwrap()),

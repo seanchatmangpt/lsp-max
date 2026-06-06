@@ -1,12 +1,14 @@
 //! Call hierarchy view population (prepare, incoming, outgoing) via SPARQL.
 
+use super::helpers::{parse_symbol_kind, run_select, term_to_string, term_to_u32};
+use super::lookups::contains_position;
+use super::types::MaterializedViewStore;
+use lsp_types_max::{
+    CallHierarchyIncomingCall, CallHierarchyItem, CallHierarchyOutgoingCall, Position, Range, Uri,
+};
+use oxigraph::store::Store;
 use std::collections::HashMap;
 use url::Url;
-use lsp_types_max::{CallHierarchyIncomingCall, CallHierarchyItem, CallHierarchyOutgoingCall, Position, Range, Uri};
-use oxigraph::store::Store;
-use super::types::MaterializedViewStore;
-use super::lookups::contains_position;
-use super::helpers::{term_to_string, term_to_u32, run_select, parse_symbol_kind};
 
 const QUERY_CALL_PREPARE: &str = "
     PREFIX lsif: <https://microsoft.github.io/language-server-protocol/specifications/lsif/0.6.0/specification/>
@@ -96,44 +98,100 @@ const QUERY_CALL_OUTGOING: &str = "
 
 type Sol = oxigraph::sparql::QuerySolution;
 
-fn u(sol: &Sol, key: &str) -> u32 { sol.get(key).map(term_to_u32).unwrap_or(0) }
-fn uf(sol: &Sol, key: &str, fallback: u32) -> u32 { sol.get(key).map(term_to_u32).unwrap_or(fallback) }
+fn u(sol: &Sol, key: &str) -> u32 {
+    sol.get(key).map(term_to_u32).unwrap_or(0)
+}
+fn uf(sol: &Sol, key: &str, fallback: u32) -> u32 {
+    sol.get(key).map(term_to_u32).unwrap_or(fallback)
+}
 
 fn mk_range(sl: u32, sc: u32, el: u32, ec: u32) -> Range {
     Range::new(Position::new(sl, sc), Position::new(el, ec))
 }
 
-fn src_range(sol: &Sol) -> Range { mk_range(u(sol,"srcStartLine"), u(sol,"srcStartChar"), u(sol,"srcEndLine"), u(sol,"srcEndChar")) }
-fn item_range(sol: &Sol) -> Range { mk_range(u(sol,"itemStartLine"), u(sol,"itemStartChar"), u(sol,"itemEndLine"), u(sol,"itemEndChar")) }
+fn src_range(sol: &Sol) -> Range {
+    mk_range(
+        u(sol, "srcStartLine"),
+        u(sol, "srcStartChar"),
+        u(sol, "srcEndLine"),
+        u(sol, "srcEndChar"),
+    )
+}
+fn item_range(sol: &Sol) -> Range {
+    mk_range(
+        u(sol, "itemStartLine"),
+        u(sol, "itemStartChar"),
+        u(sol, "itemEndLine"),
+        u(sol, "itemEndChar"),
+    )
+}
 fn item_full(sol: &Sol, fallback: Range) -> Range {
-    mk_range(uf(sol,"itemFullStartLine",fallback.start.line), uf(sol,"itemFullStartChar",fallback.start.character),
-             uf(sol,"itemFullEndLine",fallback.end.line), uf(sol,"itemFullEndChar",fallback.end.character))
+    mk_range(
+        uf(sol, "itemFullStartLine", fallback.start.line),
+        uf(sol, "itemFullStartChar", fallback.start.character),
+        uf(sol, "itemFullEndLine", fallback.end.line),
+        uf(sol, "itemFullEndChar", fallback.end.character),
+    )
 }
-fn caller_range(sol: &Sol) -> Range { mk_range(u(sol,"callerStartLine"), u(sol,"callerStartChar"), u(sol,"callerEndLine"), u(sol,"callerEndChar")) }
+fn caller_range(sol: &Sol) -> Range {
+    mk_range(
+        u(sol, "callerStartLine"),
+        u(sol, "callerStartChar"),
+        u(sol, "callerEndLine"),
+        u(sol, "callerEndChar"),
+    )
+}
 fn caller_full(sol: &Sol, fallback: Range) -> Range {
-    mk_range(uf(sol,"callerFullStartLine",fallback.start.line), uf(sol,"callerFullStartChar",fallback.start.character),
-             uf(sol,"callerFullEndLine",fallback.end.line), uf(sol,"callerFullEndChar",fallback.end.character))
+    mk_range(
+        uf(sol, "callerFullStartLine", fallback.start.line),
+        uf(sol, "callerFullStartChar", fallback.start.character),
+        uf(sol, "callerFullEndLine", fallback.end.line),
+        uf(sol, "callerFullEndChar", fallback.end.character),
+    )
 }
-fn callee_range(sol: &Sol) -> Range { mk_range(u(sol,"calleeStartLine"), u(sol,"calleeStartChar"), u(sol,"calleeEndLine"), u(sol,"calleeEndChar")) }
+fn callee_range(sol: &Sol) -> Range {
+    mk_range(
+        u(sol, "calleeStartLine"),
+        u(sol, "calleeStartChar"),
+        u(sol, "calleeEndLine"),
+        u(sol, "calleeEndChar"),
+    )
+}
 fn callee_full(sol: &Sol, fallback: Range) -> Range {
-    mk_range(uf(sol,"calleeFullStartLine",fallback.start.line), uf(sol,"calleeFullStartChar",fallback.start.character),
-             uf(sol,"calleeFullEndLine",fallback.end.line), uf(sol,"calleeFullEndChar",fallback.end.character))
+    mk_range(
+        uf(sol, "calleeFullStartLine", fallback.start.line),
+        uf(sol, "calleeFullStartChar", fallback.start.character),
+        uf(sol, "calleeFullEndLine", fallback.end.line),
+        uf(sol, "calleeFullEndChar", fallback.end.character),
+    )
 }
-fn ref_range(sol: &Sol) -> Range { mk_range(u(sol,"refStartLine"), u(sol,"refStartChar"), u(sol,"refEndLine"), u(sol,"refEndChar")) }
+fn ref_range(sol: &Sol) -> Range {
+    mk_range(
+        u(sol, "refStartLine"),
+        u(sol, "refStartChar"),
+        u(sol, "refEndLine"),
+        u(sol, "refEndChar"),
+    )
+}
 
 pub(super) fn populate_call_hierarchy(store: &Store, views: &MaterializedViewStore) {
     // 5a. Prepare
     if let Ok(sols) = run_select(store, QUERY_CALL_PREPARE) {
         for sol in sols {
             let src_doc = sol.get("srcDocUri").map(term_to_string).unwrap_or_default();
-            let item_doc = sol.get("itemDocUri").map(term_to_string).unwrap_or_default();
+            let item_doc = sol
+                .get("itemDocUri")
+                .map(term_to_string)
+                .unwrap_or_default();
             if let (Ok(src_url), Ok(item_url)) = (Url::parse(&src_doc), Url::parse(&item_doc)) {
                 let sr = src_range(&sol);
                 let ir = item_range(&sol);
                 let ifr = item_full(&sol, ir);
                 let item = CallHierarchyItem {
                     name: sol.get("itemName").map(term_to_string).unwrap_or_default(),
-                    kind: parse_symbol_kind(&sol.get("itemKind").map(term_to_string).unwrap_or_default()),
+                    kind: parse_symbol_kind(
+                        &sol.get("itemKind").map(term_to_string).unwrap_or_default(),
+                    ),
                     tags: None,
                     detail: sol.get("itemDetail").map(term_to_string),
                     uri: item_url.to_string().parse().unwrap(),
@@ -141,7 +199,11 @@ pub(super) fn populate_call_hierarchy(store: &Store, views: &MaterializedViewSto
                     selection_range: ir,
                     data: None,
                 };
-                views.call_hierarchy_prepare.entry(src_url).or_default().push((sr, vec![item]));
+                views
+                    .call_hierarchy_prepare
+                    .entry(src_url)
+                    .or_default()
+                    .push((sr, vec![item]));
             }
         }
     }
@@ -150,17 +212,31 @@ pub(super) fn populate_call_hierarchy(store: &Store, views: &MaterializedViewSto
     let mut temp_inc: HashMap<(Url, Range), Vec<(CallHierarchyItem, Range)>> = HashMap::new();
     if let Ok(sols) = run_select(store, QUERY_CALL_INCOMING) {
         for sol in sols {
-            let item_doc = sol.get("itemDocUri").map(term_to_string).unwrap_or_default();
-            let caller_doc = sol.get("callerDocUri").map(term_to_string).unwrap_or_default();
-            if let (Ok(item_url), Ok(caller_url)) = (Url::parse(&item_doc), Url::parse(&caller_doc)) {
+            let item_doc = sol
+                .get("itemDocUri")
+                .map(term_to_string)
+                .unwrap_or_default();
+            let caller_doc = sol
+                .get("callerDocUri")
+                .map(term_to_string)
+                .unwrap_or_default();
+            if let (Ok(item_url), Ok(caller_url)) = (Url::parse(&item_doc), Url::parse(&caller_doc))
+            {
                 let ir = item_range(&sol);
                 let cr = caller_range(&sol);
                 let cfr = caller_full(&sol, cr);
                 let rr = ref_range(&sol);
                 if contains_position(&cfr, rr.start) {
                     let caller_item = CallHierarchyItem {
-                        name: sol.get("callerName").map(term_to_string).unwrap_or_default(),
-                        kind: parse_symbol_kind(&sol.get("callerKind").map(term_to_string).unwrap_or_default()),
+                        name: sol
+                            .get("callerName")
+                            .map(term_to_string)
+                            .unwrap_or_default(),
+                        kind: parse_symbol_kind(
+                            &sol.get("callerKind")
+                                .map(term_to_string)
+                                .unwrap_or_default(),
+                        ),
                         tags: None,
                         detail: sol.get("callerDetail").map(term_to_string),
                         uri: caller_url.to_string().parse().unwrap(),
@@ -168,7 +244,10 @@ pub(super) fn populate_call_hierarchy(store: &Store, views: &MaterializedViewSto
                         selection_range: cr,
                         data: None,
                     };
-                    temp_inc.entry((item_url, ir)).or_default().push((caller_item, rr));
+                    temp_inc
+                        .entry((item_url, ir))
+                        .or_default()
+                        .push((caller_item, rr));
                 }
             }
         }
@@ -176,21 +255,40 @@ pub(super) fn populate_call_hierarchy(store: &Store, views: &MaterializedViewSto
     for ((url, range), calls) in temp_inc {
         let mut grouped: HashMap<Uri, (CallHierarchyItem, Vec<Range>)> = HashMap::new();
         for (item, rr) in calls {
-            grouped.entry(item.uri.clone()).or_insert((item, vec![])).1.push(rr);
+            grouped
+                .entry(item.uri.clone())
+                .or_insert((item, vec![]))
+                .1
+                .push(rr);
         }
-        let list: Vec<CallHierarchyIncomingCall> = grouped.into_values()
-            .map(|(item, ranges)| CallHierarchyIncomingCall { from: item, from_ranges: ranges })
+        let list: Vec<CallHierarchyIncomingCall> = grouped
+            .into_values()
+            .map(|(item, ranges)| CallHierarchyIncomingCall {
+                from: item,
+                from_ranges: ranges,
+            })
             .collect();
-        views.call_hierarchy_incoming.entry(url).or_default().push((range, list));
+        views
+            .call_hierarchy_incoming
+            .entry(url)
+            .or_default()
+            .push((range, list));
     }
 
     // 5c. Outgoing
     let mut temp_out: HashMap<(Url, Range), Vec<(CallHierarchyItem, Range)>> = HashMap::new();
     if let Ok(sols) = run_select(store, QUERY_CALL_OUTGOING) {
         for sol in sols {
-            let item_doc = sol.get("itemDocUri").map(term_to_string).unwrap_or_default();
-            let callee_doc = sol.get("calleeDocUri").map(term_to_string).unwrap_or_default();
-            if let (Ok(item_url), Ok(callee_url)) = (Url::parse(&item_doc), Url::parse(&callee_doc)) {
+            let item_doc = sol
+                .get("itemDocUri")
+                .map(term_to_string)
+                .unwrap_or_default();
+            let callee_doc = sol
+                .get("calleeDocUri")
+                .map(term_to_string)
+                .unwrap_or_default();
+            if let (Ok(item_url), Ok(callee_url)) = (Url::parse(&item_doc), Url::parse(&callee_doc))
+            {
                 let ir = item_range(&sol);
                 let ifr = item_full(&sol, ir);
                 let cr = callee_range(&sol);
@@ -198,8 +296,15 @@ pub(super) fn populate_call_hierarchy(store: &Store, views: &MaterializedViewSto
                 let rr = ref_range(&sol);
                 if contains_position(&ifr, rr.start) {
                     let callee_item = CallHierarchyItem {
-                        name: sol.get("calleeName").map(term_to_string).unwrap_or_default(),
-                        kind: parse_symbol_kind(&sol.get("calleeKind").map(term_to_string).unwrap_or_default()),
+                        name: sol
+                            .get("calleeName")
+                            .map(term_to_string)
+                            .unwrap_or_default(),
+                        kind: parse_symbol_kind(
+                            &sol.get("calleeKind")
+                                .map(term_to_string)
+                                .unwrap_or_default(),
+                        ),
                         tags: None,
                         detail: sol.get("calleeDetail").map(term_to_string),
                         uri: callee_url.to_string().parse().unwrap(),
@@ -207,7 +312,10 @@ pub(super) fn populate_call_hierarchy(store: &Store, views: &MaterializedViewSto
                         selection_range: cr,
                         data: None,
                     };
-                    temp_out.entry((item_url, ir)).or_default().push((callee_item, rr));
+                    temp_out
+                        .entry((item_url, ir))
+                        .or_default()
+                        .push((callee_item, rr));
                 }
             }
         }
@@ -215,11 +323,23 @@ pub(super) fn populate_call_hierarchy(store: &Store, views: &MaterializedViewSto
     for ((url, range), calls) in temp_out {
         let mut grouped: HashMap<Uri, (CallHierarchyItem, Vec<Range>)> = HashMap::new();
         for (item, rr) in calls {
-            grouped.entry(item.uri.clone()).or_insert((item, vec![])).1.push(rr);
+            grouped
+                .entry(item.uri.clone())
+                .or_insert((item, vec![]))
+                .1
+                .push(rr);
         }
-        let list: Vec<CallHierarchyOutgoingCall> = grouped.into_values()
-            .map(|(item, ranges)| CallHierarchyOutgoingCall { to: item, from_ranges: ranges })
+        let list: Vec<CallHierarchyOutgoingCall> = grouped
+            .into_values()
+            .map(|(item, ranges)| CallHierarchyOutgoingCall {
+                to: item,
+                from_ranges: ranges,
+            })
             .collect();
-        views.call_hierarchy_outgoing.entry(url).or_default().push((range, list));
+        views
+            .call_hierarchy_outgoing
+            .entry(url)
+            .or_default()
+            .push((range, list));
     }
 }

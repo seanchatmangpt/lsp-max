@@ -1,28 +1,28 @@
 //! Assorted middleware that implements LSP server semantics.
 
-pub use self::initialize::{Initialize, InitializeService};
-pub use self::shutdown::{Shutdown, ShutdownService};
-pub use self::exit::{Exit, ExitService};
-pub use self::normal::{Normal, NormalService};
-pub use self::permissive::{Permissive, PermissiveService};
+pub(crate) use self::cancellation::Cancellable;
 pub use self::catch_unwind::{CatchUnwind, CatchUnwindService};
 pub use self::document_sync::{DocumentSync, DocumentSyncService};
-pub(crate) use self::cancellation::Cancellable;
+pub use self::exit::{Exit, ExitService};
+pub use self::initialize::{Initialize, InitializeService};
+pub use self::normal::{Normal, NormalService};
+pub use self::permissive::{Permissive, PermissiveService};
+pub use self::shutdown::{Shutdown, ShutdownService};
 
-mod initialize;
-mod shutdown;
+pub(super) mod cancellation;
+mod catch_unwind;
+mod document_sync;
 mod exit;
+mod initialize;
 mod normal;
 mod permissive;
-mod catch_unwind;
-pub(super) mod cancellation;
-mod document_sync;
+mod shutdown;
 
 #[cfg(test)]
 mod tests;
 
-use crate::jsonrpc::{not_initialized_error, Error, Id, Response};
 use super::state::State;
+use crate::jsonrpc::{not_initialized_error, Error, Id, Response};
 
 fn not_initialized_response(id: Option<Id>, server_state: State) -> Option<Response> {
     let id = id?;

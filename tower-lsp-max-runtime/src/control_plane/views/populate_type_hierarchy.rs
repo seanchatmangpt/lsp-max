@@ -1,10 +1,10 @@
 //! Type hierarchy view population (prepare, supertypes, subtypes) via SPARQL.
 
-use url::Url;
+use super::helpers::{parse_symbol_kind, run_select, term_to_string, term_to_u32};
+use super::types::MaterializedViewStore;
 use lsp_types_max::{Position, Range, TypeHierarchyItem};
 use oxigraph::store::Store;
-use super::types::MaterializedViewStore;
-use super::helpers::{term_to_string, term_to_u32, run_select, parse_symbol_kind};
+use url::Url;
 
 const QUERY_TYPE_PREPARE: &str = "
     PREFIX lsif: <https://microsoft.github.io/language-server-protocol/specifications/lsif/0.6.0/specification/>
@@ -88,28 +88,69 @@ const QUERY_TYPE_SUBTYPES: &str = "
 
 type Sol = oxigraph::sparql::QuerySolution;
 
-fn u(sol: &Sol, key: &str) -> u32 { sol.get(key).map(term_to_u32).unwrap_or(0) }
-fn uf(sol: &Sol, key: &str, fallback: u32) -> u32 { sol.get(key).map(term_to_u32).unwrap_or(fallback) }
+fn u(sol: &Sol, key: &str) -> u32 {
+    sol.get(key).map(term_to_u32).unwrap_or(0)
+}
+fn uf(sol: &Sol, key: &str, fallback: u32) -> u32 {
+    sol.get(key).map(term_to_u32).unwrap_or(fallback)
+}
 
 fn mk(sl: u32, sc: u32, el: u32, ec: u32) -> Range {
     Range::new(Position::new(sl, sc), Position::new(el, ec))
 }
 
-fn src_range(sol: &Sol) -> Range { mk(u(sol,"srcStartLine"), u(sol,"srcStartChar"), u(sol,"srcEndLine"), u(sol,"srcEndChar")) }
-fn dest_range(sol: &Sol) -> Range { mk(u(sol,"destStartLine"), u(sol,"destStartChar"), u(sol,"destEndLine"), u(sol,"destEndChar")) }
-fn item_range(sol: &Sol) -> Range { mk(u(sol,"itemStartLine"), u(sol,"itemStartChar"), u(sol,"itemEndLine"), u(sol,"itemEndChar")) }
+fn src_range(sol: &Sol) -> Range {
+    mk(
+        u(sol, "srcStartLine"),
+        u(sol, "srcStartChar"),
+        u(sol, "srcEndLine"),
+        u(sol, "srcEndChar"),
+    )
+}
+fn dest_range(sol: &Sol) -> Range {
+    mk(
+        u(sol, "destStartLine"),
+        u(sol, "destStartChar"),
+        u(sol, "destEndLine"),
+        u(sol, "destEndChar"),
+    )
+}
+fn item_range(sol: &Sol) -> Range {
+    mk(
+        u(sol, "itemStartLine"),
+        u(sol, "itemStartChar"),
+        u(sol, "itemEndLine"),
+        u(sol, "itemEndChar"),
+    )
+}
 
 fn dest_full(sol: &Sol, fallback: Range) -> Range {
-    mk(uf(sol,"destFullStartLine",fallback.start.line), uf(sol,"destFullStartChar",fallback.start.character),
-       uf(sol,"destFullEndLine",fallback.end.line), uf(sol,"destFullEndChar",fallback.end.character))
+    mk(
+        uf(sol, "destFullStartLine", fallback.start.line),
+        uf(sol, "destFullStartChar", fallback.start.character),
+        uf(sol, "destFullEndLine", fallback.end.line),
+        uf(sol, "destFullEndChar", fallback.end.character),
+    )
 }
 
 fn item_full(sol: &Sol, fallback: Range) -> Range {
-    mk(uf(sol,"itemFullStartLine",fallback.start.line), uf(sol,"itemFullStartChar",fallback.start.character),
-       uf(sol,"itemFullEndLine",fallback.end.line), uf(sol,"itemFullEndChar",fallback.end.character))
+    mk(
+        uf(sol, "itemFullStartLine", fallback.start.line),
+        uf(sol, "itemFullStartChar", fallback.start.character),
+        uf(sol, "itemFullEndLine", fallback.end.line),
+        uf(sol, "itemFullEndChar", fallback.end.character),
+    )
 }
 
-fn type_item_from(sol: &Sol, name_key: &str, kind_key: &str, detail_key: &str, url: Url, range: Range, full: Range) -> TypeHierarchyItem {
+fn type_item_from(
+    sol: &Sol,
+    name_key: &str,
+    kind_key: &str,
+    detail_key: &str,
+    url: Url,
+    range: Range,
+    full: Range,
+) -> TypeHierarchyItem {
     TypeHierarchyItem {
         name: sol.get(name_key).map(term_to_string).unwrap_or_default(),
         kind: parse_symbol_kind(&sol.get(kind_key).map(term_to_string).unwrap_or_default()),
@@ -127,13 +168,28 @@ pub(super) fn populate_type_hierarchy(store: &Store, views: &MaterializedViewSto
     if let Ok(sols) = run_select(store, QUERY_TYPE_PREPARE) {
         for sol in sols {
             let src_doc = sol.get("srcDocUri").map(term_to_string).unwrap_or_default();
-            let item_doc = sol.get("itemDocUri").map(term_to_string).unwrap_or_default();
+            let item_doc = sol
+                .get("itemDocUri")
+                .map(term_to_string)
+                .unwrap_or_default();
             if let (Ok(src_url), Ok(item_url)) = (Url::parse(&src_doc), Url::parse(&item_doc)) {
                 let sr = src_range(&sol);
                 let ir = item_range(&sol);
                 let ifr = item_full(&sol, ir);
-                let ti = type_item_from(&sol, "itemName", "itemKind", "itemDetail", item_url, ir, ifr);
-                views.type_hierarchy_prepare.entry(src_url).or_default().push((sr, vec![ti]));
+                let ti = type_item_from(
+                    &sol,
+                    "itemName",
+                    "itemKind",
+                    "itemDetail",
+                    item_url,
+                    ir,
+                    ifr,
+                );
+                views
+                    .type_hierarchy_prepare
+                    .entry(src_url)
+                    .or_default()
+                    .push((sr, vec![ti]));
             }
         }
     }
@@ -142,13 +198,28 @@ pub(super) fn populate_type_hierarchy(store: &Store, views: &MaterializedViewSto
     if let Ok(sols) = run_select(store, QUERY_TYPE_SUPERTYPES) {
         for sol in sols {
             let src_doc = sol.get("srcDocUri").map(term_to_string).unwrap_or_default();
-            let dest_doc = sol.get("destDocUri").map(term_to_string).unwrap_or_default();
+            let dest_doc = sol
+                .get("destDocUri")
+                .map(term_to_string)
+                .unwrap_or_default();
             if let (Ok(src_url), Ok(dest_url)) = (Url::parse(&src_doc), Url::parse(&dest_doc)) {
                 let sr = src_range(&sol);
                 let dr = dest_range(&sol);
                 let dfr = dest_full(&sol, dr);
-                let ti = type_item_from(&sol, "destName", "destKind", "destDetail", dest_url, dr, dfr);
-                views.type_hierarchy_supertypes.entry(src_url).or_default().push((sr, vec![ti]));
+                let ti = type_item_from(
+                    &sol,
+                    "destName",
+                    "destKind",
+                    "destDetail",
+                    dest_url,
+                    dr,
+                    dfr,
+                );
+                views
+                    .type_hierarchy_supertypes
+                    .entry(src_url)
+                    .or_default()
+                    .push((sr, vec![ti]));
             }
         }
     }
@@ -157,14 +228,22 @@ pub(super) fn populate_type_hierarchy(store: &Store, views: &MaterializedViewSto
     if let Ok(sols) = run_select(store, QUERY_TYPE_SUBTYPES) {
         for sol in sols {
             let src_doc = sol.get("srcDocUri").map(term_to_string).unwrap_or_default();
-            let dest_doc = sol.get("destDocUri").map(term_to_string).unwrap_or_default();
+            let dest_doc = sol
+                .get("destDocUri")
+                .map(term_to_string)
+                .unwrap_or_default();
             if let (Ok(src_url), Ok(dest_url)) = (Url::parse(&src_doc), Url::parse(&dest_doc)) {
                 let sr = src_range(&sol);
                 let dr = dest_range(&sol);
                 // subtypes: the "dest" full fields carry the subtype item's full span
                 let dfr = dest_full(&sol, sr);
-                let ti = type_item_from(&sol, "destName", "destKind", "destDetail", src_url, sr, dfr);
-                views.type_hierarchy_subtypes.entry(dest_url).or_default().push((dr, vec![ti]));
+                let ti =
+                    type_item_from(&sol, "destName", "destKind", "destDetail", src_url, sr, dfr);
+                views
+                    .type_hierarchy_subtypes
+                    .entry(dest_url)
+                    .or_default()
+                    .push((dr, vec![ti]));
             }
         }
     }

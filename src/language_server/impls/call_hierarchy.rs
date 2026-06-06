@@ -1,5 +1,5 @@
 use crate::jsonrpc::{Error, Result};
-use lsp_types::{
+use lsp_types_max::{
     CallHierarchyIncomingCall, CallHierarchyIncomingCallsParams, CallHierarchyItem,
     CallHierarchyOutgoingCall, CallHierarchyOutgoingCallsParams, CallHierarchyPrepareParams,
 };
@@ -13,8 +13,10 @@ pub async fn prepare_call_hierarchy(
     let pos = params.text_document_position_params.position;
     let views = tower_lsp_max_runtime::control_plane::views::get_views();
     let url = Url::parse(uri.as_str()).map_err(|_| Error::internal_error())?;
-    
-    if let Some(items) = tower_lsp_max_runtime::control_plane::views::lookup_call_hierarchy_prepare(views, &url, pos) {
+
+    if let Some(items) =
+        tower_lsp_max_runtime::control_plane::views::lookup_call_hierarchy_prepare(views, &url, pos)
+    {
         Ok(Some(items))
     } else {
         Ok(None)
@@ -29,8 +31,10 @@ pub async fn incoming_calls(
     let pos = params.item.selection_range.start;
     let views = tower_lsp_max_runtime::control_plane::views::get_views();
     let url = Url::parse(uri.as_str()).map_err(|_| Error::internal_error())?;
-    
-    if let Some(calls) = tower_lsp_max_runtime::control_plane::views::lookup_call_hierarchy_incoming(views, &url, pos) {
+
+    if let Some(calls) = tower_lsp_max_runtime::control_plane::views::lookup_call_hierarchy_incoming(
+        views, &url, pos,
+    ) {
         Ok(Some(calls))
     } else {
         Ok(None)
@@ -45,8 +49,10 @@ pub async fn outgoing_calls(
     let pos = params.item.selection_range.start;
     let views = tower_lsp_max_runtime::control_plane::views::get_views();
     let url = Url::parse(uri.as_str()).map_err(|_| Error::internal_error())?;
-    
-    if let Some(calls) = tower_lsp_max_runtime::control_plane::views::lookup_call_hierarchy_outgoing(views, &url, pos) {
+
+    if let Some(calls) = tower_lsp_max_runtime::control_plane::views::lookup_call_hierarchy_outgoing(
+        views, &url, pos,
+    ) {
         Ok(Some(calls))
     } else {
         Ok(None)

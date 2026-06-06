@@ -1,15 +1,15 @@
-pub mod types;
 pub mod helpers;
 pub mod lookups;
+pub mod populate_call_hierarchy;
 pub mod populate_defs_refs;
 pub mod populate_hover_diag;
-pub mod populate_call_hierarchy;
 pub mod populate_type_hierarchy;
+pub mod types;
 pub mod update;
 
-pub use types::*;
 pub use helpers::*;
 pub use lookups::*;
+pub use types::*;
 pub use update::*;
 
 use std::sync::OnceLock;

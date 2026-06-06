@@ -1,13 +1,13 @@
+use futures::future::{BoxFuture, FutureExt};
 use std::sync::Arc;
 use std::task::{Context, Poll};
-use futures::future::{BoxFuture, FutureExt};
 use tower::{Layer, Service};
 use tracing::info;
 
-use super::Cancellable;
-use super::super::ExitedError;
 use super::super::pending::Pending;
 use super::super::state::{ServerState, State};
+use super::super::ExitedError;
+use super::Cancellable;
 use crate::jsonrpc::{Request, Response};
 
 /// Middleware which implements `shutdown` request semantics.

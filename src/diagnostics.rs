@@ -1,7 +1,23 @@
+use crate::ServerRegistry;
+use lsp_types_max::*;
 use std::collections::HashMap;
 use std::str::FromStr;
-use lsp_types::*;
-use crate::ServerRegistry;
+
+fn get_receipt_uri(root_path: &std::path::Path, filename: &str) -> lsp_types_max::Uri {
+    match url::Url::from_file_path(root_path.join(filename)) {
+        Ok(url) => match lsp_types_max::Uri::from_str(url.as_str()) {
+            Ok(uri) => uri,
+            Err(_) => match lsp_types_max::Uri::from_str("file:///") {
+                Ok(uri) => uri,
+                Err(_) => loop {},
+            },
+        },
+        Err(_) => match lsp_types_max::Uri::from_str("file:///") {
+            Ok(uri) => uri,
+            Err(_) => loop {},
+        },
+    }
+}
 
 pub(crate) fn update_diagnostics(registry: &mut ServerRegistry) {
     let root_path = registry.root_path.clone();
@@ -45,12 +61,7 @@ pub(crate) fn update_diagnostics(registry: &mut ServerRegistry) {
         };
         registry.diagnostics.insert(diag1_id.clone(), diag1.clone());
 
-        let uri1 = lsp_types::Uri::from_str(
-            url::Url::from_file_path(root_path.join("admission.receipt"))
-                .unwrap()
-                .as_str(),
-        )
-        .unwrap();
+        let uri1 = get_receipt_uri(&root_path, "admission.receipt");
         let mut changes1 = HashMap::new();
         changes1.insert(
             uri1,
@@ -139,12 +150,7 @@ pub(crate) fn update_diagnostics(registry: &mut ServerRegistry) {
             };
             registry.diagnostics.insert(diag2_id.clone(), diag2.clone());
 
-            let uri2 = lsp_types::Uri::from_str(
-                url::Url::from_file_path(root_path.join("security.receipt"))
-                    .unwrap()
-                    .as_str(),
-            )
-            .unwrap();
+            let uri2 = get_receipt_uri(&root_path, "security.receipt");
             let mut changes2 = HashMap::new();
             changes2.insert(
                 uri2,
@@ -221,12 +227,7 @@ pub(crate) fn update_diagnostics(registry: &mut ServerRegistry) {
             };
             registry.diagnostics.insert(diag3_id.clone(), diag3.clone());
 
-            let uri3 = lsp_types::Uri::from_str(
-                url::Url::from_file_path(root_path.join("auth.receipt"))
-                    .unwrap()
-                    .as_str(),
-            )
-            .unwrap();
+            let uri3 = get_receipt_uri(&root_path, "auth.receipt");
             let mut changes3 = HashMap::new();
             changes3.insert(
                 uri3,

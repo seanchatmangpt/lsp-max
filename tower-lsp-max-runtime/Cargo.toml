@@ -8,7 +8,7 @@ description = "Runtime snapshotting and state tracking for tower-lsp-max"
 tower-lsp-max-protocol = { path = "../tower-lsp-max-protocol", version = "26.6.5" }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-lsp-types-max = { version = "0.97.0", package = "lsp-types" }
+lsp-types-max = { path = "../../lsp-types-max", version = "26.6.5" }
 oxigraph = "0.5.8"
 tower-lsp-max-base = { path = "../crates/tower-lsp-max-base" }
 tower-lsp-max-lsif = { path = "../crates/tower-lsp-max-lsif" }
@@ -18,7 +18,7 @@ uuid = { version = "1.0", features = ["v4", "serde"] }
 thiserror = "1"
 dashmap = "5.1"
 rand_core = { version = "0.6", features = ["getrandom"] }
-wasm4pm-compat = { path = "/Users/sac/wasm4pm-compat", version = "26.6.5", features = ["formats", "strict", "wasm4pm"] }
+wasm4pm-compat = { path = "../../wasm4pm-compat", version = "26.6.5", features = ["formats", "strict", "wasm4pm"] }
 url = "2.5"
 
 

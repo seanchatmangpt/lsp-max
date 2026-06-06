@@ -1,11 +1,11 @@
 use serde::{Deserialize, Serialize};
 use tower_lsp_max_protocol::{LawAxis, MaxDiagnostic, Repairability, Terminality};
 
-pub mod queries;
 mod helpers;
+pub mod queries;
 
-pub use queries::*;
 use helpers::*;
+pub use queries::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct VerificationReport {

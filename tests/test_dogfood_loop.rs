@@ -8,10 +8,10 @@ use tower_lsp_max::{Client, ExitedError, LanguageServer, LspService, Server};
 
 #[derive(Clone, Default)]
 struct TestEvents {
-    did_open_notebook: Arc<Mutex<Option<lsp318::DidOpenNotebookDocumentParams>>>,
-    set_trace: Arc<Mutex<Option<lsp318::SetTraceParams>>>,
-    progress: Arc<Mutex<Option<lsp318::ProgressParams>>>,
-    work_done_cancel: Arc<Mutex<Option<lsp318::WorkDoneProgressCancelParams>>>,
+    did_open_notebook: Arc<Mutex<Option<lsp::DidOpenNotebookDocumentParams>>>,
+    set_trace: Arc<Mutex<Option<lsp::SetTraceParams>>>,
+    progress: Arc<Mutex<Option<lsp::ProgressParams>>>,
+    work_done_cancel: Arc<Mutex<Option<lsp::WorkDoneProgressCancelParams>>>,
 }
 
 struct DogfoodBackend {
@@ -92,24 +92,24 @@ impl LanguageServer for DogfoodBackend {
 
     async fn inline_completion(
         &self,
-        params: lsp318::InlineCompletionParams,
-    ) -> Result<Option<serde_json::Value>> {
+        params: lsp::InlineCompletionParams,
+    ) -> Result<Option<lsp::InlineCompletionResponse>> {
         println!("Server: inline_completion called");
         assert_eq!(
-            params
-                .text_document_position_params_base
-                .text_document
-                .uri
-                .as_str(),
+            params.text_document_position.text_document.uri.as_str(),
             "file:///dogfood.rs"
         );
-        Ok(Some(serde_json::json!({
-            "items": [
-                {
-                    "insertText": "dogfood_inline_completion_text",
-                }
-            ]
-        })))
+        Ok(Some(lsp::InlineCompletionResponse::List(
+            lsp::InlineCompletionList {
+                items: vec![lsp::InlineCompletionItem {
+                    insert_text: lsp::StringOrStringValue::String("dogfood_inline_completion_text".to_string()),
+                    filter_text: None,
+                    range: None,
+                    command: None,
+                    insert_text_format: None,
+                }],
+            },
+        )))
     }
 
     async fn text_document_content(
@@ -144,22 +144,22 @@ impl LanguageServer for DogfoodBackend {
         }]))
     }
 
-    async fn did_open_notebook_document(&self, params: lsp318::DidOpenNotebookDocumentParams) {
+    async fn did_open_notebook_document(&self, params: lsp::DidOpenNotebookDocumentParams) {
         println!("Server: did_open_notebook_document called");
         *self.events.did_open_notebook.lock().unwrap() = Some(params);
     }
 
-    async fn set_trace(&self, params: lsp318::SetTraceParams) {
+    async fn set_trace(&self, params: lsp::SetTraceParams) {
         println!("Server: set_trace called");
         *self.events.set_trace.lock().unwrap() = Some(params);
     }
 
-    async fn progress(&self, params: lsp318::ProgressParams) {
+    async fn progress(&self, params: lsp::ProgressParams) {
         println!("Server: progress called");
         *self.events.progress.lock().unwrap() = Some(params);
     }
 
-    async fn work_done_progress_cancel(&self, params: lsp318::WorkDoneProgressCancelParams) {
+    async fn work_done_progress_cancel(&self, params: lsp::WorkDoneProgressCancelParams) {
         println!("Server: work_done_progress_cancel called");
         *self.events.work_done_cancel.lock().unwrap() = Some(params);
     }
@@ -551,18 +551,18 @@ async fn test_dogfood_loopback_integration() {
         assert_eq!(did_open.notebook_document.notebook_type, "jupyter");
 
         let set_trace = events.set_trace.lock().unwrap().take().unwrap();
-        assert_eq!(set_trace.value, lsp318::TraceValue::Verbose);
+        assert_eq!(set_trace.value, lsp::TraceValue::Verbose);
 
         let progress = events.progress.lock().unwrap().take().unwrap();
         assert_eq!(
             progress.token,
-            lsp318::IntegerOrString::String("test-progress-token".to_string())
+            lsp::NumberOrString::String("test-progress-token".to_string())
         );
 
         let cancel = events.work_done_cancel.lock().unwrap().take().unwrap();
         assert_eq!(
             cancel.token,
-            lsp318::IntegerOrString::String("test-progress-token".to_string())
+            lsp::NumberOrString::String("test-progress-token".to_string())
         );
     }
     println!("Client: server notifications verified successfully");

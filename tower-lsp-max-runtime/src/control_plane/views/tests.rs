@@ -1,12 +1,14 @@
-use super::types::*;
-use super::lookups::*;
-use super::update::*;
 use super::helpers::*;
-use lsp_types_max::{Position, Range, SymbolKind, Hover, Location, Uri};
+use super::lookups::*;
+use super::types::*;
+use super::update::*;
+use lsp_types_max::{Diagnostic, Hover, Location, Position, Range, SymbolKind, Uri};
 use oxigraph::model::GraphName;
 use oxigraph::model::NamedNode;
 use oxigraph::store::Store;
-use tower_lsp_max_lsif::lsif::{Element, Vertex, VertexType, Edge, EdgeType, RangeTag, HoverResultData, HoverContents};
+use tower_lsp_max_lsif::lsif::{
+    Edge, EdgeType, Element, HoverContents, HoverResultData, RangeTag, Vertex, VertexType,
+};
 use tower_lsp_max_protocol::MaxDiagnostic;
 use url::Url;
 
@@ -68,9 +70,7 @@ fn test_materialized_views_definition_references_hover_diagnostics() {
             id: lsp_types_max::NumberOrString::Number(6),
             type_: VertexType::Vertex,
             result: HoverResultData {
-                contents: HoverContents::String(
-                    "This is foo function".to_string(),
-                ),
+                contents: HoverContents::String("This is foo function".to_string()),
                 range: None,
             },
         }),
@@ -140,8 +140,12 @@ fn test_materialized_views_definition_references_hover_diagnostics() {
     // Populate store with quads
     for el in &elements {
         let mut quads = Vec::new();
-        crate::control_plane::admission::mapping::map_element_to_quads(el, &active_graph, &mut quads)
-            .unwrap();
+        crate::control_plane::admission::mapping::map_element_to_quads(
+            el,
+            &active_graph,
+            &mut quads,
+        )
+        .unwrap();
         for quad in quads {
             store.insert(&quad).unwrap();
         }
@@ -164,8 +168,10 @@ fn test_materialized_views_definition_references_hover_diagnostics() {
 
     // Map live diag to store
     for diag in &live_diags {
-        let quads =
-            crate::control_plane::admission::mapping_helpers::map_diagnostic_to_quads(diag, &active_graph);
+        let quads = crate::control_plane::admission::mapping_helpers::map_diagnostic_to_quads(
+            diag,
+            &active_graph,
+        );
         for quad in quads {
             store.insert(&quad).unwrap();
         }
@@ -268,9 +274,7 @@ fn test_materialized_view_store_lookups() {
             id: lsp_types_max::NumberOrString::Number(6),
             type_: VertexType::Vertex,
             result: HoverResultData {
-                contents: HoverContents::String(
-                    "This is foo function".to_string(),
-                ),
+                contents: HoverContents::String("This is foo function".to_string()),
                 range: None,
             },
         }),
@@ -331,8 +335,12 @@ fn test_materialized_view_store_lookups() {
 
     for el in &elements {
         let mut quads = Vec::new();
-        crate::control_plane::admission::mapping::map_element_to_quads(el, &active_graph, &mut quads)
-            .unwrap();
+        crate::control_plane::admission::mapping::map_element_to_quads(
+            el,
+            &active_graph,
+            &mut quads,
+        )
+        .unwrap();
         for quad in quads {
             store.insert(&quad).unwrap();
         }
@@ -353,8 +361,10 @@ fn test_materialized_view_store_lookups() {
     }];
 
     for diag in &live_diags {
-        let quads =
-            crate::control_plane::admission::mapping_helpers::map_diagnostic_to_quads(diag, &active_graph);
+        let quads = crate::control_plane::admission::mapping_helpers::map_diagnostic_to_quads(
+            diag,
+            &active_graph,
+        );
         for quad in quads {
             store.insert(&quad).unwrap();
         }

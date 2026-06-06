@@ -1,14 +1,14 @@
+use futures::future::{self, Ready};
 use std::marker::PhantomData;
 use std::sync::Arc;
 use std::task::{Context, Poll};
-use futures::future::{self, Ready};
 use tower::{Layer, Service};
 use tracing::info;
 
-use super::super::ExitedError;
 use super::super::client::Client;
 use super::super::pending::Pending;
 use super::super::state::{ServerState, State};
+use super::super::ExitedError;
 use crate::jsonrpc::{Request, Response};
 
 /// Middleware which implements `exit` notification semantics.

@@ -192,3 +192,52 @@ Verify that all workspace crates (`tower-lsp-max`, `tower-lsp-max-protocol`, `to
 - [ ] Every source file is under 500 LOC (with unit tests extracted where necessary).
 - [ ] Module-level and item-level docstrings are preserved.
 
+## Follow-up — 2026-06-06T17:50:34Z
+
+A production-grade verification audit on `tower-lsp-max` and `lsp-types-max` to enforce the 10 gates of the Anti-fake Law, ensuring every requirement R1-R7 has a corresponding bypass-kill proof, fresh-clone verification, and black-box protocol test.
+
+Working directory: /Users/sac/tower-lsp-max
+Integrity mode: benchmark
+
+## Requirements
+
+### R1. Fresh-Clone Receipts (Gate 1)
+Clone both `tower-lsp-max` and `lsp-types-max` into fresh environments, run complete test suites and clippy checks, and record exact command outputs with the commit SHAs.
+
+### R2. Bypass-Kill Matrix Verification (Gate 2, 4, 6, 7)
+Perform deliberate sabotage/bypass tests on each of the core requirements (R1–R7) and components (e.g. `CapabilityTracker`, `method_strategy`, `DocumentVersionTracker`, `TransactionEditGate`, `SourceHealth`, `StaticGraphSource`). Prove that disabling or bypassing these components causes at least one test to fail.
+
+### R3. Exhaustive Checks and Fraud Scan (Gate 5, 8)
+Run a comprehensive fraud scan searching for stubs (`todo!`, `unimplemented!`), raw JSON fallbacks, or panics in the hot path, and justify all hits. Verify that all LSP method families map to explicit routing strategies.
+
+### R4. Black-Box Protocol Transcript Tests (Gate 3)
+Verify at least one behavior for every requirement (R1–R7) using JSON-RPC/LSP request/response transcript tests, bypassing direct internal function calls to prevent mock-only successes.
+
+### R5. Complete Verification Report (Gate 9, 10)
+Produce a report receipt matching the required final wording and report receipt format for all requirements, confirming the status of each.
+
+## Acceptance Criteria
+
+### Execution & Verification
+- [ ] Fresh-clone tests and clippy pass with zero errors on both repositories.
+- [ ] Sabotage/bypass proof is provided for R1-R7 (at least one failing test per bypass).
+- [ ] Fraud scan output is compiled and every match is fully justified.
+- [ ] Workspace edit paths are proven to fail if `TransactionEditGate` is bypassed.
+- [ ] All 10 acceptance gates are satisfied and documented in the final report.
+- [ ] Final receipt uses the exact format required by Gate 9 and final wording required by Gate 10.
+
+## Follow-up — 2026-06-06T17:51:01Z
+
+Hello! The user has added a new hard requirement to the audit scope: R8 — `playground/` Composite LSP Dogfood Harness. Please update your audit, implementation, and verification tasks to include R8.
+
+Here are the requirements and acceptance criteria for R8:
+- R8: `playground/` must launch a composite LSP using `tower-lsp-max` and operate against real `tower-lsp-max` / `lsp-types-max` source workspaces. It must compose at least two upstream sources (e.g. static graph + upstream/mock), exercise read-only and mutation LSP methods, show source attribution, show staleness outcomes, show TransactionEditGate behavior, demonstrate upstream failure degradation, and write transcript receipts into `playground/receipts/<timestamp>.jsonl`.
+- Sabotage checks: Replacing composite router, capability tracker, doc version tracker, edit gate, static graph, or failure handling with a bypass/no-op must cause named tests or playground transcript checks to fail.
+- Please update the final acceptance receipt format to include R8 and satisfy the acceptance criteria.
+
+## Follow-up — 2026-06-06T18:22:22Z
+
+The user has explicitly requested: 'launch 5 subagents to help fill the gaps by writing/updating code'. Please ensure that the orchestrator spawns the 5 specialized coding subagents to implement, edit, and verify the R8 dogfood harness, transaction gates, version tracks, and routing matrix.
+
+
+

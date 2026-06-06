@@ -23,7 +23,9 @@ pub enum MeshAction {
         action_id: String,
         description: String,
     },
-    ResetInstance { instance_id: InstanceId },
+    ResetInstance {
+        instance_id: InstanceId,
+    },
 }
 
 impl std::fmt::Display for MeshAction {

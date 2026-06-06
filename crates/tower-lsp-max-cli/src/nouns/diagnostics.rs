@@ -53,16 +53,16 @@ impl DiagnosticsService {
                         line: 1,
                         message: diag.lsp.message.clone(),
                         severity: match diag.lsp.severity {
-                            Some(s) if s == lsp_types::DiagnosticSeverity::ERROR => {
+                            Some(s) if s == lsp_types_max::DiagnosticSeverity::ERROR => {
                                 DiagnosticSeverity::Error
                             }
-                            Some(s) if s == lsp_types::DiagnosticSeverity::WARNING => {
+                            Some(s) if s == lsp_types_max::DiagnosticSeverity::WARNING => {
                                 DiagnosticSeverity::Warning
                             }
-                            Some(s) if s == lsp_types::DiagnosticSeverity::INFORMATION => {
+                            Some(s) if s == lsp_types_max::DiagnosticSeverity::INFORMATION => {
                                 DiagnosticSeverity::Info
                             }
-                            Some(s) if s == lsp_types::DiagnosticSeverity::HINT => {
+                            Some(s) if s == lsp_types_max::DiagnosticSeverity::HINT => {
                                 DiagnosticSeverity::Hint
                             }
                             _ => DiagnosticSeverity::Error,
@@ -77,16 +77,16 @@ impl DiagnosticsService {
                     line: 1,
                     message: diag.lsp.message.clone(),
                     severity: match diag.lsp.severity {
-                        Some(s) if s == lsp_types::DiagnosticSeverity::ERROR => {
+                        Some(s) if s == lsp_types_max::DiagnosticSeverity::ERROR => {
                             DiagnosticSeverity::Error
                         }
-                        Some(s) if s == lsp_types::DiagnosticSeverity::WARNING => {
+                        Some(s) if s == lsp_types_max::DiagnosticSeverity::WARNING => {
                             DiagnosticSeverity::Warning
                         }
-                        Some(s) if s == lsp_types::DiagnosticSeverity::INFORMATION => {
+                        Some(s) if s == lsp_types_max::DiagnosticSeverity::INFORMATION => {
                             DiagnosticSeverity::Info
                         }
-                        Some(s) if s == lsp_types::DiagnosticSeverity::HINT => {
+                        Some(s) if s == lsp_types_max::DiagnosticSeverity::HINT => {
                             DiagnosticSeverity::Hint
                         }
                         _ => DiagnosticSeverity::Error,

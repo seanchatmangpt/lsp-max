@@ -1,7 +1,7 @@
 use super::super::invariants::VerificationReport;
 use super::super::receipts::{Blake3Hash, CryptographicReceipt};
-use tower_lsp_max_lsif::lsif::{Element};
-use crate::{Law, Phase, Data, Machine};
+use crate::{Data, Law, Machine, Phase};
+use tower_lsp_max_lsif::lsif::Element;
 
 #[derive(Debug, Clone)]
 pub enum GraphAdmissionError {

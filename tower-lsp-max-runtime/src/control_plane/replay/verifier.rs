@@ -5,7 +5,7 @@ use std::collections::HashMap;
 
 use crate::control_plane::receipts::{Blake3Hash, CryptographicReceipt};
 
-use super::clock::{ReplayClock, ReplayEntropy, hash_query_results, preprocess_query};
+use super::clock::{hash_query_results, preprocess_query, ReplayClock, ReplayEntropy};
 
 fn find_matching_graph_name(store: &Store, hash_or_uri: &str) -> Option<GraphName> {
     if hash_or_uri == "default" || hash_or_uri.is_empty() {

@@ -3,7 +3,7 @@
 use std::fmt::{self, Debug, Formatter};
 use std::marker::PhantomData;
 
-use lsp_types::{
+use lsp_types_max::{
     notification::Progress as ProgressNotification, ProgressParams, ProgressParamsValue,
     ProgressToken, WorkDoneProgress, WorkDoneProgressBegin, WorkDoneProgressReport,
 };
@@ -350,7 +350,7 @@ impl<B, C> OngoingProgress<B, C> {
             .send_notification::<ProgressNotification>(ProgressParams {
                 token: self.token,
                 value: ProgressParamsValue::WorkDone(WorkDoneProgress::End(
-                    lsp_types::WorkDoneProgressEnd { message },
+                    lsp_types_max::WorkDoneProgressEnd { message },
                 )),
             })
             .await;

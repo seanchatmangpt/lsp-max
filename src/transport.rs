@@ -1,8 +1,8 @@
 //! Generic server for multiplexing bidirectional streams through a transport.
 
-#[cfg(feature = "runtime-agnostic")]
+#[cfg(all(feature = "runtime-agnostic", not(feature = "runtime-tokio")))]
 use async_codec_lite::{FramedRead, FramedWrite};
-#[cfg(feature = "runtime-agnostic")]
+#[cfg(all(feature = "runtime-agnostic", not(feature = "runtime-tokio")))]
 use futures::io::{AsyncRead, AsyncWrite};
 
 #[cfg(feature = "runtime-tokio")]
@@ -201,7 +201,7 @@ fn to_jsonrpc_error(err: ParseError) -> Error {
     }
 }
 
-#[cfg(feature = "runtime-agnostic")]
+#[cfg(all(feature = "runtime-agnostic", not(feature = "runtime-tokio")))]
 fn to_jsonrpc_error(err: impl std::error::Error) -> Error {
     match err.source().and_then(|e| e.downcast_ref()) {
         Some(ParseError::Body(err)) if err.is_data() => Error::invalid_request(),
@@ -213,7 +213,7 @@ fn to_jsonrpc_error(err: impl std::error::Error) -> Error {
 mod tests {
     use std::task::{Context, Poll};
 
-    #[cfg(feature = "runtime-agnostic")]
+    #[cfg(all(feature = "runtime-agnostic", not(feature = "runtime-tokio")))]
     use futures::io::Cursor;
     #[cfg(feature = "runtime-tokio")]
     use std::io::Cursor;

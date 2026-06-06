@@ -38,6 +38,7 @@ impl LanguageServer for Backend {
                 }),
                 ..ServerCapabilities::default()
             },
+            ..Default::default()
         })
     }
 
@@ -117,7 +118,7 @@ impl LanguageServer for Backend {
 
 #[tokio::main]
 async fn main() {
-    #[cfg(feature = "runtime-agnostic")]
+    #[cfg(all(feature = "runtime-agnostic", not(feature = "runtime-tokio")))]
     use tokio_util::compat::{TokioAsyncReadCompatExt, TokioAsyncWriteCompatExt};
 
     tracing_subscriber::fmt().init();
@@ -146,7 +147,7 @@ async fn main() {
     };
 
     let (read, write) = tokio::io::split(stream);
-    #[cfg(feature = "runtime-agnostic")]
+    #[cfg(all(feature = "runtime-agnostic", not(feature = "runtime-tokio")))]
     let (read, write) = (read.compat(), write.compat_write());
 
     let (service, socket) = LspService::new(|client| Backend { client });

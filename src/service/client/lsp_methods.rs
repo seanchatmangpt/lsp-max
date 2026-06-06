@@ -1,7 +1,7 @@
-use std::fmt::Display;
+use lsp_types_max::*;
 use serde::Serialize;
 use serde_json::Value;
-use lsp_types::*;
+use std::fmt::Display;
 
 use super::Client;
 use crate::jsonrpc;
@@ -25,7 +25,7 @@ impl Client {
         &self,
         registrations: Vec<Registration>,
     ) -> jsonrpc::Result<()> {
-        use lsp_types::request::RegisterCapability;
+        use lsp_types_max::request::RegisterCapability;
         self.send_request::<RegisterCapability>(RegistrationParams { registrations })
             .await
     }
@@ -46,7 +46,7 @@ impl Client {
         &self,
         unregisterations: Vec<Unregistration>,
     ) -> jsonrpc::Result<()> {
-        use lsp_types::request::UnregisterCapability;
+        use lsp_types_max::request::UnregisterCapability;
         self.send_request::<UnregisterCapability>(UnregistrationParams { unregisterations })
             .await
     }
@@ -59,7 +59,7 @@ impl Client {
     ///
     /// [`window/showMessage`]: https://microsoft.github.io/language-server-protocol/specification#window_showMessage
     pub async fn show_message<M: Display>(&self, typ: MessageType, message: M) {
-        use lsp_types::notification::ShowMessage;
+        use lsp_types_max::notification::ShowMessage;
         self.send_notification_unchecked::<ShowMessage>(ShowMessageParams {
             typ,
             message: message.to_string(),
@@ -81,7 +81,7 @@ impl Client {
         message: M,
         actions: Option<Vec<MessageActionItem>>,
     ) -> jsonrpc::Result<Option<MessageActionItem>> {
-        use lsp_types::request::ShowMessageRequest;
+        use lsp_types_max::request::ShowMessageRequest;
         self.send_request_unchecked::<ShowMessageRequest>(ShowMessageRequestParams {
             typ,
             message: message.to_string(),
@@ -96,7 +96,7 @@ impl Client {
     ///
     /// [`window/logMessage`]: https://microsoft.github.io/language-server-protocol/specification#window_logMessage
     pub async fn log_message<M: Display>(&self, typ: MessageType, message: M) {
-        use lsp_types::notification::LogMessage;
+        use lsp_types_max::notification::LogMessage;
         self.send_notification_unchecked::<LogMessage>(LogMessageParams {
             typ,
             message: message.to_string(),
@@ -110,7 +110,7 @@ impl Client {
     ///
     /// [`$/logTrace`]: https://microsoft.github.io/language-server-protocol/specification#logTrace
     pub async fn log_trace(&self, params: LogTraceParams) {
-        use lsp_types::notification::LogTrace;
+        use lsp_types_max::notification::LogTrace;
         self.send_notification_unchecked::<LogTrace>(params).await;
     }
 
@@ -133,7 +133,7 @@ impl Client {
     ///
     /// This request was introduced in specification version 3.16.0.
     pub async fn show_document(&self, params: ShowDocumentParams) -> jsonrpc::Result<bool> {
-        use lsp_types::request::ShowDocument;
+        use lsp_types_max::request::ShowDocument;
         let response = self.send_request::<ShowDocument>(params).await?;
         Ok(response.success)
     }
@@ -151,7 +151,7 @@ impl Client {
         &self,
         params: WorkDoneProgressCreateParams,
     ) -> jsonrpc::Result<()> {
-        use lsp_types::request::WorkDoneProgressCreate;
+        use lsp_types_max::request::WorkDoneProgressCreate;
         self.send_request::<WorkDoneProgressCreate>(params).await
     }
 
@@ -161,7 +161,7 @@ impl Client {
     ///
     /// [`telemetry/event`]: https://microsoft.github.io/language-server-protocol/specification#telemetry_event
     pub async fn telemetry_event<S: Serialize>(&self, data: S) {
-        use lsp_types::notification::TelemetryEvent;
+        use lsp_types_max::notification::TelemetryEvent;
         match serde_json::to_value(data) {
             Err(e) => tracing::error!("invalid JSON in `telemetry/event` notification: {}", e),
             Ok(mut value) => {
@@ -203,7 +203,7 @@ impl Client {
     ///
     /// This request was introduced in specification version 3.16.0.
     pub async fn code_lens_refresh(&self) -> jsonrpc::Result<()> {
-        use lsp_types::request::CodeLensRefresh;
+        use lsp_types_max::request::CodeLensRefresh;
         self.send_request::<CodeLensRefresh>(()).await
     }
 
@@ -230,7 +230,7 @@ impl Client {
     ///
     /// This request was introduced in specification version 3.16.0.
     pub async fn semantic_tokens_refresh(&self) -> jsonrpc::Result<()> {
-        use lsp_types::request::SemanticTokensRefresh;
+        use lsp_types_max::request::SemanticTokensRefresh;
         self.send_request::<SemanticTokensRefresh>(()).await
     }
 
@@ -256,7 +256,7 @@ impl Client {
     ///
     /// This request was introduced in specification version 3.17.0.
     pub async fn inline_value_refresh(&self) -> jsonrpc::Result<()> {
-        use lsp_types::request::InlineValueRefreshRequest;
+        use lsp_types_max::request::InlineValueRefreshRequest;
         self.send_request::<InlineValueRefreshRequest>(()).await
     }
 
@@ -282,7 +282,7 @@ impl Client {
     ///
     /// This request was introduced in specification version 3.17.0.
     pub async fn inlay_hint_refresh(&self) -> jsonrpc::Result<()> {
-        use lsp_types::request::InlayHintRefreshRequest;
+        use lsp_types_max::request::InlayHintRefreshRequest;
         self.send_request::<InlayHintRefreshRequest>(()).await
     }
 
@@ -326,7 +326,7 @@ impl Client {
     ///
     /// This request was introduced in specification version 3.17.0.
     pub async fn workspace_diagnostic_refresh(&self) -> jsonrpc::Result<()> {
-        use lsp_types::request::WorkspaceDiagnosticRefresh;
+        use lsp_types_max::request::WorkspaceDiagnosticRefresh;
         self.send_request::<WorkspaceDiagnosticRefresh>(()).await
     }
 
@@ -335,9 +335,12 @@ impl Client {
     /// This corresponds to the [`workspace/textDocumentContent/refresh`] request.
     pub async fn text_document_content_refresh(
         &self,
-        params: crate::max_protocol::lsp_3_18::TextDocumentContentRefreshParams,
+        params: tower_lsp_max_protocol::lsp_3_18::TextDocumentContentRefreshParams,
     ) -> jsonrpc::Result<()> {
-        self.send_request::<crate::max_protocol::lsp_3_18::TextDocumentContentRefreshRequest>(params).await
+        self.send_request::<tower_lsp_max_protocol::lsp_3_18::TextDocumentContentRefreshRequest>(
+            params,
+        )
+        .await
     }
 
     /// Submits validation diagnostics for an open file with the given URI.
@@ -355,8 +358,8 @@ impl Client {
         diags: Vec<Diagnostic>,
         version: Option<i32>,
     ) {
-        use lsp_types::notification::PublishDiagnostics;
-        self.send_notification::<PublishDiagnostics>(PublishDiagnosticsParams::new(
+        use lsp_types_max::notification::PublishDiagnostics;
+        self.send_notification_unchecked::<PublishDiagnostics>(PublishDiagnosticsParams::new(
             uri, diags, version,
         ))
         .await;
@@ -389,7 +392,7 @@ impl Client {
         &self,
         items: Vec<ConfigurationItem>,
     ) -> jsonrpc::Result<Vec<Value>> {
-        use lsp_types::request::WorkspaceConfiguration;
+        use lsp_types_max::request::WorkspaceConfiguration;
         self.send_request::<WorkspaceConfiguration>(ConfigurationParams { items })
             .await
     }
@@ -414,7 +417,7 @@ impl Client {
     ///
     /// This request was introduced in specification version 3.6.0.
     pub async fn workspace_folders(&self) -> jsonrpc::Result<Option<Vec<WorkspaceFolder>>> {
-        use lsp_types::request::WorkspaceFoldersRequest;
+        use lsp_types_max::request::WorkspaceFoldersRequest;
         self.send_request::<WorkspaceFoldersRequest>(()).await
     }
 
@@ -435,7 +438,7 @@ impl Client {
         &self,
         edit: WorkspaceEdit,
     ) -> jsonrpc::Result<ApplyWorkspaceEditResponse> {
-        use lsp_types::request::ApplyWorkspaceEdit;
+        use lsp_types_max::request::ApplyWorkspaceEdit;
         self.send_request::<ApplyWorkspaceEdit>(ApplyWorkspaceEditParams { edit, label: None })
             .await
     }

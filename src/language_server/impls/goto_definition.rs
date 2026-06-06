@@ -1,7 +1,7 @@
 //! Definition lookup implementations.
 
 use crate::jsonrpc::{Error, Result};
-use lsp_types::{GotoDefinitionParams, GotoDefinitionResponse};
+use lsp_types_max::{GotoDefinitionParams, GotoDefinitionResponse};
 use url::Url;
 
 /// Asks the server for the definition location of a symbol.

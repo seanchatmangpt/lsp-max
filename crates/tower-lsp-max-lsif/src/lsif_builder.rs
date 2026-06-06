@@ -1,5 +1,5 @@
 use crate::lsif::*;
-use lsp_types::Position;
+use lsp_types_max::Position;
 use std::io::{self, Write};
 
 pub struct LsifBuilder<W: Write> {
@@ -107,6 +107,38 @@ impl<W: Write> LsifBuilder<W> {
             type_: VertexType::Vertex,
         }))?;
         Ok(result_set_id)
+    }
+
+    pub fn contains(&mut self, out_v: Id, in_vs: Vec<Id>) -> io::Result<Id> {
+        let edge_id = self.next_id();
+        self.emit(Element::Edge(Edge::Contains {
+            id: edge_id.clone(),
+            type_: EdgeType::Edge,
+            out_v,
+            in_vs,
+        }))?;
+        Ok(edge_id)
+    }
+
+    pub fn diagnostic_result(&mut self, result: Vec<lsp_types_max::Diagnostic>) -> io::Result<Id> {
+        let diag_result_id = self.next_id();
+        self.emit(Element::Vertex(Vertex::DiagnosticResult {
+            id: diag_result_id.clone(),
+            type_: VertexType::Vertex,
+            result,
+        }))?;
+        Ok(diag_result_id)
+    }
+
+    pub fn diagnostic_edge(&mut self, out_v: Id, in_v: Id) -> io::Result<Id> {
+        let edge_id = self.next_id();
+        self.emit(Element::Edge(Edge::TextDocumentDiagnostic {
+            id: edge_id.clone(),
+            type_: EdgeType::Edge,
+            out_v,
+            in_v,
+        }))?;
+        Ok(edge_id)
     }
 
     pub fn bind_next(&mut self, out_v: Id, in_v: Id) -> io::Result<Id> {

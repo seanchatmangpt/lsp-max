@@ -1,5 +1,5 @@
 use crate::{GateId, LawAxis, ReceiptObligation};
-use lsp_types::{CodeAction, Diagnostic};
+use lsp_types_max::{CodeAction, Diagnostic};
 use serde::{Deserialize, Serialize};
 
 // ---------------------------------------------------------------------------
@@ -98,7 +98,7 @@ impl Default for MaxDiagnostic {
 }
 
 impl MaxDiagnostic {
-    /// Projects the `MaxDiagnostic` down into a standard `lsp_types::Diagnostic`.
+    /// Projects the `MaxDiagnostic` down into a standard `lsp_types_max::Diagnostic`.
     pub fn into_lsp(self) -> Diagnostic {
         let mut d = self.lsp.clone();
         if d.data.is_none() {

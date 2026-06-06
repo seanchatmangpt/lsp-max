@@ -1,4 +1,4 @@
-use lsp_types::NumberOrString;
+use lsp_types_max::NumberOrString;
 use tower_lsp_max_lsif::lsif::*;
 use tower_lsp_max_lsif::lsif_builder::LsifBuilder;
 

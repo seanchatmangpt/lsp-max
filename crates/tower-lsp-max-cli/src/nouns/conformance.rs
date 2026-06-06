@@ -50,7 +50,7 @@ impl ConformanceService {
         for diag in &inst.diagnostics {
             let is_error = matches!(
                 diag.lsp.severity,
-                Some(lsp_types::DiagnosticSeverity::ERROR)
+                Some(lsp_types_max::DiagnosticSeverity::ERROR)
             );
             let entry = has_error.entry(diag.law_axis.clone()).or_insert(false);
             if is_error {

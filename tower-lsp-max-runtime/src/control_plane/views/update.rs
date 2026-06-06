@@ -6,12 +6,12 @@
 //! - [`populate_call_hierarchy`] — call hierarchy (prepare / incoming / outgoing)
 //! - [`populate_type_hierarchy`] — type hierarchy (prepare / supertypes / subtypes)
 
-use oxigraph::store::Store;
-use super::types::MaterializedViewStore;
-use super::populate_defs_refs::{populate_definitions, populate_references};
-use super::populate_hover_diag::{populate_hovers, populate_diagnostics};
 use super::populate_call_hierarchy::populate_call_hierarchy;
+use super::populate_defs_refs::{populate_definitions, populate_references};
+use super::populate_hover_diag::{populate_diagnostics, populate_hovers};
 use super::populate_type_hierarchy::populate_type_hierarchy;
+use super::types::MaterializedViewStore;
+use oxigraph::store::Store;
 
 /// Rebuild all materialized views from the Oxigraph triple store.
 ///
@@ -30,8 +30,12 @@ pub fn update_views(store: &Store, views: &MaterializedViewStore) {
     populate_type_hierarchy(store, views);
 
     // Monotonic epoch synchronisation — unblock waiting readers.
-    let committed = views.committed_epoch.load(std::sync::atomic::Ordering::Acquire);
-    views.applied_epoch.store(committed, std::sync::atomic::Ordering::Release);
+    let committed = views
+        .committed_epoch
+        .load(std::sync::atomic::Ordering::Acquire);
+    views
+        .applied_epoch
+        .store(committed, std::sync::atomic::Ordering::Release);
     let _lock = views.sync_mutex.lock().unwrap();
     views.sync_condvar.notify_all();
 }

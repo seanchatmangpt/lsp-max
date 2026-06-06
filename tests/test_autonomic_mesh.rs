@@ -1,3 +1,4 @@
+use lsp_types_max as lsp_types;
 use tower_lsp_max_runtime::{
     AutonomicMesh, CustomerRequestClassifierHook, Hook, HookEvent, InstanceId, LspInstance,
     LspPhase, MaxDiagnostic, MeshAction, PolicyEvaluationHook, PolicyState, Receipt,

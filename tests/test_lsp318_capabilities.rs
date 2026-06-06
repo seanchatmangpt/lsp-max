@@ -1185,11 +1185,11 @@ use tower_lsp_max::ExitedError;
 
 #[derive(Clone, Default)]
 struct Batch9Events {
-    did_save: Arc<Mutex<Option<lsp318::DidSaveNotebookDocumentParams>>>,
-    did_close: Arc<Mutex<Option<lsp318::DidCloseNotebookDocumentParams>>>,
-    work_done_cancel: Arc<Mutex<Option<lsp318::WorkDoneProgressCancelParams>>>,
-    progress: Arc<Mutex<Option<lsp318::ProgressParams>>>,
-    set_trace: Arc<Mutex<Option<lsp318::SetTraceParams>>>,
+    did_save: Arc<Mutex<Option<lsp::DidSaveNotebookDocumentParams>>>,
+    did_close: Arc<Mutex<Option<lsp::DidCloseNotebookDocumentParams>>>,
+    work_done_cancel: Arc<Mutex<Option<lsp::WorkDoneProgressCancelParams>>>,
+    progress: Arc<Mutex<Option<lsp::ProgressParams>>>,
+    set_trace: Arc<Mutex<Option<lsp::SetTraceParams>>>,
 }
 
 struct Batch9Backend {
@@ -1206,19 +1206,19 @@ impl LanguageServer for Batch9Backend {
     async fn shutdown(&self) -> Result<()> {
         Ok(())
     }
-    async fn did_save_notebook_document(&self, params: lsp318::DidSaveNotebookDocumentParams) {
+    async fn did_save_notebook_document(&self, params: lsp::DidSaveNotebookDocumentParams) {
         *self.events.did_save.lock().unwrap() = Some(params);
     }
-    async fn did_close_notebook_document(&self, params: lsp318::DidCloseNotebookDocumentParams) {
+    async fn did_close_notebook_document(&self, params: lsp::DidCloseNotebookDocumentParams) {
         *self.events.did_close.lock().unwrap() = Some(params);
     }
-    async fn work_done_progress_cancel(&self, params: lsp318::WorkDoneProgressCancelParams) {
+    async fn work_done_progress_cancel(&self, params: lsp::WorkDoneProgressCancelParams) {
         *self.events.work_done_cancel.lock().unwrap() = Some(params);
     }
-    async fn progress(&self, params: lsp318::ProgressParams) {
+    async fn progress(&self, params: lsp::ProgressParams) {
         *self.events.progress.lock().unwrap() = Some(params);
     }
-    async fn set_trace(&self, params: lsp318::SetTraceParams) {
+    async fn set_trace(&self, params: lsp::SetTraceParams) {
         *self.events.set_trace.lock().unwrap() = Some(params);
     }
 }
@@ -1450,7 +1450,7 @@ async fn test_b9_work_done_progress_cancel() {
     .await;
     assert_eq!(
         cancel.token,
-        lsp318::IntegerOrString::String("cancel-token-b9".to_string())
+        lsp::NumberOrString::String("cancel-token-b9".to_string())
     );
 
     shutdown_b9(tx, responses, server_handle, reader_handle).await;
@@ -1477,7 +1477,7 @@ async fn test_b9_progress_notification() {
     let prog = wait_for_event_b9(&events.progress, Duration::from_secs(2), "$/progress").await;
     assert_eq!(
         prog.token,
-        lsp318::IntegerOrString::String("progress-b9".to_string())
+        lsp::NumberOrString::String("progress-b9".to_string())
     );
 
     shutdown_b9(tx, responses, server_handle, reader_handle).await;
@@ -1499,7 +1499,7 @@ async fn test_b9_set_trace_notification() {
     .await;
 
     let trace = wait_for_event_b9(&events.set_trace, Duration::from_secs(2), "$/setTrace").await;
-    assert_eq!(trace.value, lsp318::TraceValue::Messages);
+    assert_eq!(trace.value, lsp::TraceValue::Messages);
 
     shutdown_b9(tx, responses, server_handle, reader_handle).await;
 }
@@ -1515,8 +1515,8 @@ struct Batch8Events {
     did_create_files: Arc<Mutex<Option<lsp::CreateFilesParams>>>,
     did_rename_files: Arc<Mutex<Option<lsp::RenameFilesParams>>>,
     did_delete_files: Arc<Mutex<Option<lsp::DeleteFilesParams>>>,
-    did_open_notebook: Arc<Mutex<Option<lsp318::DidOpenNotebookDocumentParams>>>,
-    did_change_notebook: Arc<Mutex<Option<lsp318::DidChangeNotebookDocumentParams>>>,
+    did_open_notebook: Arc<Mutex<Option<lsp::DidOpenNotebookDocumentParams>>>,
+    did_change_notebook: Arc<Mutex<Option<lsp::DidChangeNotebookDocumentParams>>>,
 }
 
 struct Batch8Backend {
@@ -1553,10 +1553,10 @@ impl LanguageServer for Batch8Backend {
     async fn did_delete_files(&self, params: lsp::DeleteFilesParams) {
         *self.events.did_delete_files.lock().unwrap() = Some(params);
     }
-    async fn did_open_notebook_document(&self, params: lsp318::DidOpenNotebookDocumentParams) {
+    async fn did_open_notebook_document(&self, params: lsp::DidOpenNotebookDocumentParams) {
         *self.events.did_open_notebook.lock().unwrap() = Some(params);
     }
-    async fn did_change_notebook_document(&self, params: lsp318::DidChangeNotebookDocumentParams) {
+    async fn did_change_notebook_document(&self, params: lsp::DidChangeNotebookDocumentParams) {
         *self.events.did_change_notebook.lock().unwrap() = Some(params);
     }
 }

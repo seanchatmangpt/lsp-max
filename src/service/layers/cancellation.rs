@@ -1,10 +1,10 @@
+use futures::future::{BoxFuture, FutureExt};
 use std::sync::Arc;
 use std::task::{Context, Poll};
-use futures::future::{BoxFuture, FutureExt};
 use tower::Service;
 
-use super::super::ExitedError;
 use super::super::pending::Pending;
+use super::super::ExitedError;
 use crate::jsonrpc::{Request, Response};
 
 /// Wraps an inner service `S` and implements `$/cancelRequest` semantics for all requests.

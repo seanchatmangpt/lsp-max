@@ -1,10 +1,10 @@
 //! Definitions and references view population via SPARQL.
 
-use url::Url;
+use super::helpers::{run_select, term_to_string, term_to_u32};
+use super::types::MaterializedViewStore;
 use lsp_types_max::{Location, Position, Range, Uri};
 use oxigraph::store::Store;
-use super::types::MaterializedViewStore;
-use super::helpers::{term_to_string, term_to_u32, run_select};
+use url::Url;
 
 const QUERY_DEFINITIONS: &str = "
     PREFIX lsif: <https://microsoft.github.io/language-server-protocol/specifications/lsif/0.6.0/specification/>
@@ -65,43 +65,84 @@ const QUERY_REFERENCES: &str = "
 ";
 
 pub(super) fn populate_definitions(store: &Store, views: &MaterializedViewStore) {
-    let Ok(sols) = run_select(store, QUERY_DEFINITIONS) else { return };
+    let Ok(sols) = run_select(store, QUERY_DEFINITIONS) else {
+        return;
+    };
     for sol in sols {
         let src_doc_uri = sol.get("srcDocUri").map(term_to_string).unwrap_or_default();
-        let dest_doc_uri = sol.get("destDocUri").map(term_to_string).unwrap_or_default();
+        let dest_doc_uri = sol
+            .get("destDocUri")
+            .map(term_to_string)
+            .unwrap_or_default();
         if let (Ok(src_url), Ok(dest_url)) = (Url::parse(&src_doc_uri), Url::parse(&dest_doc_uri)) {
             let src_range = Range::new(
-                Position::new(sol.get("srcStartLine").map(term_to_u32).unwrap_or(0), sol.get("srcStartChar").map(term_to_u32).unwrap_or(0)),
-                Position::new(sol.get("srcEndLine").map(term_to_u32).unwrap_or(0), sol.get("srcEndChar").map(term_to_u32).unwrap_or(0)),
+                Position::new(
+                    sol.get("srcStartLine").map(term_to_u32).unwrap_or(0),
+                    sol.get("srcStartChar").map(term_to_u32).unwrap_or(0),
+                ),
+                Position::new(
+                    sol.get("srcEndLine").map(term_to_u32).unwrap_or(0),
+                    sol.get("srcEndChar").map(term_to_u32).unwrap_or(0),
+                ),
             );
             let dest_range = Range::new(
-                Position::new(sol.get("destStartLine").map(term_to_u32).unwrap_or(0), sol.get("destStartChar").map(term_to_u32).unwrap_or(0)),
-                Position::new(sol.get("destEndLine").map(term_to_u32).unwrap_or(0), sol.get("destEndChar").map(term_to_u32).unwrap_or(0)),
+                Position::new(
+                    sol.get("destStartLine").map(term_to_u32).unwrap_or(0),
+                    sol.get("destStartChar").map(term_to_u32).unwrap_or(0),
+                ),
+                Position::new(
+                    sol.get("destEndLine").map(term_to_u32).unwrap_or(0),
+                    sol.get("destEndChar").map(term_to_u32).unwrap_or(0),
+                ),
             );
             let dest_uri = dest_url.to_string().parse::<Uri>().unwrap();
-            let loc = Location { uri: dest_uri, range: dest_range };
-            views.definitions.entry(src_url).or_default().push((src_range, loc));
+            let loc = Location {
+                uri: dest_uri,
+                range: dest_range,
+            };
+            views
+                .definitions
+                .entry(src_url)
+                .or_default()
+                .push((src_range, loc));
         }
     }
 }
 
 pub(super) fn populate_references(store: &Store, views: &MaterializedViewStore) {
     let mut temp: std::collections::HashMap<(Url, Range), Vec<Location>> = Default::default();
-    let Ok(sols) = run_select(store, QUERY_REFERENCES) else { return };
+    let Ok(sols) = run_select(store, QUERY_REFERENCES) else {
+        return;
+    };
     for sol in sols {
         let src_doc_uri = sol.get("srcDocUri").map(term_to_string).unwrap_or_default();
         let ref_doc_uri = sol.get("refDocUri").map(term_to_string).unwrap_or_default();
         if let (Ok(src_url), Ok(ref_url)) = (Url::parse(&src_doc_uri), Url::parse(&ref_doc_uri)) {
             let src_range = Range::new(
-                Position::new(sol.get("srcStartLine").map(term_to_u32).unwrap_or(0), sol.get("srcStartChar").map(term_to_u32).unwrap_or(0)),
-                Position::new(sol.get("srcEndLine").map(term_to_u32).unwrap_or(0), sol.get("srcEndChar").map(term_to_u32).unwrap_or(0)),
+                Position::new(
+                    sol.get("srcStartLine").map(term_to_u32).unwrap_or(0),
+                    sol.get("srcStartChar").map(term_to_u32).unwrap_or(0),
+                ),
+                Position::new(
+                    sol.get("srcEndLine").map(term_to_u32).unwrap_or(0),
+                    sol.get("srcEndChar").map(term_to_u32).unwrap_or(0),
+                ),
             );
             let ref_range = Range::new(
-                Position::new(sol.get("refStartLine").map(term_to_u32).unwrap_or(0), sol.get("refStartChar").map(term_to_u32).unwrap_or(0)),
-                Position::new(sol.get("refEndLine").map(term_to_u32).unwrap_or(0), sol.get("refEndChar").map(term_to_u32).unwrap_or(0)),
+                Position::new(
+                    sol.get("refStartLine").map(term_to_u32).unwrap_or(0),
+                    sol.get("refStartChar").map(term_to_u32).unwrap_or(0),
+                ),
+                Position::new(
+                    sol.get("refEndLine").map(term_to_u32).unwrap_or(0),
+                    sol.get("refEndChar").map(term_to_u32).unwrap_or(0),
+                ),
             );
             let ref_uri = ref_url.to_string().parse::<Uri>().unwrap();
-            let loc = Location { uri: ref_uri, range: ref_range };
+            let loc = Location {
+                uri: ref_uri,
+                range: ref_range,
+            };
             temp.entry((src_url, src_range)).or_default().push(loc);
         }
     }

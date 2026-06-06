@@ -1,10 +1,12 @@
-use tower_lsp_max_base::abstractions::RelationAdmitter;
-use tower_lsp_max_lsif::lsif::{Element};
-use tower_lsp_max_protocol::{MaxDiagnostic, ConformanceVector};
-use super::super::invariants::{VerificationReport, verify_invariants};
+use super::super::invariants::{verify_invariants, VerificationReport};
 use super::super::receipts::{Blake3Hash, CryptographicReceipt};
-use super::types::{GraphAdmissionLaw, RAW, RawData, AdmittedData, ADMITTED, CandidateData, CANDIDATE};
+use super::types::{
+    AdmittedData, CandidateData, GraphAdmissionLaw, RawData, ADMITTED, CANDIDATE, RAW,
+};
 use crate::Machine;
+use tower_lsp_max_base::abstractions::RelationAdmitter;
+use tower_lsp_max_lsif::lsif::Element;
+use tower_lsp_max_protocol::{ConformanceVector, MaxDiagnostic};
 
 pub struct AdmittedGraph {
     pub store: oxigraph::store::Store,
@@ -121,7 +123,7 @@ impl RelationAdmitter for AdmittedGraph {
         views
             .committed_epoch
             .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-        
+
         let store_clone = self.store.clone();
         let views_clone = views.clone();
         std::thread::spawn(move || {

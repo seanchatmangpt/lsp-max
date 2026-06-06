@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use lsp_types::*;
+use lsp_types_max::*;
 use serde_json::json;
 use tower::ServiceExt;
 

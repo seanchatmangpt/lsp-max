@@ -301,9 +301,7 @@ fn test_replay_engine_transition_mismatch() {
     let chain = vec![r0];
     let engine = ReplayEngine::new(genesis_hash, verifying_key);
 
-    let res = engine.replay(&chain, |_receipt| {
-        Blake3Hash([99u8; 32])
-    });
+    let res = engine.replay(&chain, |_receipt| Blake3Hash([99u8; 32]));
 
     assert_eq!(res, Err(ChainValidationError::HashMismatch { index: 0 }));
 }

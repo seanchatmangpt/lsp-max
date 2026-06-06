@@ -1,10 +1,10 @@
 //! Diagnostic repair planning and transaction application implementations.
 
-use crate::jsonrpc::{Error, Result};
-use crate::{lock_registry, update_diagnostics, sha256};
 use crate::gate::run_gate_logic;
+use crate::jsonrpc::{Error, Result};
 use crate::workspace_edit::apply_workspace_edit;
-use lsp_types::{DiagnosticSeverity, CodeAction, CodeActionKind, WorkspaceEdit, TextEdit};
+use crate::{lock_registry, sha256, update_diagnostics};
+use lsp_types_max::{CodeAction, CodeActionKind, DiagnosticSeverity, TextEdit, WorkspaceEdit};
 
 /// Returns a full MaxDiagnostic by ID.
 pub async fn max_explain_diagnostic(params: String) -> Result<max_protocol::MaxDiagnostic> {
@@ -105,7 +105,7 @@ pub async fn max_apply_repair_transaction(
             .iter()
             .map(|g| g.0.clone())
             .collect();
-        let diag_filter: Option<Vec<(String, lsp_types::Range)>> = params
+        let diag_filter: Option<Vec<(String, lsp_types_max::Range)>> = params
             .action
             .diagnostics
             .as_ref()

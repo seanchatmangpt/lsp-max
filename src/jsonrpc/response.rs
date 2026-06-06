@@ -92,6 +92,25 @@ impl Response {
     pub const fn id(&self) -> &Id {
         &self.id
     }
+
+    /// Constructs a JSON-RPC response from an `lsp_types_max::ResponseMessage`.
+    pub fn from_message(msg: lsp_types_max::ResponseMessage) -> Self {
+        match msg {
+            lsp_types_max::ResponseMessage::Success { id, result, .. } => {
+                Response::from_ok(id.map(Id::from).unwrap_or(Id::Null), result)
+            }
+            lsp_types_max::ResponseMessage::Error { id, error, .. } => {
+                Response::from_error(
+                    id.map(Id::from).unwrap_or(Id::Null),
+                    Error {
+                        code: (error.code as i64).into(),
+                        message: std::borrow::Cow::Owned(error.message),
+                        data: error.data,
+                    },
+                )
+            }
+        }
+    }
 }
 
 impl Debug for Response {

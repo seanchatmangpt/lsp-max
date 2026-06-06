@@ -1,6 +1,6 @@
+use crate::sha256::{sha256, validate_and_reconstruct_chain_checked};
 use std::fmt::{Debug, Formatter};
 use std::marker::PhantomData;
-use crate::sha256::{sha256, validate_and_reconstruct_chain_checked};
 
 pub struct DeterministicSnapshot {
     pub id: tower_lsp_max_protocol::SnapshotId,

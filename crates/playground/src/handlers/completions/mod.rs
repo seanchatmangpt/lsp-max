@@ -1,4 +1,4 @@
-use tower_lsp_max::lsp_types::*;
+use tower_lsp_max::lsp_types_max::*;
 
 use crate::Backend;
 

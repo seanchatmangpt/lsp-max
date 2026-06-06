@@ -10,7 +10,7 @@ use std::task::{Context, Poll};
 use futures::channel::mpsc::{self, Sender};
 use futures::future::BoxFuture;
 use futures::sink::SinkExt;
-use lsp_types::*;
+use lsp_types_max::*;
 use serde::Serialize;
 use serde_json::Value;
 use tower::Service;
@@ -22,10 +22,11 @@ use super::state::{ServerState, State};
 use super::ExitedError;
 use crate::jsonrpc::{self, Error, ErrorCode, Id, Request, Response};
 
-pub mod progress;
-mod pending;
-mod socket;
 mod lsp_methods;
+mod pending;
+pub mod progress;
+pub mod progress_ext;
+mod socket;
 
 #[cfg(test)]
 mod tests;
@@ -70,7 +71,7 @@ impl Client {
     /// Sends a custom notification to the client.
     pub async fn send_notification<N>(&self, params: N::Params)
     where
-        N: lsp_types::notification::Notification,
+        N: lsp_types_max::notification::Notification,
     {
         if let State::Initialized | State::ShutDown = self.inner.state.get() {
             self.send_notification_unchecked::<N>(params).await;
@@ -82,7 +83,7 @@ impl Client {
 
     async fn send_notification_unchecked<N>(&self, params: N::Params)
     where
-        N: lsp_types::notification::Notification,
+        N: lsp_types_max::notification::Notification,
     {
         let request = Request::from_notification::<N>(params);
         if self.clone().call(request).await.is_err() {
@@ -93,7 +94,7 @@ impl Client {
     /// Sends a custom request to the client.
     pub async fn send_request<R>(&self, params: R::Params) -> jsonrpc::Result<R::Result>
     where
-        R: lsp_types::request::Request,
+        R: lsp_types_max::request::Request,
     {
         if let State::Initialized | State::ShutDown = self.inner.state.get() {
             self.send_request_unchecked::<R>(params).await
@@ -107,7 +108,7 @@ impl Client {
 
     async fn send_request_unchecked<R>(&self, params: R::Params) -> jsonrpc::Result<R::Result>
     where
-        R: lsp_types::request::Request,
+        R: lsp_types_max::request::Request,
     {
         let id = self.next_request_id();
         let request = Request::from_request::<R>(id, params);
@@ -190,7 +191,7 @@ impl Service<Request> for Client {
 #[derive(Debug)]
 struct FoldingRangeRefresh;
 
-impl lsp_types::request::Request for FoldingRangeRefresh {
+impl lsp_types_max::request::Request for FoldingRangeRefresh {
     type Params = ();
     type Result = ();
     const METHOD: &'static str = "workspace/foldingRange/refresh";

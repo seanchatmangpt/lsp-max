@@ -49,11 +49,11 @@ impl Request {
     /// # Panics
     ///
     /// Panics if `params` could not be serialized into a [`serde_json::Value`]. Since the
-    /// [`lsp_types::request::Request`] trait promises this invariant is upheld, this should never
+    /// [`lsp_types_max::request::Request`] trait promises this invariant is upheld, this should never
     /// happen in practice (unless the trait was implemented incorrectly).
     pub(crate) fn from_request<R>(id: Id, params: R::Params) -> Self
     where
-        R: lsp_types::request::Request,
+        R: lsp_types_max::request::Request,
     {
         Request {
             jsonrpc: Version,
@@ -68,16 +68,36 @@ impl Request {
     /// # Panics
     ///
     /// Panics if `params` could not be serialized into a [`serde_json::Value`]. Since the
-    /// [`lsp_types::notification::Notification`] trait promises this invariant is upheld, this
+    /// [`lsp_types_max::notification::Notification`] trait promises this invariant is upheld, this
     /// should never happen in practice (unless the trait was implemented incorrectly).
     pub(crate) fn from_notification<N>(params: N::Params) -> Self
     where
-        N: lsp_types::notification::Notification,
+        N: lsp_types_max::notification::Notification,
     {
         Request {
             jsonrpc: Version,
             method: N::METHOD.into(),
             params: Some(serde_json::to_value(params).unwrap()),
+            id: None,
+        }
+    }
+
+    /// Constructs a JSON-RPC request from an `lsp_types_max::RequestMessage`.
+    pub fn from_message(msg: lsp_types_max::RequestMessage) -> Self {
+        Request {
+            jsonrpc: Version,
+            method: Cow::Owned(msg.method),
+            params: msg.params,
+            id: Some(Id::from(msg.id)),
+        }
+    }
+
+    /// Constructs a JSON-RPC notification from an `lsp_types_max::NotificationMessage`.
+    pub fn from_notification_message(msg: lsp_types_max::NotificationMessage) -> Self {
+        Request {
+            jsonrpc: Version,
+            method: Cow::Owned(msg.method),
+            params: msg.params,
             id: None,
         }
     }

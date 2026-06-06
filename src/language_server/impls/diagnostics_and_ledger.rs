@@ -1,8 +1,8 @@
 //! Ledger, autonomic loop, hooks, and diagnostic query implementations.
 
 use crate::jsonrpc::{Error, Result};
-use crate::{lock_registry, update_diagnostics, sha256};
-use lsp_types::DiagnosticSeverity;
+use crate::{lock_registry, sha256, update_diagnostics};
+use lsp_types_max::DiagnosticSeverity;
 use serde_json::Value;
 
 /// Forcibly clears a diagnostic.
@@ -203,10 +203,7 @@ pub async fn max_lawful_transition(params: String) -> Result<serde_json::Value> 
             } else {
                 (
                     false,
-                    serde_json::json!(format!(
-                        "Blocked by {} error diagnostic(s)",
-                        blocking_count
-                    )),
+                    serde_json::json!(format!("Blocked by {} error diagnostic(s)", blocking_count)),
                 )
             }
         }

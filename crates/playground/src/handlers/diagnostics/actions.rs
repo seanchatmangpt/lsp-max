@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use tower_lsp_max::lsp_types::*;
+use tower_lsp_max::lsp_types_max::*;
 
 use crate::handlers::completions::{CAPABILITY_FIELDS, METHODS};
 use crate::handlers::diagnostics::analysis::analyze_impl_block;

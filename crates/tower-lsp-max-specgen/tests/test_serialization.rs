@@ -477,16 +477,14 @@ fn test_3_18_untagged_enum_ordering_bug() {
     let deserialized: AnnotatedTextEditOrSnippetTextEditOrTextEdit =
         serde_json::from_str(json_str).expect("Failed to deserialize");
 
-    // We check if it was deserialized as AnnotatedTextEdit or TextEdit.
-    // If it deserializes as TextEdit, it means the ordering in the untagged enum
-    // allows TextEdit to swallow the input and discard "annotationId".
+    // We check if it was deserialized as AnnotatedTextEdit.
     match deserialized {
-        AnnotatedTextEditOrSnippetTextEditOrTextEdit::TextEdit(text_edit) => {
-            // Asserting the current buggy behavior: it parses as TextEdit and discards annotationId
-            assert_eq!(text_edit.new_text, "hello");
+        AnnotatedTextEditOrSnippetTextEditOrTextEdit::AnnotatedTextEdit(annotated) => {
+            assert_eq!(annotated.text_edit_base.new_text, "hello");
+            assert_eq!(annotated.annotation_id, "my-annotation-id");
         }
         _ => {
-            panic!("Expected it to deserialize as TextEdit due to the bug, but got another variant")
+            panic!("Expected it to deserialize as AnnotatedTextEdit, but got another variant")
         }
     }
 }
@@ -504,19 +502,18 @@ fn test_3_18_call_hierarchy_ordering_bug() {
     let deserialized: BooleanOrCallHierarchyOptionsOrCallHierarchyRegistrationOptions =
         serde_json::from_str(json_str).expect("Failed to deserialize");
 
-    // Due to the wrong order, it deserializes as CallHierarchyOptions (the simpler subset)
-    // and ignores documentSelector.
+    // We expect it to deserialize as CallHierarchyRegistrationOptions since the order is fixed.
     match deserialized {
-        BooleanOrCallHierarchyOptionsOrCallHierarchyRegistrationOptions::CallHierarchyOptions(
+        BooleanOrCallHierarchyOptionsOrCallHierarchyRegistrationOptions::CallHierarchyRegistrationOptions(
             opts,
         ) => {
             assert!(opts
-                .work_done_progress_options_mixin
-                .work_done_progress
-                .unwrap_or(false));
+                .text_document_registration_options_base
+                .document_selector
+                .is_some());
         }
         _ => {
-            panic!("Expected it to deserialize as CallHierarchyOptions due to the bug, but got another variant")
+            panic!("Expected it to deserialize as CallHierarchyRegistrationOptions, but got another variant")
         }
     }
 }
@@ -534,14 +531,13 @@ fn test_3_18_selection_range_ordering_bug() {
     let deserialized: BooleanOrSelectionRangeOptionsOrSelectionRangeRegistrationOptions =
         serde_json::from_str(json_str).expect("Failed to deserialize");
 
-    // Due to the wrong order, it deserializes as SelectionRangeOptions (the simpler subset)
-    // and ignores documentSelector.
+    // We expect it to deserialize as SelectionRangeRegistrationOptions since the order is fixed.
     match deserialized {
-        BooleanOrSelectionRangeOptionsOrSelectionRangeRegistrationOptions::SelectionRangeOptions(opts) => {
-            assert!(opts.work_done_progress_options_mixin.work_done_progress.unwrap_or(false));
+        BooleanOrSelectionRangeOptionsOrSelectionRangeRegistrationOptions::SelectionRangeRegistrationOptions(opts) => {
+            assert!(opts.text_document_registration_options_base.document_selector.is_some());
         }
         _ => {
-            panic!("Expected it to deserialize as SelectionRangeOptions due to the bug, but got another variant")
+            panic!("Expected it to deserialize as SelectionRangeRegistrationOptions, but got another variant")
         }
     }
 }

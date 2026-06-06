@@ -1,5 +1,5 @@
-use std::task::{Context, Poll};
 use futures::future::{BoxFuture, FutureExt};
+use std::task::{Context, Poll};
 use tower::{Layer, Service};
 
 use super::super::ExitedError;

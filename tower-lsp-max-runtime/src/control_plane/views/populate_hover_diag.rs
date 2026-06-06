@@ -1,10 +1,10 @@
 //! Hover and diagnostics view population via SPARQL.
 
-use url::Url;
+use super::helpers::{run_select, term_to_string, term_to_u32};
+use super::types::MaterializedViewStore;
 use lsp_types_max::{Diagnostic, Hover, Position, Range};
 use oxigraph::store::Store;
-use super::types::MaterializedViewStore;
-use super::helpers::{term_to_string, term_to_u32, run_select};
+use url::Url;
 
 const QUERY_HOVER: &str = "
     PREFIX lsif: <https://microsoft.github.io/language-server-protocol/specifications/lsif/0.6.0/specification/>
@@ -54,24 +54,47 @@ const QUERY_LIVE_DIAGNOSTICS: &str = "
 
 pub(super) fn populate_hovers(store: &Store, views: &MaterializedViewStore) {
     use tower_lsp_max_lsif::lsif::{HoverContents, HoverResultData};
-    let Ok(sols) = run_select(store, QUERY_HOVER) else { return };
+    let Ok(sols) = run_select(store, QUERY_HOVER) else {
+        return;
+    };
     for sol in sols {
         let src_doc_uri = sol.get("srcDocUri").map(term_to_string).unwrap_or_default();
         let hover_data_str = sol.get("hoverData").map(term_to_string).unwrap_or_default();
-        let Ok(src_url) = Url::parse(&src_doc_uri) else { continue };
-        let Ok(result_data) = serde_json::from_str::<HoverResultData>(&hover_data_str) else { continue };
+        let Ok(src_url) = Url::parse(&src_doc_uri) else {
+            continue;
+        };
+        let Ok(result_data) = serde_json::from_str::<HoverResultData>(&hover_data_str) else {
+            continue;
+        };
         let src_range = Range::new(
-            Position::new(sol.get("srcStartLine").map(term_to_u32).unwrap_or(0), sol.get("srcStartChar").map(term_to_u32).unwrap_or(0)),
-            Position::new(sol.get("srcEndLine").map(term_to_u32).unwrap_or(0), sol.get("srcEndChar").map(term_to_u32).unwrap_or(0)),
+            Position::new(
+                sol.get("srcStartLine").map(term_to_u32).unwrap_or(0),
+                sol.get("srcStartChar").map(term_to_u32).unwrap_or(0),
+            ),
+            Position::new(
+                sol.get("srcEndLine").map(term_to_u32).unwrap_or(0),
+                sol.get("srcEndChar").map(term_to_u32).unwrap_or(0),
+            ),
         );
         let hover_contents = match &result_data.contents {
             HoverContents::Markup(m) => lsp_types_max::HoverContents::Markup(m.clone()),
-            HoverContents::String(s) => lsp_types_max::HoverContents::Scalar(lsp_types_max::MarkedString::String(s.clone())),
+            HoverContents::String(s) => {
+                lsp_types_max::HoverContents::Scalar(lsp_types_max::MarkedString::String(s.clone()))
+            }
             HoverContents::MarkedString(ms) => lsp_types_max::HoverContents::Scalar(ms.clone()),
-            HoverContents::MarkedStringArray(arr) => lsp_types_max::HoverContents::Array(arr.clone()),
+            HoverContents::MarkedStringArray(arr) => {
+                lsp_types_max::HoverContents::Array(arr.clone())
+            }
         };
-        let lsp_hover = Hover { contents: hover_contents, range: result_data.range };
-        views.hovers.entry(src_url).or_default().push((src_range, lsp_hover));
+        let lsp_hover = Hover {
+            contents: hover_contents,
+            range: result_data.range,
+        };
+        views
+            .hovers
+            .entry(src_url)
+            .or_default()
+            .push((src_range, lsp_hover));
     }
 }
 

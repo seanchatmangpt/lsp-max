@@ -1,4 +1,6 @@
-use crate::mesh_types::{Hook, HookEvent, MeshAction, InstanceId, PolicyState, MaxDiagnostic, Receipt};
+use crate::mesh_types::{
+    Hook, HookEvent, InstanceId, MaxDiagnostic, MeshAction, PolicyState, Receipt,
+};
 use crate::sha256::sha256;
 
 pub struct IntakeDiagnosticHook;

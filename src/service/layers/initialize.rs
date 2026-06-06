@@ -1,13 +1,13 @@
+use futures::future::{BoxFuture, FutureExt};
 use std::sync::Arc;
 use std::task::{Context, Poll};
-use futures::future::{BoxFuture, FutureExt};
 use tower::{Layer, Service};
 use tracing::warn;
 
-use super::Cancellable;
-use super::super::ExitedError;
 use super::super::pending::Pending;
 use super::super::state::{ServerState, State};
+use super::super::ExitedError;
+use super::Cancellable;
 use crate::jsonrpc::{Error, Request, Response};
 
 /// Middleware which implements `initialize` request semantics.
@@ -58,7 +58,7 @@ where
             .get("capabilities")
             .cloned()
             .unwrap_or(serde_json::Value::Null);
-        let client_caps: Option<lsp_types::ClientCapabilities> =
+        let client_caps: Option<lsp_types_max::ClientCapabilities> =
             serde_json::from_value(client_caps_val).ok();
 
         if let Some(pid) = params.get("processId").and_then(|v| v.as_u64()) {
@@ -80,7 +80,7 @@ where
                             .get("capabilities")
                             .cloned()
                             .unwrap_or(serde_json::Value::Null);
-                        let server_caps_parsed: Option<lsp_types::ServerCapabilities> =
+                        let server_caps_parsed: Option<lsp_types_max::ServerCapabilities> =
                             serde_json::from_value(server_caps_val).ok();
 
                         {
@@ -101,7 +101,8 @@ where
         } else {
             warn!("received duplicate `initialize` request, ignoring");
             let (_, id, _) = req.into_parts();
-            futures::future::ok(id.map(|id| Response::from_error(id, Error::invalid_request()))).boxed()
+            futures::future::ok(id.map(|id| Response::from_error(id, Error::invalid_request())))
+                .boxed()
         }
     }
 }

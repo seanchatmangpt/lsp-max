@@ -2,7 +2,7 @@
 
 use crate::jsonrpc::{Error, Result};
 use crate::{lock_registry, update_diagnostics, SnapshotRecord};
-use lsp_types::DiagnosticSeverity;
+use lsp_types_max::DiagnosticSeverity;
 use serde_json::Value;
 
 /// Returns a deterministic snapshot of the workspace state.
