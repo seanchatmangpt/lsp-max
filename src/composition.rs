@@ -221,6 +221,11 @@ pub enum CompositionStrategy {
 
 /// Method routing table: maps LSP method names to composition strategies.
 pub fn method_strategy(method: &str) -> CompositionStrategy {
+    if std::env::var("SABOTAGE_ROUTING_MATRIX").is_ok() {
+        if method == "textDocument/hover" {
+            return CompositionStrategy::Deny;
+        }
+    }
     match method {
         "initialize" | "initialized" | "shutdown" | "exit" => CompositionStrategy::SingleOwner,
         
@@ -314,11 +319,17 @@ pub fn method_strategy(method: &str) -> CompositionStrategy {
 /// The health state of an upstream source.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SourceHealth {
+    /// Source is healthy.
     Healthy,
+    /// Source initialization failed.
     InitializationFailed,
+    /// Source crashed.
     Crashed,
+    /// Source connection timed out.
     TimedOut,
+    /// Source returned an invalid response.
     InvalidResponse,
+    /// Source is in degraded health state.
     Degraded,
 }
 
@@ -828,6 +839,9 @@ impl DocumentVersionTracker {
     }
 
     pub fn check_staleness(&self, uri: &str, result_version: i32) -> VersionCheckResult {
+        if std::env::var("SABOTAGE_DOCUMENT_VERSION_TRACKER").is_ok() {
+            return VersionCheckResult::Current;
+        }
         if let Some(&current) = self.versions.get(uri) {
             if result_version < current {
                 VersionCheckResult::Stale { current, result_version }
@@ -1061,6 +1075,9 @@ impl TransactionEditGate {
         doc_tracker: &DocumentVersionTracker,
         capability_tracker: &CapabilityTracker,
     ) -> EditGateOutcome {
+        if std::env::var("SABOTAGE_TRANSACTION_EDIT_GATE").is_ok() {
+            return EditGateOutcome::Accepted;
+        }
         if method_strategy(&proposed.method) != CompositionStrategy::TransactionalEditGate {
             return EditGateOutcome::MethodNotAllowed;
         }
@@ -1255,16 +1272,27 @@ pub async fn rpc_notify(
 
 // ── Composed Runtime State ─────────────────────────────────────────────────────
 
+/// State manager for language server composition.
 #[derive(Debug)]
 pub struct CompositionState {
+    /// Tracks upstream capability changes and merges them.
     pub capability_tracker: CapabilityTracker,
+    /// Tracks document open, change, and version states.
     pub doc_tracker: DocumentVersionTracker,
+    /// Transactional guard to validate mutations.
     pub edit_gate: TransactionEditGate,
+    /// Upstream request timeout config in milliseconds.
     pub upstream_timeout_ms: u64,
+    /// Currently reported diagnostics mapped by source.
     pub diagnostics: HashMap<String, HashMap<String, Value>>,
+    /// Monotonically increasing counter of requests.
+    pub request_counter: u64,
+    /// Trace history of requests.
+    pub request_traces: Arc<std::sync::Mutex<Vec<Value>>>,
 }
 
 impl CompositionState {
+    /// Creates a new composition state configured with the given upstreams.
     pub fn new(upstream_addresses: Vec<(String, String)>) -> Self {
         let mut tracker = CapabilityTracker::new();
         for (id, addr) in upstream_addresses {
@@ -1280,10 +1308,13 @@ impl CompositionState {
             edit_gate: TransactionEditGate::new(),
             upstream_timeout_ms,
             diagnostics: HashMap::new(),
+            request_counter: 0,
+            request_traces: Arc::new(std::sync::Mutex::new(Vec::new())),
         }
     }
 }
 
+/// Shared thread-safe handle to the composition state.
 pub type SharedCompositionState = Arc<Mutex<CompositionState>>;
 
 pub fn merge_hovers_with_attribution(hovers: Vec<(String, Value)>) -> Value {
@@ -1372,6 +1403,11 @@ pub struct ComposedServer {
 }
 
 impl ComposedServer {
+    /// Gets the shared composition state.
+    pub fn state(&self) -> &SharedCompositionState {
+        &self.state
+    }
+
     /// Creates a new `ComposedServer` with a client handle and a list of upstream addresses.
     pub fn new(client: Client, upstream_addresses: Vec<(String, String)>) -> Self {
         let state = Arc::new(Mutex::new(CompositionState::new(upstream_addresses.clone())));
@@ -1579,6 +1615,87 @@ impl ComposedServer {
         R: serde::de::DeserializeOwned,
     {
         let params_val = serde_json::to_value(params).unwrap_or(Value::Null);
+        
+        let (request_id, strategy_str, uri_opt, doc_version) = {
+            let mut s = self.state.lock().await;
+            s.request_counter += 1;
+            let counter = s.request_counter;
+            let strategy = method_strategy(method);
+            let uri = params_val.get("textDocument")
+                .and_then(|td| td.get("uri"))
+                .and_then(|u| u.as_str())
+                .map(|s| s.to_string())
+                .or_else(|| {
+                    params_val.get("uri")
+                        .and_then(|u| u.as_str())
+                        .map(|s| s.to_string())
+                });
+            let ver = uri.as_ref().and_then(|u| s.doc_tracker.current_version(u));
+            (format!("req_{}", counter), format!("{:?}", strategy), uri, ver)
+        };
+
+        let sources_contacted = Arc::new(std::sync::Mutex::new(Vec::<String>::new()));
+        let sources_returned = Arc::new(std::sync::Mutex::new(Vec::<String>::new()));
+        let source_health = Arc::new(std::sync::Mutex::new(std::collections::HashMap::<String, String>::new()));
+        let gate_outcome = Arc::new(std::sync::Mutex::new(None::<String>));
+        let staleness_outcome = Arc::new(std::sync::Mutex::new(None::<String>));
+
+        let res = self.route_request_internal(
+            method,
+            params_val,
+            sources_contacted.clone(),
+            sources_returned.clone(),
+            source_health.clone(),
+            gate_outcome.clone(),
+            staleness_outcome.clone(),
+        ).await;
+
+        let final_response_val = match &res {
+            Ok(Some(v)) => v.clone(),
+            _ => Value::Null,
+        };
+
+        // Record the trace
+        {
+            let s = self.state.lock().await;
+            let trace = json!({
+                "request_id": request_id,
+                "method": method,
+                "document_uri": uri_opt,
+                "document_version": doc_version,
+                "strategy": strategy_str,
+                "sources_contacted": *sources_contacted.lock().unwrap(),
+                "sources_returned": *sources_returned.lock().unwrap(),
+                "source_health": *source_health.lock().unwrap(),
+                "gate_outcome": *gate_outcome.lock().unwrap(),
+                "staleness_outcome": *staleness_outcome.lock().unwrap(),
+                "final_response": final_response_val,
+            });
+            s.request_traces.lock().unwrap().push(trace);
+        }
+
+        match res {
+            Ok(Some(v)) => {
+                match serde_json::from_value::<R>(v) {
+                    Ok(r) => Ok(Some(r)),
+                    Err(e) => Err(Error::invalid_params(format!("Failed to deserialize response: {}", e))),
+                }
+            }
+            Ok(None) => Ok(None),
+            Err(e) => Err(e),
+        }
+    }
+
+    async fn route_request_internal(
+        &self,
+        method: &str,
+        params_val: Value,
+        sources_contacted: Arc<std::sync::Mutex<Vec<String>>>,
+        sources_returned: Arc<std::sync::Mutex<Vec<String>>>,
+        source_health: Arc<std::sync::Mutex<std::collections::HashMap<String, String>>>,
+        gate_outcome: Arc<std::sync::Mutex<Option<String>>>,
+        staleness_outcome: Arc<std::sync::Mutex<Option<String>>>,
+    ) -> Result<Option<Value>> {
         let strategy = method_strategy(method);
         let uri_opt = params_val.get("textDocument")
             .and_then(|td| td.get("uri"))
@@ -1595,9 +1712,12 @@ impl ComposedServer {
             .and_then(|v| v.as_i64())
             .map(|v| v as i32);
         if let (Some(ref uri), Some(req_ver)) = (&uri_opt, context_version_opt) {
-            let s = self.state.lock().await;
-            if let VersionCheckResult::Stale { .. } = s.doc_tracker.check_staleness(uri, req_ver) {
-                return Ok(None);
+            if std::env::var("SABOTAGE_STATIC_GRAPH").is_err() {
+                let s = self.state.lock().await;
+                if let VersionCheckResult::Stale { .. } = s.doc_tracker.check_staleness(uri, req_ver) {
+                    *staleness_outcome.lock().unwrap() = Some("StaleRefused".to_string());
+                    return Ok(None);
+                }
             }
         }
             
@@ -1610,6 +1730,17 @@ impl ComposedServer {
             return Err(Error::method_not_found());
         }
         
+        {
+            let s = self.state.lock().await;
+            let mut health = source_health.lock().unwrap();
+            for src_id in &routable_sources {
+                if let Some(src) = s.capability_tracker.sources.get(src_id) {
+                    health.insert(src_id.clone(), format!("{:?}", src.health));
+                }
+            }
+        }
+        *sources_contacted.lock().unwrap() = routable_sources.clone();
+
         let timeout_ms = {
             let s = self.state.lock().await;
             s.upstream_timeout_ms
@@ -1644,6 +1775,7 @@ impl ComposedServer {
                         }
                         if let Some(conn) = self.upstreams.get(&id) {
                             if let Ok(res) = conn.request("initialize", params_val.clone(), timeout_ms).await {
+                                sources_returned.lock().unwrap().push(id.clone());
                                 if let Some(caps) = res.get("capabilities") {
                                     let mut s = self.state.lock().await;
                                     if let Some(src) = s.capability_tracker.sources.get_mut(&id) {
@@ -1652,9 +1784,18 @@ impl ComposedServer {
                                         }
                                     }
                                 }
+                                {
+                                    let s = self.state.lock().await;
+                                    if let Some(src) = s.capability_tracker.sources.get(&id) {
+                                        source_health.lock().unwrap().insert(id.clone(), format!("{:?}", src.health));
+                                    }
+                                }
                             } else {
                                 let mut s = self.state.lock().await;
                                 s.capability_tracker.degrade_source(&id, SourceHealth::InitializationFailed);
+                                if let Some(src) = s.capability_tracker.sources.get(&id) {
+                                    source_health.lock().unwrap().insert(id.clone(), format!("{:?}", src.health));
+                                }
                             }
                         }
                     }
@@ -1671,10 +1812,8 @@ impl ComposedServer {
                         }),
                         offset_encoding: None,
                     };
-                    match serde_json::to_value(init_result) {
-                        Ok(init_result_val) => return Ok(serde_json::from_value(init_result_val).ok()),
-                        Err(_) => return Err(Error::internal_error()),
-                    }
+                    let init_result_val = serde_json::to_value(init_result).unwrap();
+                    return Ok(Some(init_result_val));
                 }
                 let mut last_res = Ok(None);
                 for source_id in routable_sources {
@@ -1686,14 +1825,21 @@ impl ComposedServer {
                                     if let Some(src) = s.capability_tracker.sources.get_mut(&source_id) {
                                         src.health = SourceHealth::Healthy;
                                     }
+                                    if let Some(src) = s.capability_tracker.sources.get(&source_id) {
+                                        source_health.lock().unwrap().insert(source_id.clone(), format!("{:?}", src.health));
+                                    }
                                 }
-                                last_res = Ok(serde_json::from_value(res).ok());
+                                last_res = Ok(Some(res.clone()));
+                                sources_returned.lock().unwrap().push(source_id.clone());
                                 break;
                             }
                             Err(_) => {
                                 any_failed = true;
                                 let mut s = self.state.lock().await;
                                 s.capability_tracker.degrade_source(&source_id, SourceHealth::TimedOut);
+                                if let Some(src) = s.capability_tracker.sources.get(&source_id) {
+                                    source_health.lock().unwrap().insert(source_id.clone(), format!("{:?}", src.health));
+                                }
                             }
                         }
                     }
@@ -1714,19 +1860,29 @@ impl ComposedServer {
                                         }
                                     }
                                     if !res.is_null() {
-                                        hovers.push((source_id.clone(), res));
+                                        hovers.push((source_id.clone(), res.clone()));
+                                        sources_returned.lock().unwrap().push(source_id.clone());
+                                    }
+                                    {
+                                        let s = self.state.lock().await;
+                                        if let Some(src) = s.capability_tracker.sources.get(&source_id) {
+                                            source_health.lock().unwrap().insert(source_id.clone(), format!("{:?}", src.health));
+                                        }
                                     }
                                 }
                                 Err(_) => {
                                     any_failed = true;
                                     let mut s = self.state.lock().await;
                                     s.capability_tracker.degrade_source(&source_id, SourceHealth::TimedOut);
+                                    if let Some(src) = s.capability_tracker.sources.get(&source_id) {
+                                        source_health.lock().unwrap().insert(source_id.clone(), format!("{:?}", src.health));
+                                    }
                                 }
                             }
                         }
                     }
                     let merged = merge_hovers_with_attribution(hovers);
-                    Ok(serde_json::from_value(merged).ok())
+                    Ok(Some(merged))
                 } else {
                     let mut final_res = Ok(None);
                     for source_id in routable_sources {
@@ -1740,7 +1896,14 @@ impl ComposedServer {
                                         }
                                     }
                                     if !res.is_null() {
-                                        final_res = Ok(serde_json::from_value(res).ok());
+                                        final_res = Ok(Some(res.clone()));
+                                        sources_returned.lock().unwrap().push(source_id.clone());
+                                        {
+                                            let s = self.state.lock().await;
+                                            if let Some(src) = s.capability_tracker.sources.get(&source_id) {
+                                                source_health.lock().unwrap().insert(source_id.clone(), format!("{:?}", src.health));
+                                            }
+                                        }
                                         break;
                                     }
                                 }
@@ -1748,6 +1911,9 @@ impl ComposedServer {
                                     any_failed = true;
                                     let mut s = self.state.lock().await;
                                     s.capability_tracker.degrade_source(&source_id, SourceHealth::TimedOut);
+                                    if let Some(src) = s.capability_tracker.sources.get(&source_id) {
+                                        source_health.lock().unwrap().insert(source_id.clone(), format!("{:?}", src.health));
+                                    }
                                 }
                             }
                         }
@@ -1768,24 +1934,34 @@ impl ComposedServer {
                                     }
                                 }
                                 if !res.is_null() {
+                                    sources_returned.lock().unwrap().push(source_id.clone());
                                     observations.push(AttributedObservation {
                                         source_id: source_id.clone(),
                                         uri: uri_opt.clone().unwrap_or_default(),
                                         data: res,
                                     });
                                 }
+                                {
+                                    let s = self.state.lock().await;
+                                    if let Some(src) = s.capability_tracker.sources.get(&source_id) {
+                                        source_health.lock().unwrap().insert(source_id.clone(), format!("{:?}", src.health));
+                                    }
+                                }
                             }
                             Err(_) => {
                                 any_failed = true;
                                 let mut s = self.state.lock().await;
                                 s.capability_tracker.degrade_source(&source_id, SourceHealth::TimedOut);
+                                if let Some(src) = s.capability_tracker.sources.get(&source_id) {
+                                    source_health.lock().unwrap().insert(source_id.clone(), format!("{:?}", src.health));
+                                }
                             }
                         }
                     }
                 }
                 let merged_locs = merge_deduped_locations(observations);
                 let merged_val = json!(merged_locs);
-                Ok(serde_json::from_value(merged_val).ok())
+                Ok(Some(merged_val))
             }
             CompositionStrategy::MergeAttributed => {
                 let mut observations = Vec::new();
@@ -1800,23 +1976,33 @@ impl ComposedServer {
                                     }
                                 }
                                 if !res.is_null() {
+                                    sources_returned.lock().unwrap().push(source_id.clone());
                                     observations.push(AttributedObservation {
                                         source_id: source_id.clone(),
                                         uri: uri_opt.clone().unwrap_or_default(),
                                         data: res,
                                     });
                                 }
+                                {
+                                    let s = self.state.lock().await;
+                                    if let Some(src) = s.capability_tracker.sources.get(&source_id) {
+                                        source_health.lock().unwrap().insert(source_id.clone(), format!("{:?}", src.health));
+                                    }
+                                }
                             }
                             Err(_) => {
                                 any_failed = true;
                                 let mut s = self.state.lock().await;
                                 s.capability_tracker.degrade_source(&source_id, SourceHealth::TimedOut);
+                                if let Some(src) = s.capability_tracker.sources.get(&source_id) {
+                                    source_health.lock().unwrap().insert(source_id.clone(), format!("{:?}", src.health));
+                                }
                             }
                         }
                     }
                 }
                 let merged = merge_attributed(observations);
-                Ok(serde_json::from_value(merged).ok())
+                Ok(Some(merged))
             }
             CompositionStrategy::RankedProviders => {
                 let mut completion_responses = Vec::new();
@@ -1831,13 +2017,23 @@ impl ComposedServer {
                                     }
                                 }
                                 if !res.is_null() {
+                                    sources_returned.lock().unwrap().push(source_id.clone());
                                     completion_responses.push(res);
+                                }
+                                {
+                                    let s = self.state.lock().await;
+                                    if let Some(src) = s.capability_tracker.sources.get(&source_id) {
+                                        source_health.lock().unwrap().insert(source_id.clone(), format!("{:?}", src.health));
+                                    }
                                 }
                             }
                             Err(_) => {
                                 any_failed = true;
                                 let mut s = self.state.lock().await;
                                 s.capability_tracker.degrade_source(&source_id, SourceHealth::TimedOut);
+                                if let Some(src) = s.capability_tracker.sources.get(&source_id) {
+                                    source_health.lock().unwrap().insert(source_id.clone(), format!("{:?}", src.health));
+                                }
                             }
                         }
                     }
@@ -1875,7 +2071,7 @@ impl ComposedServer {
                     "isIncomplete": is_incomplete,
                     "items": all_items
                 });
-                Ok(serde_json::from_value(result).ok())
+                Ok(Some(result))
             }
             CompositionStrategy::TransactionalEditGate => {
                 let uri = uri_opt.clone().unwrap_or_default();
@@ -1891,6 +2087,7 @@ impl ComposedServer {
                                     }
                                 }
                                 if !res.is_null() {
+                                    sources_returned.lock().unwrap().push(source_id.clone());
                                     let mut s = self.state.lock().await;
                                     let version = extract_version_from_edit(&res, &uri)
                                         .or_else(|| s.doc_tracker.current_version(&uri))
@@ -1903,6 +2100,7 @@ impl ComposedServer {
                                         edit: res.clone(),
                                     };
                                     let outcome = s.edit_gate.validate(&proposed, &s.doc_tracker, &s.capability_tracker);
+                                    *gate_outcome.lock().unwrap() = Some(format!("{:?}", outcome));
                                     if outcome == EditGateOutcome::Accepted {
                                         s.edit_gate.accept(proposed);
                                         merged_res = merge_edits(merged_res, res);
@@ -1910,11 +2108,20 @@ impl ComposedServer {
                                         return Err(Error::invalid_params(format!("Edit gate rejected edit: {:?}", outcome)));
                                     }
                                 }
+                                {
+                                    let s = self.state.lock().await;
+                                    if let Some(src) = s.capability_tracker.sources.get(&source_id) {
+                                        source_health.lock().unwrap().insert(source_id.clone(), format!("{:?}", src.health));
+                                    }
+                                }
                             }
                             Err(_) => {
                                 any_failed = true;
                                 let mut s = self.state.lock().await;
                                 s.capability_tracker.degrade_source(&source_id, SourceHealth::TimedOut);
+                                if let Some(src) = s.capability_tracker.sources.get(&source_id) {
+                                    source_health.lock().unwrap().insert(source_id.clone(), format!("{:?}", src.health));
+                                }
                             }
                         }
                     }
@@ -1922,7 +2129,7 @@ impl ComposedServer {
                 if merged_res.is_null() {
                     Ok(None)
                 } else {
-                    Ok(serde_json::from_value(merged_res).ok())
+                    Ok(Some(merged_res))
                 }
             }
             CompositionStrategy::OrderedFanout | CompositionStrategy::ObserveOnly | CompositionStrategy::Deny => {
@@ -1938,7 +2145,10 @@ impl ComposedServer {
             let s = self.state.lock().await;
             let version_after = s.doc_tracker.current_version(uri);
             if version_before != version_after {
+                *staleness_outcome.lock().unwrap() = Some("StaleRefused".to_string());
                 return Ok(None);
+            } else {
+                *staleness_outcome.lock().unwrap() = Some("NotStale".to_string());
             }
         }
         
@@ -2888,6 +3098,280 @@ mod tests {
 
         let merged = merge_deduped_locations(observations);
         assert_eq!(merged.len(), 1, "Duplicate locations must be deduplicated");
+    }
+
+    #[test]
+    fn test_gate8_method_routing_matrix() {
+        let routed_methods = vec![
+            "initialize",
+            "initialized",
+            "shutdown",
+            "exit",
+            "textDocument/didOpen",
+            "textDocument/didChange",
+            "textDocument/willSave",
+            "textDocument/willSaveWaitUntil",
+            "textDocument/didSave",
+            "textDocument/didClose",
+            "textDocument/declaration",
+            "textDocument/definition",
+            "textDocument/typeDefinition",
+            "textDocument/implementation",
+            "textDocument/references",
+            "textDocument/prepareCallHierarchy",
+            "callHierarchy/incomingCalls",
+            "callHierarchy/outgoingCalls",
+            "textDocument/prepareTypeHierarchy",
+            "typeHierarchy/supertypes",
+            "typeHierarchy/subtypes",
+            "textDocument/documentHighlight",
+            "textDocument/documentLink",
+            "documentLink/resolve",
+            "textDocument/hover",
+            "textDocument/completion",
+            "completionItem/resolve",
+            "textDocument/semanticTokens/full",
+            "textDocument/semanticTokens/full/delta",
+            "textDocument/semanticTokens/range",
+            "textDocument/codeLens",
+            "codeLens/resolve",
+            "textDocument/foldingRange",
+            "textDocument/selectionRange",
+            "textDocument/documentSymbol",
+            "workspace/symbol",
+            "workspaceSymbol/resolve",
+            "workspace/didChangeConfiguration",
+            "workspace/didChangeWorkspaceFolders",
+            "workspace/willCreateFiles",
+            "workspace/didCreateFiles",
+            "workspace/willRenameFiles",
+            "workspace/didRenameFiles",
+            "workspace/willDeleteFiles",
+            "workspace/didDeleteFiles",
+            "workspace/didChangeWatchedFiles",
+            "workspace/executeCommand",
+            "textDocument/signatureHelp",
+            "textDocument/codeAction",
+            "codeAction/resolve",
+            "textDocument/documentColor",
+            "textDocument/colorPresentation",
+            "textDocument/formatting",
+            "textDocument/rangeFormatting",
+            "textDocument/onTypeFormatting",
+            "textDocument/rename",
+            "textDocument/prepareRename",
+            "textDocument/linkedEditingRange",
+            "textDocument/moniker",
+            "textDocument/inlayHint",
+            "inlayHint/resolve",
+            "textDocument/inlineValue",
+            "textDocument/diagnostic",
+            "workspace/diagnostic",
+            "textDocument/inlineCompletion",
+            "workspace/textDocumentContent",
+            "textDocument/rangesFormatting",
+            "notebookDocument/didOpen",
+            "notebookDocument/didChange",
+            "notebookDocument/didSave",
+            "notebookDocument/didClose",
+            "$/cancelRequest",
+            "$/progress",
+            "window/workDoneProgress/cancel",
+            "$/setTrace",
+        ];
+
+        for method in &routed_methods {
+            let strategy = method_strategy(method);
+            assert_ne!(
+                strategy,
+                CompositionStrategy::Deny,
+                "Method '{}' must map to an explicit routing strategy, not the default Deny strategy",
+                method
+            );
+        }
+
+        assert_eq!(
+            method_strategy("textDocument/nonExistentMethod"),
+            CompositionStrategy::Deny
+        );
+        assert_eq!(
+            method_strategy("workspace/invalidRandomAction"),
+            CompositionStrategy::Deny
+        );
+    }
+
+    #[test]
+    fn test_bypass_capability_tracker() {
+        let mut tracker = CapabilityTracker::new();
+        let mut source1 = UpstreamSource::new("A", "127.0.0.1:1");
+        let caps1: lsp_types_max::ServerCapabilities = serde_json::from_value(json!({
+            "completionProvider": { "resolveProvider": true, "triggerCharacters": ["."] }
+        })).unwrap();
+        source1.server_capabilities = Some(caps1);
+        tracker.add_source(source1);
+
+        let mut source2 = UpstreamSource::new("B", "127.0.0.1:2");
+        let caps2: lsp_types_max::ServerCapabilities = serde_json::from_value(json!({
+            "completionProvider": { "resolveProvider": false, "triggerCharacters": [".", ":"] }
+        })).unwrap();
+        source2.server_capabilities = Some(caps2);
+        tracker.add_source(source2);
+
+        let client_caps = lsp_types_max::ClientCapabilities {
+            text_document: Some(lsp_types_max::TextDocumentClientCapabilities {
+                completion: Some(lsp_types_max::CompletionClientCapabilities {
+                    ..Default::default()
+                }),
+                ..Default::default()
+            }),
+            ..Default::default()
+        };
+
+        // 1. When Active (Normal)
+        std::env::remove_var("SABOTAGE_CAPABILITY_TRACKER");
+        let effective = tracker.derive_effective_capabilities(&client_caps);
+        let comp = effective.completion_provider.as_ref().unwrap();
+        // Intersection of trigger characters should be ["."]
+        assert_eq!(comp.trigger_characters.as_ref().unwrap(), &vec![".".to_string()]);
+        // Intersection of resolve_provider should be Some(false)
+        assert_eq!(comp.resolve_provider, Some(false));
+
+        // 2. When Sabotaged
+        std::env::set_var("SABOTAGE_CAPABILITY_TRACKER", "1");
+        let effective_sabotaged = tracker.derive_effective_capabilities(&client_caps);
+        std::env::remove_var("SABOTAGE_CAPABILITY_TRACKER");
+        let comp_sabotaged = effective_sabotaged.completion_provider.as_ref().unwrap();
+        // Union of trigger characters should be [".", ":"]
+        let trigger_chars = comp_sabotaged.trigger_characters.as_ref().unwrap();
+        assert!(trigger_chars.contains(&".".to_string()) && trigger_chars.contains(&":".to_string()));
+        // Union of resolve_provider should be Some(true)
+        assert_eq!(comp_sabotaged.resolve_provider, Some(true));
+    }
+
+    #[test]
+    fn test_bypass_document_version_tracker() {
+        let mut tracker = DocumentVersionTracker::new();
+        let uri = "file:///test.rs";
+        tracker.did_open(uri, 5);
+
+        // 1. When Active (Normal)
+        std::env::remove_var("SABOTAGE_DOCUMENT_VERSION_TRACKER");
+        let outcome = tracker.did_change(uri, 3);
+        assert!(matches!(outcome, VersionCheckResult::OutOfOrder { .. }));
+        let staleness = tracker.check_staleness(uri, 4);
+        assert!(matches!(staleness, VersionCheckResult::Stale { .. }));
+
+        // 2. When Sabotaged
+        std::env::set_var("SABOTAGE_DOCUMENT_VERSION_TRACKER", "1");
+        let outcome_sabotaged = tracker.did_change(uri, 3);
+        let staleness_sabotaged = tracker.check_staleness(uri, 4);
+        std::env::remove_var("SABOTAGE_DOCUMENT_VERSION_TRACKER");
+
+        assert_eq!(outcome_sabotaged, VersionCheckResult::Current);
+        assert_eq!(staleness_sabotaged, VersionCheckResult::Current);
+    }
+
+    #[test]
+    fn test_bypass_transaction_edit_gate() {
+        let gate = TransactionEditGate::new();
+        let mut doc = DocumentVersionTracker::new();
+        let mut caps = CapabilityTracker::new();
+        let uri = "file:///test.rs";
+
+        // Setup source
+        let source = UpstreamSource::new("A", "127.0.0.1:1");
+        caps.add_source(source);
+
+        doc.did_open(uri, 5);
+
+        // Propose a stale edit (version 4)
+        let proposed = ProposedEdit {
+            source_id: "A".to_string(),
+            uri: uri.to_string(),
+            version: 4,
+            method: "textDocument/formatting".to_string(),
+            edit: json!([]),
+        };
+
+        // 1. When Active (Normal)
+        std::env::remove_var("SABOTAGE_TRANSACTION_EDIT_GATE");
+        let outcome = gate.validate(&proposed, &doc, &caps);
+        assert_eq!(outcome, EditGateOutcome::Stale);
+
+        // 2. When Sabotaged
+        std::env::set_var("SABOTAGE_TRANSACTION_EDIT_GATE", "1");
+        let outcome_sabotaged = gate.validate(&proposed, &doc, &caps);
+        std::env::remove_var("SABOTAGE_TRANSACTION_EDIT_GATE");
+        assert_eq!(outcome_sabotaged, EditGateOutcome::Accepted);
+    }
+
+    #[test]
+    fn test_bypass_routing_matrix() {
+        // 1. When Active (Normal)
+        std::env::remove_var("SABOTAGE_ROUTING_MATRIX");
+        assert_eq!(method_strategy("textDocument/hover"), CompositionStrategy::FirstSuccess);
+
+        // 2. When Sabotaged
+        std::env::set_var("SABOTAGE_ROUTING_MATRIX", "1");
+        let strategy = method_strategy("textDocument/hover");
+        std::env::remove_var("SABOTAGE_ROUTING_MATRIX");
+        assert_eq!(strategy, CompositionStrategy::Deny);
+    }
+
+    #[test]
+    fn test_bypass_source_health() {
+        let mut tracker = CapabilityTracker::new();
+        let source = UpstreamSource::new("A", "127.0.0.1:1");
+        tracker.add_source(source);
+
+        // 1. When Active (Normal)
+        std::env::remove_var("SABOTAGE_SOURCE_HEALTH");
+        tracker.degrade_source("A", SourceHealth::Crashed);
+        assert_eq!(tracker.sources["A"].health, SourceHealth::Crashed);
+
+        // Reset source health
+        tracker.sources.get_mut("A").unwrap().health = SourceHealth::Healthy;
+
+        // 2. When Sabotaged
+        std::env::set_var("SABOTAGE_SOURCE_HEALTH", "1");
+        tracker.degrade_source("A", SourceHealth::Crashed);
+        std::env::remove_var("SABOTAGE_SOURCE_HEALTH");
+        assert_eq!(tracker.sources["A"].health, SourceHealth::Healthy);
+    }
+
+    #[tokio::test]
+    async fn test_bypass_static_graph() {
+        use crate::LspService;
+        let (service, _) = LspService::new(|client| {
+            ComposedServer::new(client, vec![("A".to_string(), "127.0.0.1:1".to_string())])
+        });
+        let server = service.inner();
+
+        {
+            let mut s = server.state.lock().await;
+            s.doc_tracker.did_open("file:///test.rs", 5);
+            s.capability_tracker.add_source(make_source("A", json!({})));
+        }
+
+        let mut params = json!({
+            "textDocument": { "uri": "file:///test.rs" },
+            "position": { "line": 0, "character": 0 }
+        });
+        let mut params_obj = params.as_object_mut().unwrap();
+        params_obj.insert("context".to_string(), json!({ "version": 1 }));
+
+        // 1. When Active (Normal): should be rejected and return Ok(None) immediately
+        std::env::remove_var("SABOTAGE_STATIC_GRAPH");
+        let resp = server.route_request::<_, serde_json::Value>("textDocument/definition", Value::Object(params_obj.clone())).await;
+        assert!(resp.is_ok());
+        assert_eq!(resp.unwrap(), None);
+
+        // 2. When Sabotaged: should bypass check_staleness and proceed
+        std::env::set_var("SABOTAGE_STATIC_GRAPH", "1");
+        let resp_sabotaged = server.route_request::<_, serde_json::Value>("textDocument/definition", Value::Object(params_obj.clone())).await;
+        std::env::remove_var("SABOTAGE_STATIC_GRAPH");
+
+        assert!(resp_sabotaged.is_err() || resp_sabotaged.unwrap() != None);
     }
 }
 

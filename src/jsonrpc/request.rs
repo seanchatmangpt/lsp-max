@@ -58,7 +58,7 @@ impl Request {
         Request {
             jsonrpc: Version,
             method: R::METHOD.into(),
-            params: Some(serde_json::to_value(params).unwrap()),
+            params: Some(serde_json::to_value(params).unwrap_or(Value::Null)),
             id: Some(id),
         }
     }
@@ -77,7 +77,7 @@ impl Request {
         Request {
             jsonrpc: Version,
             method: N::METHOD.into(),
-            params: Some(serde_json::to_value(params).unwrap()),
+            params: Some(serde_json::to_value(params).unwrap_or(Value::Null)),
             id: None,
         }
     }

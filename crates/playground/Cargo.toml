@@ -12,6 +12,10 @@ path = "src/main.rs"
 name = "lsif_demo"
 path = "src/bin/lsif_demo.rs"
 
+[[bin]]
+name = "dogfood_harness"
+path = "src/bin/dogfood_harness.rs"
+
 [dependencies]
 async-trait = "0.1"
 dashmap = "5.1"

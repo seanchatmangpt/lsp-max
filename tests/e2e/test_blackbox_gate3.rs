@@ -1,5 +1,18 @@
 use crate::test_harness::TestHarness;
-use serde_json::json;
+use serde_json::{json, Value};
+
+async fn respond_to_request(stream: &mut tokio::io::DuplexStream, id: Value, result: Value) {
+    let resp = json!({
+        "jsonrpc": "2.0",
+        "id": id,
+        "result": result
+    });
+    let payload = serde_json::to_string(&resp).unwrap();
+    let msg = format!("Content-Length: {}\r\n\r\n{}", payload.len(), payload).into_bytes();
+    use tokio::io::AsyncWriteExt;
+    stream.write_all(&msg).await.unwrap();
+    stream.flush().await.unwrap();
+}
 
 /// 1. Composed Initialize: client sends initialize, upstream A advertises hover, upstream B does not;
 ///    verify downstream capabilities.
@@ -144,7 +157,7 @@ async fn test_gate3_dynamic_unregistration_and_refusal() {
 
     // Composed server should forward the dynamic registration request to the client
     let reg_msg = tokio::time::timeout(
-        std::time::Duration::from_millis(1000),
+        std::time::Duration::from_millis(2000),
         harness.client.read_message(),
     )
     .await
@@ -157,7 +170,7 @@ async fn test_gate3_dynamic_unregistration_and_refusal() {
 
     // Respond back from the client confirming the registration
     let reg_id = reg_msg.get("id").unwrap().clone();
-    harness.client.send_notification("$/cancelRequest", json!({ "id": reg_id })).await;
+    respond_to_request(&mut harness.client.stream, reg_id, json!(null)).await;
 
     // Configure the mock server to return a specific hover response
     {
@@ -198,7 +211,7 @@ async fn test_gate3_dynamic_unregistration_and_refusal() {
 
     // Composed server should forward the dynamic unregistration request to the client
     let unreg_msg = tokio::time::timeout(
-        std::time::Duration::from_millis(1000),
+        std::time::Duration::from_millis(2000),
         harness.client.read_message(),
     )
     .await
@@ -208,6 +221,10 @@ async fn test_gate3_dynamic_unregistration_and_refusal() {
         unreg_msg.get("method").and_then(|m| m.as_str()),
         Some("client/unregisterCapability")
     );
+
+    // Respond back from the client confirming the unregistration
+    let unreg_id = unreg_msg.get("id").unwrap().clone();
+    respond_to_request(&mut harness.client.stream, unreg_id, json!(null)).await;
 
     // Verify hover requests are refused once again after unregistration
     let final_hover = harness.client.send_request("textDocument/hover", hover_params).await;

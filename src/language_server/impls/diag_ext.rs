@@ -118,17 +118,18 @@ pub async fn workspace_diagnostic(
 
     if reports.is_empty() && !global_items.is_empty() {
         // Fallback: use root path
-        let root_uri = Uri::from_str(&format!("file://{}", registry.root_path.display())).unwrap();
-        reports.push(WorkspaceDocumentDiagnosticReport::Full(
-            WorkspaceFullDocumentDiagnosticReport {
-                uri: root_uri,
-                version: None,
-                full_document_diagnostic_report: FullDocumentDiagnosticReport {
-                    result_id: None,
-                    items: global_items,
+        if let Ok(root_uri) = Uri::from_str(&format!("file://{}", registry.root_path.display())) {
+            reports.push(WorkspaceDocumentDiagnosticReport::Full(
+                WorkspaceFullDocumentDiagnosticReport {
+                    uri: root_uri,
+                    version: None,
+                    full_document_diagnostic_report: FullDocumentDiagnosticReport {
+                        result_id: None,
+                        items: global_items,
+                    },
                 },
-            },
-        ));
+            ));
+        }
     }
 
     Ok(WorkspaceDiagnosticReportResult::Report(

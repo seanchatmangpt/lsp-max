@@ -121,7 +121,7 @@ pub(crate) use language_server::generated;
 pub use tower_lsp_max_lsif as lsif;
 
 mod composition;
-pub use composition::ComposedServer;
+pub use composition::{ComposedServer, SourceHealth, CompositionState, SharedCompositionState};
 
 
 /// Module containing validation gate logic.

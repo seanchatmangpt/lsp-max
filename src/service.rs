@@ -279,10 +279,10 @@ fn handle_mesh_rpc(
     method: &str,
     params: Option<Value>,
 ) -> Result<Value, String> {
-    let mut registry = crate::get_registry().lock().unwrap();
+    let mut registry = crate::get_registry().lock().unwrap_or_else(|p| p.into_inner());
     crate::update_diagnostics(&mut registry);
 
-    let mut mesh = state.mesh.lock().unwrap();
+    let mut mesh = state.mesh.lock().unwrap_or_else(|p| p.into_inner());
 
     // Sync registry -> mesh
     let instance_id = "LSP_1";
@@ -290,7 +290,10 @@ fn handle_mesh_rpc(
         mesh.add_instance(crate::max_runtime::LspInstance::new(instance_id));
     }
     {
-        let instance = mesh.instances.get_mut(instance_id).unwrap();
+        let instance = match mesh.instances.get_mut(instance_id) {
+            Some(inst) => inst,
+            None => return Err("LSP_1 instance not found".to_string()),
+        };
         instance.phase = match registry.current_state {
             State::Uninitialized => crate::max_runtime::LspPhase::Uninitialized,
             State::Initializing => crate::max_runtime::LspPhase::Initializing,
