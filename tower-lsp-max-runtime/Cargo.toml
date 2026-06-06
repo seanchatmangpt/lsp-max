@@ -1,14 +1,26 @@
 [package]
 name = "tower-lsp-max-runtime"
-version = "26.6.4"
+version = "26.6.5"
 edition = "2021"
 description = "Runtime snapshotting and state tracking for tower-lsp-max"
 
 [dependencies]
-tower-lsp-max-protocol = { path = "../tower-lsp-max-protocol", version = "26.6.4" }
+tower-lsp-max-protocol = { path = "../tower-lsp-max-protocol", version = "26.6.5" }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-lsp-types = "0.97.0"
+lsp-types-max = { version = "0.97.0", package = "lsp-types" }
+oxigraph = "0.5.8"
+tower-lsp-max-base = { path = "../crates/tower-lsp-max-base" }
+tower-lsp-max-lsif = { path = "../crates/tower-lsp-max-lsif" }
+blake3 = "1.3"
+ed25519-dalek = { version = "2.0", features = ["rand_core"] }
+uuid = { version = "1.0", features = ["v4", "serde"] }
+thiserror = "1"
+dashmap = "5.1"
+rand_core = { version = "0.6", features = ["getrandom"] }
+wasm4pm-compat = { path = "/Users/sac/wasm4pm-compat", version = "26.6.5", features = ["formats", "strict", "wasm4pm"] }
+url = "2.5"
+
 
 [dev-dependencies]
 tempfile = "3"

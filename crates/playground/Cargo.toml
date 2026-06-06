@@ -30,6 +30,7 @@ proc-macro2 = { version = "1", features = ["span-locations"] }
 toml = "0.8"
 ropey = "1"
 dashmap = "5"
+tower-lsp-max-lsif = { path = "../tower-lsp-max-lsif" }
 
 [dev-dependencies]
 tokio-test = "0.4"

@@ -1,9 +1,9 @@
-use tower_lsp_max_protocol::{
-    ConformanceVector, Receipt, MaxDiagnostic, ManifoldSnapshot,
-    LawAxis, HookDescriptor, HookGraphNode, ChainDescriptor, SnapshotId,
-};
-use tower_lsp_max_protocol::custom_methods::*;
 use lsp_types::request::Request;
+use tower_lsp_max_protocol::custom_methods::*;
+use tower_lsp_max_protocol::{
+    ChainDescriptor, ConformanceVector, HookDescriptor, HookGraphNode, LawAxis, ManifoldSnapshot,
+    MaxDiagnostic, Receipt, SnapshotId,
+};
 use tower_lsp_max_runtime::MaxMethod;
 
 #[test]
@@ -20,7 +20,11 @@ fn test_serialization_conformance_vector() {
 
     // 2. Full/Custom ConformanceVector with different LawAxis variants
     let custom_cv = ConformanceVector {
-        admitted: vec![LawAxis::Protocol, LawAxis::Type, LawAxis::Custom("custom_axis".to_string())],
+        admitted: vec![
+            LawAxis::Protocol,
+            LawAxis::Type,
+            LawAxis::Custom("custom_axis".to_string()),
+        ],
         refused: vec![LawAxis::Security, LawAxis::Release],
         unknown: vec![LawAxis::Domain],
         score: Some(50.0),
@@ -43,7 +47,10 @@ fn test_serialization_receipt() {
     let deserialized: Receipt = serde_json::from_str(&serialized).unwrap();
     assert_eq!(default_receipt.receipt_id, deserialized.receipt_id);
     assert_eq!(default_receipt.hash, deserialized.hash);
-    assert_eq!(default_receipt.prev_receipt_hash, deserialized.prev_receipt_hash);
+    assert_eq!(
+        default_receipt.prev_receipt_hash,
+        deserialized.prev_receipt_hash
+    );
 
     // 2. Custom Receipt
     let custom_receipt = Receipt {
@@ -55,7 +62,10 @@ fn test_serialization_receipt() {
     let deserialized: Receipt = serde_json::from_str(&serialized).unwrap();
     assert_eq!(custom_receipt.receipt_id, deserialized.receipt_id);
     assert_eq!(custom_receipt.hash, deserialized.hash);
-    assert_eq!(custom_receipt.prev_receipt_hash, deserialized.prev_receipt_hash);
+    assert_eq!(
+        custom_receipt.prev_receipt_hash,
+        deserialized.prev_receipt_hash
+    );
 }
 
 #[test]
@@ -71,8 +81,14 @@ fn test_serialization_max_diagnostic() {
     let custom_diag = MaxDiagnostic {
         lsp: lsp_types::Diagnostic {
             range: lsp_types::Range {
-                start: lsp_types::Position { line: 1, character: 2 },
-                end: lsp_types::Position { line: 3, character: 4 },
+                start: lsp_types::Position {
+                    line: 1,
+                    character: 2,
+                },
+                end: lsp_types::Position {
+                    line: 3,
+                    character: 4,
+                },
             },
             severity: Some(lsp_types::DiagnosticSeverity::ERROR),
             code: Some(lsp_types::NumberOrString::String("E001".to_string())),
@@ -102,7 +118,10 @@ fn test_serialization_max_diagnostic() {
     let deserialized: MaxDiagnostic = serde_json::from_str(&serialized).unwrap();
     assert_eq!(custom_diag.diagnostic_id, deserialized.diagnostic_id);
     assert_eq!(custom_diag.law_id, deserialized.law_id);
-    assert_eq!(custom_diag.violated_invariant, deserialized.violated_invariant);
+    assert_eq!(
+        custom_diag.violated_invariant,
+        deserialized.violated_invariant
+    );
     assert_eq!(custom_diag.observed_state, deserialized.observed_state);
     assert_eq!(custom_diag.expected_state, deserialized.expected_state);
 }
@@ -114,7 +133,10 @@ fn test_serialization_manifold_snapshot() {
     let serialized = serde_json::to_string(&default_snapshot).unwrap();
     let deserialized: ManifoldSnapshot = serde_json::from_str(&serialized).unwrap();
     assert_eq!(default_snapshot.snapshot_id.0, deserialized.snapshot_id.0);
-    assert_eq!(default_snapshot.conformance.strict_mode, deserialized.conformance.strict_mode);
+    assert_eq!(
+        default_snapshot.conformance.strict_mode,
+        deserialized.conformance.strict_mode
+    );
 
     // 2. Custom ManifoldSnapshot
     let custom_snapshot = ManifoldSnapshot {
@@ -126,39 +148,31 @@ fn test_serialization_manifold_snapshot() {
             score: Some(100.0),
             strict_mode: true,
         },
-        hooks: vec![
-            HookDescriptor {
-                hook_id: "hook_1".to_string(),
-                name: "test_hook".to_string(),
-                description: "test hook desc".to_string(),
-                axes: vec![LawAxis::Hook],
-                trigger_law: LawAxis::Hook,
-                input_type: "input".to_string(),
-                output_type: "output".to_string(),
-                failure_mode: "fail".to_string(),
-            }
-        ],
-        chains: vec![
-            ChainDescriptor {
-                chain_id: "chain_1".to_string(),
-                nodes: vec![
-                    HookGraphNode {
-                        node_id: "node_1".to_string(),
-                        hook: HookDescriptor::default(),
-                        predecessors: vec![],
-                        successors: vec![],
-                    }
-                ],
-                law_axis: LawAxis::Hook,
-            }
-        ],
-        receipts: vec![
-            Receipt {
-                receipt_id: "rec_1".to_string(),
-                hash: "hash_1".to_string(),
-                prev_receipt_hash: None,
-            }
-        ],
+        hooks: vec![HookDescriptor {
+            hook_id: "hook_1".to_string(),
+            name: "test_hook".to_string(),
+            description: "test hook desc".to_string(),
+            axes: vec![LawAxis::Hook],
+            trigger_law: LawAxis::Hook,
+            input_type: "input".to_string(),
+            output_type: "output".to_string(),
+            failure_mode: "fail".to_string(),
+        }],
+        chains: vec![ChainDescriptor {
+            chain_id: "chain_1".to_string(),
+            nodes: vec![HookGraphNode {
+                node_id: "node_1".to_string(),
+                hook: HookDescriptor::default(),
+                predecessors: vec![],
+                successors: vec![],
+            }],
+            law_axis: LawAxis::Hook,
+        }],
+        receipts: vec![Receipt {
+            receipt_id: "rec_1".to_string(),
+            hash: "hash_1".to_string(),
+            prev_receipt_hash: None,
+        }],
     };
     let serialized = serde_json::to_string(&custom_snapshot).unwrap();
     let deserialized: ManifoldSnapshot = serde_json::from_str(&serialized).unwrap();
@@ -188,7 +202,10 @@ fn test_custom_lsp_request_method_mappings() {
     assert_eq!(MaxConformanceVector::METHOD, "max/conformanceVector");
     assert_eq!(MaxExplainDiagnostic::METHOD, "max/explainDiagnostic");
     assert_eq!(MaxRepairPlan::METHOD, "max/repairPlan");
-    assert_eq!(MaxApplyRepairTransaction::METHOD, "max/applyRepairTransaction");
+    assert_eq!(
+        MaxApplyRepairTransaction::METHOD,
+        "max/applyRepairTransaction"
+    );
     assert_eq!(MaxExportAnalysisBundle::METHOD, "max/exportAnalysisBundle");
     assert_eq!(MaxRunGate::METHOD, "max/runGate");
     assert_eq!(MaxClearDiagnostic::METHOD, "max/clearDiagnostic");
@@ -204,7 +221,10 @@ fn test_runtime_max_method_routing() {
         (MaxMethod::ClearDiagnostic, "max/clearDiagnostic"),
         (MaxMethod::ExplainDiagnostic, "max/explainDiagnostic"),
         (MaxMethod::RepairPlan, "max/repairPlan"),
-        (MaxMethod::ApplyRepairTransaction, "max/applyRepairTransaction"),
+        (
+            MaxMethod::ApplyRepairTransaction,
+            "max/applyRepairTransaction",
+        ),
         (MaxMethod::ExportAnalysisBundle, "max/exportAnalysisBundle"),
         (MaxMethod::RunGate, "max/runGate"),
         (MaxMethod::Receipt, "max/receipt"),

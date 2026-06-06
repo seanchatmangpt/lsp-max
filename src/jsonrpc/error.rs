@@ -248,7 +248,6 @@ pub(crate) const fn not_initialized_error() -> Error {
     Error::server_not_initialized()
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;

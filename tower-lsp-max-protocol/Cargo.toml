@@ -1,6 +1,6 @@
 [package]
 name = "tower-lsp-max-protocol"
-version = "26.6.4"
+version = "26.6.5"
 edition = "2021"
 description = "Maximal capability vector, diagnostics, and protocol types for tower-lsp-max"
 

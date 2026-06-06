@@ -1,5 +1,5 @@
 use crate::lsif::*;
-use lsp_types::{Position, Range, SymbolKind};
+use lsp_types::Position;
 use std::io::{self, Write};
 
 pub struct LsifBuilder<W: Write> {
@@ -39,24 +39,30 @@ impl<W: Write> LsifBuilder<W> {
         writeln!(self.writer, "{}", json)
     }
 
-    pub fn emit_metadata(&mut self, version: &str, tool: ToolInfo) -> io::Result<Id> {
+    pub fn emit_metadata(
+        &mut self,
+        version: &str,
+        project_root: &str,
+        tool: ToolInfo,
+    ) -> io::Result<Id> {
         let id = self.next_id();
         self.emit(Element::Vertex(Vertex::MetaData {
             id: id.clone(),
             type_: VertexType::Vertex,
             version: version.to_string(),
+            project_root: project_root.to_string(),
             position_encoding: PositionEncoding::Utf16,
             tool_info: Some(tool),
         }))?;
         Ok(id)
     }
 
-    pub fn emit_project(&mut self, kind: &str, resource: Option<String>) -> io::Result<Id> {
+    pub fn emit_project(&mut self, kind: Option<&str>, resource: Option<String>) -> io::Result<Id> {
         let project_id = self.next_id();
         self.emit(Element::Vertex(Vertex::Project {
             id: project_id.clone(),
             type_: VertexType::Vertex,
-            kind: kind.to_string(),
+            kind: kind.map(|s| s.to_string()),
             resource,
             contents: None,
         }))?;
@@ -77,7 +83,12 @@ impl<W: Write> LsifBuilder<W> {
         Ok(doc_id)
     }
 
-    pub fn emit_range(&mut self, start: Position, end: Position, tag: Option<RangeTag>) -> io::Result<Id> {
+    pub fn emit_range(
+        &mut self,
+        start: Position,
+        end: Position,
+        tag: Option<RangeTag>,
+    ) -> io::Result<Id> {
         let range_id = self.next_id();
         self.emit(Element::Vertex(Vertex::Range {
             id: range_id.clone(),
@@ -131,7 +142,12 @@ impl<W: Write> LsifBuilder<W> {
         Ok(hover_result_id)
     }
 
-    pub fn bind_definition(&mut self, result_set_id: Id, range_ids: Vec<Id>, document_id: Id) -> io::Result<Id> {
+    pub fn bind_definition(
+        &mut self,
+        result_set_id: Id,
+        range_ids: Vec<Id>,
+        document_id: Id,
+    ) -> io::Result<Id> {
         let def_result_id = self.next_id();
         self.emit(Element::Vertex(Vertex::DefinitionResult {
             id: def_result_id.clone(),
@@ -159,7 +175,12 @@ impl<W: Write> LsifBuilder<W> {
         Ok(def_result_id)
     }
 
-    pub fn bind_references(&mut self, result_set_id: Id, range_ids: Vec<Id>, document_id: Id) -> io::Result<Id> {
+    pub fn bind_references(
+        &mut self,
+        result_set_id: Id,
+        range_ids: Vec<Id>,
+        document_id: Id,
+    ) -> io::Result<Id> {
         let ref_result_id = self.next_id();
         self.emit(Element::Vertex(Vertex::ReferenceResult {
             id: ref_result_id.clone(),
@@ -187,7 +208,12 @@ impl<W: Write> LsifBuilder<W> {
         Ok(ref_result_id)
     }
 
-    pub fn bind_declaration(&mut self, result_set_id: Id, range_ids: Vec<Id>, document_id: Id) -> io::Result<Id> {
+    pub fn bind_declaration(
+        &mut self,
+        result_set_id: Id,
+        range_ids: Vec<Id>,
+        document_id: Id,
+    ) -> io::Result<Id> {
         let decl_result_id = self.next_id();
         self.emit(Element::Vertex(Vertex::DeclarationResult {
             id: decl_result_id.clone(),
@@ -214,7 +240,6 @@ impl<W: Write> LsifBuilder<W> {
 
         Ok(decl_result_id)
     }
-
 
     pub fn begin_document(&mut self, doc_id: Id) -> io::Result<()> {
         if let Id::Number(n) = &doc_id {

@@ -160,7 +160,7 @@ fn gen_server_router(trait_name: &syn::Ident, methods: &[MethodCall]) -> proc_ma
         .collect();
 
     quote! {
-        mod generated {
+        pub(crate) mod generated {
             use std::sync::Arc;
             use std::future::{Future, Ready};
 

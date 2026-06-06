@@ -1008,3 +1008,196 @@ To verify that the requirements have been successfully met, the following steps 
 ## Follow-up — 2026-06-05T18:37:09Z
 
 Avoid sequential or suffix-based file naming (such as `_part1.rs`, `_part2.rs`); name split module files based on their logical categorization or functionality (e.g. `metadata.rs`, `resolution.rs`). Rename any existing files that use poor naming patterns.
+
+## Follow-up — 2026-06-05T21:52:19Z
+
+Implement the Oxigraph/SPARQL Admitted Graph Control Plane and Ostar Generative Pipeline integration in tower-lsp-max, as specified in the PRD/ARD documents inside `docs/reports/` and `docs/v26.6.5/prd-ard/`.
+
+Working directory: /Users/sac/tower-lsp-max
+Integrity mode: benchmark
+
+## Requirements
+
+### R1. Admitted RDF Graph State & Oxigraph Integration
+- Implement the `RelationAdmitter` trait supporting states: `RAW`, `CANDIDATE`, `ADMITTED`, `REFUSED`, `QUARANTINED`, `SUPERSEDED`, `REPLAYED`.
+- Support both in-memory `oxigraph::store::Store` (default) and persistent RocksDB-backed `Store` (via a configurable storage path).
+- Successfully translate LSIF 0.6.0 elements (documents, ranges, vertices, edges, item properties) and diagnostic observations into `oxrdf::Quad` triples using standard vocabularies (LSIF, PROV-O, DCTERMS, etc.).
+
+### R2. SPARQL Invariant Verification & Diagnostics
+- Enforce the 5 Core Invariants:
+  1. *No orphan LSIF relations*: Validate that all LSIF edge targets point to existing vertices using SPARQL `ASK`.
+  2. *No unreceipted graph consequences*: Every diagnostic or protocol artifact must have a `prov:wasGeneratedBy` receipt link.
+  3. *No hot-path SPARQL dependency*: Ensure interactive LSP query loops do not execute SPARQL queries directly.
+  4. *No ontology laundering*: Private terms (`max:`) must not masquerade as public semantics.
+  5. *No false ALIVE*: Valid status requires successful cryptographic replay verification.
+- Capture and report structural errors as detailed `VerificationReport` diagnostics, refusing invalid fixtures.
+
+### R3. Materialized View & LSP Routing
+- Implement asynchronous materialized views (e.g. using `DashMap` or structured indexes) populated by background SPARQL queries.
+- Serve standard LSP lookup requests (`textDocument/definition`, `textDocument/references`, `textDocument/hover`, and `textDocument/publishDiagnostics`) directly from these materialized views in `O(1)` time.
+
+### R4. Cryptographic Receipt Chaining
+- Implement a robust `CryptographicReceipt` structure in Rust (and a key management mechanism for Ed25519 signing) that records transition metadata: `prev_hash`, `discipline_id`, `law_id`, `consequence_hash`, and `sequence`.
+- Compute and chain digests using BLAKE3 to build an immutable, chronological execution chain.
+
+### R5. Deterministic Replay Engine
+- Implement a query consequence replay verifier.
+- Re-run transitions in isolation: initialize states from genesis parameters in the trace log, mock/stub system clocks and random seeds deterministically, and assert that recomputed state hashes match the signed receipts.
+
+### R6. Ostar Typestate Kernel Integration
+- Bind the codebase transitions to the generic `Machine<L, P, D>` container and compile-time checked `TypestateKernel` trait.
+- Enforce linear consumption of states using Rust's affine ownership type system (`self` moves).
+
+## Acceptance Criteria
+
+### Compilation & Tests
+- [ ] All code compiles cleanly under `cargo check` and contains no warnings under `cargo clippy`.
+- [ ] `cargo test` passes 100% across the workspace, including new unit and integration tests for the admitted graph, SPARQL queries, materialized views, receipt chaining, and deterministic replay.
+- [ ] Existing LSIF parser baseline tests remain green without regression.
+
+### Graph Admission & Query Verification
+- [ ] A sample LSIF fixture is successfully parsed, admitted into the `oxigraph::Store`, and validated against the 5 invariants.
+- [ ] Malformed/invalid graph fixtures are successfully detected, quarantined, and refused with corresponding diagnostic explanations.
+
+### Hot-Path Views & Replay
+- [ ] LSP queries (e.g. Definition) resolve from the materialized views without calling the Oxigraph store.
+- [ ] The replay engine successfully runs a verification against a generated receipt chain, producing a matching cryptographic digest and proving replay determinism.
+- [ ] No stubs, placeholders, `TODO`s, or unimplemented sections remain in the active codebase.
+
+## Follow-up — 2026-06-05T22:22:27Z
+
+Implement a production-grade 'ALIVE' release candidate for tower-lsp-max v26.6.5, integrating the Oxigraph & SPARQL Admitted Graph Control Plane and completing the remaining planned milestones (M3–M7) for library modularization.
+
+Working directory: /Users/sac/tower-lsp-max
+Integrity mode: benchmark
+
+## Requirements
+
+### R1. Admitted RDF Graph State
+Ingest workspace files, ranges, LSIF constructs (vertices/edges), LiveLSP diagnostics, and receipts into an embedded Oxigraph (v0.5.8) database as RDF triples. Enforce strict namespace mapping using standard prefixes (`rdf:`, `rdfs:`, `prov:`, `lsif:`) and bounded private prefixes (`max:`, `rcpt:`).
+
+### R2. SPARQL Invariant & SHACL Shapes Gate
+Enforce SHACL shape constraints on ingested triples to reject structurally malformed data. Run 5 core SPARQL validation queries (ASK/SELECT) at transaction commit to check for orphans, unregistered namespaces, unreceipted diagnostics, and lack of projections, blocking snapshot updates if any invariant is violated.
+
+### R3. Materialized Views & Epoch Sync Barrier
+Decouple live LSP definition, references, and hover requests from SPARQL execution by projecting query results asynchronously into in-memory `DashMap` structures to keep hot-path latencies below 5ms. To prevent race conditions, implement a Monotonic Epoch Sync Barrier that blocks strict-accuracy read requests (from agents/verifiers) when `committed_epoch > applied_epoch` until projection sync completes.
+
+### R4. Cryptographic Receipt Functor
+Ensure every admitted diagnostic or projection produces a BLAKE3 cryptographic receipt functor (`max:Receipt`) linking the input graph, query, and result hashes. Maintain functoriality ($\rho(g \circ f) = \rho(g) \circ \rho(f)$) and verify replay determinism by checking that replay query outputs match the receipt's expected result hash.
+
+### R5. Protocol Projection Surface
+Provide projection interfaces transforming the admitted graph and materialized views into standard JSON-RPC LSP, LSIF 0.6.0 NDJSON exports, Model Context Protocol (MCP) tool/resource lists, and Agent-to-Agent (A2A) task/agent capability cards.
+
+### R6. Workspace Refactoring & Decoupling (M3–M7)
+Refactor and modularize `tower-lsp-max-protocol/src/lib.rs`, `tower-lsp-max-runtime/src/lib.rs`, and the core server modules (`src/lib.rs`, `src/service.rs`, `src/service/client.rs`), splitting large inline files so that all primary source files are under 500 lines of code (LOC).
+
+## Verification Resources
+- Use the existing tests inside `tests/` directory (e.g., `test_rocksdb_admission.rs`, `test_materialized_views_integration.rs`, `test_challenger_m3_verification.rs`) as a reference verification harness.
+- Add comprehensive integration and unit tests for the Oxigraph control plane, SPARQL invariants, materialized views, and BLAKE3 receipts.
+
+## Acceptance Criteria
+
+### Build & Quality Gates
+- [ ] Workspace compiles cleanly on stable Rust channel.
+- [ ] `cargo fmt --check` succeeds across all workspace crates.
+- [ ] `cargo clippy --workspace --all-targets -- -D warnings` passes without warning/error.
+- [ ] All tests in `cargo test --workspace` pass (minimum of 400+ passing tests).
+
+### Functional Correctness
+- [ ] Structurally invalid or laundered triples are rejected at the ingestion boundary.
+- [ ] 5 core SPARQL invariants are correctly checked at transaction commit.
+- [ ] Interactive definition lookups serve from in-memory materialized views with a latency under 5ms.
+- [ ] Monotonic Epoch Sync Barrier blocks reads under write contention when strict accuracy is requested.
+- [ ] All diagnostics/projections contain valid BLAKE3 receipts, and independent verifier replays confirm 100% hash determinism.
+
+### Code Style & Decoupling
+- [ ] Target refactored source files are modularized and stay under 500 LOC.
+- [ ] All existing comments and docstrings unrelated to code changes are preserved.
+
+## Follow-up — 2026-06-05T23:07:42Z
+
+Verify all LSP, LSIF, and Base protocol implementations in the `tower-lsp-max` workspace against their official specifications: LSIF 0.6.0, LSP Base 0.9, and LSP 3.18. Address any gaps or non-conformances found, and implement comprehensive test cases to verify compliance.
+
+Working directory: /Users/sac/tower-lsp-max
+Integrity mode: benchmark
+
+## Requirements
+
+### R1. LSIF 0.6.0 Conformance Verification & Fixes
+Audit and verify the `tower-lsp-max-lsif` crate against the LSIF 0.6.0 specification (https://microsoft.github.io/language-server-protocol/specifications/lsif/0.6.0/specification/). Specifically, check that:
+- Every vertex and edge label, property, and variant matches the specification (e.g. metadata, moniker, hover, document symbol, project, document, range).
+- Serialization/deserialization behaves exactly as required by LSIF (NDJSON format).
+- Address any gaps or deviations found.
+
+### R2. LSP Base 0.9 Conformance Verification & Fixes
+Audit and verify the base protocol types and abstractions in `crates/tower-lsp-max-base` and the core workspace against the LSP Base 0.9 specification (https://microsoft.github.io/language-server-protocol/specifications/base/0.9/specification/). Specifically, check that:
+- JSON-RPC 2.0 envelopes, request/response headers, content-type, and content-length fields conform strictly.
+- Content-Length parsing and boundary conditions are handled defensively and correctly.
+- Address any gaps or deviations found.
+
+### R3. LSP 3.18 Conformance Verification & Fixes
+Audit and verify the protocol types, capabilities, and server lifecycle methods in `tower-lsp-max-protocol` and the core crate against the LSP 3.18 specification (https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/). Specifically, check that:
+- Server and client capability structs correctly reflect all optional/required fields of LSP 3.18.
+- Lifecycle method transitions (initialize, initialized, shutdown, exit) comply with the specification.
+- Request, response, and notification serialization patterns (including untagged unions, selection ranges, call hierarchies, document symbols, and diagnostics) match the spec.
+- Address any gaps or deviations found.
+
+### R4. Programmatic Compliance Testing
+Write programmatic test cases (unit and integration tests) to verify the compliance of:
+- LSIF 0.6.0 vertex and edge serialization.
+- LSP Base 0.9 headers, envelope structures, and parsing.
+- LSP 3.18 key capability configurations, diagnostics, and workspace edits.
+
+## Acceptance Criteria
+
+### Verification & Test Suite
+- [ ] Implement a test suite that programmatically validates conformance of the serialized JSON of LSP and LSIF structures against spec-expected structures.
+- [ ] All workspace tests in `cargo test --workspace` pass cleanly.
+- [ ] No compilation warnings or clippy warnings are introduced in the workspace.
+
+### Code Quality & Modularization
+- [ ] All new or refactored source files must remain under 500 lines of code (LOC).
+- [ ] Existing code documentation and comments unrelated to code changes are preserved.
+
+## Follow-up — 2026-06-05T23:13:04Z
+
+Verify and complete the entire `tower-lsp-max` framework implementation using combinatorial maximalism. Resolve all compilation errors resulting from the recent LSIF struct changes, ensure absolute conformance with LSIF 0.6.0, LSP Base 0.9, and LSP 3.18 specifications, and implement rigorous verification via Oxigraph, SPARQL, and BLAKE3 receipts.
+
+Working directory: /Users/sac/tower-lsp-max
+Integrity mode: benchmark
+
+## Requirements
+
+### R1. Fix Compilation & Align Structs
+Resolve all compilation errors across the workspace (particularly in `tower-lsp-max-runtime/src/control_plane/kernel.rs` and `wasm4pm_graduation.rs`) caused by adding the `project_root` field to `Vertex::MetaData` and updating the `kind` field to `Option<String>` in `Vertex::Project`. Ensure all test fixtures and database initializations construct these types correctly.
+
+### R2. LSIF 0.6.0 & LSP 3.18 Combinatorial Maximalism
+Complete all vertex and edge typings according to the LSIF 0.6.0 specification, including new LSIF elements such as `CallHierarchyResult`, `TypeHierarchyResult`, `textDocument/callHierarchy`, and `textDocument/typeHierarchy`. Ensure the `oxigraph` mapping and SPARQL queries correctly process and validate all combinations of these structures.
+
+### R3. SPARQL Invariants & SHACL Shape Gates
+Ensure the SHACL-style property validation gates reject any malformed metadata, documents, and invalid severity values or line/character properties. Verify that the 5 core SPARQL invariants (orphans, unregistered namespaces, unreceipted diagnostics, lack of projections, false alive) block state transitions upon commit.
+
+### R4. Caching Materialized Views & Epoch Sync Barrier
+Ensure all definition, reference, hover, call/type hierarchy, and diagnostic requests are served from DashMap materialized views with latencies under 5ms. Validate that the Monotonic Epoch Sync Barrier blocks reads during write contention when strict accuracy is requested.
+
+### R5. Cryptographic Receipts & Replay Verification
+Ensure every state transition, diagnostic, or projection produces a BLAKE3 Merkle-DAG receipt functor (`max:Receipt`) linking inputs, queries, laws, and outcomes. Verify that functoriality and query replay determinism are programmatically proven.
+
+### R6. Code Quality & Modularity (M3-M7)
+Verify that all workspace crates (`tower-lsp-max`, `tower-lsp-max-protocol`, `tower-lsp-max-runtime`, `tower-lsp-max-base`, etc.) are modularized, compile cleanly, have zero warning/clippy issues, and keep every primary source file strictly under 500 lines of code (LOC).
+
+## Acceptance Criteria
+
+### Build & Compilation
+- [ ] The entire workspace compiles cleanly without any errors or warnings.
+- [ ] `cargo clippy --workspace --all-targets -- -D warnings` passes without issue.
+
+### Verification & Correctness
+- [ ] Add programmatic tests in the test suite that verify edge-case combinations of vertices and edges (including Call/Type hierarchies) and confirm they successfully round-trip and map to Oxigraph.
+- [ ] 100% of the tests in `cargo test --workspace` pass successfully.
+
+### Code Style & Decoupling
+- [ ] Every source file is under 500 LOC (with unit tests extracted where necessary).
+- [ ] Module-level and item-level docstrings are preserved.
+
+

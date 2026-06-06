@@ -1,5 +1,5 @@
-use std::io::BufRead;
 use crate::lsif::Element;
+use std::io::BufRead;
 
 /// An iterator that streams LSIF elements from an NDJSON (JSONLines) reader.
 pub struct LsifReader<R: BufRead> {
@@ -42,7 +42,7 @@ impl<R: BufRead> Iterator for LsifReader<R> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::lsif::{Id, Vertex, VertexType};
+    use crate::lsif::{Id, Vertex};
     use std::io::Cursor;
 
     #[test]

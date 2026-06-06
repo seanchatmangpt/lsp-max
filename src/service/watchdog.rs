@@ -7,7 +7,10 @@ use super::state::ServerState;
 /// Spawns a background task that periodically checks if the parent process is still alive.
 /// If the parent process is gone, it triggers a graceful shutdown.
 pub fn spawn_watchdog(state: Arc<ServerState>) {
-    info!("Spawning watchdog for parent PID: {:?}", state.get_parent_pid());
+    info!(
+        "Spawning watchdog for parent PID: {:?}",
+        state.get_parent_pid()
+    );
     tokio::spawn(async move {
         let mut interval = tokio::time::interval(Duration::from_secs(5));
         loop {

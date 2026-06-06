@@ -200,6 +200,6 @@ pub static CAPABILITY_FIELDS: &[(&str, &str, &[&str])] = &[
     (
         "text_document_content_provider",
         "Option<TextDocumentContentOptions>",
-        &["text_document_content", "text_document_content_refresh"],
+        &["text_document_content"],
     ),
 ];

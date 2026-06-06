@@ -112,22 +112,26 @@ ASK {
     lsif:textDocument_declaration,
     lsif:textDocument_implementation,
     lsif:textDocument_typeDefinition,
+    lsif:textDocument_callHierarchy,
+    lsif:textDocument_typeHierarchy,
     lsif:textDocument_foldingRange,
     lsif:textDocument_documentLink,
     lsif:textDocument_documentSymbol,
     lsif:textDocument_diagnostic,
-    lsif:textDocument_semanticTokens,
+    lsif:textDocument_semanticTokens_full,
     <https://microsoft.github.io/language-server-protocol/specifications/lsif/0.6.0/specification/textDocument/definition>,
     <https://microsoft.github.io/language-server-protocol/specifications/lsif/0.6.0/specification/textDocument/references>,
     <https://microsoft.github.io/language-server-protocol/specifications/lsif/0.6.0/specification/textDocument/hover>,
     <https://microsoft.github.io/language-server-protocol/specifications/lsif/0.6.0/specification/textDocument/declaration>,
     <https://microsoft.github.io/language-server-protocol/specifications/lsif/0.6.0/specification/textDocument/implementation>,
     <https://microsoft.github.io/language-server-protocol/specifications/lsif/0.6.0/specification/textDocument/typeDefinition>,
+    <https://microsoft.github.io/language-server-protocol/specifications/lsif/0.6.0/specification/textDocument/callHierarchy>,
+    <https://microsoft.github.io/language-server-protocol/specifications/lsif/0.6.0/specification/textDocument/typeHierarchy>,
     <https://microsoft.github.io/language-server-protocol/specifications/lsif/0.6.0/specification/textDocument/foldingRange>,
     <https://microsoft.github.io/language-server-protocol/specifications/lsif/0.6.0/specification/textDocument/documentLink>,
     <https://microsoft.github.io/language-server-protocol/specifications/lsif/0.6.0/specification/textDocument/documentSymbol>,
     <https://microsoft.github.io/language-server-protocol/specifications/lsif/0.6.0/specification/textDocument/diagnostic>,
-    <https://microsoft.github.io/language-server-protocol/specifications/lsif/0.6.0/specification/textDocument/semanticTokens>
+    <https://microsoft.github.io/language-server-protocol/specifications/lsif/0.6.0/specification/textDocument/semanticTokens/full>
   ))
 }
 ```

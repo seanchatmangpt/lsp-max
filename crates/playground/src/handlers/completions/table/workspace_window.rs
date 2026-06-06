@@ -95,14 +95,7 @@
         capability_field: Some("text_document_content_provider"),
         domain: Domain::Workspace,
     },
-    MethodEntry {
-        fn_name: "text_document_content_refresh",
-        lsp_method: "workspace/textDocumentContent/refresh",
-        params_type: "max_protocol::lsp_3_18::TextDocumentContentRefreshParams",
-        return_type: "Result<()>",
-        capability_field: Some("text_document_content_provider"),
-        domain: Domain::Workspace,
-    },
+
     MethodEntry {
         fn_name: "work_done_progress_cancel",
         lsp_method: "window/workDoneProgress/cancel",
