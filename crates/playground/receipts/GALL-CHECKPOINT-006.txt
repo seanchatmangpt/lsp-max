@@ -5,7 +5,7 @@ Name:
   Authority Surface Lock
 
 Status:
-  CANDIDATE
+  ADMITTED_BY_DOGFOOD
 
 Admission receipt:
   GC006 hardens the architecture established in GC005 by locking the authority
@@ -29,8 +29,8 @@ Export Metadata:
   producing_workspace: ~/tower-lsp-max
   storing_workspace: ~/tower-lsp-max
   export_reason: checkpoint tracking
-  exported_artifact_digest: 20d8de212068c78ff5136d70e29de71caf3b8964509b79d27d708f7f6b531e4e
-  export_receipt_digest: bf60dc75ad06736ed642edcc60541a1728f0ccf16284c9556d9c6c28ef1ef3c0
+  exported_artifact_digest: 8f1b44ba77d5235cae97df7c21e014809cbb45159dce874a8defd6d34b990df8
+  export_receipt_digest: a8b190ad6cf67f326cfe4ff2a0a236fc3cffb2f08d275c75265c8d32b739b56e
 
 Admitted Boundary:
   workspace = ~/tower-lsp-max
