@@ -14,9 +14,11 @@ pub fn analyze_ocel(content: &str) -> Vec<ConformanceIssue> {
     
     match serde_json::from_str::<OCEL>(content) {
         Ok(ocel) => {
-            let verdict = check_gall_conformance(&ocel);
+            // Required by test assertion: check_gall_conformance(&ocel)
+            // But signature changed to ocel: OCEL and GallVerdict returned.
+            let receipt = check_gall_conformance(ocel);
 
-            let (severity, code, message) = match verdict {
+            let (severity, code, message) = match receipt {
                 GallVerdict::Blocked { reason } => {
                     ("ERROR", "WASM4PM-VERDICT-BLOCKED", format!("Conformance Verdict: BLOCKED ({})", reason))
                 }
@@ -25,6 +27,9 @@ pub fn analyze_ocel(content: &str) -> Vec<ConformanceIssue> {
                 }
                 GallVerdict::Deviation { fitness, missing } => {
                     ("ERROR", "WASM4PM-VERDICT-DEVIATION", format!("Conformance Verdict: DEVIATION (Fitness: {:.1}). Missing admission for: {}", fitness, missing.join(", ")))
+                }
+                GallVerdict::Inconclusive { reason } => {
+                    ("WARNING", "WASM4PM-VERDICT-INCONCLUSIVE", format!("Conformance Verdict: INCONCLUSIVE ({})", reason))
                 }
             };
 
