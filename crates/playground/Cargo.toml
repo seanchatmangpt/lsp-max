@@ -30,6 +30,12 @@ syn = { version = "2.0", features = ["full", "visit"] }
 proc-macro2 = { version = "1.0", features = ["span-locations"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+wasm4pm-compat = { path = "../../../wasm4pm-compat", features = ["formats", "strict", "wasm4pm"] }
+wasm4pm = { path = "../../../wasm4pm/wasm4pm", features = ["ocel", "feature-ocel"] }
+ocel-core = { path = "../../../wasm4pm/crates/ocel-core" }
+blake3 = "1"
+uuid = { version = "1", features = ["v4"] }
+chrono = { version = "0.4", features = ["serde"] }
 
 [features]
 proposed = ["tower-lsp-max/proposed", "lsp-types-max/proposed"]

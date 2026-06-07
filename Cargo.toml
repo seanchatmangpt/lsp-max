@@ -76,6 +76,7 @@ members = [
     "crates/tower-lsp-max-live",
     "crates/tower-lsp-max-lsif",
     "crates/tower-lsp-max-adapters/auto_lsp_adapter",
+    "crates/wasm4pm-lsp",
     "examples/pattern-lsp",
     "examples/clap-noun-verb-lsp",
 ]

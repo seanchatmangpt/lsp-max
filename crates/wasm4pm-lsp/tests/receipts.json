@@ -1,0 +1,42 @@
+{
+  "receipts": {
+    "dogfood_gc004.rs": {
+      "target_id": "dogfood_gc004.rs",
+      "receipt_id": "eb7c42a5-9acd-4b7a-8203-f1454a24d8df",
+      "boundary_digest": "2ea9f85163bee6248cc389231fcabf1ee1778d884a0fa4f6994f8ae5c610ad9d",
+      "workspace_digest": "58f1dccfacfeb5d1d58cb224e3b00450e22bbd8ecf404b43cf996e8e0ee1ecfb",
+      "pack_plan_digest": "424de8edf5b081002b0f909cc5221e13803ec8c0cfe4d94d46d5743758219d95",
+      "pack_descriptor_digest": "5ea80db8fbc34bcc584597428cea48d01f6ea12c9b8425987ba9105c13ac95eb",
+      "template_digest": "76f4e80a412bbd355a9e69f5acfd792ae08006a8e57536ede779723f7be1a3b0",
+      "customization_digest": "5872f46c06377002428992a98902eb6b220ac99c95ebb63b1ae2e550ba693741",
+      "blake3_hash": "2fed9352ea54b471118187b6b535d8010c77413874f99e9d81ae2d931dc4edbc",
+      "staging_digest": "e11ce1a6fa7e05aa6e4301e26de8a155b90eaa8303abb514948320aaf65ba9af",
+      "mutation_gate_decision": "admitted",
+      "verification_result": "passed",
+      "projection_engine_version": "1.0.0",
+      "signature": null,
+      "verified_at": "2026-06-06T23:55:39.611937Z",
+      "previous_receipt": null
+    },
+    "dogfood_gc005.rs": {
+      "target_id": "dogfood_gc005.rs",
+      "receipt_id": "d1746dd7-b063-4cab-b386-32e5f30d7c09",
+      "boundary_digest": "2ea9f85163bee6248cc389231fcabf1ee1778d884a0fa4f6994f8ae5c610ad9d",
+      "workspace_digest": "58f1dccfacfeb5d1d58cb224e3b00450e22bbd8ecf404b43cf996e8e0ee1ecfb",
+      "pack_plan_digest": "424de8edf5b081002b0f909cc5221e13803ec8c0cfe4d94d46d5743758219d95",
+      "pack_descriptor_digest": "5ea80db8fbc34bcc584597428cea48d01f6ea12c9b8425987ba9105c13ac95eb",
+      "template_digest": "368e7442edd75b8ad49309f78855abf788a11c7071862b6bba5c8e9031df9c19",
+      "customization_digest": "5872f46c06377002428992a98902eb6b220ac99c95ebb63b1ae2e550ba693741",
+      "blake3_hash": "368e7442edd75b8ad49309f78855abf788a11c7071862b6bba5c8e9031df9c19",
+      "staging_digest": "e11ce1a6fa7e05aa6e4301e26de8a155b90eaa8303abb514948320aaf65ba9af",
+      "mutation_gate_decision": "admitted",
+      "verification_result": "passed",
+      "projection_engine_version": "1.0.0",
+      "signature": null,
+      "verified_at": "2026-06-06T23:55:39.614259Z",
+      "previous_receipt": "eb7c42a5-9acd-4b7a-8203-f1454a24d8df"
+    }
+  },
+  "last_updated": "2026-06-06T23:55:39.614292Z",
+  "index_hash": "add1e2174129812ef5a98d29e784522d6a51ec7e449309c8f45182b06979ce9d"
+}

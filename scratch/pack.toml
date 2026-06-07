@@ -1,0 +1,17 @@
+id = "ggen-pack-gall-checkpoint-proof"
+name = "Gall Checkpoint Proofs"
+version = "1.0.0"
+description = "Projected test artifacts for Gall Checkpoints"
+license = "MIT"
+query_aliases = {}
+dependencies = {}
+
+[[templates]]
+path = "templates/dogfood_gc002.rs.tmpl"
+description = "Dogfood test for GC002"
+variables = ["checkpoint", "boundary"]
+
+[[templates]]
+path = "templates/dogfood_gc003.rs.tmpl"
+description = "Dogfood test for GC003"
+variables = ["checkpoint", "equation", "proofs"]

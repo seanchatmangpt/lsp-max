@@ -1,0 +1,22 @@
+{
+  "receipts": {
+    "cli": {
+      "target_id": "cli",
+      "receipt_id": "39c3b0b6-35d4-4db3-ac2a-1640d2c436b6",
+      "blake3_hash": "bb62f07cb55755cd12aba666135ed25e55059db8f2b90f40d26e70dae08cec16",
+      "template_digest": "6ad2f39545830ed2c40142914d6b5efccb6cf23431050996e0ef6a762a6de19c",
+      "signature": null,
+      "verified_at": "2026-06-06T22:30:28.961245Z"
+    },
+    "lsp": {
+      "target_id": "lsp",
+      "receipt_id": "0454c151-0148-492a-bca5-7f2ebaa3a541",
+      "blake3_hash": "c41f76c4b62493ac95b8ae99297e6ca5020cdce6860a4338a31d00a395089867",
+      "template_digest": "3a18438f9f86624810a3156ddbb0acb55d1c07804c4b2a62db66ff08ef4aee4a",
+      "signature": null,
+      "verified_at": "2026-06-06T22:30:28.961504Z"
+    }
+  },
+  "last_updated": "2026-06-06T22:30:28.961517Z",
+  "index_hash": "d4a2052fe2424dcb3ce225fc9e83f06cb37c75d773becacdba0cb7c64f38ddd1"
+}

@@ -1,4 +1,8 @@
 GALL-CHECKPOINT-004
+> [!IMPORTANT]
+> This file is a HUMAN-READABLE REPORT only and is not an admission receipt.
+> Admission is governed exclusively by OCEL event logs and wasm4pm replay verdicts.
+
 Pack-Domain LSP Intelligence
 Status: ADMITTED_BY_DOGFOOD
 

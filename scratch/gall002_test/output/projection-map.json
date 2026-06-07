@@ -1,0 +1,26 @@
+{
+  "mappings": {
+    "cli": {
+      "pack_id": "ggen-pack-clap-noun-verb",
+      "template_path": "/Users/sac/ggen/crates/ggen-pack-clap-noun-verb/templates/cli.tmpl",
+      "query_path": null,
+      "bound_variables": [
+        "app_name"
+      ],
+      "merge_strategy": "Exclusive",
+      "start_line": 1,
+      "end_line": 9999
+    },
+    "lsp": {
+      "pack_id": "ggen-pack-tower-lsp-max",
+      "template_path": "/Users/sac/ggen/crates/ggen-pack-tower-lsp-max/templates/lsp.tmpl",
+      "query_path": null,
+      "bound_variables": [
+        "port"
+      ],
+      "merge_strategy": "Exclusive",
+      "start_line": 1,
+      "end_line": 9999
+    }
+  }
+}
