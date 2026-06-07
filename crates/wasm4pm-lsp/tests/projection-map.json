@@ -1,16 +1,5 @@
 {
   "mappings": {
-    "dogfood_gc005.rs": {
-      "pack_id": "ggen-pack-gall-checkpoint-proof",
-      "template_path": "/Users/sac/ggen/crates/ggen-pack-gall-checkpoint-proof/templates/dogfood_gc005.rs.tmpl",
-      "query_path": null,
-      "bound_variables": [
-        "checkpoint"
-      ],
-      "merge_strategy": "Exclusive",
-      "start_line": 1,
-      "end_line": 9999
-    },
     "dogfood_gc004.rs": {
       "pack_id": "ggen-pack-gall-checkpoint-proof",
       "template_path": "/Users/sac/ggen/crates/ggen-pack-gall-checkpoint-proof/templates/dogfood_gc004.rs.tmpl",
@@ -18,6 +7,17 @@
       "bound_variables": [
         "checkpoint",
         "proofs_gc004"
+      ],
+      "merge_strategy": "Exclusive",
+      "start_line": 1,
+      "end_line": 9999
+    },
+    "dogfood_gc005.rs": {
+      "pack_id": "ggen-pack-gall-checkpoint-proof",
+      "template_path": "/Users/sac/ggen/crates/ggen-pack-gall-checkpoint-proof/templates/dogfood_gc005.rs.tmpl",
+      "query_path": null,
+      "bound_variables": [
+        "checkpoint"
       ],
       "merge_strategy": "Exclusive",
       "start_line": 1,

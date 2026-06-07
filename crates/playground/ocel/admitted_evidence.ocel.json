@@ -1,10 +1,6 @@
 {
   "eventTypes": [
     {
-      "name": "checkpoint.admitted",
-      "attributes": []
-    },
-    {
       "name": "file.projected",
       "attributes": []
     },
@@ -13,7 +9,7 @@
       "attributes": []
     },
     {
-      "name": "ConformanceVerdictEmitted",
+      "name": "checkpoint.admitted",
       "attributes": []
     }
   ],
@@ -147,51 +143,11 @@
           "qualifier": "subject"
         }
       ]
-    },
-    {
-      "id": "evt_conformance_verdict_b21dc299-5e9a-4423-996a-ffe949cfd771",
-      "type": "ConformanceVerdictEmitted",
-      "time": "2026-06-06T23:59:59Z",
-      "attributes": [
-        {
-          "name": "verdict",
-          "value": "FIT"
-        },
-        {
-          "name": "fitness",
-          "value": 1.0
-        }
-      ],
-      "relationships": []
     }
   ],
   "objects": [
     {
-      "id": "file:///tmp/cli.rs",
-      "type": "Artifact",
-      "attributes": [],
-      "relationships": []
-    },
-    {
-      "id": "GALL-CHECKPOINT-002",
-      "type": "Checkpoint",
-      "attributes": [],
-      "relationships": []
-    },
-    {
-      "id": "crates/ggen-lsp/tests/dogfood_gc004.rs",
-      "type": "Artifact",
-      "attributes": [],
-      "relationships": []
-    },
-    {
-      "id": "GALL-CHECKPOINT-004",
-      "type": "Checkpoint",
-      "attributes": [],
-      "relationships": []
-    },
-    {
-      "id": "crates/ggen-projection/tests/dogfood_gc002.rs",
+      "id": "crates/ggen-projection/tests/dogfood_gc003.rs",
       "type": "Artifact",
       "attributes": [],
       "relationships": []
@@ -203,13 +159,31 @@
       "relationships": []
     },
     {
-      "id": "GALL-CHECKPOINT-001",
+      "id": "crates/ggen-lsp/tests/dogfood_gc004.rs",
+      "type": "Artifact",
+      "attributes": [],
+      "relationships": []
+    },
+    {
+      "id": "crates/ggen-projection/tests/dogfood_gc002.rs",
+      "type": "Artifact",
+      "attributes": [],
+      "relationships": []
+    },
+    {
+      "id": "GALL-CHECKPOINT-002",
       "type": "Checkpoint",
       "attributes": [],
       "relationships": []
     },
     {
-      "id": "crates/ggen-projection/tests/dogfood_gc003.rs",
+      "id": "GALL-CHECKPOINT-004",
+      "type": "Checkpoint",
+      "attributes": [],
+      "relationships": []
+    },
+    {
+      "id": "file:///tmp/cli.rs",
       "type": "Artifact",
       "attributes": [],
       "relationships": []
@@ -217,6 +191,12 @@
     {
       "id": "file:///tmp/receipts.json",
       "type": "Artifact",
+      "attributes": [],
+      "relationships": []
+    },
+    {
+      "id": "GALL-CHECKPOINT-001",
+      "type": "Checkpoint",
       "attributes": [],
       "relationships": []
     },

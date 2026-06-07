@@ -1,10 +1,10 @@
 {
-  "bound_at": "2026-06-06T23:55:39.607223+00:00",
-  "boundary_digest": "2ea9f85163bee6248cc389231fcabf1ee1778d884a0fa4f6994f8ae5c610ad9d",
+  "bound_at": "2026-06-07T00:05:06.280777+00:00",
+  "boundary_digest": "7450696f774272ad9a2407d91f7245ef84971c93589bd328a56c6b77ac3f6ff9",
   "customization_map_digest": "5872f46c06377002428992a98902eb6b220ac99c95ebb63b1ae2e550ba693741",
-  "git_ref": "35ccdf266e32664248301324dfa7ab345611faa2",
+  "git_ref": "1d3f1b1362a0ad6a2b08e7dc115d40d8525fdbdb",
   "pack_graph_digest": "a27afcc6a0628f07e4ccf363e289355a219cac4d292fc772471bd5e5d32250f3",
-  "projection_map_digest": "bbc102f811250ad76186527d196ee53d8ef5a5700f0e99f4830e99805201b202",
+  "projection_map_digest": "fedac1c661d115eb169f6160a3b2ece6cdce4e2ef5d8767b5f5b5e50db58d4ec",
   "resolution_order": [
     "ggen-pack-gall-checkpoint-proof"
   ],
