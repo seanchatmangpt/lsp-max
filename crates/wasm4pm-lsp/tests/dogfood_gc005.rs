@@ -24,7 +24,7 @@ impl LspClient {
             .stdout(Stdio::piped())
             .stderr(Stdio::inherit())
             .spawn()
-            .expect("spawn wasm4pm-lsp");
+            .expect("spawn gc005-wasm4pm-adapter");
 
         let stdout = child.stdout.take().expect("take stdout");
         let stdin = child.stdin.take().expect("take stdin");
