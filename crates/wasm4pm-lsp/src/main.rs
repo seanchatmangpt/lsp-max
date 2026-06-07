@@ -15,6 +15,7 @@ impl tower_lsp::LanguageServer for Backend {
         Ok(InitializeResult {
             capabilities: ServerCapabilities {
                 text_document_sync: Some(TextDocumentSyncCapability::Kind(TextDocumentSyncKind::FULL)),
+                code_action_provider: Some(CodeActionProviderCapability::Simple(true)),
                 ..Default::default()
             },
             ..Default::default()
@@ -35,6 +36,28 @@ impl tower_lsp::LanguageServer for Backend {
 
     async fn did_change(&self, params: DidChangeTextDocumentParams) {
         self.diagnose(params.text_document.uri, params.content_changes[0].text.clone()).await;
+    }
+
+    async fn code_action(&self, params: CodeActionParams) -> Result<Option<CodeActionResponse>> {
+        let mut actions = Vec::new();
+        for diag in params.context.diagnostics {
+            if let Some(NumberOrString::String(code)) = &diag.code {
+                if code == "WASM4PM-VERDICT-FIT" {
+                    actions.push(CodeActionOrCommand::CodeAction(CodeAction {
+                        title: "Bind Conformance Receipt".to_string(),
+                        kind: Some(CodeActionKind::QUICKFIX),
+                        diagnostics: Some(vec![diag.clone()]),
+                        command: Some(Command {
+                            title: "Bind Conformance Receipt".to_string(),
+                            command: "conformance-receipt.bind".to_string(),
+                            arguments: Some(vec![serde_json::to_value(params.text_document.uri.clone()).unwrap()]),
+                        }),
+                        ..Default::default()
+                    }));
+                }
+            }
+        }
+        Ok(Some(actions))
     }
 }
 
