@@ -1,7 +1,7 @@
 {
   "eventTypes": [
     {
-      "name": "file.projected",
+      "name": "checkpoint.admitted",
       "attributes": []
     },
     {
@@ -9,7 +9,7 @@
       "attributes": []
     },
     {
-      "name": "checkpoint.admitted",
+      "name": "file.projected",
       "attributes": []
     }
   ],
@@ -147,6 +147,18 @@
   ],
   "objects": [
     {
+      "id": "crates/ggen-projection/tests/dogfood_gc002.rs",
+      "type": "Artifact",
+      "attributes": [],
+      "relationships": []
+    },
+    {
+      "id": "GALL-CHECKPOINT-001",
+      "type": "Checkpoint",
+      "attributes": [],
+      "relationships": []
+    },
+    {
       "id": "crates/ggen-projection/tests/dogfood_gc003.rs",
       "type": "Artifact",
       "attributes": [],
@@ -159,13 +171,13 @@
       "relationships": []
     },
     {
-      "id": "crates/ggen-lsp/tests/dogfood_gc004.rs",
+      "id": "file:///tmp/receipts.json",
       "type": "Artifact",
       "attributes": [],
       "relationships": []
     },
     {
-      "id": "crates/ggen-projection/tests/dogfood_gc002.rs",
+      "id": "crates/ggen-lsp/tests/dogfood_gc004.rs",
       "type": "Artifact",
       "attributes": [],
       "relationships": []
@@ -177,6 +189,12 @@
       "relationships": []
     },
     {
+      "id": "file:///tmp/server.rs",
+      "type": "Artifact",
+      "attributes": [],
+      "relationships": []
+    },
+    {
       "id": "GALL-CHECKPOINT-004",
       "type": "Checkpoint",
       "attributes": [],
@@ -184,24 +202,6 @@
     },
     {
       "id": "file:///tmp/cli.rs",
-      "type": "Artifact",
-      "attributes": [],
-      "relationships": []
-    },
-    {
-      "id": "file:///tmp/receipts.json",
-      "type": "Artifact",
-      "attributes": [],
-      "relationships": []
-    },
-    {
-      "id": "GALL-CHECKPOINT-001",
-      "type": "Checkpoint",
-      "attributes": [],
-      "relationships": []
-    },
-    {
-      "id": "file:///tmp/server.rs",
       "type": "Artifact",
       "attributes": [],
       "relationships": []

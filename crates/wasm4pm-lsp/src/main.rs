@@ -3,7 +3,7 @@ use tower_lsp::jsonrpc::Result;
 use tower_lsp::lsp_types::*;
 use tower_lsp::{Client, LspService, Server};
 use ocel_core::OCEL;
-use std::collections::{HashMap, HashSet};
+use wasm4pm_algos::gall::{check_gall_conformance, GallVerdict};
 
 #[derive(Debug)]
 struct Backend {
@@ -46,42 +46,19 @@ impl Backend {
         if uri.path().ends_with(".ocel.json") {
             match serde_json::from_str::<OCEL>(&content) {
                 Ok(ocel) => {
-                    let required = ["GALL-CHECKPOINT-001", "GALL-CHECKPOINT-002", "GALL-CHECKPOINT-003", "GALL-CHECKPOINT-004"];
-                    let mut admitted = HashSet::new();
-                    let mut previous_receipt_id = None;
-                    let mut chain_broken = false;
+                    // 1. Authoritative wasm4pm Replay
+                    let verdict = check_gall_conformance(&ocel);
 
-                    for evt in &ocel.events {
-                        if evt.event_type == "checkpoint.admitted" {
-                            for rel in &evt.relationships {
-                                admitted.insert(rel.object_id.clone());
-                            }
+                    let (severity, code, message) = match verdict {
+                        GallVerdict::Blocked { reason } => {
+                            (DiagnosticSeverity::ERROR, "WASM4PM-VERDICT-BLOCKED", format!("Conformance Verdict: BLOCKED ({})", reason))
                         }
-
-                        if let Some(pr_attr) = evt.attributes.iter().find(|a| a.name == "previous_receipt") {
-                            let pr = pr_attr.value.to_string();
-                            if !pr.is_empty() && Some(pr) != previous_receipt_id {
-                                chain_broken = true;
-                            }
+                        GallVerdict::Fit { fitness } => {
+                            (DiagnosticSeverity::INFORMATION, "WASM4PM-VERDICT-FIT", format!("Conformance Verdict: FIT (Fitness: {:.1})", fitness))
                         }
-                        previous_receipt_id = Some(evt.id.clone());
-                    }
-
-                    let mut fitness = 1.0;
-                    let mut deviations = Vec::new();
-                    for req in required {
-                        if !admitted.contains(req) {
-                            fitness -= 0.25;
-                            deviations.push(format!("Missing admission for {}", req));
+                        GallVerdict::Deviation { fitness, missing } => {
+                            (DiagnosticSeverity::ERROR, "WASM4PM-VERDICT-DEVIATION", format!("Conformance Verdict: DEVIATION (Fitness: {:.1}). Missing admission for: {}", fitness, missing.join(", ")))
                         }
-                    }
-
-                    let (severity, code, message) = if chain_broken {
-                        (DiagnosticSeverity::ERROR, "WASM4PM-VERDICT-BLOCKED", "Conformance Verdict: BLOCKED (Chain Broken)".to_string())
-                    } else if fitness == 1.0 {
-                        (DiagnosticSeverity::INFORMATION, "WASM4PM-VERDICT-FIT", "Conformance Verdict: FIT (Fitness: 1.0)".to_string())
-                    } else {
-                        (DiagnosticSeverity::ERROR, "WASM4PM-VERDICT-DEVIATION", format!("Conformance Verdict: DEVIATION (Fitness: {}). {}", fitness, deviations.join(", ")))
                     };
 
                     diags.push(Diagnostic {
