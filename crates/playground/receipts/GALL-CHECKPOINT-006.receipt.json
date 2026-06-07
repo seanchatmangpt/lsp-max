@@ -1,0 +1,7 @@
+{
+  "checkpoint": "GALL-CHECKPOINT-006",
+  "producing_workspace": "~/tower-lsp-max",
+  "storing_workspace": "~/tower-lsp-max",
+  "export_reason": "checkpoint tracking",
+  "exported_artifact_digest": "20d8de212068c78ff5136d70e29de71caf3b8964509b79d27d708f7f6b531e4e"
+}
