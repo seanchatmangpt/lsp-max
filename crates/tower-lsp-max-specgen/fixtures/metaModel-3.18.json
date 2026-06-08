@@ -4533,12 +4533,12 @@
 			"name": "TextDocumentContentParams",
 			"properties": [
 				{
-					"name": "uri",
+					"name": "textDocument",
 					"type": {
-						"kind": "base",
-						"name": "DocumentUri"
+						"kind": "reference",
+						"name": "TextDocumentIdentifier"
 					},
-					"documentation": "The uri of the text document."
+					"documentation": "The text document."
 				}
 			],
 			"documentation": "Parameters for the `workspace/textDocumentContent` request.\n\n@since 3.18.0",

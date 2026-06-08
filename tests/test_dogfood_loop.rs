@@ -117,7 +117,7 @@ impl LanguageServer for DogfoodBackend {
         params: lsp318::TextDocumentContentParams,
     ) -> Result<lsp318::TextDocumentContentResult> {
         println!("Server: text_document_content called");
-        assert_eq!(params.uri.as_str(), "file:///dogfood.rs");
+        assert_eq!(params.text_document.uri.as_str(), "file:///dogfood.rs");
         Ok(lsp318::TextDocumentContentResult {
             text: "dogfood document content text".to_string(),
         })
@@ -413,7 +413,9 @@ async fn test_dogfood_loopback_integration() {
         "id": 3,
         "method": "workspace/textDocumentContent",
         "params": {
-            "uri": "file:///dogfood.rs"
+            "textDocument": {
+                "uri": "file:///dogfood.rs"
+            }
         }
     });
     write_msg(&client_tx_shared, content_req).await;

@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
-use tower_lsp::jsonrpc::Result;
-use tower_lsp::lsp_types::*;
-use tower_lsp::{Client, LspService, Server};
+use tower_lsp_max::jsonrpc::Result;
+use tower_lsp_max::lsp_types::*;
+use tower_lsp_max::{Client, LspService, Server};
 use gc005_wasm4pm_adapter::analyze_ocel;
 
 #[derive(Debug)]
@@ -9,8 +9,8 @@ struct Backend {
     client: Client,
 }
 
-#[tower_lsp::async_trait]
-impl tower_lsp::LanguageServer for Backend {
+#[tower_lsp_max::async_trait]
+impl tower_lsp_max::LanguageServer for Backend {
     async fn initialize(&self, _: InitializeParams) -> Result<InitializeResult> {
         Ok(InitializeResult {
             capabilities: ServerCapabilities {
@@ -65,7 +65,7 @@ impl Backend {
     async fn diagnose(&self, uri: Url, content: String) {
         let mut diags = Vec::new();
         
-        if uri.path().ends_with(".ocel.json") {
+        if uri.path().as_str().ends_with(".ocel.json") {
             let issues = analyze_ocel(&content);
             for issue in issues {
                 let severity = match issue.severity.as_str() {

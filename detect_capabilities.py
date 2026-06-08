@@ -12,46 +12,42 @@ def main():
     print("Fetching LSP 3.18 metaModel.json...")
     url = "https://raw.githubusercontent.com/microsoft/vscode-languageserver-node/main/protocol/metaModel.json"
     req = urllib.request.Request(url)
-    with urllib.request.urlopen(req) as response:
-        meta = json.loads(response.read().decode())
+    meta = None
+    try:
+        with urllib.request.urlopen(req, timeout=5) as response:
+            meta = json.loads(response.read().decode())
+            print("Successfully fetched metamodel from GitHub.")
+    except Exception as e:
+        print(f"Error fetching metamodel from GitHub: {e}")
+        local_path = os.path.join(os.path.dirname(__file__), "crates/tower-lsp-max-specgen/fixtures/metaModel-3.18.json")
+        if os.path.exists(local_path):
+            print(f"Attempting to load local metamodel from {local_path}...")
+            try:
+                with open(local_path, "r") as f:
+                    meta = json.load(f)
+                print("Successfully loaded local metamodel.")
+            except Exception as le:
+                print(f"Error reading local metamodel: {le}")
+                sys.exit(1)
+        else:
+            print(f"Local metamodel file not found at {local_path}.")
+            sys.exit(1)
 
-    lsp_methods = []
+    # We only care about client-to-server requests and notifications
+    # as these must be implemented by the LanguageServer trait.
+    # Server-to-client requests are sent by the server to the client.
+    client_to_server_methods = {}
     
-    # Extract all requests and notifications
-    for req in meta.get("requests", []):
-        lsp_methods.append(req["method"])
-    for notif in meta.get("notifications", []):
-        lsp_methods.append(notif["method"])
-
-    # Map LSP methods to likely rust method names
-    # e.g., textDocument/hover -> hover
-    # textDocument/didOpen -> did_open
-    # workspace/executeCommand -> execute_command
-    expected_rust_methods = set()
-    method_mapping = {}
-    for m in lsp_methods:
-        parts = m.split('/')
-        base_name = parts[-1]
-        
-        # some exceptions or namespace rules
-        if parts[0] == "$":
-            base_name = parts[1]
-        
-        snake_name = to_snake_case(base_name)
-        
-        # specific mappings typical in tower-lsp
-        if m == "workspace/symbol":
-            snake_name = "symbol"
-        elif m == "workspace/configuration":
-            snake_name = "configuration"
-        elif m == "workspace/workspaceFolders":
-            snake_name = "workspace_folders"
+    for r in meta.get("requests", []):
+        if r.get("messageDirection") in ("clientToServer", "both", None):
+            client_to_server_methods[r["method"]] = "request"
             
-        expected_rust_methods.add(snake_name)
-        method_mapping[snake_name] = m
+    for n in meta.get("notifications", []):
+        if n.get("messageDirection") in ("clientToServer", "both", None):
+            client_to_server_methods[n["method"]] = "notification"
 
     # Read tower-lsp-max LanguageServer trait
-    trait_path = sys.argv[1] if len(sys.argv) > 1 else "src/lib.rs"
+    trait_path = sys.argv[1] if len(sys.argv) > 1 else "src/language_server.rs"
     if not os.path.exists(trait_path):
         print(f"Error: {trait_path} not found.")
         sys.exit(1)
@@ -59,34 +55,48 @@ def main():
     with open(trait_path, 'r') as f:
         content = f.read()
 
-    # Extract the trait block
-    match = re.search(r"pub trait LanguageServer.*?(?=\{)(.*?^\})", content, re.MULTILINE | re.DOTALL)
-    if not match:
-        print("Error: Could not find LanguageServer trait.")
-        sys.exit(1)
-
-    trait_body = match.group(1)
+    # Parse #[rpc(name = "...")] attributes and find the next async fn
+    # We match: #[rpc(name = "LSP_METHOD_NAME")]
+    # followed by optional comments/whitespace, then async fn RUST_FN_NAME
+    implemented_lsp_methods = {}
     
-    # Find all async fn declarations
-    implemented_methods = set()
-    fn_matches = re.finditer(r"async\s+fn\s+([a-zA-Z0-9_]+)\s*\(", trait_body)
-    for m in fn_matches:
-        implemented_methods.add(m.group(1))
+    # We do a sequential scan or regex finditer
+    pattern = re.compile(
+        r'#\[rpc\(name\s*=\s*"([^"]+)"[^\]]*\)\]\s*(?:\/\/\/[^\n]*\s*)*\s*async\s+fn\s+([a-zA-Z0-9_]+)',
+        re.MULTILINE
+    )
+    
+    for match in pattern.finditer(content):
+        lsp_method = match.group(1)
+        rust_fn = match.group(2)
+        implemented_lsp_methods[lsp_method] = rust_fn
 
-    # Calculate missing
+    # Whitelist methods that are handled internally by tower-lsp runtime
+    # and don't need to be implemented by the user in LanguageServer trait:
+    runtime_handled_methods = {
+        "exit": "exit",
+        "$/cancelRequest": "cancel_request"
+    }
+
     missing_methods = []
-    for expected in sorted(expected_rust_methods):
-        if expected not in implemented_methods:
-            missing_methods.append(expected)
+    for method in sorted(client_to_server_methods.keys()):
+        if method not in implemented_lsp_methods and method not in runtime_handled_methods:
+            missing_methods.append(method)
 
     print(f"\n--- Tower-LSP-Max LSP 3.18 Capability Detector ---\n")
-    print(f"Total LSP 3.18 capabilities analyzed: {len(lsp_methods)}")
-    print(f"Implemented in tower-lsp-max: {len(implemented_methods)}")
-    print(f"Missing capabilities: {len(missing_methods)}\n")
+    print(f"Total Client-to-Server LSP 3.18 methods: {len(client_to_server_methods)}")
+    print(f"Implemented in tower-lsp-max LanguageServer trait: {len(implemented_lsp_methods)}")
+    print(f"Handled internally by tower-lsp-max runtime: {len(runtime_handled_methods)}")
+    print(f"Missing methods: {len(missing_methods)}\n")
     
-    print("Unimplemented Capabilities (LSP Method -> Expected Rust Method):")
-    for expected in missing_methods:
-        print(f"  - {method_mapping.get(expected, 'unknown')} -> async fn {expected}()")
-        
+    if missing_methods:
+        print("Unimplemented Client-to-Server Methods:")
+        for method in missing_methods:
+            expected_fn = to_snake_case(method.split('/')[-1])
+            print(f"  - {method} (expected: async fn {expected_fn}())")
+    else:
+        print("All client-to-server LSP 3.18 capabilities are fully supported!")
+
 if __name__ == "__main__":
     main()
+

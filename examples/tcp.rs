@@ -35,6 +35,7 @@ impl LanguageServer for Backend {
                         change_notifications: Some(OneOf::Left(true)),
                     }),
                     file_operations: None,
+                    ..Default::default()
                 }),
                 ..ServerCapabilities::default()
             },

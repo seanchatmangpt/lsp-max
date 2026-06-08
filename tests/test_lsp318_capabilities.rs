@@ -1646,7 +1646,7 @@ async fn test_workspace_will_delete_files_dispatch() {
 async fn test_workspace_text_document_content_dispatch() {
     let events = Batch8Events::default();
     let (mut tx, mut reader) = batch8_start(events).await;
-    let params = serde_json::json!({ "uri": "file:///batch8.rs" });
+    let params = serde_json::json!({ "textDocument": { "uri": "file:///batch8.rs" } });
     let resp = batch8_request(
         &mut tx,
         &mut reader,

@@ -6,6 +6,7 @@ pub(super) fn term_to_string(term: &oxigraph::model::Term) -> String {
         oxigraph::model::Term::NamedNode(n) => n.as_str().to_string(),
         oxigraph::model::Term::BlankNode(b) => b.as_str().to_string(),
         oxigraph::model::Term::Literal(l) => l.value().to_string(),
+        oxigraph::model::Term::Triple(t) => format!("{:?}", t),
     }
 }
 

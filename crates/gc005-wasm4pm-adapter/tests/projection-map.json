@@ -1,0 +1,64 @@
+{
+  "mappings": {
+    "f8_equation_enforcement.rs": {
+      "pack_id": "ggen-pack-proofs",
+      "template_path": "/Users/sac/ggen/crates/ggen-pack-proofs/templates/f8_equation_enforcement.rs.tmpl",
+      "query_path": null,
+      "bound_variables": [],
+      "merge_strategy": "Exclusive",
+      "start_line": 1,
+      "end_line": 9999
+    },
+    "dogfood_gc006_calver.rs": {
+      "pack_id": "ggen-pack-proofs",
+      "template_path": "/Users/sac/ggen/crates/ggen-pack-proofs/templates/dogfood_gc006_calver.rs.tmpl",
+      "query_path": null,
+      "bound_variables": [],
+      "merge_strategy": "Exclusive",
+      "start_line": 1,
+      "end_line": 9999
+    },
+    "dogfood_gc007.rs": {
+      "pack_id": "ggen-pack-proofs",
+      "template_path": "/Users/sac/ggen/crates/ggen-pack-proofs/templates/dogfood_gc007.rs.tmpl",
+      "query_path": null,
+      "bound_variables": [
+        "checkpoint",
+        "proofs_gc007"
+      ],
+      "merge_strategy": "Exclusive",
+      "start_line": 1,
+      "end_line": 9999
+    },
+    "dogfood_gc008.rs": {
+      "pack_id": "ggen-pack-proofs",
+      "template_path": "/Users/sac/ggen/crates/ggen-pack-proofs/templates/dogfood_gc008.rs.tmpl",
+      "query_path": null,
+      "bound_variables": [
+        "checkpoint",
+        "proofs_gc008"
+      ],
+      "merge_strategy": "Exclusive",
+      "start_line": 1,
+      "end_line": 9999
+    },
+    "dogfood_gc005.rs": {
+      "pack_id": "ggen-pack-proofs",
+      "template_path": "/Users/sac/ggen/crates/ggen-pack-proofs/templates/dogfood_gc005.rs.tmpl",
+      "query_path": null,
+      "bound_variables": [],
+      "merge_strategy": "Exclusive",
+      "start_line": 1,
+      "end_line": 9999
+    },
+    "dogfood_gc004.rs": {
+      "pack_id": "ggen-pack-proofs",
+      "template_path": "/Users/sac/ggen/crates/ggen-pack-proofs/templates/dogfood_gc004.rs.tmpl",
+      "query_path": null,
+      "bound_variables": [],
+      "merge_strategy": "Exclusive",
+      "start_line": 1,
+      "end_line": 9999
+    }
+  }
+}

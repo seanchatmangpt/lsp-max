@@ -80,7 +80,7 @@ fn complete_ls_methods(partial: &str) -> Vec<CompletionItem> {
             };
             let stub_body = if entry.return_type.starts_with("Result<") {
                 format!(
-                    "Err(tower_lsp::jsonrpc::Error::method_not_found()) // TODO: implement {}",
+                    "Err(tower_lsp_max::jsonrpc::Error::method_not_found()) // TODO: implement {}",
                     entry.fn_name
                 )
             } else {

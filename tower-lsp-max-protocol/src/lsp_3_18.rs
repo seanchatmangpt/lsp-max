@@ -2908,8 +2908,9 @@ pub struct InlineCompletionRegistrationOptions {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TextDocumentContentParams {
-    ///The uri of the text document.
-    pub uri: DocumentUri,
+    ///The text document.
+    #[serde(rename = "textDocument")]
+    pub text_document: TextDocumentIdentifier,
 }
 /**Result of the `workspace/textDocumentContent` request.
 
@@ -8281,206 +8282,206 @@ the server provides a corresponding handler.*/
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum AnnotatedTextEditOrSnippetTextEditOrTextEdit {
-    TextEdit(TextEdit),
     AnnotatedTextEdit(AnnotatedTextEdit),
     SnippetTextEdit(SnippetTextEdit),
+    TextEdit(TextEdit),
 }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum BooleanOrCallHierarchyOptionsOrCallHierarchyRegistrationOptions {
-    Boolean(bool),
-    CallHierarchyOptions(CallHierarchyOptions),
     CallHierarchyRegistrationOptions(CallHierarchyRegistrationOptions),
+    CallHierarchyOptions(CallHierarchyOptions),
+    Boolean(bool),
 }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum BooleanOrClientSemanticTokensRequestFullDelta {
-    Boolean(bool),
     ClientSemanticTokensRequestFullDelta(ClientSemanticTokensRequestFullDelta),
+    Boolean(bool),
 }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum BooleanOrCodeActionOptions {
-    Boolean(bool),
     CodeActionOptions(CodeActionOptions),
+    Boolean(bool),
 }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum BooleanOrDecimalOrIntegerOrLSPArrayOrLSPObjectOrStringOrUinteger {
-    LSPObject(LSPObject),
     LSPArray(LSPArray),
-    String(String),
-    Integer(Integer),
-    Uinteger(Uinteger),
-    Decimal(Decimal),
+    LSPObject(LSPObject),
     Boolean(bool),
+    Decimal(Decimal),
+    Integer(Integer),
+    String(String),
+    Uinteger(Uinteger),
 }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum BooleanOrDeclarationOptionsOrDeclarationRegistrationOptions {
-    Boolean(bool),
-    DeclarationOptions(DeclarationOptions),
     DeclarationRegistrationOptions(DeclarationRegistrationOptions),
+    DeclarationOptions(DeclarationOptions),
+    Boolean(bool),
 }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum BooleanOrDefinitionOptions {
-    Boolean(bool),
     DefinitionOptions(DefinitionOptions),
+    Boolean(bool),
 }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum BooleanOrDocumentColorOptionsOrDocumentColorRegistrationOptions {
-    Boolean(bool),
-    DocumentColorOptions(DocumentColorOptions),
     DocumentColorRegistrationOptions(DocumentColorRegistrationOptions),
+    DocumentColorOptions(DocumentColorOptions),
+    Boolean(bool),
 }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum BooleanOrDocumentFormattingOptions {
-    Boolean(bool),
     DocumentFormattingOptions(DocumentFormattingOptions),
+    Boolean(bool),
 }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum BooleanOrDocumentHighlightOptions {
-    Boolean(bool),
     DocumentHighlightOptions(DocumentHighlightOptions),
+    Boolean(bool),
 }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum BooleanOrDocumentRangeFormattingOptions {
-    Boolean(bool),
     DocumentRangeFormattingOptions(DocumentRangeFormattingOptions),
+    Boolean(bool),
 }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum BooleanOrDocumentSymbolOptions {
-    Boolean(bool),
     DocumentSymbolOptions(DocumentSymbolOptions),
+    Boolean(bool),
 }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum BooleanOrFoldingRangeOptionsOrFoldingRangeRegistrationOptions {
-    Boolean(bool),
-    FoldingRangeOptions(FoldingRangeOptions),
     FoldingRangeRegistrationOptions(FoldingRangeRegistrationOptions),
+    FoldingRangeOptions(FoldingRangeOptions),
+    Boolean(bool),
 }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum BooleanOrHoverOptions {
-    Boolean(bool),
     HoverOptions(HoverOptions),
+    Boolean(bool),
 }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum BooleanOrImplementationOptionsOrImplementationRegistrationOptions {
-    Boolean(bool),
-    ImplementationOptions(ImplementationOptions),
     ImplementationRegistrationOptions(ImplementationRegistrationOptions),
+    ImplementationOptions(ImplementationOptions),
+    Boolean(bool),
 }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum BooleanOrInlayHintOptionsOrInlayHintRegistrationOptions {
-    Boolean(bool),
-    InlayHintOptions(InlayHintOptions),
     InlayHintRegistrationOptions(InlayHintRegistrationOptions),
+    InlayHintOptions(InlayHintOptions),
+    Boolean(bool),
 }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum BooleanOrInlineCompletionOptions {
-    Boolean(bool),
     InlineCompletionOptions(InlineCompletionOptions),
+    Boolean(bool),
 }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum BooleanOrInlineValueOptionsOrInlineValueRegistrationOptions {
-    Boolean(bool),
-    InlineValueOptions(InlineValueOptions),
     InlineValueRegistrationOptions(InlineValueRegistrationOptions),
+    InlineValueOptions(InlineValueOptions),
+    Boolean(bool),
 }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum BooleanOrLinkedEditingRangeOptionsOrLinkedEditingRangeRegistrationOptions {
-    Boolean(bool),
-    LinkedEditingRangeOptions(LinkedEditingRangeOptions),
     LinkedEditingRangeRegistrationOptions(LinkedEditingRangeRegistrationOptions),
+    LinkedEditingRangeOptions(LinkedEditingRangeOptions),
+    Boolean(bool),
 }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum BooleanOrLiteral57f9bf6390bb37d9 {
-    Boolean(bool),
     Literal57f9bf6390bb37d9(Literal57f9bf6390bb37d9),
+    Boolean(bool),
 }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum BooleanOrMonikerOptionsOrMonikerRegistrationOptions {
-    Boolean(bool),
-    MonikerOptions(MonikerOptions),
     MonikerRegistrationOptions(MonikerRegistrationOptions),
+    MonikerOptions(MonikerOptions),
+    Boolean(bool),
 }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum BooleanOrReferenceOptions {
-    Boolean(bool),
     ReferenceOptions(ReferenceOptions),
+    Boolean(bool),
 }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum BooleanOrRenameOptions {
-    Boolean(bool),
     RenameOptions(RenameOptions),
+    Boolean(bool),
 }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum BooleanOrSaveOptions {
-    Boolean(bool),
     SaveOptions(SaveOptions),
+    Boolean(bool),
 }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum BooleanOrSelectionRangeOptionsOrSelectionRangeRegistrationOptions {
-    Boolean(bool),
-    SelectionRangeOptions(SelectionRangeOptions),
     SelectionRangeRegistrationOptions(SelectionRangeRegistrationOptions),
+    SelectionRangeOptions(SelectionRangeOptions),
+    Boolean(bool),
 }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum BooleanOrSemanticTokensFullDelta {
-    Boolean(bool),
     SemanticTokensFullDelta(SemanticTokensFullDelta),
+    Boolean(bool),
 }
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum BooleanOrString {
-    String(String),
     Boolean(bool),
+    String(String),
 }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum BooleanOrTypeDefinitionOptionsOrTypeDefinitionRegistrationOptions {
-    Boolean(bool),
-    TypeDefinitionOptions(TypeDefinitionOptions),
     TypeDefinitionRegistrationOptions(TypeDefinitionRegistrationOptions),
+    TypeDefinitionOptions(TypeDefinitionOptions),
+    Boolean(bool),
 }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum BooleanOrTypeHierarchyOptionsOrTypeHierarchyRegistrationOptions {
-    Boolean(bool),
-    TypeHierarchyOptions(TypeHierarchyOptions),
     TypeHierarchyRegistrationOptions(TypeHierarchyRegistrationOptions),
+    TypeHierarchyOptions(TypeHierarchyOptions),
+    Boolean(bool),
 }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum BooleanOrWorkspaceSymbolOptions {
-    Boolean(bool),
     WorkspaceSymbolOptions(WorkspaceSymbolOptions),
+    Boolean(bool),
 }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum CodeActionOrCommand {
-    Command(Command),
     CodeAction(CodeAction),
+    Command(Command),
 }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
@@ -8491,10 +8492,10 @@ pub enum CompletionItemArrayOrCompletionList {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum CreateFileOrDeleteFileOrRenameFileOrTextDocumentEdit {
-    TextDocumentEdit(TextDocumentEdit),
-    CreateFile(CreateFile),
     RenameFile(RenameFile),
+    CreateFile(CreateFile),
     DeleteFile(DeleteFile),
+    TextDocumentEdit(TextDocumentEdit),
 }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
@@ -8511,20 +8512,20 @@ pub enum DefinitionOrDefinitionLinkArray {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum DiagnosticOptionsOrDiagnosticRegistrationOptions {
-    DiagnosticOptions(DiagnosticOptions),
     DiagnosticRegistrationOptions(DiagnosticRegistrationOptions),
+    DiagnosticOptions(DiagnosticOptions),
 }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum DocumentSymbolArrayOrSymbolInformationArray {
-    SymbolInformationArray(Vec<SymbolInformation>),
     DocumentSymbolArray(Vec<DocumentSymbol>),
+    SymbolInformationArray(Vec<SymbolInformation>),
 }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum EditRangeWithInsertReplaceOrRange {
-    Range(Range),
     EditRangeWithInsertReplace(EditRangeWithInsertReplace),
+    Range(Range),
 }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
@@ -8535,27 +8536,27 @@ pub enum FullDocumentDiagnosticReportOrUnchangedDocumentDiagnosticReport {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum InlayHintLabelPartArrayOrString {
-    String(String),
     InlayHintLabelPartArray(Vec<InlayHintLabelPart>),
+    String(String),
 }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum InlineCompletionItemArrayOrInlineCompletionList {
-    InlineCompletionList(InlineCompletionList),
     InlineCompletionItemArray(Vec<InlineCompletionItem>),
+    InlineCompletionList(InlineCompletionList),
 }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum InlineValueEvaluatableExpressionOrInlineValueTextOrInlineValueVariableLookup {
-    InlineValueText(InlineValueText),
     InlineValueVariableLookup(InlineValueVariableLookup),
     InlineValueEvaluatableExpression(InlineValueEvaluatableExpression),
+    InlineValueText(InlineValueText),
 }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum InsertReplaceEditOrTextEdit {
-    TextEdit(TextEdit),
     InsertReplaceEdit(InsertReplaceEdit),
+    TextEdit(TextEdit),
 }
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(untagged)]
@@ -8569,8 +8570,8 @@ pub struct Literal57f9bf6390bb37d9 {}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum LocationOrLocationArray {
-    Location(Location),
     LocationArray(Vec<Location>),
+    Location(Location),
 }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
@@ -8581,21 +8582,21 @@ pub enum LocationOrLocationUriOnly {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum MarkedStringOrMarkedStringArrayOrMarkupContent {
-    MarkupContent(MarkupContent),
-    MarkedString(MarkedString),
     MarkedStringArray(Vec<MarkedString>),
+    MarkedString(MarkedString),
+    MarkupContent(MarkupContent),
 }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum MarkedStringWithLanguageOrString {
-    String(String),
     MarkedStringWithLanguage(MarkedStringWithLanguage),
+    String(String),
 }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum MarkupContentOrString {
-    String(String),
     MarkupContent(MarkupContent),
+    String(String),
 }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
@@ -8607,38 +8608,38 @@ pub enum NotebookCellTextDocumentFilterOrTextDocumentFilter {
 #[serde(untagged)]
 pub enum NotebookDocumentFilterNotebookTypeOrNotebookDocumentFilterPatternOrNotebookDocumentFilterScheme {
     NotebookDocumentFilterNotebookType(NotebookDocumentFilterNotebookType),
-    NotebookDocumentFilterScheme(NotebookDocumentFilterScheme),
     NotebookDocumentFilterPattern(NotebookDocumentFilterPattern),
+    NotebookDocumentFilterScheme(NotebookDocumentFilterScheme),
 }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum NotebookDocumentFilterOrString {
-    String(String),
     NotebookDocumentFilter(NotebookDocumentFilter),
+    String(String),
 }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum NotebookDocumentFilterWithCellsOrNotebookDocumentFilterWithNotebook {
-    NotebookDocumentFilterWithNotebook(NotebookDocumentFilterWithNotebook),
     NotebookDocumentFilterWithCells(NotebookDocumentFilterWithCells),
+    NotebookDocumentFilterWithNotebook(NotebookDocumentFilterWithNotebook),
 }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum NotebookDocumentSyncOptionsOrNotebookDocumentSyncRegistrationOptions {
-    NotebookDocumentSyncOptions(NotebookDocumentSyncOptions),
     NotebookDocumentSyncRegistrationOptions(NotebookDocumentSyncRegistrationOptions),
+    NotebookDocumentSyncOptions(NotebookDocumentSyncOptions),
 }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum PatternOrRelativePattern {
-    Pattern(Pattern),
     RelativePattern(RelativePattern),
+    Pattern(Pattern),
 }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum PrepareRenameDefaultBehaviorOrPrepareRenamePlaceholderOrRange {
-    Range(Range),
     PrepareRenamePlaceholder(PrepareRenamePlaceholder),
+    Range(Range),
     PrepareRenameDefaultBehavior(PrepareRenameDefaultBehavior),
 }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -8650,8 +8651,8 @@ pub enum RelatedFullDocumentDiagnosticReportOrRelatedUnchangedDocumentDiagnostic
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum SemanticTokensOptionsOrSemanticTokensRegistrationOptions {
-    SemanticTokensOptions(SemanticTokensOptions),
     SemanticTokensRegistrationOptions(SemanticTokensRegistrationOptions),
+    SemanticTokensOptions(SemanticTokensOptions),
 }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
@@ -8662,20 +8663,20 @@ pub enum SemanticTokensOrSemanticTokensDelta {
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum StringOrStringArray {
-    String(String),
     StringArray(Vec<String>),
+    String(String),
 }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum StringOrStringValue {
-    String(String),
     StringValue(StringValue),
+    String(String),
 }
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum StringOrTupleOfUintegerAndUinteger {
-    String(String),
     TupleOfUintegerAndUinteger((Uinteger, Uinteger)),
+    String(String),
 }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
@@ -8692,15 +8693,15 @@ pub enum TextDocumentContentChangePartialOrTextDocumentContentChangeWholeDocumen
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum TextDocumentContentOptionsOrTextDocumentContentRegistrationOptions {
-    TextDocumentContentOptions(TextDocumentContentOptions),
     TextDocumentContentRegistrationOptions(TextDocumentContentRegistrationOptions),
+    TextDocumentContentOptions(TextDocumentContentOptions),
 }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum TextDocumentFilterLanguageOrTextDocumentFilterPatternOrTextDocumentFilterScheme {
     TextDocumentFilterLanguage(TextDocumentFilterLanguage),
-    TextDocumentFilterScheme(TextDocumentFilterScheme),
     TextDocumentFilterPattern(TextDocumentFilterPattern),
+    TextDocumentFilterScheme(TextDocumentFilterScheme),
 }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
@@ -8771,11 +8772,6 @@ impl LspRequest for FoldingRangeRequest {
 }
 pub struct FoldingRangeRefreshRequest;
 impl LspRequest for FoldingRangeRefreshRequest {
-    type Params = ();
-    type Result = ();
-    const METHOD: &'static str = "workspace/foldingRange/refresh";
-}
-impl lsp_types_max::request::Request for FoldingRangeRefreshRequest {
     type Params = ();
     type Result = ();
     const METHOD: &'static str = "workspace/foldingRange/refresh";
@@ -8956,11 +8952,6 @@ impl LspRequest for TextDocumentContentRequest {
 }
 pub struct TextDocumentContentRefreshRequest;
 impl LspRequest for TextDocumentContentRefreshRequest {
-    type Params = TextDocumentContentRefreshParams;
-    type Result = ();
-    const METHOD: &'static str = "workspace/textDocumentContent/refresh";
-}
-impl lsp_types_max::request::Request for TextDocumentContentRefreshRequest {
     type Params = TextDocumentContentRefreshParams;
     type Result = ();
     const METHOD: &'static str = "workspace/textDocumentContent/refresh";

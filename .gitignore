@@ -10,3 +10,4 @@ vendors/
 **/target_e2e/
 **/lsif_dump.json
 **/receipts/
+scratch/

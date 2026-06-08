@@ -41,3 +41,15 @@ pub use core::{
     AnalysisBundle, CapabilityGap, GateId, InstanceId, LspStateModel, MaxCapabilityVector, Receipt,
     ReceiptObligation,
 };
+
+impl lsp_types_max::request::Request for lsp_3_18::FoldingRangeRefreshRequest {
+    type Params = ();
+    type Result = ();
+    const METHOD: &'static str = "workspace/foldingRange/refresh";
+}
+
+impl lsp_types_max::request::Request for lsp_3_18::TextDocumentContentRefreshRequest {
+    type Params = lsp_3_18::TextDocumentContentRefreshParams;
+    type Result = ();
+    const METHOD: &'static str = "workspace/textDocumentContent/refresh";
+}

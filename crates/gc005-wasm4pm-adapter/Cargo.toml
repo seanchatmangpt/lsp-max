@@ -1,6 +1,6 @@
 [package]
 name = "gc005-wasm4pm-adapter"
-version = "0.1.0"
+version = "26.6.6"
 edition = "2021"
 
 [dependencies]

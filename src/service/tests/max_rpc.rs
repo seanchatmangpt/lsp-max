@@ -291,7 +291,7 @@ async fn test_lsp_3_18_methods() {
     // 2. workspace/textDocumentContent
     let req = Request::build("workspace/textDocumentContent")
         .params(json!({
-            "uri": "file:///foo.rs"
+            "textDocument": { "uri": "file:///foo.rs" }
         }))
         .id(3)
         .finish();
@@ -366,7 +366,7 @@ async fn test_lsp_3_18_methods_routing() {
     // 2. workspace/textDocumentContent
     let req = Request::build("workspace/textDocumentContent")
         .params(json!({
-            "uri": "file:///foo.rs"
+            "textDocument": { "uri": "file:///foo.rs" }
         }))
         .id(3)
         .finish();

@@ -1,0 +1,12 @@
+{
+  "bound_at": "2026-06-07T02:20:19.205667+00:00",
+  "boundary_digest": "98475a7b4610720c199edd68d9aa6e1e8043a44601525a5ed09601f67e01b945",
+  "customization_map_digest": "5872f46c06377002428992a98902eb6b220ac99c95ebb63b1ae2e550ba693741",
+  "git_ref": "51db2d2d08c3938753830da5204fd7f60f0b0f3b",
+  "pack_graph_digest": "c01a040e8ca6de419a6af46fd5fe55235fa1f60d1b3091cdbebab96f3c4fb16c",
+  "projection_map_digest": "ac4e5fa7f313b8ea644006f008f976718a9db49a73e25daf8c83fbc537cec8a8",
+  "resolution_order": [
+    "ggen-pack-proofs"
+  ],
+  "toolchain": "rustc 1.95.0 (59807616e 2026-04-14)"
+}

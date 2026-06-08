@@ -55,7 +55,7 @@ ws_stream_tungstenite = { version = "0.10", features = ["tokio_io"] }
 tower-lsp-max-playground = { path = "crates/playground" }
 tempfile = "3"
 ropey = "1"
-oxigraph = { version = "0.5.8", default-features = false }
+oxigraph = { version = "0.5.8", default-features = false, features = ["rdf-12"] }
 wasm4pm-compat = { path = "../wasm4pm-compat", version = "26.6.5", features = ["formats", "strict", "wasm4pm"] }
 uuid = { version = "1.0", features = ["v4"] }
 ed25519-dalek = "2.0"
@@ -78,5 +78,6 @@ members = [
     "crates/tower-lsp-max-adapters/auto_lsp_adapter",
     "crates/wasm4pm-lsp",
     "examples/pattern-lsp",
+    "examples/anti-llm-lsp",
     "examples/clap-noun-verb-lsp", "crates/gc005-wasm4pm-adapter",
 ]

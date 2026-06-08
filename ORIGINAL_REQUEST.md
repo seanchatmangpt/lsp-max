@@ -239,5 +239,224 @@ Here are the requirements and acceptance criteria for R8:
 
 The user has explicitly requested: 'launch 5 subagents to help fill the gaps by writing/updating code'. Please ensure that the orchestrator spawns the 5 specialized coding subagents to implement, edit, and verify the R8 dogfood harness, transaction gates, version tracks, and routing matrix.
 
+## Follow-up — 2026-06-07T07:26:19Z
+
+# Goal
+
+Downgrade the claims of full LSP 3.18 maximalism to reflect Delta Changelog Coverage only. Implement the new `ANTI-LLM-LSP318-COMB-001` diagnostic checking for changelog-only laundering. Implement a spec extractor tool/canary that parses/extracts the complete LSP 3.18 protocol graph from the spec or metamodel to define and generate the combinatorial coverage matrix.
+
+Working directory: `/Users/sac/tower-lsp-max/examples/anti-llm-lsp`
+Project root: `/Users/sac/tower-lsp-max`
+Integrity mode: development with receipt discipline
+
+## Governing Statuses
+
+```yaml
+LSP318_CHANGELOG_DELTA_STATUS:
+  status: REPORTED_15_OF_15_WITH_TRANSCRIPTS_AND_RECEIPTS
+  scope: changelog_only
+
+LSP318_SPEC_GRAPH_STATUS:
+  status: BLOCKED_PENDING_SPEC_GRAPH_EXTRACTION
+  scope: full_3_18_protocol_surface
+
+LSP318_COMBINATORIAL_MAXIMALISM_STATUS:
+  status: MATRIX_INCOMPLETE
+  reason: "15 changelog rows do not cover the full LSP 3.18 request/capability/type/field/state-space graph."
+```
+
+## Requirements
+
+### R1. Implement New Diagnostic `ANTI-LLM-LSP318-COMB-001`
+- **Code:** `ANTI-LLM-LSP318-COMB-001`
+- **Category:** `protocol_surface`
+- **Message:** "15-row changelog matrix is being treated as full LSP 3.18 combinatorial coverage."
+- **Forbidden Implication:** `ChangelogCoverage(15 rows) ⇒ SpecCoverage(LSP 3.18)`
+- **Severity:** `ERROR`
+- **Checkpoint Impacted:** `LSP318_COMBINATORIAL_MAXIMALISM`
+- **Required Next Proof:**
+  - Extract full LSP 3.18 spec graph.
+  - Generate message/capability/type/field inventories.
+  - Generate combinatorial coverage matrix.
+  - Reclassify current 15 rows as changelog delta coverage only.
+- **Receipt Required:** true
+
+### R2. Spec Graph and Inventories Extraction
+Extract the actual protocol graph from the LSP 3.18 specification/metamodel. The graph is modeled as `G_318 = (M, C, T, F, R, E, N, D)` containing messages, capabilities, protocol types, fields, result types, error paths, nullability/default constraints, dynamic registration and lifecycle constraints.
+
+Generate the following output files under `examples/anti-llm-lsp/generated/` (create this directory if it doesn't exist):
+- `examples/anti-llm-lsp/generated/lsp318_spec_graph.json`
+- `examples/anti-llm-lsp/generated/lsp318_message_inventory.json`
+- `examples/anti-llm-lsp/generated/lsp318_capability_inventory.json`
+- `examples/anti-llm-lsp/generated/lsp318_type_field_inventory.json`
+- `examples/anti-llm-lsp/generated/lsp318_combinatorial_matrix.json`
+- `examples/anti-llm-lsp/generated/lsp318_gap_report.md`
+
+### R3. Comprehensive Spec Inventories Details
+
+#### 1. Message Inventory
+Classify and output every LSP method (request, notification, response, server-to-client, client-to-server, both-direction, custom/extension).
+Include: method name, direction, params type, result type, partial result type, workDoneProgress support, partialResult support, cancellation behavior, required capabilities, dynamic registration support, error behavior, negative controls, transcript path, receipt path, digest.
+
+#### 2. Capability Inventory
+Define every client/server capability path and registration option.
+Include: capability_path, owner (client|server|registration), type, status, default behavior, introduced_since, related methods, positive transcript, negative transcript, receipt.
+
+#### 3. Type and Field Inventory
+Deconstruct protocol structures (e.g. `InitializeParams`, `ClientCapabilities`, `ServerCapabilities`, `TextDocumentSyncOptions`, `WorkspaceEdit`, `Diagnostic`, `CompletionList`, etc.).
+Include: type_name, field_name, required|optional, nullable|non-null, data type, enum values, since/deprecated tags, default behavior, validation tests, negative controls.
+
+#### 4. Lifecycle State Machine
+Define and cover protocol state transitions: request before initialize, initialize twice, initialized before initialize, shutdown then request, exit before shutdown, cancel request, cancel unknown request, content modified, server/request cancelled, out-of-order responses, stale request handling.
+
+#### 5. Dynamic Registration Matrix
+For every dynamically registerable capability: supports dynamicRegistration, registerCapability accepted, unregisterCapability accepted, request works after registration, request refused after unregistration, bad registration refused, duplicate registration behavior, receipt.
+
+#### 6. Error-path Matrix
+Provide negative controls: invalid params, method not found, server not initialized, request cancelled, content modified, unsupported capability, malformed URI, bad range, missing required field, wrong nullability, wrong enum value.
+
+#### 7. Base Transport and JSON-RPC Matrix
+Validate: Content-Length correct, Content-Length missing, Content-Length wrong, Content-Type default, utf-8/utf8 compatibility, batch messages refused, invalid JSON refused, request-response/notification-no-response pairing, $/ request/notification handling.
+
+---
+
+## Acceptance Criteria
+
+- [ ] `ANTI-LLM-LSP318-COMB-001` diagnostic is fully implemented in rules and evaluates correctly.
+- [ ] Spec graph and inventories are successfully extracted and generated under `examples/anti-llm-lsp/generated/`.
+- [ ] No stubs or hand-written summaries replace the generated `lsp318_spec_graph.json`, `lsp318_message_inventory.json`, `lsp318_capability_inventory.json`, `lsp318_type_field_inventory.json`, `lsp318_combinatorial_matrix.json`, and `lsp318_gap_report.md`.
+- [ ] All 30 dogfood tests continue to pass and are reclassified as Delta Changelog Delta coverage proof.
+- [ ] The final report implements the new two-level status framing correctly.
+
+
+
+
+## Follow-up — 2026-06-07T08:09:14Z
+
+# Goal
+
+anti-llm-lsp must start using wasm4pm-compat for OCEL process evidence.
+
+Working directory: `/Users/sac/tower-lsp-max/examples/anti-llm-lsp`
+Project root: `/Users/sac/tower-lsp-max`
+Integrity mode: development with receipt discipline
+
+## Mission
+anti-llm-lsp must become an OCEL evidence producer using wasm4pm-compat. It must not become a full wasm4pm mining/conformance engine.
+
+## Boundary Law
+- anti-llm-lsp observes and emits diagnostics.
+- wasm4pm-compat supplies typed process-evidence / OCEL-compatible structures.
+- full wasm4pm remains outside this checkpoint.
+- no mining, replay, conformance checking, or process discovery is required here.
+- do not launder diagnostics into process evidence without OCEL events.
+
+## Forbidden Implication
+DiagnosticEmitted ⇒ ProcessEvidenceRecorded
+
+## Required Statuses
+
+```yaml
+OCEL_COMPAT_STATUS:
+  status: BLOCKED_PENDING_COMPAT_EVENT_LOG
+  scope: examples/anti-llm-lsp
+```
+
+Do not claim process-evidence completeness until OCEL events are emitted, exported, validated, and receipted.
+
+---
+
+## Required OCEL Evidence Model
+
+Add typed OCEL event emission for the actual anti-LLM lifecycle.
+
+### Event Types
+`RepositoryScanned`, `FileObserved`, `RawTextObservationDetected`, `TreeSitterObservationDetected`, `CargoGraphObservationDetected`, `MarkdownClaimDetected`, `JsonRpcTranscriptParsed`, `ReceiptFileParsed`, `RouteEvidenceChecked`, `DiagnosticEmitted`, `ForbiddenImplicationDetected`, `NegativeControlExecuted`, `Lsp318FeatureExercised`, `Lsp318FeatureRefusedByLaw`, `VirtualDocumentServed`, `FailsetUpdated`, `ClaimStatusReported`, `ReceiptValidated`, `AuditReportScanned`.
+
+### Object Types
+`Repository`, `Crate`, `File`, `FileRange`, `Diagnostic`, `DiagnosticCode`, `ForbiddenImplication`, `Checkpoint`, `Receipt`, `Digest`, `JsonRpcTranscript`, `LspMethod`, `LspCapabilityPath`, `Lsp318FeatureRow`, `NegativeControlFixture`, `TestCase`, `Failset`, `AgentReport`, `RouteStage`, `OcelEventLog`.
+
+### Core Relations
+- `DiagnosticEmitted` -> `FileRange`, `DiagnosticCode`, `ForbiddenImplication`, `Checkpoint`
+- `ReceiptValidated` -> `Receipt`, `Digest`, `Checkpoint`
+- `Lsp318FeatureExercised` -> `Lsp318FeatureRow`, `JsonRpcTranscript`, `Receipt`
+- `NegativeControlExecuted` -> `NegativeControlFixture`, `DiagnosticCode`, `Receipt`
+- `FailsetUpdated` -> `Diagnostic`, `Checkpoint`, `AgentReport`
+
+---
+
+## Required Outputs
+
+Add these files under `examples/anti-llm-lsp/ocel/` (create directory if it doesn't exist):
+- `examples/anti-llm-lsp/ocel/anti_llm_lsp_ocel.json`
+- `examples/anti-llm-lsp/ocel/anti_llm_lsp_ocel.receipt.json`
+- `examples/anti-llm-lsp/ocel/ocel_event_inventory.json`
+- `examples/anti-llm-lsp/ocel/ocel_object_inventory.json`
+- `examples/anti-llm-lsp/ocel/ocel_relation_inventory.json`
+- `examples/anti-llm-lsp/ocel/ocel_gap_report.md`
+
+If JSON is used, it is a boundary/export format only.
+Internal code should use typed structures through `wasm4pm-compat`, not untyped `serde_json::Value` authority.
+
+---
+
+## New Diagnostics
+
+### ANTI-LLM-OCEL-001
+- **Category:** `process_evidence`
+- **Message:** "Diagnostic emitted without corresponding OCEL process event."
+- **Forbidden Implication:** `DiagnosticEmitted ⇒ ProcessEvidenceRecorded`
+- **Severity:** `ERROR`
+- **Checkpoint Impacted:** `OCEL-COMPAT-001`
+- **Receipt Required:** `true`
+
+### ANTI-LLM-OCEL-002
+- **Category:** `process_evidence`
+- **Message:** "Receipt claim exists without OCEL object/event binding."
+- **Forbidden Implication:** `ReceiptExists ⇒ ReceiptBoundToProcess`
+- **Severity:** `ERROR`
+- **Checkpoint Impacted:** `OCEL-COMPAT-001`
+- **Receipt Required:** `true`
+
+### ANTI-LLM-OCEL-003
+- **Category:** `process_evidence`
+- **Message:** "OCEL export produced without wasm4pm-compat typed boundary."
+- **Forbidden Implication:** `JSONShape(OCEL) ⇒ CompatAdmittedOCEL`
+- **Severity:** `ERROR`
+- **Checkpoint Impacted:** `OCEL-COMPAT-001`
+- **Receipt Required:** `true`
+
+### ANTI-LLM-OCEL-004
+- **Category:** `process_evidence`
+- **Message:** "Full wasm4pm authority used where wasm4pm-compat boundary was required."
+- **Forbidden Implication:** `CompatEvidenceBoundary ⇒ FullMiningAuthority`
+- **Severity:** `ERROR`
+- **Checkpoint Impacted:** `OCEL-COMPAT-001`
+- **Receipt Required:** `true`
+
+---
+
+## Acceptance Criteria
+
+- [ ] `wasm4pm-compat` dependency added.
+- [ ] Full `wasm4pm` not introduced.
+- [ ] Typed OCEL event/object model exists.
+- [ ] Diagnostics, receipts, LSP318 feature rows, negative controls, and failset updates bind to OCEL events.
+- [ ] OCEL export, receipt, inventories, and gap report are generated.
+- [ ] Implement and pass these 10 tests:
+  - `ocel_001_diagnostic_emits_compat_event`
+  - `ocel_002_receipt_binds_to_ocel_object`
+  - `ocel_003_lsp318_feature_row_binds_to_ocel_event`
+  - `ocel_004_negative_control_binds_to_ocel_event`
+  - `ocel_005_failset_update_binds_to_ocel_event`
+  - `ocel_006_ocel_export_uses_wasm4pm_compat_boundary`
+  - `ocel_007_rejects_json_shape_without_compat_boundary`
+  - `ocel_008_rejects_full_wasm4pm_authority_in_compat_checkpoint`
+  - `ocel_009_generates_ocel_gap_report`
+  - `ocel_010_receipts_ocel_export_digest`
+- [ ] Final report implements the new OCEL status schema.
+
+
+
 
 

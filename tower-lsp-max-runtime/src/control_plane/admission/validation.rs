@@ -49,6 +49,7 @@ pub fn validate_shacl_shapes(quads: &[oxigraph::model::Quad]) -> Result<(), Grap
             oxigraph::model::Term::Literal(l) => l.value(),
             oxigraph::model::Term::NamedNode(n) => n.as_str(),
             oxigraph::model::Term::BlankNode(b) => b.as_str(),
+            oxigraph::model::Term::Triple(t) => panic!("RDF-star triples are not supported in validation: {:?}", t),
         };
 
         // Severity validation

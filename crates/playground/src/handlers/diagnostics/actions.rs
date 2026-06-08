@@ -292,7 +292,7 @@ fn generate_method_stub(entry: &crate::handlers::completions::MethodEntry) -> St
         };
         let body = if entry.return_type.starts_with("Result<") {
             format!(
-                "Err(tower_lsp::jsonrpc::Error::method_not_found()) // TODO: implement {}",
+                "Err(tower_lsp_max::jsonrpc::Error::method_not_found()) // TODO: implement {}",
                 entry.fn_name
             )
         } else {
