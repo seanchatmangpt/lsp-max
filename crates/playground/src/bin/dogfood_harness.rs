@@ -134,10 +134,13 @@ fn get_word_at_pos(path: &std::path::Path, pos: Position) -> Option<String> {
 
 // --- STATIC GRAPH BACKEND ---
 
+use tower_lsp_max::auto_lsp::AutoLspAdapter;
+
 #[derive(Clone)]
 struct StaticGraphBackend {
     client: tower_lsp_max::Client,
     index: Arc<std::sync::Mutex<SimpleWorkspaceIndex>>,
+    auto_lsp: Arc<AutoLspAdapter>,
 }
 
 #[tower_lsp_max::async_trait]
@@ -258,6 +261,7 @@ impl tower_lsp_max::LanguageServer for StaticGraphBackend {
 struct MockPeerBackend {
     client: tower_lsp_max::Client,
     delay: Arc<std::sync::atomic::AtomicU64>,
+    auto_lsp: Arc<AutoLspAdapter>,
 }
 
 #[tower_lsp_max::async_trait]
@@ -591,6 +595,7 @@ async fn main() {
         StaticGraphBackend {
             client,
             index: index_clone_1,
+            auto_lsp: Arc::new(AutoLspAdapter::new_default()),
         }
     }).await;
     println!("-> Static graph upstream server started on: {}", static_graph_addr);
@@ -601,6 +606,7 @@ async fn main() {
         MockPeerBackend {
             client,
             delay: mock_delay_clone,
+            auto_lsp: Arc::new(AutoLspAdapter::new_default()),
         }
     }).await;
     println!("-> Mock peer upstream server started on: {}", mock_peer_addr);

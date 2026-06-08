@@ -108,6 +108,11 @@ use tracing::{error, warn};
 
 use self::jsonrpc::{Error, Result};
 
+/// Semantic parsing and incremental AST generation bridged from `auto-lsp`.
+pub mod auto_lsp {
+    pub use auto_lsp_adapter::*;
+}
+
 pub mod jsonrpc;
 
 mod codec;

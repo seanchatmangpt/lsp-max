@@ -4,9 +4,9 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-tower-lsp-max = { path = "../../.." }
 auto-lsp-core = { path = "../auto-lsp-core" }
 lsp-types-max = { workspace = true }
-salsa = "0.26"
-texter = { version = "0.3.0", default-features = false, features = ["tree-sitter"] }
-tree-sitter = "0.26.5"
+texter = { workspace = true }
+tree-sitter = { workspace = true }
+dashmap = { workspace = true }
+parking_lot = { workspace = true }

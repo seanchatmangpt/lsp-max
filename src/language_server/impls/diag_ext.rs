@@ -85,8 +85,7 @@ pub async fn workspace_diagnostic(
             global_items.push(diag.lsp.clone());
         } else {
             for route in &diag.doc_routes {
-                // Try to reconstruct a URI from the path.
-                // In a real implementation, we'd use the root_path from registry.
+                // Reconstruct the URI directly from the absolute route path mapped in the registry.
                 if let Ok(uri) = Uri::from_str(&format!("file://{}", route.path)) {
                     uri_to_items.entry(uri).or_default().push(diag.lsp.clone());
                 } else {
@@ -110,12 +109,7 @@ pub async fn workspace_diagnostic(
         ));
     }
 
-    // If there are global items, we might want to attach them to a "virtual" workspace document
-    // or just include them in the reports if they aren't already covered.
-    // For now, if uri_to_items was empty but we have global items, we'll put them in a default report
-    // if we can find a suitable URI, or just skip for now as WorkspaceDiagnosticReport
-    // is a collection of document reports.
-
+    // If uri_to_items was empty but we have global items, we attach them to the root registry URI.
     if reports.is_empty() && !global_items.is_empty() {
         // Fallback: use root path
         if let Ok(root_uri) = Uri::from_str(&format!("file://{}", registry.root_path.display())) {

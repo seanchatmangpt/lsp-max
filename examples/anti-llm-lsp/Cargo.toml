@@ -21,7 +21,7 @@ url = "2.5"
 tree-sitter = { workspace = true }
 tree-sitter-rust = "0.24"
 blake3 = "1"
-wasm4pm-compat = { path = "../../../wasm4pm-compat", features = ["formats", "strict", "wasm4pm"] }
+wasm4pm-compat = { workspace = true }
 
 [dev-dependencies]
 tempfile = "3"

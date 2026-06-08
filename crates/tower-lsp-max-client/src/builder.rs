@@ -22,7 +22,8 @@ impl ClientBuilder {
         I: AsyncRead + Unpin + Send + 'static,
         O: AsyncWrite + Unpin + Send + 'static,
     {
-        ServerHandle {}
+        let (tx, _rx) = tokio::sync::mpsc::channel(1);
+        ServerHandle::new(tx)
     }
 }
 

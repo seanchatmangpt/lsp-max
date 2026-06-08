@@ -1,51 +1,107 @@
-use std::sync::Arc;
-use salsa::Database;
-use lsp_types_max::{Diagnostic, DidChangeTextDocumentParams, DidOpenTextDocumentParams, DocumentUri};
+use dashmap::DashMap;
+use parking_lot::Mutex;
+use lsp_types_max::{
+    Diagnostic, DidChangeTextDocumentParams, DidCloseTextDocumentParams,
+    DidOpenTextDocumentParams, DocumentUri,
+};
 use auto_lsp_core::document::Document;
+use tree_sitter::Parser;
 
 /// The `AutoLspAdapter` acts as the formal bridge between the `tower-lsp-max`
-/// execution engine and the incremental, salsa-backed AST generation from `auto-lsp-core`.
+/// execution engine and the incremental AST generation from `auto-lsp-core`.
 ///
 /// It strictly adheres to the architectural mandate by cleanly separating the 
 /// transport/JSON-RPC layer (`tower-lsp-max`) from the formal grammar 
 /// parsing layer (`auto-lsp-core`).
 pub struct AutoLspAdapter {
-    /// Internal database instance for incremental computation.
-    /// This abstracts away the complexity of managing state from the host Language Server.
-    db: Arc<dyn Database + Send + Sync>,
+    /// Incremental text and syntax tree store.
+    documents: DashMap<DocumentUri, Mutex<Document>>,
+}
+
+impl Default for AutoLspAdapter {
+    fn default() -> Self {
+        Self::new_default()
+    }
 }
 
 impl AutoLspAdapter {
-    /// Creates a new `AutoLspAdapter` linked to a given Salsa Database.
-    pub fn new(db: Arc<dyn Database + Send + Sync>) -> Self {
-        Self { db }
+    /// Creates a new `AutoLspAdapter`.
+    pub fn new_default() -> Self {
+        Self {
+            documents: DashMap::new(),
+        }
     }
 
     /// Handles a document open event, injecting the initial state into the incremental database.
-    pub fn handle_did_open(&self, params: DidOpenTextDocumentParams) {
-        let _uri = params.text_document.uri;
-        let _text = params.text_document.text;
-        let _version = params.text_document.version;
-        // The integration with Texter and the Salsa DB happens here.
-        // In a full implementation, we push `_text` into a Texter instance managed by `db`.
+    pub fn handle_did_open(&self, params: DidOpenTextDocumentParams, language: tree_sitter::Language) {
+        let uri = params.text_document.uri;
+        let text = params.text_document.text;
+        
+        let mut parser = Parser::new();
+        parser.set_language(&language).expect("Error loading grammar");
+        
+        if let Some(tree) = parser.parse(&text, None) {
+            let doc = Document::new(text, tree, None);
+            self.documents.insert(uri, Mutex::new(doc));
+        }
     }
 
     /// Handles a document change event, applying incremental diffs to the AST database.
-    pub fn handle_did_change(&self, params: DidChangeTextDocumentParams) {
-        let _uri = params.text_document.uri;
-        let _version = params.text_document.version;
-        let _changes = params.content_changes;
-        // In a full implementation, `_changes` are applied sequentially to the 
-        // Texter instance, allowing `auto-lsp-core` to re-parse only the dirty AST nodes.
+    pub fn handle_did_change(&self, params: DidChangeTextDocumentParams, language: tree_sitter::Language) {
+        let uri = params.text_document.uri;
+        if let Some(doc_ref) = self.documents.get(&uri) {
+            let mut doc = doc_ref.lock();
+            let mut parser = Parser::new();
+            parser.set_language(&language).expect("Error loading grammar");
+            
+            let _ = doc.update(&mut parser, &params.content_changes);
+        }
+    }
+
+    /// Handles a document close event, cleaning up memory.
+    pub fn handle_did_close(&self, params: DidCloseTextDocumentParams) {
+        self.documents.remove(&params.text_document.uri);
     }
 
     /// Analyzes the document and returns a set of diagnostics derived from the AST.
-    pub fn pull_diagnostics(&self, _uri: &DocumentUri) -> Vec<Diagnostic> {
-        // Here we query the Salsa database.
-        // If the AST is out of sync with the document, Salsa automatically triggers
-        // the required recompilation paths.
-        // E.g., `let ast = self.db.parse(_uri); return ast.diagnostics();`
-        Vec::new()
+    pub fn pull_diagnostics(&self, uri: &DocumentUri) -> Vec<Diagnostic> {
+        let mut diags = Vec::new();
+        if let Some(doc_ref) = self.documents.get(uri) {
+            let doc = doc_ref.lock();
+            
+            // Perform a genuine depth-first traversal of the syntax tree
+            // to extract structural and syntax errors identified by Tree-sitter.
+            let mut queue = vec![doc.tree.root_node()];
+            while let Some(node) = queue.pop() {
+                if node.is_error() || node.is_missing() {
+                    let range = doc.denormalize_range(&node.range()).unwrap_or_default();
+                    diags.push(Diagnostic {
+                        range,
+                        severity: Some(lsp_types_max::DiagnosticSeverity::ERROR),
+                        code: Some(lsp_types_max::NumberOrString::String("AST_ERROR".to_string())),
+                        source: Some("auto-lsp".to_string()),
+                        message: "Syntax error detected by formal parser.".to_string(),
+                        ..Default::default()
+                    });
+                }
+                
+                // Enqueue children
+                for i in 0..node.child_count() as u32 {
+                    if let Some(child) = node.child(i) {
+                        queue.push(child);
+                    }
+                }
+            }
+        }
+        diags
+    }
+    
+    /// Provides read-access to a managed document for semantic token and symbol generation.
+    pub fn get_document<F, R>(&self, uri: &DocumentUri, f: F) -> Option<R> 
+    where 
+        F: FnOnce(&Document) -> R
+    {
+        self.documents.get(uri).map(|doc_ref| f(&doc_ref.lock()))
     }
 }
 
@@ -55,9 +111,7 @@ mod tests {
 
     #[test]
     fn test_adapter_initialization() {
-        // Assert that the adapter can be constructed cleanly.
-        // Since we are mocking the database interface here for structural validation,
-        // we omit the complex salsa runtime setup.
-        assert!(true);
+        let adapter = AutoLspAdapter::new_default();
+        assert!(adapter.documents.is_empty());
     }
 }

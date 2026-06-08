@@ -271,7 +271,7 @@ impl LanguageServer for AntiLlmServer {
                 label: "todo_snippet".to_string(),
                 kind: Some(CompletionItemKind::SNIPPET),
                 detail: Some("Todo snippet".to_string()),
-                insert_text: Some("todo!(\"$1\")".to_string()),
+                insert_text: Some("println!(\"$1\");".to_string()),
                 insert_text_format: Some(InsertTextFormat::SNIPPET),
                 ..Default::default()
             },

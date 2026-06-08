@@ -16,6 +16,7 @@ use ropey::Rope;
 use tower_lsp_max::jsonrpc::Result;
 use tower_lsp_max::lsp_types::*;
 use tower_lsp_max::{Client, LanguageServer};
+use tower_lsp_max::auto_lsp::AutoLspAdapter;
 
 /// One entry per open document.
 pub struct Document {
@@ -29,6 +30,8 @@ pub struct Backend {
     pub client: Client,
     /// Open documents indexed by URI.
     pub docs: Arc<DashMap<Uri, Document>>,
+    /// Formal bridge to the auto-lsp semantic engine.
+    pub auto_lsp: AutoLspAdapter,
 }
 
 impl Backend {
@@ -36,6 +39,7 @@ impl Backend {
         Self {
             client,
             docs: Arc::new(DashMap::new()),
+            auto_lsp: AutoLspAdapter::new_default(),
         }
     }
 }

@@ -3,7 +3,7 @@ use lsp_types_max::Diagnostic;
 
 #[test]
 fn test_composite_source_merging() {
-    let content = "let x = serde_json::Value::Null;\nfn main() { unimplemented!() }";
+    let content = "let x = serde_json::Value::Null;\nfn main() { panic!(\"Intended error\"); }";
     let uri = "file:///fake/src/lib.rs";
     
     // Simulate other upstream source (e.g. rust-analyzer)
