@@ -4,7 +4,7 @@ use tree_sitter::{Node, Parser};
 pub fn parse_rust_ast(filepath: &str, content: &str) -> Vec<Observation> {
     let mut observations = Vec::new();
     let mut parser = Parser::new();
-    let lang = tree_sitter_rust::language();
+    let lang = tree_sitter_rust::LANGUAGE.into();
     if parser.set_language(&lang).is_err() {
         return observations;
     }

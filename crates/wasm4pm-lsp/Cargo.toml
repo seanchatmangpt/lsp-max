@@ -13,3 +13,7 @@ gc005-wasm4pm-adapter = { path = "../gc005-wasm4pm-adapter" }
 [[bin]]
 name = "wasm4pm-lsp"
 path = "src/main.rs"
+
+[dev-dependencies]
+tempfile = "3"
+url = "2"

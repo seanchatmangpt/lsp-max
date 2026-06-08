@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 use std::collections::{HashMap, HashSet};
 use chrono::{DateTime, FixedOffset};
-use ocel_core::{OCEL, OCELEvent, OCELObject, OCELRelationship, OCELType};
+use wasm4pm_compat::ocel::{OCEL, OCELEvent, OCELObject, OCELRelationship, OCELType, OCELEventAttribute, OCELAttributeValue};
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 struct RawEvent {
@@ -84,9 +84,9 @@ fn process_evidence_to_ocel(content: &str) -> Result<OCEL, Box<dyn std::error::E
 
         let mut attributes = Vec::new();
         if let Some(pr) = raw.previous_receipt {
-             attributes.push(ocel_core::OCELEventAttribute {
+             attributes.push(OCELEventAttribute {
                 name: "previous_receipt".to_string(),
-                value: ocel_core::OCELAttributeValue::String(pr),
+                value: OCELAttributeValue::String(pr),
             });
         }
 

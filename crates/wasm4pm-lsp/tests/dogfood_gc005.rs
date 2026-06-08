@@ -4,7 +4,7 @@ use std::process::{Child, ChildStdin, Command, Stdio};
 use std::sync::mpsc::{self, Receiver};
 use std::{thread, fs};
 use std::time::Duration;
-use tower_lsp_max::lsp_types::Url;
+use url::Url;
 
 const READ_TIMEOUT: Duration = Duration::from_secs(10);
 

@@ -1,0 +1,31 @@
+[package]
+name = "auto-lsp-core"
+description = """
+Core crate for `auto_lsp`.
+"""
+version = "0.7.0"
+authors = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
+edition = { workspace = true }
+
+[dependencies]
+lsp-types-max = { workspace = true }
+tree-sitter = { workspace = true }
+downcast-rs = { workspace = true }
+streaming-iterator = { workspace = true }
+parking_lot = { workspace = true }
+texter = { workspace = true }
+anyhow = { workspace = true }
+regex = { workspace = true }
+salsa = { workspace = true }
+log = { workspace = true }
+thiserror = { workspace = true }
+ariadne = { workspace = true, features = ["auto-color"] }
+
+[dev-dependencies]
+tree-sitter-html = "0.23.2"
+rstest = { workspace = true }
+
+[features]
+wasm = ["parking_lot/nightly"]

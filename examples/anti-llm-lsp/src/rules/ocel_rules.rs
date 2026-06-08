@@ -16,7 +16,7 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
                 forbidden_implication: "DiagnosticEmitted => ProcessEvidenceRecorded".to_string(),
                 blocking: true,
                 required_correction: "Emit an OCEL event whenever a diagnostic is raised.".to_string(),
-                required_next_proof: "Verify that OcelLog contains DiagnosticEmitted linked to the diagnostic.".to_string(),
+                required_next_proof: "Verify that OCEL contains DiagnosticEmitted linked to the diagnostic.".to_string(),
             });
         }
 
@@ -31,7 +31,7 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
                 forbidden_implication: "ReceiptExists => ReceiptBoundToProcess".to_string(),
                 blocking: true,
                 required_correction: "Ensure that all receipts are bound to a corresponding Receipt object and ReceiptValidated event.".to_string(),
-                required_next_proof: "Check for corresponding event/object link in exported OcelLog.".to_string(),
+                required_next_proof: "Check for corresponding event/object link in exported OCEL.".to_string(),
             });
         }
 

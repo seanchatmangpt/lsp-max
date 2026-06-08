@@ -389,8 +389,8 @@ fn ocel_001_diagnostic_emits_compat_event() {
     let ocel_json_path = tmp.path().join("ocel/anti_llm_lsp_ocel.json");
     let ocel_content = fs::read_to_string(&ocel_json_path).unwrap();
     let val: serde_json::Value = serde_json::from_str(&ocel_content).unwrap();
-    let events = val.get("events").unwrap().as_object().unwrap();
-    assert!(events.values().any(|ev| ev.get("type").and_then(|t| t.as_str()) == Some("DiagnosticEmitted")));
+    let events = val.get("events").unwrap().as_array().unwrap();
+    assert!(events.iter().any(|ev| ev.get("type").and_then(|t| t.as_str()) == Some("DiagnosticEmitted")));
 
     // Verify negative control
     let path = find_file_path("fixtures/negative_controls/ocel_no_event.md");
@@ -407,9 +407,9 @@ fn ocel_002_receipt_binds_to_ocel_object() {
     let ocel_json_path = tmp.path().join("ocel/anti_llm_lsp_ocel.json");
     let ocel_content = fs::read_to_string(&ocel_json_path).unwrap();
     let val: serde_json::Value = serde_json::from_str(&ocel_content).unwrap();
-    let events = val.get("events").unwrap().as_object().unwrap();
+    let events = val.get("events").unwrap().as_array().unwrap();
     
-    let receipt_val_event = events.values().find(|ev| {
+    let receipt_val_event = events.iter().find(|ev| {
         ev.get("type").and_then(|t| t.as_str()) == Some("ReceiptValidated")
     }).expect("Should have ReceiptValidated event");
 
@@ -431,9 +431,9 @@ fn ocel_003_lsp318_feature_row_binds_to_ocel_event() {
     let ocel_json_path = tmp.path().join("ocel/anti_llm_lsp_ocel.json");
     let ocel_content = fs::read_to_string(&ocel_json_path).unwrap();
     let val: serde_json::Value = serde_json::from_str(&ocel_content).unwrap();
-    let events = val.get("events").unwrap().as_object().unwrap();
+    let events = val.get("events").unwrap().as_array().unwrap();
 
-    let feature_ex_event = events.values().find(|ev| {
+    let feature_ex_event = events.iter().find(|ev| {
         ev.get("type").and_then(|t| t.as_str()) == Some("Lsp318FeatureExercised")
     }).expect("Should have Lsp318FeatureExercised event");
 
@@ -449,9 +449,9 @@ fn ocel_004_negative_control_binds_to_ocel_event() {
     let ocel_json_path = tmp.path().join("ocel/anti_llm_lsp_ocel.json");
     let ocel_content = fs::read_to_string(&ocel_json_path).unwrap();
     let val: serde_json::Value = serde_json::from_str(&ocel_content).unwrap();
-    let events = val.get("events").unwrap().as_object().unwrap();
+    let events = val.get("events").unwrap().as_array().unwrap();
 
-    let neg_control_event = events.values().find(|ev| {
+    let neg_control_event = events.iter().find(|ev| {
         ev.get("type").and_then(|t| t.as_str()) == Some("NegativeControlExecuted")
     }).expect("Should have NegativeControlExecuted event");
 
@@ -467,9 +467,9 @@ fn ocel_005_failset_update_binds_to_ocel_event() {
     let ocel_json_path = tmp.path().join("ocel/anti_llm_lsp_ocel.json");
     let ocel_content = fs::read_to_string(&ocel_json_path).unwrap();
     let val: serde_json::Value = serde_json::from_str(&ocel_content).unwrap();
-    let events = val.get("events").unwrap().as_object().unwrap();
+    let events = val.get("events").unwrap().as_array().unwrap();
 
-    assert!(events.values().any(|ev| ev.get("type").and_then(|t| t.as_str()) == Some("FailsetUpdated")));
+    assert!(events.iter().any(|ev| ev.get("type").and_then(|t| t.as_str()) == Some("FailsetUpdated")));
 }
 
 #[test]

@@ -80,4 +80,36 @@ members = [
     "examples/pattern-lsp",
     "examples/anti-llm-lsp",
     "examples/clap-noun-verb-lsp", "crates/gc005-wasm4pm-adapter",
+    "crates/tower-lsp-max-adapters/auto-lsp-core",
+    "crates/tower-lsp-max-adapters/auto-lsp-codegen",
 ]
+
+[workspace.package]
+authors = ["Eyal Kalderon <ebkalderon@gmail.com>"]
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/ebkalderon/tower-lsp"
+edition = "2021"
+
+[workspace.dependencies]
+lsp-types-max = { path = "../lsp-types-max", version = "26.6.5", features = ["proposed"] }
+tree-sitter = "0.26.5"
+tree-sitter-language = "0.1.7"
+downcast-rs = "2.0.2"
+streaming-iterator = "0.1.9"
+parking_lot = "0.12.5"
+texter = { version = "0.3.0", default-features = false, features = ["tree-sitter"] }
+log = "0.4.29"
+rayon = "1.11.0"
+anyhow = "1.0.101"
+regex = "1.11.1"
+rstest = "0.25.0"
+salsa = "0.26.0"
+dashmap = "6.1.0"
+thiserror = "2.0.18"
+ariadne = "0.6.0"
+walkdir = "2.5.0"
+rayon-par-bridge = "0.1.0"
+bon = "3.6.4"
+auto-lsp-core = { path = "crates/tower-lsp-max-adapters/auto-lsp-core" }
+auto-lsp-codegen = { path = "crates/tower-lsp-max-adapters/auto-lsp-codegen" }
+auto-lsp-default = { path = "crates/tower-lsp-max-adapters/auto-lsp-default" }

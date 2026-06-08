@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
-use ocel_core::OCEL;
-use wasm4pm_algos::gall::{check_gall_conformance, GallVerdict};
+use wasm4pm_compat::ocel::OCEL;
+use wasm4pm::gall::{check_gall_conformance, GallVerdict};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ConformanceIssue {

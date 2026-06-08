@@ -1,0 +1,162 @@
+/*
+This file is part of auto-lsp.
+Copyright (C) 2025 CLAUZEL Adrien
+
+auto-lsp is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>
+*/
+
+use crate::errors::DocumentError;
+use crate::{document::Document, errors::PositionError};
+use downcast_rs::{DowncastSync, impl_downcast};
+use std::cmp::Ordering;
+use tree_sitter::Node;
+
+/// An ast node that uniquely identifies a node in the AST.
+///
+/// It can be casted to the specific node type using the `cast` method.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct AstNodeId<T> {
+    pub id: usize,
+    _marker: std::marker::PhantomData<T>,
+}
+
+impl<'a, T: AstNode> AstNodeId<T> {
+    pub(crate) fn new(id: usize) -> Self {
+        Self {
+            id,
+            _marker: std::marker::PhantomData,
+        }
+    }
+
+    pub fn cast(&self, nodes: &'a Vec<Box<dyn AstNode>>) -> &'a T {
+        debug_assert!(nodes.is_sorted());
+        match nodes[self.id].downcast_ref::<T>() {
+            Some(node) => node,
+            None => panic!(
+                "Invalid cast of AstNodeId of id {} to {}",
+                self.id,
+                std::any::type_name::<T>(),
+            ),
+        }
+    }
+}
+
+/// Trait representing an AST node.
+pub trait AstNode: std::fmt::Debug + Send + Sync + DowncastSync {
+    /// Returns `true` if a given [`tree_sitter::Node`] matches this node type.
+    fn contains(node: &Node) -> bool
+    where
+        Self: Sized;
+
+    /// Returns the inner node as a trait object.
+    ///
+    /// If the node is a struct, returns self.    
+    fn lower(&self) -> &dyn AstNode;
+
+    /// Returns the unique ID of this node.
+    ///
+    /// IDs are assigned when [`TryFrom`] is called and are unique within the tree.
+    fn get_id(&self) -> usize;
+
+    /// Returns the ID of the parent node, if any.
+    fn get_parent_id(&self) -> Option<usize>;
+
+    /// Returns the [`tree_sitter::Range`] of this node.
+    fn get_range(&self) -> &tree_sitter::Range;
+
+    /// Returns the LSP-compatible range of this node.
+    fn get_lsp_range(&self, document: &Document) -> Result<lsp_types_max::Range, DocumentError> {
+        document.denormalize_range(self.get_range())
+    }
+
+    /// Returns `true` if this node is a MISSING node.
+    ///
+    /// Mirrors [is_missing](https://docs.rs/tree-sitter/latest/tree_sitter/struct.Node.html#method.is_missing)
+    fn is_missing(&self) -> bool;
+
+    /// Returns the start position in LSP format.
+    fn get_start_position(&self) -> lsp_types_max::Position {
+        let range = self.get_range();
+        lsp_types_max::Position {
+            line: range.start_point.row as u32,
+            character: range.start_point.column as u32,
+        }
+    }
+
+    /// Returns the end position in LSP format.
+    fn get_end_position(&self) -> lsp_types_max::Position {
+        let range = self.get_range();
+        lsp_types_max::Position {
+            line: range.end_point.row as u32,
+            character: range.end_point.column as u32,
+        }
+    }
+
+    /// Returns the UTF-8 text slice corresponding to this node.
+    ///
+    /// Returns:
+    /// - `Ok(&str)` with the node's source text
+    /// - `Err(PositionError::WrongTextRange)` if the range is invalid
+    /// - `Err(PositionError::UTF8Error)` if the byte slice is not valid UTF-8
+    fn get_text<'a>(&self, source_code: &'a [u8]) -> Result<&'a str, PositionError> {
+        let range = self.get_range();
+        let range = range.start_byte..range.end_byte;
+        match source_code.get(range.start..range.end) {
+            Some(text) => match std::str::from_utf8(text) {
+                Ok(text) => Ok(text),
+                Err(utf8_error) => Err(PositionError::UTF8Error { range, utf8_error }),
+            },
+            None => Err(PositionError::WrongTextRange { range }),
+        }
+    }
+
+    /// Retrieves the parent node, if present, from the node list.
+    ///
+    /// The node list must be sorted by ID.
+    fn get_parent<'a>(&'a self, nodes: &'a [Box<dyn AstNode>]) -> Option<&'a Box<dyn AstNode>> {
+        match nodes.first() {
+            Some(first) => {
+                assert_eq!(
+                    first.get_id(),
+                    0,
+                    "get_parent called on an unsorted node list"
+                );
+                nodes.get(self.get_parent_id()?)
+            }
+            None => None,
+        }
+    }
+}
+
+impl_downcast!(AstNode);
+
+impl PartialEq for dyn AstNode {
+    fn eq(&self, other: &Self) -> bool {
+        self.get_range().eq(other.get_range()) && self.get_id().eq(&other.get_id())
+    }
+}
+
+impl Eq for dyn AstNode {}
+
+impl PartialOrd for dyn AstNode {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.get_id().cmp(&other.get_id()))
+    }
+}
+
+impl Ord for dyn AstNode {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.get_id().cmp(&other.get_id())
+    }
+}

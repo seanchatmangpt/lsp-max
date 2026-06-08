@@ -91,6 +91,7 @@ impl LanguageServer for ClapNounVerbLsp {
                         did_delete: None,
                         will_delete: None,
                     }),
+                    text_document_content: None,
                 }),
                 text_document_sync: Some(TextDocumentSyncCapability::Options(TextDocumentSyncOptions {
                     open_close: Some(true),

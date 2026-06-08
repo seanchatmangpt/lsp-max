@@ -5,7 +5,7 @@ use std::sync::mpsc::{self, Receiver};
 use std::thread;
 use std::time::Duration;
 use tempfile::TempDir;
-use tower_lsp_max::lsp_types::Url;
+use url::Url;
 
 const READ_TIMEOUT: Duration = Duration::from_secs(10);
 
@@ -21,7 +21,7 @@ struct LspClient {
 impl LspClient {
     fn new() -> Self {
         let tmp = TempDir::new().expect("create temp dir");
-        let bin = env!("CARGO_BIN_EXE_ggen-lsp");
+        let bin = env!("CARGO_BIN_EXE_wasm4pm-lsp");
         let mut child = Command::new(bin)
             .current_dir(tmp.path())
             .stdin(Stdio::piped())
