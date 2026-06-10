@@ -1,11 +1,11 @@
+use lsp_max::jsonrpc::Result;
+use lsp_max::lsp_types as lsp;
+use lsp_max::{Client, LspService, Server};
 /// Batch 1 — initialized, didOpen, didChange, didClose, didSave, willSave,
 /// willSaveWaitUntil, completion notification/stub-handler tests.
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use tokio::io::AsyncWriteExt;
-use tower_lsp_max::jsonrpc::Result;
-use tower_lsp_max::lsp_types as lsp;
-use tower_lsp_max::{Client, LspService, Server};
 
 use super::common::{encode_message, read_message, wait_for_response_b1, write_msg_b1};
 
@@ -26,8 +26,8 @@ pub struct Lsp318Backend {
     pub log: CallLog,
 }
 
-#[tower_lsp_max::async_trait]
-impl tower_lsp_max::LanguageServer for Lsp318Backend {
+#[lsp_max::async_trait]
+impl lsp_max::LanguageServer for Lsp318Backend {
     async fn initialize(&self, _: lsp::InitializeParams) -> Result<lsp::InitializeResult> {
         Ok(lsp::InitializeResult::default())
     }

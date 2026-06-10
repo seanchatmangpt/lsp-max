@@ -1,9 +1,9 @@
-use serde_json::json;
-use tower_lsp_max::lsp_types::{
+use lsp_max::lsp_types::{
     CodeAction, CodeActionDisabled, CodeActionKind, CodeActionKindDocumentation, CodeActionTag,
     Command, NumberOrString,
 };
-use tower_lsp_max_lsif::lsif::{Element, PositionEncoding, ToolInfo, Vertex, VertexType};
+use lsp_max_lsif::lsif::{Element, PositionEncoding, ToolInfo, Vertex, VertexType};
+use serde_json::json;
 
 // ============================================================================
 // 1. R1: Protocol Type Completeness - Positive Test Cases
@@ -141,8 +141,8 @@ fn test_r1_negative_malformed_lsif_vertex_rejected() {
 /// advertising hoverProvider/completionProvider unconditionally, this test will fail on the static mock.
 #[tokio::test]
 async fn test_r2_bypass_fails_on_static_mock() {
-    use tower_lsp_max::lsp_types as lsp;
-    use tower_lsp_max::{LanguageServer, LspService};
+    use lsp_max::lsp_types as lsp;
+    use lsp_max::{LanguageServer, LspService};
 
     // Construct a client initialize request that explicitly disables hoverProvider support
     let init_params = lsp::InitializeParams {
@@ -161,7 +161,7 @@ async fn test_r2_bypass_fails_on_static_mock() {
 
     // Instantiate ComposedServer with no upstreams (to test intersection with empty set)
     let (service, _) = LspService::new(|client| {
-        tower_lsp_max::ComposedServer::new(client, vec![] as Vec<(String, String)>)
+        lsp_max::ComposedServer::new(client, vec![] as Vec<(String, String)>)
     });
 
     // Directly call the initialize handler to retrieve negotiated capabilities

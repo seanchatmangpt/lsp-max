@@ -3,10 +3,10 @@ mod semantics;
 
 use crate::backend::TexBackend;
 use clap_noun_verb_macros::verb;
+use lsp_max::lsp_max_ast::AutoLspAdapter;
+use lsp_max::{LspService, Server};
 use std::process::Command;
 use std::sync::Arc;
-use tower_lsp_max::auto_lsp::AutoLspAdapter;
-use tower_lsp_max::{LspService, Server};
 
 #[verb("start", "server")]
 fn start_server() -> clap_noun_verb::Result<()> {
@@ -16,7 +16,7 @@ fn start_server() -> clap_noun_verb::Result<()> {
 
         let (service, socket) = LspService::new(|client| TexBackend {
             client,
-            auto_lsp: Arc::new(AutoLspAdapter::new_default()),
+            lsp_max_ast: Arc::new(AutoLspAdapter::new_default()),
         });
 
         let _ = Server::new(stdin, stdout, socket).serve(service).await;
@@ -104,11 +104,11 @@ fn run_verification_domain_logic() -> Result<bool, clap_noun_verb::error::NounVe
                 "Bad path",
             ))
         })?;
-        let uri: tower_lsp_max::lsp_types_max::Url = url.as_str().parse().unwrap();
+        let uri: lsp_max::lsp_types_max::Url = url.as_str().parse().unwrap();
 
         adapter.handle_did_open(
-            tower_lsp_max::lsp_types_max::DidOpenTextDocumentParams {
-                text_document: tower_lsp_max::lsp_types_max::TextDocumentItem {
+            lsp_max::lsp_types_max::DidOpenTextDocumentParams {
+                text_document: lsp_max::lsp_types_max::TextDocumentItem {
                     uri: uri.clone(),
                     language_id: "latex".to_string(),
                     version: 1,
@@ -122,7 +122,7 @@ fn run_verification_domain_logic() -> Result<bool, clap_noun_verb::error::NounVe
 
         let has_errors = diags
             .iter()
-            .any(|d| d.severity == Some(tower_lsp_max::lsp_types_max::DiagnosticSeverity::ERROR));
+            .any(|d| d.severity == Some(lsp_max::lsp_types_max::DiagnosticSeverity::ERROR));
 
         if !has_errors {
             println!("✅ {} : PASSED rigor checks.", path_str);
@@ -134,8 +134,8 @@ fn run_verification_domain_logic() -> Result<bool, clap_noun_verb::error::NounVe
                     .code
                     .as_ref()
                     .map(|c| match c {
-                        tower_lsp_max::lsp_types_max::NumberOrString::Number(n) => n.to_string(),
-                        tower_lsp_max::lsp_types_max::NumberOrString::String(s) => s.clone(),
+                        lsp_max::lsp_types_max::NumberOrString::Number(n) => n.to_string(),
+                        lsp_max::lsp_types_max::NumberOrString::String(s) => s.clone(),
                     })
                     .unwrap_or_else(|| "UNKNOWN".to_string());
                 println!("  [{}] {}", code, d.message);

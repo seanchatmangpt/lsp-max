@@ -1,4 +1,4 @@
-use tower_lsp_max::lsp_types_max::*;
+use lsp_max::lsp_types_max::*;
 
 use super::completions::{CAPABILITY_FIELDS, METHODS};
 use crate::Backend;
@@ -69,21 +69,21 @@ pub fn hover_for_word(word: &str) -> Option<Hover> {
         });
     }
 
-    // tower-lsp-max protocol types
+    // lsp-max protocol types
     hover_protocol_type(word)
 }
 
 fn hover_protocol_type(word: &str) -> Option<Hover> {
     let content = match word {
         "MaxDiagnostic" => {
-            "## `MaxDiagnostic`\n\nA `tower-lsp-max` extension diagnostic. Extends the standard \
+            "## `MaxDiagnostic`\n\nA `lsp-max` extension diagnostic. Extends the standard \
              LSP `Diagnostic` with:\n- `snapshot_id: SnapshotId` — links the diagnostic to a \
              deterministic snapshot\n- `conformance_vector: Vec<f32>` — process-mining conformance \
              scores per dimension\n- `receipt: Option<Receipt>` — cryptographic provenance receipt\n\n\
              Returned from `max_explain_diagnostic` and included in `MaxDiagnosticParams`."
         }
         "Receipt" => {
-            "## `Receipt`\n\nCryptographic provenance receipt from the `tower-lsp-max` runtime. \
+            "## `Receipt`\n\nCryptographic provenance receipt from the `lsp-max` runtime. \
              Proves a specific snapshot was observed at a specific logical time. Fields:\n\
              - `snapshot_id: SnapshotId`\n\
              - `timestamp: u64` — monotonic logical clock\n\
@@ -91,7 +91,7 @@ fn hover_protocol_type(word: &str) -> Option<Hover> {
         }
         "SnapshotId" => {
             "## `SnapshotId`\n\nOpaque identifier for a `DeterministicSnapshot` in the \
-             `tower-lsp-max-runtime` mesh. Used to correlate diagnostics, receipts, and \
+             `lsp-max-runtime` mesh. Used to correlate diagnostics, receipts, and \
              conformance vectors across requests."
         }
         "LspService" => {
@@ -112,15 +112,15 @@ fn hover_protocol_type(word: &str) -> Option<Hover> {
         }
         // --- Additional LSP primitive types (20+ total) ---
         "PolicyState" => {
-            "## `PolicyState`\n\nRuntime policy evaluation state in the `tower-lsp-max` conformance \
+            "## `PolicyState`\n\nRuntime policy evaluation state in the `lsp-max` conformance \
              vector. Represents pass/fail/pending status of a declared proof gate at a specific snapshot."
         }
         "GateId" => {
-            "## `GateId`\n\nIdentifier for a proof gate registered in the `tower-lsp-max` policy \
+            "## `GateId`\n\nIdentifier for a proof gate registered in the `lsp-max` policy \
              layer. Passed to `max_run_gate` to trigger evaluation."
         }
         "MaxCodeAction" => {
-            "## `MaxCodeAction`\n\nA `tower-lsp-max` code action from `max_repair_plan`. Includes \
+            "## `MaxCodeAction`\n\nA `lsp-max` code action from `max_repair_plan`. Includes \
              standard LSP `CodeAction` fields plus a `transaction_id` for atomic repair transactions."
         }
         "Server" => {

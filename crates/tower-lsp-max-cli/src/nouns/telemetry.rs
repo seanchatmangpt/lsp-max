@@ -1,8 +1,8 @@
 use clap_noun_verb::Result;
 use clap_noun_verb_macros::verb;
+use lsp_max_protocol;
+use lsp_max_runtime::AutonomicMesh;
 use serde::Serialize;
-use tower_lsp_max_protocol;
-use tower_lsp_max_runtime::AutonomicMesh;
 
 // --- Domain Tier ---
 
@@ -43,9 +43,9 @@ impl TelemetryService {
             .next()
             .cloned()
             .unwrap_or_else(|| "default".to_string());
-        let instance_id = tower_lsp_max_runtime::InstanceId::from(instance_id_str.clone());
+        let instance_id = lsp_max_runtime::InstanceId::from(instance_id_str.clone());
         // Record export as a bounded action
-        mesh.execute_action(tower_lsp_max_runtime::MeshAction::ExecuteBoundedAction {
+        mesh.execute_action(lsp_max_runtime::MeshAction::ExecuteBoundedAction {
             instance_id: instance_id.clone(),
             action_id: format!("telemetry-export-{}", data_id),
             description: format!("Export telemetry data {} to {}", data_id, destination),
@@ -55,10 +55,10 @@ impl TelemetryService {
             data_id,
             destination.replace("://", "-").replace('/', "-")
         );
-        let hash = tower_lsp_max_runtime::sha256(receipt_id.as_bytes());
-        mesh.execute_action(tower_lsp_max_runtime::MeshAction::EmitReceipt {
+        let hash = lsp_max_runtime::sha256(receipt_id.as_bytes());
+        mesh.execute_action(lsp_max_runtime::MeshAction::EmitReceipt {
             instance_id,
-            receipt: tower_lsp_max_protocol::Receipt {
+            receipt: lsp_max_protocol::Receipt {
                 receipt_id,
                 hash,
                 prev_receipt_hash: None,
@@ -79,8 +79,8 @@ impl TelemetryService {
             .next()
             .cloned()
             .unwrap_or_else(|| "default".to_string());
-        let instance_id = tower_lsp_max_runtime::InstanceId::from(instance_id_str.clone());
-        mesh.execute_action(tower_lsp_max_runtime::MeshAction::ExecuteBoundedAction {
+        let instance_id = lsp_max_runtime::InstanceId::from(instance_id_str.clone());
+        mesh.execute_action(lsp_max_runtime::MeshAction::ExecuteBoundedAction {
             instance_id,
             action_id: format!("telemetry-trace-{}", span_name),
             description: format!("OTel trace span: {}", span_name),
@@ -103,8 +103,8 @@ impl TelemetryService {
             .next()
             .cloned()
             .unwrap_or_else(|| "default".to_string());
-        let instance_id = tower_lsp_max_runtime::InstanceId::from(instance_id_str.clone());
-        mesh.execute_action(tower_lsp_max_runtime::MeshAction::ExecuteBoundedAction {
+        let instance_id = lsp_max_runtime::InstanceId::from(instance_id_str.clone());
+        mesh.execute_action(lsp_max_runtime::MeshAction::ExecuteBoundedAction {
             instance_id,
             action_id: format!("telemetry-metric-{}", metric_name),
             description: format!("Record metric {}={}", metric_name, value),

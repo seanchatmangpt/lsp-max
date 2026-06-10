@@ -1,6 +1,6 @@
 use anti_llm_lsp::server::AntiLlmServer;
 use clap::{Parser, Subcommand};
-use tower_lsp_max::{LspService, Server};
+use lsp_max::{LspService, Server};
 
 #[derive(Parser)]
 #[command(name = "anti-llm-lsp")]

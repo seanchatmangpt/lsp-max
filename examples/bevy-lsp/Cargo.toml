@@ -13,5 +13,5 @@ tokio = { version = "1.17", features = ["full"] }
 tree-sitter-rust = "0.24"
 
 [build-dependencies]
-auto-lsp-codegen = { path = "../../crates/tower-lsp-max-adapters/auto-lsp-codegen" }
+lsp-max-ast-codegen = { path = "../../crates/lsp-max-adapters/lsp-max-ast-codegen" }
 tree-sitter-rust = "0.24"

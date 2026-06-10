@@ -1,11 +1,11 @@
-use lsp_types::request::Request;
-use lsp_types_max as lsp_types;
-use tower_lsp_max_protocol::custom_methods::*;
-use tower_lsp_max_protocol::{
+use lsp_max_protocol::custom_methods::*;
+use lsp_max_protocol::{
     ChainDescriptor, ConformanceVector, HookDescriptor, HookGraphNode, LawAxis, ManifoldSnapshot,
     MaxDiagnostic, Receipt, SnapshotId,
 };
-use tower_lsp_max_runtime::MaxMethod;
+use lsp_max_runtime::MaxMethod;
+use lsp_types::request::Request;
+use lsp_types_max as lsp_types;
 
 #[test]
 fn test_serialization_conformance_vector() {
@@ -112,8 +112,8 @@ fn test_serialization_max_diagnostic() {
         violated_invariant: "invariant_x".to_string(),
         observed_state: serde_json::json!({"state": "bad"}),
         expected_state: serde_json::json!({"state": "good"}),
-        repairability: tower_lsp_max_protocol::Repairability::Repairable,
-        terminality: tower_lsp_max_protocol::Terminality::Terminal,
+        repairability: lsp_max_protocol::Repairability::Repairable,
+        terminality: lsp_max_protocol::Terminality::Terminal,
     };
     let serialized = serde_json::to_string(&custom_diag).unwrap();
     let deserialized: MaxDiagnostic = serde_json::from_str(&serialized).unwrap();

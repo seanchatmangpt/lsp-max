@@ -6,12 +6,11 @@ async fn test_f4_t3_diagnostics_filtering_contract() {
     let upstreams = vec![("ggen-lsp".to_string(), mock.addr.to_string())];
 
     let (client_io, server_io) = tokio::io::duplex(1024 * 1024);
-    let (service, socket) = tower_lsp_max::LspService::new(|client| {
-        tower_lsp_max::ComposedServer::new(client, upstreams.clone())
-    });
+    let (service, socket) =
+        lsp_max::LspService::new(|client| lsp_max::ComposedServer::new(client, upstreams.clone()));
     let (reader, writer) = tokio::io::split(server_io);
     tokio::spawn(async move {
-        let _ = tower_lsp_max::Server::new(reader, writer, socket)
+        let _ = lsp_max::Server::new(reader, writer, socket)
             .serve(service)
             .await;
     });

@@ -3,13 +3,13 @@
 //! Specifically verifies round-trip compatibility, edge cases (empty values, complex nested
 //! structures), and backward compatibility (deserializing older schemas without the new fields).
 
-use serde_json::{json, Value};
-use tower_lsp_max::lsp_types::{Diagnostic, DiagnosticSeverity, Position, Range};
-use tower_lsp_max::max_protocol::{
+use lsp_max::lsp_types::{Diagnostic, DiagnosticSeverity, Position, Range};
+use lsp_max::max_protocol::{
     ChainDescriptor, ConformanceVector, DocRoute, GateId, HookDescriptor, HookGraphNode, LawAxis,
     ManifoldSnapshot, MaxDiagnostic, Receipt, ReceiptObligation, RepairAction, Repairability,
     SnapshotId, Terminality, TransitionAttempt,
 };
+use serde_json::{json, Value};
 
 #[test]
 fn test_conformance_vector_edge_cases() {
@@ -146,7 +146,7 @@ fn test_max_diagnostic_extreme_values() {
                 },
             },
             severity: Some(DiagnosticSeverity::ERROR),
-            code: Some(tower_lsp_max::lsp_types::NumberOrString::String(
+            code: Some(lsp_max::lsp_types::NumberOrString::String(
                 "ERR_404".to_string(),
             )),
             source: Some("SystemCheck".to_string()),

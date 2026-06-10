@@ -1,4 +1,4 @@
-//! Composition substrate for `tower-lsp-max v26.6.5`.
+//! Composition substrate for `lsp-max v26.6.5`.
 //!
 //! Implements:
 //! - R2: Capability discovery, intersection, dynamic registration/unregistration.

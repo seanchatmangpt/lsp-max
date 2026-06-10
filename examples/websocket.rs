@@ -1,9 +1,9 @@
 use async_tungstenite::tokio::accept_async;
+use lsp_max::jsonrpc::Result;
+use lsp_max::lsp_types::*;
+use lsp_max::{Client, LanguageServer, LspService, Server};
 use serde_json::Value;
 use tokio::net::TcpListener;
-use tower_lsp_max::jsonrpc::Result;
-use tower_lsp_max::lsp_types::*;
-use tower_lsp_max::{Client, LanguageServer, LspService, Server};
 use tracing::info;
 use ws_stream_tungstenite::*;
 
@@ -12,7 +12,7 @@ struct Backend {
     client: Client,
 }
 
-#[tower_lsp_max::async_trait]
+#[lsp_max::async_trait]
 impl LanguageServer for Backend {
     async fn initialize(&self, _: InitializeParams) -> Result<InitializeResult> {
         Ok(InitializeResult {

@@ -15,5 +15,5 @@ tokio = { version = "1.17", features = ["full"] }
 tree-sitter-latex = { package = "codebook-tree-sitter-latex", version = "0.6.1" }
 
 [build-dependencies]
-auto-lsp-codegen = { path = "../../crates/tower-lsp-max-adapters/auto-lsp-codegen" }
+lsp-max-ast-codegen = { path = "../../crates/lsp-max-adapters/lsp-max-ast-codegen" }
 tree-sitter-latex = { package = "codebook-tree-sitter-latex", version = "0.6.1" }

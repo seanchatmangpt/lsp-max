@@ -1,8 +1,8 @@
 /*
-This file is part of auto-lsp.
+This file is part of lsp-max-ast.
 Copyright (C) 2025 CLAUZEL Adrien
 
-auto-lsp is free software: you can redistribute it and/or modify
+lsp-max-ast is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
 (at your option) any later version.
@@ -18,17 +18,17 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 //! # Auto LSP Codegen
 //!
-//! To generate an AST, simply provide a Tree-sitter [node-types.json](https://tree-sitter.github.io/tree-sitter/using-parsers/6-static-node-types.html#static-node-types) and [LanguageFn](https://docs.rs/tree-sitter/latest/tree_sitter/struct.Language.html) of any language to the `generate` function of the `auto_lsp_codegen` crate.
+//! To generate an AST, simply provide a Tree-sitter [node-types.json](https://tree-sitter.github.io/tree-sitter/using-parsers/6-static-node-types.html#static-node-types) and [LanguageFn](https://docs.rs/tree-sitter/latest/tree_sitter/struct.Language.html) of any language to the `generate` function of the `lsp_max_ast_codegen` crate.
 //!
 //! ```sh
-//! cargo add auto_lsp_codegen
+//! cargo add lsp_max_ast_codegen
 //! ```
 //!
-//! Although `auto_lsp_codegen` is a standalone crate, the generated code depends on the main `auto_lsp` crate.
+//! Although `lsp_max_ast_codegen` is a standalone crate, the generated code depends on the main `lsp_max_ast` crate.
 //!
 //! ## Usage
 //!
-//! The `auto_lsp_codegen` crate exposes a single `generate` function, which takes:
+//! The `lsp_max_ast_codegen` crate exposes a single `generate` function, which takes:
 //!
 //! - A [`node-types.json`](https://tree-sitter.github.io/tree-sitter/using-parsers/6-static-node-types.html),
 //! - A [`LanguageFn`](https://docs.rs/tree-sitter-language/0.1.5/tree_sitter_language/struct.LanguageFn.html)
@@ -42,7 +42,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>
 //! Note, however, that the output can be quite large—for example, Python’s AST results in ~11,000 lines of code.
 //!
 //! ```rust, ignore
-//! use auto_lsp_codegen::generate;
+//! use lsp_max_ast_codegen::generate;
 //! use std::{fs, path::PathBuf};
 //!
 //! fn main() {
@@ -192,7 +192,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>
 //! If your grammar defines additional unnamed tokens not covered by the default map, you can provide a custom token mapping to generate appropriate Rust enum names.
 //!
 //! ```rust, ignore
-//!use auto_lsp_codegen::generate;
+//!use lsp_max_ast_codegen::generate;
 //!
 //!let _result = generate(
 //!        &tree_sitter_python::NODE_TYPES,
@@ -317,7 +317,7 @@ pub(crate) static SUPER_TYPES: LazyLock<RwLock<BTreeMap<String, SuperType>>> =
 /// # Example
 ///
 /// ```rust
-/// use auto_lsp_codegen::generate;
+/// use lsp_max_ast_codegen::generate;
 ///
 /// let _result = generate(
 ///        &tree_sitter_python::NODE_TYPES,

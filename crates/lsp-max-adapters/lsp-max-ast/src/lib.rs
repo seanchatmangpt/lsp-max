@@ -1,5 +1,5 @@
-use auto_lsp_core::document::Document;
 use dashmap::DashMap;
+use lsp_max_ast_core::document::Document;
 use lsp_types_max::{
     Diagnostic, DidChangeTextDocumentParams, DidCloseTextDocumentParams, DidOpenTextDocumentParams,
     DocumentUri,
@@ -7,12 +7,12 @@ use lsp_types_max::{
 use parking_lot::Mutex;
 use tree_sitter::Parser;
 
-/// The `AutoLspAdapter` acts as the formal bridge between the `tower-lsp-max`
-/// execution engine and the incremental AST generation from `auto-lsp-core`.
+/// The `AutoLspAdapter` acts as the formal bridge between the `lsp-max`
+/// execution engine and the incremental AST generation from `lsp-max-ast-core`.
 ///
 /// It strictly adheres to the architectural mandate by cleanly separating the
-/// transport/JSON-RPC layer (`tower-lsp-max`) from the formal grammar
-/// parsing layer (`auto-lsp-core`).
+/// transport/JSON-RPC layer (`lsp-max`) from the formal grammar
+/// parsing layer (`lsp-max-ast-core`).
 pub struct AutoLspAdapter {
     /// Incremental text and syntax tree store.
     documents: DashMap<DocumentUri, Mutex<Document>>,
@@ -93,7 +93,7 @@ impl AutoLspAdapter {
                         code: Some(lsp_types_max::NumberOrString::String(
                             "AST_ERROR".to_string(),
                         )),
-                        source: Some("auto-lsp".to_string()),
+                        source: Some("lsp-max-ast".to_string()),
                         message: "Syntax error detected by formal parser.".to_string(),
                         ..Default::default()
                     });

@@ -1,13 +1,13 @@
+use lsp_max::jsonrpc::Result;
+use lsp_max::lsp_types as lsp;
+use lsp_max::max_protocol::lsp_3_18 as lsp318;
+use lsp_max::{Client, LspService, Server};
 /// Batch 8 — workspace/did*Files, workspace/willRenameFiles,
 /// workspace/willDeleteFiles, workspace/textDocumentContent,
 /// notebookDocument/didOpen, notebookDocument/didChange.
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use tokio::io::AsyncWriteExt;
-use tower_lsp_max::jsonrpc::Result;
-use tower_lsp_max::lsp_types as lsp;
-use tower_lsp_max::max_protocol::lsp_3_18 as lsp318;
-use tower_lsp_max::{Client, LspService, Server};
 
 use super::common::{assert_well_formed, encode_message, read_message, roundtrip};
 
@@ -26,8 +26,8 @@ struct Batch8Backend {
     events: Batch8Events,
 }
 
-#[tower_lsp_max::async_trait]
-impl tower_lsp_max::LanguageServer for Batch8Backend {
+#[lsp_max::async_trait]
+impl lsp_max::LanguageServer for Batch8Backend {
     async fn initialize(&self, _: lsp::InitializeParams) -> Result<lsp::InitializeResult> {
         Ok(lsp::InitializeResult::default())
     }

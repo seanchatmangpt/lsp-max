@@ -4,15 +4,15 @@
 //! Integrates both precise AST parsing (using `syn`) and robust fallback regex scanning.
 
 use clap::Parser;
+use lsp_max::jsonrpc::Result;
+use lsp_max::lsp_types_max::*;
+use lsp_max::{Client, LanguageServer, LspService, Server};
 use serde_json::Value;
 use std::collections::HashMap;
 use std::sync::Mutex;
 use syn::spanned::Spanned;
 use syn::visit::Visit;
 use syn::{Expr, ExprCall, ExprMethodCall, Ident, UseTree};
-use tower_lsp_max::jsonrpc::Result;
-use tower_lsp_max::lsp_types_max::*;
-use tower_lsp_max::{Client, LanguageServer, LspService, Server};
 use tracing::{error, info};
 
 /// CLI arguments for the LSP server.
@@ -173,7 +173,7 @@ impl Backend {
     }
 }
 
-#[tower_lsp_max::async_trait]
+#[lsp_max::async_trait]
 impl LanguageServer for Backend {
     async fn initialize(&self, _: InitializeParams) -> Result<InitializeResult> {
         Ok(InitializeResult {
@@ -347,7 +347,7 @@ impl LanguageServer for Backend {
             }
             _ => {
                 error!("LSP command not found: {}", params.command);
-                Err(tower_lsp_max::jsonrpc::Error::method_not_found())
+                Err(lsp_max::jsonrpc::Error::method_not_found())
             }
         }
     }

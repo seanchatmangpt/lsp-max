@@ -1,11 +1,11 @@
+use lsp_max::jsonrpc::Result as RpcResult;
+use lsp_max::lsp_types as lsp;
+use lsp_max::{LanguageServer, LspService, Server};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
-use tower_lsp_max::jsonrpc::Result as RpcResult;
-use tower_lsp_max::lsp_types as lsp;
-use tower_lsp_max::{LanguageServer, LspService, Server};
 
 struct TestBackend;
 
-#[tower_lsp_max::async_trait]
+#[lsp_max::async_trait]
 impl LanguageServer for TestBackend {
     async fn initialize(&self, _: lsp::InitializeParams) -> RpcResult<lsp::InitializeResult> {
         Ok(lsp::InitializeResult::default())
@@ -49,7 +49,7 @@ fn encode_message(msg: &serde_json::Value) -> Vec<u8> {
 
 #[tokio::main]
 async fn main() {
-    tower_lsp_max::reset_registry_for_tests();
+    lsp_max::reset_registry_for_tests();
     let (service, socket) = LspService::new(|_| TestBackend);
 
     let (mut client_tx, server_rx) = tokio::io::duplex(1024 * 1024);

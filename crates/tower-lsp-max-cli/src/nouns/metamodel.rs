@@ -1,7 +1,7 @@
 use clap_noun_verb::Result;
 use clap_noun_verb_macros::verb;
+use lsp_max_runtime::sha256;
 use serde::Serialize;
-use tower_lsp_max_runtime::sha256;
 
 // ==========================================
 // Tier 1: Domain
@@ -61,7 +61,7 @@ impl MetamodelService {
     pub fn validate(&self, id: &str) -> Vec<ValidationIssue> {
         // Wire to runtime: validate by checking state file if id matches an instance
         let state_path = crate::nouns::get_state_path();
-        let mesh_ok = tower_lsp_max_runtime::AutonomicMesh::load_from_file(&state_path).is_ok();
+        let mesh_ok = lsp_max_runtime::AutonomicMesh::load_from_file(&state_path).is_ok();
         if mesh_ok {
             vec![ValidationIssue {
                 level: "INFO".to_string(),

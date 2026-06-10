@@ -1,8 +1,8 @@
+use lsp_max::{LspService, Server};
+use lsp_max_playground::Backend;
 /// Integration tests using a real LSP server (require network-style duplex setup).
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
-use tower_lsp_max::{LspService, Server};
-use tower_lsp_max_playground::Backend;
 
 use super::common::{read_message, wait_for_notification, wait_for_response, write_msg};
 
@@ -59,7 +59,7 @@ async fn test_quick_fix_missing_moniker_notebook_sync() {
     let code_text = r#"
 struct Dummy;
 
-#[tower_lsp_max::async_trait]
+#[lsp_max::async_trait]
 impl LanguageServer for Dummy {
     async fn initialize(&self, params: InitializeParams) -> Result<InitializeResult> {
         Ok(InitializeResult {
@@ -289,7 +289,7 @@ async fn test_quick_fix_missing_file_operations() {
     let code_text = r#"
 struct Dummy;
 
-#[tower_lsp_max::async_trait]
+#[lsp_max::async_trait]
 impl LanguageServer for Dummy {
     async fn initialize(&self, params: InitializeParams) -> Result<InitializeResult> {
         Ok(InitializeResult {

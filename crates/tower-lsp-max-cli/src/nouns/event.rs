@@ -1,13 +1,13 @@
 use clap_noun_verb::Result;
 use clap_noun_verb_macros::verb;
+use lsp_max_runtime::AutonomicMesh;
 use serde::Serialize;
-use tower_lsp_max_runtime::AutonomicMesh;
 
 // ==============================================================================
 // 1. Domain Tier
 // ==============================================================================
 
-// HookEvent is re-exported from tower_lsp_max_runtime and derives Serialize.
+// HookEvent is re-exported from lsp_max_runtime and derives Serialize.
 
 // ==============================================================================
 // 2. Service Tier

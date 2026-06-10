@@ -190,7 +190,7 @@ impl ComposedServer {
                     let init_result = InitializeResult {
                         capabilities: effective_caps,
                         server_info: Some(ServerInfo {
-                            name: "tower-lsp-max-composed".to_string(),
+                            name: "lsp-max-composed".to_string(),
                             version: Some("26.6.5".to_string()),
                         }),
                         offset_encoding: None,

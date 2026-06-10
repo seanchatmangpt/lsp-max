@@ -1,4 +1,4 @@
-//! Playground LSP backend for manual integration testing of tower-lsp-max.
+//! Playground LSP backend for manual integration testing of lsp-max.
 //!
 //! Implements a minimal `LanguageServer` (document sync, hover, diagnostics)
 //! against an in-memory rope store; useful for verifying runtime behaviour
@@ -12,11 +12,11 @@ pub mod handlers;
 use std::sync::Arc;
 
 use dashmap::DashMap;
+use lsp_max::jsonrpc::Result;
+use lsp_max::lsp_max_ast::AutoLspAdapter;
+use lsp_max::lsp_types::*;
+use lsp_max::{Client, LanguageServer};
 use ropey::Rope;
-use tower_lsp_max::auto_lsp::AutoLspAdapter;
-use tower_lsp_max::jsonrpc::Result;
-use tower_lsp_max::lsp_types::*;
-use tower_lsp_max::{Client, LanguageServer};
 
 /// One entry per open document.
 pub struct Document {
@@ -30,8 +30,8 @@ pub struct Backend {
     pub client: Client,
     /// Open documents indexed by URI.
     pub docs: Arc<DashMap<Uri, Document>>,
-    /// Formal bridge to the auto-lsp semantic engine.
-    pub auto_lsp: AutoLspAdapter,
+    /// Formal bridge to the lsp-max-ast semantic engine.
+    pub lsp_max_ast: AutoLspAdapter,
 }
 
 impl Backend {
@@ -39,12 +39,12 @@ impl Backend {
         Self {
             client,
             docs: Arc::new(DashMap::new()),
-            auto_lsp: AutoLspAdapter::new_default(),
+            lsp_max_ast: AutoLspAdapter::new_default(),
         }
     }
 }
 
-#[tower_lsp_max::async_trait]
+#[lsp_max::async_trait]
 impl LanguageServer for Backend {
     // --- LIFECYCLE ---
 
@@ -52,7 +52,7 @@ impl LanguageServer for Backend {
         Ok(InitializeResult {
             capabilities: capabilities::server_capabilities(),
             server_info: Some(ServerInfo {
-                name: "tower-lsp-max-playground".to_string(),
+                name: "lsp-max-playground".to_string(),
                 version: Some(env!("CARGO_PKG_VERSION").to_string()),
             }),
             offset_encoding: None,
@@ -61,7 +61,7 @@ impl LanguageServer for Backend {
 
     async fn initialized(&self, _: InitializedParams) {
         self.client
-            .log_message(MessageType::INFO, "tower-lsp-max playground ready")
+            .log_message(MessageType::INFO, "lsp-max playground ready")
             .await;
     }
 

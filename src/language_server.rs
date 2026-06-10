@@ -1,13 +1,13 @@
 use crate::jsonrpc::{Error, Result};
 use async_trait::async_trait;
 use auto_impl::auto_impl;
+use lsp_max_macros::rpc;
 use lsp_types_max::request::{
     GotoDeclarationParams, GotoDeclarationResponse, GotoImplementationParams,
     GotoImplementationResponse, GotoTypeDefinitionParams, GotoTypeDefinitionResponse,
 };
 use lsp_types_max::*;
 use serde_json::Value;
-use tower_lsp_max_macros::rpc;
 
 pub(crate) mod impls;
 

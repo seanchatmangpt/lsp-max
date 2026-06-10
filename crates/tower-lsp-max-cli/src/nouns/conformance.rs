@@ -2,8 +2,8 @@ use clap_noun_verb::error::NounVerbError;
 use clap_noun_verb::Result;
 use clap_noun_verb_macros::verb;
 use serde::Serialize;
-use tower_lsp_max_protocol::{LawAxis, ConformanceVector};
-use tower_lsp_max_runtime::AutonomicMesh;
+use lsp_max_protocol::{LawAxis, ConformanceVector};
+use lsp_max_runtime::AutonomicMesh;
 
 // ==============================================================================
 // 1. Domain Tier
@@ -277,7 +277,7 @@ pub fn run_gate(instance_id: String, gate_id: String) -> Result<RunGateResult> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tower_lsp_max_runtime::{AutonomicMesh, LspInstance};
+    use lsp_max_runtime::{AutonomicMesh, LspInstance};
 
     fn make_temp_mesh() -> (tempfile::NamedTempFile, ConformanceService) {
         let mut mesh = AutonomicMesh::new();

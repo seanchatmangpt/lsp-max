@@ -1,10 +1,11 @@
 [package]
-name = "auto_lsp_adapter"
+name = "lsp-max-ast"
 version = "0.1.0"
 edition = "2024"
+publish = false
 
 [dependencies]
-auto-lsp-core = { path = "../auto-lsp-core" }
+lsp-max-ast-core = { path = "../lsp-max-ast-core" }
 lsp-types-max = { workspace = true }
 texter = { workspace = true }
 tree-sitter = { workspace = true }

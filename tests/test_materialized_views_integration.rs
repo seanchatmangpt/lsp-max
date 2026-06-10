@@ -1,16 +1,14 @@
+use lsp_max_lsif::lsif::{Edge, EdgeType, Element, HoverResultData, RangeTag, Vertex, VertexType};
+use lsp_max_protocol::MaxDiagnostic;
+use lsp_max_runtime::control_plane::views::{
+    lookup_definition, lookup_diagnostics, lookup_hover, lookup_references, update_views,
+    MaterializedViewStore,
+};
 use lsp_types::{Diagnostic, Position, Range, SymbolKind};
 use lsp_types_max as lsp_types;
 use oxigraph::model::GraphName;
 use oxigraph::model::NamedNode;
 use oxigraph::store::Store;
-use tower_lsp_max_lsif::lsif::{
-    Edge, EdgeType, Element, HoverResultData, RangeTag, Vertex, VertexType,
-};
-use tower_lsp_max_protocol::MaxDiagnostic;
-use tower_lsp_max_runtime::control_plane::views::{
-    lookup_definition, lookup_diagnostics, lookup_hover, lookup_references, update_views,
-    MaterializedViewStore,
-};
 use url::Url;
 
 #[test]
@@ -61,7 +59,7 @@ fn test_integration_materialized_views_flow() {
             id: lsp_types::NumberOrString::Number(6),
             type_: VertexType::Vertex,
             result: HoverResultData {
-                contents: tower_lsp_max_lsif::lsif::HoverContents::String(
+                contents: lsp_max_lsif::lsif::HoverContents::String(
                     "This is foo function".to_string(),
                 ),
                 range: None,
@@ -124,7 +122,7 @@ fn test_integration_materialized_views_flow() {
 
     for el in &elements {
         let mut quads = Vec::new();
-        tower_lsp_max_runtime::control_plane::admission::map_element_to_quads(
+        lsp_max_runtime::control_plane::admission::map_element_to_quads(
             el,
             &active_graph,
             &mut quads,
@@ -143,17 +141,15 @@ fn test_integration_materialized_views_flow() {
             severity: Some(lsp_types::DiagnosticSeverity::ERROR),
             ..Default::default()
         },
-        doc_routes: vec![tower_lsp_max_protocol::DocRoute {
+        doc_routes: vec![lsp_max_protocol::DocRoute {
             path: "file:///test.rs".to_string(),
         }],
         ..Default::default()
     }];
 
     for diag in &live_diags {
-        let quads = tower_lsp_max_runtime::control_plane::admission::map_diagnostic_to_quads(
-            diag,
-            &active_graph,
-        );
+        let quads =
+            lsp_max_runtime::control_plane::admission::map_diagnostic_to_quads(diag, &active_graph);
         for quad in quads {
             store.insert(&quad).unwrap();
         }
@@ -208,8 +204,8 @@ fn test_integration_materialized_views_flow() {
 #[test]
 fn test_integration_verify_replay_flow() {
     use ed25519_dalek::{Signer, SigningKey};
-    use tower_lsp_max_runtime::control_plane::receipts::{Blake3Hash, CryptographicReceipt};
-    use tower_lsp_max_runtime::control_plane::replay::verify_replay;
+    use lsp_max_runtime::control_plane::receipts::{Blake3Hash, CryptographicReceipt};
+    use lsp_max_runtime::control_plane::replay::verify_replay;
     use uuid::Uuid;
 
     let seed = [0u8; 32];

@@ -335,12 +335,10 @@ impl Client {
     /// This corresponds to the [`workspace/textDocumentContent/refresh`] request.
     pub async fn text_document_content_refresh(
         &self,
-        params: tower_lsp_max_protocol::lsp_3_18::TextDocumentContentRefreshParams,
+        params: lsp_max_protocol::lsp_3_18::TextDocumentContentRefreshParams,
     ) -> jsonrpc::Result<()> {
-        self.send_request::<tower_lsp_max_protocol::lsp_3_18::TextDocumentContentRefreshRequest>(
-            params,
-        )
-        .await
+        self.send_request::<lsp_max_protocol::lsp_3_18::TextDocumentContentRefreshRequest>(params)
+            .await
     }
 
     /// Submits validation diagnostics for an open file with the given URI.

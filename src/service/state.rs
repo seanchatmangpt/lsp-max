@@ -210,12 +210,12 @@ impl ServerState {
 
                     let mut mesh = self.mesh.lock().unwrap();
                     mesh.dispatch_event(crate::max_protocol::HookEvent::StateTransition {
-                        instance_id: tower_lsp_max_runtime::InstanceId::from("LSP_1"),
+                        instance_id: lsp_max_runtime::InstanceId::from("LSP_1"),
                         from_phase: "Uninitialized".to_string(),
                         to_phase: "Initializing".to_string(),
                     });
                     mesh.dispatch_event(crate::max_protocol::HookEvent::ReceiptEmitted {
-                        instance_id: tower_lsp_max_runtime::InstanceId::from("LSP_1"),
+                        instance_id: lsp_max_runtime::InstanceId::from("LSP_1"),
                         receipt,
                     });
                     let _ = mesh.verify_instance_ledger("LSP_1");
@@ -268,12 +268,12 @@ impl ServerState {
             if let Some(ref r) = receipt {
                 let mut mesh = self.mesh.lock().unwrap();
                 mesh.dispatch_event(crate::max_protocol::HookEvent::StateTransition {
-                    instance_id: tower_lsp_max_runtime::InstanceId::from("LSP_1"),
+                    instance_id: lsp_max_runtime::InstanceId::from("LSP_1"),
                     from_phase: "Initializing".to_string(),
                     to_phase: "Initialized".to_string(),
                 });
                 mesh.dispatch_event(crate::max_protocol::HookEvent::ReceiptEmitted {
-                    instance_id: tower_lsp_max_runtime::InstanceId::from("LSP_1"),
+                    instance_id: lsp_max_runtime::InstanceId::from("LSP_1"),
                     receipt: r.clone(),
                 });
                 let _ = mesh.verify_instance_ledger("LSP_1");
@@ -350,12 +350,12 @@ impl ServerState {
             if let Some(ref r) = receipt {
                 let mut mesh = self.mesh.lock().unwrap();
                 mesh.dispatch_event(crate::max_protocol::HookEvent::StateTransition {
-                    instance_id: tower_lsp_max_runtime::InstanceId::from("LSP_1"),
+                    instance_id: lsp_max_runtime::InstanceId::from("LSP_1"),
                     from_phase: "Initialized".to_string(),
                     to_phase: "ShutDown".to_string(),
                 });
                 mesh.dispatch_event(crate::max_protocol::HookEvent::ReceiptEmitted {
-                    instance_id: tower_lsp_max_runtime::InstanceId::from("LSP_1"),
+                    instance_id: lsp_max_runtime::InstanceId::from("LSP_1"),
                     receipt: r.clone(),
                 });
                 let _ = mesh.verify_instance_ledger("LSP_1");
@@ -405,12 +405,12 @@ impl ServerState {
         if let Some(ref r) = receipt {
             let mut mesh = self.mesh.lock().unwrap();
             mesh.dispatch_event(crate::max_protocol::HookEvent::StateTransition {
-                instance_id: tower_lsp_max_runtime::InstanceId::from("LSP_1"),
+                instance_id: lsp_max_runtime::InstanceId::from("LSP_1"),
                 from_phase: "ShutDown".to_string(),
                 to_phase: "Exited".to_string(),
             });
             mesh.dispatch_event(crate::max_protocol::HookEvent::ReceiptEmitted {
-                instance_id: tower_lsp_max_runtime::InstanceId::from("LSP_1"),
+                instance_id: lsp_max_runtime::InstanceId::from("LSP_1"),
                 receipt: r.clone(),
             });
             let _ = mesh.verify_instance_ledger("LSP_1");

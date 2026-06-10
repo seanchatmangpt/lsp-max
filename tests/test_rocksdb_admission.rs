@@ -1,11 +1,9 @@
+use lsp_max_base::abstractions::RelationAdmitter;
+use lsp_max_lsif::lsif::{Edge, Element, PositionEncoding, Vertex, VertexType};
+use lsp_max_runtime::control_plane::admission::{resolve_db_path, AdmittedGraph, StoreFactory};
 use lsp_types_max as lsp_types;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Barrier, Mutex};
-use tower_lsp_max_base::abstractions::RelationAdmitter;
-use tower_lsp_max_lsif::lsif::{Edge, Element, PositionEncoding, Vertex, VertexType};
-use tower_lsp_max_runtime::control_plane::admission::{
-    resolve_db_path, AdmittedGraph, StoreFactory,
-};
 
 static TEST_MUTEX: Mutex<()> = Mutex::new(());
 
@@ -88,7 +86,7 @@ fn test_named_graph_invariant_validation() {
         }),
         Element::Edge(Edge::Contains {
             id: lsp_types::NumberOrString::Number(2),
-            type_: tower_lsp_max_lsif::lsif::EdgeType::Edge,
+            type_: lsp_max_lsif::lsif::EdgeType::Edge,
             out_v: lsp_types::NumberOrString::Number(1),
             in_vs: vec![lsp_types::NumberOrString::Number(999)], // Node 999 does not exist!
         }),
@@ -214,7 +212,7 @@ fn test_transaction_isolation_dirty_reads_prevention() {
             }),
             Element::Edge(Edge::Contains {
                 id: lsp_types::NumberOrString::Number(2),
-                type_: tower_lsp_max_lsif::lsif::EdgeType::Edge,
+                type_: lsp_max_lsif::lsif::EdgeType::Edge,
                 out_v: lsp_types::NumberOrString::Number(1),
                 in_vs: vec![lsp_types::NumberOrString::Number(999)], // orphan -> fails validation
             }),

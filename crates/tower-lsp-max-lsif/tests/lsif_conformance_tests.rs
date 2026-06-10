@@ -1,6 +1,6 @@
+use lsp_max_lsif::lsif::*;
+use lsp_max_lsif::lsif_builder::LsifBuilder;
 use lsp_types_max::NumberOrString;
-use tower_lsp_max_lsif::lsif::*;
-use tower_lsp_max_lsif::lsif_builder::LsifBuilder;
 
 #[test]
 fn test_metadata_conformance() {

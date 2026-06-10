@@ -1,9 +1,9 @@
+use lsp_max::jsonrpc::{Error, Result};
+use lsp_max::lsp_types::notification::Notification;
+use lsp_max::lsp_types::*;
+use lsp_max::{Client, LanguageServer, LspService, Server};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use tower_lsp_max::jsonrpc::{Error, Result};
-use tower_lsp_max::lsp_types::notification::Notification;
-use tower_lsp_max::lsp_types::*;
-use tower_lsp_max::{Client, LanguageServer, LspService, Server};
 
 #[derive(Debug, Deserialize, Serialize)]
 struct CustomNotificationParams {
@@ -33,7 +33,7 @@ struct Backend {
     client: Client,
 }
 
-#[tower_lsp_max::async_trait]
+#[lsp_max::async_trait]
 impl LanguageServer for Backend {
     async fn initialize(&self, _: InitializeParams) -> Result<InitializeResult> {
         Ok(InitializeResult {

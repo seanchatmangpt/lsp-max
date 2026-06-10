@@ -1,10 +1,11 @@
 [package]
-name = "auto-lsp-codegen"
+name = "lsp-max-ast-codegen"
 description = """
 Codegen crate for `auto_lsp`.
 """
 readme = "README.md"
 version = "0.2.1"
+publish = false
 authors = { workspace = true }
 license = { workspace = true }
 repository = { workspace = true }

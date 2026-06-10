@@ -1,10 +1,10 @@
+use lsp_max::jsonrpc::Result;
+use lsp_max::lsp_types as lsp;
+use lsp_max::max_protocol::lsp_3_18 as lsp318;
+use lsp_max::{Client, LanguageServer};
 /// DogfoodBackend and related types for the dogfood loop tests.
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
-use tower_lsp_max::jsonrpc::Result;
-use tower_lsp_max::lsp_types as lsp;
-use tower_lsp_max::max_protocol::lsp_3_18 as lsp318;
-use tower_lsp_max::{Client, LanguageServer};
 
 #[derive(Clone, Default)]
 pub struct TestEvents {
@@ -19,7 +19,7 @@ pub struct DogfoodBackend {
     pub events: TestEvents,
 }
 
-#[tower_lsp_max::async_trait]
+#[lsp_max::async_trait]
 impl LanguageServer for DogfoodBackend {
     async fn initialize(&self, _: lsp::InitializeParams) -> Result<lsp::InitializeResult> {
         println!("Server: initialize called");

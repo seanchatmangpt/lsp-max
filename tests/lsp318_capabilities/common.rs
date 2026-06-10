@@ -1,16 +1,16 @@
+use lsp_max::jsonrpc::Result;
+use lsp_max::lsp_types as lsp;
+use lsp_max::{LspService, Server};
 use std::sync::Mutex;
 use std::time::Duration;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
-use tower_lsp_max::jsonrpc::Result;
-use tower_lsp_max::lsp_types as lsp;
-use tower_lsp_max::{LspService, Server};
 
 // ── StubBackend (used by batches 2-7) ──────────────────────────────────────
 
 pub struct StubBackend;
 
-#[tower_lsp_max::async_trait]
-impl tower_lsp_max::LanguageServer for StubBackend {
+#[lsp_max::async_trait]
+impl lsp_max::LanguageServer for StubBackend {
     async fn initialize(&self, _: lsp::InitializeParams) -> Result<lsp::InitializeResult> {
         Ok(lsp::InitializeResult::default())
     }

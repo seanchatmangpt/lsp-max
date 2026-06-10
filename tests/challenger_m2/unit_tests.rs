@@ -1,8 +1,8 @@
+use lsp_max::lsp_types::*;
+use lsp_max_playground::handlers::completions::get_completions;
+use lsp_max_playground::handlers::diagnostics::get_diagnostics;
 /// Unit tests for completion and diagnostic helpers (no server required).
 use std::str::FromStr;
-use tower_lsp_max::lsp_types::*;
-use tower_lsp_max_playground::handlers::completions::get_completions;
-use tower_lsp_max_playground::handlers::diagnostics::get_diagnostics;
 
 #[test]
 fn test_completion_empty_file_no_panic() {

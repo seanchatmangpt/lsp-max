@@ -2,10 +2,10 @@ use crate::diagnostics::Receipt;
 use crate::scanner;
 use clap_noun_verb::Result;
 use clap_noun_verb_macros::verb;
+use lsp_max::{Client, LanguageServer, LspService, Server};
 use lsp_types_max::*;
 use serde::Serialize;
 use tokio::runtime::Runtime;
-use tower_lsp_max::{Client, LanguageServer, LspService, Server};
 
 #[derive(Serialize)]
 pub struct ServerResult {
@@ -66,12 +66,9 @@ impl PatternLsp {
     }
 }
 
-#[tower_lsp_max::async_trait]
+#[lsp_max::async_trait]
 impl LanguageServer for PatternLsp {
-    async fn initialize(
-        &self,
-        _: InitializeParams,
-    ) -> tower_lsp_max::jsonrpc::Result<InitializeResult> {
+    async fn initialize(&self, _: InitializeParams) -> lsp_max::jsonrpc::Result<InitializeResult> {
         Ok(InitializeResult {
             capabilities: ServerCapabilities {
                 text_document_sync: Some(TextDocumentSyncCapability::Kind(
@@ -97,7 +94,7 @@ impl LanguageServer for PatternLsp {
         })
     }
 
-    async fn shutdown(&self) -> tower_lsp_max::jsonrpc::Result<()> {
+    async fn shutdown(&self) -> lsp_max::jsonrpc::Result<()> {
         Ok(())
     }
 
@@ -122,7 +119,7 @@ impl LanguageServer for PatternLsp {
     async fn diagnostic(
         &self,
         _params: DocumentDiagnosticParams,
-    ) -> tower_lsp_max::jsonrpc::Result<DocumentDiagnosticReportResult> {
+    ) -> lsp_max::jsonrpc::Result<DocumentDiagnosticReportResult> {
         // As a simple example, we might not need to respond to the pull request because we do push based,
         // but if required, we can return the Full report. Let's return Full with empty items and rely on publish for now.
         Ok(DocumentDiagnosticReportResult::Report(

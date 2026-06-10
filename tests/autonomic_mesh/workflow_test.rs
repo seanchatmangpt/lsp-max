@@ -1,5 +1,5 @@
 /// Customer service autonomic mesh workflow test.
-use tower_lsp_max_runtime::{
+use lsp_max_runtime::{
     AutonomicMesh, CustomerRequestClassifierHook, FailureMode, Hook, HookDescriptor, HookEvent,
     InstanceId, LspInstance, LspPhase, MeshAction, PolicyEvaluationHook, PolicyState, Receipt,
     ReceiptRoutingHook,

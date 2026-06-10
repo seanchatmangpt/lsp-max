@@ -1,7 +1,8 @@
 [package]
-name = "tower-lsp-max-base"
+name = "lsp-max-base"
 version = "0.1.0"
 edition = "2024"
+publish = false
 
 [dependencies]
 bytes = "1.0"
