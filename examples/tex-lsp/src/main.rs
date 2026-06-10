@@ -25,45 +25,40 @@ fn start_server() -> clap_noun_verb::Result<()> {
     Ok(())
 }
 
+const THESIS_DIR: &str = "docs/thesis/periodic-table-of-reason";
+const PDF_NAME: &str = "periodic-table-of-reason-v26.6.10.pdf";
+
+fn run_pdflatex(jobname: &str) {
+    let _ = Command::new("pdflatex")
+        .current_dir(THESIS_DIR)
+        .args(["-interaction=nonstopmode", &format!("-jobname={}", jobname), "main.tex"])
+        .status();
+}
+
+fn run_bibtex(jobname: &str) {
+    match Command::new("bibtex").current_dir(THESIS_DIR).arg(jobname).status() {
+        Ok(s) if s.success() => println!("bibtex OK."),
+        Ok(_) => println!("bibtex errors — check .blg."),
+        Err(e) => println!("bibtex unavailable: {}", e),
+    }
+}
+
 #[verb("compile", "pdf")]
 fn compile_pdf() -> clap_noun_verb::Result<()> {
-    println!("Compiling PDF with pdflatex...");
-    let status = Command::new("pdflatex")
-        .current_dir("docs/thesis/ggen")
-        .arg("-interaction=nonstopmode")
-        .arg("main.tex")
+    let jobname = "periodic-table-of-reason-v26.6.10";
+    println!("Pass 1/4: pdflatex...");
+    Command::new("pdflatex")
+        .current_dir(THESIS_DIR)
+        .args(["-interaction=nonstopmode", &format!("-jobname={}", jobname), "main.tex"])
         .status()?;
-
-    if status.success() {
-        println!("Pass 1/3 compiled successfully.");
-    }
-
-    println!("Running bibtex...");
-    let _ = Command::new("bibtex")
-        .current_dir("docs/thesis/ggen")
-        .arg("main")
-        .status();
-
-    println!("Running pdflatex (Pass 2)...");
-    let _ = Command::new("pdflatex")
-        .current_dir("docs/thesis/ggen")
-        .arg("-interaction=nonstopmode")
-        .arg("main.tex")
-        .status();
-
-    println!("Running pdflatex (Pass 3)...");
-    let _ = Command::new("pdflatex")
-        .current_dir("docs/thesis/ggen")
-        .arg("-interaction=nonstopmode")
-        .arg("main.tex")
-        .status();
-
-    println!("Opening main.pdf...");
-    let _ = Command::new("open")
-        .current_dir("docs/thesis/ggen")
-        .arg("main.pdf")
-        .status();
-
+    println!("Pass 2/4: bibtex...");
+    run_bibtex(jobname);
+    println!("Pass 3/4: pdflatex...");
+    run_pdflatex(jobname);
+    println!("Pass 4/4: pdflatex...");
+    run_pdflatex(jobname);
+    println!("Opening {}...", PDF_NAME);
+    let _ = Command::new("open").current_dir(THESIS_DIR).arg(PDF_NAME).status();
     Ok(())
 }
 
@@ -76,12 +71,19 @@ fn verify_dissertation() -> clap_noun_verb::Result<()> {
 fn run_verification_domain_logic() -> Result<bool, clap_noun_verb::error::NounVerbError> {
     let adapter = AutoLspAdapter::new_default();
     let chapters = [
-        "docs/thesis/ggen/chapters/ch1_problem_formulation.tex",
-        "docs/thesis/ggen/chapters/ch2_algebraic_boundary.tex",
-        "docs/thesis/ggen/chapters/ch3_differential_calculus.tex",
-        "docs/thesis/ggen/chapters/ch4_generative_functors.tex",
-        "docs/thesis/ggen/chapters/ch5_operational_calculus.tex",
-        "docs/thesis/ggen/chapters/ch6_swarm_defense.tex",
+        "docs/thesis/periodic-table-of-reason/chapters/01-unverifiability.tex",
+        "docs/thesis/periodic-table-of-reason/chapters/02-breed-category.tex",
+        "docs/thesis/periodic-table-of-reason/chapters/03-oracle-theorem.tex",
+        "docs/thesis/periodic-table-of-reason/chapters/04-ocel-conformance.tex",
+        "docs/thesis/periodic-table-of-reason/chapters/05-epistemological-space.tex",
+        "docs/thesis/periodic-table-of-reason/chapters/06-bvc.tex",
+        "docs/thesis/periodic-table-of-reason/chapters/07-fourth-constraint.tex",
+        "docs/thesis/periodic-table-of-reason/chapters/08-speed-transitions.tex",
+        "docs/thesis/periodic-table-of-reason/chapters/09-receipt-chain.tex",
+        "docs/thesis/periodic-table-of-reason/chapters/10-fortune5.tex",
+        "docs/thesis/periodic-table-of-reason/chapters/11-main-theorems.tex",
+        "docs/thesis/periodic-table-of-reason/chapters/12-verification-falsifiers.tex",
+        "docs/thesis/periodic-table-of-reason/chapters/13-conclusion.tex",
     ];
 
     println!("--- Natively Verifying Academic Rigor via tex-lsp ---");
