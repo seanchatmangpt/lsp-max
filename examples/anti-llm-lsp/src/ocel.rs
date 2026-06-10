@@ -1,7 +1,9 @@
 use serde_json::{json, Value};
 use std::fs;
 use std::path::Path;
-use wasm4pm_compat::ocel::{OCELEvent, OCELEventAttribute, OCELObject, OCELRelationship, OCELType, OCEL};
+use wasm4pm_compat::ocel::{
+    OCELEvent, OCELEventAttribute, OCELObject, OCELRelationship, OCELType, OCEL,
+};
 
 pub fn generate_anti_llm_ocel_log() -> OCEL {
     // 1. Create Objects
