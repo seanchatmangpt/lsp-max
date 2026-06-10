@@ -99,7 +99,7 @@ repository = "https://github.com/seanchatmangpt/lsp-max"
 edition = "2021"
 
 [workspace.dependencies]
-wasm4pm-compat = { version = "26.6.9", features = ["formats", "strict", "wasm4pm"] }
+wasm4pm-compat = { version = "26.6.10", features = ["formats", "strict", "wasm4pm"] }
 lsp-types-max = { path = "../lsp-types-max", version = "26.6.8", features = ["proposed"] }
 tree-sitter = "0.26.5"
 tree-sitter-language = "0.1.7"
@@ -124,5 +124,4 @@ lsp-max-ast-codegen = { path = "crates/lsp-max-adapters/lsp-max-ast-codegen", ve
 lsp-max-ast = { path = "crates/lsp-max-adapters/lsp-max-ast", version = "26.6.9" }
 
 [patch.crates-io]
-wasm4pm-compat = { path = "../wasm4pm-compat" }
 wasm4pm = { path = "../wasm4pm/wasm4pm" }
