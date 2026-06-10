@@ -1,5 +1,5 @@
-use crate::powl_types::PowlNode;
-use crate::validators::validate_node;
+use crate::powl_parser::parse_powl;
+use crate::validators::validate_powl;
 use lsp_max::{Client, LanguageServer};
 use lsp_types_max::*;
 
@@ -21,13 +21,25 @@ impl PowlLsp {
 }
 
 fn parse_and_validate(content: &str) -> Vec<Diagnostic> {
-    match serde_json::from_str::<PowlNode>(content) {
-        Ok(node) => validate_node(&node),
+    let v: serde_json::Value = match serde_json::from_str(content) {
+        Ok(v) => v,
+        Err(e) => {
+            return vec![Diagnostic {
+                range: Range::new(Position::new(0, 0), Position::new(0, 0)),
+                severity: Some(DiagnosticSeverity::ERROR),
+                source: Some("powl-lsp".to_string()),
+                message: format!("JSON parse error: {}", e),
+                ..Diagnostic::default()
+            }]
+        }
+    };
+    match parse_powl(&v) {
+        Ok(powl) => validate_powl(&powl),
         Err(e) => vec![Diagnostic {
             range: Range::new(Position::new(0, 0), Position::new(0, 0)),
             severity: Some(DiagnosticSeverity::ERROR),
             source: Some("powl-lsp".to_string()),
-            message: format!("POWL parse error: {}", e),
+            message: format!("POWL structure error: {}", e),
             ..Diagnostic::default()
         }],
     }

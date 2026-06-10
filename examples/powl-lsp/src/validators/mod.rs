@@ -1,6 +1,11 @@
-use crate::powl_types::{ChoiceGraph, Loop, PartialOrder, PowlNode};
+// Structural validators for POWL models.
+// Operate on wasm4pm_compat canonical types.
+// Graph-theory checks (cycle-freedom, reachability) live here.
+// Process intelligence (fitness, conformance, discovery) graduates to wasm4pm.
+
 use lsp_types_max::{Diagnostic, DiagnosticSeverity, Position, Range};
 use std::collections::{HashMap, HashSet};
+use wasm4pm_compat::powl::{Powl, PowlNodeId, PowlNodeKind};
 
 fn zero_range() -> Range {
     Range::new(Position::new(0, 0), Position::new(0, 0))
@@ -16,73 +21,98 @@ fn error_diag(message: impl Into<String>) -> Diagnostic {
     }
 }
 
-/// Port of choiceGraph.ts `validateChoiceGraph`
-pub fn validate_choice_graph(cg: &ChoiceGraph) -> Vec<Diagnostic> {
+/// Validate the structural invariants of a `Powl` model.
+pub fn validate_powl(powl: &Powl) -> Vec<Diagnostic> {
     let mut diags = Vec::new();
 
-    let node_ids: HashSet<String> = cg.nodes.iter().map(|n| n.id().to_string()).collect();
+    if powl.root.is_none() && !powl.nodes.is_empty() {
+        diags.push(error_diag("POWL model has nodes but no root."));
+    }
 
-    // Rule 1: must have at least one node
-    if node_ids.is_empty() {
+    // Walk every node and validate its kind-specific invariants.
+    for node in &powl.nodes {
+        match &node.kind {
+            PowlNodeKind::Atom(_) | PowlNodeKind::Silent => {}
+            PowlNodeKind::PartialOrder(children) => {
+                diags.extend(validate_partial_order(children, powl));
+            }
+            PowlNodeKind::Choice(children) => {
+                if children.is_empty() {
+                    diags.push(error_diag(format!(
+                        "Choice node {:?} has no branches.",
+                        node.id
+                    )));
+                }
+            }
+            PowlNodeKind::Loop { body, redo: _ } => {
+                if !node_exists(*body, powl) {
+                    diags.push(error_diag(format!(
+                        "Loop node {:?}: 'do' body {:?} does not exist.",
+                        node.id, body
+                    )));
+                }
+            }
+            PowlNodeKind::ChoiceGraph { nodes, edges } => {
+                diags.extend(validate_choice_graph(nodes, edges, powl));
+            }
+        }
+    }
+
+    diags
+}
+
+fn node_exists(id: PowlNodeId, powl: &Powl) -> bool {
+    powl.nodes.iter().any(|n| n.id == id)
+}
+
+fn validate_partial_order(children: &[PowlNodeId], powl: &Powl) -> Vec<Diagnostic> {
+    let mut diags = Vec::new();
+    let node_set: HashSet<usize> = children.iter().map(|id| id.0).collect();
+
+    // Build adjacency from OrderEdges that touch these children.
+    let mut adj: HashMap<usize, Vec<usize>> = HashMap::new();
+    for id in &node_set {
+        adj.insert(*id, vec![]);
+    }
+    for edge in &powl.edges {
+        if node_set.contains(&edge.from.0) && node_set.contains(&edge.to.0) {
+            adj.entry(edge.from.0).or_default().push(edge.to.0);
+        }
+    }
+
+    if has_cycle_usize(&node_set, &adj) {
+        diags.push(error_diag(
+            "Partial order contains a cycle, which is not allowed.",
+        ));
+    }
+    diags
+}
+
+fn validate_choice_graph(
+    nodes: &[PowlNodeId],
+    edges: &[wasm4pm_compat::powl::ChoiceGraphEdge],
+    _powl: &Powl,
+) -> Vec<Diagnostic> {
+    let mut diags = Vec::new();
+    let node_set: HashSet<usize> = nodes.iter().map(|id| id.0).collect();
+
+    if node_set.is_empty() {
         diags.push(error_diag("Choice graph must have at least one node."));
         return diags;
     }
 
-    // Rule 2: valid start node
-    let start_valid = node_ids.contains(&cg.start_node);
-    if !start_valid {
-        diags.push(error_diag(format!(
-            "Choice graph startNode '{}' is not a valid node id.",
-            cg.start_node
-        )));
+    let mut adj: HashMap<usize, Vec<usize>> = HashMap::new();
+    let mut rev_adj: HashMap<usize, Vec<usize>> = HashMap::new();
+    for id in &node_set {
+        adj.insert(*id, vec![]);
+        rev_adj.insert(*id, vec![]);
+    }
+    for edge in edges {
+        adj.entry(edge.from.0).or_default().push(edge.to.0);
+        rev_adj.entry(edge.to.0).or_default().push(edge.from.0);
     }
 
-    // Rule 3: valid end node
-    let end_valid = node_ids.contains(&cg.end_node);
-    if !end_valid {
-        diags.push(error_diag(format!(
-            "Choice graph endNode '{}' is not a valid node id.",
-            cg.end_node
-        )));
-    }
-
-    // Build adjacency list
-    let mut adj: HashMap<String, Vec<String>> = HashMap::new();
-    let mut rev_adj: HashMap<String, Vec<String>> = HashMap::new();
-    for id in &node_ids {
-        adj.insert(id.clone(), vec![]);
-        rev_adj.insert(id.clone(), vec![]);
-    }
-    for [from, to] in &cg.edges {
-        adj.entry(from.clone()).or_default().push(to.clone());
-        rev_adj.entry(to.clone()).or_default().push(from.clone());
-    }
-
-    // Rule 4: reachability (only if both start/end valid)
-    if start_valid && end_valid {
-        let reachable_from_start = get_reachable(&cg.start_node, &adj);
-        for id in &node_ids {
-            if !reachable_from_start.contains(id) {
-                diags.push(error_diag(format!(
-                    "Node '{}' is not reachable from startNode '{}'.",
-                    id, cg.start_node
-                )));
-            }
-        }
-
-        let can_reach_end = get_reachable(&cg.end_node, &rev_adj);
-        for id in &node_ids {
-            if !can_reach_end.contains(id) {
-                diags.push(error_diag(format!(
-                    "Node '{}' cannot reach endNode '{}'.",
-                    id, cg.end_node
-                )));
-            }
-        }
-    }
-
-    // Rule 5: must be acyclic
-    if has_cycle(&node_ids, &adj) {
+    if has_cycle_usize(&node_set, &adj) {
         diags.push(error_diag(
             "Choice graph contains a cycle, which is not allowed.",
         ));
@@ -91,15 +121,15 @@ pub fn validate_choice_graph(cg: &ChoiceGraph) -> Vec<Diagnostic> {
     diags
 }
 
-fn get_reachable(start: &str, adj: &HashMap<String, Vec<String>>) -> HashSet<String> {
+fn get_reachable(start: usize, adj: &HashMap<usize, Vec<usize>>) -> HashSet<usize> {
     let mut visited = HashSet::new();
-    let mut stack = vec![start.to_string()];
+    let mut stack = vec![start];
     while let Some(node) = stack.pop() {
-        if visited.insert(node.clone()) {
+        if visited.insert(node) {
             if let Some(neighbors) = adj.get(&node) {
-                for n in neighbors {
-                    if !visited.contains(n) {
-                        stack.push(n.clone());
+                for &n in neighbors {
+                    if !visited.contains(&n) {
+                        stack.push(n);
                     }
                 }
             }
@@ -108,11 +138,11 @@ fn get_reachable(start: &str, adj: &HashMap<String, Vec<String>>) -> HashSet<Str
     visited
 }
 
-fn has_cycle(node_ids: &HashSet<String>, adj: &HashMap<String, Vec<String>>) -> bool {
+fn has_cycle_usize(node_ids: &HashSet<usize>, adj: &HashMap<usize, Vec<usize>>) -> bool {
     let mut visited = HashSet::new();
     let mut rec_stack = HashSet::new();
-    for id in node_ids {
-        if !visited.contains(id) && is_cyclic_util(id, adj, &mut visited, &mut rec_stack) {
+    for &id in node_ids {
+        if !visited.contains(&id) && is_cyclic_util(id, adj, &mut visited, &mut rec_stack) {
             return true;
         }
     }
@@ -120,85 +150,31 @@ fn has_cycle(node_ids: &HashSet<String>, adj: &HashMap<String, Vec<String>>) -> 
 }
 
 fn is_cyclic_util(
-    id: &str,
-    adj: &HashMap<String, Vec<String>>,
-    visited: &mut HashSet<String>,
-    rec_stack: &mut HashSet<String>,
+    id: usize,
+    adj: &HashMap<usize, Vec<usize>>,
+    visited: &mut HashSet<usize>,
+    rec_stack: &mut HashSet<usize>,
 ) -> bool {
-    visited.insert(id.to_string());
-    rec_stack.insert(id.to_string());
+    visited.insert(id);
+    rec_stack.insert(id);
 
-    if let Some(neighbors) = adj.get(id) {
-        for n in neighbors {
-            if !visited.contains(n) {
+    if let Some(neighbors) = adj.get(&id) {
+        for &n in neighbors {
+            if !visited.contains(&n) {
                 if is_cyclic_util(n, adj, visited, rec_stack) {
                     return true;
                 }
-            } else if rec_stack.contains(n) {
+            } else if rec_stack.contains(&n) {
                 return true;
             }
         }
     }
-    rec_stack.remove(id);
+    rec_stack.remove(&id);
     false
 }
 
-/// Port of partialOrder.ts `validatePartialOrder`
-pub fn validate_partial_order(po: &PartialOrder) -> Vec<Diagnostic> {
-    let mut diags = Vec::new();
-
-    let mut node_ids: HashSet<String> = po.nodes.iter().map(|n| n.id().to_string()).collect();
-    let mut adj: HashMap<String, Vec<String>> = HashMap::new();
-
-    for [from, to] in &po.edges {
-        node_ids.insert(from.clone());
-        node_ids.insert(to.clone());
-        adj.entry(from.clone()).or_default().push(to.clone());
-    }
-    for id in &node_ids {
-        adj.entry(id.clone()).or_default();
-    }
-
-    if has_cycle(&node_ids, &adj) {
-        diags.push(error_diag(
-            "Partial order contains a cycle, which is not allowed.",
-        ));
-    }
-
-    diags
-}
-
-/// Port of loop.ts `validateLoop`
-pub fn validate_loop(lp: &Loop) -> Vec<Diagnostic> {
-    // do_part and redo_part are non-Option Box<PowlNode>, so they always exist at Rust type
-    // level. The TypeScript checks for null/undefined — here we just confirm the fields exist
-    // (always true). No additional diagnostics needed unless downstream validation fails.
-    let _ = (&lp.do_part, &lp.redo_part);
-    Vec::new()
-}
-
-/// Recursive dispatcher: validates a node and all children
-pub fn validate_node(node: &PowlNode) -> Vec<Diagnostic> {
-    let mut diags = Vec::new();
-    match node {
-        PowlNode::Activity(_) => {}
-        PowlNode::PartialOrder(po) => {
-            diags.extend(validate_partial_order(po));
-            for child in &po.nodes {
-                diags.extend(validate_node(child));
-            }
-        }
-        PowlNode::ChoiceGraph(cg) => {
-            diags.extend(validate_choice_graph(cg));
-            for child in &cg.nodes {
-                diags.extend(validate_node(child));
-            }
-        }
-        PowlNode::Loop(lp) => {
-            diags.extend(validate_loop(lp));
-            diags.extend(validate_node(&lp.do_part));
-            diags.extend(validate_node(&lp.redo_part));
-        }
-    }
-    diags
+// Suppress unused-import warning — get_reachable is available for future use.
+#[allow(dead_code)]
+fn _use_get_reachable() {
+    let _ = get_reachable;
 }

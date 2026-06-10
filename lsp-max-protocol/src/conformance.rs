@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use wasm4pm_compat::conformance::ConformanceResult;
 
 // ---------------------------------------------------------------------------
 // LawAxis — replaces ad-hoc string law_ids
@@ -118,24 +119,6 @@ impl std::fmt::Display for ConformanceGrade {
 }
 
 // ---------------------------------------------------------------------------
-// ProcessQuality — van der Aalst's four quality dimensions
-// ---------------------------------------------------------------------------
-
-/// Process quality dimensions from van der Aalst's process mining theory.
-/// Mirrors wasm4pm_compat::conformance::ConformanceResult without a hard dep.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub struct ProcessQuality {
-    /// Fraction of observed behaviour explained by the model (0–1).
-    pub fitness: f64,
-    /// Fraction of model behaviour observed in the log (0–1). None = unknown.
-    pub precision: Option<f64>,
-    /// Degree to which the model generalizes beyond the log (0–1). None = unknown.
-    pub generalization: Option<f64>,
-    /// Structural simplicity of the model (0–1). None = unknown.
-    pub simplicity: Option<f64>,
-}
-
-// ---------------------------------------------------------------------------
 // ConformanceVector — doctrine-correct: Admitted/Refused/Unknown are distinct
 // ---------------------------------------------------------------------------
 
@@ -152,7 +135,7 @@ pub struct ConformanceVector {
     /// Whether unknown axes block release actuation
     pub strict_mode: bool,
     /// Process quality from POWL conformance check. None until wasm4pm graduation.
-    pub process_quality: Option<ProcessQuality>,
+    pub process_quality: Option<ConformanceResult>,
 }
 
 impl ConformanceVector {

@@ -2,16 +2,16 @@
 //! The declared model is the ΔP — what the server claims it does.
 //! wasm4pm checks actual execution against this declaration.
 
-use serde::{Deserialize, Serialize};
+use wasm4pm_compat::powl::Powl;
 
 /// The declared POWL process model for an lsp-max server instance.
 /// Holds the structural description of lawful operations the server performs.
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Default)]
 pub struct DeclaredPowlModel {
     /// Human-readable name for this model (e.g. "lsp-max-initialize-flow")
     pub name: String,
-    /// POWL model serialized as JSON (bridges to wasm4pm engine)
-    pub model_json: Option<String>,
+    /// The declared POWL structure. None until the server registers its process model.
+    pub model: Option<Powl>,
     /// Minimum fitness threshold for admission (0.0–1.0)
     pub fitness_threshold: f64,
 }
@@ -20,7 +20,7 @@ impl DeclaredPowlModel {
     pub fn new(name: impl Into<String>) -> Self {
         DeclaredPowlModel {
             name: name.into(),
-            model_json: None,
+            model: None,
             fitness_threshold: 0.8,
         }
     }

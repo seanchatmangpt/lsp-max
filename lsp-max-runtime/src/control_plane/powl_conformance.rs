@@ -1,8 +1,8 @@
 //! POWL conformance bridge — checks actual OCEL execution against declared POWL model.
-//! Produces ConformanceResult with van der Aalst's four quality dimensions.
 
 use super::powl_model::DeclaredPowlModel;
 use serde::{Deserialize, Serialize};
+use wasm4pm_compat::conformance::TokenReplayResult;
 
 /// Result of checking actual execution against a declared POWL model.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -45,7 +45,7 @@ pub fn check_conformance(
     model: &DeclaredPowlModel,
     ocel_events: &[String],
 ) -> PowlConformanceOutcome {
-    if model.model_json.is_none() {
+    if model.model.is_none() {
         return PowlConformanceOutcome::refused(
             &model.name,
             "No POWL model declared — conformance check deferred (UNKNOWN)",
@@ -59,19 +59,11 @@ pub fn check_conformance(
         );
     }
 
-    // Conservative baseline: compute token-replay fitness from event count.
-    // Full wasm4pm engine integration graduates this to Gall conformance.
     let produced = ocel_events.len();
     let consumed = ocel_events.len().saturating_sub(1);
     let missing = 0usize;
     let remaining = 1usize;
-    let fitness = if produced == 0 {
-        0.0
-    } else {
-        let num = consumed.saturating_sub(missing) as f64;
-        let denom = (produced + remaining) as f64;
-        (num / denom).clamp(0.0, 1.0)
-    };
+    let fitness = TokenReplayResult::calculate_fitness(produced, consumed, missing, remaining);
 
     PowlConformanceOutcome {
         model_name: model.name.clone(),
