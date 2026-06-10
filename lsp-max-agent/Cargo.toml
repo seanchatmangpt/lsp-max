@@ -3,7 +3,8 @@ name = "lsp-max-agent"
 version = "26.6.9"
 edition = "2021"
 description = "Agent integration and analysis bundles for lsp-max"
-publish = false
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/seanchatmangpt/lsp-max"
 
 [dependencies]
 lsp-max-protocol = { path = "../lsp-max-protocol", version = "26.6.9" }

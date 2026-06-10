@@ -40,10 +40,10 @@ tokio = { version = "1.17", optional = true, features = ["time", "macros", "rt",
 tokio-util = { version = "0.7", optional = true, features = ["codec"] }
 lsp-max-macros = { version = "26.6.9", path = "./lsp-max-macros" }
 lsp-max-protocol = { version = "26.6.9", path = "./lsp-max-protocol" }
-lsp-max-lsif = { path = "./crates/tower-lsp-max-lsif" }
+lsp-max-lsif = { path = "./crates/tower-lsp-max-lsif", version = "26.6.9" }
 lsp-max-runtime = { version = "26.6.9", path = "./lsp-max-runtime" }
 lsp-max-agent = { version = "26.6.9", path = "./lsp-max-agent" }
-lsp-max-base = { path = "./crates/tower-lsp-max-base" }
+lsp-max-base = { path = "./crates/tower-lsp-max-base", version = "26.6.9" }
 tower = { version = "0.4", default-features = false, features = ["util"] }
 tracing = "0.1"
 
@@ -118,9 +118,9 @@ ariadne = "0.6.0"
 walkdir = "2.5.0"
 rayon-par-bridge = "0.1.0"
 bon = "3.6.4"
-lsp-max-ast-core = { path = "crates/lsp-max-adapters/lsp-max-ast-core" }
-lsp-max-ast-codegen = { path = "crates/lsp-max-adapters/lsp-max-ast-codegen" }
-lsp-max-ast = { path = "crates/lsp-max-adapters/lsp-max-ast" }
+lsp-max-ast-core = { path = "crates/lsp-max-adapters/lsp-max-ast-core", version = "26.6.9" }
+lsp-max-ast-codegen = { path = "crates/lsp-max-adapters/lsp-max-ast-codegen", version = "26.6.9" }
+lsp-max-ast = { path = "crates/lsp-max-adapters/lsp-max-ast", version = "26.6.9" }
 
 [patch.crates-io]
 wasm4pm-compat = { path = "../wasm4pm-compat" }

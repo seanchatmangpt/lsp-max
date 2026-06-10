@@ -2,6 +2,9 @@
 name = "lsp-max-cli"
 version = "26.6.9"
 edition = "2021"
+description = "Actuation grammar CLI for lsp-max: noun/verb surface built on clap-noun-verb"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/seanchatmangpt/lsp-max"
 
 [dependencies]
 clap-noun-verb = "26.6.2"
@@ -10,9 +13,9 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 tokio = { version = "1.17", features = ["full"] }
 linkme = "0.3.36"
-lsp-max = { path = "../.." }
-lsp-max-protocol = { path = "../../lsp-max-protocol" }
-lsp-types-max = { path = "../../../lsp-types-max" }
+lsp-max = { path = "../..", version = "26.6.9" }
+lsp-max-protocol = { path = "../../lsp-max-protocol", version = "26.6.9" }
+lsp-types-max = { path = "../../../lsp-types-max", version = "26.6.8" }
 lsp-max-agent = { path = "../../lsp-max-agent", version = "26.6.9" }
 lsp-max-runtime = { path = "../../lsp-max-runtime", version = "26.6.9" }
 tracing = "0.1"
