@@ -75,8 +75,9 @@ impl lsp_max::LanguageServer for Backend {
 impl Backend {
     async fn diagnose(&self, uri: Url, content: String) {
         let mut diags = Vec::new();
+        let path = uri.path().to_string();
 
-        if uri.path().as_str().ends_with(".ocel.json") {
+        if path.ends_with(".ocel.json") {
             let issues = analyze_ocel(&content);
             for issue in issues {
                 let severity = match issue.severity.as_str() {
@@ -89,6 +90,83 @@ impl Backend {
                     code: Some(NumberOrString::String(issue.code)),
                     message: issue.message,
                     source: Some("wasm4pm-lsp".to_string()),
+                    ..Default::default()
+                });
+            }
+        }
+
+        // CLAP-PACK-HANDLER-UNBOUND: cli.rs without clap-noun-verb handler binding
+        if path.ends_with("cli.rs") {
+            let has_verb_binding = content.contains("#[verb")
+                || content.contains("clap_noun_verb")
+                || content.contains("clap-noun-verb");
+            if !has_verb_binding {
+                diags.push(Diagnostic {
+                    range: Range::default(),
+                    severity: Some(DiagnosticSeverity::ERROR),
+                    code: Some(NumberOrString::String(
+                        "CLAP-PACK-HANDLER-UNBOUND".to_string(),
+                    )),
+                    message: "cli.rs has no clap-noun-verb handler binding".to_string(),
+                    source: Some("wasm4pm-lsp".to_string()),
+                    data: Some(serde_json::json!({"source_id": "clap_noun_verb_pack_lsp"})),
+                    ..Default::default()
+                });
+            }
+            // ggen projection state overlay when ggen:override marker present
+            if content.contains("ggen:override") {
+                diags.push(Diagnostic {
+                    range: Range::default(),
+                    severity: Some(DiagnosticSeverity::INFORMATION),
+                    code: Some(NumberOrString::String(
+                        "GGEN-PROJECTION-OVERLAY".to_string(),
+                    )),
+                    message: "ggen projection state overlay active".to_string(),
+                    source: Some("wasm4pm-lsp".to_string()),
+                    data: Some(serde_json::json!({"source_id": "ggen_lsp_observer"})),
+                    ..Default::default()
+                });
+            }
+        }
+
+        // TOWER-PACK-UNGUARDED-MUTATION: .rs files with direct mutation functions
+        if path.ends_with(".rs") && !path.ends_with("cli.rs") {
+            let has_mutation = content.contains("write_to_disk")
+                || content.contains("fn write_")
+                || content.contains("fn delete_")
+                || content.contains("fn mutate_")
+                || content.contains("fn update_file");
+            if has_mutation {
+                diags.push(Diagnostic {
+                    range: Range::default(),
+                    severity: Some(DiagnosticSeverity::ERROR),
+                    code: Some(NumberOrString::String(
+                        "TOWER-PACK-UNGUARDED-MUTATION".to_string(),
+                    )),
+                    message: "LSP surface must be read-only; direct file mutation detected"
+                        .to_string(),
+                    source: Some("wasm4pm-lsp".to_string()),
+                    data: Some(serde_json::json!({"source_id": "lsp_max_pack_lsp"})),
+                    ..Default::default()
+                });
+            }
+        }
+
+        // GGEN-EVIDENCE-001: receipts.json must be valid receipt JSON
+        if path.ends_with("receipts.json") || path.ends_with(".receipt.json") {
+            let is_valid_receipt = serde_json::from_str::<serde_json::Value>(&content)
+                .ok()
+                .and_then(|v| v.get("digest").cloned())
+                .is_some();
+            if !is_valid_receipt {
+                diags.push(Diagnostic {
+                    range: Range::default(),
+                    severity: Some(DiagnosticSeverity::ERROR),
+                    code: Some(NumberOrString::String("GGEN-EVIDENCE-001".to_string())),
+                    message: "receipts.json is not a valid receipt (missing digest field)"
+                        .to_string(),
+                    source: Some("wasm4pm-lsp".to_string()),
+                    data: Some(serde_json::json!({"source_id": "ggen_lsp_observer"})),
                     ..Default::default()
                 });
             }
