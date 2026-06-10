@@ -1,7 +1,7 @@
 use serde_json::{json, Value};
 use std::fs;
 use std::path::Path;
-use wasm4pm_compat::ocel::{OCELEvent, OCELEventAttribute, OCELObject, OCELRelationship, OCEL};
+use wasm4pm_compat::ocel::{OCELEvent, OCELEventAttribute, OCELObject, OCELRelationship, OCELType, OCEL};
 
 pub fn generate_anti_llm_ocel_log() -> OCEL {
     // 1. Create Objects
@@ -65,6 +65,17 @@ pub fn generate_anti_llm_ocel_log() -> OCEL {
                 "BLAKE3".to_string(),
             ))
             .with_attribute(OCELEventAttribute::string("value", "temp_val".to_string())),
+        OCELObject::new("feature_row_001".to_string(), "Lsp318FeatureRow").with_attribute(
+            OCELEventAttribute::string("name", "lsp318-feature-row-001".to_string()),
+        ),
+        OCELObject::new(
+            "fixture_changelog_laundering".to_string(),
+            "NegativeControlFixture",
+        )
+        .with_attribute(OCELEventAttribute::string(
+            "name",
+            "fixture-changelog-laundering".to_string(),
+        )),
     ];
 
     // 2. Create Events with E2O relationships embedded
@@ -121,11 +132,115 @@ pub fn generate_anti_llm_ocel_log() -> OCEL {
         .qualified("checkpoint"),
     );
 
-    let events = vec![ev_repo_scan, ev_file_obs, ev_diag_emit, ev_receipt_val];
+    let mut ev_lsp318 = OCELEvent::new("ev_lsp318".to_string(), "Lsp318FeatureExercised");
+    ev_lsp318.relationships.push(
+        OCELRelationship::new("ev_lsp318".to_string(), "feature_row_001".to_string())
+            .qualified("feature_row"),
+    );
+
+    let mut ev_neg_control =
+        OCELEvent::new("ev_neg_control".to_string(), "NegativeControlExecuted");
+    ev_neg_control.relationships.push(
+        OCELRelationship::new(
+            "ev_neg_control".to_string(),
+            "fixture_changelog_laundering".to_string(),
+        )
+        .qualified("fixture"),
+    );
+
+    let ev_failset = OCELEvent::new("ev_failset".to_string(), "FailsetUpdated");
+
+    let events = vec![
+        ev_repo_scan,
+        ev_file_obs,
+        ev_diag_emit,
+        ev_receipt_val,
+        ev_lsp318,
+        ev_neg_control,
+        ev_failset,
+    ];
 
     OCEL {
-        event_types: vec![],
-        object_types: vec![],
+        event_types: vec![
+            OCELType {
+                name: "RepositoryScanned".to_string(),
+                attributes: vec![],
+            },
+            OCELType {
+                name: "FileObserved".to_string(),
+                attributes: vec![],
+            },
+            OCELType {
+                name: "DiagnosticEmitted".to_string(),
+                attributes: vec![],
+            },
+            OCELType {
+                name: "ReceiptValidated".to_string(),
+                attributes: vec![],
+            },
+            OCELType {
+                name: "Lsp318FeatureExercised".to_string(),
+                attributes: vec![],
+            },
+            OCELType {
+                name: "NegativeControlExecuted".to_string(),
+                attributes: vec![],
+            },
+            OCELType {
+                name: "FailsetUpdated".to_string(),
+                attributes: vec![],
+            },
+        ],
+        object_types: vec![
+            OCELType {
+                name: "Repository".to_string(),
+                attributes: vec![],
+            },
+            OCELType {
+                name: "Crate".to_string(),
+                attributes: vec![],
+            },
+            OCELType {
+                name: "File".to_string(),
+                attributes: vec![],
+            },
+            OCELType {
+                name: "FileRange".to_string(),
+                attributes: vec![],
+            },
+            OCELType {
+                name: "Checkpoint".to_string(),
+                attributes: vec![],
+            },
+            OCELType {
+                name: "DiagnosticCode".to_string(),
+                attributes: vec![],
+            },
+            OCELType {
+                name: "ForbiddenImplication".to_string(),
+                attributes: vec![],
+            },
+            OCELType {
+                name: "Diagnostic".to_string(),
+                attributes: vec![],
+            },
+            OCELType {
+                name: "Receipt".to_string(),
+                attributes: vec![],
+            },
+            OCELType {
+                name: "Digest".to_string(),
+                attributes: vec![],
+            },
+            OCELType {
+                name: "Lsp318FeatureRow".to_string(),
+                attributes: vec![],
+            },
+            OCELType {
+                name: "NegativeControlFixture".to_string(),
+                attributes: vec![],
+            },
+        ],
         events,
         objects,
     }
