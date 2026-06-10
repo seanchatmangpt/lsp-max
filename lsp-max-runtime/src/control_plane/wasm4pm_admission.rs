@@ -108,10 +108,8 @@ impl Admit for Wasm4pmBridgeGraphAdmitter {
         }
 
         let digest = Digest::new(format!("blake3:{}", to_hex(&receipt.consequence_hash.0)));
-        let replay_hint = ReplayHint::new(format!(
-            "lsp-max://replay/sequence/{}",
-            receipt.sequence
-        ));
+        let replay_hint =
+            ReplayHint::new(format!("lsp-max://replay/sequence/{}", receipt.sequence));
 
         let envelope =
             match ReceiptEnvelope::try_from_parts(subject, "wasm4pm-bridge", digest, replay_hint) {

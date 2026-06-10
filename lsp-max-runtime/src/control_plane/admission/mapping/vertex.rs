@@ -222,8 +222,7 @@ pub(super) fn map_vertex(
                 if let Some(sk) = symbol_kind {
                     quads.push(oxigraph::model::Quad::new(
                         subject.clone(),
-                        oxigraph::model::NamedNode::new("urn:lsp-max:core:symbolKind")
-                            .unwrap(),
+                        oxigraph::model::NamedNode::new("urn:lsp-max:core:symbolKind").unwrap(),
                         oxigraph::model::Term::Literal(
                             oxigraph::model::Literal::new_simple_literal(sk),
                         ),
@@ -243,8 +242,7 @@ pub(super) fn map_vertex(
                 if let Some(fr) = full_range {
                     quads.push(oxigraph::model::Quad::new(
                         subject.clone(),
-                        oxigraph::model::NamedNode::new("urn:lsp-max:core:fullStartLine")
-                            .unwrap(),
+                        oxigraph::model::NamedNode::new("urn:lsp-max:core:fullStartLine").unwrap(),
                         oxigraph::model::Term::Literal(
                             oxigraph::model::Literal::new_simple_literal(fr.start.line.to_string()),
                         ),
@@ -252,10 +250,8 @@ pub(super) fn map_vertex(
                     ));
                     quads.push(oxigraph::model::Quad::new(
                         subject.clone(),
-                        oxigraph::model::NamedNode::new(
-                            "urn:lsp-max:core:fullStartCharacter",
-                        )
-                        .unwrap(),
+                        oxigraph::model::NamedNode::new("urn:lsp-max:core:fullStartCharacter")
+                            .unwrap(),
                         oxigraph::model::Term::Literal(
                             oxigraph::model::Literal::new_simple_literal(
                                 fr.start.character.to_string(),
@@ -265,8 +261,7 @@ pub(super) fn map_vertex(
                     ));
                     quads.push(oxigraph::model::Quad::new(
                         subject.clone(),
-                        oxigraph::model::NamedNode::new("urn:lsp-max:core:fullEndLine")
-                            .unwrap(),
+                        oxigraph::model::NamedNode::new("urn:lsp-max:core:fullEndLine").unwrap(),
                         oxigraph::model::Term::Literal(
                             oxigraph::model::Literal::new_simple_literal(fr.end.line.to_string()),
                         ),
@@ -370,8 +365,7 @@ pub(super) fn map_vertex(
             if let Some(repo) = repository {
                 quads.push(oxigraph::model::Quad::new(
                     subject.clone(),
-                    oxigraph::model::NamedNode::new("urn:lsp-max:core:repositoryUrl")
-                        .unwrap(),
+                    oxigraph::model::NamedNode::new("urn:lsp-max:core:repositoryUrl").unwrap(),
                     oxigraph::model::Term::Literal(oxigraph::model::Literal::new_simple_literal(
                         &repo.url,
                     )),
@@ -379,8 +373,7 @@ pub(super) fn map_vertex(
                 ));
                 quads.push(oxigraph::model::Quad::new(
                     subject.clone(),
-                    oxigraph::model::NamedNode::new("urn:lsp-max:core:repositoryType")
-                        .unwrap(),
+                    oxigraph::model::NamedNode::new("urn:lsp-max:core:repositoryType").unwrap(),
                     oxigraph::model::Term::Literal(oxigraph::model::Literal::new_simple_literal(
                         &repo.type_,
                     )),
@@ -404,8 +397,7 @@ pub(super) fn map_vertex(
             if let Ok(json_str) = serde_json::to_string(result) {
                 quads.push(oxigraph::model::Quad::new(
                     subject.clone(),
-                    oxigraph::model::NamedNode::new("urn:lsp-max:core:diagnosticData")
-                        .unwrap(),
+                    oxigraph::model::NamedNode::new("urn:lsp-max:core:diagnosticData").unwrap(),
                     oxigraph::model::Term::Literal(oxigraph::model::Literal::new_simple_literal(
                         &json_str,
                     )),

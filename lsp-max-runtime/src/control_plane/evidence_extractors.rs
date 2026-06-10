@@ -193,14 +193,10 @@ pub fn extract_receipts_from_store(
     let rcpt_type = oxigraph::model::Term::NamedNode(
         oxigraph::model::NamedNode::new("urn:lsp-max:core:Receipt").unwrap(),
     );
-    let prev_hash_pred =
-        oxigraph::model::NamedNode::new("urn:lsp-max:core:prevHash").unwrap();
-    let result_hash_pred =
-        oxigraph::model::NamedNode::new("urn:lsp-max:core:resultHash").unwrap();
-    let query_hash_pred =
-        oxigraph::model::NamedNode::new("urn:lsp-max:core:queryHash").unwrap();
-    let graph_hash_pred =
-        oxigraph::model::NamedNode::new("urn:lsp-max:core:graphHash").unwrap();
+    let prev_hash_pred = oxigraph::model::NamedNode::new("urn:lsp-max:core:prevHash").unwrap();
+    let result_hash_pred = oxigraph::model::NamedNode::new("urn:lsp-max:core:resultHash").unwrap();
+    let query_hash_pred = oxigraph::model::NamedNode::new("urn:lsp-max:core:queryHash").unwrap();
+    let graph_hash_pred = oxigraph::model::NamedNode::new("urn:lsp-max:core:graphHash").unwrap();
 
     fn lit_str(
         store: &oxigraph::store::Store,
