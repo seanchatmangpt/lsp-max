@@ -1,18 +1,18 @@
 # Supported Features
 
 This document tracks which features defined in the [Language Server Protocol
-(LSP) specification][spec] are currently supported by `tower-lsp` and to what
+(LSP) specification][spec] are currently supported by `lsp-max` and to what
 degree. Please note that this document is provided _as-is_ and will be updated
 over time on a best-effort basis. There is no guarantee that it will always
 reflect the current reality exactly on the mainline branch. However, it should
-be updated on every `tower-lsp` release at minimum.
+be updated on every `lsp-max` release at minimum.
 
 [spec]: https://microsoft.github.io/language-server-protocol/specification
 
 Feel free to open a new [discussion thread] if there are any questions. Drive-by
 pull requests correcting this document are always welcome!
 
-[discussion thread]: https://github.com/ebkalderon/tower-lsp/discussions
+[discussion thread]: https://github.com/ebkalderon/lsp-max/discussions
 
 <details><summary>Click here to expand/collapse the icon legend.</summary>
 
@@ -77,8 +77,8 @@ Method Name                           | Message Type                | Supported 
 [`workspace/diagnostic/refresh`]: https://microsoft.github.io/language-server-protocol/specification#diagnostic_refresh
 [`workspaceSymbol/resolve`]: https://microsoft.github.io/language-server-protocol/specification#workspace_symbolResolve
 
-[#352]: https://github.com/ebkalderon/tower-lsp/issues/352
-[#374]: https://github.com/ebkalderon/tower-lsp/issues/374
+[#352]: https://github.com/ebkalderon/lsp-max/issues/352
+[#374]: https://github.com/ebkalderon/lsp-max/issues/374
 
 ## [3.16.0] - 2020-12-14
 
@@ -128,7 +128,7 @@ Method Name                                | Message Type                | Suppo
 [`workspace/didDeleteFiles`]: https://microsoft.github.io/language-server-protocol/specification#workspace_didDeleteFiles
 [`window/showDocument`]: https://microsoft.github.io/language-server-protocol/specification#window_showDocument
 
-[#146]: https://github.com/ebkalderon/tower-lsp/issues/146
+[#146]: https://github.com/ebkalderon/lsp-max/issues/146
 
 ## [3.15.0] - 2020-01-14
 
@@ -146,10 +146,10 @@ Method Name                        | Message Type                | Supported    
 [`window/workDoneProgress/cancel`]: https://microsoft.github.io/language-server-protocol/specification#window_workDoneProgress_cancel
 [`textDocument/selectionRange`]: https://microsoft.github.io/language-server-protocol/specification#textDocument_selectionRange
 
-[#10]: https://github.com/ebkalderon/tower-lsp/issues/10
-[#176]: https://github.com/ebkalderon/tower-lsp/issues/176
-[#380]: https://github.com/ebkalderon/tower-lsp/issues/380
-[#381]: https://github.com/ebkalderon/tower-lsp/issues/381
+[#10]: https://github.com/ebkalderon/lsp-max/issues/10
+[#176]: https://github.com/ebkalderon/lsp-max/issues/176
+[#380]: https://github.com/ebkalderon/lsp-max/issues/380
+[#381]: https://github.com/ebkalderon/lsp-max/issues/381
 
 ## [3.14.0] - 2018-12-13
 
@@ -161,7 +161,7 @@ Method Name                  | Message Type                | Supported      | Tr
 
 [`textDocument/declaration`]: https://microsoft.github.io/language-server-protocol/specification#textDocument_declaration
 
-[#10]: https://github.com/ebkalderon/tower-lsp/issues/10
+[#10]: https://github.com/ebkalderon/lsp-max/issues/10
 
 ## [3.12.0] - 2018-08-23
 
@@ -173,7 +173,7 @@ Method Name                    | Message Type                | Supported      | 
 
 [`textDocument/prepareRename`]: https://microsoft.github.io/language-server-protocol/specification#textDocument_prepareRename
 
-[#10]: https://github.com/ebkalderon/tower-lsp/issues/10
+[#10]: https://github.com/ebkalderon/lsp-max/issues/10
 
 ## [3.10.0] - 2018-07-23
 
@@ -185,7 +185,7 @@ Method Name                   | Message Type                | Supported      | T
 
 [`textDocument/foldingRange`]: https://microsoft.github.io/language-server-protocol/specification#textDocument_foldingRange
 
-[#10]: https://github.com/ebkalderon/tower-lsp/issues/10
+[#10]: https://github.com/ebkalderon/lsp-max/issues/10
 
 ## [3.6.0] - 2018-02-22
 
@@ -209,9 +209,9 @@ Method Name                             | Message Type                | Supporte
 [`textDocument/documentColor`]: https://microsoft.github.io/language-server-protocol/specification#textDocument_documentColor
 [`textDocument/colorPresentation`]: https://microsoft.github.io/language-server-protocol/specification#textDocument_colorPresentation
 
-[#8]: https://github.com/ebkalderon/tower-lsp/issues/8
-[#10]: https://github.com/ebkalderon/tower-lsp/issues/10
-[#13]: https://github.com/ebkalderon/tower-lsp/issues/13
+[#8]: https://github.com/ebkalderon/lsp-max/issues/8
+[#10]: https://github.com/ebkalderon/lsp-max/issues/10
+[#13]: https://github.com/ebkalderon/lsp-max/issues/13
 
 ## [3.0.0] - 2017-02-08
 
@@ -304,15 +304,15 @@ Method Name                          | Message Type                | Supported  
 [^1]: Server-to-client `$/cancelRequest` support is not yet implemented. However, the raw message can be emitted manually using `Client::send_notification()`.
       Client-to-server support is implemented via async/await task cancellation.
 
-[#8]: https://github.com/ebkalderon/tower-lsp/issues/8
-[#9]: https://github.com/ebkalderon/tower-lsp/issues/9
-[#10]: https://github.com/ebkalderon/tower-lsp/issues/10
-[#11]: https://github.com/ebkalderon/tower-lsp/issues/11
-[#12]: https://github.com/ebkalderon/tower-lsp/issues/12
-[#13]: https://github.com/ebkalderon/tower-lsp/issues/13
-[#118]: https://github.com/ebkalderon/tower-lsp/issues/118
-[#145]: https://github.com/ebkalderon/tower-lsp/issues/145
-[#231]: https://github.com/ebkalderon/tower-lsp/issues/231
+[#8]: https://github.com/ebkalderon/lsp-max/issues/8
+[#9]: https://github.com/ebkalderon/lsp-max/issues/9
+[#10]: https://github.com/ebkalderon/lsp-max/issues/10
+[#11]: https://github.com/ebkalderon/lsp-max/issues/11
+[#12]: https://github.com/ebkalderon/lsp-max/issues/12
+[#13]: https://github.com/ebkalderon/lsp-max/issues/13
+[#118]: https://github.com/ebkalderon/lsp-max/issues/118
+[#145]: https://github.com/ebkalderon/lsp-max/issues/145
+[#231]: https://github.com/ebkalderon/lsp-max/issues/231
 
 [3.17.0]: https://microsoft.github.io/language-server-protocol/specification#version_3_17_0
 [3.16.0]: https://microsoft.github.io/language-server-protocol/specification#version_3_16_0

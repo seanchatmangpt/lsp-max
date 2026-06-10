@@ -1,6 +1,6 @@
-# Contributing to tower-lsp
+# Contributing to lsp-max
 
-`tower-lsp` is an open-source project that values community contribution. We
+`lsp-max` is an open-source project that values community contribution. We
 could always use a helping hand! What would you like to do?
 
 1. [I want to submit issues or request features.](#submitting-issues)
@@ -9,7 +9,7 @@ could always use a helping hand! What would you like to do?
 
 ## Submitting issues
 
-One way you can help `tower-lsp` is to report bugs or request features on our
+One way you can help `lsp-max` is to report bugs or request features on our
 GitHub issue trackers. We can't fix problems we don't know about, so please
 report early and often!
 
@@ -21,12 +21,12 @@ on how to approach this, read about how to produce a
 [mcve]: https://stackoverflow.com/help/mcve
 
 When making a feature request, please make it clear what problem you intend to
-solve with the feature, any ideas for how `tower-lsp` could support solving that
+solve with the feature, any ideas for how `lsp-max` could support solving that
 problem, any possible alternatives, and any disadvantages.
 
 ## Contributing code
 
-The general workflow for contributing code to the `tower-lsp` repository is as
+The general workflow for contributing code to the `lsp-max` repository is as
 follows:
 
 1. Fork this repository to your own GitHub account.
@@ -35,7 +35,7 @@ follows:
 4. Make your changes and push them up to the forked repository.
 5. [Open a pull request] against this repository.
 
-[Open a pull request]: https://github.com/ebkalderon/tower-lsp/compare
+[Open a pull request]: https://github.com/ebkalderon/lsp-max/compare
 
 Before submitting your pull request, please make sure the following conditions
 are satisfied:
@@ -60,7 +60,7 @@ pull request with your changes. If anything does not pass, typically it will be
 easier to iterate and fix it locally than waiting for the CI servers to run
 tests for you.
 
-Thank you very much for your contribution! Now `tower-lsp` will be a little
+Thank you very much for your contribution! Now `lsp-max` will be a little
 faster, more ergonomic, and more efficient.
 
 ## Writing documentation

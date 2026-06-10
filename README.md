@@ -1,54 +1,65 @@
-# tower-lsp
+# lsp-max
 
 [![Build Status][build-badge]][build-url]
 [![Crates.io][crates-badge]][crates-url]
 [![Documentation][docs-badge]][docs-url]
 
-[build-badge]: https://github.com/ebkalderon/tower-lsp/workflows/rust/badge.svg
-[build-url]: https://github.com/ebkalderon/tower-lsp/actions
-[crates-badge]: https://img.shields.io/crates/v/tower-lsp.svg
-[crates-url]: https://crates.io/crates/tower-lsp
-[docs-badge]: https://docs.rs/tower-lsp/badge.svg
-[docs-url]: https://docs.rs/tower-lsp
+[build-badge]: https://github.com/seanchatmangpt/lsp-max/workflows/rust/badge.svg
+[build-url]: https://github.com/seanchatmangpt/lsp-max/actions
+[crates-badge]: https://img.shields.io/crates/v/lsp-max.svg
+[crates-url]: https://crates.io/crates/lsp-max
+[docs-badge]: https://docs.rs/lsp-max/badge.svg
+[docs-url]: https://docs.rs/lsp-max
 
-[Language Server Protocol] implementation for Rust based on [Tower].
+Law-state LSP runtime — maximum [LSP 3.18] coverage, process-mining conformance,
+and receipt-chain admission. Primary clients are agents, CI, and release gates;
+the editor is one client among many.
 
-[language server protocol]: https://microsoft.github.io/language-server-protocol
-[tower]: https://github.com/tower-rs/tower
+[LSP 3.18]: https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/
 
-Tower is a simple and composable framework for implementing asynchronous
-services in Rust. Central to Tower is the [`Service`] trait, which provides the
-necessary abstractions for defining request/response clients and servers.
-Examples of protocols implemented using the `Service` trait include
-[`hyper`] for HTTP and [`tonic`] for gRPC.
+## What this is
 
-[`service`]: https://docs.rs/tower-service/
-[`hyper`]: https://docs.rs/hyper/
-[`tonic`]: https://docs.rs/tonic/
+`lsp-max` is a fork of `tower-lsp` that diverged into a "law-state runtime
+projected through LSP." It adds:
 
-This library (`tower-lsp`) provides a simple implementation of the Language
-Server Protocol (LSP) that makes it easy to write your own language server. It
-consists of three parts:
+- **`max/*` protocol surface** — snapshots, conformance vectors, receipts, repair
+  plans, and gates beyond standard LSP.
+- **Receipt-chain admission** — every capability claim requires a BLAKE3-hashed
+  receipt; tests without receipts are not admitted.
+- **Process-mining conformance** — OCEL event logs derived from OTel traces are
+  checked against declared process models via `wasm4pm`.
+- **`ConformanceVector`** — `admitted`/`refused`/`unknown` axes; unknown never
+  collapses into admitted or refused.
 
-- The `LanguageServer` trait which defines the behavior of your language server.
-- The asynchronous `LspService` delegate which wraps your language server
-  implementation and defines the behavior of the protocol.
-- A `Server` which spawns the `LspService` and processes requests and responses
-  over `stdio` or TCP.
+## Published crates
 
-## Example
+| Crate | Description |
+|-------|-------------|
+| `lsp-max` | LSP server framework: `LanguageServer` trait, `LspService`, `Server`, law-state surface |
+| `lsp-max-macros` | Proc macros (`#[lsp_max::async_trait]`) |
+| `lsp-max-cli` | Actuation grammar: noun/verb CLI built on `clap-noun-verb` |
+| `lsp-max-client` | LSP client framework for driving servers in tests and agents |
+
+All other workspace crates are internal implementation details (`publish = false`).
+
+## Quick start
+
+```toml
+[dependencies]
+lsp-max = "26.6"
+```
 
 ```rust
-use tower_lsp::jsonrpc::Result;
-use tower_lsp::lsp_types::*;
-use tower_lsp::{Client, LanguageServer, LspService, Server};
+use lsp_max::jsonrpc::Result;
+use lsp_max::lsp_types_max::*;
+use lsp_max::{Client, LanguageServer, LspService, Server};
 
 #[derive(Debug)]
 struct Backend {
     client: Client,
 }
 
-#[tower_lsp::async_trait]
+#[lsp_max::async_trait]
 impl LanguageServer for Backend {
     async fn initialize(&self, _: InitializeParams) -> Result<InitializeResult> {
         Ok(InitializeResult::default())
@@ -75,38 +86,42 @@ async fn main() {
 }
 ```
 
-## Using runtimes other than tokio
+## Versioning
 
-By default, `tower-lsp` is configured for use with `tokio`.
+`lsp-max` uses **CalVer** (`YY.M.D`). Version `26.6.9` = 2026-06-09. There are
+no SemVer guarantees — version-law violations are a diagnostic family
+(`ANTI-LLM-VERSION-*`).
 
-Using `tower-lsp` with other runtimes requires disabling `default-features` and
-enabling the `runtime-agnostic` feature:
+## Sibling repo dependencies
+
+The workspace requires sibling checkouts at:
+
+- `../lsp-types-max` — LSP type authority (with LSP 3.18 `proposed` features)
+- `../wasm4pm-compat` — baseline process-mining type authority
+- `../wasm4pm` — process-mining execution engine
+
+## Examples
+
+Domain-specific LSP servers are in `examples/`:
+
+| Example | Description |
+|---------|-------------|
+| `anti-llm-lsp` | Canary: detects forbidden identifiers, fake receipts, victory language |
+| `clap-noun-verb-lsp` | Noun/verb CLI surface demo |
+| `pattern-lsp` | Pattern detection LSP |
+| `wasm4pm-lsp` | Process-mining LSP over wasm4pm |
+| `axum-lsp`, `bevy-lsp`, `tex-lsp` | Framework integration demos |
+
+## Proposed features
+
+Enable LSP 3.18 proposed features:
 
 ```toml
-[dependencies.tower-lsp]
-version = "*"
-default-features = false
-features = ["runtime-agnostic"]
+[dependencies]
+lsp-max = { version = "26.6", features = ["proposed"] }
 ```
-
-## Using proposed features
-
-You can use enable proposed features in the
-[LSP Specification version 3.18](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/)
-by enabling the `proposed` Cargo crate feature. Note that there are no semver
-guarantees to the `proposed` features so there may be breaking changes between
-any type of version in the `proposed` features.
-
-## Ecosystem
-
-- [tower-lsp-boilerplate](https://github.com/IWANABETHATGUY/tower-lsp-boilerplate) - Useful GitHub project template which makes writing new language servers easier.
 
 ## License
 
-`tower-lsp` is free and open source software distributed under the terms of
-either the [MIT](LICENSE-MIT) or the [Apache 2.0](LICENSE-APACHE) license, at
-your option.
-
-Unless you explicitly state otherwise, any contribution intentionally submitted
-for inclusion in the work by you, as defined in the Apache-2.0 license, shall be
-dual licensed as above, without any additional terms or conditions.
+Dual-licensed under [MIT](LICENSE-MIT) or [Apache 2.0](LICENSE-APACHE) at your
+option.

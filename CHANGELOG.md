@@ -3,7 +3,7 @@
 All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
-and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
+and this project adheres to [CalVer (YY.M.D).
 
 ## [Unreleased]
 
@@ -146,9 +146,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 
-* Fix semver incompatibility in release of `tower-lsp-macros` (PR #306).
-  * Re-released `tower-lsp-macros` 0.4.2 -> 0.5.0.
-  * Re-released `tower-lsp` 0.15.0 -> 0.15.1.
+* Fix semver incompatibility in release of `lsp-max-macros` (PR #306).
+  * Re-released `lsp-max-macros` 0.4.2 -> 0.5.0.
+  * Re-released `lsp-max` 0.15.0 -> 0.15.1.
 * Update `tokio-util` from `0.6.5` to `0.7.0` (PR #303).
 
 ## [0.15.0] - 2022-02-10 [YANKED]
@@ -264,7 +264,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
-* Add private subcrate `tower-lsp-macros` for internal use only (PR #202).
+* Add private subcrate `lsp-max-macros` for internal use only (PR #202).
 * Implement cancellation support via `$/cancelRequest` (PR #202).
 * Officially support serving over TCP (PR #198).
 
@@ -284,7 +284,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Removed
 
-* Remove dependency on `jsonrpc-core`, as `tower-lsp` no longer relies on it.
+* Remove dependency on `jsonrpc-core`, as `lsp-max` no longer relies on it.
 * Remove `LspService::with_handler()` constructor (PR #202).
 
 ## [0.11.0] - 2020-04-30
@@ -579,34 +579,34 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   * `textDocument/hover`
   * `textDocument/documentHighlight`
 
-[Unreleased]: https://github.com/ebkalderon/tower-lsp/compare/v0.20.0...HEAD
-[0.20.0]: https://github.com/ebkalderon/tower-lsp/compare/v0.19.0...v0.20.0
-[0.19.0]: https://github.com/ebkalderon/tower-lsp/compare/v0.18.0...v0.19.0
-[0.18.0]: https://github.com/ebkalderon/tower-lsp/compare/v0.17.0...v0.18.0
-[0.17.0]: https://github.com/ebkalderon/tower-lsp/compare/v0.16.0...v0.17.0
-[0.16.0]: https://github.com/ebkalderon/tower-lsp/compare/v0.15.1...v0.16.0
-[0.15.1]: https://github.com/ebkalderon/tower-lsp/compare/v0.15.0...v0.15.1
-[0.15.0]: https://github.com/ebkalderon/tower-lsp/compare/v0.14.1...v0.15.0
-[0.14.1]: https://github.com/ebkalderon/tower-lsp/compare/v0.14.0...v0.14.1
-[0.14.0]: https://github.com/ebkalderon/tower-lsp/compare/v0.13.3...v0.14.0
-[0.13.3]: https://github.com/ebkalderon/tower-lsp/compare/v0.13.2...v0.13.3
-[0.13.2]: https://github.com/ebkalderon/tower-lsp/compare/v0.13.1...v0.13.2
-[0.13.1]: https://github.com/ebkalderon/tower-lsp/compare/v0.13.0...v0.13.1
-[0.13.0]: https://github.com/ebkalderon/tower-lsp/compare/v0.12.1...v0.13.0
-[0.12.1]: https://github.com/ebkalderon/tower-lsp/compare/v0.12.0...v0.12.1
-[0.12.0]: https://github.com/ebkalderon/tower-lsp/compare/v0.11.0...v0.12.0
-[0.11.0]: https://github.com/ebkalderon/tower-lsp/compare/v0.10.1...v0.11.0
-[0.10.1]: https://github.com/ebkalderon/tower-lsp/compare/v0.10.0...v0.10.1
-[0.10.0]: https://github.com/ebkalderon/tower-lsp/compare/v0.9.1...v0.10.0
-[0.9.1]: https://github.com/ebkalderon/tower-lsp/compare/v0.9.0...v0.9.1
-[0.9.0]: https://github.com/ebkalderon/tower-lsp/compare/v0.8.0...v0.9.0
-[0.8.0]: https://github.com/ebkalderon/tower-lsp/compare/v0.7.0...v0.8.0
-[0.7.0]: https://github.com/ebkalderon/tower-lsp/compare/v0.6.0...v0.7.0
-[0.6.0]: https://github.com/ebkalderon/tower-lsp/compare/v0.5.0...v0.6.0
-[0.5.0]: https://github.com/ebkalderon/tower-lsp/compare/v0.4.1...v0.5.0
-[0.4.1]: https://github.com/ebkalderon/tower-lsp/compare/v0.4.0...v0.4.1
-[0.4.0]: https://github.com/ebkalderon/tower-lsp/compare/v0.3.1...v0.4.0
-[0.3.1]: https://github.com/ebkalderon/tower-lsp/compare/v0.3.0...v0.3.1
-[0.3.0]: https://github.com/ebkalderon/tower-lsp/compare/v0.2.0...v0.3.0
-[0.2.0]: https://github.com/ebkalderon/tower-lsp/compare/v0.1.0...v0.2.0
-[0.1.0]: https://github.com/ebkalderon/tower-lsp/releases/tag/v0.1.0
+[Unreleased]: https://github.com/ebkalderon/lsp-max/compare/v0.20.0...HEAD
+[0.20.0]: https://github.com/ebkalderon/lsp-max/compare/v0.19.0...v0.20.0
+[0.19.0]: https://github.com/ebkalderon/lsp-max/compare/v0.18.0...v0.19.0
+[0.18.0]: https://github.com/ebkalderon/lsp-max/compare/v0.17.0...v0.18.0
+[0.17.0]: https://github.com/ebkalderon/lsp-max/compare/v0.16.0...v0.17.0
+[0.16.0]: https://github.com/ebkalderon/lsp-max/compare/v0.15.1...v0.16.0
+[0.15.1]: https://github.com/ebkalderon/lsp-max/compare/v0.15.0...v0.15.1
+[0.15.0]: https://github.com/ebkalderon/lsp-max/compare/v0.14.1...v0.15.0
+[0.14.1]: https://github.com/ebkalderon/lsp-max/compare/v0.14.0...v0.14.1
+[0.14.0]: https://github.com/ebkalderon/lsp-max/compare/v0.13.3...v0.14.0
+[0.13.3]: https://github.com/ebkalderon/lsp-max/compare/v0.13.2...v0.13.3
+[0.13.2]: https://github.com/ebkalderon/lsp-max/compare/v0.13.1...v0.13.2
+[0.13.1]: https://github.com/ebkalderon/lsp-max/compare/v0.13.0...v0.13.1
+[0.13.0]: https://github.com/ebkalderon/lsp-max/compare/v0.12.1...v0.13.0
+[0.12.1]: https://github.com/ebkalderon/lsp-max/compare/v0.12.0...v0.12.1
+[0.12.0]: https://github.com/ebkalderon/lsp-max/compare/v0.11.0...v0.12.0
+[0.11.0]: https://github.com/ebkalderon/lsp-max/compare/v0.10.1...v0.11.0
+[0.10.1]: https://github.com/ebkalderon/lsp-max/compare/v0.10.0...v0.10.1
+[0.10.0]: https://github.com/ebkalderon/lsp-max/compare/v0.9.1...v0.10.0
+[0.9.1]: https://github.com/ebkalderon/lsp-max/compare/v0.9.0...v0.9.1
+[0.9.0]: https://github.com/ebkalderon/lsp-max/compare/v0.8.0...v0.9.0
+[0.8.0]: https://github.com/ebkalderon/lsp-max/compare/v0.7.0...v0.8.0
+[0.7.0]: https://github.com/ebkalderon/lsp-max/compare/v0.6.0...v0.7.0
+[0.6.0]: https://github.com/ebkalderon/lsp-max/compare/v0.5.0...v0.6.0
+[0.5.0]: https://github.com/ebkalderon/lsp-max/compare/v0.4.1...v0.5.0
+[0.4.1]: https://github.com/ebkalderon/lsp-max/compare/v0.4.0...v0.4.1
+[0.4.0]: https://github.com/ebkalderon/lsp-max/compare/v0.3.1...v0.4.0
+[0.3.1]: https://github.com/ebkalderon/lsp-max/compare/v0.3.0...v0.3.1
+[0.3.0]: https://github.com/ebkalderon/lsp-max/compare/v0.2.0...v0.3.0
+[0.2.0]: https://github.com/ebkalderon/lsp-max/compare/v0.1.0...v0.2.0
+[0.1.0]: https://github.com/ebkalderon/lsp-max/releases/tag/v0.1.0
