@@ -9,10 +9,7 @@ pub fn generate_anti_llm_ocel_log() -> OCEL {
     // 1. Create Objects
     let objects = vec![
         OCELObject::new("repo_lsp_max".to_string(), "Repository")
-            .with_attribute(OCELEventAttribute::string(
-                "name",
-                "lsp-max".to_string(),
-            ))
+            .with_attribute(OCELEventAttribute::string("name", "lsp-max".to_string()))
             .with_attribute(OCELEventAttribute::string(
                 "path",
                 "/Users/sac/lsp-max".to_string(),
