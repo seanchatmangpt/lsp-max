@@ -2,9 +2,9 @@ mod backend;
 mod semantics;
 
 use crate::backend::BevyBackend;
+use lsp_max::lsp_max_ast::AutoLspAdapter;
+use lsp_max::{LspService, Server};
 use std::sync::Arc;
-use tower_lsp_max::auto_lsp::AutoLspAdapter;
-use tower_lsp_max::{LspService, Server};
 
 fn main() {
     tokio::runtime::Runtime::new().unwrap().block_on(async {
@@ -13,7 +13,7 @@ fn main() {
 
         let (service, socket) = LspService::new(|client| BevyBackend {
             client,
-            auto_lsp: Arc::new(AutoLspAdapter::new_default()),
+            lsp_max_ast: Arc::new(AutoLspAdapter::new_default()),
         });
 
         let _ = Server::new(stdin, stdout, socket).serve(service).await;

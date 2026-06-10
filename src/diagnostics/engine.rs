@@ -21,7 +21,7 @@ fn build_diagnostic(spec: &LawSpec) -> max_protocol::MaxDiagnostic {
         severity: Some(spec.severity),
         code: None,
         code_description: None,
-        source: Some("tower-lsp-max".to_string()),
+        source: Some("lsp-max".to_string()),
         message: spec.message.to_string(),
         related_information: None,
         tags: None,

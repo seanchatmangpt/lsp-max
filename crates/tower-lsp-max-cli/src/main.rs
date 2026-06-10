@@ -27,7 +27,7 @@ mod tests {
 
         // Also clean up refund receipt path if it exists
         let refund_receipt_path = std::env::temp_dir()
-            .join("tower_lsp_max_refund_receipt.txt")
+            .join("lsp_max_refund_receipt.txt")
             .to_string_lossy()
             .into_owned();
         if Path::new(&refund_receipt_path).exists() {
@@ -39,7 +39,7 @@ mod tests {
 
         // 1. Query initial state for LSP_1 using state verb
         let args = vec![
-            "tower-lsp-max-cli".to_string(),
+            "lsp-max-cli".to_string(),
             "state".to_string(),
             "state".to_string(),
             "--instance-id".to_string(),
@@ -54,7 +54,7 @@ mod tests {
 
         // 2. Query initial state for LSP_2
         let args = vec![
-            "tower-lsp-max-cli".to_string(),
+            "lsp-max-cli".to_string(),
             "state".to_string(),
             "state".to_string(),
             "--instance-id".to_string(),
@@ -67,7 +67,7 @@ mod tests {
 
         // 3. Register diagnostic on LSP_1 under law-intake-validation
         let args = vec![
-            "tower-lsp-max-cli".to_string(),
+            "lsp-max-cli".to_string(),
             "diagnostics".to_string(),
             "diagnose".to_string(),
             "--instance-id".to_string(),
@@ -86,7 +86,7 @@ mod tests {
 
         // 4. Verify gate logic transitioned LSP_2 to ClarificationRequested
         let args = vec![
-            "tower-lsp-max-cli".to_string(),
+            "lsp-max-cli".to_string(),
             "state".to_string(),
             "state".to_string(),
             "--instance-id".to_string(),
@@ -97,7 +97,7 @@ mod tests {
 
         // Verify LSP_1 conformance score is reduced
         let args = vec![
-            "tower-lsp-max-cli".to_string(),
+            "lsp-max-cli".to_string(),
             "state".to_string(),
             "state".to_string(),
             "--instance-id".to_string(),
@@ -109,7 +109,7 @@ mod tests {
 
         // 5. Query diagnostics run
         let args = vec![
-            "tower-lsp-max-cli".to_string(),
+            "lsp-max-cli".to_string(),
             "diagnostics".to_string(),
             "run".to_string(),
             "--target".to_string(),
@@ -124,7 +124,7 @@ mod tests {
 
         // 6. Clear diagnostic on LSP_1 to trigger the next stage of gate logic
         let args = vec![
-            "tower-lsp-max-cli".to_string(),
+            "lsp-max-cli".to_string(),
             "diagnostics".to_string(),
             "clear".to_string(),
             "--instance-id".to_string(),
@@ -137,7 +137,7 @@ mod tests {
 
         // 7. Verify gate logic cleared diagnostics, transitioned LSP_2, and emitted receipts/bounded action
         let args = vec![
-            "tower-lsp-max-cli".to_string(),
+            "lsp-max-cli".to_string(),
             "state".to_string(),
             "state".to_string(),
             "--instance-id".to_string(),
@@ -148,7 +148,7 @@ mod tests {
         assert_eq!(output.data["conformance_score"], 100.0);
 
         let args = vec![
-            "tower-lsp-max-cli".to_string(),
+            "lsp-max-cli".to_string(),
             "state".to_string(),
             "state".to_string(),
             "--instance-id".to_string(),
@@ -159,7 +159,7 @@ mod tests {
 
         // Verify receipt list on LSP_1
         let args = vec![
-            "tower-lsp-max-cli".to_string(),
+            "lsp-max-cli".to_string(),
             "receipt".to_string(),
             "list".to_string(),
             "--instance-id".to_string(),
@@ -174,7 +174,7 @@ mod tests {
 
         // Verify receipt list on LSP_2
         let args = vec![
-            "tower-lsp-max-cli".to_string(),
+            "lsp-max-cli".to_string(),
             "receipt".to_string(),
             "list".to_string(),
             "--instance-id".to_string(),
@@ -189,7 +189,7 @@ mod tests {
 
         // Verify event log list
         let args = vec![
-            "tower-lsp-max-cli".to_string(),
+            "lsp-max-cli".to_string(),
             "event".to_string(),
             "list".to_string(),
         ];
@@ -198,7 +198,7 @@ mod tests {
 
         // 8. Test Client noun (verifies #[serde(flatten)] extra field works!)
         let args = vec![
-            "tower-lsp-max-cli".to_string(),
+            "lsp-max-cli".to_string(),
             "client".to_string(),
             "connect".to_string(),
             "--id".to_string(),
@@ -209,7 +209,7 @@ mod tests {
 
         // Send a message
         let args = vec![
-            "tower-lsp-max-cli".to_string(),
+            "lsp-max-cli".to_string(),
             "client".to_string(),
             "send".to_string(),
             "--id".to_string(),
@@ -222,7 +222,7 @@ mod tests {
 
         // Verify that running another state command does NOT wipe out the client details
         let args = vec![
-            "tower-lsp-max-cli".to_string(),
+            "lsp-max-cli".to_string(),
             "state".to_string(),
             "state".to_string(),
             "--instance-id".to_string(),
@@ -232,7 +232,7 @@ mod tests {
 
         // Receive the message
         let args = vec![
-            "tower-lsp-max-cli".to_string(),
+            "lsp-max-cli".to_string(),
             "client".to_string(),
             "receive".to_string(),
             "--id".to_string(),

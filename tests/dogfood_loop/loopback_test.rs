@@ -1,9 +1,9 @@
+use lsp_max::lsp_types as lsp;
+use lsp_max::{ExitedError, LspService, Server};
 /// test_dogfood_loopback_integration — full loopback integration test.
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use tokio::io::AsyncWriteExt;
-use tower_lsp_max::lsp_types as lsp;
-use tower_lsp_max::{ExitedError, LspService, Server};
 
 use super::backend::{DogfoodBackend, TestEvents};
 use super::helpers::{

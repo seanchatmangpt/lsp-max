@@ -1,12 +1,12 @@
+use lsp_max::lsp_types::*;
+use lsp_max::{LspService, Server};
+use lsp_max_playground::handlers::completions::get_completions;
+use lsp_max_playground::handlers::diagnostics::get_diagnostics;
+use lsp_max_playground::Backend;
 use std::str::FromStr;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
-use tower_lsp_max::lsp_types::*;
-use tower_lsp_max::{LspService, Server};
-use tower_lsp_max_playground::handlers::completions::get_completions;
-use tower_lsp_max_playground::handlers::diagnostics::get_diagnostics;
-use tower_lsp_max_playground::Backend;
 
 // ===========================================================================
 // 1. COMPLETIONS CONTEXT BOUNDS CHECKS

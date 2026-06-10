@@ -1,5 +1,5 @@
 /// Additional autonomic mesh tests: save/load, hooks, RPC, unicode, concurrency.
-use tower_lsp_max_runtime::{
+use lsp_max_runtime::{
     AutonomicMesh, HookEvent, InstanceId, LspInstance, LspPhase, MeshAction, PolicyState, Receipt,
     ReceiptRoutingHook,
 };

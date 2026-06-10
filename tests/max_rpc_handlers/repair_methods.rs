@@ -1,6 +1,6 @@
+use lsp_max::max_protocol::{MaxCodeAction, MaxDiagnostic, Receipt};
 /// max/explainDiagnostic, max/repairPlan, max/applyRepairTransaction tests.
 use std::time::Duration;
-use tower_lsp_max::max_protocol::{MaxCodeAction, MaxDiagnostic, Receipt};
 
 use super::common::{
     boot_server, cleanup_receipts, expect_error, expect_result, wait_for_response, write_msg,

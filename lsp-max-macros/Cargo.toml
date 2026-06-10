@@ -1,13 +1,13 @@
 [package]
-name = "tower-lsp-max-macros"
+name = "lsp-max-macros"
 version = "26.6.9"
 authors = ["Eyal Kalderon <ebkalderon@gmail.com>"]
-description = "Internal procedural macros for tower-lsp-max"
+description = "Internal procedural macros for lsp-max"
 edition = "2021"
 rust-version = "1.70.0"
 license = "MIT OR Apache-2.0"
-homepage = "https://github.com/ebkalderon/tower-lsp"
-repository = "https://github.com/ebkalderon/tower-lsp"
+homepage = "https://github.com/seanchatmangpt/lsp-max"
+repository = "https://github.com/seanchatmangpt/lsp-max"
 
 [lib]
 proc-macro = true

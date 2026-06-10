@@ -100,7 +100,7 @@ pub async fn wait_for_notification(received: RxLog, method: &str, timeout: Durat
 
 /// Utility helper to clean up receipt files generated during testing.
 pub fn cleanup_receipts() {
-    if let Ok(reg) = tower_lsp_max::get_registry().lock() {
+    if let Ok(reg) = lsp_max::get_registry().lock() {
         let temp_path = reg.root_path.clone();
         let _ = std::fs::remove_file(temp_path.join("admission.receipt"));
         let _ = std::fs::remove_file(temp_path.join("security.receipt"));

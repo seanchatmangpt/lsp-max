@@ -1,10 +1,10 @@
 use crate::types::CommandResult;
 use clap_noun_verb::Result;
 use clap_noun_verb_macros::verb;
+use lsp_max::jsonrpc;
+use lsp_max::lsp_types::*;
+use lsp_max::{Client, LanguageServer, LspService, Server};
 use tokio::runtime::Runtime;
-use tower_lsp_max::jsonrpc;
-use tower_lsp_max::lsp_types::*;
-use tower_lsp_max::{Client, LanguageServer, LspService, Server};
 
 #[derive(Debug)]
 pub struct ClapNounVerbLsp {
@@ -17,7 +17,7 @@ impl ClapNounVerbLsp {
     }
 }
 
-#[tower_lsp_max::async_trait]
+#[lsp_max::async_trait]
 impl LanguageServer for ClapNounVerbLsp {
     async fn initialize(&self, _: InitializeParams) -> jsonrpc::Result<InitializeResult> {
         Ok(InitializeResult {

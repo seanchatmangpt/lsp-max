@@ -200,10 +200,7 @@ fn test_gc004_pack_domain_lsp_intelligence() {
             .unwrap()
             .as_str()
             .unwrap();
-        assert_eq!(
-            source_id, "tower_lsp_max_pack_lsp",
-            "Owner must be tower pack"
-        );
+        assert_eq!(source_id, "lsp_max_pack_lsp", "Owner must be tower pack");
     }
 
     // projection-state-overlay

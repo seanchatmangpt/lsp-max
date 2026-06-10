@@ -1,7 +1,7 @@
+use lsp_max::lsp_types as lsp;
 /// Batch 5 — selectionRange, linkedEditingRange, semanticTokens/*,
 /// inlayHint, inlayHint/resolve, textDocument/diagnostic.
 use std::str::FromStr;
-use tower_lsp_max::lsp_types as lsp;
 
 use super::common::{assert_well_formed, roundtrip, td_pos};
 

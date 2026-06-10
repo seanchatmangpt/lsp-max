@@ -2,27 +2,27 @@ use std::fs;
 
 #[test]
 fn test_gc006_authority_surface_lock() {
-    let mut tower_lsp_max_root = std::env::current_dir().unwrap();
-    while !tower_lsp_max_root.join("Cargo.toml").exists()
-        || !std::fs::read_to_string(tower_lsp_max_root.join("Cargo.toml"))
+    let mut lsp_max_root = std::env::current_dir().unwrap();
+    while !lsp_max_root.join("Cargo.toml").exists()
+        || !std::fs::read_to_string(lsp_max_root.join("Cargo.toml"))
             .unwrap()
             .contains("[workspace]")
     {
-        if let Some(parent) = tower_lsp_max_root.parent() {
-            tower_lsp_max_root = parent.to_path_buf();
+        if let Some(parent) = lsp_max_root.parent() {
+            lsp_max_root = parent.to_path_buf();
         } else {
-            panic!("Could not find workspace root for tower-lsp-max");
+            panic!("Could not find workspace root for lsp-max");
         }
     }
-    let ggen_root = tower_lsp_max_root.parent().unwrap().join("ggen");
+    let ggen_root = lsp_max_root.parent().unwrap().join("ggen");
 
     // no-shadow-crates
     {
         // Ensure no forbidden shadow crates exist in the workspaces.
         let forbidden = vec![
-            tower_lsp_max_root.join("crates/wasm4pm"),
-            tower_lsp_max_root.join("crates/wasm4pm-proper"),
-            tower_lsp_max_root.join("crates/wasm4pm-compat"),
+            lsp_max_root.join("crates/wasm4pm"),
+            lsp_max_root.join("crates/wasm4pm-proper"),
+            lsp_max_root.join("crates/wasm4pm-compat"),
             ggen_root.join("crates/wasm4pm"),
             ggen_root.join("crates/wasm4pm-proper"),
             ggen_root.join("crates/wasm4pm-compat"),
@@ -48,7 +48,7 @@ fn test_gc006_authority_surface_lock() {
             digest: Option<String>,
         }
 
-        let parent_dir = tower_lsp_max_root.parent().unwrap().to_path_buf();
+        let parent_dir = lsp_max_root.parent().unwrap().to_path_buf();
         let check_clean = |repo_name: &str| {
             let repo_path = parent_dir.join(repo_name);
             assert!(
@@ -172,7 +172,7 @@ fn test_gc006_authority_surface_lock() {
     // wasm4pm-lsp-no-local-conformance
     {
         let lsp_src =
-            fs::read_to_string(tower_lsp_max_root.join("crates/wasm4pm-lsp/src/main.rs")).unwrap();
+            fs::read_to_string(lsp_max_root.join("crates/wasm4pm-lsp/src/main.rs")).unwrap();
         // The LSP must not implement its own conformance loop (e.g. searching for markers or checking cardinalities directly)
         assert!(!lsp_src.contains("check_gall_conformance(&ocel) {")); // It shouldn't implement the logic directly
         assert!(!lsp_src.contains("GallVerdict::Fit {")); // It shouldn't manufacture these
@@ -183,7 +183,7 @@ fn test_gc006_authority_surface_lock() {
     // adapter-no-fake-fit
     {
         let adapter_src =
-            fs::read_to_string(tower_lsp_max_root.join("crates/gc005-wasm4pm-adapter/src/lib.rs"))
+            fs::read_to_string(lsp_max_root.join("crates/gc005-wasm4pm-adapter/src/lib.rs"))
                 .unwrap();
         // The adapter must not contain string replacement logic for verdicts or hardcode "FIT" conditionally outside of matching the authority's enum.
         assert!(!adapter_src.contains("verdict = \"FIT\""));
@@ -193,24 +193,23 @@ fn test_gc006_authority_surface_lock() {
     // adapter-uses-sealed-authority
     {
         let adapter_src =
-            fs::read_to_string(tower_lsp_max_root.join("crates/gc005-wasm4pm-adapter/src/lib.rs"))
+            fs::read_to_string(lsp_max_root.join("crates/gc005-wasm4pm-adapter/src/lib.rs"))
                 .unwrap();
         // The adapter MUST import check_gall_conformance from wasm4pm
         assert!(adapter_src.contains("check_gall_conformance"));
         assert!(adapter_src.contains("check_gall_conformance(&ocel)"));
 
         let adapter_cargo =
-            fs::read_to_string(tower_lsp_max_root.join("crates/gc005-wasm4pm-adapter/Cargo.toml"))
+            fs::read_to_string(lsp_max_root.join("crates/gc005-wasm4pm-adapter/Cargo.toml"))
                 .unwrap();
         assert!(adapter_cargo.contains("wasm4pm = { path = \"../../../wasm4pm/wasm4pm\" }"));
         assert!(adapter_cargo.contains("wasm4pm-compat = { path = \"../../../wasm4pm-compat\" }"));
     }
 
     // Architecture Contract Checks
-    let authority_surface = fs::read_to_string(
-        tower_lsp_max_root.join("crates/playground/receipts/authority_surface.toml"),
-    )
-    .unwrap_or_default();
+    let authority_surface =
+        fs::read_to_string(lsp_max_root.join("crates/playground/receipts/authority_surface.toml"))
+            .unwrap_or_default();
     if !authority_surface.is_empty() {
         assert!(authority_surface.contains("wasm4pm::gall"));
         assert!(authority_surface.contains("check_gall_conformance"));

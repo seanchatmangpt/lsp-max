@@ -1,13 +1,13 @@
+use lsp_max::jsonrpc::{ErrorCode, Request, Result};
+use lsp_max::lsp_types::*;
+use lsp_max::{LanguageServer, LspService};
 use serde_json::{json, Value};
 use std::time::Duration;
 use tower::{Service, ServiceExt};
-use tower_lsp_max::jsonrpc::{ErrorCode, Request, Result};
-use tower_lsp_max::lsp_types::*;
-use tower_lsp_max::{LanguageServer, LspService};
 
 struct Mock;
 
-#[tower_lsp_max::async_trait]
+#[lsp_max::async_trait]
 impl LanguageServer for Mock {
     async fn initialize(&self, _: InitializeParams) -> Result<InitializeResult> {
         Ok(InitializeResult::default())
@@ -57,7 +57,7 @@ async fn test_panic_handling() {
 
 #[tokio::test]
 async fn test_max_rpc_lifecycle_guards() {
-    tower_lsp_max::reset_registry_for_tests();
+    lsp_max::reset_registry_for_tests();
     let (mut service, _) = LspService::new(|_| Mock);
 
     // Call max/snapshot before initialization
@@ -114,7 +114,7 @@ async fn test_document_sync_serialization() {
 
 #[tokio::test]
 async fn test_watchdog_exit() {
-    tower_lsp_max::reset_registry_for_tests();
+    lsp_max::reset_registry_for_tests();
     let (mut service, _) = LspService::new(|_| Mock);
 
     // Use a PID that is likely to exist but we can "simulate" death if we had a way to mock.

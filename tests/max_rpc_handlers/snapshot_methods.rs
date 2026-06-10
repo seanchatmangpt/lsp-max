@@ -1,6 +1,6 @@
+use lsp_max::max_protocol::{AnalysisBundle, SnapshotId};
 /// max/snapshot and max/exportAnalysisBundle tests.
 use std::time::Duration;
-use tower_lsp_max::max_protocol::{AnalysisBundle, SnapshotId};
 
 use super::common::{boot_server, cleanup_receipts, expect_result, wait_for_response, write_msg};
 
@@ -51,9 +51,13 @@ async fn test_max_export_analysis_bundle() {
         bundle.snapshot_id.0, snap_id.0,
         "bundle snapshot_id must match"
     );
-    let named_count = bundle.diagnostics.iter().filter(|d| {
-        !matches!(&d.law_axis, tower_lsp_max::max_protocol::LawAxis::Custom(s) if s.is_empty())
-    }).count();
+    let named_count = bundle
+        .diagnostics
+        .iter()
+        .filter(
+            |d| !matches!(&d.law_axis, lsp_max::max_protocol::LawAxis::Custom(s) if s.is_empty()),
+        )
+        .count();
     assert_eq!(
         bundle.capability_vector.gaps.len(),
         named_count,

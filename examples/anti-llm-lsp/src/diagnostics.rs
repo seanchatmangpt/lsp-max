@@ -1,5 +1,5 @@
+use lsp_max::lsp_types::{Diagnostic, DiagnosticSeverity, Position, Range};
 use serde::{Deserialize, Serialize};
-use tower_lsp_max::lsp_types::{Diagnostic, DiagnosticSeverity, Position, Range};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AntiLlmDiagnostic {
@@ -35,7 +35,7 @@ impl AntiLlmDiagnostic {
         Diagnostic {
             range: Range::new(start_pos, end_pos),
             severity: Some(severity),
-            code: Some(tower_lsp_max::lsp_types::NumberOrString::String(
+            code: Some(lsp_max::lsp_types::NumberOrString::String(
                 self.code.clone(),
             )),
             source: Some("anti-llm-lsp".to_string()),

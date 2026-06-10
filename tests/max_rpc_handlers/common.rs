@@ -1,9 +1,9 @@
+use lsp_max::jsonrpc::Result as RpcResult;
+use lsp_max::lsp_types as lsp;
+use lsp_max::{LanguageServer, LspService, Server};
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
-use tower_lsp_max::jsonrpc::Result as RpcResult;
-use tower_lsp_max::lsp_types as lsp;
-use tower_lsp_max::{LanguageServer, LspService, Server};
 
 pub type TxShared = Arc<tokio::sync::Mutex<Option<tokio::io::DuplexStream>>>;
 pub type RxLog = Arc<std::sync::Mutex<Vec<serde_json::Value>>>;
@@ -14,7 +14,7 @@ pub static TEST_MUTEX: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(()
 
 pub struct TestBackend;
 
-#[tower_lsp_max::async_trait]
+#[lsp_max::async_trait]
 impl LanguageServer for TestBackend {
     async fn initialize(&self, _: lsp::InitializeParams) -> RpcResult<lsp::InitializeResult> {
         Ok(lsp::InitializeResult::default())
@@ -84,11 +84,11 @@ pub async fn wait_for_response(received: RxLog, id: i64, timeout: Duration) -> s
 
 pub async fn boot_server() -> (TxShared, RxLog, tokio::task::JoinHandle<()>, SerialGuard) {
     let _guard = TEST_MUTEX.lock().await;
-    tower_lsp_max::reset_registry_for_tests();
+    lsp_max::reset_registry_for_tests();
     let temp_dir = tempfile::tempdir().unwrap();
     let temp_path = temp_dir.path().to_path_buf();
     std::boxed::Box::leak(std::boxed::Box::new(temp_dir));
-    if let Ok(mut reg) = tower_lsp_max::get_registry().lock() {
+    if let Ok(mut reg) = lsp_max::get_registry().lock() {
         reg.root_path = temp_path.clone();
     }
     let _ = std::fs::remove_file(temp_path.join("admission.receipt"));
@@ -138,7 +138,7 @@ pub fn expect_error(resp: &serde_json::Value) -> &serde_json::Value {
 }
 
 pub fn cleanup_receipts() {
-    if let Ok(reg) = tower_lsp_max::get_registry().lock() {
+    if let Ok(reg) = lsp_max::get_registry().lock() {
         let temp_path = reg.root_path.clone();
         let _ = std::fs::remove_file(temp_path.join("admission.receipt"));
         let _ = std::fs::remove_file(temp_path.join("security.receipt"));

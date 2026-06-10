@@ -34,15 +34,15 @@ fn walk_dir(dir: &Path, violations: &mut Vec<String>) {
 #[test]
 fn test_gc006_release_law_calver_lock() {
     let current_dir = std::env::current_dir().unwrap();
-    let tower_lsp_max_root = current_dir
+    let lsp_max_root = current_dir
         .parent()
         .unwrap()
         .parent()
         .unwrap()
         .to_path_buf();
-    let ggen_root = tower_lsp_max_root.parent().unwrap().join("ggen");
+    let ggen_root = lsp_max_root.parent().unwrap().join("ggen");
 
-    let workspaces_to_check = vec![tower_lsp_max_root, ggen_root];
+    let workspaces_to_check = vec![lsp_max_root, ggen_root];
     let mut violations = Vec::new();
 
     for ws in workspaces_to_check {

@@ -1,8 +1,8 @@
 /*
-This file is part of auto-lsp.
+This file is part of lsp-max-ast.
 Copyright (C) 2025 CLAUZEL Adrien
 
-auto-lsp is free software: you can redistribute it and/or modify
+lsp-max-ast is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
 (at your option) any later version.
@@ -119,7 +119,7 @@ pub(crate) fn generate_struct(
     let of_type = match NODE_ID_FOR_NAMED_NODE.lock().unwrap().get(struct_type) {
         Some(id) => {
             quote! {
-                fn contains(node: &auto_lsp::tree_sitter::Node) -> bool {
+                fn contains(node: &lsp_max_ast::tree_sitter::Node) -> bool {
                     matches!(node.kind_id(), #id)
                 }
             }
@@ -127,13 +127,13 @@ pub(crate) fn generate_struct(
         None => {
             if let Some(id) = NODE_ID_FOR_UNNAMED_NODE.lock().unwrap().get(struct_type) {
                 quote! {
-                    fn contains(node: &auto_lsp::tree_sitter::Node) -> bool {
+                    fn contains(node: &lsp_max_ast::tree_sitter::Node) -> bool {
                         matches!(node.kind_id(), #id)
                     }
                 }
             } else {
                 quote! {
-                    fn contains(node: &auto_lsp::tree_sitter::Node) -> bool {
+                    fn contains(node: &lsp_max_ast::tree_sitter::Node) -> bool {
                         matches!(node.kind(), #struct_type)
                     }
                 }
@@ -142,11 +142,11 @@ pub(crate) fn generate_struct(
     };
 
     let struct_fields = if struct_fields.is_empty() {
-        quote! { _range: auto_lsp::tree_sitter::Range, _id: usize, _parent: Option<usize>, _is_missing: bool, }
+        quote! { _range: lsp_max_ast::tree_sitter::Range, _id: usize, _parent: Option<usize>, _is_missing: bool, }
     } else {
         quote! {
             #(#struct_fields),*,
-             _range: auto_lsp::tree_sitter::Range,
+             _range: lsp_max_ast::tree_sitter::Range,
             _id: usize,
             _parent: Option<usize>,
             _is_missing: bool
@@ -184,10 +184,10 @@ pub(crate) fn generate_struct(
             #struct_fields
         }
 
-        impl auto_lsp::core::ast::AstNode for #struct_name {
+        impl lsp_max_ast::core::ast::AstNode for #struct_name {
             #of_type
 
-            fn lower(&self) -> &dyn auto_lsp::core::ast::AstNode {
+            fn lower(&self) -> &dyn lsp_max_ast::core::ast::AstNode {
                 self
             }
 
@@ -199,7 +199,7 @@ pub(crate) fn generate_struct(
                 self._parent
             }
 
-            fn get_range(&self) -> &auto_lsp::tree_sitter::Range {
+            fn get_range(&self) -> &lsp_max_ast::tree_sitter::Range {
                 &self._range
             }
 
@@ -209,10 +209,10 @@ pub(crate) fn generate_struct(
         }
 
         impl<'a>
-            TryFrom<auto_lsp::core::ast::TryFromParams<'a>> for #struct_name {
-            type Error = auto_lsp::core::errors::AstError;
+            TryFrom<lsp_max_ast::core::ast::TryFromParams<'a>> for #struct_name {
+            type Error = lsp_max_ast::core::errors::AstError;
 
-            fn try_from((node, db, builder, id, parent_id): auto_lsp::core::ast::TryFromParams) -> Result<Self, auto_lsp::core::errors::AstError> {
+            fn try_from((node, db, builder, id, parent_id): lsp_max_ast::core::ast::TryFromParams) -> Result<Self, lsp_max_ast::core::errors::AstError> {
                 #(#struct_fields_init);*;
                 #init_builder
                 #struct_fields_finalize
@@ -296,7 +296,7 @@ pub(crate) fn generate_enum(variant_name: &Ident, variants: &Vec<TypeInfo>) -> T
             #(#r_types => Ok(Self::#r_variants(#r_variants::try_from((node, db, builder, id, parent_id))?))),*,
             /// Super types
             #(#(#super_types_types)|* => Ok(Self::#super_types_variants(#super_types_variants::try_from((node, db, builder, id, parent_id))?))),*,
-            _ => Err(auto_lsp::core::errors::AstError::UnexpectedSymbol {
+            _ => Err(lsp_max_ast::core::errors::AstError::UnexpectedSymbol {
                 range: node.range(),
                 symbol: node.kind(),
                 parent_name: stringify!(#variant_name),
@@ -305,7 +305,7 @@ pub(crate) fn generate_enum(variant_name: &Ident, variants: &Vec<TypeInfo>) -> T
         (true, false) => quote! {
             /// Super types
             #(#(#super_types_types)|* => Ok(Self::#super_types_variants(#super_types_variants::try_from((node, db, builder, id, parent_id))?))),*,
-            _ => Err(auto_lsp::core::errors::AstError::UnexpectedSymbol {
+            _ => Err(lsp_max_ast::core::errors::AstError::UnexpectedSymbol {
                 range: node.range(),
                 symbol: node.kind(),
                 parent_name: stringify!(#variant_name),
@@ -313,14 +313,14 @@ pub(crate) fn generate_enum(variant_name: &Ident, variants: &Vec<TypeInfo>) -> T
         },
         (false, true) => quote! {
             #(#r_types => Ok(Self::#r_variants(#r_variants::try_from((node, db, builder, id, parent_id))?))),*,
-            _ => Err(auto_lsp::core::errors::AstError::UnexpectedSymbol {
+            _ => Err(lsp_max_ast::core::errors::AstError::UnexpectedSymbol {
                 range: node.range(),
                 symbol: node.kind(),
                 parent_name: stringify!(#variant_name),
             })
         },
         _ => quote! {
-            _ => Err(auto_lsp::core::errors::AstError::UnexpectedSymbol {
+            _ => Err(lsp_max_ast::core::errors::AstError::UnexpectedSymbol {
                 range: node.range(),
                 symbol: node.kind(),
                 parent_name: stringify!(#variant_name),
@@ -337,12 +337,12 @@ pub(crate) fn generate_enum(variant_name: &Ident, variants: &Vec<TypeInfo>) -> T
             #(#r_variants(#r_variants)),*
         }
 
-        impl auto_lsp::core::ast::AstNode for #variant_name {
-            fn contains(node: &auto_lsp::tree_sitter::Node) -> bool {
+        impl lsp_max_ast::core::ast::AstNode for #variant_name {
+            fn contains(node: &lsp_max_ast::tree_sitter::Node) -> bool {
                 matches!(node.kind_id(), #(#r_types)|*)
             }
 
-            fn lower(&self) -> &dyn auto_lsp::core::ast::AstNode {
+            fn lower(&self) -> &dyn lsp_max_ast::core::ast::AstNode {
                 match self {
                     #(Self::#r_variants(node) => node.lower()),*
                 }
@@ -360,7 +360,7 @@ pub(crate) fn generate_enum(variant_name: &Ident, variants: &Vec<TypeInfo>) -> T
                 }
             }
 
-            fn get_range(&self) -> &auto_lsp::tree_sitter::Range {
+            fn get_range(&self) -> &lsp_max_ast::tree_sitter::Range {
                 match self {
                     #(Self::#r_variants(node) => node.get_range()),*
                 }
@@ -374,10 +374,10 @@ pub(crate) fn generate_enum(variant_name: &Ident, variants: &Vec<TypeInfo>) -> T
         }
 
        impl<'a>
-            TryFrom<auto_lsp::core::ast::TryFromParams<'a>> for #variant_name {
-            type Error = auto_lsp::core::errors::AstError;
+            TryFrom<lsp_max_ast::core::ast::TryFromParams<'a>> for #variant_name {
+            type Error = lsp_max_ast::core::errors::AstError;
 
-            fn try_from((node, db, builder, id, parent_id): auto_lsp::core::ast::TryFromParams) -> Result<Self, auto_lsp::core::errors::AstError> {
+            fn try_from((node, db, builder, id, parent_id): lsp_max_ast::core::ast::TryFromParams) -> Result<Self, lsp_max_ast::core::errors::AstError> {
                 match node.kind_id() {
                     #pattern_matching
                 }

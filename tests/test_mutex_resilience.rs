@@ -6,19 +6,19 @@
 //! 1. handle_mesh_rpc returns an error string rather than panicking when the mutex is poisoned.
 //! 2. The registry lock in the initialize hot path uses map_err (structural / compile-time check).
 
+use lsp_max::jsonrpc::Result as RpcResult;
+use lsp_max::lsp_types as lsp;
+use lsp_max::{LanguageServer, LspService, Server};
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
-use tower_lsp_max::jsonrpc::Result as RpcResult;
-use tower_lsp_max::lsp_types as lsp;
-use tower_lsp_max::{LanguageServer, LspService, Server};
 
 // Serialise tests so they don't race on the shared global registry.
 static TEST_MUTEX: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
 
 struct TestBackend;
 
-#[tower_lsp_max::async_trait]
+#[lsp_max::async_trait]
 impl LanguageServer for TestBackend {
     async fn initialize(&self, _: lsp::InitializeParams) -> RpcResult<lsp::InitializeResult> {
         Ok(lsp::InitializeResult::default())
@@ -96,11 +96,11 @@ async fn boot_initialized_server() -> (
     tokio::sync::MutexGuard<'static, ()>,
 ) {
     let guard = TEST_MUTEX.lock().await;
-    tower_lsp_max::reset_registry_for_tests();
+    lsp_max::reset_registry_for_tests();
     let temp_dir = tempfile::tempdir().unwrap();
     let temp_path = temp_dir.path().to_path_buf();
     std::boxed::Box::leak(std::boxed::Box::new(temp_dir));
-    if let Ok(mut reg) = tower_lsp_max::get_registry().lock() {
+    if let Ok(mut reg) = lsp_max::get_registry().lock() {
         reg.root_path = temp_path.clone();
     }
     let _ = std::fs::remove_file(temp_path.join("admission.receipt"));
@@ -218,7 +218,7 @@ async fn test_mesh_rpc_conformance_vector_succeeds_on_healthy_registry() {
 fn test_registry_lock_returns_ok_when_healthy() {
     // This is the pattern that replaced .lock().unwrap() in layers.rs and service.rs.
     // If it panics, the replacement is broken.
-    let result = tower_lsp_max::get_registry().lock();
+    let result = lsp_max::get_registry().lock();
     assert!(
         result.is_ok(),
         "registry lock should succeed on healthy mutex"

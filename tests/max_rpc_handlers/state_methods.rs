@@ -1,6 +1,6 @@
+use lsp_max::max_protocol::{ConformanceVector, GateId, SnapshotId};
 /// max/runGate, max/conformanceVector, max/instanceList, max/lsif tests.
 use std::time::Duration;
-use tower_lsp_max::max_protocol::{ConformanceVector, GateId, SnapshotId};
 
 use super::common::{boot_server, cleanup_receipts, expect_result, wait_for_response, write_msg};
 

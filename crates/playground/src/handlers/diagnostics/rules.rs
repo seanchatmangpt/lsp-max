@@ -1,11 +1,11 @@
-use tower_lsp_max::lsp_types_max::*;
+use lsp_max::lsp_types_max::*;
 
 use crate::handlers::completions::METHODS;
 use crate::handlers::diagnostics::analysis::{analyze_impl_block, ImplAnalysis};
 use crate::handlers::diagnostics::levenshtein_distance;
 
 // Diagnostic source tag shown in the IDE
-pub const SOURCE: &str = "tower-lsp-max-playground";
+pub const SOURCE: &str = "lsp-max-playground";
 
 // Diagnostic codes
 pub const CAPABILITY_WITHOUT_METHOD: &str = "TLM001";

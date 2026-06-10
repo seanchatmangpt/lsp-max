@@ -101,7 +101,7 @@ qol-sync:
 
 # Regenerate LSP 3.18 spec-graph artifacts from the canonical metaModel.json
 spec-graph:
-    cargo run -p tower-lsp-max-specgen -- \
+    cargo run -p lsp-max-specgen -- \
         --emit-spec-graph examples/anti-llm-lsp/generated \
         --input vendors/vscode-languageserver-node/protocol/metaModel.json
 
@@ -120,7 +120,7 @@ etc-intel:
     @echo "## Architectural Mandate" >> .autodx/ecosystem-intel.md
     @echo "- **wasm4pm-compat**: The sole, axiomatic baseline type authority." >> .autodx/ecosystem-intel.md
     @echo "- **wasm4pm**: The execution engine." >> .autodx/ecosystem-intel.md
-    @echo "- **tower-lsp-max**: The semantic intelligence layer." >> .autodx/ecosystem-intel.md
+    @echo "- **lsp-max**: The semantic intelligence layer." >> .autodx/ecosystem-intel.md
     @echo "" >> .autodx/ecosystem-intel.md
     @echo "## Forbidden Concepts" >> .autodx/ecosystem-intel.md
     @echo "- No deprecation paths." >> .autodx/ecosystem-intel.md

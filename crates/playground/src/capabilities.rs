@@ -1,8 +1,8 @@
-use tower_lsp_max::lsp_types_max::*;
+use lsp_max::lsp_types_max::*;
 
 /// Build the `ServerCapabilities` advertised during `initialize`.
 ///
-/// This "Maximal" configuration enables every single capability supported by tower-lsp-max.
+/// This "Maximal" configuration enables every single capability supported by lsp-max.
 pub fn server_capabilities() -> ServerCapabilities {
     ServerCapabilities {
         position_encoding: Some(PositionEncodingKind::UTF8),
@@ -18,7 +18,7 @@ pub fn server_capabilities() -> ServerCapabilities {
         )),
 
         // Completions triggered by `.`, `:`, space, and `"` to cover all
-        // tower-lsp-max completion contexts.
+        // lsp-max completion contexts.
         completion_provider: Some(CompletionOptions {
             resolve_provider: Some(true),
             trigger_characters: Some(vec![

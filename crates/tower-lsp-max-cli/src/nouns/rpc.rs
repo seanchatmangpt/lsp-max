@@ -1,7 +1,7 @@
 use clap_noun_verb::Result;
 use clap_noun_verb_macros::verb;
+use lsp_max_runtime::AutonomicMesh;
 use serde::Serialize;
-use tower_lsp_max_runtime::AutonomicMesh;
 
 // ==============================================================================
 // 1. Domain Tier

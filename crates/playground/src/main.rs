@@ -1,12 +1,12 @@
-use tower_lsp_max::{LspService, Server};
-use tower_lsp_max_playground::Backend;
+use lsp_max::{LspService, Server};
+use lsp_max_playground::Backend;
 
 #[tokio::main]
 async fn main() {
     tracing_subscriber::fmt()
         .with_env_filter(
             tracing_subscriber::EnvFilter::from_default_env()
-                .add_directive("tower_lsp_max_playground=debug".parse().unwrap()),
+                .add_directive("lsp_max_playground=debug".parse().unwrap()),
         )
         .with_writer(std::io::stderr)
         .init();

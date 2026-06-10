@@ -1,8 +1,8 @@
 /*
-This file is part of auto-lsp.
+This file is part of lsp-max-ast.
 Copyright (C) 2025 CLAUZEL Adrien
 
-auto-lsp is free software: you can redistribute it and/or modify
+lsp-max-ast is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
 (at your option) any later version.
@@ -71,9 +71,9 @@ impl Field {
         let field_name = format_ident!("{}", &sanitize_string(&self.tree_sitter_type));
         let pascal_name = &self.field_name;
         let field_type = match self.kind {
-            Kind::Base => quote! { auto_lsp::core::ast::AstNodeId<#pascal_name> },
-            Kind::Vec => quote! { Vec<auto_lsp::core::ast::AstNodeId<#pascal_name>> },
-            Kind::Option => quote! { Option<auto_lsp::core::ast::AstNodeId<#pascal_name>> },
+            Kind::Base => quote! { lsp_max_ast::core::ast::AstNodeId<#pascal_name> },
+            Kind::Vec => quote! { Vec<lsp_max_ast::core::ast::AstNodeId<#pascal_name>> },
+            Kind::Option => quote! { Option<lsp_max_ast::core::ast::AstNodeId<#pascal_name>> },
         };
 
         quote! {
@@ -115,7 +115,7 @@ impl Field {
         match self.kind {
             Kind::Base => quote! {
                  #field_name:  #field_name?.ok_or_else(|| {
-                    auto_lsp::core::errors::AstError::UnexpectedSymbol {
+                    lsp_max_ast::core::errors::AstError::UnexpectedSymbol {
                         range: node.range(),
                         symbol: node.kind(),
                         parent_name: stringify!(#field_name),
@@ -137,9 +137,9 @@ impl Child {
     fn generate_field(&self) -> TokenStream {
         let pascal_name = &self.field_name;
         let field_type = match self.kind {
-            Kind::Base => quote! { auto_lsp::core::ast::AstNodeId<#pascal_name> },
-            Kind::Vec => quote! { Vec<auto_lsp::core::ast::AstNodeId<#pascal_name>> },
-            Kind::Option => quote! { Option<auto_lsp::core::ast::AstNodeId<#pascal_name>> },
+            Kind::Base => quote! { lsp_max_ast::core::ast::AstNodeId<#pascal_name> },
+            Kind::Vec => quote! { Vec<lsp_max_ast::core::ast::AstNodeId<#pascal_name>> },
+            Kind::Option => quote! { Option<lsp_max_ast::core::ast::AstNodeId<#pascal_name>> },
         };
 
         quote! {
@@ -174,7 +174,7 @@ impl Child {
         match self.kind {
             Kind::Base => quote! {
                 children: children?.ok_or_else(|| {
-                    auto_lsp::core::errors::AstError::UnexpectedSymbol {
+                    lsp_max_ast::core::errors::AstError::UnexpectedSymbol {
                         range: node.range(),
                         symbol: node.kind(),
                         parent_name: stringify!(#name),

@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use tower_lsp_max::lsp_types_max::*;
+use lsp_max::lsp_types_max::*;
 
 use crate::handlers::completions::{CAPABILITY_FIELDS, METHODS};
 use crate::handlers::diagnostics::analysis::analyze_impl_block;
@@ -179,7 +179,7 @@ pub async fn code_actions(
                             } else {
                                 action.command = Some(Command {
                                     title: format!("Add capability declaration for `{name}`"),
-                                    command: "tower-lsp-max-playground.addCapability".to_string(),
+                                    command: "lsp-max-playground.addCapability".to_string(),
                                     arguments: Some(vec![
                                         serde_json::to_value(uri.as_str()).unwrap(),
                                         serde_json::Value::String(name.to_string()),
@@ -198,7 +198,7 @@ pub async fn code_actions(
                             } else {
                                 action.command = Some(Command {
                                     title: format!("Add capability declaration for `{name}`"),
-                                    command: "tower-lsp-max-playground.addCapability".to_string(),
+                                    command: "lsp-max-playground.addCapability".to_string(),
                                     arguments: Some(vec![
                                         serde_json::to_value(uri.as_str()).unwrap(),
                                         serde_json::Value::String(name.to_string()),
@@ -292,7 +292,7 @@ fn generate_method_stub(entry: &crate::handlers::completions::MethodEntry) -> St
         };
         let body = if entry.return_type.starts_with("Result<") {
             format!(
-                "Err(tower_lsp_max::jsonrpc::Error::method_not_found()) // TODO: implement {}",
+                "Err(lsp_max::jsonrpc::Error::method_not_found()) // TODO: implement {}",
                 entry.fn_name
             )
         } else {

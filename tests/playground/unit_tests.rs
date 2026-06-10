@@ -1,6 +1,6 @@
 /// Synchronous unit/challenger tests — no server required.
-use tower_lsp_max::lsp_types::Position;
-use tower_lsp_max_playground::handlers::completions::get_completions;
+use lsp_max::lsp_types::Position;
+use lsp_max_playground::handlers::completions::get_completions;
 
 #[test]
 fn test_challenger_edge_cases_completions() {
@@ -67,7 +67,7 @@ pub trait TestServer {
 
 #[test]
 fn test_methods_and_capabilities_table_consistency() {
-    use tower_lsp_max_playground::handlers::completions::{CAPABILITY_FIELDS, METHODS};
+    use lsp_max_playground::handlers::completions::{CAPABILITY_FIELDS, METHODS};
     let mut errors = Vec::new();
 
     for method in METHODS {
@@ -126,8 +126,8 @@ fn test_methods_and_capabilities_table_consistency() {
 
 #[test]
 fn test_challenger_diagnostics_false_positives() {
-    use tower_lsp_max::lsp_types::Uri;
-    use tower_lsp_max_playground::handlers::diagnostics::rules::get_diagnostics;
+    use lsp_max::lsp_types::Uri;
+    use lsp_max_playground::handlers::diagnostics::rules::get_diagnostics;
 
     let code = r#"
 impl LanguageServer for Backend {
@@ -160,7 +160,7 @@ impl LanguageServer for Backend {
 
     let has_dead_code_warning = diags.iter().any(|d| {
         d.code
-            == Some(tower_lsp_max::lsp_types::NumberOrString::String(
+            == Some(lsp_max::lsp_types::NumberOrString::String(
                 "TLM002".to_string(),
             ))
             && d.message.contains("did_change_workspace_folders")

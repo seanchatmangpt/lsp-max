@@ -1,6 +1,6 @@
-use tower_lsp_max::lsif::lsif_builder::LsifBuilder;
-use tower_lsp_max::lsif::lsif_types::ToolInfo;
-use tower_lsp_max::lsp_types_max::Position;
+use lsp_max::lsif::lsif_builder::LsifBuilder;
+use lsp_max::lsif::lsif_types::ToolInfo;
+use lsp_max::lsp_types_max::Position;
 
 fn main() {
     let mut buffer = Vec::new();
@@ -9,7 +9,7 @@ fn main() {
     builder
         .emit_metadata(
             "0.6.0",
-            "file:///Users/sac/tower-lsp-max",
+            "file:///Users/sac/lsp-max",
             ToolInfo {
                 name: "lsif-demo".to_string(),
                 version: Some("0.1.0".to_string()),
@@ -19,7 +19,7 @@ fn main() {
         .unwrap();
 
     let _doc_id = builder
-        .emit_document("file:///Users/sac/tower-lsp-max/src/lib.rs", "rust")
+        .emit_document("file:///Users/sac/lsp-max/src/lib.rs", "rust")
         .unwrap();
 
     let _range_id = builder

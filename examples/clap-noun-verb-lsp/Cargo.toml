@@ -8,9 +8,9 @@ clap = { version = "4.4", features = ["derive"] }
 clap-noun-verb = "26.6.2"
 clap-noun-verb-macros = "26.6.2"
 linkme = "0.3"
-tower-lsp-max = { path = "../../" }
-tower-lsp-max-protocol = { path = "../../tower-lsp-max-protocol" }
-tower-lsp-max-macros = { path = "../../tower-lsp-max-macros" }
+lsp-max = { path = "../../" }
+lsp-max-protocol = { path = "../../lsp-max-protocol" }
+lsp-max-macros = { path = "../../lsp-max-macros" }
 lsp-types-max = { path = "../../../lsp-types-max", version = "26.6.9", features = ["proposed"] }
 tokio = { version = "1.17", features = ["full"] }
 serde = { version = "1.0", features = ["derive"] }

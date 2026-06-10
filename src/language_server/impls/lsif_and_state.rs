@@ -2,9 +2,9 @@
 
 use crate::jsonrpc::{Error, Result};
 use crate::{lock_registry, update_diagnostics, ServerRegistry};
+use lsp_max_lsif::lsif::*;
+use lsp_max_lsif::lsif_builder::LsifBuilder;
 use serde_json::Value;
-use tower_lsp_max_lsif::lsif::*;
-use tower_lsp_max_lsif::lsif_builder::LsifBuilder;
 
 /// Dumps the current server registry state.
 pub async fn max_dump_state() -> Result<serde_json::Value> {
@@ -60,7 +60,7 @@ pub async fn max_lsif() -> Result<String> {
             "0.6.0",
             "file:///",
             ToolInfo {
-                name: "tower-lsp-max".to_string(),
+                name: "lsp-max".to_string(),
                 version: Some("26.6.5".to_string()),
                 args: Some(vec![]),
             },

@@ -1,9 +1,9 @@
-use tower_lsp_max::auto_lsp::AutoLspAdapter;
-use tower_lsp_max::lsp_types_max::Diagnostic;
+use lsp_max::lsp_max_ast::AutoLspAdapter;
+use lsp_max::lsp_types_max::Diagnostic;
 
 pub fn dispatch_semantic_rules(
     adapter: &AutoLspAdapter,
-    uri: &tower_lsp_max::lsp_types_max::DocumentUri,
+    uri: &lsp_max::lsp_types_max::DocumentUri,
 ) -> Vec<Diagnostic> {
     let diagnostics = adapter.pull_diagnostics(uri);
 

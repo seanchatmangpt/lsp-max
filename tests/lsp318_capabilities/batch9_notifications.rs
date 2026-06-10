@@ -1,11 +1,11 @@
+use lsp_max::jsonrpc::Result;
+use lsp_max::lsp_types as lsp;
+use lsp_max::{Client, ExitedError, LspService, Server};
 /// Batch 9 — notebookDocument/didSave, notebookDocument/didClose,
 /// window/workDoneProgress/cancel, $/progress, $/setTrace.
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use tokio::io::AsyncWriteExt;
-use tower_lsp_max::jsonrpc::Result;
-use tower_lsp_max::lsp_types as lsp;
-use tower_lsp_max::{Client, ExitedError, LspService, Server};
 
 use super::common::{encode_message, read_message};
 
@@ -23,8 +23,8 @@ struct Batch9Backend {
     events: Batch9Events,
 }
 
-#[tower_lsp_max::async_trait]
-impl tower_lsp_max::LanguageServer for Batch9Backend {
+#[lsp_max::async_trait]
+impl lsp_max::LanguageServer for Batch9Backend {
     async fn initialize(&self, _: lsp::InitializeParams) -> Result<lsp::InitializeResult> {
         Ok(lsp::InitializeResult::default())
     }

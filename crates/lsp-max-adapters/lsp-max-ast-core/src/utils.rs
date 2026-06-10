@@ -5,7 +5,7 @@
 ///
 /// ```rust, ignore
 /// use ast::generated::{FunctionDefinition, ClassDefinition};
-/// use auto_lsp::dispatch_once;
+/// use lsp_max_ast::dispatch_once;
 ///
 /// /* ... */
 /// let result = dispatch_once!(node.lower(), [
@@ -31,7 +31,7 @@ macro_rules! dispatch_once {
 ///
 /// ```rust, ignore
 /// use ast::generated::{FunctionDefinition, ClassDefinition};
-/// use auto_lsp::dispatch;
+/// use lsp_max_ast::dispatch;
 ///
 /// /* ... */
 /// dispatch!(node.lower(), [

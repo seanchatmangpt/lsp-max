@@ -2,7 +2,7 @@
 //!
 //! This module implements the pull-based diagnostic model introduced in LSP 3.17,
 //! providing both document-scoped and workspace-scoped diagnostic reports.
-//! It integrates with the `tower-lsp-max` registry and autonomic loop.
+//! It integrates with the `lsp-max` registry and autonomic loop.
 
 use crate::jsonrpc::Result;
 use crate::{lock_registry, update_diagnostics};

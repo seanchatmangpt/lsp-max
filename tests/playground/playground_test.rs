@@ -1,9 +1,9 @@
+use lsp_max::{LspService, Server};
+use lsp_max_playground::Backend;
 /// test_playground_integration — full playground loopback integration test.
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use tokio::io::AsyncWriteExt;
-use tower_lsp_max::{LspService, Server};
-use tower_lsp_max_playground::Backend;
 
 use super::common::{
     encode_message, read_message, wait_for_notification, wait_for_response, write_msg,
@@ -76,7 +76,7 @@ async fn test_playground_integration() {
     let code_text = r#"
 struct DummyServer;
 
-#[tower_lsp_max::async_trait]
+#[lsp_max::async_trait]
 impl LanguageServer for DummyServer {
 }
 "#;
@@ -125,7 +125,7 @@ impl LanguageServer for DummyServer {
     let code_text_with_i = r#"
 struct DummyServer;
 
-#[tower_lsp_max::async_trait]
+#[lsp_max::async_trait]
 impl LanguageServer for DummyServer {
     i
 }

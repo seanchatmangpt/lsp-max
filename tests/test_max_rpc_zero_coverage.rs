@@ -4,21 +4,21 @@
 //! Each test: boot server → send request → assert response has 'result' key (not 'error').
 //! This prevents silent regressions when dispatch branches are refactored.
 
+use lsp_max::{LanguageServer, LspService, Server};
 use std::sync::Arc;
 use std::time::Duration;
-use tower_lsp_max::{LanguageServer, LspService, Server};
 
 static TEST_MUTEX: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
 
-use tower_lsp_max::jsonrpc::Result as RpcResult;
-use tower_lsp_max::lsp_types as lsp;
+use lsp_max::jsonrpc::Result as RpcResult;
+use lsp_max::lsp_types as lsp;
 
 mod common;
 use common::{cleanup_receipts, read_message, wait_for_response, write_msg, RxLog, TxShared};
 
 struct TestBackend;
 
-#[tower_lsp_max::async_trait]
+#[lsp_max::async_trait]
 impl LanguageServer for TestBackend {
     async fn initialize(&self, _: lsp::InitializeParams) -> RpcResult<lsp::InitializeResult> {
         Ok(lsp::InitializeResult::default())
@@ -32,11 +32,11 @@ type SerialGuard = tokio::sync::MutexGuard<'static, ()>;
 
 async fn boot_server() -> (TxShared, RxLog, tokio::task::JoinHandle<()>, SerialGuard) {
     let _guard = TEST_MUTEX.lock().await;
-    tower_lsp_max::reset_registry_for_tests();
+    lsp_max::reset_registry_for_tests();
     let temp_dir = tempfile::tempdir().unwrap();
     let temp_path = temp_dir.path().to_path_buf();
     std::boxed::Box::leak(std::boxed::Box::new(temp_dir));
-    if let Ok(mut reg) = tower_lsp_max::get_registry().lock() {
+    if let Ok(mut reg) = lsp_max::get_registry().lock() {
         reg.root_path = temp_path.clone();
     }
     let _ = std::fs::remove_file(temp_path.join("admission.receipt"));

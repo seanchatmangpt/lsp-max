@@ -3,20 +3,20 @@ use std::fs;
 #[test]
 fn test_gc008_clap_governed_mutation_route() {
     let current_dir = std::env::current_dir().unwrap();
-    // Assuming current_dir is inside tower-lsp-max/crates/gc005-wasm4pm-adapter
-    let tower_lsp_max_root = current_dir
+    // Assuming current_dir is inside lsp-max/crates/gc005-wasm4pm-adapter
+    let lsp_max_root = current_dir
         .parent()
         .unwrap()
         .parent()
         .unwrap()
         .to_path_buf();
-    let parent_dir = tower_lsp_max_root.parent().unwrap().to_path_buf();
+    let parent_dir = lsp_max_root.parent().unwrap().to_path_buf();
     let wasm4pm_root = parent_dir.join("wasm4pm");
 
     let lsp_main_path = wasm4pm_root.join("crates/wasm4pm-lsp/src/main.rs");
     let lsp_src = fs::read_to_string(&lsp_main_path).expect("Could not read wasm4pm-lsp main.rs");
 
-    let adapter_lib_path = tower_lsp_max_root.join("crates/gc005-wasm4pm-adapter/src/lib.rs");
+    let adapter_lib_path = lsp_max_root.join("crates/gc005-wasm4pm-adapter/src/lib.rs");
     let adapter_src =
         fs::read_to_string(&adapter_lib_path).expect("Could not read gc005-wasm4pm-adapter lib.rs");
 

@@ -1,7 +1,7 @@
 //! Implementation of the LSP Base Protocol 0.9.
 //!
 //! This module provides conversion utilities between `lsp_types_max` Base Protocol types
-//! and `tower-lsp-max` JSON-RPC types.
+//! and `lsp-max` JSON-RPC types.
 
 use std::borrow::Cow;
 
@@ -12,15 +12,15 @@ use serde_json::Value;
 
 use super::{Error, ErrorCode, Id, Request, Response};
 
-/// Conversion from `lsp_types_max` types to `tower-lsp-max` types.
+/// Conversion from `lsp_types_max` types to `lsp-max` types.
 pub trait IntoTower {
-    /// The target `tower-lsp-max` type.
+    /// The target `lsp-max` type.
     type Target;
-    /// Converts this type into the target `tower-lsp-max` type.
+    /// Converts this type into the target `lsp-max` type.
     fn into_tower(self) -> Self::Target;
 }
 
-/// Conversion from `tower-lsp-max` types to `lsp_types_max` types.
+/// Conversion from `lsp-max` types to `lsp_types_max` types.
 pub trait IntoLsp {
     /// The target `lsp_types_max` type.
     type Target;
@@ -108,7 +108,7 @@ impl IntoLsp for Response {
     }
 }
 
-/// Converts a `tower-lsp-max` `Id` to an `lsp_types_max` `Option<NumberOrString>`.
+/// Converts a `lsp-max` `Id` to an `lsp_types_max` `Option<NumberOrString>`.
 fn tower_id_to_lsp(id: Id) -> Option<NumberOrString> {
     match id {
         Id::Number(n) => Some(NumberOrString::Number(n as i32)),
@@ -119,7 +119,7 @@ fn tower_id_to_lsp(id: Id) -> Option<NumberOrString> {
 
 /// A wrapper enum that encapsulates all possible LSP Base Protocol 0.9 messages.
 ///
-/// This provides a bridge between the unified `Request` type in `tower-lsp-max`
+/// This provides a bridge between the unified `Request` type in `lsp-max`
 /// and the explicit `RequestMessage` and `NotificationMessage` types in the LSP specification.
 #[derive(Debug, Clone, PartialEq)]
 pub enum BaseProtocolMessage {
@@ -132,7 +132,7 @@ pub enum BaseProtocolMessage {
 }
 
 impl BaseProtocolMessage {
-    /// Converts a `tower-lsp-max` `Request` into a `BaseProtocolMessage`.
+    /// Converts a `lsp-max` `Request` into a `BaseProtocolMessage`.
     ///
     /// This will be either a `Request` or a `Notification` depending on whether an ID is present.
     pub fn from_request(request: Request) -> Self {
@@ -157,7 +157,7 @@ impl BaseProtocolMessage {
         }
     }
 
-    /// Converts a `tower-lsp-max` `Response` into a `BaseProtocolMessage`.
+    /// Converts a `lsp-max` `Response` into a `BaseProtocolMessage`.
     pub fn from_response(response: Response) -> Self {
         BaseProtocolMessage::Response(response.into_lsp())
     }

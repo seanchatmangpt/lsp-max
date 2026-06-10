@@ -1,7 +1,7 @@
+use lsp_max::jsonrpc::{Error, Result};
+use lsp_max::lsp_types::*;
+use lsp_max::{Client, LanguageServer};
 use std::sync::{Arc, Mutex};
-use tower_lsp_max::jsonrpc::{Error, Result};
-use tower_lsp_max::lsp_types::*;
-use tower_lsp_max::{Client, LanguageServer};
 
 use crate::engine;
 use crate::virtual_docs::{
@@ -51,7 +51,7 @@ impl AntiLlmServer {
         let _ = self
             .client
             .text_document_content_refresh(
-                tower_lsp_max::max_protocol::lsp_3_18::TextDocumentContentRefreshParams {
+                lsp_max::max_protocol::lsp_3_18::TextDocumentContentRefreshParams {
                     uri: uri.to_string(),
                 },
             )
@@ -59,7 +59,7 @@ impl AntiLlmServer {
     }
 }
 
-#[tower_lsp_max::async_trait]
+#[lsp_max::async_trait]
 impl LanguageServer for AntiLlmServer {
     #[allow(deprecated, clippy::field_reassign_with_default)]
     async fn initialize(&self, params: InitializeParams) -> Result<InitializeResult> {
@@ -167,8 +167,8 @@ impl LanguageServer for AntiLlmServer {
 
     async fn text_document_content(
         &self,
-        params: tower_lsp_max::max_protocol::lsp_3_18::TextDocumentContentParams,
-    ) -> Result<tower_lsp_max::max_protocol::lsp_3_18::TextDocumentContentResult> {
+        params: lsp_max::max_protocol::lsp_3_18::TextDocumentContentParams,
+    ) -> Result<lsp_max::max_protocol::lsp_3_18::TextDocumentContentResult> {
         let uri = params.text_document.uri.as_str();
         let content = match uri {
             "anti-llm://failset" => {
@@ -195,7 +195,7 @@ impl LanguageServer for AntiLlmServer {
             _ => "".to_string(),
         };
 
-        Ok(tower_lsp_max::max_protocol::lsp_3_18::TextDocumentContentResult { text: content })
+        Ok(lsp_max::max_protocol::lsp_3_18::TextDocumentContentResult { text: content })
     }
 
     async fn folding_range(&self, params: FoldingRangeParams) -> Result<Option<Vec<FoldingRange>>> {
@@ -222,8 +222,8 @@ impl LanguageServer for AntiLlmServer {
 
     async fn ranges_formatting(
         &self,
-        params: tower_lsp_max::max_protocol::lsp_3_18::DocumentRangesFormattingParams,
-    ) -> Result<Option<Vec<tower_lsp_max::max_protocol::lsp_3_18::TextEdit>>> {
+        params: lsp_max::max_protocol::lsp_3_18::DocumentRangesFormattingParams,
+    ) -> Result<Option<Vec<lsp_max::max_protocol::lsp_3_18::TextEdit>>> {
         let uri = &params.text_document.uri;
         if uri.starts_with("anti-llm://") {
             Ok(Some(vec![]))

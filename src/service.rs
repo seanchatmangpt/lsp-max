@@ -196,14 +196,14 @@ impl<S: LanguageServer> LspServiceBuilder<S> {
     ///
     /// ```rust,no_run
     /// use serde_json::{json, Value};
-    /// use tower_lsp_max::jsonrpc::Result;
-    /// use tower_lsp_max::lsp_types_max::*;
-    /// use tower_lsp_max::{LanguageServer, LspService};
+    /// use lsp_max::jsonrpc::Result;
+    /// use lsp_max::lsp_types_max::*;
+    /// use lsp_max::{LanguageServer, LspService};
     ///
     /// struct Mock;
     ///
     /// // Implementation of `LanguageServer` omitted...
-    /// # #[tower_lsp_max::async_trait]
+    /// # #[lsp_max::async_trait]
     /// # impl LanguageServer for Mock {
     /// #     async fn initialize(&self, _: InitializeParams) -> Result<InitializeResult> {
     /// #         Ok(InitializeResult::default())

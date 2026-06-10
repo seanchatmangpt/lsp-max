@@ -1,10 +1,10 @@
+use lsp_max::lsp_types::*;
+use lsp_max::ComposedServer;
 use serde_json::{json, Value};
 use std::collections::HashMap;
 use std::str::FromStr;
 use std::sync::Arc;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
-use tower_lsp_max::lsp_types::*;
-use tower_lsp_max::ComposedServer;
 
 // --- WORKSPACE INDEXER ---
 
@@ -137,21 +137,21 @@ fn get_word_at_pos(path: &std::path::Path, pos: Position) -> Option<String> {
 
 // --- STATIC GRAPH BACKEND ---
 
-use tower_lsp_max::auto_lsp::AutoLspAdapter;
+use lsp_max::lsp_max_ast::AutoLspAdapter;
 
 #[derive(Clone)]
 struct StaticGraphBackend {
-    client: tower_lsp_max::Client,
+    client: lsp_max::Client,
     index: Arc<std::sync::Mutex<SimpleWorkspaceIndex>>,
-    _auto_lsp: Arc<AutoLspAdapter>,
+    _lsp_max_ast: Arc<AutoLspAdapter>,
 }
 
-#[tower_lsp_max::async_trait]
-impl tower_lsp_max::LanguageServer for StaticGraphBackend {
+#[lsp_max::async_trait]
+impl lsp_max::LanguageServer for StaticGraphBackend {
     async fn initialize(
         &self,
         _params: InitializeParams,
-    ) -> tower_lsp_max::jsonrpc::Result<InitializeResult> {
+    ) -> lsp_max::jsonrpc::Result<InitializeResult> {
         let caps = ServerCapabilities {
             hover_provider: Some(HoverProviderCapability::Simple(true)),
             definition_provider: Some(OneOf::Left(true)),
@@ -171,7 +171,7 @@ impl tower_lsp_max::LanguageServer for StaticGraphBackend {
 
     async fn initialized(&self, _params: InitializedParams) {}
 
-    async fn shutdown(&self) -> tower_lsp_max::jsonrpc::Result<()> {
+    async fn shutdown(&self) -> lsp_max::jsonrpc::Result<()> {
         Ok(())
     }
 
@@ -196,7 +196,7 @@ impl tower_lsp_max::LanguageServer for StaticGraphBackend {
         self.client.publish_diagnostics(uri, vec![diag], None).await;
     }
 
-    async fn hover(&self, params: HoverParams) -> tower_lsp_max::jsonrpc::Result<Option<Hover>> {
+    async fn hover(&self, params: HoverParams) -> lsp_max::jsonrpc::Result<Option<Hover>> {
         let uri = &params.text_document_position_params.text_document.uri;
         let pos = params.text_document_position_params.position;
         if let Ok(url) = url::Url::parse(uri.as_str()) {
@@ -225,7 +225,7 @@ impl tower_lsp_max::LanguageServer for StaticGraphBackend {
     async fn goto_definition(
         &self,
         params: GotoDefinitionParams,
-    ) -> tower_lsp_max::jsonrpc::Result<Option<GotoDefinitionResponse>> {
+    ) -> lsp_max::jsonrpc::Result<Option<GotoDefinitionResponse>> {
         let uri = &params.text_document_position_params.text_document.uri;
         let pos = params.text_document_position_params.position;
         if let Ok(url) = url::Url::parse(uri.as_str()) {
@@ -253,7 +253,7 @@ impl tower_lsp_max::LanguageServer for StaticGraphBackend {
     async fn references(
         &self,
         params: ReferenceParams,
-    ) -> tower_lsp_max::jsonrpc::Result<Option<Vec<Location>>> {
+    ) -> lsp_max::jsonrpc::Result<Option<Vec<Location>>> {
         let uri = &params.text_document_position.text_document.uri;
         let pos = params.text_document_position.position;
         if let Ok(url) = url::Url::parse(uri.as_str()) {
@@ -281,17 +281,17 @@ impl tower_lsp_max::LanguageServer for StaticGraphBackend {
 
 #[derive(Clone)]
 struct MockPeerBackend {
-    client: tower_lsp_max::Client,
+    client: lsp_max::Client,
     delay: Arc<std::sync::atomic::AtomicU64>,
-    _auto_lsp: Arc<AutoLspAdapter>,
+    _lsp_max_ast: Arc<AutoLspAdapter>,
 }
 
-#[tower_lsp_max::async_trait]
-impl tower_lsp_max::LanguageServer for MockPeerBackend {
+#[lsp_max::async_trait]
+impl lsp_max::LanguageServer for MockPeerBackend {
     async fn initialize(
         &self,
         _params: InitializeParams,
-    ) -> tower_lsp_max::jsonrpc::Result<InitializeResult> {
+    ) -> lsp_max::jsonrpc::Result<InitializeResult> {
         let caps = ServerCapabilities {
             hover_provider: Some(HoverProviderCapability::Simple(true)),
             completion_provider: Some(CompletionOptions::default()),
@@ -313,7 +313,7 @@ impl tower_lsp_max::LanguageServer for MockPeerBackend {
 
     async fn initialized(&self, _params: InitializedParams) {}
 
-    async fn shutdown(&self) -> tower_lsp_max::jsonrpc::Result<()> {
+    async fn shutdown(&self) -> lsp_max::jsonrpc::Result<()> {
         Ok(())
     }
 
@@ -338,7 +338,7 @@ impl tower_lsp_max::LanguageServer for MockPeerBackend {
         self.client.publish_diagnostics(uri, vec![diag], None).await;
     }
 
-    async fn hover(&self, params: HoverParams) -> tower_lsp_max::jsonrpc::Result<Option<Hover>> {
+    async fn hover(&self, params: HoverParams) -> lsp_max::jsonrpc::Result<Option<Hover>> {
         let delay_ms = self.delay.load(std::sync::atomic::Ordering::Relaxed);
         if delay_ms > 0 {
             tokio::time::sleep(std::time::Duration::from_millis(delay_ms)).await;
@@ -375,7 +375,7 @@ impl tower_lsp_max::LanguageServer for MockPeerBackend {
     async fn completion(
         &self,
         _params: CompletionParams,
-    ) -> tower_lsp_max::jsonrpc::Result<Option<CompletionResponse>> {
+    ) -> lsp_max::jsonrpc::Result<Option<CompletionResponse>> {
         Ok(Some(CompletionResponse::Array(vec![CompletionItem {
             label: "mock_completion_item".to_string(),
             ..Default::default()
@@ -385,7 +385,7 @@ impl tower_lsp_max::LanguageServer for MockPeerBackend {
     async fn rename(
         &self,
         params: RenameParams,
-    ) -> tower_lsp_max::jsonrpc::Result<Option<WorkspaceEdit>> {
+    ) -> lsp_max::jsonrpc::Result<Option<WorkspaceEdit>> {
         let delay_ms = self.delay.load(std::sync::atomic::Ordering::Relaxed);
         if delay_ms > 0 {
             tokio::time::sleep(std::time::Duration::from_millis(delay_ms)).await;
@@ -431,7 +431,7 @@ impl tower_lsp_max::LanguageServer for MockPeerBackend {
     async fn formatting(
         &self,
         _params: DocumentFormattingParams,
-    ) -> tower_lsp_max::jsonrpc::Result<Option<Vec<TextEdit>>> {
+    ) -> lsp_max::jsonrpc::Result<Option<Vec<TextEdit>>> {
         let pos = Position {
             line: 0,
             character: 0,
@@ -448,7 +448,7 @@ impl tower_lsp_max::LanguageServer for MockPeerBackend {
     async fn code_action(
         &self,
         _params: CodeActionParams,
-    ) -> tower_lsp_max::jsonrpc::Result<Option<CodeActionResponse>> {
+    ) -> lsp_max::jsonrpc::Result<Option<CodeActionResponse>> {
         let action = CodeAction {
             title: "mock-peer-code-action".to_string(),
             kind: Some(CodeActionKind::QUICKFIX),
@@ -598,8 +598,8 @@ impl TestClient {
 
 async fn start_upstream_server<S, F>(init: F) -> (String, tokio::task::JoinHandle<()>)
 where
-    S: tower_lsp_max::LanguageServer + 'static,
-    F: FnOnce(tower_lsp_max::Client) -> S + Send + Sync + 'static,
+    S: lsp_max::LanguageServer + 'static,
+    F: FnOnce(lsp_max::Client) -> S + Send + Sync + 'static,
 {
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
     let addr = listener.local_addr().unwrap().to_string();
@@ -610,8 +610,8 @@ where
             let init_fn = init_opt
                 .take()
                 .expect("Upstream server can only accept one connection in this harness");
-            let (service, socket) = tower_lsp_max::LspService::new(init_fn);
-            let _ = tower_lsp_max::Server::new(reader, writer, socket)
+            let (service, socket) = lsp_max::LspService::new(init_fn);
+            let _ = lsp_max::Server::new(reader, writer, socket)
                 .serve(service)
                 .await;
         }
@@ -634,7 +634,7 @@ async fn main() {
     // 1. Scan and index workspaces
     println!("Step 1: Scanning and indexing real local workspaces...");
     let mut index = SimpleWorkspaceIndex::new();
-    index.index_dir("/Users/sac/tower-lsp-max");
+    index.index_dir("/Users/sac/lsp-max");
     index.index_dir("/Users/sac/lsp-types-max");
     let index_arc = Arc::new(std::sync::Mutex::new(index));
     let index_clone_1 = index_arc.clone();
@@ -646,7 +646,7 @@ async fn main() {
         start_upstream_server(move |client| StaticGraphBackend {
             client,
             index: index_clone_1,
-            _auto_lsp: Arc::new(AutoLspAdapter::new_default()),
+            _lsp_max_ast: Arc::new(AutoLspAdapter::new_default()),
         })
         .await;
     println!(
@@ -659,7 +659,7 @@ async fn main() {
     let (mock_peer_addr, mock_peer_task) = start_upstream_server(move |client| MockPeerBackend {
         client,
         delay: mock_delay_clone,
-        _auto_lsp: Arc::new(AutoLspAdapter::new_default()),
+        _lsp_max_ast: Arc::new(AutoLspAdapter::new_default()),
     })
     .await;
     println!(
@@ -680,7 +680,7 @@ async fn main() {
     let composed_state_holder = Arc::new(std::sync::Mutex::new(None));
     let composed_state_holder_clone = composed_state_holder.clone();
 
-    let (service, socket) = tower_lsp_max::LspService::new(|client| {
+    let (service, socket) = lsp_max::LspService::new(|client| {
         let server = ComposedServer::new(client, upstreams.clone());
         let composed_state = server.state().clone();
         let mut holder = composed_state_holder_clone.lock().unwrap();
@@ -691,7 +691,7 @@ async fn main() {
     // Spawn composed server
     let (server_reader, server_writer) = tokio::io::split(server_io);
     let composed_server_task = tokio::spawn(async move {
-        let _ = tower_lsp_max::Server::new(server_reader, server_writer, socket)
+        let _ = lsp_max::Server::new(server_reader, server_writer, socket)
             .serve(service)
             .await;
     });
@@ -708,8 +708,8 @@ async fn main() {
 
     // Set registry root path
     {
-        let mut reg = tower_lsp_max::get_registry().lock().unwrap();
-        reg.root_path = std::path::PathBuf::from("/Users/sac/tower-lsp-max");
+        let mut reg = lsp_max::get_registry().lock().unwrap();
+        reg.root_path = std::path::PathBuf::from("/Users/sac/lsp-max");
         println!("Set ServerRegistry root_path to: {:?}", reg.root_path);
     }
 
@@ -724,7 +724,7 @@ async fn main() {
                         "hover": { "contentFormat": ["markdown"] }
                     }
                 },
-                "rootUri": "file:///Users/sac/tower-lsp-max",
+                "rootUri": "file:///Users/sac/lsp-max",
                 "processId": null
             }),
         )
@@ -735,14 +735,14 @@ async fn main() {
     client.send_notification("initialized", json!({})).await;
 
     // 5. Open a document containing real workspace contents
-    let real_file_uri = "file:///Users/sac/tower-lsp-max/crates/playground/src/lib.rs";
+    let real_file_uri = "file:///Users/sac/lsp-max/crates/playground/src/lib.rs";
     println!("Step 5: Opening file: {}", real_file_uri);
     client.send_notification("textDocument/didOpen", json!({
         "textDocument": {
             "uri": real_file_uri,
             "languageId": "rust",
             "version": 1,
-            "text": std::fs::read_to_string("/Users/sac/tower-lsp-max/crates/playground/src/lib.rs").unwrap()
+            "text": std::fs::read_to_string("/Users/sac/lsp-max/crates/playground/src/lib.rs").unwrap()
         }
     })).await;
 
@@ -783,7 +783,7 @@ async fn main() {
 
     // 7. Verify read-only paths (hover, definition, references)
     let file_content =
-        std::fs::read_to_string("/Users/sac/tower-lsp-max/crates/playground/src/lib.rs").unwrap();
+        std::fs::read_to_string("/Users/sac/lsp-max/crates/playground/src/lib.rs").unwrap();
     let mut hover_line = 27;
     let mut hover_col = 15;
     for (line_idx, line) in file_content.lines().enumerate() {
@@ -1104,9 +1104,8 @@ async fn main() {
         .unwrap()
         .as_secs();
 
-    let root_receipts_dir = std::path::Path::new("/Users/sac/tower-lsp-max/playground/receipts");
-    let crate_receipts_dir =
-        std::path::Path::new("/Users/sac/tower-lsp-max/crates/playground/receipts");
+    let root_receipts_dir = std::path::Path::new("/Users/sac/lsp-max/playground/receipts");
+    let crate_receipts_dir = std::path::Path::new("/Users/sac/lsp-max/crates/playground/receipts");
     std::fs::create_dir_all(root_receipts_dir).ok();
     std::fs::create_dir_all(crate_receipts_dir).ok();
 

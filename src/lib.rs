@@ -5,16 +5,16 @@
 //! # Example
 //!
 //! ```rust,no_run
-//! use tower_lsp_max::jsonrpc::Result;
-//! use tower_lsp_max::lsp_types_max::*;
-//! use tower_lsp_max::{Client, LanguageServer, LspService, Server};
+//! use lsp_max::jsonrpc::Result;
+//! use lsp_max::lsp_types_max::*;
+//! use lsp_max::{Client, LanguageServer, LspService, Server};
 //!
 //! #[derive(Debug)]
 //! struct Backend {
 //!     client: Client,
 //! }
 //!
-//! #[tower_lsp_max::async_trait]
+//! #[lsp_max::async_trait]
 //! impl LanguageServer for Backend {
 //!     async fn initialize(&self, _: InitializeParams) -> Result<InitializeResult> {
 //!         Ok(InitializeResult {
@@ -81,9 +81,9 @@
 pub extern crate lsp_types_max;
 pub use lsp_types_max as lsp_types;
 
-pub extern crate tower_lsp_max_agent as max_agent;
-pub extern crate tower_lsp_max_protocol as max_protocol;
-pub extern crate tower_lsp_max_runtime as max_runtime;
+pub extern crate lsp_max_agent as max_agent;
+pub extern crate lsp_max_protocol as max_protocol;
+pub extern crate lsp_max_runtime as max_runtime;
 
 /// A re-export of [`async-trait`](https://docs.rs/async-trait) for convenience.
 pub use async_trait::async_trait;
@@ -98,9 +98,9 @@ use lsp_types_max::*;
 
 use self::jsonrpc::{Error, Result};
 
-/// Semantic parsing and incremental AST generation bridged from `auto-lsp`.
-pub mod auto_lsp {
-    pub use auto_lsp_adapter::*;
+/// Semantic parsing and incremental AST generation via the lsp-max-ast layer.
+pub mod ast {
+    pub use lsp_max_ast::*;
 }
 
 pub mod jsonrpc;
@@ -113,7 +113,7 @@ mod transport;
 pub(crate) use language_server::generated;
 pub use language_server::LanguageServer;
 
-pub use tower_lsp_max_lsif as lsif;
+pub use lsp_max_lsif as lsif;
 
 mod composition;
 pub use composition::{ComposedServer, CompositionState, SharedCompositionState, SourceHealth};

@@ -1,6 +1,6 @@
 use crate::mock_server::MockServer;
+use lsp_max::{ComposedServer, LspService, Server};
 use serde_json::{json, Value};
-use tower_lsp_max::{ComposedServer, LspService, Server};
 
 async fn read_message<R: tokio::io::AsyncReadExt + Unpin>(
     reader: &mut R,

@@ -14,7 +14,7 @@ use serde_json::json;
 
 #[test]
 fn test_protocol_conformance_vector_round_trip() {
-    use tower_lsp_max_protocol::{ConformanceVector, LawAxis};
+    use lsp_max_protocol::{ConformanceVector, LawAxis};
     let cv = ConformanceVector {
         admitted: vec![LawAxis::Protocol, LawAxis::Type],
         refused: vec![LawAxis::Hook],
@@ -33,7 +33,7 @@ fn test_protocol_conformance_vector_round_trip() {
 
 #[test]
 fn test_protocol_admission_result_round_trip() {
-    use tower_lsp_max_protocol::{AdmissionDecision, AdmissionResult, LawAxis, Receipt};
+    use lsp_max_protocol::{AdmissionDecision, AdmissionResult, LawAxis, Receipt};
     let ar = AdmissionResult {
         decision: AdmissionDecision::Admitted,
         law_axis: LawAxis::Protocol,
@@ -53,7 +53,7 @@ fn test_protocol_admission_result_round_trip() {
 
 #[test]
 fn test_protocol_refusal_result_round_trip() {
-    use tower_lsp_max_protocol::{LawAxis, Receipt, RefusalResult, RepairAction};
+    use lsp_max_protocol::{LawAxis, Receipt, RefusalResult, RepairAction};
     let rr = RefusalResult {
         law_axis: LawAxis::Security,
         rationale: "security gate failed".to_string(),
@@ -76,7 +76,7 @@ fn test_protocol_refusal_result_round_trip() {
 
 #[test]
 fn test_protocol_lawful_transition_result_round_trip() {
-    use tower_lsp_max_protocol::{LawfulTransitionResult, Receipt};
+    use lsp_max_protocol::{LawfulTransitionResult, Receipt};
     let ltr = LawfulTransitionResult {
         from_phase: "Uninitialized".to_string(),
         to_phase: "Initializing".to_string(),
@@ -99,7 +99,7 @@ fn test_protocol_lawful_transition_result_round_trip() {
 
 #[test]
 fn test_protocol_replay_result_round_trip() {
-    use tower_lsp_max_protocol::{ConformanceVector, Receipt, ReplayResult};
+    use lsp_max_protocol::{ConformanceVector, Receipt, ReplayResult};
     let rr = ReplayResult {
         replay_id: "replay-001".to_string(),
         events_replayed: 42,
@@ -119,7 +119,7 @@ fn test_protocol_replay_result_round_trip() {
 
 #[test]
 fn test_protocol_release_actuation_result_round_trip() {
-    use tower_lsp_max_protocol::{ConformanceVector, Receipt, ReleaseActuationResult};
+    use lsp_max_protocol::{ConformanceVector, Receipt, ReleaseActuationResult};
     let rar = ReleaseActuationResult {
         released: true,
         conformance: ConformanceVector::default(),
@@ -140,7 +140,7 @@ fn test_protocol_release_actuation_result_round_trip() {
 
 #[test]
 fn test_protocol_hook_descriptor_round_trip() {
-    use tower_lsp_max_protocol::{HookDescriptor, LawAxis};
+    use lsp_max_protocol::{HookDescriptor, LawAxis};
     let hd = HookDescriptor {
         hook_id: "hook-001".to_string(),
         name: "TestHook".to_string(),
@@ -160,7 +160,7 @@ fn test_protocol_hook_descriptor_round_trip() {
 
 #[test]
 fn test_protocol_chain_descriptor_round_trip() {
-    use tower_lsp_max_protocol::{ChainDescriptor, HookDescriptor, HookGraphNode, LawAxis};
+    use lsp_max_protocol::{ChainDescriptor, HookDescriptor, HookGraphNode, LawAxis};
     let node = HookGraphNode {
         node_id: "node-001".to_string(),
         hook: HookDescriptor::default(),
@@ -181,7 +181,7 @@ fn test_protocol_chain_descriptor_round_trip() {
 
 #[test]
 fn test_protocol_propagation_result_round_trip() {
-    use tower_lsp_max_protocol::{PropagationResult, Receipt};
+    use lsp_max_protocol::{PropagationResult, Receipt};
     let pr = PropagationResult {
         propagation_id: "prop-001".to_string(),
         affected_nodes: vec!["node-A".to_string(), "node-B".to_string()],
@@ -201,7 +201,7 @@ fn test_protocol_propagation_result_round_trip() {
 
 #[test]
 fn test_protocol_autonomic_loop_status_round_trip() {
-    use tower_lsp_max_protocol::{AutonomicLoopStatus, Receipt};
+    use lsp_max_protocol::{AutonomicLoopStatus, Receipt};
     let als = AutonomicLoopStatus {
         loop_id: "loop-001".to_string(),
         active: true,
@@ -223,7 +223,7 @@ fn test_protocol_autonomic_loop_status_round_trip() {
 
 #[test]
 fn test_protocol_manifold_snapshot_round_trip() {
-    use tower_lsp_max_protocol::{
+    use lsp_max_protocol::{
         ChainDescriptor, ConformanceVector, HookDescriptor, ManifoldSnapshot, Receipt, SnapshotId,
     };
     let ms = ManifoldSnapshot {

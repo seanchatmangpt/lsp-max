@@ -1,7 +1,7 @@
 use clap_noun_verb::Result;
 use clap_noun_verb_macros::verb;
+use lsp_max_runtime::AutonomicMesh;
 use serde::Serialize;
-use tower_lsp_max_runtime::AutonomicMesh;
 
 // ==============================================================================
 // 1. Domain Tier
@@ -102,7 +102,7 @@ pub fn manifold(instance_id: String) -> Result<ManifoldResult> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tower_lsp_max_runtime::{AutonomicMesh, LspInstance};
+    use lsp_max_runtime::{AutonomicMesh, LspInstance};
 
     fn make_temp_service() -> (tempfile::NamedTempFile, SnapshotService) {
         let mut mesh = AutonomicMesh::new();

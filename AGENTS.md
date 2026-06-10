@@ -1,4 +1,4 @@
-# AGENTS.md SPR — tower-lsp-max
+# AGENTS.md SPR — lsp-max
 
 This SPR is the compressed activation layer for the full `AGENTS.md`. It does not replace the full file. It primes agents with the project laws before they read the detailed rules.
 
@@ -6,7 +6,7 @@ This SPR is the compressed activation layer for the full `AGENTS.md`. It does no
 
 ## Core Frame
 
-`tower-lsp-max` is the proving ground for **inverted LSP**.
+`lsp-max` is the proving ground for **inverted LSP**.
 
 Normal LSP helps humans write code.
 
@@ -46,7 +46,7 @@ Agent output is admitted only when bounded receipts prove that the action equals
 This project is an F1 race team for agents.
 
 The agent is the driver.  
-`tower-lsp-max` is the chassis/protocol surface.  
+`lsp-max` is the chassis/protocol surface.  
 `anti-llm-lsp` is telemetry.  
 The failset is the pit wall.  
 Receipts are scrutineering.  
@@ -360,7 +360,7 @@ examples/anti-llm-lsp
 Purpose:
 
 ```text
-anti-llm-lsp runs on tower-lsp-max
+anti-llm-lsp runs on lsp-max
 anti-llm-lsp does not depend on plain tower-lsp
 anti-llm-lsp exercises LSP 3.18 surfaces
 anti-llm-lsp detects attempts to reintroduce tower-lsp
@@ -369,9 +369,9 @@ anti-llm-lsp detects attempts to reintroduce tower-lsp
 Self-sealing law:
 
 ```text
-tower-lsp-max hosts anti-llm-lsp
+lsp-max hosts anti-llm-lsp
 anti-llm-lsp detects tower-lsp
-therefore tower-lsp-max cannot silently regress to tower-lsp
+therefore lsp-max cannot silently regress to tower-lsp
 ```
 
 ---

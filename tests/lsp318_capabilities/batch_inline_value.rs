@@ -1,6 +1,6 @@
+use lsp_max::lsp_types as lsp;
 /// textDocument/inlineValue dispatch test.
 use std::str::FromStr;
-use tower_lsp_max::lsp_types as lsp;
 
 use super::common::{assert_well_formed, roundtrip};
 

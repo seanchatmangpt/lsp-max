@@ -1,9 +1,9 @@
+use lsp_max::{LspService, Server};
+use lsp_max_playground::Backend;
 /// RPC integration tests: rpc_attribute_diagnostics, rpc_completion.
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use tokio::io::AsyncWriteExt;
-use tower_lsp_max::{LspService, Server};
-use tower_lsp_max_playground::Backend;
 
 use super::common::{
     encode_message, read_message, wait_for_notification, wait_for_response, write_msg,
