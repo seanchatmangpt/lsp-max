@@ -112,6 +112,9 @@ Domain-specific LSP servers are in `examples/`:
 | `wasm4pm-lsp` | Process-mining LSP over wasm4pm |
 | `axum-lsp`, `bevy-lsp`, `tex-lsp` | Framework integration demos |
 | `agi-swarm-defense` | Explanation: why the law-state runtime exists |
+| `receipt_chain_explained.rs` | Explanation: why BLAKE3 receipt-chain, not test assertions |
+| `conformance_vector_explained.rs` | Explanation: why ConformanceVector has an Unknown axis |
+| `calver_law_explained.rs` | Explanation: why CalVer instead of SemVer |
 
 See [`docs/EXAMPLES.md`](docs/EXAMPLES.md) for the full [Diataxis]-mapped index
 with gap analysis.

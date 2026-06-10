@@ -13,7 +13,7 @@ quadrant, and every quadrant has coverage.
 | [Tutorial](#tutorials) | Learning-oriented — guided first steps | `stdio.rs`, `tcp.rs`, `websocket.rs` |
 | [How-to](#how-to-guides) | Goal-oriented — specific task recipes | `custom_notification.rs`, `repro_lifecycle.rs`, `axum-lsp`, `bevy-lsp`, `tex-lsp`, `wasm/` |
 | [Reference](#reference) | Information-oriented — technical specification | `anti-llm-lsp`, `clap-noun-verb-lsp`, `pattern-lsp`, `wasm4pm-lsp`, `wasm4pm-compat-lsp`, `gc005-wasm4pm-adapter` |
-| [Explanation](#explanation) | Understanding-oriented — concepts and rationale | `agi-swarm-defense` |
+| [Explanation](#explanation) | Understanding-oriented — concepts and rationale | `agi-swarm-defense`, `receipt_chain_explained.rs`, `conformance_vector_explained.rs`, `calver_law_explained.rs` |
 
 ---
 
@@ -173,6 +173,33 @@ architecture.
 
 Read this after the tutorials and before building a production agent client.
 
+### `receipt_chain_explained.rs`
+
+**Why BLAKE3 content-addressable receipts, not test assertions.**
+
+Explains the circular-hash trap, why receipts must be written *after* the
+artifact (not embedded in it), what a receipt does and does not prove, and how
+receipts compose with OCEL conformance and `ConformanceVector` in the full
+admission model.
+
+### `conformance_vector_explained.rs`
+
+**Why `ConformanceVector` has three axes — and why Unknown must never collapse.**
+
+Explains the failure modes of a boolean `is_admitted` flag, the gate decision
+contract for consumers, how axes transition from `unknown` to `admitted` or
+`refused` during server startup and conformance checks, and how the delta log
+enables incremental admission polling.
+
+### `calver_law_explained.rs`
+
+**Why `YY.M.D` CalVer instead of SemVer.**
+
+Explains why SemVer's compatibility signal is meaningless for lsp-max's
+agent-first clients, how CalVer integrates with the receipt/audit trail, the
+`ANTI-LLM-VERSION-*` enforcement mechanism, and the sibling-repo version
+constraint trap that blanket bump scripts trigger.
+
 ---
 
 ## Gap analysis
@@ -182,18 +209,6 @@ Read this after the tutorials and before building a production agent client.
 | Tutorial | `stdio.rs`, `tcp.rs`, `websocket.rs` | COVERED — three transport variants |
 | How-to | `custom_notification.rs`, `repro_lifecycle.rs`, `axum-lsp`, `bevy-lsp`, `tex-lsp`, `wasm/` | COVERED — six distinct tasks |
 | Reference | `anti-llm-lsp`, `clap-noun-verb-lsp`, `pattern-lsp`, `wasm4pm-lsp`, `wasm4pm-compat-lsp`, `gc005-wasm4pm-adapter` | COVERED — six reference implementations |
-| Explanation | `agi-swarm-defense` | PARTIAL — one conceptual example; consider adding explanation of receipt-chain rationale |
+| Explanation | `agi-swarm-defense`, `receipt_chain_explained.rs`, `conformance_vector_explained.rs`, `calver_law_explained.rs` | COVERED — four conceptual examples |
 
-### Known gap: Explanation depth
-
-`agi-swarm-defense` is the only Explanation-quadrant example. The following
-concepts lack a narrative example:
-
-- **Receipt-chain rationale** — why BLAKE3 + content-addressable receipts, not
-  just test assertions
-- **`ConformanceVector` unknown-axis** — why unknown must not collapse
-- **CalVer law** — why version-as-date, not SemVer
-
-These can be addressed by adding prose to `AGENTS.md` sections, adding a
-`docs/EXPLANATION.md`, or adding a dedicated `examples/receipts-explained/`
-example in a future iteration.
+All quadrants covered. No known gaps.
