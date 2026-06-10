@@ -65,7 +65,7 @@ impl AutonomicMesh {
             }
             MaxMethod::RepairPlan => self.handle_repair_plan(instance_id, params),
             MaxMethod::ApplyRepairTransaction => {
-                let code_action: tower_lsp_max_protocol::MaxCodeAction =
+                let code_action: lsp_max_protocol::MaxCodeAction =
                     serde_json::from_value(params).map_err(|e| format!("Invalid params: {}", e))?;
                 self.apply_repair_transaction(instance_id, code_action)
             }
@@ -108,7 +108,7 @@ impl AutonomicMesh {
             MaxMethod::HookGraph => self.handle_hook_graph(instance_id),
             MaxMethod::Chain => self.handle_chain(),
             MaxMethod::Propagate => {
-                let receipt: tower_lsp_max_protocol::Receipt =
+                let receipt: lsp_max_protocol::Receipt =
                     serde_json::from_value(params).map_err(|e| format!("Invalid params: {}", e))?;
                 self.execute_action(MeshAction::EmitReceipt {
                     instance_id: InstanceId::from(instance_id),
@@ -172,7 +172,7 @@ impl AutonomicMesh {
                     serde_json::from_value(params).map_err(|e| format!("Invalid params: {}", e))?;
                 let receipt_id = format!("rcpt-refusal-{}", diag_id);
                 let hash = sha256(receipt_id.as_bytes());
-                let receipt = tower_lsp_max_protocol::Receipt {
+                let receipt = lsp_max_protocol::Receipt {
                     receipt_id: receipt_id.clone(),
                     hash,
                     prev_receipt_hash: None,
@@ -246,7 +246,7 @@ impl AutonomicMesh {
     pub fn apply_repair_transaction(
         &mut self,
         instance_id: &str,
-        code_action: tower_lsp_max_protocol::MaxCodeAction,
+        code_action: lsp_max_protocol::MaxCodeAction,
     ) -> Result<serde_json::Value, String> {
         {
             let inst = self
@@ -270,7 +270,7 @@ impl AutonomicMesh {
         let action_id = format!("repair-{}", code_action.action.title.replace(' ', "-"));
         let receipt_id = format!("rcpt-repair-{}", code_action.action.title.replace(' ', "-"));
         let hash = sha256(receipt_id.as_bytes());
-        let receipt = tower_lsp_max_protocol::Receipt {
+        let receipt = lsp_max_protocol::Receipt {
             receipt_id: receipt_id.clone(),
             hash,
             prev_receipt_hash: None,

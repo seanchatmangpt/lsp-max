@@ -5,7 +5,7 @@ use std::fmt::{Debug, Formatter};
 use std::marker::PhantomData;
 
 pub struct DeterministicSnapshot {
-    pub id: tower_lsp_max_protocol::SnapshotId,
+    pub id: lsp_max_protocol::SnapshotId,
     pub timestamp: u64,
 }
 
@@ -16,7 +16,7 @@ impl DeterministicSnapshot {
             .unwrap_or(std::time::Duration::ZERO)
             .as_secs();
         Self {
-            id: tower_lsp_max_protocol::SnapshotId(format!("snap-{}", timestamp)),
+            id: lsp_max_protocol::SnapshotId(format!("snap-{}", timestamp)),
             timestamp,
         }
     }

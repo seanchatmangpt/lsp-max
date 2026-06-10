@@ -1,7 +1,7 @@
 //! Evidence payload types and From/TryFrom converters for wasm4pm compatibility.
 
 use crate::control_plane::receipts::CryptographicReceipt;
-use tower_lsp_max_protocol::MaxDiagnostic;
+use lsp_max_protocol::MaxDiagnostic;
 use wasm4pm_compat::evidence::Evidence;
 use wasm4pm_compat::state::{Admitted, Raw};
 use wasm4pm_compat::witness::Ocel20;
@@ -59,13 +59,13 @@ impl From<&lsp_types_max::Range> for RangeEvidencePayload {
     }
 }
 
-impl TryFrom<&tower_lsp_max_lsif::lsif::Vertex> for RangeEvidencePayload {
+impl TryFrom<&lsp_max_lsif::lsif::Vertex> for RangeEvidencePayload {
     type Error = &'static str;
 
-    fn try_from(v: &tower_lsp_max_lsif::lsif::Vertex) -> Result<Self, Self::Error> {
+    fn try_from(v: &lsp_max_lsif::lsif::Vertex) -> Result<Self, Self::Error> {
         match v {
-            tower_lsp_max_lsif::lsif::Vertex::Range { start, end, .. }
-            | tower_lsp_max_lsif::lsif::Vertex::ResultRange { start, end, .. } => Ok(Self {
+            lsp_max_lsif::lsif::Vertex::Range { start, end, .. }
+            | lsp_max_lsif::lsif::Vertex::ResultRange { start, end, .. } => Ok(Self {
                 start_line: start.line,
                 start_character: start.character,
                 end_line: end.line,
@@ -76,12 +76,12 @@ impl TryFrom<&tower_lsp_max_lsif::lsif::Vertex> for RangeEvidencePayload {
     }
 }
 
-impl TryFrom<&tower_lsp_max_lsif::lsif::Vertex> for WorkspaceEvidencePayload {
+impl TryFrom<&lsp_max_lsif::lsif::Vertex> for WorkspaceEvidencePayload {
     type Error = &'static str;
 
-    fn try_from(v: &tower_lsp_max_lsif::lsif::Vertex) -> Result<Self, Self::Error> {
+    fn try_from(v: &lsp_max_lsif::lsif::Vertex) -> Result<Self, Self::Error> {
         match v {
-            tower_lsp_max_lsif::lsif::Vertex::Project { id, kind, .. } => {
+            lsp_max_lsif::lsif::Vertex::Project { id, kind, .. } => {
                 let id_str = match id {
                     lsp_types_max::NumberOrString::Number(n) => n.to_string(),
                     lsp_types_max::NumberOrString::String(s) => s.clone(),
@@ -125,8 +125,8 @@ impl From<&CryptographicReceipt> for CryptographicReceiptEvidencePayload {
     }
 }
 
-impl From<&tower_lsp_max_protocol::Receipt> for CryptographicReceiptEvidencePayload {
-    fn from(r: &tower_lsp_max_protocol::Receipt) -> Self {
+impl From<&lsp_max_protocol::Receipt> for CryptographicReceiptEvidencePayload {
+    fn from(r: &lsp_max_protocol::Receipt) -> Self {
         Self {
             prev_hash: r.prev_receipt_hash.clone().unwrap_or_default(),
             discipline_id: String::new(),

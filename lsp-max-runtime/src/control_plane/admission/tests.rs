@@ -5,9 +5,9 @@ use super::mapping_helpers::*;
 use super::types::*;
 use crate::Machine;
 use oxigraph::store::Store;
-use tower_lsp_max_base::abstractions::RelationAdmitter;
-use tower_lsp_max_lsif::lsif::{Edge, EdgeType, Element, PositionEncoding, Vertex, VertexType};
-use tower_lsp_max_protocol::MaxDiagnostic;
+use lsp_max_base::abstractions::RelationAdmitter;
+use lsp_max_lsif::lsif::{Edge, EdgeType, Element, PositionEncoding, Vertex, VertexType};
+use lsp_max_protocol::MaxDiagnostic;
 
 fn make_meta_element() -> Element {
     Element::Vertex(Vertex::MetaData {
@@ -144,7 +144,7 @@ fn test_ontology_laundering_ingestion_whitelist() {
             message: "test diagnostic message".to_string(),
             ..Default::default()
         },
-        receipt_obligation: Some(tower_lsp_max_protocol::ReceiptObligation {
+        receipt_obligation: Some(lsp_max_protocol::ReceiptObligation {
             required_receipts: vec!["rcpt-123".to_string()],
         }),
         ..Default::default()

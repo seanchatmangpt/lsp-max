@@ -16,26 +16,26 @@ impl AutonomicMesh {
             .instances
             .get(instance_id)
             .ok_or_else(|| format!("Instance not found: {}", instance_id))?;
-        let actions: Vec<tower_lsp_max_protocol::MaxCodeAction> = inst
+        let actions: Vec<lsp_max_protocol::MaxCodeAction> = inst
             .diagnostics
             .iter()
             .filter(|d| d.diagnostic_id == id || d.law_id == id)
             .flat_map(|d| {
                 d.repair_actions
                     .iter()
-                    .map(move |ra| tower_lsp_max_protocol::MaxCodeAction {
+                    .map(move |ra| lsp_max_protocol::MaxCodeAction {
                         action: lsp_types_max::CodeAction {
                             title: ra.description.clone(),
                             ..Default::default()
                         },
                         preconditions: vec![],
-                        validation_plan: tower_lsp_max_protocol::ValidationPlan {
+                        validation_plan: lsp_max_protocol::ValidationPlan {
                             gates: d.verification_gates.clone(),
                         },
-                        rollback_plan: tower_lsp_max_protocol::RollbackPlan {
+                        rollback_plan: lsp_max_protocol::RollbackPlan {
                             strategy: "revert".to_string(),
                         },
-                        receipt_plan: tower_lsp_max_protocol::ReceiptPlan {
+                        receipt_plan: lsp_max_protocol::ReceiptPlan {
                             expected_receipts: d
                                 .receipt_obligation
                                 .as_ref()
@@ -53,7 +53,7 @@ impl AutonomicMesh {
         instance_id: &str,
         params: serde_json::Value,
     ) -> Result<serde_json::Value, String> {
-        let snapshot_id: tower_lsp_max_protocol::SnapshotId =
+        let snapshot_id: lsp_max_protocol::SnapshotId =
             serde_json::from_value(params).map_err(|e| format!("Invalid params: {}", e))?;
         let inst = self
             .instances
@@ -61,9 +61,9 @@ impl AutonomicMesh {
             .ok_or_else(|| format!("Instance not found: {}", instance_id))?;
         let mut cv = build_conformance_vector(&inst.diagnostics);
         cv.score = Some(inst.conformance_score());
-        let bundle = tower_lsp_max_protocol::AnalysisBundle {
+        let bundle = lsp_max_protocol::AnalysisBundle {
             snapshot_id,
-            capability_vector: tower_lsp_max_protocol::MaxCapabilityVector {
+            capability_vector: lsp_max_protocol::MaxCapabilityVector {
                 client: lsp_types_max::ClientCapabilities::default(),
                 server: lsp_types_max::ServerCapabilities::default(),
                 negotiated: serde_json::Value::Null,
@@ -285,7 +285,7 @@ impl AutonomicMesh {
         }
         let receipt_id = format!("rcpt-release-{}", instance_id);
         let hash = sha256(receipt_id.as_bytes());
-        let receipt = tower_lsp_max_protocol::Receipt {
+        let receipt = lsp_max_protocol::Receipt {
             receipt_id: receipt_id.clone(),
             hash,
             prev_receipt_hash: None,

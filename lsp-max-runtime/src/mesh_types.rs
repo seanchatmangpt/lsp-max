@@ -1,4 +1,4 @@
-pub use tower_lsp_max_protocol::{HookEvent, InstanceId, MaxDiagnostic, PolicyState, Receipt};
+pub use lsp_max_protocol::{HookEvent, InstanceId, MaxDiagnostic, PolicyState, Receipt};
 
 #[derive(Debug, Clone)]
 pub enum MeshAction {

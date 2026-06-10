@@ -2,7 +2,7 @@ mod edge;
 mod vertex;
 
 use super::types::GraphAdmissionError;
-use tower_lsp_max_lsif::lsif::Element;
+use lsp_max_lsif::lsif::Element;
 
 pub fn map_element_to_quads(
     element: &Element,

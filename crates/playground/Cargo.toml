@@ -1,11 +1,11 @@
 [package]
-name = "tower-lsp-max-playground"
+name = "lsp-max-playground"
 version = "0.1.0"
 edition = "2021"
 publish = false
 
 [[bin]]
-name = "tower-lsp-max-playground"
+name = "lsp-max-playground"
 path = "src/main.rs"
 
 [[bin]]
@@ -23,7 +23,7 @@ ropey = "1.5"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 tokio = { version = "1.17", features = ["full"] }
-tower-lsp-max = { path = "../..", features = ["proposed"] }
+lsp-max = { path = "../..", features = ["proposed"] }
 lsp-types-max = { path = "../../../lsp-types-max", features = ["proposed"] }
 url = "2.5"
 syn = { version = "2.0", features = ["full", "visit"] }
@@ -37,7 +37,7 @@ uuid = { version = "1", features = ["v4"] }
 chrono = { version = "0.4", features = ["serde"] }
 
 [features]
-proposed = ["tower-lsp-max/proposed", "lsp-types-max/proposed"]
+proposed = ["lsp-max/proposed", "lsp-types-max/proposed"]
 
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(feature, values("proposed"))'] }

@@ -1,5 +1,5 @@
 use oxigraph::sparql::QueryResults;
-use tower_lsp_max_protocol::{LawAxis, MaxDiagnostic, Repairability, Terminality};
+use lsp_max_protocol::{LawAxis, MaxDiagnostic, Repairability, Terminality};
 
 pub(super) fn term_to_string(term: &oxigraph::model::Term) -> String {
     match term {

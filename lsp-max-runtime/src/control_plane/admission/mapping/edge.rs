@@ -1,6 +1,6 @@
 use super::super::mapping_helpers::*;
 use super::super::types::GraphAdmissionError;
-use tower_lsp_max_lsif::lsif::Edge;
+use lsp_max_lsif::lsif::Edge;
 
 pub(super) fn map_edge(
     edge: &Edge,
@@ -108,19 +108,19 @@ pub(super) fn map_edge(
 
             if let Some(prop) = property {
                 let prop_str = match prop {
-                    tower_lsp_max_lsif::lsif::ItemEdgeProperty::Definitions => "definitions",
-                    tower_lsp_max_lsif::lsif::ItemEdgeProperty::Declarations => "declarations",
-                    tower_lsp_max_lsif::lsif::ItemEdgeProperty::References => "references",
-                    tower_lsp_max_lsif::lsif::ItemEdgeProperty::ReferenceResults => {
+                    lsp_max_lsif::lsif::ItemEdgeProperty::Definitions => "definitions",
+                    lsp_max_lsif::lsif::ItemEdgeProperty::Declarations => "declarations",
+                    lsp_max_lsif::lsif::ItemEdgeProperty::References => "references",
+                    lsp_max_lsif::lsif::ItemEdgeProperty::ReferenceResults => {
                         "referenceResults"
                     }
-                    tower_lsp_max_lsif::lsif::ItemEdgeProperty::ImplementationResults => {
+                    lsp_max_lsif::lsif::ItemEdgeProperty::ImplementationResults => {
                         "implementationResults"
                     }
-                    tower_lsp_max_lsif::lsif::ItemEdgeProperty::TypeDefinitions => {
+                    lsp_max_lsif::lsif::ItemEdgeProperty::TypeDefinitions => {
                         "typeDefinitionResults"
                     }
-                    tower_lsp_max_lsif::lsif::ItemEdgeProperty::ReferenceLinks => "referenceLinks",
+                    lsp_max_lsif::lsif::ItemEdgeProperty::ReferenceLinks => "referenceLinks",
                 };
 
                 quads.push(oxigraph::model::Quad::new(

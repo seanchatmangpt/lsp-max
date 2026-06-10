@@ -973,9 +973,9 @@
         update_diagnostics(&mut registry);
         
         let mut buffer = Vec::new();
-        let mut builder = tower_lsp_max_protocol::lsif_builder::LsifBuilder::new(&mut buffer);
+        let mut builder = lsp_max_protocol::lsif_builder::LsifBuilder::new(&mut buffer);
         
-        builder.emit_metadata("0.6.0", tower_lsp_max_protocol::lsif::ToolInfo {
+        builder.emit_metadata("0.6.0", lsp_max_protocol::lsif::ToolInfo {
             name: "tower-lsp-max".to_string(),
             version: Some("26.6.4".to_string()),
             args: None,
@@ -998,16 +998,16 @@
             
             if !diags.is_empty() {
                 let diag_result_id = builder.next_id();
-                builder.emit(tower_lsp_max_protocol::lsif::Element::Vertex(tower_lsp_max_protocol::lsif::Vertex::DiagnosticResult {
+                builder.emit(lsp_max_protocol::lsif::Element::Vertex(lsp_max_protocol::lsif::Vertex::DiagnosticResult {
                     id: diag_result_id.clone(),
-                    type_: tower_lsp_max_protocol::lsif::VertexType::Vertex,
+                    type_: lsp_max_protocol::lsif::VertexType::Vertex,
                     result: diags,
                 })).map_err(|e| Error::internal_error())?;
                 
                 let diag_edge_id = builder.next_id();
-                builder.emit(tower_lsp_max_protocol::lsif::Element::Edge(tower_lsp_max_protocol::lsif::Edge::TextDocumentDiagnostic {
+                builder.emit(lsp_max_protocol::lsif::Element::Edge(lsp_max_protocol::lsif::Edge::TextDocumentDiagnostic {
                     id: diag_edge_id,
-                    type_: tower_lsp_max_protocol::lsif::EdgeType::Edge,
+                    type_: lsp_max_protocol::lsif::EdgeType::Edge,
                     out_v: doc_id.clone(),
                     in_v: diag_result_id,
                 })).map_err(|e| Error::internal_error())?;

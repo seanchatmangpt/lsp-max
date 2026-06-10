@@ -9,7 +9,7 @@ publish = false
 lsp-max-protocol = { path = "../lsp-max-protocol", version = "26.6.9" }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-lsp-types-max = { path = "../../lsp-types-max", version = "26.6.9" }
+lsp-types-max = { path = "../../lsp-types-max", version = "26.6.8" }
 oxigraph = { version = "0.5.8", default-features = false }
 lsp-max-base = { path = "../crates/tower-lsp-max-base" }
 lsp-max-lsif = { path = "../crates/tower-lsp-max-lsif" }

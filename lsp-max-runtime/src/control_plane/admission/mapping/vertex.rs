@@ -1,6 +1,6 @@
 use super::super::mapping_helpers::*;
 use super::super::types::GraphAdmissionError;
-use tower_lsp_max_lsif::lsif::Vertex;
+use lsp_max_lsif::lsif::Vertex;
 
 pub(super) fn map_vertex(
     vertex: &Vertex,
@@ -63,9 +63,9 @@ pub(super) fn map_vertex(
                 graph_name.clone(),
             ));
             let pos_enc_str = match position_encoding {
-                tower_lsp_max_lsif::lsif::PositionEncoding::Utf8 => "utf-8",
-                tower_lsp_max_lsif::lsif::PositionEncoding::Utf16 => "utf-16",
-                tower_lsp_max_lsif::lsif::PositionEncoding::Utf32 => "utf-32",
+                lsp_max_lsif::lsif::PositionEncoding::Utf8 => "utf-8",
+                lsp_max_lsif::lsif::PositionEncoding::Utf16 => "utf-16",
+                lsp_max_lsif::lsif::PositionEncoding::Utf32 => "utf-32",
             };
             quads.push(oxigraph::model::Quad::new(
                 subject.clone(),
@@ -167,7 +167,7 @@ pub(super) fn map_vertex(
 
             if let Some(range_tag) = tag {
                 let (tag_type, text, symbol_kind, full_range, detail) = match range_tag {
-                    tower_lsp_max_lsif::lsif::RangeTag::Declaration {
+                    lsp_max_lsif::lsif::RangeTag::Declaration {
                         text,
                         kind,
                         full_range,
@@ -179,7 +179,7 @@ pub(super) fn map_vertex(
                         Some(full_range),
                         detail.as_ref(),
                     ),
-                    tower_lsp_max_lsif::lsif::RangeTag::Definition {
+                    lsp_max_lsif::lsif::RangeTag::Definition {
                         text,
                         kind,
                         full_range,
@@ -191,10 +191,10 @@ pub(super) fn map_vertex(
                         Some(full_range),
                         detail.as_ref(),
                     ),
-                    tower_lsp_max_lsif::lsif::RangeTag::Reference { text } => {
+                    lsp_max_lsif::lsif::RangeTag::Reference { text } => {
                         (Some("reference"), Some(text), None, None, None)
                     }
-                    tower_lsp_max_lsif::lsif::RangeTag::Unknown { text } => {
+                    lsp_max_lsif::lsif::RangeTag::Unknown { text } => {
                         (Some("unknown"), Some(text), None, None, None)
                     }
                 };
@@ -310,9 +310,9 @@ pub(super) fn map_vertex(
                 graph_name.clone(),
             ));
             let kind_str = match kind {
-                tower_lsp_max_lsif::lsif_types::MonikerKind::Import => "import",
-                tower_lsp_max_lsif::lsif_types::MonikerKind::Export => "export",
-                tower_lsp_max_lsif::lsif_types::MonikerKind::Local => "local",
+                lsp_max_lsif::lsif_types::MonikerKind::Import => "import",
+                lsp_max_lsif::lsif_types::MonikerKind::Export => "export",
+                lsp_max_lsif::lsif_types::MonikerKind::Local => "local",
             };
             quads.push(oxigraph::model::Quad::new(
                 subject.clone(),
@@ -323,11 +323,11 @@ pub(super) fn map_vertex(
                 graph_name.clone(),
             ));
             let unique_str = match unique {
-                tower_lsp_max_lsif::lsif_types::UniquenessLevel::Document => "document",
-                tower_lsp_max_lsif::lsif_types::UniquenessLevel::Project => "project",
-                tower_lsp_max_lsif::lsif_types::UniquenessLevel::Group => "group",
-                tower_lsp_max_lsif::lsif_types::UniquenessLevel::Scheme => "scheme",
-                tower_lsp_max_lsif::lsif_types::UniquenessLevel::Global => "global",
+                lsp_max_lsif::lsif_types::UniquenessLevel::Document => "document",
+                lsp_max_lsif::lsif_types::UniquenessLevel::Project => "project",
+                lsp_max_lsif::lsif_types::UniquenessLevel::Group => "group",
+                lsp_max_lsif::lsif_types::UniquenessLevel::Scheme => "scheme",
+                lsp_max_lsif::lsif_types::UniquenessLevel::Global => "global",
             };
             quads.push(oxigraph::model::Quad::new(
                 subject.clone(),

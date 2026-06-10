@@ -5,10 +5,10 @@ use lsp_types_max::{Diagnostic, Position, Range, SymbolKind};
 use oxigraph::model::GraphName;
 use oxigraph::model::NamedNode;
 use oxigraph::store::Store;
-use tower_lsp_max_lsif::lsif::{
+use lsp_max_lsif::lsif::{
     Edge, EdgeType, Element, HoverContents, HoverResultData, RangeTag, Vertex, VertexType,
 };
-use tower_lsp_max_protocol::MaxDiagnostic;
+use lsp_max_protocol::MaxDiagnostic;
 use url::Url;
 
 #[allow(dead_code)]
@@ -18,7 +18,7 @@ fn make_meta_element() -> Element {
         type_: VertexType::Vertex,
         version: "0.6.0".to_string(),
         project_root: "file:///".to_string(),
-        position_encoding: tower_lsp_max_lsif::lsif::PositionEncoding::Utf16,
+        position_encoding: lsp_max_lsif::lsif::PositionEncoding::Utf16,
         tool_info: None,
     })
 }
@@ -160,7 +160,7 @@ fn test_materialized_views_definition_references_hover_diagnostics() {
             severity: Some(lsp_types_max::DiagnosticSeverity::ERROR),
             ..Default::default()
         },
-        doc_routes: vec![tower_lsp_max_protocol::DocRoute {
+        doc_routes: vec![lsp_max_protocol::DocRoute {
             path: "file:///test.rs".to_string(),
         }],
         ..Default::default()
@@ -354,7 +354,7 @@ fn test_materialized_view_store_lookups() {
             severity: Some(lsp_types_max::DiagnosticSeverity::ERROR),
             ..Default::default()
         },
-        doc_routes: vec![tower_lsp_max_protocol::DocRoute {
+        doc_routes: vec![lsp_max_protocol::DocRoute {
             path: "file:///test.rs".to_string(),
         }],
         ..Default::default()

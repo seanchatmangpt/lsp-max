@@ -2,9 +2,9 @@ use super::super::invariants::{verify_invariants, VerificationReport};
 use super::super::receipts::{Blake3Hash, CryptographicReceipt};
 use super::types::{RawData, RAW};
 use crate::Machine;
-use tower_lsp_max_base::abstractions::RelationAdmitter;
-use tower_lsp_max_lsif::lsif::Element;
-use tower_lsp_max_protocol::MaxDiagnostic;
+use lsp_max_base::abstractions::RelationAdmitter;
+use lsp_max_lsif::lsif::Element;
+use lsp_max_protocol::MaxDiagnostic;
 
 pub struct AdmittedGraph {
     pub store: oxigraph::store::Store,

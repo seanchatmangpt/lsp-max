@@ -9,7 +9,7 @@ clap = { version = "4.4", features = ["derive"] }
 clap-noun-verb = "26.6.2"
 clap-noun-verb-macros = "26.6.2"
 linkme = "0.3"
-tower-lsp-max = { path = "../../" }
+lsp-max = { path = "../../" }
 url = "2.5"
 tokio = { version = "1.17", features = ["full"] }
 tree-sitter-latex = { package = "codebook-tree-sitter-latex", version = "0.6.1" }

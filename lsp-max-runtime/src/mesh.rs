@@ -33,8 +33,8 @@ pub type MaxMesh = AutonomicMesh;
 
 pub fn build_conformance_vector(
     diagnostics: &[MaxDiagnostic],
-) -> tower_lsp_max_protocol::ConformanceVector {
-    let mut axis_map: HashMap<tower_lsp_max_protocol::LawAxis, bool> = HashMap::new();
+) -> lsp_max_protocol::ConformanceVector {
+    let mut axis_map: HashMap<lsp_max_protocol::LawAxis, bool> = HashMap::new();
     for diag in diagnostics {
         let is_error = matches!(
             diag.lsp.severity,
@@ -63,16 +63,16 @@ pub fn build_conformance_vector(
         Some(100.0 * admitted.len() as f64 / total as f64)
     };
 
-    let witnessed: std::collections::HashSet<tower_lsp_max_protocol::LawAxis> =
+    let witnessed: std::collections::HashSet<lsp_max_protocol::LawAxis> =
         axis_map.keys().cloned().collect();
-    let unknown: Vec<tower_lsp_max_protocol::LawAxis> =
-        tower_lsp_max_protocol::LawAxis::all_named()
+    let unknown: Vec<lsp_max_protocol::LawAxis> =
+        lsp_max_protocol::LawAxis::all_named()
             .iter()
             .filter(|ax| !witnessed.contains(ax))
             .cloned()
             .collect();
 
-    tower_lsp_max_protocol::ConformanceVector {
+    lsp_max_protocol::ConformanceVector {
         admitted,
         refused,
         unknown,
@@ -185,12 +185,12 @@ impl AutonomicMesh {
                     repair_actions: vec![],
                     verification_gates: vec![],
                     receipt_obligation: None,
-                    law_axis: tower_lsp_max_protocol::LawAxis::Security,
+                    law_axis: lsp_max_protocol::LawAxis::Security,
                     violated_invariant: String::new(),
                     observed_state: serde_json::Value::Null,
                     expected_state: serde_json::Value::Null,
-                    repairability: tower_lsp_max_protocol::Repairability::NotRepairable,
-                    terminality: tower_lsp_max_protocol::Terminality::Terminal,
+                    repairability: lsp_max_protocol::Repairability::NotRepairable,
+                    terminality: lsp_max_protocol::Terminality::Terminal,
                 }),
             });
             return;
@@ -415,12 +415,12 @@ impl AutonomicMesh {
                     repair_actions: vec![],
                     verification_gates: vec![],
                     receipt_obligation: None,
-                    law_axis: tower_lsp_max_protocol::LawAxis::Domain,
+                    law_axis: lsp_max_protocol::LawAxis::Domain,
                     violated_invariant: String::new(),
                     observed_state: serde_json::Value::Null,
                     expected_state: serde_json::Value::Null,
-                    repairability: tower_lsp_max_protocol::Repairability::Unknown,
-                    terminality: tower_lsp_max_protocol::Terminality::NonTerminal,
+                    repairability: lsp_max_protocol::Repairability::Unknown,
+                    terminality: lsp_max_protocol::Terminality::NonTerminal,
                 };
 
                 self.execute_action(MeshAction::AddDiagnostic {

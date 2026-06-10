@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use tower_lsp_max_protocol::{LawAxis, MaxDiagnostic, Repairability, Terminality};
+use lsp_max_protocol::{LawAxis, MaxDiagnostic, Repairability, Terminality};
 
 mod helpers;
 pub mod queries;

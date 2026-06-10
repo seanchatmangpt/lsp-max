@@ -159,7 +159,7 @@ impl GraduateToWasm4pm for VerificationReport {
 mod tests {
     use super::*;
     use crate::control_plane::receipts::Blake3Hash;
-    use tower_lsp_max_lsif::lsif::{Element, PositionEncoding, Vertex, VertexType};
+    use lsp_max_lsif::lsif::{Element, PositionEncoding, Vertex, VertexType};
 
     fn make_meta_element() -> Element {
         Element::Vertex(Vertex::MetaData {

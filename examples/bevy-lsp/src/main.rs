@@ -2,7 +2,7 @@ mod backend;
 mod semantics;
 
 use crate::backend::BevyBackend;
-use lsp_max::lsp_max_ast::AutoLspAdapter;
+use lsp_max::ast::AutoLspAdapter;
 use lsp_max::{LspService, Server};
 use std::sync::Arc;
 

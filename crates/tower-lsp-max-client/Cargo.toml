@@ -10,7 +10,7 @@ repository = "https://github.com/seanchatmangpt/tower-lsp-max"
 [dependencies]
 lsp-max-macros = { path = "../../lsp-max-macros", version = "26.6.9" }
 lsp-max-protocol = { path = "../../lsp-max-protocol" }
-lsp-types = { package = "lsp-types-max", path = "../../../lsp-types-max", version = "26.6.9" }
+lsp-types = { package = "lsp-types-max", path = "../../../lsp-types-max", version = "26.6.8" }
 tower = { version = "0.4", features = ["util"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"

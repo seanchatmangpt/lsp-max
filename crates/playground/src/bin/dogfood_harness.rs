@@ -137,7 +137,7 @@ fn get_word_at_pos(path: &std::path::Path, pos: Position) -> Option<String> {
 
 // --- STATIC GRAPH BACKEND ---
 
-use lsp_max::lsp_max_ast::AutoLspAdapter;
+use lsp_max::ast::AutoLspAdapter;
 
 #[derive(Clone)]
 struct StaticGraphBackend {

@@ -68,7 +68,7 @@ impl TypestateKernel<AccessAdmissionLaw, Uninitialized, EmptyData>
     type Input = serde_json::Value;
     type OutputPhase = Initializing;
     type OutputData = InitializingData;
-    type Receipt = tower_lsp_max_protocol::Receipt;
+    type Receipt = lsp_max_protocol::Receipt;
 
     fn validate(&self, _input: &Self::Input) -> Result<(), <AccessAdmissionLaw as Law>::Error> {
         Ok(())
@@ -92,7 +92,7 @@ impl TypestateKernel<AccessAdmissionLaw, Uninitialized, EmptyData>
     fn receipt(&self) -> Self::Receipt {
         let receipt_id = "rcpt-uninitialized".to_string();
         let hash = sha256(receipt_id.as_bytes());
-        tower_lsp_max_protocol::Receipt {
+        lsp_max_protocol::Receipt {
             receipt_id,
             hash,
             prev_receipt_hash: None,
@@ -115,7 +115,7 @@ impl TypestateKernel<AccessAdmissionLaw, Initializing, InitializingData>
     type Input = serde_json::Value;
     type OutputPhase = Initialized;
     type OutputData = InitializedData;
-    type Receipt = tower_lsp_max_protocol::Receipt;
+    type Receipt = lsp_max_protocol::Receipt;
 
     fn validate(&self, _input: &Self::Input) -> Result<(), <AccessAdmissionLaw as Law>::Error> {
         Ok(())
@@ -142,7 +142,7 @@ impl TypestateKernel<AccessAdmissionLaw, Initializing, InitializingData>
         let receipt_id = format!("rcpt-uninitialized-to-initializing:{}", client_caps_json);
         let prev_hash = sha256(b"rcpt-uninitialized");
         let hash = sha256(format!("{}:{}", prev_hash, receipt_id).as_bytes());
-        tower_lsp_max_protocol::Receipt {
+        lsp_max_protocol::Receipt {
             receipt_id,
             hash,
             prev_receipt_hash: Some(prev_hash),
@@ -177,7 +177,7 @@ impl TypestateKernel<AccessAdmissionLaw, Initialized, InitializedData>
     type Input = ();
     type OutputPhase = ShutDown;
     type OutputData = EmptyData;
-    type Receipt = tower_lsp_max_protocol::Receipt;
+    type Receipt = lsp_max_protocol::Receipt;
 
     fn validate(&self, _input: &Self::Input) -> Result<(), <AccessAdmissionLaw as Law>::Error> {
         Ok(())
@@ -208,7 +208,7 @@ impl TypestateKernel<AccessAdmissionLaw, Initialized, InitializedData>
         let prev_hash = sha256(format!("{}:{}", hash_0, rcpt_1).as_bytes());
         let receipt_id = format!("rcpt-initializing-to-initialized:{}", server_caps_json);
         let hash = sha256(format!("{}:{}", prev_hash, receipt_id).as_bytes());
-        tower_lsp_max_protocol::Receipt {
+        lsp_max_protocol::Receipt {
             receipt_id,
             hash,
             prev_receipt_hash: Some(prev_hash),
@@ -244,7 +244,7 @@ impl TypestateKernel<AccessAdmissionLaw, ShutDown, EmptyData>
     type Input = ();
     type OutputPhase = Exited;
     type OutputData = EmptyData;
-    type Receipt = tower_lsp_max_protocol::Receipt;
+    type Receipt = lsp_max_protocol::Receipt;
 
     fn validate(&self, _input: &Self::Input) -> Result<(), <AccessAdmissionLaw as Law>::Error> {
         Ok(())
@@ -285,7 +285,7 @@ impl TypestateKernel<AccessAdmissionLaw, ShutDown, EmptyData>
         let prev_hash = sha256(format!("{}:{}", hash_1, rcpt_2).as_bytes());
         let receipt_id = "rcpt-initialized-to-shutdown".to_string();
         let hash = sha256(format!("{}:{}", prev_hash, receipt_id).as_bytes());
-        tower_lsp_max_protocol::Receipt {
+        lsp_max_protocol::Receipt {
             receipt_id,
             hash,
             prev_receipt_hash: Some(prev_hash),
@@ -321,7 +321,7 @@ impl TypestateKernel<AccessAdmissionLaw, Exited, EmptyData>
     type Input = ();
     type OutputPhase = Exited;
     type OutputData = EmptyData;
-    type Receipt = tower_lsp_max_protocol::Receipt;
+    type Receipt = lsp_max_protocol::Receipt;
 
     fn validate(&self, _input: &Self::Input) -> Result<(), <AccessAdmissionLaw as Law>::Error> {
         Err("Already exited")
@@ -364,7 +364,7 @@ impl TypestateKernel<AccessAdmissionLaw, Exited, EmptyData>
         let prev_hash = sha256(format!("{}:{}", hash_2, rcpt_3).as_bytes());
         let receipt_id = "rcpt-shutdown-to-exited".to_string();
         let hash = sha256(format!("{}:{}", prev_hash, receipt_id).as_bytes());
-        tower_lsp_max_protocol::Receipt {
+        lsp_max_protocol::Receipt {
             receipt_id,
             hash,
             prev_receipt_hash: Some(prev_hash),

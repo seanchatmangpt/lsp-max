@@ -1,4 +1,4 @@
-use lsp_max::lsp_max_ast::AutoLspAdapter;
+use lsp_max::ast::AutoLspAdapter;
 use std::sync::Arc;
 
 pub struct TexBackend {

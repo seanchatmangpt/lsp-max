@@ -1,5 +1,5 @@
-use tower_lsp_max_lsif::lsif::{Edge, Vertex};
-use tower_lsp_max_protocol::MaxDiagnostic;
+use lsp_max_lsif::lsif::{Edge, Vertex};
+use lsp_max_protocol::MaxDiagnostic;
 
 pub fn nos_to_string(nos: &lsp_types_max::NumberOrString) -> String {
     match nos {

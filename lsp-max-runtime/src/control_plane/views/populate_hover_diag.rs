@@ -53,7 +53,7 @@ const QUERY_LIVE_DIAGNOSTICS: &str = "
 ";
 
 pub(super) fn populate_hovers(store: &Store, views: &MaterializedViewStore) {
-    use tower_lsp_max_lsif::lsif::{HoverContents, HoverResultData};
+    use lsp_max_lsif::lsif::{HoverContents, HoverResultData};
     let Ok(sols) = run_select(store, QUERY_HOVER) else {
         return;
     };

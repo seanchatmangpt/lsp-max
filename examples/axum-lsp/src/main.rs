@@ -1,5 +1,5 @@
 use clap_noun_verb_macros::verb;
-use lsp_max::lsp_max_ast::AutoLspAdapter;
+use lsp_max::ast::AutoLspAdapter;
 use lsp_max::{LspService, Server};
 use std::sync::Arc;
 

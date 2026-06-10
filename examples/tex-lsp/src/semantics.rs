@@ -1,4 +1,4 @@
-use lsp_max::lsp_max_ast::AutoLspAdapter;
+use lsp_max::ast::AutoLspAdapter;
 use lsp_max::lsp_types_max::Diagnostic;
 use lsp_max::lsp_types_max::{DiagnosticSeverity, NumberOrString, Position, Range};
 

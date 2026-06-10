@@ -95,7 +95,7 @@ pub fn sha256(data: &[u8]) -> String {
 }
 
 pub fn validate_and_reconstruct_chain_checked(
-    history: &[tower_lsp_max_protocol::Receipt],
+    history: &[lsp_max_protocol::Receipt],
 ) -> Result<(serde_json::Value, serde_json::Value), String> {
     if history.is_empty() {
         return Err("History must not be empty".to_string());
