@@ -111,6 +111,12 @@ Domain-specific LSP servers are in `examples/`:
 | `pattern-lsp` | Pattern detection LSP |
 | `wasm4pm-lsp` | Process-mining LSP over wasm4pm |
 | `axum-lsp`, `bevy-lsp`, `tex-lsp` | Framework integration demos |
+| `agi-swarm-defense` | Explanation: why the law-state runtime exists |
+
+See [`docs/EXAMPLES.md`](docs/EXAMPLES.md) for the full [Diataxis]-mapped index
+with gap analysis.
+
+[Diataxis]: https://diataxis.fr
 
 ## Proposed features
 
