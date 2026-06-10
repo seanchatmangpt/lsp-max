@@ -427,6 +427,7 @@ fn handle_mesh_rpc(
             unknown: Vec::new(),
             score: derived_score,
             strict_mode: true,
+            process_quality: None,
         };
 
         let receipts = registry.receipts.values().cloned().collect();

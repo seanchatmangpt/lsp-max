@@ -21,6 +21,7 @@ fn test_protocol_conformance_vector_round_trip() {
         unknown: vec![LawAxis::Domain],
         score: Some(66.7),
         strict_mode: true,
+        process_quality: None,
     };
     let s = serde_json::to_string(&cv).expect("serialize ConformanceVector");
     let cv2: ConformanceVector = serde_json::from_str(&s).expect("deserialize ConformanceVector");

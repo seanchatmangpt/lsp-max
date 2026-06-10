@@ -26,6 +26,17 @@ pub fn run_gate_logic(
                 false
             }
         }
+        "gate-powl-conformance" => {
+            // POWL conformance gate — admitted when a receipt exists for the declared model.
+            // Full wasm4pm integration routes through control_plane::powl_conformance.
+            let spec = crate::diagnostics::law_table::law_table()
+                .into_iter()
+                .find(|s| s.gate_id == gate_id);
+            match spec {
+                Some(spec) => root_path.join(spec.receipt_file).exists(),
+                None => false, // No law table entry — UNKNOWN, conservative refusal
+            }
+        }
         _ => {
             let output = std::process::Command::new("cargo")
                 .arg("check")

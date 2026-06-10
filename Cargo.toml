@@ -78,6 +78,7 @@ members = [
     "crates/lsp-max-live",
     "crates/lsp-max-lsif",
     "crates/lsp-max-adapters/lsp-max-ast",
+    "examples/powl-lsp",
     "examples/wasm4pm-lsp",
     "examples/pattern-lsp",
     "examples/anti-llm-lsp",

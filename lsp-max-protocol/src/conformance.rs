@@ -118,6 +118,24 @@ impl std::fmt::Display for ConformanceGrade {
 }
 
 // ---------------------------------------------------------------------------
+// ProcessQuality — van der Aalst's four quality dimensions
+// ---------------------------------------------------------------------------
+
+/// Process quality dimensions from van der Aalst's process mining theory.
+/// Mirrors wasm4pm_compat::conformance::ConformanceResult without a hard dep.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ProcessQuality {
+    /// Fraction of observed behaviour explained by the model (0–1).
+    pub fitness: f64,
+    /// Fraction of model behaviour observed in the log (0–1). None = unknown.
+    pub precision: Option<f64>,
+    /// Degree to which the model generalizes beyond the log (0–1). None = unknown.
+    pub generalization: Option<f64>,
+    /// Structural simplicity of the model (0–1). None = unknown.
+    pub simplicity: Option<f64>,
+}
+
+// ---------------------------------------------------------------------------
 // ConformanceVector — doctrine-correct: Admitted/Refused/Unknown are distinct
 // ---------------------------------------------------------------------------
 
@@ -133,6 +151,8 @@ pub struct ConformanceVector {
     pub score: Option<f64>,
     /// Whether unknown axes block release actuation
     pub strict_mode: bool,
+    /// Process quality from POWL conformance check. None until wasm4pm graduation.
+    pub process_quality: Option<ProcessQuality>,
 }
 
 impl ConformanceVector {
@@ -153,6 +173,7 @@ impl Default for ConformanceVector {
             unknown: Vec::new(),
             score: None,
             strict_mode: true,
+            process_quality: None,
         }
     }
 }
@@ -169,6 +190,7 @@ mod tests {
             unknown: vec![],
             score: Some(100.0),
             strict_mode: true,
+            process_quality: None,
         };
         assert!(cv.all_admitted());
     }
@@ -181,6 +203,7 @@ mod tests {
             unknown: vec![],
             score: Some(50.0),
             strict_mode: true,
+            process_quality: None,
         };
         assert!(!cv.all_admitted());
     }
@@ -193,6 +216,7 @@ mod tests {
             unknown: vec![LawAxis::Domain],
             score: None,
             strict_mode: true,
+            process_quality: None,
         };
         assert!(!cv.all_admitted());
     }
@@ -231,6 +255,7 @@ mod tests {
             unknown: vec![LawAxis::Domain],
             score: None,
             strict_mode: true,
+            process_quality: None,
         };
         assert!(
             !cv.admits_release(),
@@ -246,6 +271,7 @@ mod tests {
             unknown: vec![LawAxis::Domain],
             score: None,
             strict_mode: false,
+            process_quality: None,
         };
         assert!(
             cv.admits_release(),
@@ -262,6 +288,7 @@ mod tests {
                 unknown: vec![],
                 score: Some(0.0),
                 strict_mode: strict,
+                process_quality: None,
             };
             assert!(
                 !cv.admits_release(),
@@ -317,6 +344,7 @@ mod tests {
             unknown: vec![LawAxis::Domain],
             score: Some(66.7),
             strict_mode: false,
+            process_quality: None,
         };
         let json = serde_json::to_string(&cv).expect("serialize");
         let cv2: ConformanceVector = serde_json::from_str(&json).expect("deserialize");

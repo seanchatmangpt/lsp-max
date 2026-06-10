@@ -20,6 +20,7 @@ fn test_conformance_vector_edge_cases() {
         unknown: vec![],
         score: None,
         strict_mode: false,
+        process_quality: None,
     };
     let json_empty = serde_json::to_string(&cv_empty).expect("serialize empty ConformanceVector");
     let cv_empty_dec: ConformanceVector =
@@ -41,6 +42,7 @@ fn test_conformance_vector_edge_cases() {
         unknown: vec![LawAxis::Autopoiesis, LawAxis::Custom("".to_string())],
         score: Some(75.5),
         strict_mode: true,
+        process_quality: None,
     };
     let json_complex =
         serde_json::to_string(&cv_complex).expect("serialize complex ConformanceVector");
@@ -208,6 +210,7 @@ fn test_manifold_snapshot_serialization_extremes() {
             unknown: vec![],
             score: None,
             strict_mode: false,
+            process_quality: None,
         },
         hooks: vec![],
         chains: vec![],
@@ -229,6 +232,7 @@ fn test_manifold_snapshot_serialization_extremes() {
             unknown: vec![],
             score: Some(100.0),
             strict_mode: true,
+            process_quality: None,
         },
         hooks: vec![HookDescriptor {
             hook_id: "hook-1".to_string(),
