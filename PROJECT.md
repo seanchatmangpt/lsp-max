@@ -31,7 +31,3 @@ The following files exceed 500 LOC due to structural constraints in Rust that pr
 | `src/language_server.rs` | ~615 | Single `pub trait LanguageServer` definition — Rust requires a trait in one place |
 | `src/composition/language_server_impl.rs` | ~636 | Single `impl LanguageServer for ComposedServer` — Rust allows only one impl per trait per type |
 | `src/composition/routing.rs` | ~725 | Single `route_request_internal` dispatch function — per-strategy fan-out cannot be split without changing behavior; `route_notification` is a separate method in the same impl |
-| `tests/e2e/test_f4_diagnostics.rs` | ~780 | E2E test file; split is OPEN for a future commit |
-| `tests/e2e/test_blackbox_gate3.rs` | ~589 | E2E test file; split is OPEN for a future commit |
-| `tower-lsp-max-runtime/src/control_plane/admission/mapping.rs` | ~565 | Admission mapping logic; refactor is OPEN |
-| `tower-lsp-max-runtime/src/control_plane/kernel.rs` | ~555 | Control-plane kernel; refactor is OPEN |
