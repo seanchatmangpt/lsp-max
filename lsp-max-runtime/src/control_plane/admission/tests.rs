@@ -4,10 +4,10 @@ use super::admitter::*;
 use super::mapping_helpers::*;
 use super::types::*;
 use crate::Machine;
-use oxigraph::store::Store;
 use lsp_max_base::abstractions::RelationAdmitter;
 use lsp_max_lsif::lsif::{Edge, EdgeType, Element, PositionEncoding, Vertex, VertexType};
 use lsp_max_protocol::MaxDiagnostic;
+use oxigraph::store::Store;
 
 fn make_meta_element() -> Element {
     Element::Vertex(Vertex::MetaData {

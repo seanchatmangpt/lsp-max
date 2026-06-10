@@ -1,8 +1,8 @@
+use lsp_max_protocol::AnalysisBundle;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
-use lsp_max_protocol::AnalysisBundle;
 
 pub struct AgentExporter;
 

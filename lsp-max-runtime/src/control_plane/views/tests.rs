@@ -1,14 +1,14 @@
 use super::lookups::*;
 use super::types::*;
 use super::update::*;
-use lsp_types_max::{Diagnostic, Position, Range, SymbolKind};
-use oxigraph::model::GraphName;
-use oxigraph::model::NamedNode;
-use oxigraph::store::Store;
 use lsp_max_lsif::lsif::{
     Edge, EdgeType, Element, HoverContents, HoverResultData, RangeTag, Vertex, VertexType,
 };
 use lsp_max_protocol::MaxDiagnostic;
+use lsp_types_max::{Diagnostic, Position, Range, SymbolKind};
+use oxigraph::model::GraphName;
+use oxigraph::model::NamedNode;
+use oxigraph::store::Store;
 use url::Url;
 
 #[allow(dead_code)]

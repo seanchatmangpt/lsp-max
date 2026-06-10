@@ -111,9 +111,7 @@ pub(super) fn map_edge(
                     lsp_max_lsif::lsif::ItemEdgeProperty::Definitions => "definitions",
                     lsp_max_lsif::lsif::ItemEdgeProperty::Declarations => "declarations",
                     lsp_max_lsif::lsif::ItemEdgeProperty::References => "references",
-                    lsp_max_lsif::lsif::ItemEdgeProperty::ReferenceResults => {
-                        "referenceResults"
-                    }
+                    lsp_max_lsif::lsif::ItemEdgeProperty::ReferenceResults => "referenceResults",
                     lsp_max_lsif::lsif::ItemEdgeProperty::ImplementationResults => {
                         "implementationResults"
                     }

@@ -65,12 +65,11 @@ pub fn build_conformance_vector(
 
     let witnessed: std::collections::HashSet<lsp_max_protocol::LawAxis> =
         axis_map.keys().cloned().collect();
-    let unknown: Vec<lsp_max_protocol::LawAxis> =
-        lsp_max_protocol::LawAxis::all_named()
-            .iter()
-            .filter(|ax| !witnessed.contains(ax))
-            .cloned()
-            .collect();
+    let unknown: Vec<lsp_max_protocol::LawAxis> = lsp_max_protocol::LawAxis::all_named()
+        .iter()
+        .filter(|ax| !witnessed.contains(ax))
+        .cloned()
+        .collect();
 
     lsp_max_protocol::ConformanceVector {
         admitted,

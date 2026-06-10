@@ -1,6 +1,6 @@
 use super::*;
-use oxigraph::store::Store;
 use lsp_max_lsif::lsif::{Element, PositionEncoding, Vertex, VertexType};
+use oxigraph::store::Store;
 
 fn test_element() -> Element {
     Element::Vertex(Vertex::MetaData {

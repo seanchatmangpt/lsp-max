@@ -1,5 +1,5 @@
-use serde::{Deserialize, Serialize};
 use lsp_max_protocol::{LawAxis, MaxDiagnostic, Repairability, Terminality};
+use serde::{Deserialize, Serialize};
 
 mod helpers;
 pub mod queries;

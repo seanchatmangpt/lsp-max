@@ -129,7 +129,7 @@ fn test_gc005_wasm4pm_lsp_observation() {
         .expect("initialize result");
     client.notify("initialized", json!({}));
 
-    let ocel_path = "../playground/ocel/admitted_evidence.ocel.json";
+    let ocel_path = "../../crates/playground/ocel/admitted_evidence.ocel.json";
 
     // Test FIT verdict
     {

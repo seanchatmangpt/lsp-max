@@ -78,7 +78,7 @@ members = [
     "crates/tower-lsp-max-live",
     "crates/tower-lsp-max-lsif",
     "crates/lsp-max-adapters/lsp-max-ast",
-    "crates/wasm4pm-lsp",
+    "examples/wasm4pm-lsp",
     "examples/pattern-lsp",
     "examples/anti-llm-lsp",
     "examples/clap-noun-verb-lsp",
@@ -86,7 +86,7 @@ members = [
     "examples/axum-lsp",
     "examples/bevy-lsp",
     "examples/tex-lsp",
-    "crates/gc005-wasm4pm-adapter",
+    "examples/gc005-wasm4pm-adapter",
     "crates/lsp-max-adapters/lsp-max-ast-core",
     "crates/lsp-max-adapters/lsp-max-ast-codegen",
 ]

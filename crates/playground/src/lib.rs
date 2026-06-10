@@ -12,8 +12,8 @@ pub mod handlers;
 use std::sync::Arc;
 
 use dashmap::DashMap;
-use lsp_max::jsonrpc::Result;
 use lsp_max::ast::AutoLspAdapter;
+use lsp_max::jsonrpc::Result;
 use lsp_max::lsp_types::*;
 use lsp_max::{Client, LanguageServer};
 use ropey::Rope;

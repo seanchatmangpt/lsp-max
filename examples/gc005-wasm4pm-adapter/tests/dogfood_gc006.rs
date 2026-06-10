@@ -178,7 +178,7 @@ fn test_gc006_authority_surface_lock() {
     // wasm4pm-lsp-no-local-conformance
     {
         let lsp_src =
-            fs::read_to_string(lsp_max_root.join("crates/wasm4pm-lsp/src/main.rs")).unwrap();
+            fs::read_to_string(lsp_max_root.join("examples/wasm4pm-lsp/src/main.rs")).unwrap();
         // The LSP must not implement its own conformance loop (e.g. searching for markers or checking cardinalities directly)
         assert!(!lsp_src.contains("check_gall_conformance(&ocel) {")); // It shouldn't implement the logic directly
         assert!(!lsp_src.contains("GallVerdict::Fit {")); // It shouldn't manufacture these
@@ -189,7 +189,7 @@ fn test_gc006_authority_surface_lock() {
     // adapter-no-fake-fit
     {
         let adapter_src =
-            fs::read_to_string(lsp_max_root.join("crates/gc005-wasm4pm-adapter/src/lib.rs"))
+            fs::read_to_string(lsp_max_root.join("examples/gc005-wasm4pm-adapter/src/lib.rs"))
                 .unwrap();
         // The adapter must not contain string replacement logic for verdicts or hardcode "FIT" conditionally outside of matching the authority's enum.
         assert!(!adapter_src.contains("verdict = \"FIT\""));
@@ -199,14 +199,14 @@ fn test_gc006_authority_surface_lock() {
     // adapter-uses-sealed-authority
     {
         let adapter_src =
-            fs::read_to_string(lsp_max_root.join("crates/gc005-wasm4pm-adapter/src/lib.rs"))
+            fs::read_to_string(lsp_max_root.join("examples/gc005-wasm4pm-adapter/src/lib.rs"))
                 .unwrap();
         // The adapter MUST import check_gall_conformance from wasm4pm
         assert!(adapter_src.contains("check_gall_conformance"));
         assert!(adapter_src.contains("check_gall_conformance(&ocel)"));
 
         let adapter_cargo =
-            fs::read_to_string(lsp_max_root.join("crates/gc005-wasm4pm-adapter/Cargo.toml"))
+            fs::read_to_string(lsp_max_root.join("examples/gc005-wasm4pm-adapter/Cargo.toml"))
                 .unwrap();
         assert!(adapter_cargo.contains("wasm4pm = { path = \"../../../wasm4pm/wasm4pm\" }"));
         assert!(
