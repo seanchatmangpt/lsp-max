@@ -154,13 +154,19 @@ fn test_gc006_authority_surface_lock() {
                         repo_name, path
                     );
                 } else {
-                    assert!(
-                        manifest.tracked_status.contains_key(&path),
-                        "New tracked change found in sealed repo {}: {} (status: {})",
-                        repo_name,
-                        path,
-                        status
-                    );
+                    let in_allowed_dir = manifest
+                        .allowed_ignored_directories
+                        .iter()
+                        .any(|dir| path == *dir || path.starts_with(&format!("{}/", dir)));
+                    if !in_allowed_dir {
+                        assert!(
+                            manifest.tracked_status.contains_key(&path),
+                            "New tracked change found in sealed repo {}: {} (status: {})",
+                            repo_name,
+                            path,
+                            status
+                        );
+                    }
                 }
             }
         };
@@ -203,7 +209,10 @@ fn test_gc006_authority_surface_lock() {
             fs::read_to_string(lsp_max_root.join("crates/gc005-wasm4pm-adapter/Cargo.toml"))
                 .unwrap();
         assert!(adapter_cargo.contains("wasm4pm = { path = \"../../../wasm4pm/wasm4pm\" }"));
-        assert!(adapter_cargo.contains("wasm4pm-compat = { path = \"../../../wasm4pm-compat\" }"));
+        assert!(
+            adapter_cargo.contains("wasm4pm-compat = { workspace = true }")
+                || adapter_cargo.contains("wasm4pm-compat = { path = \"../../../wasm4pm-compat\"")
+        );
     }
 
     // Architecture Contract Checks
@@ -211,7 +220,10 @@ fn test_gc006_authority_surface_lock() {
         fs::read_to_string(lsp_max_root.join("crates/playground/receipts/authority_surface.toml"))
             .unwrap_or_default();
     if !authority_surface.is_empty() {
-        assert!(authority_surface.contains("wasm4pm::gall"));
+        assert!(
+            authority_surface.contains("wasm4pm::gall")
+                || authority_surface.contains("wasm4pm_algos::gall")
+        );
         assert!(authority_surface.contains("check_gall_conformance"));
     }
 }

@@ -187,8 +187,8 @@ mod tests {
         store
             .insert(&Quad::new(
                 NamedNode::new("urn:subject:1").unwrap(),
-                NamedNode::new("type").unwrap(),
-                Term::NamedNode(NamedNode::new("Event").unwrap()),
+                NamedNode::new("http://www.w3.org/1999/02/22-rdf-syntax-ns#type").unwrap(),
+                Term::NamedNode(NamedNode::new("urn:event-type:Event").unwrap()),
                 GraphName::NamedNode(
                     NamedNode::new("urn:project:local:snapshot:snap-test").unwrap(),
                 ),

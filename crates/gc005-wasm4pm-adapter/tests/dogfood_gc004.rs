@@ -2,6 +2,7 @@ use std::fs;
 use std::path::PathBuf;
 
 #[test]
+#[ignore = "requires sibling repo /Users/sac/ggen/crates/ggen-pack-clap-noun-verb — BLOCKED until ggen pack crates exist"]
 fn test_gc004_pack_domain_lsp_intelligence() {
     let workspace = "/Users/sac/ggen";
 

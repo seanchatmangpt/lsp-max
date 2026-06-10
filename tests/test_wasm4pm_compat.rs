@@ -22,9 +22,16 @@ fn test_ocel_validation_success() {
     ev1.relationships
         .push(OCELRelationship::new("e1".to_string(), "o1".to_string()));
 
+    use wasm4pm_compat::ocel::OCELType;
     let log = OCEL {
-        event_types: vec![],
-        object_types: vec![],
+        event_types: vec![OCELType {
+            name: "Event".to_string(),
+            attributes: vec![],
+        }],
+        object_types: vec![OCELType {
+            name: "Object".to_string(),
+            attributes: vec![],
+        }],
         events: vec![ev1],
         objects: vec![OCELObject::new("o1".to_string(), "Object")],
     };
