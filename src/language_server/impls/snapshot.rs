@@ -71,6 +71,7 @@ pub async fn max_snapshot() -> Result<max_protocol::SnapshotId> {
         unknown,
         score: derived_score,
         strict_mode: true,
+        process_quality: None,
     };
 
     let receipts = registry.receipts.values().cloned().collect();
@@ -133,6 +134,7 @@ pub async fn max_conformance_vector(
             unknown,
             score: derived_score,
             strict_mode: true,
+            process_quality: None,
         })
     }
 }

@@ -3,6 +3,8 @@ pub mod evidence_extractors;
 pub mod evidence_types;
 pub mod invariants;
 pub mod kernel;
+pub mod powl_conformance;
+pub mod powl_model;
 pub mod receipts;
 pub mod replay;
 pub mod views;

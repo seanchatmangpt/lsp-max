@@ -30,6 +30,7 @@ fn test_serialization_conformance_vector() {
         unknown: vec![LawAxis::Domain],
         score: Some(50.0),
         strict_mode: false,
+        process_quality: None,
     };
     let serialized = serde_json::to_string(&custom_cv).unwrap();
     let deserialized: ConformanceVector = serde_json::from_str(&serialized).unwrap();
@@ -148,6 +149,7 @@ fn test_serialization_manifold_snapshot() {
             unknown: vec![],
             score: Some(100.0),
             strict_mode: true,
+            process_quality: None,
         },
         hooks: vec![HookDescriptor {
             hook_id: "hook_1".to_string(),

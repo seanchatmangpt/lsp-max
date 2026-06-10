@@ -77,6 +77,7 @@ pub fn build_conformance_vector(
         unknown,
         score: derived_score,
         strict_mode: true,
+        process_quality: None,
     }
 }
 
