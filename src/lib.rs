@@ -84,7 +84,6 @@ pub use lsp_types_max as lsp_types;
 pub extern crate tower_lsp_max_agent as max_agent;
 pub extern crate tower_lsp_max_protocol as max_protocol;
 pub extern crate tower_lsp_max_runtime as max_runtime;
-use url::Url;
 
 /// A re-export of [`async-trait`](https://docs.rs/async-trait) for convenience.
 pub use async_trait::async_trait;
@@ -95,16 +94,7 @@ pub use self::service::progress::{
 pub use self::service::{Client, ClientSocket, ExitedError, LspService, LspServiceBuilder};
 pub use self::transport::{Loopback, Server};
 
-use auto_impl::auto_impl;
-use lsp_types_max::request::{
-    GotoDeclarationParams, GotoDeclarationResponse, GotoImplementationParams,
-    GotoImplementationResponse, GotoTypeDefinitionParams, GotoTypeDefinitionResponse,
-};
 use lsp_types_max::*;
-use serde_json::Value;
-use std::str::FromStr;
-use tower_lsp_max_macros::rpc;
-use tracing::{error, warn};
 
 use self::jsonrpc::{Error, Result};
 
@@ -116,28 +106,25 @@ pub mod auto_lsp {
 pub mod jsonrpc;
 
 mod codec;
-pub mod service;
-mod transport;
 /// Module containing the `LanguageServer` trait and its macro-generated router.
 pub mod language_server;
-pub use language_server::LanguageServer;
+pub mod service;
+mod transport;
 pub(crate) use language_server::generated;
+pub use language_server::LanguageServer;
 
 pub use tower_lsp_max_lsif as lsif;
 
 mod composition;
-pub use composition::{ComposedServer, SourceHealth, CompositionState, SharedCompositionState};
+pub use composition::{ComposedServer, CompositionState, SharedCompositionState, SourceHealth};
 
-
-/// Module containing validation gate logic.
-pub mod gate;
 /// Module containing diagnostic update and management functions.
 pub mod diagnostics;
+/// Module containing validation gate logic.
+pub mod gate;
 /// Module containing helper functions to apply workspace and text edits.
 pub mod workspace_edit;
 
-use gate::run_gate_logic;
-use workspace_edit::apply_workspace_edit;
 pub(crate) use diagnostics::update_diagnostics;
 
 fn _assert_object_safe() {
@@ -239,9 +226,18 @@ pub(crate) fn lock_registry() -> Result<std::sync::MutexGuard<'static, ServerReg
     get_registry().lock().map_err(|_| Error::internal_error())
 }
 
-#[allow(dead_code)]
-fn lock_mesh() -> Result<std::sync::MutexGuard<'static, max_runtime::AutonomicMesh>> {
-    MESH.get_or_init(|| Mutex::new(max_runtime::AutonomicMesh::new()))
+fn build_standard_mesh() -> max_runtime::AutonomicMesh {
+    let mut mesh = max_runtime::AutonomicMesh::new();
+    mesh.register_hook(Box::new(max_runtime::IntakeDiagnosticHook));
+    mesh.register_hook(Box::new(max_runtime::IntakeClearHook));
+    mesh.register_hook(Box::new(max_runtime::CustomerRequestClassifierHook::new()));
+    mesh.register_hook(Box::new(max_runtime::PolicyEvaluationHook::new()));
+    mesh.register_hook(Box::new(max_runtime::ReceiptRoutingHook::new()));
+    mesh
+}
+
+pub(crate) fn lock_mesh() -> Result<std::sync::MutexGuard<'static, max_runtime::AutonomicMesh>> {
+    MESH.get_or_init(|| Mutex::new(build_standard_mesh()))
         .lock()
         .map_err(|_| Error::internal_error())
 }

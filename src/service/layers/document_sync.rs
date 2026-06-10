@@ -1,5 +1,5 @@
 use dashmap::DashMap;
-use futures::future::{BoxFuture, FutureExt};
+use futures::future::BoxFuture;
 use futures::lock::Mutex;
 use std::sync::Arc;
 use std::task::{Context, Poll};

@@ -1,0 +1,86 @@
+[project]
+name = "my-ggen-project"
+version = "0.1.0"
+description = "A ggen project initialized with default templates"
+authors = ["ggen init"]
+license = "MIT"
+
+# BIG BANG 80/20: Specification Closure First
+# Before using ggen, confirm:
+# 1. Do you have real user data (CSV/JSON)? Not promised—actual files.
+# 2. Can you find one existing standard ontology (schema.org, FOAF, Dublin Core, SKOS)?
+#    Should take 5 minutes. If it takes 3 months, you're building custom (wrong path).
+# 3. Can you explain your problem in one sentence? No 100-page documents.
+# 4. Has anyone (not a friend, not a co-founder) committed to this?
+#    Email, contract, payment—proof, not enthusiasm.
+# 5. Can you validate with 10 real users in 48 hours?
+#
+# If you answered NO to any of these, stop. Talk to Sean before proceeding.
+
+[ontology]
+# REQUIRED: Path to your RDF ontology file (Turtle format)
+# Approved: schema.org, FOAF, Dublin Core, SKOS, Big Five
+# Replace with your chosen standard ontology below.
+source = "schema/domain.ttl"
+# Use standard ontologies only (BIG BANG 80/20 gate)
+standard_only = true
+
+# Example: Using schema.org for e-commerce domain
+# [[ontology.pack]]
+# name = "schema-org"
+# version = "^3.13.0"
+# namespace = "https://schema.org/"
+
+[generation]
+output_dir = "."
+
+# Define inference rules (required for DMAIC quality gates)
+[inference]
+rules = [
+    { name = "standard-normalization", construct = "CONSTRUCT { ?s ?p ?o } WHERE { ?s ?p ?o }" }
+]
+
+# Define at least one generation rule (required)
+# This example rule generates Rust structs from the Person ontology
+[[generation.rules]]
+name = "example-rule"
+# SPARQL SELECT query to extract ontology concepts
+query = { inline = """
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX schema: <https://schema.org/>
+
+SELECT ?class ?label ?comment
+WHERE {
+  ?class a rdfs:Class ;
+         rdfs:label ?label .
+  OPTIONAL { ?class rdfs:comment ?comment . }
+}
+LIMIT 10
+""" }
+# Template file to render (relative to templates directory)
+template = { file = "templates/example.txt.tera" }
+# Output file path (relative to output_dir)
+output_file = "ontology-summary.txt"
+# How to handle existing output files
+mode = "Overwrite"
+
+[sync]
+enabled = true
+on_change = "manual"
+validate_after = true
+conflict_mode = "fail"
+
+[rdf]
+formats = ["turtle"]
+default_format = "turtle"
+strict_validation = false
+
+[templates]
+enable_caching = true
+auto_reload = true
+
+[output]
+formatting = "default"
+line_length = 100
+indent = 2

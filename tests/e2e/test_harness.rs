@@ -182,7 +182,8 @@ impl TestHarness {
         }
 
         let (client_io, server_io) = tokio::io::duplex(1024 * 1024);
-        let (service, socket) = LspService::new(|client| ComposedServer::new(client, upstreams.clone()));
+        let (service, socket) =
+            LspService::new(|client| ComposedServer::new(client, upstreams.clone()));
         let (reader, writer) = tokio::io::split(server_io);
         tokio::spawn(async move {
             let _ = Server::new(reader, writer, socket).serve(service).await;

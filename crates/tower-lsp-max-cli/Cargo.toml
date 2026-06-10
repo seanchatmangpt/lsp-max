@@ -1,6 +1,6 @@
 [package]
 name = "tower-lsp-max-cli"
-version = "26.6.5"
+version = "26.6.8"
 edition = "2021"
 
 [dependencies]
@@ -13,8 +13,8 @@ linkme = "0.3.36"
 tower-lsp-max = { path = "../.." }
 tower-lsp-max-protocol = { path = "../../tower-lsp-max-protocol" }
 lsp-types-max = { path = "../../../lsp-types-max" }
-tower-lsp-max-agent = { path = "../../tower-lsp-max-agent", version = "26.6.5" }
-tower-lsp-max-runtime = { path = "../../tower-lsp-max-runtime", version = "26.6.5" }
+tower-lsp-max-agent = { path = "../../tower-lsp-max-agent", version = "26.6.8" }
+tower-lsp-max-runtime = { path = "../../tower-lsp-max-runtime", version = "26.6.8" }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
 

@@ -27,7 +27,9 @@ impl LanguageServer for MockLsp318 {
         Ok(Some(lsp_types_max::InlineCompletionResponse::List(
             lsp_types_max::InlineCompletionList {
                 items: vec![lsp_types_max::InlineCompletionItem {
-                    insert_text: lsp_types_max::StringOrStringValue::String("hello_world".to_string()),
+                    insert_text: lsp_types_max::StringOrStringValue::String(
+                        "hello_world".to_string(),
+                    ),
                     filter_text: None,
                     range: None,
                     command: None,
@@ -286,7 +288,8 @@ async fn test_lsp_3_18_methods() {
         .unwrap()
         .unwrap();
     let (_, res) = response.into_parts();
-    assert_eq!(res.unwrap_err().code, ErrorCode::MethodNotFound);
+    // inline_completion default delegates to the impl which returns Ok(None) (not MethodNotFound)
+    assert!(res.is_ok());
 
     // 2. workspace/textDocumentContent
     let req = Request::build("workspace/textDocumentContent")

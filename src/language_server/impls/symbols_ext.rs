@@ -3,10 +3,7 @@
 use crate::jsonrpc::Result;
 use lsp_types_max::{CodeAction, WorkspaceSymbol};
 
-/// Handler for the `workspaceSymbol/resolve` endpoint.
-///
-/// This method resolves additional information for a workspace symbol,
-/// such as its range, if it was lazily requested by the client.
+/// Default: UNSUPPORTED — no materialized view backs this method; override in concrete servers.
 pub async fn symbol_resolve(params: WorkspaceSymbol) -> Result<WorkspaceSymbol> {
     Ok(params)
 }

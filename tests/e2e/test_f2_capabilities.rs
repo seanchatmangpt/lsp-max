@@ -263,7 +263,7 @@ async fn test_f2_t2_dynamic_registration_duplicate() {
         s.dynamic_registrations.push(reg.clone());
         s.dynamic_registrations.push(reg);
     }
-    
+
     // Read and assert first registration is received
     let msg1 = tokio::time::timeout(
         std::time::Duration::from_millis(500),

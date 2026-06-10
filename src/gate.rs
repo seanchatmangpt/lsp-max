@@ -12,26 +12,16 @@ pub fn run_gate_logic(
     match gate_id {
         "some-gate" => true,
         "gate-state-check" => current_state != crate::service::State::Uninitialized,
-        "gate-receipt-check" => {
-            let path = root_path.join("security.receipt");
+        "gate-receipt-check" | "gate-auth-check" => {
+            let spec = crate::diagnostics::law_table::law_table()
+                .into_iter()
+                .find(|s| s.gate_id == gate_id);
+            let Some(spec) = spec else { return false };
+            let path = root_path.join(spec.receipt_file);
             if path.exists() {
-                if let Ok(content) = std::fs::read_to_string(&path) {
-                    content.trim() == "rcpt-security-auth"
-                } else {
-                    false
-                }
-            } else {
-                false
-            }
-        }
-        "gate-auth-check" => {
-            let path = root_path.join("auth.receipt");
-            if path.exists() {
-                if let Ok(content) = std::fs::read_to_string(&path) {
-                    content.trim() == "generated-rcpt-security-auth"
-                } else {
-                    false
-                }
+                std::fs::read_to_string(&path)
+                    .map(|c| c.trim() == spec.receipt_token)
+                    .unwrap_or(false)
             } else {
                 false
             }

@@ -1,6 +1,6 @@
 [package]
 name = "tower-lsp-max"
-version = "26.6.5"
+version = "26.6.8"
 authors = ["Eyal Kalderon <ebkalderon@gmail.com>"]
 edition = "2021"
 rust-version = "1.70.0"
@@ -30,7 +30,7 @@ dashmap = "5.1"
 futures = { version = "0.3", default-features = false, features = ["std", "async-await"] }
 httparse = "1.8"
 libc = "0.2"
-lsp-types-max = { path = "../lsp-types-max", version = "26.6.5", features = ["proposed"] }
+lsp-types-max = { path = "../lsp-types-max", version = "26.6.8", features = ["proposed"] }
 url = { version = "2.5", features = ["serde"] }
 memchr = "2.5"
 windows-sys = { version = "0.52", features = ["Win32_System_Threading", "Win32_Foundation"] }
@@ -38,11 +38,11 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 tokio = { version = "1.17", optional = true, features = ["time", "macros", "rt", "io-util", "net"] }
 tokio-util = { version = "0.7", optional = true, features = ["codec"] }
-tower-lsp-max-macros = { version = "26.6.5", path = "./tower-lsp-max-macros" }
-tower-lsp-max-protocol = { version = "26.6.5", path = "./tower-lsp-max-protocol" }
+tower-lsp-max-macros = { version = "26.6.8", path = "./tower-lsp-max-macros" }
+tower-lsp-max-protocol = { version = "26.6.8", path = "./tower-lsp-max-protocol" }
 tower-lsp-max-lsif = { path = "./crates/tower-lsp-max-lsif" }
-tower-lsp-max-runtime = { version = "26.6.5", path = "./tower-lsp-max-runtime" }
-tower-lsp-max-agent = { version = "26.6.5", path = "./tower-lsp-max-agent" }
+tower-lsp-max-runtime = { version = "26.6.8", path = "./tower-lsp-max-runtime" }
+tower-lsp-max-agent = { version = "26.6.8", path = "./tower-lsp-max-agent" }
 tower-lsp-max-base = { path = "./crates/tower-lsp-max-base" }
 tower = { version = "0.4", default-features = false, features = ["util"] }
 tracing = "0.1"
@@ -81,7 +81,12 @@ members = [
     "crates/wasm4pm-lsp",
     "examples/pattern-lsp",
     "examples/anti-llm-lsp",
-    "examples/clap-noun-verb-lsp", "crates/gc005-wasm4pm-adapter",
+    "examples/clap-noun-verb-lsp",
+    "examples/wasm4pm-compat-lsp",
+    "examples/axum-lsp",
+    "examples/bevy-lsp",
+    "examples/tex-lsp",
+    "crates/gc005-wasm4pm-adapter",
     "crates/tower-lsp-max-adapters/auto-lsp-core",
     "crates/tower-lsp-max-adapters/auto-lsp-codegen",
 ]
@@ -94,7 +99,7 @@ edition = "2021"
 
 [workspace.dependencies]
 wasm4pm-compat = { version = "26.6.8", features = ["formats", "strict", "wasm4pm"] }
-lsp-types-max = { path = "../lsp-types-max", version = "26.6.5", features = ["proposed"] }
+lsp-types-max = { path = "../lsp-types-max", version = "26.6.8", features = ["proposed"] }
 tree-sitter = "0.26.5"
 tree-sitter-language = "0.1.7"
 downcast-rs = "2.0.2"
@@ -116,3 +121,7 @@ bon = "3.6.4"
 auto-lsp-core = { path = "crates/tower-lsp-max-adapters/auto-lsp-core" }
 auto-lsp-codegen = { path = "crates/tower-lsp-max-adapters/auto-lsp-codegen" }
 auto_lsp_adapter = { path = "crates/tower-lsp-max-adapters/auto_lsp_adapter" }
+
+[patch.crates-io]
+wasm4pm-compat = { path = "../wasm4pm-compat" }
+wasm4pm = { path = "../wasm4pm/wasm4pm" }

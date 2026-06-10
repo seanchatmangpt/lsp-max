@@ -2,7 +2,7 @@
 
 pub use self::socket::{ClientSocket, RequestStream, ResponseSink};
 
-use std::fmt::{self, Debug, Display, Formatter};
+use std::fmt::{self, Debug, Formatter};
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::Arc;
 use std::task::{Context, Poll};
@@ -10,9 +10,6 @@ use std::task::{Context, Poll};
 use futures::channel::mpsc::{self, Sender};
 use futures::future::BoxFuture;
 use futures::sink::SinkExt;
-use lsp_types_max::*;
-use serde::Serialize;
-use serde_json::Value;
 use tower::Service;
 use tracing::{error, trace};
 

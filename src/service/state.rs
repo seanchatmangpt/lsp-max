@@ -232,7 +232,10 @@ impl ServerState {
     pub fn transition_to_initialized(&self, server_caps: serde_json::Value) -> bool {
         println!("--- transition_to_initialized entered");
         let mut lock = self.machine.lock().unwrap();
-        println!("--- transition_to_initialized state machine before: {:?}", lock.get_state());
+        println!(
+            "--- transition_to_initialized state machine before: {:?}",
+            lock.get_state()
+        );
         let (success, receipt) = match &*lock {
             StateMachine::Initializing(_) => {
                 let old = std::mem::replace(

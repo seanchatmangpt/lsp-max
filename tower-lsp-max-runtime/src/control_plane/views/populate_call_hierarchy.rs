@@ -253,6 +253,7 @@ pub(super) fn populate_call_hierarchy(store: &Store, views: &MaterializedViewSto
         }
     }
     for ((url, range), calls) in temp_inc {
+        #[allow(clippy::mutable_key_type)]
         let mut grouped: HashMap<Uri, (CallHierarchyItem, Vec<Range>)> = HashMap::new();
         for (item, rr) in calls {
             grouped
@@ -321,6 +322,7 @@ pub(super) fn populate_call_hierarchy(store: &Store, views: &MaterializedViewSto
         }
     }
     for ((url, range), calls) in temp_out {
+        #[allow(clippy::mutable_key_type)]
         let mut grouped: HashMap<Uri, (CallHierarchyItem, Vec<Range>)> = HashMap::new();
         for (item, rr) in calls {
             grouped

@@ -292,8 +292,7 @@ async fn test_t3_static_graph_hover_merge_with_dynamic_results() {
         if let Some(contents) = result.get("contents") {
             let val = contents
                 .get("value")
-                .or(Some(contents))
-                .unwrap()
+                .unwrap_or(contents)
                 .as_str()
                 .unwrap_or("");
             assert!(val.contains("Dynamic Hover Content") || val.is_empty());

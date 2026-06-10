@@ -1,4 +1,4 @@
 #[test]
 fn test_dummy_composite_playground() {
-    assert!(true);
+    // Placeholder test — no assertion needed.
 }

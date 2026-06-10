@@ -127,7 +127,7 @@ async fn test_f7_t1_static_graph_routing() {
     assert!(resp.get("error").is_none());
     if let Some(res) = resp.get("result") {
         if let Some(arr) = res.as_array() {
-            assert!(arr.len() > 0, "Merged result should contain entries");
+            assert!(!arr.is_empty(), "Merged result should contain entries");
         }
     }
     harness.shutdown();

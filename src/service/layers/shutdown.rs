@@ -5,7 +5,7 @@ use tower::{Layer, Service};
 use tracing::info;
 
 use super::super::pending::Pending;
-use super::super::state::{ServerState, State};
+use super::super::state::ServerState;
 use super::super::ExitedError;
 use super::Cancellable;
 use crate::jsonrpc::{Request, Response};

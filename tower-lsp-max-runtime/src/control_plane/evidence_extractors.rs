@@ -79,7 +79,7 @@ pub fn extract_ranges_from_store(
 
     fn lit_u32(
         store: &oxigraph::store::Store,
-        subject: oxigraph::model::SubjectRef,
+        subject: oxigraph::model::NamedOrBlankNodeRef,
         pred: &oxigraph::model::NamedNode,
         graph: &oxigraph::model::GraphName,
     ) -> u32 {
@@ -142,7 +142,7 @@ pub fn extract_diagnostics_from_store(
 
     fn lit_str(
         store: &oxigraph::store::Store,
-        subject: oxigraph::model::SubjectRef,
+        subject: oxigraph::model::NamedOrBlankNodeRef,
         pred: &oxigraph::model::NamedNode,
         graph: &oxigraph::model::GraphName,
     ) -> Option<String> {
@@ -204,7 +204,7 @@ pub fn extract_receipts_from_store(
 
     fn lit_str(
         store: &oxigraph::store::Store,
-        subject: oxigraph::model::SubjectRef,
+        subject: oxigraph::model::NamedOrBlankNodeRef,
         pred: &oxigraph::model::NamedNode,
         graph: &oxigraph::model::GraphName,
     ) -> String {

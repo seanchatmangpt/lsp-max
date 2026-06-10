@@ -4,7 +4,6 @@ use crate::gate::run_gate_logic;
 use crate::jsonrpc::{Error, Result};
 use crate::workspace_edit::apply_workspace_edit;
 use crate::{lock_registry, sha256, update_diagnostics};
-use lsp_types_max::{CodeAction, CodeActionKind, DiagnosticSeverity, TextEdit, WorkspaceEdit};
 
 /// Returns a full MaxDiagnostic by ID.
 pub async fn max_explain_diagnostic(params: String) -> Result<max_protocol::MaxDiagnostic> {

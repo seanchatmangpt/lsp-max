@@ -343,8 +343,7 @@ async fn test_f4_t2_out_of_order_did_change() {
         let last_change = s
             .received_requests
             .iter()
-            .filter(|r| r.get("method").and_then(|m| m.as_str()) == Some("textDocument/didChange"))
-            .last();
+            .rfind(|r| r.get("method").and_then(|m| m.as_str()) == Some("textDocument/didChange"));
         if let Some(c) = last_change {
             let ver = c
                 .get("params")

@@ -5,7 +5,6 @@ use crate::{lock_registry, update_diagnostics, ServerRegistry};
 use serde_json::Value;
 use tower_lsp_max_lsif::lsif::*;
 use tower_lsp_max_lsif::lsif_builder::LsifBuilder;
-use url::Url;
 
 /// Dumps the current server registry state.
 pub async fn max_dump_state() -> Result<serde_json::Value> {
@@ -73,11 +72,11 @@ pub async fn max_lsif() -> Result<String> {
         .map_err(|_| Error::internal_error())?;
 
     // Export documents and diagnostics
-    for (uri_str, _version) in &registry.document_versions {
+    for uri_str in registry.document_versions.keys() {
         let doc_id = builder
             .emit_document(uri_str.as_str(), "rust")
             .map_err(|_| Error::internal_error())?;
-        
+
         builder
             .contains(project_id.clone(), vec![doc_id.clone()])
             .map_err(|_| Error::internal_error())?;
@@ -100,10 +99,14 @@ pub async fn max_lsif() -> Result<String> {
                 .map_err(|_| Error::internal_error())?;
         }
 
-        builder.end_document(doc_id).map_err(|_| Error::internal_error())?;
+        builder
+            .end_document(doc_id)
+            .map_err(|_| Error::internal_error())?;
     }
 
-    builder.end_project(project_id).map_err(|_| Error::internal_error())?;
+    builder
+        .end_project(project_id)
+        .map_err(|_| Error::internal_error())?;
 
-    Ok(String::from_utf8(buffer).map_err(|_| Error::internal_error())?)
+    String::from_utf8(buffer).map_err(|_| Error::internal_error())
 }

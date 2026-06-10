@@ -1,4 +1,4 @@
 #[test]
 fn test_dummy_dynamic_registration() {
-    assert!(true);
+    // Placeholder test — no assertion needed.
 }

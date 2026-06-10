@@ -1,5 +1,5 @@
 use crate::mesh::AutonomicMesh;
-use crate::mesh_types::{LspPhase, Receipt};
+use crate::mesh_types::LspPhase;
 use crate::sha256::sha256;
 
 impl AutonomicMesh {

@@ -127,7 +127,9 @@ impl<S: LanguageServer> Service<Request> for LspService<S> {
             return Poll::Ready(Err(ExitedError(code)));
         }
         if self.state.poll_initializing(cx).is_pending() {
-            println!("--- LspService::poll_ready returning Pending because poll_initializing is pending");
+            println!(
+                "--- LspService::poll_ready returning Pending because poll_initializing is pending"
+            );
             return Poll::Pending;
         }
         println!("--- LspService::poll_ready delegating to inner");
@@ -285,7 +287,9 @@ fn handle_mesh_rpc(
     method: &str,
     params: Option<Value>,
 ) -> Result<Value, String> {
-    let mut registry = crate::get_registry().lock().unwrap_or_else(|p| p.into_inner());
+    let mut registry = crate::get_registry()
+        .lock()
+        .unwrap_or_else(|p| p.into_inner());
     crate::update_diagnostics(&mut registry);
 
     let mut mesh = state.mesh.lock().unwrap_or_else(|p| p.into_inner());

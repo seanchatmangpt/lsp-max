@@ -1,7 +1,7 @@
 use dashmap::DashMap;
 use lsp_types_max::{
     CallHierarchyIncomingCall, CallHierarchyItem, CallHierarchyOutgoingCall, Diagnostic, Hover,
-    Location, Position, Range, TypeHierarchyItem,
+    Location, Range, TypeHierarchyItem,
 };
 use std::sync::Arc;
 use url::Url;

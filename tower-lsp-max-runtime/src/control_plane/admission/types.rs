@@ -1,5 +1,5 @@
 use super::super::invariants::VerificationReport;
-use super::super::receipts::{Blake3Hash, CryptographicReceipt};
+use super::super::receipts::CryptographicReceipt;
 use crate::{Data, Law, Machine, Phase};
 use tower_lsp_max_lsif::lsif::Element;
 

@@ -532,8 +532,7 @@ pub trait LanguageServer: Send + Sync + 'static {
         &self,
         params: InlineCompletionParams,
     ) -> Result<Option<InlineCompletionResponse>> {
-        let _ = params;
-        Err(Error::method_not_found())
+        impls::text_document::inline_completion(params).await
     }
     /// Handler for the `text_document_content` endpoint.
     #[rpc(name = "workspace/textDocumentContent")]

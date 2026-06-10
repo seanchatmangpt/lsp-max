@@ -1,7 +1,6 @@
 use crate::mesh_types::{
-    Hook, HookEvent, InstanceId, MaxDiagnostic, MeshAction, PolicyState, Receipt,
+    FailureMode, Hook, HookDescriptor, HookEvent, InstanceId, MeshAction, PolicyState, Receipt,
 };
-use crate::sha256::sha256;
 
 pub struct IntakeDiagnosticHook;
 
@@ -26,6 +25,16 @@ impl Hook for IntakeDiagnosticHook {
                 }
             }
             _ => vec![],
+        }
+    }
+
+    fn descriptor(&self) -> HookDescriptor {
+        HookDescriptor {
+            name: "IntakeDiagnosticHook",
+            input_type: "HookEvent::DiagnosticEmitted",
+            output_type: "MeshAction::TransitionPolicyState",
+            trigger_law: "LAW-INTAKE-001",
+            failure_mode: FailureMode::EmitDiagnostic,
         }
     }
 }
@@ -77,6 +86,16 @@ impl Hook for IntakeClearHook {
                 }
             }
             _ => vec![],
+        }
+    }
+
+    fn descriptor(&self) -> HookDescriptor {
+        HookDescriptor {
+            name: "IntakeClearHook",
+            input_type: "HookEvent::DiagnosticCleared",
+            output_type: "MeshAction::EmitReceipt, MeshAction::TransitionPolicyState, MeshAction::ExecuteBoundedAction",
+            trigger_law: "LAW-INTAKE-002",
+            failure_mode: FailureMode::EmitDiagnostic,
         }
     }
 }
@@ -215,6 +234,16 @@ impl Hook for CustomerRequestClassifierHook {
         }
         actions
     }
+
+    fn descriptor(&self) -> HookDescriptor {
+        HookDescriptor {
+            name: "CustomerRequestClassifierHook",
+            input_type: "HookEvent::ReceiptEmitted, HookEvent::PolicyStateChanged, HookEvent::DiagnosticEmitted, HookEvent::StateTransition, HookEvent::BoundedActionExecuted, HookEvent::InstanceReset",
+            output_type: "MeshAction::TransitionPolicyState, MeshAction::EmitReceipt",
+            trigger_law: "LAW-CLASSIFY-001",
+            failure_mode: FailureMode::RefuseEvent,
+        }
+    }
 }
 
 pub struct PolicyEvaluationHook {
@@ -303,6 +332,16 @@ impl Hook for PolicyEvaluationHook {
         }
         actions
     }
+
+    fn descriptor(&self) -> HookDescriptor {
+        HookDescriptor {
+            name: "PolicyEvaluationHook",
+            input_type: "HookEvent::ReceiptEmitted, HookEvent::PolicyStateChanged, HookEvent::BoundedActionExecuted, HookEvent::InstanceReset",
+            output_type: "MeshAction::TransitionPolicyState, MeshAction::ExecuteBoundedAction, MeshAction::EmitReceipt",
+            trigger_law: "LAW-POLICY-001",
+            failure_mode: FailureMode::Halt,
+        }
+    }
 }
 
 pub struct ReceiptRoutingHook {
@@ -383,5 +422,15 @@ impl Hook for ReceiptRoutingHook {
             _ => {}
         }
         actions
+    }
+
+    fn descriptor(&self) -> HookDescriptor {
+        HookDescriptor {
+            name: "ReceiptRoutingHook",
+            input_type: "HookEvent::DiagnosticEmitted, HookEvent::DiagnosticCleared, HookEvent::ReceiptEmitted",
+            output_type: "MeshAction::ClearDiagnostic",
+            trigger_law: "LAW-ROUTING-001",
+            failure_mode: FailureMode::EmitDiagnostic,
+        }
     }
 }

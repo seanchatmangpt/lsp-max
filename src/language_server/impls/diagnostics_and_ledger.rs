@@ -1,7 +1,7 @@
 //! Ledger, autonomic loop, hooks, and diagnostic query implementations.
 
 use crate::jsonrpc::{Error, Result};
-use crate::{lock_registry, sha256, update_diagnostics};
+use crate::{lock_mesh, lock_registry, sha256, update_diagnostics};
 use lsp_types_max::DiagnosticSeverity;
 use serde_json::Value;
 
@@ -156,24 +156,35 @@ pub async fn max_chain() -> Result<serde_json::Value> {
 
 /// Lists registered hooks in the service layer.
 pub async fn max_hook() -> Result<serde_json::Value> {
-    Ok(serde_json::json!([
-        {"name": "DiagnosticUpdateHook"},
-        {"name": "ReceiptIntegrityHook"},
-    ]))
+    let mesh = lock_mesh()?;
+    let descriptors = mesh.hook_descriptors();
+    serde_json::to_value(&descriptors).map_err(|_| crate::jsonrpc::Error::internal_error())
 }
 
 /// Returns hook topology for the service layer.
 pub async fn max_hook_graph() -> Result<serde_json::Value> {
     let mut registry = lock_registry()?;
     update_diagnostics(&mut registry);
+    let mesh = lock_mesh()?;
+    let descriptors = mesh.hook_descriptors();
+    let active_count = descriptors.len();
+    let hooks: Vec<_> = descriptors
+        .iter()
+        .map(|d| {
+            serde_json::json!({
+                "hook": d.name,
+                "trigger_law": d.trigger_law,
+                "input_type": d.input_type,
+                "output_type": d.output_type,
+                "failure_mode": d.failure_mode,
+            })
+        })
+        .collect();
     Ok(serde_json::json!({
-        "hooks": [
-            {
-                "hook": "DiagnosticUpdateHook",
-                "active_diagnostic_count": registry.diagnostics.len(),
-                "active_receipt_count": registry.receipts.len(),
-            }
-        ]
+        "active_hook_count": active_count,
+        "active_diagnostic_count": registry.diagnostics.len(),
+        "active_receipt_count": registry.receipts.len(),
+        "hooks": hooks,
     }))
 }
 
@@ -231,7 +242,7 @@ pub async fn max_lawful_transition(params: String) -> Result<serde_json::Value> 
 pub async fn max_ledger_report() -> Result<String> {
     let mut registry = lock_registry()?;
     update_diagnostics(&mut registry);
-    let mut report = format!("Ledger Diagnostic Report for Instance: LSP_1\n");
+    let mut report = "Ledger Diagnostic Report for Instance: LSP_1\n".to_string();
     report.push_str("Status: VERIFIED (Cryptographic integrity intact)\n");
     report.push_str(&format!("Active Phase: {:?}\n", registry.current_state));
     report.push_str(&format!("Receipts count: {}\n", registry.receipts.len()));

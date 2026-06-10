@@ -66,9 +66,28 @@ impl std::fmt::Display for MeshAction {
     }
 }
 
+/// Failure mode for a hook — what happens when the hook cannot satisfy its contract.
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub enum FailureMode {
+    RefuseEvent,
+    EmitDiagnostic,
+    Halt,
+}
+
+/// Static descriptor for a registered hook — name, type surface, trigger law, failure mode.
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct HookDescriptor {
+    pub name: &'static str,
+    pub input_type: &'static str,
+    pub output_type: &'static str,
+    pub trigger_law: &'static str,
+    pub failure_mode: FailureMode,
+}
+
 pub trait Hook: Send + Sync {
     fn name(&self) -> &str;
     fn trigger(&self, event: &HookEvent) -> Vec<MeshAction>;
+    fn descriptor(&self) -> HookDescriptor;
 }
 
 /// Lifecycle phase of an LSP instance.

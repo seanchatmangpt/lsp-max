@@ -1,7 +1,7 @@
 use crate::mesh_hooks::{IntakeClearHook, IntakeDiagnosticHook};
 use crate::mesh_types::{
-    AutonomicMeshState, ConformanceDeltaEntry, ConformanceGrade, Hook, HookEvent, InstanceId,
-    LspInstance, LspPhase, MaxDiagnostic, MeshAction, PolicyState, Receipt,
+    AutonomicMeshState, ConformanceDeltaEntry, Hook, HookEvent, InstanceId, LspInstance, LspPhase,
+    MaxDiagnostic, MeshAction, PolicyState,
 };
 use crate::sha256::sha256;
 use std::collections::{HashMap, VecDeque};
@@ -152,6 +152,10 @@ impl AutonomicMesh {
 
     pub fn register_hook(&mut self, hook: Box<dyn Hook>) {
         self.hooks.push(hook);
+    }
+
+    pub fn hook_descriptors(&self) -> Vec<crate::mesh_types::HookDescriptor> {
+        self.hooks.iter().map(|h| h.descriptor()).collect()
     }
 
     pub fn dispatch_event(&mut self, event: HookEvent) {

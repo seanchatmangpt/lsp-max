@@ -18,7 +18,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 use crate::errors::DocumentError;
 use crate::{document::Document, errors::PositionError};
-use downcast_rs::{DowncastSync, impl_downcast};
+use downcast_rs::{impl_downcast, DowncastSync};
 use std::cmp::Ordering;
 use tree_sitter::Node;
 
@@ -70,6 +70,7 @@ pub trait AstNode: std::fmt::Debug + Send + Sync + DowncastSync {
     fn get_id(&self) -> usize;
 
     /// Returns the ID of the parent node, if any.
+    #[allow(clippy::borrowed_box)]
     fn get_parent_id(&self) -> Option<usize>;
 
     /// Returns the [`tree_sitter::Range`] of this node.
@@ -124,6 +125,7 @@ pub trait AstNode: std::fmt::Debug + Send + Sync + DowncastSync {
     /// Retrieves the parent node, if present, from the node list.
     ///
     /// The node list must be sorted by ID.
+    #[allow(clippy::borrowed_box)]
     fn get_parent<'a>(&'a self, nodes: &'a [Box<dyn AstNode>]) -> Option<&'a Box<dyn AstNode>> {
         match nodes.first() {
             Some(first) => {
@@ -149,6 +151,7 @@ impl PartialEq for dyn AstNode {
 
 impl Eq for dyn AstNode {}
 
+#[allow(clippy::non_canonical_partial_ord_impl)]
 impl PartialOrd for dyn AstNode {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.get_id().cmp(&other.get_id()))

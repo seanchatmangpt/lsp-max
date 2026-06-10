@@ -1,11 +1,16 @@
+use assert_cmd::Command;
 use std::fs;
 use std::path::PathBuf;
-use assert_cmd::Command;
 
 #[test]
 fn test_workspace_scope_proof() {
-    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).parent().unwrap().parent().unwrap().to_path_buf();
-    
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .unwrap()
+        .parent()
+        .unwrap()
+        .to_path_buf();
+
     let f1 = root.join("crates/fake_subcrate/src/lib.rs");
     let f2 = root.join("examples/fake_example/src/main.rs");
     let f3 = root.join("playground/fake.rs");
@@ -20,7 +25,7 @@ fn test_workspace_scope_proof() {
 
     let mut cmd = Command::cargo_bin("pattern-lsp").unwrap();
     cmd.arg("scan").arg("workspace").arg("--format").arg("json");
-    
+
     let output = cmd.unwrap();
     let stdout = String::from_utf8_lossy(&output.stdout);
 

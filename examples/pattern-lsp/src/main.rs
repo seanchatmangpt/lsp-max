@@ -1,1 +1,4 @@
-use pattern_lsp::*; #[tokio::main] async fn main() -> clap_noun_verb::Result<()> { clap_noun_verb::run() }
+#[tokio::main]
+async fn main() -> clap_noun_verb::Result<()> {
+    clap_noun_verb::run()
+}

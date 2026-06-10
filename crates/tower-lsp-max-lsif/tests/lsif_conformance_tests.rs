@@ -6,11 +6,17 @@ use tower_lsp_max_lsif::lsif_builder::LsifBuilder;
 fn test_metadata_conformance() {
     let mut buf = Vec::new();
     let mut builder = LsifBuilder::new(&mut buf);
-    builder.emit_metadata("0.6.0", "file:///test_project", ToolInfo {
-        name: "test-conformance".to_string(),
-        version: Some("1.0.0".to_string()),
-        args: None,
-    }).unwrap();
+    builder
+        .emit_metadata(
+            "0.6.0",
+            "file:///test_project",
+            ToolInfo {
+                name: "test-conformance".to_string(),
+                version: Some("1.0.0".to_string()),
+                args: None,
+            },
+        )
+        .unwrap();
 
     let json_str = String::from_utf8(buf).unwrap();
     assert!(json_str.contains(r#""projectRoot":"file:///test_project""#));

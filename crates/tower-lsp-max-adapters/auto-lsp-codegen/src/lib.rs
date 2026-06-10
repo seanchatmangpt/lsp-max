@@ -259,10 +259,10 @@ mod utils;
 
 use crate::json::{NodeType, TypeInfo};
 use crate::output::{generate_enum, generate_struct};
-use crate::supertypes::{SuperType, generate_super_type};
+use crate::supertypes::{generate_super_type, SuperType};
 use crate::utils::{sanitize_string, sanitize_string_to_pascal};
 use proc_macro2::TokenStream;
-use quote::{ToTokens, format_ident, quote};
+use quote::{format_ident, quote, ToTokens};
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 use std::sync::{LazyLock, Mutex, RwLock};
 use utils::TOKENS;

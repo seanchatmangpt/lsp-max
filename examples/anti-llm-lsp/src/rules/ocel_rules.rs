@@ -15,8 +15,11 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
                 message: "Diagnostic emitted without corresponding OCEL process event.".to_string(),
                 forbidden_implication: "DiagnosticEmitted => ProcessEvidenceRecorded".to_string(),
                 blocking: true,
-                required_correction: "Emit an OCEL event whenever a diagnostic is raised.".to_string(),
-                required_next_proof: "Verify that OCEL contains DiagnosticEmitted linked to the diagnostic.".to_string(),
+                required_correction: "Emit an OCEL event whenever a diagnostic is raised."
+                    .to_string(),
+                required_next_proof:
+                    "Verify that OCEL contains DiagnosticEmitted linked to the diagnostic."
+                        .to_string(),
             });
         }
 
@@ -57,11 +60,14 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
                 file_path: o.file_path.clone(),
                 line: o.line,
                 column: o.column,
-                message: "Full wasm4pm authority used where wasm4pm-compat boundary was required.".to_string(),
+                message: "Full wasm4pm authority used where wasm4pm-compat boundary was required."
+                    .to_string(),
                 forbidden_implication: "CompatEvidenceBoundary => FullMiningAuthority".to_string(),
                 blocking: true,
-                required_correction: "Use only wasm4pm-compat typed boundaries in this checkpoint.".to_string(),
-                required_next_proof: "Check dependencies to ensure full wasm4pm is excluded.".to_string(),
+                required_correction: "Use only wasm4pm-compat typed boundaries in this checkpoint."
+                    .to_string(),
+                required_next_proof: "Check dependencies to ensure full wasm4pm is excluded."
+                    .to_string(),
             });
         }
     }

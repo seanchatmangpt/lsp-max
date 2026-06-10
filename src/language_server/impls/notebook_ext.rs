@@ -1,6 +1,5 @@
 //! Handlers for notebookDocument/* LSP 3.17 request methods.
 
-use crate::jsonrpc::Result;
 use lsp_types_max::*;
 
 /// Handler for the `notebookDocument/didOpen` notification.
@@ -33,26 +32,4 @@ pub async fn did_save_notebook(params: DidSaveNotebookDocumentParams) {
 pub async fn did_close_notebook(params: DidCloseNotebookDocumentParams) {
     let _ = params.notebook_document;
     let _ = params.cell_text_documents;
-}
-
-/// A manager for Notebook Documents can be implemented by the backend
-/// to track the state of opened notebooks and their constituent cells.
-pub struct NotebookManager {
-    // Implementation would typically use a DashMap or similar for thread-safe state tracking
-}
-
-impl NotebookManager {
-    pub fn new() -> Self {
-        Self {}
-    }
-
-    pub fn handle_did_open(&self, params: DidOpenNotebookDocumentParams) {
-        // Track the notebook and its initial cells
-    }
-
-    pub fn handle_did_change(&self, params: DidChangeNotebookDocumentParams) {
-        // Apply changes to the tracked notebook state
-        // This includes structure changes (adding/removing cells),
-        // metadata changes, and cell text content changes.
-    }
 }

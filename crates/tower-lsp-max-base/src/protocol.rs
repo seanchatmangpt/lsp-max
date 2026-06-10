@@ -343,7 +343,10 @@ pub fn validate_envelope(value: &serde_json::Value) -> Result<(), &'static str> 
         if !method_val.is_string() {
             return Err("method must be a string");
         }
-        if let Some(_id_val) = obj.get("id").filter(|v| !v.is_number() && !v.is_string() && !v.is_null()) {
+        if let Some(_id_val) = obj
+            .get("id")
+            .filter(|v| !v.is_number() && !v.is_string() && !v.is_null())
+        {
             return Err("id must be a number, string, or null");
         }
     } else if has_result || has_error {

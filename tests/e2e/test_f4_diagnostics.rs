@@ -332,7 +332,10 @@ async fn test_f4_t2_diagnostics_clear_on_save() {
     .expect("Timeout waiting for diagnostics")
     .expect("Connection closed");
     let params = msg.get("params").unwrap();
-    assert_eq!(params.get("diagnostics").unwrap().as_array().unwrap().len(), 1);
+    assert_eq!(
+        params.get("diagnostics").unwrap().as_array().unwrap().len(),
+        1
+    );
 
     // Client sends didSave
     harness
@@ -370,7 +373,15 @@ async fn test_f4_t2_diagnostics_clear_on_save() {
     .expect("Timeout waiting for cleared diagnostics")
     .expect("Connection closed");
     let params2 = msg2.get("params").unwrap();
-    assert_eq!(params2.get("diagnostics").unwrap().as_array().unwrap().len(), 0);
+    assert_eq!(
+        params2
+            .get("diagnostics")
+            .unwrap()
+            .as_array()
+            .unwrap()
+            .len(),
+        0
+    );
 
     harness.shutdown();
 }
@@ -504,7 +515,10 @@ async fn test_f4_t2_diagnostics_empty_array() {
     .expect("Timeout waiting for initial diagnostic")
     .expect("Connection closed");
     let params = msg.get("params").unwrap();
-    assert_eq!(params.get("diagnostics").unwrap().as_array().unwrap().len(), 1);
+    assert_eq!(
+        params.get("diagnostics").unwrap().as_array().unwrap().len(),
+        1
+    );
 
     // Publish empty diagnostics array
     let empty_diag = json!({
@@ -589,10 +603,7 @@ async fn test_f4_t2_diagnostics_non_standard_severity() {
         diags1[0].get("message").and_then(|m| m.as_str()),
         Some("Invalid severity diagnostic")
     );
-    assert_eq!(
-        diags1[0].get("severity").and_then(|s| s.as_i64()),
-        Some(5)
-    );
+    assert_eq!(diags1[0].get("severity").and_then(|s| s.as_i64()), Some(5));
 
     // Send a standard severity diagnostic (severity 1 = Error)
     let standard_diag = json!({
@@ -633,10 +644,7 @@ async fn test_f4_t2_diagnostics_non_standard_severity() {
         diags2[0].get("message").and_then(|m| m.as_str()),
         Some("Standard severity diagnostic")
     );
-    assert_eq!(
-        diags2[0].get("severity").and_then(|s| s.as_i64()),
-        Some(1)
-    );
+    assert_eq!(diags2[0].get("severity").and_then(|s| s.as_i64()), Some(1));
 
     harness.shutdown();
 }
@@ -702,10 +710,14 @@ async fn test_f4_t3_diagnostics_filtering_contract() {
     let upstreams = vec![("ggen-lsp".to_string(), mock.addr.to_string())];
 
     let (client_io, server_io) = tokio::io::duplex(1024 * 1024);
-    let (service, socket) = tower_lsp_max::LspService::new(|client| tower_lsp_max::ComposedServer::new(client, upstreams.clone()));
+    let (service, socket) = tower_lsp_max::LspService::new(|client| {
+        tower_lsp_max::ComposedServer::new(client, upstreams.clone())
+    });
     let (reader, writer) = tokio::io::split(server_io);
     tokio::spawn(async move {
-        let _ = tower_lsp_max::Server::new(reader, writer, socket).serve(service).await;
+        let _ = tower_lsp_max::Server::new(reader, writer, socket)
+            .serve(service)
+            .await;
     });
 
     let mut client = crate::test_harness::TestClient::new(client_io);
@@ -716,9 +728,7 @@ async fn test_f4_t3_diagnostics_filtering_contract() {
         "processId": null
     });
     let _ = client.send_request("initialize", init_params).await;
-    client
-        .send_notification("initialized", json!({}))
-        .await;
+    client.send_notification("initialized", json!({})).await;
 
     let diag_payload = json!({
         "jsonrpc": "2.0",
@@ -752,17 +762,14 @@ async fn test_f4_t3_diagnostics_filtering_contract() {
         s.diagnostics_to_send.push(diag_payload);
     }
 
-    let msg = tokio::time::timeout(
-        std::time::Duration::from_millis(500),
-        client.read_message(),
-    )
-    .await
-    .expect("Timeout waiting for diagnostics forwarding")
-    .expect("Connection closed");
+    let msg = tokio::time::timeout(std::time::Duration::from_millis(500), client.read_message())
+        .await
+        .expect("Timeout waiting for diagnostics forwarding")
+        .expect("Connection closed");
 
     let params = msg.get("params").unwrap();
     let diags = params.get("diagnostics").unwrap().as_array().unwrap();
-    
+
     assert_eq!(diags.len(), 1);
     assert_eq!(
         diags[0].get("message").and_then(|m| m.as_str()),

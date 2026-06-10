@@ -1,6 +1,6 @@
 [package]
 name = "gc005-wasm4pm-adapter"
-version = "26.6.6"
+version = "26.6.8"
 edition = "2021"
 
 [dependencies]
@@ -13,7 +13,6 @@ wasm4pm = { path = "../../../wasm4pm/wasm4pm" }
 tempfile = "3"
 sha2 = "0.10"
 walkdir = "2"
-ggen-projection = { path = "../../../ggen/crates/ggen-projection" }
 tower_lsp_max_max = { package = "tower-lsp-max", path = "../.." }
 lsp-types-max = { path = "../../../lsp-types-max" }
 url = "2"

@@ -13,5 +13,7 @@ pub struct ReceiptShowResult {
 #[verb("show")]
 pub fn cmd_show(latest: bool) -> Result<ReceiptShowResult> {
     let _ = latest;
-    Ok(ReceiptShowResult { receipt_id: "none".into() })
+    Ok(ReceiptShowResult {
+        receipt_id: "none".into(),
+    })
 }

@@ -38,9 +38,15 @@ impl LspClient {
             let mut reader = BufReader::new(stdout);
             loop {
                 let mut line = String::new();
-                if reader.read_line(&mut line).is_err() || line.is_empty() { break; }
+                if reader.read_line(&mut line).is_err() || line.is_empty() {
+                    break;
+                }
                 if line.starts_with("Content-Length: ") {
-                    let len: usize = line.trim_start_matches("Content-Length: ").trim().parse().unwrap();
+                    let len: usize = line
+                        .trim_start_matches("Content-Length: ")
+                        .trim()
+                        .parse()
+                        .unwrap();
                     reader.read_line(&mut line).unwrap(); // consume empty line
                     let mut body = vec![0u8; len];
                     reader.read_exact(&mut body).unwrap();
@@ -50,7 +56,14 @@ impl LspClient {
             }
         });
 
-        Self { stdin, rx, child, next_id: 1, stashed_notifications: Vec::new(), _tmp: tmp }
+        Self {
+            stdin,
+            rx,
+            child,
+            next_id: 1,
+            stashed_notifications: Vec::new(),
+            _tmp: tmp,
+        }
     }
 
     fn send(&mut self, msg: Value) {
@@ -65,8 +78,13 @@ impl LspClient {
         self.next_id += 1;
         self.send(json!({ "jsonrpc": "2.0", "id": id, "method": method, "params": params }));
         loop {
-            let msg = self.rx.recv_timeout(READ_TIMEOUT).expect("LSP request timeout");
-            if msg.get("id") == Some(&json!(id)) { return msg; }
+            let msg = self
+                .rx
+                .recv_timeout(READ_TIMEOUT)
+                .expect("LSP request timeout");
+            if msg.get("id") == Some(&json!(id)) {
+                return msg;
+            }
             self.stashed_notifications.push(msg);
         }
     }
@@ -77,12 +95,21 @@ impl LspClient {
 
     fn wait_for_notification(&mut self, method: &str) -> Value {
         // Check stash first
-        if let Some(pos) = self.stashed_notifications.iter().position(|n| n.get("method") == Some(&json!(method))) {
+        if let Some(pos) = self
+            .stashed_notifications
+            .iter()
+            .position(|n| n.get("method") == Some(&json!(method)))
+        {
             return self.stashed_notifications.remove(pos);
         }
         loop {
-            let msg = self.rx.recv_timeout(READ_TIMEOUT).expect("LSP notification timeout");
-            if msg.get("method") == Some(&json!(method)) { return msg; }
+            let msg = self
+                .rx
+                .recv_timeout(READ_TIMEOUT)
+                .expect("LSP notification timeout");
+            if msg.get("method") == Some(&json!(method)) {
+                return msg;
+            }
             self.stashed_notifications.push(msg);
         }
     }
@@ -97,118 +124,208 @@ impl Drop for LspClient {
 #[test]
 fn test_gc004_pack_domain_lsp_intelligence() {
     let mut client = LspClient::new();
-    client.request("initialize", json!({ "capabilities": {} })).get("result").expect("initialize result");
+    client
+        .request("initialize", json!({ "capabilities": {} }))
+        .get("result")
+        .expect("initialize result");
     client.notify("initialized", json!({}));
 
-    
     // ggen-does-not-own-clap-domain
     {
-        
-            let uri = Url::parse("file:///tmp/cli.rs").unwrap();
-            let content = "struct Opts; // missing handler";
-            client.notify("textDocument/didOpen", json!({
+        let uri = Url::parse("file:///tmp/cli.rs").unwrap();
+        let content = "struct Opts; // missing handler";
+        client.notify(
+            "textDocument/didOpen",
+            json!({
                 "textDocument": { "uri": uri, "languageId": "rust", "version": 1, "text": content }
-            }));
-            
-            let notif = client.wait_for_notification("textDocument/publishDiagnostics");
-            let diags = notif.get("params").unwrap().get("diagnostics").unwrap().as_array().unwrap();
-            
-            let clap_err = diags.iter().find(|d| d.get("code").unwrap() == "CLAP-PACK-HANDLER-UNBOUND").expect("Must have clap error");
-            
-            let source_id = clap_err.get("data").unwrap().get("source_id").unwrap().as_str().unwrap();
-            assert_eq!(source_id, "clap_noun_verb_pack_lsp", "Owner must be clap pack");
-            
-        
+            }),
+        );
+
+        let notif = client.wait_for_notification("textDocument/publishDiagnostics");
+        let diags = notif
+            .get("params")
+            .unwrap()
+            .get("diagnostics")
+            .unwrap()
+            .as_array()
+            .unwrap();
+
+        let clap_err = diags
+            .iter()
+            .find(|d| d.get("code").unwrap() == "CLAP-PACK-HANDLER-UNBOUND")
+            .expect("Must have clap error");
+
+        let source_id = clap_err
+            .get("data")
+            .unwrap()
+            .get("source_id")
+            .unwrap()
+            .as_str()
+            .unwrap();
+        assert_eq!(
+            source_id, "clap_noun_verb_pack_lsp",
+            "Owner must be clap pack"
+        );
     }
-    
+
     // ggen-does-not-own-tower-domain
     {
-        
-            let uri = Url::parse("file:///tmp/server.rs").unwrap();
-            let content = "fn write_to_disk() {}";
-            client.notify("textDocument/didOpen", json!({
+        let uri = Url::parse("file:///tmp/server.rs").unwrap();
+        let content = "fn write_to_disk() {}";
+        client.notify(
+            "textDocument/didOpen",
+            json!({
                 "textDocument": { "uri": uri, "languageId": "rust", "version": 1, "text": content }
-            }));
-            
-            let notif = client.wait_for_notification("textDocument/publishDiagnostics");
-            let diags = notif.get("params").unwrap().get("diagnostics").unwrap().as_array().unwrap();
-            
-            let tower_err = diags.iter().find(|d| d.get("code").unwrap() == "TOWER-PACK-UNGUARDED-MUTATION").expect("Must have tower error");
-            
-            let source_id = tower_err.get("data").unwrap().get("source_id").unwrap().as_str().unwrap();
-            assert_eq!(source_id, "tower_lsp_max_pack_lsp", "Owner must be tower pack");
-            
-        
+            }),
+        );
+
+        let notif = client.wait_for_notification("textDocument/publishDiagnostics");
+        let diags = notif
+            .get("params")
+            .unwrap()
+            .get("diagnostics")
+            .unwrap()
+            .as_array()
+            .unwrap();
+
+        let tower_err = diags
+            .iter()
+            .find(|d| d.get("code").unwrap() == "TOWER-PACK-UNGUARDED-MUTATION")
+            .expect("Must have tower error");
+
+        let source_id = tower_err
+            .get("data")
+            .unwrap()
+            .get("source_id")
+            .unwrap()
+            .as_str()
+            .unwrap();
+        assert_eq!(
+            source_id, "tower_lsp_max_pack_lsp",
+            "Owner must be tower pack"
+        );
     }
-    
+
     // projection-state-overlay
     {
-        
-            let uri = Url::parse("file:///tmp/cli.rs").unwrap();
-            let content = "struct Opts; ggen:override";
-            client.notify("textDocument/didOpen", json!({
+        let uri = Url::parse("file:///tmp/cli.rs").unwrap();
+        let content = "struct Opts; ggen:override";
+        client.notify(
+            "textDocument/didOpen",
+            json!({
                 "textDocument": { "uri": uri, "languageId": "rust", "version": 1, "text": content }
-            }));
-            
-            let notif = client.wait_for_notification("textDocument/publishDiagnostics");
-            let diags = notif.get("params").unwrap().get("diagnostics").unwrap().as_array().unwrap();
-            
-            let has_clap = diags.iter().any(|d| {
-                d.get("data").unwrap().get("source_id").unwrap().as_str().unwrap() == "clap_noun_verb_pack_lsp"
-            });
-            let has_ggen = diags.iter().any(|d| {
-                d.get("data").unwrap().get("source_id").unwrap().as_str().unwrap() == "ggen_lsp_observer"
-            });
-            assert!(has_clap && has_ggen, "Must overlay both pack domain and ggen projection state");
-            
-        
+            }),
+        );
+
+        let notif = client.wait_for_notification("textDocument/publishDiagnostics");
+        let diags = notif
+            .get("params")
+            .unwrap()
+            .get("diagnostics")
+            .unwrap()
+            .as_array()
+            .unwrap();
+
+        let has_clap = diags.iter().any(|d| {
+            d.get("data")
+                .unwrap()
+                .get("source_id")
+                .unwrap()
+                .as_str()
+                .unwrap()
+                == "clap_noun_verb_pack_lsp"
+        });
+        let has_ggen = diags.iter().any(|d| {
+            d.get("data")
+                .unwrap()
+                .get("source_id")
+                .unwrap()
+                .as_str()
+                .unwrap()
+                == "ggen_lsp_observer"
+        });
+        assert!(
+            has_clap && has_ggen,
+            "Must overlay both pack domain and ggen projection state"
+        );
     }
-    
+
     // receipt-errors-owned-by-ggen
     {
-        
-            let uri = Url::parse("file:///tmp/receipts.json").unwrap();
-            let content = "random_corrupt_bytes";
-            client.notify("textDocument/didOpen", json!({
+        let uri = Url::parse("file:///tmp/receipts.json").unwrap();
+        let content = "random_corrupt_bytes";
+        client.notify(
+            "textDocument/didOpen",
+            json!({
                 "textDocument": { "uri": uri, "languageId": "json", "version": 1, "text": content }
-            }));
-            
-            let notif = client.wait_for_notification("textDocument/publishDiagnostics");
-            let diags = notif.get("params").unwrap().get("diagnostics").unwrap().as_array().unwrap();
-            
-            let receipt_err = diags.iter().find(|d| d.get("code").unwrap() == "GGEN-EVIDENCE-001").expect("Must have receipt error");
-            let source_id = receipt_err.get("data").unwrap().get("source_id").unwrap().as_str().unwrap();
-            assert_eq!(source_id, "ggen_lsp_observer", "Receipt errors must be owned by ggen");
-            
-        
+            }),
+        );
+
+        let notif = client.wait_for_notification("textDocument/publishDiagnostics");
+        let diags = notif
+            .get("params")
+            .unwrap()
+            .get("diagnostics")
+            .unwrap()
+            .as_array()
+            .unwrap();
+
+        let receipt_err = diags
+            .iter()
+            .find(|d| d.get("code").unwrap() == "GGEN-EVIDENCE-001")
+            .expect("Must have receipt error");
+        let source_id = receipt_err
+            .get("data")
+            .unwrap()
+            .get("source_id")
+            .unwrap()
+            .as_str()
+            .unwrap();
+        assert_eq!(
+            source_id, "ggen_lsp_observer",
+            "Receipt errors must be owned by ggen"
+        );
     }
-    
+
     // domain-errors-owned-by-pack
     {
-        
-            let uri = Url::parse("file:///tmp/cli.rs").unwrap();
-            let content = "struct Opts; // missing handler";
-            client.notify("textDocument/didOpen", json!({
+        let uri = Url::parse("file:///tmp/cli.rs").unwrap();
+        let content = "struct Opts; // missing handler";
+        client.notify(
+            "textDocument/didOpen",
+            json!({
                 "textDocument": { "uri": uri, "languageId": "rust", "version": 1, "text": content }
-            }));
-            
-            let notif = client.wait_for_notification("textDocument/publishDiagnostics");
-            let diags = notif.get("params").unwrap().get("diagnostics").unwrap().as_array().unwrap();
-            
-            let clap_err = diags.iter().find(|d| d.get("code").unwrap() == "CLAP-PACK-HANDLER-UNBOUND").expect("Must have clap error");
-            
-            let source_id = clap_err.get("data").unwrap().get("source_id").unwrap().as_str().unwrap();
-            assert_eq!(source_id, "clap_noun_verb_pack_lsp", "Owner must be clap pack");
-            
-        
+            }),
+        );
+
+        let notif = client.wait_for_notification("textDocument/publishDiagnostics");
+        let diags = notif
+            .get("params")
+            .unwrap()
+            .get("diagnostics")
+            .unwrap()
+            .as_array()
+            .unwrap();
+
+        let clap_err = diags
+            .iter()
+            .find(|d| d.get("code").unwrap() == "CLAP-PACK-HANDLER-UNBOUND")
+            .expect("Must have clap error");
+
+        let source_id = clap_err
+            .get("data")
+            .unwrap()
+            .get("source_id")
+            .unwrap()
+            .as_str()
+            .unwrap();
+        assert_eq!(
+            source_id, "clap_noun_verb_pack_lsp",
+            "Owner must be clap pack"
+        );
     }
-    
+
     // pack-lsp-direct-write-refused
-    {
-        
-            // The architecture split prevents direct write by returning PackObservation instead of taking handle to fs.
-            assert!(true);
-        
-    }
-    
+    // The architecture split prevents direct write by returning PackObservation instead of taking handle to fs.
+    // (Structural invariant — no runtime assertion needed.)
 }

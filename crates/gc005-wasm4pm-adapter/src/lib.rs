@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
-use wasm4pm_compat::ocel::OCEL;
 use wasm4pm::gall::{check_gall_conformance, GallVerdict};
+use wasm4pm_compat::ocel::OCEL;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ConformanceIssue {
@@ -11,7 +11,7 @@ pub struct ConformanceIssue {
 
 pub fn analyze_ocel(content: &str) -> Vec<ConformanceIssue> {
     let mut issues = Vec::new();
-    
+
     match serde_json::from_str::<OCEL>(content) {
         Ok(ocel) => {
             // Required by test assertion: check_gall_conformance(&ocel)
@@ -47,6 +47,6 @@ pub fn analyze_ocel(content: &str) -> Vec<ConformanceIssue> {
             });
         }
     }
-    
+
     issues
 }

@@ -1,40 +1,44 @@
 use crate::client::ClientError;
-use lsp_types_max::*;
+use lsp_types::*;
+use serde_json::json;
 use serde_json::Value;
 use tokio::sync::mpsc;
-use tower_lsp_max_protocol::Message;
 
 /// A handle to interact with the connected Language Server.
 /// This acts as the outbound proxy for the downstream client.
 #[derive(Debug, Clone)]
 pub struct ServerHandle {
-    pub(crate) outbound_tx: mpsc::Sender<Message>,
+    pub(crate) outbound_tx: mpsc::Sender<Value>,
 }
 
 impl ServerHandle {
-    pub fn new(outbound_tx: mpsc::Sender<Message>) -> Self {
+    pub fn new(outbound_tx: mpsc::Sender<Value>) -> Self {
         Self { outbound_tx }
     }
 
     /// Helper to send a notification
     async fn notify(&self, method: &str, params: impl serde::Serialize) {
-        let msg = Message::Notification(tower_lsp_max_protocol::Notification {
-            jsonrpc: tower_lsp_max_protocol::Version::V2,
-            method: method.to_string(),
-            params: Some(serde_json::to_value(params).unwrap_or_default()),
+        let msg = json!({
+            "jsonrpc": "2.0",
+            "method": method,
+            "params": params,
         });
         let _ = self.outbound_tx.send(msg).await;
     }
 
     /// Helper to send a request (Note: returning default Ok(None) to maintain signature without blocking for response map logic in this baseline).
-    async fn request<R>(&self, method: &str, params: impl serde::Serialize) -> Result<Option<R>, ClientError> {
-        let _msg = Message::Request(tower_lsp_max_protocol::Request {
-            jsonrpc: tower_lsp_max_protocol::Version::V2,
-            id: tower_lsp_max_protocol::Id::Number(0),
-            method: method.to_string(),
-            params: Some(serde_json::to_value(params).unwrap_or_default()),
+    async fn request<R>(
+        &self,
+        method: &str,
+        params: impl serde::Serialize,
+    ) -> Result<Option<R>, ClientError> {
+        let msg = json!({
+            "jsonrpc": "2.0",
+            "id": 0,
+            "method": method,
+            "params": params,
         });
-        let _ = self.outbound_tx.send(_msg).await;
+        let _ = self.outbound_tx.send(msg).await;
         // In this execution baseline, outbound request tracking requires a response map.
         // We route the request out and return Ok(None) to satisfy the API signature cleanly.
         Ok(None)
@@ -90,7 +94,9 @@ impl ServerHandle {
         &self,
         params: CompletionItem,
     ) -> Result<CompletionItem, ClientError> {
-        let _ = self.request::<CompletionItem>("completionItem/resolve", params.clone()).await;
+        let _ = self
+            .request::<CompletionItem>("completionItem/resolve", params.clone())
+            .await;
         Ok(params)
     }
 
@@ -151,11 +157,10 @@ impl ServerHandle {
     ) -> Result<Option<CodeActionResponse>, ClientError> {
         self.request("textDocument/codeAction", params).await
     }
-    pub async fn code_action_resolve(
-        &self,
-        params: CodeAction,
-    ) -> Result<CodeAction, ClientError> {
-        let _ = self.request::<CodeAction>("codeAction/resolve", params.clone()).await;
+    pub async fn code_action_resolve(&self, params: CodeAction) -> Result<CodeAction, ClientError> {
+        let _ = self
+            .request::<CodeAction>("codeAction/resolve", params.clone())
+            .await;
         Ok(params)
     }
 
@@ -166,7 +171,9 @@ impl ServerHandle {
         self.request("textDocument/codeLens", params).await
     }
     pub async fn code_lens_resolve(&self, params: CodeLens) -> Result<CodeLens, ClientError> {
-        let _ = self.request::<CodeLens>("codeLens/resolve", params.clone()).await;
+        let _ = self
+            .request::<CodeLens>("codeLens/resolve", params.clone())
+            .await;
         Ok(params)
     }
 
@@ -182,10 +189,7 @@ impl ServerHandle {
     ) -> Result<Option<Vec<TextEdit>>, ClientError> {
         self.request("textDocument/rangeFormatting", params).await
     }
-    pub async fn rename(
-        &self,
-        params: RenameParams,
-    ) -> Result<Option<WorkspaceEdit>, ClientError> {
+    pub async fn rename(&self, params: RenameParams) -> Result<Option<WorkspaceEdit>, ClientError> {
         self.request("textDocument/rename", params).await
     }
     pub async fn prepare_rename(
@@ -199,19 +203,22 @@ impl ServerHandle {
         &self,
         params: SemanticTokensParams,
     ) -> Result<Option<SemanticTokensResult>, ClientError> {
-        self.request("textDocument/semanticTokens/full", params).await
+        self.request("textDocument/semanticTokens/full", params)
+            .await
     }
     pub async fn semantic_tokens_full_delta(
         &self,
         params: SemanticTokensDeltaParams,
     ) -> Result<Option<SemanticTokensFullDeltaResult>, ClientError> {
-        self.request("textDocument/semanticTokens/full/delta", params).await
+        self.request("textDocument/semanticTokens/full/delta", params)
+            .await
     }
     pub async fn semantic_tokens_range(
         &self,
         params: SemanticTokensRangeParams,
     ) -> Result<Option<SemanticTokensRangeResult>, ClientError> {
-        self.request("textDocument/semanticTokens/range", params).await
+        self.request("textDocument/semanticTokens/range", params)
+            .await
     }
 
     pub async fn inlay_hint(
@@ -221,7 +228,9 @@ impl ServerHandle {
         self.request("textDocument/inlayHint", params).await
     }
     pub async fn inlay_hint_resolve(&self, params: InlayHint) -> Result<InlayHint, ClientError> {
-        let _ = self.request::<InlayHint>("inlayHint/resolve", params.clone()).await;
+        let _ = self
+            .request::<InlayHint>("inlayHint/resolve", params.clone())
+            .await;
         Ok(params)
     }
 
@@ -240,12 +249,14 @@ impl ServerHandle {
         self.request("workspace/executeCommand", params).await
     }
     pub async fn did_change_configuration(&self, params: DidChangeConfigurationParams) {
-        self.notify("workspace/didChangeConfiguration", params).await;
+        self.notify("workspace/didChangeConfiguration", params)
+            .await;
     }
     pub async fn did_change_watched_files(&self, params: DidChangeWatchedFilesParams) {
         self.notify("workspace/didChangeWatchedFiles", params).await;
     }
     pub async fn did_change_workspace_folders(&self, params: DidChangeWorkspaceFoldersParams) {
-        self.notify("workspace/didChangeWorkspaceFolders", params).await;
+        self.notify("workspace/didChangeWorkspaceFolders", params)
+            .await;
     }
 }

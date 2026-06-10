@@ -15,11 +15,11 @@ use serde::de::{self, Deserializer};
 use serde::ser::Serializer;
 use serde::{Deserialize, Serialize};
 
+pub mod base_protocol;
 mod error;
 mod request;
 mod response;
 mod router;
-pub mod base_protocol;
 
 /// A unique ID used to correlate requests and responses together.
 #[derive(Clone, Debug, Default, Eq, Hash, PartialEq, Deserialize, Serialize)]
@@ -118,9 +118,15 @@ pub(crate) enum Message {
 impl From<self::base_protocol::BaseProtocolMessage> for Message {
     fn from(msg: self::base_protocol::BaseProtocolMessage) -> Self {
         match msg {
-            self::base_protocol::BaseProtocolMessage::Request(r) => Message::Request(Request::from_message(r)),
-            self::base_protocol::BaseProtocolMessage::Notification(n) => Message::Request(Request::from_notification_message(n)),
-            self::base_protocol::BaseProtocolMessage::Response(r) => Message::Response(Response::from_message(r)),
+            self::base_protocol::BaseProtocolMessage::Request(r) => {
+                Message::Request(Request::from_message(r))
+            }
+            self::base_protocol::BaseProtocolMessage::Notification(n) => {
+                Message::Request(Request::from_notification_message(n))
+            }
+            self::base_protocol::BaseProtocolMessage::Response(r) => {
+                Message::Response(Response::from_message(r))
+            }
         }
     }
 }

@@ -1,0 +1,21 @@
+[package]
+name = "wasm4pm-compat-lsp"
+version = "26.6.8"
+edition = "2021"
+description = "Static analysis rules and checks for wasm4pm-compat boundary admission and loss policy compliance"
+publish = false
+
+[dependencies]
+clap = { version = "4", features = ["derive"] }
+lsp-types-max = { workspace = true }
+proc-macro2 = { version = "1.0", features = ["span-locations"] }
+quote = "1.0"
+regex = "1.10"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+syn = { version = "2.0", features = ["full", "visit", "extra-traits", "parsing", "printing", "proc-macro"] }
+tokio = { version = "1", features = ["full"] }
+tower-lsp-max = { path = "../../" }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+wasm4pm-compat = { workspace = true }

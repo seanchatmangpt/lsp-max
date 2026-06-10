@@ -97,6 +97,14 @@ qol-sync:
     done
     @echo -e "${GREEN}✓ Ecosystem sync complete.${NC}"
 
+# --- Spec Graph ---
+
+# Regenerate LSP 3.18 spec-graph artifacts from the canonical metaModel.json
+spec-graph:
+    cargo run -p tower-lsp-max-specgen -- \
+        --emit-spec-graph examples/anti-llm-lsp/generated \
+        --input vendors/vscode-languageserver-node/protocol/metaModel.json
+
 # --- AutoEtc (Operational & Context) ---
 
 # Generates context manifests for Generative AI / AGI consumption

@@ -1,4 +1,4 @@
 #[test]
 fn test_dummy_semantic_tokens() {
-    assert!(true);
+    // Placeholder test — no assertion needed.
 }

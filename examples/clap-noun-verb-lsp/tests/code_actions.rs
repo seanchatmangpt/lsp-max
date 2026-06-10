@@ -1,4 +1,4 @@
 #[test]
 fn test_dummy_code_actions() {
-    assert!(true);
+    // Placeholder test — no assertion needed.
 }

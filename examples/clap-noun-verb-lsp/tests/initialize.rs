@@ -9,9 +9,9 @@ fn test_initialize_capabilities() {
 
     let mut cmd = Command::cargo_bin("clap-noun-verb-lsp").unwrap();
     cmd.arg("server")
-       .arg("serve")
-       .arg("--stdio")
-       .write_stdin(format!("Content-Length: {}\r\n\r\n{}", input.len(), input));
+        .arg("serve")
+        .arg("--stdio")
+        .write_stdin(format!("Content-Length: {}\r\n\r\n{}", input.len(), input));
 
     let output = cmd.output().unwrap();
     let stdout = String::from_utf8(output.stdout).unwrap();

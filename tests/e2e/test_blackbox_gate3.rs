@@ -50,7 +50,9 @@ async fn test_gate3_composed_initialize() {
 
     let resp = harness.client.send_request("initialize", init_params).await;
     let result = resp.get("result").expect("Initialize must return a result");
-    let caps = result.get("capabilities").expect("Result must contain capabilities");
+    let caps = result
+        .get("capabilities")
+        .expect("Result must contain capabilities");
 
     // Since Upstream A advertises hover, the composed server must advertise hover downstream
     assert_eq!(
@@ -84,9 +86,16 @@ async fn test_gate3_composed_initialize() {
         "processId": 1234
     });
 
-    let resp2 = harness2.client.send_request("initialize", init_params2).await;
-    let result2 = resp2.get("result").expect("Initialize must return a result");
-    let caps2 = result2.get("capabilities").expect("Result must contain capabilities");
+    let resp2 = harness2
+        .client
+        .send_request("initialize", init_params2)
+        .await;
+    let result2 = resp2
+        .get("result")
+        .expect("Initialize must return a result");
+    let caps2 = result2
+        .get("capabilities")
+        .expect("Result must contain capabilities");
 
     let hover_provider = caps2.get("hoverProvider");
     assert!(
@@ -125,7 +134,10 @@ async fn test_gate3_dynamic_unregistration_and_refusal() {
     });
     let _ = harness.client.send_request("initialize", init_params).await;
     println!("--- Sending initialized notification");
-    harness.client.send_notification("initialized", json!({})).await;
+    harness
+        .client
+        .send_notification("initialized", json!({}))
+        .await;
 
     // A hover request now should fail because hover is not routable yet
     let hover_params = json!({
@@ -133,7 +145,10 @@ async fn test_gate3_dynamic_unregistration_and_refusal() {
         "position": { "line": 0, "character": 0 }
     });
     println!("--- Sending initial hover request (expected to fail)");
-    let initial_hover = harness.client.send_request("textDocument/hover", hover_params.clone()).await;
+    let initial_hover = harness
+        .client
+        .send_request("textDocument/hover", hover_params.clone())
+        .await;
     println!("--- Got initial hover result: {:?}", initial_hover);
     assert!(
         initial_hover.get("error").is_some()
@@ -179,7 +194,10 @@ async fn test_gate3_dynamic_unregistration_and_refusal() {
 
     // Respond back from the client confirming the registration
     let reg_id = reg_msg.get("id").unwrap().clone();
-    println!("--- Responding to registerCapability request with id {:?}", reg_id);
+    println!(
+        "--- Responding to registerCapability request with id {:?}",
+        reg_id
+    );
     respond_to_request(&mut harness.client.stream, reg_id, json!(null)).await;
 
     println!("--- Configuring mock server hover response");
@@ -196,10 +214,19 @@ async fn test_gate3_dynamic_unregistration_and_refusal() {
 
     println!("--- Sending active hover request");
     // Now, sending a hover request should succeed
-    let active_hover = harness.client.send_request("textDocument/hover", hover_params.clone()).await;
+    let active_hover = harness
+        .client
+        .send_request("textDocument/hover", hover_params.clone())
+        .await;
     println!("--- Got active hover response: {:?}", active_hover);
-    let hover_res = active_hover.get("result").expect("Hover request must return a result");
-    let hover_val = hover_res.get("contents").and_then(|c| c.get("value")).and_then(|v| v.as_str()).unwrap_or("");
+    let hover_res = active_hover
+        .get("result")
+        .expect("Hover request must return a result");
+    let hover_val = hover_res
+        .get("contents")
+        .and_then(|c| c.get("value"))
+        .and_then(|v| v.as_str())
+        .unwrap_or("");
     assert!(
         hover_val.contains("Hover Active"),
         "Hover request should return mock content after dynamic registration"
@@ -233,7 +260,10 @@ async fn test_gate3_dynamic_unregistration_and_refusal() {
     .await
     .expect("Timeout waiting for client/unregisterCapability")
     .expect("Connection closed");
-    println!("--- Got client/unregisterCapability message: {:?}", unreg_msg);
+    println!(
+        "--- Got client/unregisterCapability message: {:?}",
+        unreg_msg
+    );
     assert_eq!(
         unreg_msg.get("method").and_then(|m| m.as_str()),
         Some("client/unregisterCapability")
@@ -241,12 +271,18 @@ async fn test_gate3_dynamic_unregistration_and_refusal() {
 
     // Respond back from the client confirming the unregistration
     let unreg_id = unreg_msg.get("id").unwrap().clone();
-    println!("--- Responding to unregisterCapability request with id {:?}", unreg_id);
+    println!(
+        "--- Responding to unregisterCapability request with id {:?}",
+        unreg_id
+    );
     respond_to_request(&mut harness.client.stream, unreg_id, json!(null)).await;
 
     println!("--- Sending final hover request (expected to fail after unregistration)");
     // Verify hover requests are refused once again after unregistration
-    let final_hover = harness.client.send_request("textDocument/hover", hover_params).await;
+    let final_hover = harness
+        .client
+        .send_request("textDocument/hover", hover_params)
+        .await;
     println!("--- Got final hover response: {:?}", final_hover);
     assert!(
         final_hover.get("error").is_some()
@@ -287,30 +323,45 @@ async fn test_gate3_mutating_paths_version_constraints() {
     println!("--- Sending initialize");
     let _ = harness.client.send_request("initialize", init_params).await;
     println!("--- Sending initialized notification");
-    harness.client.send_notification("initialized", json!({})).await;
+    harness
+        .client
+        .send_notification("initialized", json!({}))
+        .await;
 
     let file_uri = "file:///Users/sac/tower-lsp-composition/main.rs";
 
     println!("--- Sending didOpen (version 1)");
     // 1. Open the file with version 1
-    harness.client.send_notification("textDocument/didOpen", json!({
-        "textDocument": {
-            "uri": file_uri,
-            "languageId": "rust",
-            "version": 1,
-            "text": "fn main() {}"
-        }
-    })).await;
+    harness
+        .client
+        .send_notification(
+            "textDocument/didOpen",
+            json!({
+                "textDocument": {
+                    "uri": file_uri,
+                    "languageId": "rust",
+                    "version": 1,
+                    "text": "fn main() {}"
+                }
+            }),
+        )
+        .await;
 
     println!("--- Sending didChange (version 5)");
     // 2. Change the file to version 5
-    harness.client.send_notification("textDocument/didChange", json!({
-        "textDocument": {
-            "uri": file_uri,
-            "version": 5
-        },
-        "contentChanges": [{ "text": "fn main() {\n    // Some code\n}" }]
-    })).await;
+    harness
+        .client
+        .send_notification(
+            "textDocument/didChange",
+            json!({
+                "textDocument": {
+                    "uri": file_uri,
+                    "version": 5
+                },
+                "contentChanges": [{ "text": "fn main() {\n    // Some code\n}" }]
+            }),
+        )
+        .await;
 
     // --- RENAME VERSION CONSTRAINT TESTS ---
     // A. Positive: current version (5)
@@ -333,11 +384,17 @@ async fn test_gate3_mutating_paths_version_constraints() {
         s0.rename_response = Some(rename_edit_v5);
     }
     println!("--- Sending rename request (v5)");
-    let rename_resp_v5 = harness.client.send_request("textDocument/rename", json!({
-        "textDocument": { "uri": file_uri },
-        "position": { "line": 0, "character": 3 },
-        "newName": "my_main"
-    })).await;
+    let rename_resp_v5 = harness
+        .client
+        .send_request(
+            "textDocument/rename",
+            json!({
+                "textDocument": { "uri": file_uri },
+                "position": { "line": 0, "character": 3 },
+                "newName": "my_main"
+            }),
+        )
+        .await;
     println!("--- Got rename response (v5): {:?}", rename_resp_v5);
     assert!(
         rename_resp_v5.get("result").is_some() && !rename_resp_v5.get("result").unwrap().is_null(),
@@ -364,11 +421,17 @@ async fn test_gate3_mutating_paths_version_constraints() {
         s0.rename_response = Some(rename_edit_v1);
     }
     println!("--- Sending rename request (v1)");
-    let rename_resp_v1 = harness.client.send_request("textDocument/rename", json!({
-        "textDocument": { "uri": file_uri },
-        "position": { "line": 0, "character": 3 },
-        "newName": "stale_main"
-    })).await;
+    let rename_resp_v1 = harness
+        .client
+        .send_request(
+            "textDocument/rename",
+            json!({
+                "textDocument": { "uri": file_uri },
+                "position": { "line": 0, "character": 3 },
+                "newName": "stale_main"
+            }),
+        )
+        .await;
     println!("--- Got rename response (v1): {:?}", rename_resp_v1);
     assert!(
         rename_resp_v1.get("error").is_some()
@@ -379,17 +442,23 @@ async fn test_gate3_mutating_paths_version_constraints() {
 
     // --- FORMATTING VERSION CONSTRAINT TESTS ---
     // Clear pending rename edit by sending a didChange notification with version 6
-    harness.client.send_notification("textDocument/didChange", json!({
-        "textDocument": {
-            "uri": file_uri,
-            "version": 6
-        },
-        "contentChanges": [
-            {
-                "text": "fn main() {\n    // Some code\n}"
-            }
-        ]
-    })).await;
+    harness
+        .client
+        .send_notification(
+            "textDocument/didChange",
+            json!({
+                "textDocument": {
+                    "uri": file_uri,
+                    "version": 6
+                },
+                "contentChanges": [
+                    {
+                        "text": "fn main() {\n    // Some code\n}"
+                    }
+                ]
+            }),
+        )
+        .await;
 
     // A. Positive: current request context (6)
     let format_response = json!([
@@ -404,11 +473,17 @@ async fn test_gate3_mutating_paths_version_constraints() {
         s0.formatting_response = Some(format_response);
     }
     println!("--- Sending formatting request (v6)");
-    let format_resp_v6 = harness.client.send_request("textDocument/formatting", json!({
-        "textDocument": { "uri": file_uri },
-        "options": { "tabSize": 4, "insertSpaces": true },
-        "context": { "version": 6 }
-    })).await;
+    let format_resp_v6 = harness
+        .client
+        .send_request(
+            "textDocument/formatting",
+            json!({
+                "textDocument": { "uri": file_uri },
+                "options": { "tabSize": 4, "insertSpaces": true },
+                "context": { "version": 6 }
+            }),
+        )
+        .await;
     println!("--- Got formatting response (v6): {:?}", format_resp_v6);
     assert!(
         format_resp_v6.get("result").is_some() && !format_resp_v6.get("result").unwrap().is_null(),
@@ -417,11 +492,17 @@ async fn test_gate3_mutating_paths_version_constraints() {
 
     // B. Negative: stale request context (1)
     println!("--- Sending formatting request (v1)");
-    let format_resp_v1 = harness.client.send_request("textDocument/formatting", json!({
-        "textDocument": { "uri": file_uri },
-        "options": { "tabSize": 4, "insertSpaces": true },
-        "context": { "version": 1 }
-    })).await;
+    let format_resp_v1 = harness
+        .client
+        .send_request(
+            "textDocument/formatting",
+            json!({
+                "textDocument": { "uri": file_uri },
+                "options": { "tabSize": 4, "insertSpaces": true },
+                "context": { "version": 1 }
+            }),
+        )
+        .await;
     println!("--- Got formatting response (v1): {:?}", format_resp_v1);
     assert!(
         format_resp_v1.get("error").is_some()
@@ -432,17 +513,23 @@ async fn test_gate3_mutating_paths_version_constraints() {
 
     // --- CODE ACTION VERSION CONSTRAINT TESTS ---
     // Clear pending formatting edit by sending a didChange notification with version 7
-    harness.client.send_notification("textDocument/didChange", json!({
-        "textDocument": {
-            "uri": file_uri,
-            "version": 7
-        },
-        "contentChanges": [
-            {
-                "text": "fn main() {\n    // Some code\n}"
-            }
-        ]
-    })).await;
+    harness
+        .client
+        .send_notification(
+            "textDocument/didChange",
+            json!({
+                "textDocument": {
+                    "uri": file_uri,
+                    "version": 7
+                },
+                "contentChanges": [
+                    {
+                        "text": "fn main() {\n    // Some code\n}"
+                    }
+                ]
+            }),
+        )
+        .await;
 
     // A. Positive: current request context (7)
     let code_action_response = json!([
@@ -469,9 +556,13 @@ async fn test_gate3_mutating_paths_version_constraints() {
         "range": { "start": { "line": 1, "character": 0 }, "end": { "line": 1, "character": 20 } },
         "context": { "diagnostics": [], "version": 7 }
     })).await;
-    println!("--- Got code action response (v7): {:?}", code_action_resp_v7);
+    println!(
+        "--- Got code action response (v7): {:?}",
+        code_action_resp_v7
+    );
     assert!(
-        code_action_resp_v7.get("result").is_some() && !code_action_resp_v7.get("result").unwrap().is_null(),
+        code_action_resp_v7.get("result").is_some()
+            && !code_action_resp_v7.get("result").unwrap().is_null(),
         "Code action request with matching version 7 must be accepted"
     );
 
@@ -482,7 +573,10 @@ async fn test_gate3_mutating_paths_version_constraints() {
         "range": { "start": { "line": 1, "character": 0 }, "end": { "line": 1, "character": 20 } },
         "context": { "diagnostics": [], "version": 1 }
     })).await;
-    println!("--- Got code action response (v1): {:?}", code_action_resp_v1);
+    println!(
+        "--- Got code action response (v1): {:?}",
+        code_action_resp_v1
+    );
     assert!(
         code_action_resp_v1.get("error").is_some()
             || code_action_resp_v1.get("result").is_none()

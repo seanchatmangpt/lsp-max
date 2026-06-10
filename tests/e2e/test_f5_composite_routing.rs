@@ -4,7 +4,7 @@ use serde_json::json;
 #[tokio::test]
 async fn test_f5_t1_compose_initialize_capabilities() {
     let mut harness = TestHarness::new(2).await;
-    
+
     // Set different capabilities on the upstreams:
     // Both support hover, neither supports declaration
     {
@@ -34,8 +34,12 @@ async fn test_f5_t1_compose_initialize_capabilities() {
     });
 
     let resp = harness.client.send_request("initialize", init_params).await;
-    let result = resp.get("result").expect("Initialize should return a result");
-    let caps = result.get("capabilities").expect("Result should contain capabilities");
+    let result = resp
+        .get("result")
+        .expect("Initialize should return a result");
+    let caps = result
+        .get("capabilities")
+        .expect("Result should contain capabilities");
 
     // hoverProvider is true since both upstreams and client support it
     assert_eq!(
@@ -44,10 +48,7 @@ async fn test_f5_t1_compose_initialize_capabilities() {
     );
     // declarationProvider is false/none because upstreams do not support it
     let decl_provider = caps.get("declarationProvider");
-    assert!(
-        decl_provider.is_none()
-            || decl_provider == Some(&json!(false))
-    );
+    assert!(decl_provider.is_none() || decl_provider == Some(&json!(false)));
 
     harness.shutdown();
 }
@@ -135,7 +136,11 @@ async fn test_f5_t1_routing_hover_first_success() {
 
     let contents = result.get("contents");
     assert!(contents.is_some(), "Hover result should contain contents");
-    let val = contents.unwrap().get("value").and_then(|v| v.as_str()).unwrap_or("");
+    let val = contents
+        .unwrap()
+        .get("value")
+        .and_then(|v| v.as_str())
+        .unwrap_or("");
     assert!(
         val.contains("Hover content from mock-1"),
         "Hover contents should contain the response from the successful upstream"
@@ -182,7 +187,9 @@ async fn test_f5_t1_routing_completion_merge() {
         .client
         .send_request("textDocument/completion", comp_params)
         .await;
-    let result = resp.get("result").expect("Completion should return a result");
+    let result = resp
+        .get("result")
+        .expect("Completion should return a result");
     let items = result
         .get("items")
         .or(result.as_array().map(|_| result))
@@ -242,7 +249,9 @@ async fn test_f5_t1_routing_definition_merge() {
         .client
         .send_request("textDocument/definition", def_params)
         .await;
-    let result = resp.get("result").expect("Definition should return a result");
+    let result = resp
+        .get("result")
+        .expect("Definition should return a result");
     assert!(result.is_array());
     let arr = result.as_array().unwrap();
 
@@ -251,9 +260,13 @@ async fn test_f5_t1_routing_definition_merge() {
     let mut contains_loc1 = false;
     let mut contains_loc2 = false;
     for item in arr {
-        if item.get("uri").and_then(|u| u.as_str()) == Some("file:///Users/sac/tower-lsp-composition/main.rs") {
+        if item.get("uri").and_then(|u| u.as_str())
+            == Some("file:///Users/sac/tower-lsp-composition/main.rs")
+        {
             contains_loc1 = true;
-        } else if item.get("uri").and_then(|u| u.as_str()) == Some("file:///Users/sac/tower-lsp-composition/helper.rs") {
+        } else if item.get("uri").and_then(|u| u.as_str())
+            == Some("file:///Users/sac/tower-lsp-composition/helper.rs")
+        {
             contains_loc2 = true;
         }
     }
@@ -299,12 +312,16 @@ async fn test_f5_t2_routing_slow_upstream_timeout() {
     });
 
     // Wrap in tokio timeout of 1 second so the test itself doesn't hang in case of failure
-    let resp_fut = harness.client.send_request("textDocument/definition", def_params);
+    let resp_fut = harness
+        .client
+        .send_request("textDocument/definition", def_params);
     let resp = tokio::time::timeout(std::time::Duration::from_millis(1000), resp_fut)
         .await
         .expect("Request must return within timeout bounds");
 
-    let result = resp.get("result").expect("Definition should return a result");
+    let result = resp
+        .get("result")
+        .expect("Definition should return a result");
     assert!(result.is_array());
     let arr = result.as_array().unwrap();
 
@@ -428,7 +445,7 @@ async fn test_f5_t2_routing_concurrent_stress() {
 #[tokio::test]
 async fn test_f5_t2_routing_empty_upstreams() {
     let mut harness = TestHarness::new(0).await;
-    
+
     let init_params = json!({
         "capabilities": {},
         "rootUri": null,

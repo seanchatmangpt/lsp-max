@@ -7,6 +7,6 @@ pub mod receipts;
 pub mod routes;
 pub mod rust_smells;
 pub mod surface;
-pub mod typescript;
 pub mod test;
+pub mod typescript;
 pub mod version;

@@ -5,10 +5,11 @@ pub fn parse_typescript(filepath: &str, content: &str) -> Vec<Observation> {
     let mut obs = Vec::new();
 
     // Compile regexes
-    let ts_ignore_re = Regex::new(r"//\s*@ts-ignore|//\s*@ts-nocheck|/\*\s*eslint-disable").unwrap();
+    let ts_ignore_re =
+        Regex::new(r"//\s*@ts-ignore|//\s*@ts-nocheck|/\*\s*eslint-disable").unwrap();
     let as_any_re = Regex::new(r"\bas\s+any\b").unwrap();
     let todo_re = Regex::new(r"\bTODO\b|\bFIXME\b|\bunimplemented\b").unwrap();
-    
+
     // Forbidden claims (from unLSP/tower-lsp-max)
     let claims_re = Regex::new(r"(?i)\b(done|complete|fully\s+covered|production\s+ready|all\s+fixed|victory|fully\s+admitted|victory\s+confirmed)\b").unwrap();
 
@@ -18,7 +19,7 @@ pub fn parse_typescript(filepath: &str, content: &str) -> Vec<Observation> {
 
     for (line_idx, line) in content.lines().enumerate() {
         let line_num = line_idx + 1;
-        
+
         // 1. TS Ignore / ESLint disable check
         if let Some(mat) = ts_ignore_re.find(line) {
             obs.push(Observation {
@@ -60,7 +61,10 @@ pub fn parse_typescript(filepath: &str, content: &str) -> Vec<Observation> {
                 kind: "ts_smell".to_string(),
                 construct: mat.as_str().to_string(),
                 context: line.to_string(),
-                message: format!("Unimplemented stub or placeholder '{}' detected", mat.as_str()),
+                message: format!(
+                    "Unimplemented stub or placeholder '{}' detected",
+                    mat.as_str()
+                ),
             });
         }
 
@@ -91,14 +95,17 @@ pub fn parse_typescript(filepath: &str, content: &str) -> Vec<Observation> {
                 kind: "ts_leak".to_string(),
                 construct: mat.as_str().to_string(),
                 context: line.to_string(),
-                message: format!("Naming Fence violation: Unauthorized name '{}' detected", mat.as_str()),
+                message: format!(
+                    "Naming Fence violation: Unauthorized name '{}' detected",
+                    mat.as_str()
+                ),
             });
         }
 
         // 6. Vocabulary leaks
         if let Some(mat) = vocab_re.find(line) {
             // Whitelist: do not flag vocabulary check definitions themselves or test fixtures
-            let in_whitelisted_file = filepath.contains("diagnostics.ts") 
+            let in_whitelisted_file = filepath.contains("diagnostics.ts")
                 || filepath.contains("fixtures/")
                 || filepath.contains("test/")
                 || filepath.contains("tests/");
@@ -112,7 +119,10 @@ pub fn parse_typescript(filepath: &str, content: &str) -> Vec<Observation> {
                     kind: "ts_leak".to_string(),
                     construct: mat.as_str().to_string(),
                     context: line.to_string(),
-                    message: format!("Scope Fence violation: Leaked internal term '{}'", mat.as_str()),
+                    message: format!(
+                        "Scope Fence violation: Leaked internal term '{}'",
+                        mat.as_str()
+                    ),
                 });
             }
         }

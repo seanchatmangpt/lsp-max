@@ -15,8 +15,11 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
                 message: format!("TypeScript code smell or stub detected: {}.", o.message),
                 forbidden_implication: "TypeScriptStub => AdmissibleCode".to_string(),
                 blocking: true,
-                required_correction: "Remove ts-ignore, eslint-disable, unsafe casting (as any), or TODO stubs.".to_string(),
-                required_next_proof: "Ensure typescript compiles strictly and uses explicit types.".to_string(),
+                required_correction:
+                    "Remove ts-ignore, eslint-disable, unsafe casting (as any), or TODO stubs."
+                        .to_string(),
+                required_next_proof: "Ensure typescript compiles strictly and uses explicit types."
+                    .to_string(),
             });
         }
 

@@ -131,18 +131,31 @@ where
             while let Some(msg) = framed_stdin.next().await {
                 if let Ok(ref m) = msg {
                     match m {
-                        Message::Request(req) => println!("--- Server::serve read_input got Request: method={}, id={:?}", req.method(), req.id()),
-                        Message::Response(res) => println!("--- Server::serve read_input got Response: id={:?}", res.id()),
+                        Message::Request(req) => println!(
+                            "--- Server::serve read_input got Request: method={}, id={:?}",
+                            req.method(),
+                            req.id()
+                        ),
+                        Message::Response(res) => println!(
+                            "--- Server::serve read_input got Response: id={:?}",
+                            res.id()
+                        ),
                     }
                 }
                 match msg {
                     Ok(Message::Request(req)) => {
-                        println!("--- Server::serve read_input poll_ready start for {}", req.method());
+                        println!(
+                            "--- Server::serve read_input poll_ready start for {}",
+                            req.method()
+                        );
                         if let Err(err) = future::poll_fn(|cx| service.poll_ready(cx)).await {
                             error!("{}", display_sources(&err));
                             return Err(err);
                         }
-                        println!("--- Server::serve read_input poll_ready end for {}", req.method());
+                        println!(
+                            "--- Server::serve read_input poll_ready end for {}",
+                            req.method()
+                        );
 
                         let fut = service.call(req).unwrap_or_else(|err| {
                             error!("{}", display_sources(&err));

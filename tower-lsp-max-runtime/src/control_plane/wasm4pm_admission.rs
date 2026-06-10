@@ -2,9 +2,7 @@ use crate::control_plane::admission::AdmittedRelationGraph;
 use crate::control_plane::receipts::to_hex;
 use wasm4pm_compat::admission::{Admission, Admit, Refusal};
 use wasm4pm_compat::evidence::Evidence;
-use wasm4pm_compat::ocel::{
-    OCELRelationship, OCELEventAttribute, OCELEvent, OCEL, OCELObject,
-};
+use wasm4pm_compat::ocel::{OCELEvent, OCELObject, OCELRelationship, OCEL};
 use wasm4pm_compat::receipt::{Digest, ReceiptEnvelope, ReceiptRefusal, ReplayHint};
 use wasm4pm_compat::state::Raw;
 use wasm4pm_compat::witness::{Ocel20, Wasm4pmBridge};
@@ -28,25 +26,24 @@ impl Admit for Ocel20GraphAdmitter {
         // Formal Graph Extraction Logic:
         // In this execution baseline, we extract the process evidence directly from the
         // semantic triple store.
-        
+
         let mut events = Vec::new();
         let mut objects = Vec::new();
 
         // Ensure disjoint universes and mandatory attributes to satisfy the baseline laws.
-        for quad in admitted_graph.store.iter() {
-            if let Ok(quad) = quad {
-                let s = quad.subject.to_string();
-                let p = quad.predicate.to_string();
-                let o = quad.object.to_string();
-                
-                if p.contains("type") && o.contains("Event") {
-                    let mut ev = OCELEvent::new(s.clone(), "ExtractedEvent");
-                    // Satisfy the edge mandatory law
-                    ev.relationships.push(OCELRelationship::new(s.clone(), "root_obj".to_string()));
-                    events.push(ev);
-                } else if p.contains("type") && o.contains("Object") {
-                    objects.push(OCELObject::new(s, "ExtractedObject"));
-                }
+        for quad in admitted_graph.store.iter().flatten() {
+            let s = quad.subject.to_string();
+            let p = quad.predicate.to_string();
+            let o = quad.object.to_string();
+
+            if p.contains("type") && o.contains("Event") {
+                let mut ev = OCELEvent::new(s.clone(), "ExtractedEvent");
+                // Satisfy the edge mandatory law
+                ev.relationships
+                    .push(OCELRelationship::new(s.clone(), "root_obj".to_string()));
+                events.push(ev);
+            } else if p.contains("type") && o.contains("Object") {
+                objects.push(OCELObject::new(s, "ExtractedObject"));
             }
         }
 
@@ -63,9 +60,14 @@ impl Admit for Ocel20GraphAdmitter {
         };
 
         // Formally validate against Dr. van der Aalst's academic boundary laws.
-        let report = wasm4pm_compat::ocel::validate::validate(&ocel, &std::collections::HashMap::new());
+        let report =
+            wasm4pm_compat::ocel::validate::validate(&ocel, &std::collections::HashMap::new());
         if !report.valid {
-            let first_error = report.errors.first().map(|e| e.code.clone()).unwrap_or_else(|| "UNKNOWN_VALIDATION_ERROR".to_string());
+            let first_error = report
+                .errors
+                .first()
+                .map(|e| e.code.clone())
+                .unwrap_or_else(|| "UNKNOWN_VALIDATION_ERROR".to_string());
             return Err(Refusal::new(first_error));
         }
 
@@ -187,13 +189,17 @@ mod tests {
                 NamedNode::new("urn:subject:1").unwrap(),
                 NamedNode::new("type").unwrap(),
                 Term::NamedNode(NamedNode::new("Event").unwrap()),
-                GraphName::NamedNode(NamedNode::new("urn:project:local:snapshot:snap-test").unwrap()),
+                GraphName::NamedNode(
+                    NamedNode::new("urn:project:local:snapshot:snap-test").unwrap(),
+                ),
             ))
             .unwrap();
 
         let graph = AdmittedRelationGraph {
             store,
-            graph_name: GraphName::NamedNode(NamedNode::new("urn:project:local:snapshot:snap-test").unwrap()),
+            graph_name: GraphName::NamedNode(
+                NamedNode::new("urn:project:local:snapshot:snap-test").unwrap(),
+            ),
             receipt: CryptographicReceipt {
                 prev_hash: Blake3Hash([0u8; 32]),
                 discipline_id: Uuid::new_v4(),

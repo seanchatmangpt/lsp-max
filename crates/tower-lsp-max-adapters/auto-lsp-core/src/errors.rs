@@ -106,10 +106,7 @@ impl From<AstError> for ParseError {
         let range = match &error {
             AstError::UnexpectedSymbol { range, .. } => *range,
         };
-        Self::AstError {
-            span: range.into(),
-            error,
-        }
+        Self::AstError { span: range, error }
     }
 }
 
@@ -139,10 +136,7 @@ impl From<LexerError> for ParseError {
             LexerError::Missing { range, .. } => *range,
             LexerError::Syntax { range, .. } => *range,
         };
-        Self::LexerError {
-            span: range.into(),
-            error,
-        }
+        Self::LexerError { span: range, error }
     }
 }
 

@@ -4,8 +4,8 @@ use crate::parsers::{
     cargo_lock, cargo_toml, json_rpc, markdown_claims, receipt_json, rust_tree_sitter, typescript,
 };
 use crate::rules::{
-    authority, claims, lsp318, mutation, ocel_rules, receipts, routes, rust_smells, surface, test, version,
-    typescript as ts_rules,
+    authority, claims, lsp318, mutation, ocel_rules, receipts, routes, rust_smells, surface, test,
+    typescript as ts_rules, version,
 };
 use std::fs;
 use std::path::Path;
@@ -186,7 +186,11 @@ pub fn scan_directory(dirpath: &str) -> Vec<Observation> {
                 let p = entry.path();
                 let name = p.file_name().unwrap_or_default().to_string_lossy();
                 if p.is_dir() {
-                    if name != "target" && name != ".git" && name != ".cargo" && name != "fixtures" && name != "node_modules"
+                    if name != "target"
+                        && name != ".git"
+                        && name != ".cargo"
+                        && name != "fixtures"
+                        && name != "node_modules"
                     {
                         queue.push(p);
                     }

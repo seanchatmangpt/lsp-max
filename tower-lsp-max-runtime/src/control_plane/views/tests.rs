@@ -1,8 +1,7 @@
-use super::helpers::*;
 use super::lookups::*;
 use super::types::*;
 use super::update::*;
-use lsp_types_max::{Diagnostic, Hover, Location, Position, Range, SymbolKind, Uri};
+use lsp_types_max::{Diagnostic, Position, Range, SymbolKind};
 use oxigraph::model::GraphName;
 use oxigraph::model::NamedNode;
 use oxigraph::store::Store;
@@ -12,6 +11,7 @@ use tower_lsp_max_lsif::lsif::{
 use tower_lsp_max_protocol::MaxDiagnostic;
 use url::Url;
 
+#[allow(dead_code)]
 fn make_meta_element() -> Element {
     Element::Vertex(Vertex::MetaData {
         id: lsp_types_max::NumberOrString::Number(1),
@@ -177,7 +177,7 @@ fn test_materialized_views_definition_references_hover_diagnostics() {
         }
     }
 
-    let views = MaterializedViews::new();
+    let _views = MaterializedViews::new();
     // Use an internal helper or simulate update_sync
     // For test compatibility, we can verify update_views on MaterializedViewStore
     let store_views = MaterializedViewStore::new();

@@ -1,0 +1,13 @@
+[package]
+name = "axum-lsp"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+clap-noun-verb = "26.6.2"
+clap-noun-verb-macros = "26.6.2"
+linkme = "0.3"
+tower-lsp-max = { path = "../../" }
+tokio = { version = "1.17", features = ["full"] }
+tree-sitter-rust = "0.24"

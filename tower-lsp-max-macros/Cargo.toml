@@ -1,6 +1,6 @@
 [package]
 name = "tower-lsp-max-macros"
-version = "26.6.5"
+version = "26.6.8"
 authors = ["Eyal Kalderon <ebkalderon@gmail.com>"]
 description = "Internal procedural macros for tower-lsp-max"
 edition = "2021"

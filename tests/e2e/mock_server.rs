@@ -183,7 +183,7 @@ async fn handle_connection(
     // Background writer task
     tokio::spawn(async move {
         while let Some(msg) = rx.recv().await {
-            if let Err(_) = write_message(&mut writer, &msg).await {
+            if write_message(&mut writer, &msg).await.is_err() {
                 break;
             }
         }
@@ -213,18 +213,26 @@ async fn handle_connection(
         loop {
             tokio::time::sleep(std::time::Duration::from_millis(10)).await;
             let mut s = state_watch.lock().await;
-            if s.is_dead { break; }
+            if s.is_dead {
+                break;
+            }
             for diag in s.diagnostics_to_send.drain(..) {
                 let msg = serde_json::to_vec(&diag).unwrap();
-                if tx_watch.send(msg).await.is_err() { return; }
+                if tx_watch.send(msg).await.is_err() {
+                    return;
+                }
             }
             for reg in s.dynamic_registrations.drain(..) {
                 let msg = serde_json::to_vec(&reg).unwrap();
-                if tx_watch.send(msg).await.is_err() { return; }
+                if tx_watch.send(msg).await.is_err() {
+                    return;
+                }
             }
             for unreg in s.dynamic_unregistrations.drain(..) {
                 let msg = serde_json::to_vec(&unreg).unwrap();
-                if tx_watch.send(msg).await.is_err() { return; }
+                if tx_watch.send(msg).await.is_err() {
+                    return;
+                }
             }
         }
     });
@@ -252,7 +260,11 @@ async fn handle_connection(
             }
         };
 
-        let method = request.get("method").and_then(|m| m.as_str()).unwrap_or("").to_string();
+        let method = request
+            .get("method")
+            .and_then(|m| m.as_str())
+            .unwrap_or("")
+            .to_string();
         let id = request.get("id").cloned();
 
         let mut s = state.lock().await;

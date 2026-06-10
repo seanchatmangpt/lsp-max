@@ -385,12 +385,14 @@ fn detects_changelog_only_laundering() {
 fn ocel_001_diagnostic_emits_compat_event() {
     let tmp = tempfile::tempdir().unwrap();
     let tmp_path = tmp.path().to_string_lossy().to_string();
-    let _ = anti_llm_lsp::ocel::write_ocel_outputs(&tmp_path).unwrap();
+    anti_llm_lsp::ocel::write_ocel_outputs(&tmp_path).unwrap();
     let ocel_json_path = tmp.path().join("ocel/anti_llm_lsp_ocel.json");
     let ocel_content = fs::read_to_string(&ocel_json_path).unwrap();
     let val: serde_json::Value = serde_json::from_str(&ocel_content).unwrap();
     let events = val.get("events").unwrap().as_array().unwrap();
-    assert!(events.iter().any(|ev| ev.get("type").and_then(|t| t.as_str()) == Some("DiagnosticEmitted")));
+    assert!(events
+        .iter()
+        .any(|ev| ev.get("type").and_then(|t| t.as_str()) == Some("DiagnosticEmitted")));
 
     // Verify negative control
     let path = find_file_path("fixtures/negative_controls/ocel_no_event.md");
@@ -403,18 +405,25 @@ fn ocel_001_diagnostic_emits_compat_event() {
 fn ocel_002_receipt_binds_to_ocel_object() {
     let tmp = tempfile::tempdir().unwrap();
     let tmp_path = tmp.path().to_string_lossy().to_string();
-    let _ = anti_llm_lsp::ocel::write_ocel_outputs(&tmp_path).unwrap();
+    anti_llm_lsp::ocel::write_ocel_outputs(&tmp_path).unwrap();
     let ocel_json_path = tmp.path().join("ocel/anti_llm_lsp_ocel.json");
     let ocel_content = fs::read_to_string(&ocel_json_path).unwrap();
     let val: serde_json::Value = serde_json::from_str(&ocel_content).unwrap();
     let events = val.get("events").unwrap().as_array().unwrap();
-    
-    let receipt_val_event = events.iter().find(|ev| {
-        ev.get("type").and_then(|t| t.as_str()) == Some("ReceiptValidated")
-    }).expect("Should have ReceiptValidated event");
 
-    let rels = receipt_val_event.get("relationships").unwrap().as_array().unwrap();
-    assert!(rels.iter().any(|r| r.get("objectId").and_then(|o| o.as_str()) == Some("receipt_ocel_json")));
+    let receipt_val_event = events
+        .iter()
+        .find(|ev| ev.get("type").and_then(|t| t.as_str()) == Some("ReceiptValidated"))
+        .expect("Should have ReceiptValidated event");
+
+    let rels = receipt_val_event
+        .get("relationships")
+        .unwrap()
+        .as_array()
+        .unwrap();
+    assert!(rels
+        .iter()
+        .any(|r| r.get("objectId").and_then(|o| o.as_str()) == Some("receipt_ocel_json")));
 
     // Verify negative control
     let path = find_file_path("fixtures/negative_controls/ocel_no_binding.md");
@@ -427,59 +436,75 @@ fn ocel_002_receipt_binds_to_ocel_object() {
 fn ocel_003_lsp318_feature_row_binds_to_ocel_event() {
     let tmp = tempfile::tempdir().unwrap();
     let tmp_path = tmp.path().to_string_lossy().to_string();
-    let _ = anti_llm_lsp::ocel::write_ocel_outputs(&tmp_path).unwrap();
+    anti_llm_lsp::ocel::write_ocel_outputs(&tmp_path).unwrap();
     let ocel_json_path = tmp.path().join("ocel/anti_llm_lsp_ocel.json");
     let ocel_content = fs::read_to_string(&ocel_json_path).unwrap();
     let val: serde_json::Value = serde_json::from_str(&ocel_content).unwrap();
     let events = val.get("events").unwrap().as_array().unwrap();
 
-    let feature_ex_event = events.iter().find(|ev| {
-        ev.get("type").and_then(|t| t.as_str()) == Some("Lsp318FeatureExercised")
-    }).expect("Should have Lsp318FeatureExercised event");
+    let feature_ex_event = events
+        .iter()
+        .find(|ev| ev.get("type").and_then(|t| t.as_str()) == Some("Lsp318FeatureExercised"))
+        .expect("Should have Lsp318FeatureExercised event");
 
-    let rels = feature_ex_event.get("relationships").unwrap().as_array().unwrap();
-    assert!(rels.iter().any(|r| r.get("objectId").and_then(|o| o.as_str()) == Some("feature_row_001")));
+    let rels = feature_ex_event
+        .get("relationships")
+        .unwrap()
+        .as_array()
+        .unwrap();
+    assert!(rels
+        .iter()
+        .any(|r| r.get("objectId").and_then(|o| o.as_str()) == Some("feature_row_001")));
 }
 
 #[test]
 fn ocel_004_negative_control_binds_to_ocel_event() {
     let tmp = tempfile::tempdir().unwrap();
     let tmp_path = tmp.path().to_string_lossy().to_string();
-    let _ = anti_llm_lsp::ocel::write_ocel_outputs(&tmp_path).unwrap();
+    anti_llm_lsp::ocel::write_ocel_outputs(&tmp_path).unwrap();
     let ocel_json_path = tmp.path().join("ocel/anti_llm_lsp_ocel.json");
     let ocel_content = fs::read_to_string(&ocel_json_path).unwrap();
     let val: serde_json::Value = serde_json::from_str(&ocel_content).unwrap();
     let events = val.get("events").unwrap().as_array().unwrap();
 
-    let neg_control_event = events.iter().find(|ev| {
-        ev.get("type").and_then(|t| t.as_str()) == Some("NegativeControlExecuted")
-    }).expect("Should have NegativeControlExecuted event");
+    let neg_control_event = events
+        .iter()
+        .find(|ev| ev.get("type").and_then(|t| t.as_str()) == Some("NegativeControlExecuted"))
+        .expect("Should have NegativeControlExecuted event");
 
-    let rels = neg_control_event.get("relationships").unwrap().as_array().unwrap();
-    assert!(rels.iter().any(|r| r.get("objectId").and_then(|o| o.as_str()) == Some("fixture_changelog_laundering")));
+    let rels = neg_control_event
+        .get("relationships")
+        .unwrap()
+        .as_array()
+        .unwrap();
+    assert!(rels.iter().any(
+        |r| r.get("objectId").and_then(|o| o.as_str()) == Some("fixture_changelog_laundering")
+    ));
 }
 
 #[test]
 fn ocel_005_failset_update_binds_to_ocel_event() {
     let tmp = tempfile::tempdir().unwrap();
     let tmp_path = tmp.path().to_string_lossy().to_string();
-    let _ = anti_llm_lsp::ocel::write_ocel_outputs(&tmp_path).unwrap();
+    anti_llm_lsp::ocel::write_ocel_outputs(&tmp_path).unwrap();
     let ocel_json_path = tmp.path().join("ocel/anti_llm_lsp_ocel.json");
     let ocel_content = fs::read_to_string(&ocel_json_path).unwrap();
     let val: serde_json::Value = serde_json::from_str(&ocel_content).unwrap();
     let events = val.get("events").unwrap().as_array().unwrap();
 
-    assert!(events.iter().any(|ev| ev.get("type").and_then(|t| t.as_str()) == Some("FailsetUpdated")));
+    assert!(events
+        .iter()
+        .any(|ev| ev.get("type").and_then(|t| t.as_str()) == Some("FailsetUpdated")));
 }
 
 #[test]
 fn ocel_006_ocel_export_uses_wasm4pm_compat_boundary() {
     let tmp = tempfile::tempdir().unwrap();
     let tmp_path = tmp.path().to_string_lossy().to_string();
-    let _ = anti_llm_lsp::ocel::write_ocel_outputs(&tmp_path).unwrap();
+    anti_llm_lsp::ocel::write_ocel_outputs(&tmp_path).unwrap();
     let ocel_json_path = tmp.path().join("ocel/anti_llm_lsp_ocel.json");
     let ocel_content = fs::read_to_string(&ocel_json_path).unwrap();
-    
+
     // Proves external JSON shape parses and validates successfully via the wasm4pm-compat boundary structure check
     let parsed_log = anti_llm_lsp::ocel::parse_and_validate_ocel_json(&ocel_content);
     assert!(parsed_log.is_ok());
@@ -505,7 +530,7 @@ fn ocel_008_rejects_full_wasm4pm_authority_in_compat_checkpoint() {
 fn ocel_009_generates_ocel_gap_report() {
     let tmp = tempfile::tempdir().unwrap();
     let tmp_path = tmp.path().to_string_lossy().to_string();
-    let _ = anti_llm_lsp::ocel::write_ocel_outputs(&tmp_path).unwrap();
+    anti_llm_lsp::ocel::write_ocel_outputs(&tmp_path).unwrap();
     let gap_report_path = tmp.path().join("ocel/ocel_gap_report.md");
     let content = fs::read_to_string(&gap_report_path).unwrap();
     assert!(!content.is_empty());
@@ -517,7 +542,7 @@ fn ocel_009_generates_ocel_gap_report() {
 fn ocel_010_receipts_ocel_export_digest() {
     let tmp = tempfile::tempdir().unwrap();
     let tmp_path = tmp.path().to_string_lossy().to_string();
-    let _ = anti_llm_lsp::ocel::write_ocel_outputs(&tmp_path).unwrap();
+    anti_llm_lsp::ocel::write_ocel_outputs(&tmp_path).unwrap();
     let ocel_json_path = tmp.path().join("ocel/anti_llm_lsp_ocel.json");
     let ocel_content = fs::read_to_string(&ocel_json_path).unwrap();
     let expected_hash = blake3::hash(ocel_content.as_bytes()).to_hex().to_string();
@@ -525,12 +550,21 @@ fn ocel_010_receipts_ocel_export_digest() {
     let receipt_path = tmp.path().join("ocel/anti_llm_lsp_ocel.receipt.json");
     let receipt_content = fs::read_to_string(&receipt_path).unwrap();
     let val: serde_json::Value = serde_json::from_str(&receipt_content).unwrap();
-    
+
     let digest = val.get("digest").unwrap().as_str().unwrap();
     assert_eq!(digest, expected_hash);
-    assert_eq!(val.get("digest_algorithm").unwrap().as_str().unwrap(), "BLAKE3");
-    assert_eq!(val.get("boundary").unwrap().as_str().unwrap(), "examples/anti-llm-lsp/ocel");
-    assert_eq!(val.get("checkpoint").unwrap().as_str().unwrap(), "OCEL-COMPAT-001");
+    assert_eq!(
+        val.get("digest_algorithm").unwrap().as_str().unwrap(),
+        "BLAKE3"
+    );
+    assert_eq!(
+        val.get("boundary").unwrap().as_str().unwrap(),
+        "examples/anti-llm-lsp/ocel"
+    );
+    assert_eq!(
+        val.get("checkpoint").unwrap().as_str().unwrap(),
+        "OCEL-COMPAT-001"
+    );
 }
 
 #[test]
@@ -560,4 +594,56 @@ fn test_typescript_detection() {
     check_diag_code(&diags, "ANTI-LLM-STRANGE-009");
     check_diag_code(&diags, "ANTI-LLM-CLAIM-005");
     check_diag_code(&diags, "ANTI-LLM-CLAIM-006");
+}
+
+// -------------------------------------------------------------
+// Spec-graph inventory reconciliation
+// -------------------------------------------------------------
+
+/// Assert that every method name in the feature matrix has a corresponding
+/// entry in the generated lsp318_message_inventory.json.
+///
+/// This closes the loop: the feature matrix declares coverage for a set of LSP
+/// methods; the inventory is derived from the canonical metaModel.json.  Any
+/// method in the matrix that is absent from the inventory indicates either a
+/// typo in the matrix or a method that was removed from the spec.
+#[test]
+fn feature_matrix_methods_present_in_inventory() {
+    use std::collections::HashSet;
+
+    #[derive(serde::Deserialize)]
+    struct InventoryEntry {
+        method: String,
+    }
+
+    let inv_path = find_file_path("generated/lsp318_message_inventory.json");
+    let raw = fs::read_to_string(&inv_path)
+        .unwrap_or_else(|e| panic!("failed to read message inventory: {e}"));
+    let inventory: Vec<InventoryEntry> =
+        serde_json::from_str(&raw).expect("failed to parse lsp318_message_inventory.json");
+
+    let inventory_methods: HashSet<String> = inventory.into_iter().map(|e| e.method).collect();
+
+    let matrix = get_feature_matrix();
+    let mut missing: Vec<String> = Vec::new();
+    for feature in &matrix {
+        // Skip placeholder entries that have no real method name.
+        if feature.request_method.is_empty() || feature.request_method == "none" {
+            continue;
+        }
+        if !inventory_methods.contains(&feature.request_method) {
+            missing.push(format!(
+                "{} ({} — method: {})",
+                feature.feature_id, feature.feature, feature.request_method
+            ));
+        }
+    }
+
+    if !missing.is_empty() {
+        panic!(
+            "{} feature matrix method(s) not found in lsp318_message_inventory.json:\n  {}",
+            missing.len(),
+            missing.join("\n  ")
+        );
+    }
 }

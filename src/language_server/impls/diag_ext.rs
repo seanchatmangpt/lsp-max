@@ -10,18 +10,6 @@ use lsp_types_max::*;
 use std::collections::HashMap;
 use std::str::FromStr;
 
-/// Returns the diagnostic server capabilities for the advanced diagnostics domain.
-pub fn capabilities() -> DiagnosticServerCapabilities {
-    DiagnosticServerCapabilities::Options(DiagnosticOptions {
-        identifier: Some("tower-lsp-max-diagnostics".to_string()),
-        inter_file_dependencies: true,
-        workspace_diagnostics: true,
-        work_done_progress_options: WorkDoneProgressOptions {
-            work_done_progress: None,
-        },
-    })
-}
-
 /// Handler for the `textDocument/diagnostic` endpoint.
 /// Implements pull-based diagnostics for a single document.
 pub async fn diagnostic(
@@ -67,7 +55,7 @@ pub async fn diagnostic(
 /// Handler for the `workspace/diagnostic` endpoint.
 /// Implements pull-based diagnostics for the entire workspace.
 pub async fn workspace_diagnostic(
-    params: WorkspaceDiagnosticParams,
+    _params: WorkspaceDiagnosticParams,
 ) -> Result<WorkspaceDiagnosticReportResult> {
     let mut registry = lock_registry()?;
     update_diagnostics(&mut registry);
@@ -129,41 +117,6 @@ pub async fn workspace_diagnostic(
     Ok(WorkspaceDiagnosticReportResult::Report(
         WorkspaceDiagnosticReport { items: reports },
     ))
-}
-
-/// Refreshes diagnostics by sending a `workspace/diagnostic/refresh` request to the client.
-/// This is a server-to-client request.
-pub async fn refresh_diagnostics(client: &crate::service::Client) -> Result<()> {
-    client
-        .send_request::<request::WorkspaceDiagnosticRefresh>(())
-        .await
-}
-
-/// A specialized diagnostic provider that can be used for auto-lsp style integration.
-pub struct MaxDiagnosticProvider;
-
-impl MaxDiagnosticProvider {
-    pub fn new() -> Self {
-        Self
-    }
-
-    pub async fn provide_diagnostics(&self, uri: &Uri) -> Result<Vec<Diagnostic>> {
-        let mut registry = lock_registry()?;
-        update_diagnostics(&mut registry);
-
-        let path = uri.path();
-        Ok(registry
-            .diagnostics
-            .values()
-            .filter(|d| {
-                d.doc_routes.is_empty()
-                    || d.doc_routes
-                        .iter()
-                        .any(|r| path.as_str().ends_with(&r.path))
-            })
-            .map(|d| d.lsp.clone())
-            .collect())
-    }
 }
 
 pub async fn work_done_progress_cancel(_params: WorkDoneProgressCancelParams) {}

@@ -99,16 +99,14 @@ impl Response {
             lsp_types_max::ResponseMessage::Success { id, result, .. } => {
                 Response::from_ok(id.map(Id::from).unwrap_or(Id::Null), result)
             }
-            lsp_types_max::ResponseMessage::Error { id, error, .. } => {
-                Response::from_error(
-                    id.map(Id::from).unwrap_or(Id::Null),
-                    Error {
-                        code: (error.code as i64).into(),
-                        message: std::borrow::Cow::Owned(error.message),
-                        data: error.data,
-                    },
-                )
-            }
+            lsp_types_max::ResponseMessage::Error { id, error, .. } => Response::from_error(
+                id.map(Id::from).unwrap_or(Id::Null),
+                Error {
+                    code: (error.code as i64).into(),
+                    message: std::borrow::Cow::Owned(error.message),
+                    data: error.data,
+                },
+            ),
         }
     }
 }

@@ -61,7 +61,6 @@ pub fn server_capabilities() -> ServerCapabilities {
             ]),
             resolve_provider: Some(true),
             work_done_progress_options: Default::default(),
-            ..Default::default()
         })),
 
         code_lens_provider: Some(CodeLensOptions {
@@ -152,6 +151,7 @@ pub fn server_capabilities() -> ServerCapabilities {
             "maximal": true,
             "playground": true
         })),
-        ..Default::default()
+        #[cfg(not(feature = "proposed"))]
+        inline_completion_provider: None,
     }
 }

@@ -17,7 +17,12 @@ fn test_cli_surface_graph() {
 #[test]
 fn test_cli_surface_command() {
     let mut cmd = Command::cargo_bin("clap-noun-verb-lsp").unwrap();
-    cmd.arg("command").arg("inspect").arg("--noun").arg("noun").arg("--verb").arg("verb");
+    cmd.arg("command")
+        .arg("inspect")
+        .arg("--noun")
+        .arg("noun")
+        .arg("--verb")
+        .arg("verb");
     cmd.assert().success();
 }
 

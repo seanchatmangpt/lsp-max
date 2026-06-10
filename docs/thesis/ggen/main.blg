@@ -1,0 +1,70 @@
+This is BibTeX, Version 0.99d (TeX Live 2024)
+Capacity: max_strings=200000, hash_size=200000, hash_prime=170003
+The top-level auxiliary file: main.aux
+A level-1 auxiliary file: chapters/ch1_problem_formulation.aux
+A level-1 auxiliary file: chapters/ch2_algebraic_boundary.aux
+A level-1 auxiliary file: chapters/ch3_differential_calculus.aux
+A level-1 auxiliary file: chapters/ch4_generative_functors.aux
+A level-1 auxiliary file: chapters/ch5_operational_calculus.aux
+A level-1 auxiliary file: chapters/ch6_rebuttal.aux
+A level-1 auxiliary file: chapters/appendix_proofs.aux
+The style file: plain.bst
+Database file #1: ../../research/agent10_master_bibliography.bib
+Warning--I didn't find a database entry for "berti2019ocel"
+Warning--empty journal in back202520
+Warning--empty journal in autoagent_2024
+Warning--empty journal in compliance_predictive_process_2024
+Warning--empty journal in computational_irreducibility_agency_2024
+Warning--empty journal in dafny_verification_aware_2024
+Warning--empty journal in code_hallucinations_llm_2024
+Warning--empty journal in g_designer_2024
+Warning--empty journal in language_models_semiotic_2024
+Warning--empty journal in object_centric_sparql_2024
+Warning--empty journal in pmax_agentic_process_mining_2024
+Warning--empty journal in tensors_rdf_sparql_2024
+Warning--empty journal in knowledge_control_swarm_2024
+Warning--empty journal in vlm_geometry_2024
+Warning--empty journal in agent_tcp_ip_2025
+Warning--empty journal in noYYYY42
+You've used 15 entries,
+            2118 wiz_defined-function locations,
+            542 strings with 5981 characters,
+and the built_in function-call counts, 3067 in all, are:
+= -- 285
+> -- 105
+< -- 0
++ -- 45
+- -- 30
+* -- 122
+:= -- 581
+add.period$ -- 45
+call.type$ -- 15
+change.case$ -- 60
+chr.to.int$ -- 0
+cite$ -- 30
+duplicate$ -- 150
+empty$ -- 256
+format.name$ -- 30
+if$ -- 601
+int.to.chr$ -- 0
+int.to.str$ -- 15
+missing$ -- 15
+newline$ -- 78
+num.names$ -- 30
+pop$ -- 90
+preamble$ -- 1
+purify$ -- 45
+quote$ -- 0
+skip$ -- 104
+stack$ -- 0
+substring$ -- 75
+swap$ -- 0
+text.length$ -- 0
+text.prefix$ -- 0
+top$ -- 0
+type$ -- 60
+warning$ -- 15
+while$ -- 30
+width$ -- 17
+write$ -- 137
+(There were 16 warnings)

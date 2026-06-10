@@ -1,8 +1,10 @@
-use serde::{Deserialize, Serialize};
-use std::fs;
-use std::collections::{HashMap, HashSet};
 use chrono::{DateTime, FixedOffset};
-use wasm4pm_compat::ocel::{OCEL, OCELEvent, OCELObject, OCELRelationship, OCELType, OCELEventAttribute, OCELAttributeValue};
+use serde::{Deserialize, Serialize};
+use std::collections::{HashMap, HashSet};
+use std::fs;
+use wasm4pm_compat::ocel::{
+    OCELAttributeValue, OCELEvent, OCELEventAttribute, OCELObject, OCELRelationship, OCELType, OCEL,
+};
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 struct RawEvent {
@@ -35,9 +37,11 @@ fn process_evidence_to_ocel(content: &str) -> Result<OCEL, Box<dyn std::error::E
     let mut seen_object_types = HashSet::new();
 
     for line in content.lines() {
-        if line.trim().is_empty() { continue; }
+        if line.trim().is_empty() {
+            continue;
+        }
         let raw: RawEvent = serde_json::from_str(line)?;
-        
+
         seen_event_types.insert(raw.event_type.clone());
 
         let time = DateTime::parse_from_rfc3339(&raw.timestamp)
@@ -45,17 +49,20 @@ fn process_evidence_to_ocel(content: &str) -> Result<OCEL, Box<dyn std::error::E
             .with_timezone(&FixedOffset::east_opt(0).unwrap());
 
         let mut relationships = Vec::new();
-        
+
         if let Some(ref obj_id) = raw.object_id {
             let otype = "Artifact".to_string();
             seen_object_types.insert(otype.clone());
             if !seen_objects.contains(obj_id) {
-                objects.insert(obj_id.clone(), OCELObject {
-                    id: obj_id.clone(),
-                    object_type: otype,
-                    attributes: vec![],
-                    relationships: vec![],
-                });
+                objects.insert(
+                    obj_id.clone(),
+                    OCELObject {
+                        id: obj_id.clone(),
+                        object_type: otype,
+                        attributes: vec![],
+                        relationships: vec![],
+                    },
+                );
                 seen_objects.insert(obj_id.clone());
             }
             relationships.push(OCELRelationship {
@@ -68,12 +75,15 @@ fn process_evidence_to_ocel(content: &str) -> Result<OCEL, Box<dyn std::error::E
             let otype = "Checkpoint".to_string();
             seen_object_types.insert(otype.clone());
             if !seen_objects.contains(cp_id) {
-                objects.insert(cp_id.clone(), OCELObject {
-                    id: cp_id.clone(),
-                    object_type: otype,
-                    attributes: vec![],
-                    relationships: vec![],
-                });
+                objects.insert(
+                    cp_id.clone(),
+                    OCELObject {
+                        id: cp_id.clone(),
+                        object_type: otype,
+                        attributes: vec![],
+                        relationships: vec![],
+                    },
+                );
                 seen_objects.insert(cp_id.clone());
             }
             relationships.push(OCELRelationship {
@@ -84,7 +94,7 @@ fn process_evidence_to_ocel(content: &str) -> Result<OCEL, Box<dyn std::error::E
 
         let mut attributes = Vec::new();
         if let Some(pr) = raw.previous_receipt {
-             attributes.push(OCELEventAttribute {
+            attributes.push(OCELEventAttribute {
                 name: "previous_receipt".to_string(),
                 value: OCELAttributeValue::String(pr),
             });
@@ -100,8 +110,20 @@ fn process_evidence_to_ocel(content: &str) -> Result<OCEL, Box<dyn std::error::E
     }
 
     Ok(OCEL {
-        event_types: seen_event_types.into_iter().map(|n| OCELType { name: n, attributes: vec![] }).collect(),
-        object_types: seen_object_types.into_iter().map(|n| OCELType { name: n, attributes: vec![] }).collect(),
+        event_types: seen_event_types
+            .into_iter()
+            .map(|n| OCELType {
+                name: n,
+                attributes: vec![],
+            })
+            .collect(),
+        object_types: seen_object_types
+            .into_iter()
+            .map(|n| OCELType {
+                name: n,
+                attributes: vec![],
+            })
+            .collect(),
         events,
         objects: objects.into_values().collect(),
     })
@@ -122,7 +144,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let output_path = "crates/playground/ocel/admitted_evidence.ocel.json";
         fs::create_dir_all("crates/playground/ocel")?;
         fs::write(output_path, json)?;
-        println!("Successfully emitted wasm4pm-admitted OCEL to {}", output_path);
+        println!(
+            "Successfully emitted wasm4pm-admitted OCEL to {}",
+            output_path
+        );
     }
 
     Ok(())

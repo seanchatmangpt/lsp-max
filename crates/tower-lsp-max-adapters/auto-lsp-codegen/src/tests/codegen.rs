@@ -1,11 +1,7 @@
 #[test]
 fn test_codegen_dry_run() {
     let source = r#"[{"type": "identifier", "named": true}]"#;
-    let _result = crate::generate(
-        source,
-        &tree_sitter_html::LANGUAGE.into(),
-        None,
-    );
+    let _result = crate::generate(source, &tree_sitter_html::LANGUAGE.into(), None);
     assert!(!_result.is_empty());
 }
 

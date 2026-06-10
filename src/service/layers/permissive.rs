@@ -1,4 +1,4 @@
-use futures::future::{BoxFuture, FutureExt};
+use futures::future::BoxFuture;
 use std::sync::Arc;
 use std::task::{Context, Poll};
 use tower::{Layer, Service};

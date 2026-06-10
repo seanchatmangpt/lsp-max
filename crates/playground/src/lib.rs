@@ -13,10 +13,10 @@ use std::sync::Arc;
 
 use dashmap::DashMap;
 use ropey::Rope;
+use tower_lsp_max::auto_lsp::AutoLspAdapter;
 use tower_lsp_max::jsonrpc::Result;
 use tower_lsp_max::lsp_types::*;
 use tower_lsp_max::{Client, LanguageServer};
-use tower_lsp_max::auto_lsp::AutoLspAdapter;
 
 /// One entry per open document.
 pub struct Document {

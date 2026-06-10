@@ -1,5 +1,3 @@
-use clap_noun_verb::Result;
-
 pub mod cli;
 pub mod diagnostics;
 pub mod doctor;
@@ -10,5 +8,3 @@ pub mod scan;
 pub mod scanner;
 pub mod server;
 pub mod workspace;
-
-

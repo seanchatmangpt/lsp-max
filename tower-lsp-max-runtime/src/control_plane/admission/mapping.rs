@@ -1,7 +1,6 @@
 use super::mapping_helpers::*;
 use super::types::GraphAdmissionError;
 use tower_lsp_max_lsif::lsif::{Edge, Element, Vertex};
-use tower_lsp_max_protocol::MaxDiagnostic;
 
 pub fn map_element_to_quads(
     element: &Element,

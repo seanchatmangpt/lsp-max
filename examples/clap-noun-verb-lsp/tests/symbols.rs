@@ -1,4 +1,4 @@
 #[test]
 fn test_dummy_symbols() {
-    assert!(true);
+    // Placeholder test — no assertion needed.
 }

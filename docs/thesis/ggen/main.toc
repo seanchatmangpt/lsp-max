@@ -1,0 +1,34 @@
+\contentsline {chapter}{\numberline {1}Measure-Theoretic and Stochastic Formulation of Swarm Entropy}{3}{chapter.1}%
+\contentsline {section}{\numberline {1.1}Introduction to the Architectural Crisis}{3}{section.1.1}%
+\contentsline {section}{\numberline {1.2}Stochastic Calculus of Swarm Volatility}{4}{section.1.2}%
+\contentsline {section}{\numberline {1.3}The Measure-Theoretic Object Model}{4}{section.1.3}%
+\contentsline {section}{\numberline {1.4}Core Thesis and Efficiency Limits}{5}{section.1.4}%
+\contentsline {chapter}{\numberline {2}$C^*$-Algebraic Boundaries and Von Neumann Annihilators}{6}{chapter.2}%
+\contentsline {section}{\numberline {2.1}The Failure of Heuristic Validation}{6}{section.2.1}%
+\contentsline {section}{\numberline {2.2}The $C^*$-Algebra of Process Evidence}{6}{section.2.2}%
+\contentsline {section}{\numberline {2.3}The Spectral Projection Operator}{7}{section.2.3}%
+\contentsline {section}{\numberline {2.4}Von Neumann Algebra Extensions}{7}{section.2.4}%
+\contentsline {chapter}{\numberline {3}Riemannian Syntax Calculus and the Levi-Civita Connection}{8}{chapter.3}%
+\contentsline {section}{\numberline {3.1}The Continuous Manifold of Syntax}{8}{section.3.1}%
+\contentsline {section}{\numberline {3.2}The Levi-Civita Connection and Covariant Derivatives}{8}{section.3.2}%
+\contentsline {section}{\numberline {3.3}Bounding the Computational Energy}{9}{section.3.3}%
+\contentsline {section}{\numberline {3.4}Integration with the Einstein-Hilbert Action}{9}{section.3.4}%
+\contentsline {chapter}{\numberline {4}Homological Category-Theoretic Functors and the Verification Ladder}{10}{chapter.4}%
+\contentsline {section}{\numberline {4.1}Categorical Mapping of the Swarm Defense}{10}{section.4.1}%
+\contentsline {section}{\numberline {4.2}The Adjunction $F \dashv G$ and Natural Isomorphism}{10}{section.4.2}%
+\contentsline {section}{\numberline {4.3}Homological Boundedness and the Chain Complex}{11}{section.4.3}%
+\contentsline {section}{\numberline {4.4}The Hyper-Advanced Verification Ladder}{11}{section.4.4}%
+\contentsline {chapter}{\numberline {5}Asymptotic Falsifiers, Operational Interpretations, and Conclusion}{13}{chapter.5}%
+\contentsline {section}{\numberline {5.1}Hyper-Advanced Operational Interpretation}{13}{section.5.1}%
+\contentsline {section}{\numberline {5.2}Stochastic Falsifiers and Topological Limitations}{13}{section.5.2}%
+\contentsline {section}{\numberline {5.3}Final Output and Conclusion}{14}{section.5.3}%
+\contentsline {chapter}{\numberline {6}Rebutting the Discrete Orthodoxy: The Continuum Limit of Agent Swarms}{16}{chapter.6}%
+\contentsline {section}{\numberline {6.1}The Limits of Classical Process Mining}{16}{section.6.1}%
+\contentsline {section}{\numberline {6.2}The Necessity of the Continuum Limit}{16}{section.6.2}%
+\contentsline {subsection}{\numberline {6.2.1}From Discrete Tokens to Stochastic Flux}{16}{subsection.6.2.1}%
+\contentsline {subsection}{\numberline {6.2.2}From Reachability Graphs to Riemannian Metrics}{17}{subsection.6.2.2}%
+\contentsline {section}{\numberline {6.3}Conclusion: The Interdisciplinary Fusion}{17}{section.6.3}%
+\contentsline {chapter}{\numberline {A}Categorical Proofs of LSP Modalities}{18}{appendix.A}%
+\contentsline {section}{\numberline {A.1}Class I: Read-Only Modalities (Presheaf Resolution)}{18}{section.A.1}%
+\contentsline {section}{\numberline {A.2}Class II: Mutational Modalities (Differential Perturbation)}{18}{section.A.2}%
+\contentsline {section}{\numberline {A.3}Class III: Global Queries (Geodesic Traversal)}{19}{section.A.3}%

@@ -1,10 +1,10 @@
-use clap_noun_verb_macros::verb;
-use clap_noun_verb::Result;
 use crate::types::CommandResult;
+use clap_noun_verb::Result;
+use clap_noun_verb_macros::verb;
+use tokio::runtime::Runtime;
 use tower_lsp_max::jsonrpc;
 use tower_lsp_max::lsp_types::*;
 use tower_lsp_max::{Client, LanguageServer, LspService, Server};
-use tokio::runtime::Runtime;
 
 #[derive(Debug)]
 pub struct ClapNounVerbLsp {
@@ -22,49 +22,71 @@ impl LanguageServer for ClapNounVerbLsp {
     async fn initialize(&self, _: InitializeParams) -> jsonrpc::Result<InitializeResult> {
         Ok(InitializeResult {
             capabilities: ServerCapabilities {
-                diagnostic_provider: Some(DiagnosticServerCapabilities::Options(DiagnosticOptions {
-                    identifier: None,
-                    inter_file_dependencies: true,
-                    workspace_diagnostics: true,
-                    work_done_progress_options: WorkDoneProgressOptions { work_done_progress: None },
-                })),
-                semantic_tokens_provider: Some(SemanticTokensServerCapabilities::SemanticTokensOptions(SemanticTokensOptions {
-                    legend: SemanticTokensLegend {
-                        token_types: vec![
-                            SemanticTokenType::new("cnvNoun"),
-                            SemanticTokenType::new("cnvVerb"),
-                            SemanticTokenType::new("cnvArg"),
-                            SemanticTokenType::new("cnvArgTag"),
-                            SemanticTokenType::new("cnvEnvVar"),
-                            SemanticTokenType::new("cnvDefaultValue"),
-                            SemanticTokenType::new("cnvGroupName"),
-                            SemanticTokenType::new("cnvRequiresLink"),
-                            SemanticTokenType::new("cnvConflictsLink"),
-                            SemanticTokenType::new("cnvAlias"),
-                            SemanticTokenType::new("cnvDomainCall"),
-                            SemanticTokenType::new("cnvIntegrationCall"),
-                            SemanticTokenType::new("cnvReceiptId"),
-                            SemanticTokenType::new("cnvDiagnosticCode"),
-                            SemanticTokenType::new("cnvDeprecated"),
-                        ],
-                        token_modifiers: vec![],
+                diagnostic_provider: Some(DiagnosticServerCapabilities::Options(
+                    DiagnosticOptions {
+                        identifier: None,
+                        inter_file_dependencies: true,
+                        workspace_diagnostics: true,
+                        work_done_progress_options: WorkDoneProgressOptions {
+                            work_done_progress: None,
+                        },
                     },
-                    full: Some(SemanticTokensFullOptions::Bool(true)),
-                    range: Some(true),
-                    work_done_progress_options: WorkDoneProgressOptions { work_done_progress: None },
-                })),
-                inlay_hint_provider: Some(OneOf::Right(InlayHintServerCapabilities::Options(InlayHintOptions {
-                    resolve_provider: Some(true),
-                    work_done_progress_options: WorkDoneProgressOptions { work_done_progress: None },
-                }))),
-                inline_value_provider: Some(OneOf::Right(InlineValueServerCapabilities::Options(InlineValueOptions {
-                    work_done_progress_options: WorkDoneProgressOptions { work_done_progress: None },
-                }))),
-                code_action_provider: Some(CodeActionProviderCapability::Options(CodeActionOptions {
-                    resolve_provider: Some(true),
-                    code_action_kinds: None,
-                    work_done_progress_options: WorkDoneProgressOptions { work_done_progress: None },
-                })),
+                )),
+                semantic_tokens_provider: Some(
+                    SemanticTokensServerCapabilities::SemanticTokensOptions(
+                        SemanticTokensOptions {
+                            legend: SemanticTokensLegend {
+                                token_types: vec![
+                                    SemanticTokenType::new("cnvNoun"),
+                                    SemanticTokenType::new("cnvVerb"),
+                                    SemanticTokenType::new("cnvArg"),
+                                    SemanticTokenType::new("cnvArgTag"),
+                                    SemanticTokenType::new("cnvEnvVar"),
+                                    SemanticTokenType::new("cnvDefaultValue"),
+                                    SemanticTokenType::new("cnvGroupName"),
+                                    SemanticTokenType::new("cnvRequiresLink"),
+                                    SemanticTokenType::new("cnvConflictsLink"),
+                                    SemanticTokenType::new("cnvAlias"),
+                                    SemanticTokenType::new("cnvDomainCall"),
+                                    SemanticTokenType::new("cnvIntegrationCall"),
+                                    SemanticTokenType::new("cnvReceiptId"),
+                                    SemanticTokenType::new("cnvDiagnosticCode"),
+                                    SemanticTokenType::new("cnvDeprecated"),
+                                ],
+                                token_modifiers: vec![],
+                            },
+                            full: Some(SemanticTokensFullOptions::Bool(true)),
+                            range: Some(true),
+                            work_done_progress_options: WorkDoneProgressOptions {
+                                work_done_progress: None,
+                            },
+                        },
+                    ),
+                ),
+                inlay_hint_provider: Some(OneOf::Right(InlayHintServerCapabilities::Options(
+                    InlayHintOptions {
+                        resolve_provider: Some(true),
+                        work_done_progress_options: WorkDoneProgressOptions {
+                            work_done_progress: None,
+                        },
+                    },
+                ))),
+                inline_value_provider: Some(OneOf::Right(InlineValueServerCapabilities::Options(
+                    InlineValueOptions {
+                        work_done_progress_options: WorkDoneProgressOptions {
+                            work_done_progress: None,
+                        },
+                    },
+                ))),
+                code_action_provider: Some(CodeActionProviderCapability::Options(
+                    CodeActionOptions {
+                        resolve_provider: Some(true),
+                        code_action_kinds: None,
+                        work_done_progress_options: WorkDoneProgressOptions {
+                            work_done_progress: None,
+                        },
+                    },
+                )),
                 code_lens_provider: Some(CodeLensOptions {
                     resolve_provider: Some(true),
                 }),
@@ -76,7 +98,9 @@ impl LanguageServer for ClapNounVerbLsp {
                 moniker_provider: Some(OneOf::Left(true)),
                 execute_command_provider: Some(ExecuteCommandOptions {
                     commands: vec![],
-                    work_done_progress_options: WorkDoneProgressOptions { work_done_progress: None },
+                    work_done_progress_options: WorkDoneProgressOptions {
+                        work_done_progress: None,
+                    },
                 }),
                 workspace: Some(WorkspaceServerCapabilities {
                     workspace_folders: Some(WorkspaceFoldersServerCapabilities {
@@ -93,15 +117,17 @@ impl LanguageServer for ClapNounVerbLsp {
                     }),
                     text_document_content: None,
                 }),
-                text_document_sync: Some(TextDocumentSyncCapability::Options(TextDocumentSyncOptions {
-                    open_close: Some(true),
-                    change: Some(TextDocumentSyncKind::FULL),
-                    save: Some(TextDocumentSyncSaveOptions::SaveOptions(SaveOptions {
-                        include_text: Some(true),
-                    })),
-                    will_save: None,
-                    will_save_wait_until: None,
-                })),
+                text_document_sync: Some(TextDocumentSyncCapability::Options(
+                    TextDocumentSyncOptions {
+                        open_close: Some(true),
+                        change: Some(TextDocumentSyncKind::FULL),
+                        save: Some(TextDocumentSyncSaveOptions::SaveOptions(SaveOptions {
+                            include_text: Some(true),
+                        })),
+                        will_save: None,
+                        will_save_wait_until: None,
+                    },
+                )),
                 ..Default::default()
             },
             server_info: Some(ServerInfo {
@@ -130,8 +156,11 @@ pub fn cmd_serve(stdio: bool) -> Result<CommandResult> {
         if stdio {
             let stdin = tokio::io::stdin();
             let stdout = tokio::io::stdout();
-            let (service, socket) = LspService::new(|client| ClapNounVerbLsp::new(client));
-            Server::new(stdin, stdout, socket).serve(service).await;
+            let (service, socket) = LspService::new(ClapNounVerbLsp::new);
+            Server::new(stdin, stdout, socket)
+                .serve(service)
+                .await
+                .unwrap();
         }
     });
     Ok(CommandResult { success: true })

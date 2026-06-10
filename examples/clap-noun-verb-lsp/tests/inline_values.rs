@@ -1,4 +1,4 @@
 #[test]
 fn test_dummy_inline_values() {
-    assert!(true);
+    // Placeholder test — no assertion needed.
 }

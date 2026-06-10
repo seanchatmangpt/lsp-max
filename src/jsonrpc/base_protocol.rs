@@ -10,7 +10,7 @@ use lsp_types_max::{
 };
 use serde_json::Value;
 
-use super::{Error, ErrorCode, Id, Message, Request, Response};
+use super::{Error, ErrorCode, Id, Request, Response};
 
 /// Conversion from `lsp_types_max` types to `tower-lsp-max` types.
 pub trait IntoTower {
@@ -160,23 +160,6 @@ impl BaseProtocolMessage {
     /// Converts a `tower-lsp-max` `Response` into a `BaseProtocolMessage`.
     pub fn from_response(response: Response) -> Self {
         BaseProtocolMessage::Response(response.into_lsp())
-    }
-
-    /// Converts a `tower-lsp-max` `Message` into a `BaseProtocolMessage`.
-    pub fn from_message(message: Message) -> Self {
-        match message {
-            Message::Request(req) => Self::from_request(req),
-            Message::Response(res) => Self::from_response(res),
-        }
-    }
-
-    /// Converts this `BaseProtocolMessage` into the corresponding `tower-lsp-max` message types.
-    pub fn into_tower(self) -> Message {
-        match self {
-            BaseProtocolMessage::Request(r) => Message::Request(r.into_tower()),
-            BaseProtocolMessage::Notification(n) => Message::Request(n.into_tower()),
-            BaseProtocolMessage::Response(r) => Message::Response(r.into_tower()),
-        }
     }
 }
 
