@@ -31,12 +31,20 @@ const PDF_NAME: &str = "periodic-table-of-reason-v26.6.10.pdf";
 fn run_pdflatex(jobname: &str) {
     let _ = Command::new("pdflatex")
         .current_dir(THESIS_DIR)
-        .args(["-interaction=nonstopmode", &format!("-jobname={}", jobname), "main.tex"])
+        .args([
+            "-interaction=nonstopmode",
+            &format!("-jobname={}", jobname),
+            "main.tex",
+        ])
         .status();
 }
 
 fn run_bibtex(jobname: &str) {
-    match Command::new("bibtex").current_dir(THESIS_DIR).arg(jobname).status() {
+    match Command::new("bibtex")
+        .current_dir(THESIS_DIR)
+        .arg(jobname)
+        .status()
+    {
         Ok(s) if s.success() => println!("bibtex OK."),
         Ok(_) => println!("bibtex errors — check .blg."),
         Err(e) => println!("bibtex unavailable: {}", e),
@@ -49,7 +57,11 @@ fn compile_pdf() -> clap_noun_verb::Result<()> {
     println!("Pass 1/4: pdflatex...");
     Command::new("pdflatex")
         .current_dir(THESIS_DIR)
-        .args(["-interaction=nonstopmode", &format!("-jobname={}", jobname), "main.tex"])
+        .args([
+            "-interaction=nonstopmode",
+            &format!("-jobname={}", jobname),
+            "main.tex",
+        ])
         .status()?;
     println!("Pass 2/4: bibtex...");
     run_bibtex(jobname);
@@ -58,7 +70,10 @@ fn compile_pdf() -> clap_noun_verb::Result<()> {
     println!("Pass 4/4: pdflatex...");
     run_pdflatex(jobname);
     println!("Opening {}...", PDF_NAME);
-    let _ = Command::new("open").current_dir(THESIS_DIR).arg(PDF_NAME).status();
+    let _ = Command::new("open")
+        .current_dir(THESIS_DIR)
+        .arg(PDF_NAME)
+        .status();
     Ok(())
 }
 
