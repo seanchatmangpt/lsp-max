@@ -3,8 +3,7 @@ name = "lsp-max-ast-core"
 description = """
 Core crate for `auto_lsp`.
 """
-version = "0.7.0"
-publish = false
+version = "26.6.9"
 authors = { workspace = true }
 license = { workspace = true }
 repository = { workspace = true }

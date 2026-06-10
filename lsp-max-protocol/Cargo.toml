@@ -3,7 +3,8 @@ name = "lsp-max-protocol"
 version = "26.6.9"
 edition = "2021"
 description = "Maximal capability vector, diagnostics, and protocol types for lsp-max"
-publish = false
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/seanchatmangpt/lsp-max"
 
 [lib]
 doctest = false
