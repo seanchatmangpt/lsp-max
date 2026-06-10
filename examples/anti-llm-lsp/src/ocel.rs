@@ -256,41 +256,22 @@ pub fn write_ocel_outputs(dir: &str) -> Result<(), Box<dyn std::error::Error>> {
     let base_dir = Path::new(dir).join("ocel");
     fs::create_dir_all(&base_dir)?;
 
-    // Write OCEL JSON
+    // Serialize OCEL once; hash the final content so receipt and file are consistent.
     let ocel_json_path = base_dir.join("anti_llm_lsp_ocel.json");
     let ocel_log = generate_anti_llm_ocel_log();
-    let mut ocel_json = serialize_ocel_log(&ocel_log);
-
-    // Hash before updating the digest
-    let json_str = serde_json::to_string_pretty(&ocel_json)?;
-    let hash_val = blake3::hash(json_str.as_bytes()).to_hex().to_string();
-
-    // Inject hash into the digest object (simulated real processing logic)
-    if let Some(objects) = ocel_json.get_mut("objects").and_then(|o| o.as_array_mut()) {
-        for obj in objects {
-            if obj.get("id").and_then(|id| id.as_str()) == Some("digest_ocel_json") {
-                if let Some(attrs) = obj.get_mut("attributes").and_then(|a| a.as_array_mut()) {
-                    for attr in attrs {
-                        if attr.get("name").and_then(|n| n.as_str()) == Some("value") {
-                            attr["value"] = json!({"String": hash_val});
-                        }
-                    }
-                }
-            }
-        }
-    }
-
+    let ocel_json = serialize_ocel_log(&ocel_log);
     let ocel_content = serde_json::to_string_pretty(&ocel_json)?;
+    let hash_val = blake3::hash(ocel_content.as_bytes()).to_hex().to_string();
     fs::write(&ocel_json_path, &ocel_content)?;
 
     // Write Gap Report
     let gap_report_path = base_dir.join("ocel_gap_report.md");
     fs::write(
         &gap_report_path,
-        "# OCEL Gap Report\\n\\nNo gaps found. All systems functional.",
+        "# OCEL Gap Report\n\nNo gaps found. All systems functional.",
     )?;
 
-    // Write Receipt
+    // Write Receipt — digest covers the exact bytes written to the OCEL JSON file.
     let receipt_path = base_dir.join("anti_llm_lsp_ocel.receipt.json");
     let receipt_json = json!({
         "digest": hash_val,
