@@ -5,7 +5,7 @@
 ---
 
 ## 1. Executive Summary
-This report documents the implementation, integration, and verification of the autonomic transactional code actions, repair plans, preview/validation, and rollback engine in the `tower-lsp-max` language server. All mock placeholders and facades have been replaced with concrete, disk-modifying transactional behaviors that guarantee state reversion and workspace health.
+This report documents the implementation, integration, and verification of the autonomic transactional code actions, repair plans, preview/validation, and rollback engine in the `lsp-max` language server. All mock placeholders and facades have been replaced with concrete, disk-modifying transactional behaviors that guarantee state reversion and workspace health.
 
 ---
 
@@ -44,13 +44,13 @@ To ensure robust testing, two enhancements were made to `test_max_rpc_endpoints`
 2. **Registry State Mocking**: Resetting `registry.current_state` to `State::Uninitialized` right before checking precondition validation, allowing the service/router level check to remain `State::Initialized` so that JSON-RPC calls are processed.
 
 ### Execution Output
-All 41 library unit tests in `tower-lsp-max` pass successfully:
+All 41 library unit tests in `lsp-max` pass successfully:
 
 ```bash
-$ cargo test -p tower-lsp-max --lib
-   Compiling tower-lsp-max v26.6.4 (/Users/sac/tower-lsp-max)
+$ cargo test -p lsp-max --lib
+   Compiling lsp-max v26.6.4 (/Users/sac/lsp-max)
     Finished `test` profile [unoptimized + debuginfo] target(s) in 0.10s
-     Running unittests src/lib.rs (target/debug/deps/tower_lsp_max-c1ac0615677b4360)
+     Running unittests src/lib.rs (target/debug/deps/lsp_max-c1ac0615677b4360)
 
 running 41 tests
 test jsonrpc::error::tests::error_code_deserializes_from_i64 ... ok
@@ -98,10 +98,10 @@ test service::tests::test_max_rpc_endpoints ... ok
 test result: ok. 41 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.82s
 ```
 
-All 2 tests in `tower-lsp-max-runtime` also pass successfully:
+All 2 tests in `lsp-max-runtime` also pass successfully:
 
 ```bash
-$ cargo test -p tower-lsp-max-runtime --lib
+$ cargo test -p lsp-max-runtime --lib
 running 2 tests
 test tests::test_typestate_lifecycle ... ok
 test tests::test_kernel_admit_replay ... ok

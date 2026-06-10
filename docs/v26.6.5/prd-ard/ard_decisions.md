@@ -1,6 +1,6 @@
 # Architectural Decision Records (ADRs)
 
-This document contains decisions ARD-001 through ARD-005 governing the design of the Oxigraph & SPARQL Admitted Graph Control Plane for `tower-lsp-max` v26.6.5.
+This document contains decisions ARD-001 through ARD-005 governing the design of the Oxigraph & SPARQL Admitted Graph Control Plane for `lsp-max` v26.6.5.
 
 ---
 
@@ -10,7 +10,7 @@ This document contains decisions ARD-001 through ARD-005 governing the design of
 Accepted
 
 ### Context
-`tower-lsp-max` requires a highly consistent, persistent graph database to store and query workspace files, compilation metadata, diagnostics, rules, and execution receipts. A standard relational database or an external graph server daemon introduces deployment complexity, licensing conflicts, and communication overhead.
+`lsp-max` requires a highly consistent, persistent graph database to store and query workspace files, compilation metadata, diagnostics, rules, and execution receipts. A standard relational database or an external graph server daemon introduces deployment complexity, licensing conflicts, and communication overhead.
 
 ### Decision
 Integrate `oxigraph` version 0.5.8 as the embedded RDF graph engine.
@@ -18,7 +18,7 @@ Integrate `oxigraph` version 0.5.8 as the embedded RDF graph engine.
 - For unit testing and CI verification gates, instantiate in-memory via `Store::new` to bypass RocksDB filesystem overhead.
 
 ### Rationale
-- **Rust-Native**: Integrates directly with the `tower-lsp-max` compilation unit, avoiding external runtime or network requirements.
+- **Rust-Native**: Integrates directly with the `lsp-max` compilation unit, avoiding external runtime or network requirements.
 - **Standards-Compliant**: Fully implements W3C RDF and SPARQL 1.1/1.2 specifications.
 - **Embedded Persistence**: Backed by RocksDB, guaranteeing atomic writes and high-performance querying.
 - **Thread Safety**: The `Store` structure is `Send + Sync`, enabling concurrent query evaluations without blocking the LSP router.
@@ -114,7 +114,7 @@ Autonomous coding agents require interfaces to discover tools, view code context
 Design the RDF control plane schema to support future projections into MCP resource/tool lists and A2A task cards.
 
 ### Rationale
-- **Extensibility**: Future-proofs `tower-lsp-max` for integration with autonomous agent workflows.
+- **Extensibility**: Future-proofs `lsp-max` for integration with autonomous agent workflows.
 - **Abstract Adapter**: Decoupling the data layer from the transport protocol allows the control plane to remain stable even if MCP or A2A specifications evolve.
 
 ### Consequences

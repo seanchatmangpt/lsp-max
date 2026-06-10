@@ -7,7 +7,7 @@
 
 ## 1. Executive Summary
 
-This report documents the sequence 4 exhaustiveness conformance audit of the `tower-lsp-max` workspace. As part of this audit, we coordinated with the other 4 auditing subagents (**Architect**, **Auditor**, **Doctor**, and **Governor**) along with the **Operator** to verify the architectural, typestate, cryptographic receipt, and layout compliance of the workspace. 
+This report documents the sequence 4 exhaustiveness conformance audit of the `lsp-max` workspace. As part of this audit, we coordinated with the other 4 auditing subagents (**Architect**, **Auditor**, **Doctor**, and **Governor**) along with the **Operator** to verify the architectural, typestate, cryptographic receipt, and layout compliance of the workspace. 
 
 Following their individual analyses and implementations, we executed the full 4-stage workspace verification pipeline:
 1. `cargo fmt --check`
@@ -45,7 +45,7 @@ We compiled the findings from the specialized auditing subagents to verify struc
 - **Rules Mapping:** Checked and confirmed all rules (`Rule_Uninitialized_Initialize`, `Rule_Uninitialized_Other`, `Rule_Initialized_Normal`, `Rule_Initialized_Shutdown`, `Rule_ShutDown_Exit`, `Rule_ShutDown_Normal`) translate perfectly to the codebase matching matching states, events, and consequences.
 
 ### E. Operator Findings (Compilation Cleanliness)
-- **Warning Mitigation:** Resolved 8 compiler warnings concerning unused variables in `tower-lsp-max-cli` (specifically within `agent.rs`, `client.rs`, `config.rs`, and `workspace.rs`) using standard `let _ = <var>;` expressions.
+- **Warning Mitigation:** Resolved 8 compiler warnings concerning unused variables in `lsp-max-cli` (specifically within `agent.rs`, `client.rs`, `config.rs`, and `workspace.rs`) using standard `let _ = <var>;` expressions.
 - **Resulting Build state:** Achieved a clean check and clippy build state with absolutely zero warnings.
 
 ---
@@ -65,8 +65,8 @@ We executed each stage of the verification pipeline on the standard profile. All
 - **Details:** Compiled successfully with no workspace compilation errors.
 - **Console Output:**
   ```text
-  Checking tower-lsp-max v26.6.4 (/Users/sac/tower-lsp-max)
-  Checking tower-lsp-max-cli v26.6.4 (/Users/sac/tower-lsp-max/crates/tower-lsp-max-cli)
+  Checking lsp-max v26.6.4 (/Users/sac/lsp-max)
+  Checking lsp-max-cli v26.6.4 (/Users/sac/lsp-max/crates/lsp-max-cli)
   Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.77s
   ```
 
@@ -75,11 +75,11 @@ We executed each stage of the verification pipeline on the standard profile. All
 - **Verdict:** **PASSED**
 - **Details:** 59 checks (including unit, integration, and doc-tests) executed and passed with 100% success.
 - **Summary of Executed Test Suites:**
-  - `tower-lsp-max` unit tests: 44 passed
+  - `lsp-max` unit tests: 44 passed
   - `test_autonomic_mesh` integration test: 1 passed
-  - `tower-lsp-max-runtime` unit tests: 3 passed
+  - `lsp-max-runtime` unit tests: 3 passed
   - `test_serialization` integration tests: 11 passed
-  - `tower_lsp_max` doc-tests: 3 passed
+  - `lsp_max` doc-tests: 3 passed
 
 ### 4. Lints and Warnings Check
 - **Command:** `cargo clippy --workspace --all-targets -- -D warnings`
@@ -92,13 +92,13 @@ We executed each stage of the verification pipeline on the standard profile. All
 
 The workspace layout matches the decoupled structure required for runtime separation under **MAX-004**:
 
-1. **`tower-lsp-max` (Root):** Core server library, service layer, and middleware wrappers.
-2. **`tower-lsp-max-macros`:** Procedural macros for routing JSON-RPC methods.
-3. **`tower-lsp-max-protocol`:** Extended LSP type structures, custom diagnostics, and cryptographic receipt definitions, including the generated `lsp_3_18.rs` model.
-4. **`tower-lsp-max-runtime`:** Typestate state machine, kernel ledger, autonomic hooks, and mesh controller.
-5. **`tower-lsp-max-agent`:** Integration export models and subagent communications.
-6. **`crates/tower-lsp-max-specgen`:** LSP meta-model specgen and code generator.
-7. **`crates/tower-lsp-max-cli`:** Noun-verb Clap-based command line interface.
+1. **`lsp-max` (Root):** Core server library, service layer, and middleware wrappers.
+2. **`lsp-max-macros`:** Procedural macros for routing JSON-RPC methods.
+3. **`lsp-max-protocol`:** Extended LSP type structures, custom diagnostics, and cryptographic receipt definitions, including the generated `lsp_3_18.rs` model.
+4. **`lsp-max-runtime`:** Typestate state machine, kernel ledger, autonomic hooks, and mesh controller.
+5. **`lsp-max-agent`:** Integration export models and subagent communications.
+6. **`crates/lsp-max-specgen`:** LSP meta-model specgen and code generator.
+7. **`crates/lsp-max-cli`:** Noun-verb Clap-based command line interface.
 
 All crates compile and link cleanly, establishing complete runtime separation.
 

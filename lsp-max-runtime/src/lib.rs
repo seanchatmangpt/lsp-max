@@ -1,8 +1,8 @@
-//! Runtime utilities for tower-lsp-max servers.
+//! Runtime utilities for lsp-max servers.
 //!
 //! Provides SHA-256 hashing, the `ConformanceVector` (Admitted/Refused/Unknown
 //! tallies), and the `MaxServer` wrapper that wires a `LanguageServer` impl into
-//! the five-layer AMI execution model used by tower-lsp-max.
+//! the five-layer AMI execution model used by lsp-max.
 
 pub mod ledger;
 pub mod mesh;

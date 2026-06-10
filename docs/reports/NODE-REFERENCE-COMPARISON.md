@@ -1,16 +1,16 @@
 # Node Reference Comparison Report: Lifecycle, Cancellation, Error Handling, and Concurrency
 
-This report provides a comparative analysis between `tower-lsp-max` and the official `vscode-languageserver-node` reference implementation, focusing on core protocol orchestration and runtime behavior.
+This report provides a comparative analysis between `lsp-max` and the official `vscode-languageserver-node` reference implementation, focusing on core protocol orchestration and runtime behavior.
 
 ---
 
 ## 1. Executive Summary
 
-`tower-lsp-max` is designed as a high-assurance, typestate-driven implementation of the Language Server Protocol in Rust. While it maintains strict compatibility with the LSP 3.18.0 specification, its internal architecture leverages Rust's safety primitives (Futures, Typestates, Tower Services) to provide more robust guarantees than the reference Node.js implementation, particularly in lifecycle management and concurrency safety.
+`lsp-max` is designed as a high-assurance, typestate-driven implementation of the Language Server Protocol in Rust. While it maintains strict compatibility with the LSP 3.18.0 specification, its internal architecture leverages Rust's safety primitives (Futures, Typestates, Tower Services) to provide more robust guarantees than the reference Node.js implementation, particularly in lifecycle management and concurrency safety.
 
 ### Comparative Overview
 
-Feature | `tower-lsp-max` | `vscode-languageserver-node` | Correspondence
+Feature | `lsp-max` | `vscode-languageserver-node` | Correspondence
 --- | --- | --- | ---
 **Lifecycle** | Strict Typestate Machine (`Uninitialized` -> `Exited`) | State-based Connection (`New` -> `Disposed`) | High (Semantics-aligned)
 **Cancellation** | Future-based (Automatic drop on `$/cancelRequest`) | Token-based (Manual check of `CancellationToken`) | Functional (Spec-compliant)
@@ -21,7 +21,7 @@ Feature | `tower-lsp-max` | `vscode-languageserver-node` | Correspondence
 
 ## 2. Lifecycle Management
 
-### Deep Dive: tower-lsp-max
+### Deep Dive: lsp-max
 - **Typestate Machine:** The implementation uses a high-assurance state machine (`Uninitialized` -> `Initializing` -> `Initialized` -> `ShutDown` -> `Exited`).
 - **Middleware Guards:** Standard LSP requests are strictly guarded. Attempting to call `textDocument/hover` before `initialize` results in a `ServerNotInitialized` (-32002) error.
 - **Bypass Warning:** Current analysis shows that `max/*` prefixed RPCs (e.g., `max/snapshot`) bypass these lifecycle guards and can be executed as long as the server is not in the `Exited` state.
@@ -36,8 +36,8 @@ Feature | `tower-lsp-max` | `vscode-languageserver-node` | Correspondence
 
 ## 3. Cancellation Semantics
 
-### Deep Dive: tower-lsp-max
-- **Automatic Interruption:** By using `futures::future::abortable`, `tower-lsp-max` ensures that when a client sends `$/cancelRequest`, the future running the handler is **immediately dropped**.
+### Deep Dive: lsp-max
+- **Automatic Interruption:** By using `futures::future::abortable`, `lsp-max` ensures that when a client sends `$/cancelRequest`, the future running the handler is **immediately dropped**.
 - **Resource Safety:** Because Rust's `Drop` trait is deterministic, resources (locks, file handles) are released as soon as the future is aborted, provided the handler is "cancellation-safe" (i.e., doesn't block the thread).
 - **Tracking:** Active requests are tracked in a `DashMap` within `src/service/pending.rs`.
 
@@ -49,7 +49,7 @@ Feature | `tower-lsp-max` | `vscode-languageserver-node` | Correspondence
 
 ## 4. Error Handling and Resilience
 
-### Deep Dive: tower-lsp-max
+### Deep Dive: lsp-max
 - **Panic Avoidance:** The project maintains a strict policy against `unwrap()` and `expect()` in critical paths. `Result` is used pervasively to handle errors gracefully.
 - **Missing Boundary:** There is no global `catch_unwind` middleware. While Tokio isolates task panics, a panic in a handler polled directly by the transport loop could potentially destabilize the server thread.
 - **Consistency:** Error codes for `ContentModified` and `RequestCancelled` are integrated directly into the core `Error` type.
@@ -62,7 +62,7 @@ Feature | `tower-lsp-max` | `vscode-languageserver-node` | Correspondence
 
 ## 5. Concurrency and Ordering
 
-### Deep Dive: tower-lsp-max
+### Deep Dive: lsp-max
 - **Parallelism:** Processes up to `max_concurrency` (default 4) requests concurrently using `buffer_unordered`.
 - **Notification Ordering:** Does **not** currently guarantee sequential processing of notifications for the same document (e.g., `didChange` then `didSave`) if multiple threads pick up the tasks. This responsibility is delegated to the `LanguageServer` implementation or achieved by setting concurrency to 1.
 
@@ -74,7 +74,7 @@ Feature | `tower-lsp-max` | `vscode-languageserver-node` | Correspondence
 
 ## 7. Actionable Recommendations
 
-Based on this deep implementation analysis, the following improvements are recommended for `tower-lsp-max`:
+Based on this deep implementation analysis, the following improvements are recommended for `lsp-max`:
 
 1.  **Global Panic Middleware:** Implement a `Tower` layer using `std::panic::catch_unwind` to wrap request handlers. This would convert handler panics into JSON-RPC `InternalError` responses, matching the resilience of the Node implementation.
 2.  **Lifecycle Guard for `max/*` RPCs:** Extend the `ServerState` middleware to apply lifecycle guards to internal `max/` RPCs to prevent premature snapshots or mesh operations before the server is fully initialized.

@@ -12,13 +12,13 @@ This manual replication is problematic for several reasons:
 - It is difficult to keep updated as the LSP specifications evolve (e.g., transition from 3.16 to 3.17, and now 3.18).
 - It leads to silent protocol drift where custom extensions or interpretations diverge from the official spec.
 
-Because `tower-lsp-max` is a post-human project-state enforcement server, its components rely on precise type safety, cryptographic verification, and deterministic schemas. Any manual drift in protocol types could cause validation gates or state admission checks to fail silently or crash the machine state runtime.
+Because `lsp-max` is a post-human project-state enforcement server, its components rely on precise type safety, cryptographic verification, and deterministic schemas. Any manual drift in protocol types could cause validation gates or state admission checks to fail silently or crash the machine state runtime.
 
 ## Decision
 
-We have decided to generate standard and extended protocol vocabulary using the custom specification generator crate `tower-lsp-max-specgen` directly from the official LSP `metaModel.json` schema.
+We have decided to generate standard and extended protocol vocabulary using the custom specification generator crate `lsp-max-specgen` directly from the official LSP `metaModel.json` schema.
 
-The generated Rust modules (e.g., `crates/tower-lsp-max-protocol/src/lsp_3_18.rs`) are declared to be the absolute source of truth for all protocol data models. No manual edits are permitted on these generated structures. Custom protocol extensions are built on top of this generated vocabulary by nesting standard types or providing explicit wrappers.
+The generated Rust modules (e.g., `crates/lsp-max-protocol/src/lsp_3_18.rs`) are declared to be the absolute source of truth for all protocol data models. No manual edits are permitted on these generated structures. Custom protocol extensions are built on top of this generated vocabulary by nesting standard types or providing explicit wrappers.
 
 ## Rationale
 

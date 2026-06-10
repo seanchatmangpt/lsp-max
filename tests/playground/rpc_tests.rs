@@ -70,7 +70,7 @@ async fn test_rpc_attribute_diagnostics() {
     )
     .await;
 
-    let doc_uri = "file:///Users/sac/tower-lsp-max/test_rpc.rs";
+    let doc_uri = "file:///Users/sac/lsp-max/test_rpc.rs";
     let code_text = r#"
 #[rpc]
 pub trait TestServer {
@@ -202,7 +202,7 @@ async fn test_rpc_completion() {
     )
     .await;
 
-    let doc_uri = "file:///Users/sac/tower-lsp-max/test_completion.rs";
+    let doc_uri = "file:///Users/sac/lsp-max/test_completion.rs";
     let code_text = r#"
 #[rpc]
 pub trait TestServer {

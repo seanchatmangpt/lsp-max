@@ -1,15 +1,15 @@
 # LSP State and Lifecycle Admission Law Framework
 
-This document defines the semantic rules governing incoming message admission and lifecycle state transitions for the `tower-lsp-max` server.
+This document defines the semantic rules governing incoming message admission and lifecycle state transitions for the `lsp-max` server.
 
 ## Architecture
 
 The server consists of four distinct architectural layers:
 
-1. **Protocol (`tower-lsp-max-protocol`):** Vocabulary definition and semantic types (e.g., Capability Vector, Diagnostics, Receipts).
-2. **Server (`tower-lsp-max`):** Tower service stack and JSON-RPC router.
-3. **Runtime (`tower-lsp-max-runtime`):** Process-level execution and snapshotting.
-4. **Law Plugins (`tower-lsp-max-agent`):** Out-of-band and in-band state conformance audits.
+1. **Protocol (`lsp-max-protocol`):** Vocabulary definition and semantic types (e.g., Capability Vector, Diagnostics, Receipts).
+2. **Server (`lsp-max`):** Tower service stack and JSON-RPC router.
+3. **Runtime (`lsp-max-runtime`):** Process-level execution and snapshotting.
+4. **Law Plugins (`lsp-max-agent`):** Out-of-band and in-band state conformance audits.
 
 ---
 

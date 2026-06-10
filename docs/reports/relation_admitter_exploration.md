@@ -2,7 +2,7 @@
 
 ## 1. Executive Summary
 
-This report defines the implementation architecture and lifecycle routing logic for the `RelationAdmitter` trait (defined in the `tower-lsp-max-base` crate) within the `tower-lsp-max` framework. 
+This report defines the implementation architecture and lifecycle routing logic for the `RelationAdmitter` trait (defined in the `lsp-max-base` crate) within the `lsp-max` framework. 
 
 To transition from a dynamic, session-bound query model to a formally verifiable and cryptographically replayable RDF graph substrate, the ingestion boundary must enforce a strict, typestate-driven lifecycle for all workspace facts. This design maps raw LSIF 0.6.0 elements and diagnostic observations to snapshot-isolated RDF quads (`oxrdf::Quad`) stored in an embedded `oxigraph::store::Store`.
 
@@ -17,7 +17,7 @@ This analysis provides a fully realized blueprint for:
 
 ## 2. Trait Definitions & Concrete Type Mapping
 
-The `RelationAdmitter` trait is defined in `crates/tower-lsp-max-base/src/abstractions.rs` as follows:
+The `RelationAdmitter` trait is defined in `crates/lsp-max-base/src/abstractions.rs` as follows:
 
 ```rust
 pub trait RelationAdmitter {
@@ -35,7 +35,7 @@ To implement this trait for the Oxigraph-backed control plane, we map the associ
 
 | Associated Type | Concrete Implementation | Description |
 |---|---|---|
-| `type Parsed` | `Vec<tower_lsp_max_lsif::lsif::Element>` | A collection of parsed LSIF 0.6.0 vertices and edges representing a file/snapshot observation. |
+| `type Parsed` | `Vec<lsp_max_lsif::lsif::Element>` | A collection of parsed LSIF 0.6.0 vertices and edges representing a file/snapshot observation. |
 | `type RelationGraph` | `AdmittedRelationGraph` | A reference wrapper around the admitted snapshot within the active `oxigraph::store::Store`, keyed by a unique Named Graph node. |
 | `type Refusal` | `VerificationReport` | A structured diagnostics report detailing syntax violations, namespace laundering, SHACL errors, or SPARQL invariant failures. |
 
@@ -47,7 +47,7 @@ The target structures are defined as follows:
 use oxigraph::store::Store;
 use oxrdf::GraphName;
 use serde::Serialize;
-use tower_lsp_max_protocol::MaxDiagnostic;
+use lsp_max_protocol::MaxDiagnostic;
 
 /// Represents a successfully admitted graph snapshot inside the Oxigraph store.
 pub struct AdmittedRelationGraph {
@@ -90,12 +90,12 @@ To guarantee transition safety at compile time, we leverage Rust's affine owners
 ```rust
 use std::marker::PhantomData;
 use oxrdf::Quad;
-use tower_lsp_max_lsif::lsif::Element;
+use lsp_max_lsif::lsif::Element;
 
 /// The compile-time law governing graph admission transitions.
 pub struct GraphAdmissionLaw;
 
-impl tower_lsp_max_runtime::Law for GraphAdmissionLaw {
+impl lsp_max_runtime::Law for GraphAdmissionLaw {
     type Error = GraphAdmissionError;
 }
 
@@ -110,13 +110,13 @@ pub enum GraphAdmissionError {
 }
 
 /// The zero-cost typestate machine container.
-pub struct Machine<L: tower_lsp_max_runtime::Law, P: tower_lsp_max_runtime::Phase, D: tower_lsp_max_runtime::Data> {
+pub struct Machine<L: lsp_max_runtime::Law, P: lsp_max_runtime::Phase, D: lsp_max_runtime::Data> {
     pub _law: PhantomData<L>,
     pub phase: P,
     pub data: D,
 }
 
-impl<L: tower_lsp_max_runtime::Law, P: tower_lsp_max_runtime::Phase, D: tower_lsp_max_runtime::Data> Machine<L, P, D> {
+impl<L: lsp_max_runtime::Law, P: lsp_max_runtime::Phase, D: lsp_max_runtime::Data> Machine<L, P, D> {
     pub const fn new(phase: P, data: D) -> Self {
         Self {
             _law: PhantomData,
@@ -135,92 +135,92 @@ impl<L: tower_lsp_max_runtime::Law, P: tower_lsp_max_runtime::Phase, D: tower_ls
 // ==============================================================================
 #[derive(Debug, Clone)]
 pub struct RawPhase;
-impl tower_lsp_max_runtime::Phase for RawPhase {}
+impl lsp_max_runtime::Phase for RawPhase {}
 
 pub struct RawData {
     pub elements: Vec<Element>,
 }
-impl tower_lsp_max_runtime::Data for RawData {}
+impl lsp_max_runtime::Data for RawData {}
 
 // ==============================================================================
 // 2. CANDIDATE State
 // ==============================================================================
 #[derive(Debug, Clone)]
 pub struct CandidatePhase;
-impl tower_lsp_max_runtime::Phase for CandidatePhase {}
+impl lsp_max_runtime::Phase for CandidatePhase {}
 
 pub struct CandidateData {
     pub elements: Vec<Element>,
     pub quads: Vec<Quad>,
     pub graph_hash: String,
 }
-impl tower_lsp_max_runtime::Data for CandidateData {}
+impl lsp_max_runtime::Data for CandidateData {}
 
 // ==============================================================================
 // 3. ADMITTED State
 // ==============================================================================
 #[derive(Debug, Clone)]
 pub struct AdmittedPhase;
-impl tower_lsp_max_runtime::Phase for AdmittedPhase {}
+impl lsp_max_runtime::Phase for AdmittedPhase {}
 
 pub struct AdmittedData {
     pub graph_name: GraphName,
     pub quad_count: usize,
     pub receipt: CryptographicReceipt,
 }
-impl tower_lsp_max_runtime::Data for AdmittedData {}
+impl lsp_max_runtime::Data for AdmittedData {}
 
 // ==============================================================================
 // 4. REFUSED State
 // ==============================================================================
 #[derive(Debug, Clone)]
 pub struct RefusedPhase;
-impl tower_lsp_max_runtime::Phase for RefusedPhase {}
+impl lsp_max_runtime::Phase for RefusedPhase {}
 
 pub struct RefusedData {
     pub report: VerificationReport,
 }
-impl tower_lsp_max_runtime::Data for RefusedData {}
+impl lsp_max_runtime::Data for RefusedData {}
 
 // ==============================================================================
 // 5. QUARANTINED State
 // ==============================================================================
 #[derive(Debug, Clone)]
 pub struct QuarantinedPhase;
-impl tower_lsp_max_runtime::Phase for QuarantinedPhase {}
+impl lsp_max_runtime::Phase for QuarantinedPhase {}
 
 pub struct QuarantinedData {
     pub elements: Vec<Element>,
     pub quads: Vec<Quad>,
     pub missing_dependencies: Vec<String>,
 }
-impl tower_lsp_max_runtime::Data for QuarantinedData {}
+impl lsp_max_runtime::Data for QuarantinedData {}
 
 // ==============================================================================
 // 6. SUPERSEDED State
 // ==============================================================================
 #[derive(Debug, Clone)]
 pub struct SupersededPhase;
-impl tower_lsp_max_runtime::Phase for SupersededPhase {}
+impl lsp_max_runtime::Phase for SupersededPhase {}
 
 pub struct SupersededData {
     pub graph_name: GraphName,
     pub superseded_by: GraphName,
 }
-impl tower_lsp_max_runtime::Data for SupersededData {}
+impl lsp_max_runtime::Data for SupersededData {}
 
 // ==============================================================================
 // 7. REPLAYED State
 // ==============================================================================
 #[derive(Debug, Clone)]
 pub struct ReplayedPhase;
-impl tower_lsp_max_runtime::Phase for ReplayedPhase {}
+impl lsp_max_runtime::Phase for ReplayedPhase {}
 
 pub struct ReplayedData {
     pub graph_name: GraphName,
     pub receipt: CryptographicReceipt,
 }
-impl tower_lsp_max_runtime::Data for ReplayedData {}
+impl lsp_max_runtime::Data for ReplayedData {}
 ```
 
 ---
@@ -281,7 +281,7 @@ impl Machine<GraphAdmissionLaw, RawPhase, RawData> {
             map_element_to_quads(element, &graph_name, &mut quads)?;
         }
 
-        let graph_hash = tower_lsp_max_runtime::sha256(&byte_accumulator);
+        let graph_hash = lsp_max_runtime::sha256(&byte_accumulator);
 
         Ok(Machine::new(
             CandidatePhase,
@@ -405,7 +405,7 @@ The `map_element_to_quads` function translates LSIF domain entities to standard 
 
 ```rust
 use oxrdf::{NamedNode, Subject, Term};
-use tower_lsp_max_lsif::lsif::{Vertex, Edge, ItemEdgeProperty};
+use lsp_max_lsif::lsif::{Vertex, Edge, ItemEdgeProperty};
 
 /// Maps LSIF Elements to RDF Quads, validating namespace limits.
 pub fn map_element_to_quads(
@@ -431,7 +431,7 @@ fn map_vertex(
 
     // Apply rdf:type base mapping
     let class_uri = match vertex {
-        Vertex::MetaData { .. } => "urn:tower-lsp-max:core:Metadata",
+        Vertex::MetaData { .. } => "urn:lsp-max:core:Metadata",
         Vertex::Project { .. } => "https://microsoft.github.io/language-server-protocol/specifications/lsif/0.6.0/specification/Project",
         Vertex::Document { .. } => "https://microsoft.github.io/language-server-protocol/specifications/lsif/0.6.0/specification/Document",
         Vertex::ResultSet { .. } => "https://microsoft.github.io/language-server-protocol/specifications/lsif/0.6.0/specification/ResultSet",
@@ -441,7 +441,7 @@ fn map_vertex(
         Vertex::HoverResult { .. } => "https://microsoft.github.io/language-server-protocol/specifications/lsif/0.6.0/specification/HoverResult",
         Vertex::DefinitionResult { .. } => "https://microsoft.github.io/language-server-protocol/specifications/lsif/0.6.0/specification/DefinitionResult",
         Vertex::ReferenceResult { .. } => "https://microsoft.github.io/language-server-protocol/specifications/lsif/0.6.0/specification/ReferenceResult",
-        _ => "urn:tower-lsp-max:core:GenericVertex",
+        _ => "urn:lsp-max:core:GenericVertex",
     };
 
     quads.push(Quad::new(
@@ -456,7 +456,7 @@ fn map_vertex(
         Vertex::MetaData { version, .. } => {
             quads.push(Quad::new(
                 subject.clone(),
-                NamedNode::new("urn:tower-lsp-max:core:version").unwrap(),
+                NamedNode::new("urn:lsp-max:core:version").unwrap(),
                 Term::Literal(oxrdf::Literal::new_simple_literal(version)),
                 graph_name.clone(),
             ));
@@ -464,13 +464,13 @@ fn map_vertex(
         Vertex::Document { uri, language_id, .. } => {
             quads.push(Quad::new(
                 subject.clone(),
-                NamedNode::new("urn:tower-lsp-max:core:uri").unwrap(),
+                NamedNode::new("urn:lsp-max:core:uri").unwrap(),
                 Term::Literal(oxrdf::Literal::new_simple_literal(uri)),
                 graph_name.clone(),
             ));
             quads.push(Quad::new(
                 subject.clone(),
-                NamedNode::new("urn:tower-lsp-max:core:languageId").unwrap(),
+                NamedNode::new("urn:lsp-max:core:languageId").unwrap(),
                 Term::Literal(oxrdf::Literal::new_simple_literal(language_id)),
                 graph_name.clone(),
             ));
@@ -611,7 +611,7 @@ pub fn verify_invariants(
                 message: "Graph contains orphan LSIF relations; object lacks structural node definitions.".to_string(),
                 ..Default::default()
             },
-            law_axis: tower_lsp_max_protocol::LawAxis::Conformance,
+            law_axis: lsp_max_protocol::LawAxis::Conformance,
         });
     }
 
@@ -619,7 +619,7 @@ pub fn verify_invariants(
     // Every diagnostic must have a prov:wasGeneratedBy link pointing to a max:Receipt.
     let receipt_query = "
         PREFIX prov: <http://www.w3.org/ns/prov#>
-        PREFIX max:  <urn:tower-lsp-max:core:>
+        PREFIX max:  <urn:lsp-max:core:>
         ASK {
             ?diag a max:Diagnostic .
             FILTER NOT EXISTS {
@@ -639,7 +639,7 @@ pub fn verify_invariants(
                 message: "Found compiled diagnostic artifact lacking cryptographic provenance receipt.".to_string(),
                 ..Default::default()
             },
-            law_axis: tower_lsp_max_protocol::LawAxis::Provenance,
+            law_axis: lsp_max_protocol::LawAxis::Provenance,
         });
     }
 
@@ -687,28 +687,28 @@ To compile clean, the `RelationAdmitter` typestate engine must be integrated int
 
 ### 7.1 Crate Dependency Modifications
 
-We will add dependencies to `tower-lsp-max-runtime/Cargo.toml` to link Oxigraph, base abstractions, and parsing logic:
+We will add dependencies to `lsp-max-runtime/Cargo.toml` to link Oxigraph, base abstractions, and parsing logic:
 
 ```toml
 [dependencies]
 # Existing dependencies
-tower-lsp-max-protocol = { path = "../tower-lsp-max-protocol", version = "26.6.4" }
+lsp-max-protocol = { path = "../lsp-max-protocol", version = "26.6.4" }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 lsp-types = "0.97.0"
 
 # New Control Plane dependencies
 oxigraph = "0.5.8"
-tower-lsp-max-base = { path = "../crates/tower-lsp-max-base", version = "0.1.0" }
-tower-lsp-max-lsif = { path = "../crates/tower-lsp-max-lsif" }
+lsp-max-base = { path = "../crates/lsp-max-base", version = "0.1.0" }
+lsp-max-lsif = { path = "../crates/lsp-max-lsif" }
 ```
 
 ### 7.2 Directory and File Layout
 
-The implementation will live under the `tower-lsp-max-runtime` crate. The structure will be co-located with existing modules:
+The implementation will live under the `lsp-max-runtime` crate. The structure will be co-located with existing modules:
 
 ```
-tower-lsp-max-runtime/
+lsp-max-runtime/
 ├── Cargo.toml
 └── src/
     ├── lib.rs                  # Exposes module control_plane
@@ -721,21 +721,21 @@ tower-lsp-max-runtime/
 
 ## 8. Verification and Testing Blueprint
 
-A comprehensive test suite will be added to `tower-lsp-max-runtime/src/control_plane/admission.rs` to guarantee happy and unhappy paths:
+A comprehensive test suite will be added to `lsp-max-runtime/src/control_plane/admission.rs` to guarantee happy and unhappy paths:
 
 ```rust
 #[cfg(test)]
 mod tests {
     use super::*;
     use oxigraph::store::Store;
-    use tower_lsp_max_lsif::lsif::{Element, Vertex, VertexType};
+    use lsp_max_lsif::lsif::{Element, Vertex, VertexType};
 
     fn make_test_metadata() -> Element {
         Element::Vertex(Vertex::MetaData {
             id: lsp_types::NumberOrString::Number(1),
             type_: VertexType::Vertex,
             version: "0.6.0".to_string(),
-            position_encoding: tower_lsp_max_lsif::lsif::PositionEncoding::Utf16,
+            position_encoding: lsp_max_lsif::lsif::PositionEncoding::Utf16,
             tool_info: None,
         })
     }

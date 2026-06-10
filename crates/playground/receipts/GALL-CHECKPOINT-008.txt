@@ -26,7 +26,7 @@ Delta:
 
 Export Metadata:
   producing_workspace: ~/ggen
-  storing_workspace: ~/tower-lsp-max
+  storing_workspace: ~/lsp-max
   export_reason: checkpoint tracking
   exported_artifact_digest: 36f1eff8b4a2641166d0c2e7f06cfc7f1410628f2f0259b012f7424520d23f79
   export_receipt_digest: 2ce54092f3f2f9ed680b0bca8af2cdf33eae3b77e8bb3414855b8a3a6ef7edff

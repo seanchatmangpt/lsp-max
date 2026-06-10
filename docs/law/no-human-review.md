@@ -1,6 +1,6 @@
 # Anti-Human Correctness Gates and Automated Verification Law
 
-This document establishes the absolute law of automated verification for `tower-lsp-max` and outlaws human review as a validator of state correctness.
+This document establishes the absolute law of automated verification for `lsp-max` and outlaws human review as a validator of state correctness.
 
 ---
 

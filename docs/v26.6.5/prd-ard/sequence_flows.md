@@ -1,4 +1,4 @@
-# Execution Sequence Flows: tower-lsp-max v26.6.5
+# Execution Sequence Flows: lsp-max v26.6.5
 
 This document maps the runtime interactions and transaction pathways of the Admitted Graph Control Plane using Mermaid diagrams.
 

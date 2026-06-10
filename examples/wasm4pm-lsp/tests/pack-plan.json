@@ -3,7 +3,7 @@
     "ggen-pack-gall-checkpoint-proof": "ec2987c1c263f21a2bf48b763d3084a8fdc660508b782e6b5025a45d67e6ed88"
   },
   "outputs": [
-    "/Users/sac/tower-lsp-max/crates/wasm4pm-lsp/tests"
+    "/Users/sac/lsp-max/crates/wasm4pm-lsp/tests"
   ],
   "required_receipts": true,
   "resolved_packs": [

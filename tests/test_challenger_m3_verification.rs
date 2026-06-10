@@ -94,7 +94,7 @@ fn test_serialization_max_diagnostic() {
             severity: Some(lsp_types::DiagnosticSeverity::ERROR),
             code: Some(lsp_types::NumberOrString::String("E001".to_string())),
             code_description: None,
-            source: Some("tower-lsp-max".to_string()),
+            source: Some("lsp-max".to_string()),
             message: "Test violation".to_string(),
             related_information: None,
             tags: None,

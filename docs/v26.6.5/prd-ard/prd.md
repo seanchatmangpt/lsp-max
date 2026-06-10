@@ -1,4 +1,4 @@
-# Product Requirements Document: tower-lsp-max v26.6.5
+# Product Requirements Document: lsp-max v26.6.5
 
 - **Status**: ALIVE Candidate
 - **Version**: v26.6.5
@@ -9,7 +9,7 @@
 
 ## 1. Product Thesis
 
-The core thesis of this release is the transition of language server intelligence from an ephemeral, session-bound dynamic query model (standard Language Server Protocol) into a mathematically queryable, formally verifiable, and cryptographically replayable RDF graph database. By implementing the **Oxigraph & SPARQL Admitted Graph Control Plane**, `tower-lsp-max` enables verifiers, autonomous software agents, and compilation engines to query and validate codebase relationships, diagnostic reasoning, and tool executions using unassailable W3C semantic web standards (RDF, SPARQL, SHACL).
+The core thesis of this release is the transition of language server intelligence from an ephemeral, session-bound dynamic query model (standard Language Server Protocol) into a mathematically queryable, formally verifiable, and cryptographically replayable RDF graph database. By implementing the **Oxigraph & SPARQL Admitted Graph Control Plane**, `lsp-max` enables verifiers, autonomous software agents, and compilation engines to query and validate codebase relationships, diagnostic reasoning, and tool executions using unassailable W3C semantic web standards (RDF, SPARQL, SHACL).
 
 ---
 

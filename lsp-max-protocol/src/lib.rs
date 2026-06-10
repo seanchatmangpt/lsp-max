@@ -1,4 +1,4 @@
-//! Protocol vocabulary and conformance types for tower-lsp-max.
+//! Protocol vocabulary and conformance types for lsp-max.
 //!
 //! Re-exports the generated LSP 3.18 meta-model (`lsp_3_18`), defines `LawAxis`
 //! for typed law identifiers, and houses `ConformanceVector` and capability

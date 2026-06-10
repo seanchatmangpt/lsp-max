@@ -10,7 +10,7 @@ pub fn parse_typescript(filepath: &str, content: &str) -> Vec<Observation> {
     let as_any_re = Regex::new(r"\bas\s+any\b").unwrap();
     let todo_re = Regex::new(r"\bTODO\b|\bFIXME\b|\bunimplemented\b").unwrap();
 
-    // Forbidden claims (from unLSP/tower-lsp-max)
+    // Forbidden claims (from unLSP/lsp-max)
     let claims_re = Regex::new(r"(?i)\b(done|complete|fully\s+covered|production\s+ready|all\s+fixed|victory|fully\s+admitted|victory\s+confirmed)\b").unwrap();
 
     // Leaks (naming / vocabulary)

@@ -1,13 +1,13 @@
 # Oxigraph Store Exploration Report
 
 ## Executive Summary
-This report analyzes how `oxigraph::store::Store` is and should be integrated within the `tower-lsp-max` workspace. We propose a robust configuration structure and dynamic factory instantiation pattern supporting both ephemeral in-memory execution (the default for testing and CI) and RocksDB-backed persistent storage (via configured filesystem paths), complying with W3C RDF and SPARQL W3C standards.
+This report analyzes how `oxigraph::store::Store` is and should be integrated within the `lsp-max` workspace. We propose a robust configuration structure and dynamic factory instantiation pattern supporting both ephemeral in-memory execution (the default for testing and CI) and RocksDB-backed persistent storage (via configured filesystem paths), complying with W3C RDF and SPARQL W3C standards.
 
 ---
 
 ## 1. Current Workspace Usage & Footprint
 
-As of the current codebase state, `oxigraph` is declared as a dependency in `crates/tower-lsp-max-lsif/Cargo.toml` at version `0.5.8`:
+As of the current codebase state, `oxigraph` is declared as a dependency in `crates/lsp-max-lsif/Cargo.toml` at version `0.5.8`:
 ```toml
 [dependencies]
 lsp-types = "0.97.0"
@@ -18,7 +18,7 @@ serde_json = "1.0"
 
 No active Rust source files (`.rs`) in the workspace import or instantiate `oxigraph::store::Store` yet. The integration is currently defined only in design blueprints:
 - **`docs/reports/ARD-OXIGRAPH-SPARQL.md`**: Outlines using Oxigraph v0.5.8 as the Admitted Graph Control Plane, defining vocabulary namespace mappings, Rust boundary abstractions, and SPARQL invariant queries.
-- **`docs/reports/tower-lsp-max-v26.6.5-prd-ard.md`**: Defines W3C semantic web alignment (RDF, SPARQL, SHACL) and requires separating query execution from the interactive LSP hot path.
+- **`docs/reports/lsp-max-v26.6.5-prd-ard.md`**: Defines W3C semantic web alignment (RDF, SPARQL, SHACL) and requires separating query execution from the interactive LSP hot path.
 
 ---
 
@@ -39,7 +39,7 @@ No active Rust source files (`.rs`) in the workspace import or instantiate `oxig
 To support clean instantiation, configuration should be represented in a structured Rust format that easily maps to CLI flags, environment variables, and user setting files.
 
 ### 3.1 Rust Configuration Definition
-We recommend placing the configuration struct in a shared location, such as `tower-lsp-max-protocol::core` or a new dedicated module:
+We recommend placing the configuration struct in a shared location, such as `lsp-max-protocol::core` or a new dedicated module:
 
 ```rust
 use std::path::PathBuf;
@@ -57,9 +57,9 @@ pub struct OxigraphStoreConfig {
 
 ### 3.2 Configuration Sources Hierarchy
 Configuring the storage path should follow a standard priority hierarchy:
-1. **CLI Arguments**: E.g., `--storage-path /var/lib/tower-lsp-max/store`
+1. **CLI Arguments**: E.g., `--storage-path /var/lib/lsp-max/store`
 2. **Environment Variables**: E.g., `TOWER_LSP_MAX_STORE_PATH`
-3. **User Configuration File**: E.g., the `~/.tower-lsp-max-config.json` managed by `ConfigService` (specifically the `store.storage_path` key).
+3. **User Configuration File**: E.g., the `~/.lsp-max-config.json` managed by `ConfigService` (specifically the `store.storage_path` key).
 4. **Default**: `None` (triggers ephemeral in-memory execution).
 
 ---
@@ -138,9 +138,9 @@ impl OxigraphStoreFactory {
 
 ---
 
-## 5. Integration with the tower-lsp-max Control Plane
+## 5. Integration with the lsp-max Control Plane
 
-The initialized `Store` acts as the execution kernel of the Admitted Graph Control Plane. We recommend placing the boundary wrapper (`AdmittedGraph`) inside `crates/tower-lsp-max-lsif` or `tower-lsp-max-runtime`.
+The initialized `Store` acts as the execution kernel of the Admitted Graph Control Plane. We recommend placing the boundary wrapper (`AdmittedGraph`) inside `crates/lsp-max-lsif` or `lsp-max-runtime`.
 
 ```
                     +--------------------------------+
@@ -218,5 +218,5 @@ To ensure reliable, deterministic, and isolated testing:
 ### 6.1 Verification Commands
 To compile and test the proposed store configuration, run:
 ```bash
-cargo test --package tower-lsp-max-lsif
+cargo test --package lsp-max-lsif
 ```

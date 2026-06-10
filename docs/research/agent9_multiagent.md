@@ -6,7 +6,7 @@
 *   **Unknown. (2025).** *Agent TCP:IP - An Agent-to-Agent Transaction System.* (In `agent10_master_bibliography.bib`).
     *   *Relevance:* Foundational for the A2A transaction logic implemented in the custom `max/*` RPC endpoints.
 *   **Unknown. (2024).** *AI Multi-Agent Interoperability Extension for Managing Multiparty Conversations.* (In `agent10_master_bibliography.bib`).
-    *   *Relevance:* Informs the multi-upstream composition strategy where multiple LSPs (agents) collaborate under the `tower-lsp-max` router.
+    *   *Relevance:* Informs the multi-upstream composition strategy where multiple LSPs (agents) collaborate under the `lsp-max` router.
 *   **Hechehouche, H., et al. (2024).** *LLM-Assisted Modeling of Semantic Web-Enabled Multi-Agents Systems with AJAN.*
     *   *Relevance:* Directly relates to the Oxigraph/RDF control plane for AGI reasoning.
 *   **Model Context Protocol (MCP) Spec (2025-06-18).**
@@ -16,5 +16,5 @@
 
 #### 2. Relevance to AGI Pipeline and Actor-based LSP
 *   **Multi-Agent Coordination:** The system transitions from human-centric IDE assistance to a "post-human project-state enforcement server." The A2A and MCP protocols serve as the "Agent Surface," allowing autonomous agents to discover and invoke tools (Capabilities) and materializing code intelligence as verifiable graph state.
-*   **Actor Model & Tower:** The `tower-lsp-max` architecture utilizes the Actor-like `Service` and `Layer` traits from the Tower ecosystem. This provides the modularity required to compose independent semantic intelligence "dams" (LSPs) into a single unified authority.
+*   **Actor Model & Tower:** The `lsp-max` architecture utilizes the Actor-like `Service` and `Layer` traits from the Tower ecosystem. This provides the modularity required to compose independent semantic intelligence "dams" (LSPs) into a single unified authority.
 *   **AGI Pipeline (The $\kappa$ and $\rho$ Layers):** The pipeline uses SPARQL/SHACL (the $\kappa$ layer) to enforce process laws on agent-generated edits. Every action must emit a BLAKE3 cryptographic receipt ($\rho$ layer), satisfying $R \vdash A = \mu(O^\star)$, ensuring that no agent claim is admitted without mathematical proof.

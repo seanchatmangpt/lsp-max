@@ -8,7 +8,7 @@ use url::Url;
 
 const QUERY_DEFINITIONS: &str = "
     PREFIX lsif: <https://microsoft.github.io/language-server-protocol/specifications/lsif/0.6.0/specification/>
-    PREFIX max: <urn:tower-lsp-max:core:>
+    PREFIX max: <urn:lsp-max:core:>
     SELECT ?srcDocUri ?srcStartLine ?srcStartChar ?srcEndLine ?srcEndChar ?destDocUri ?destStartLine ?destStartChar ?destEndLine ?destEndChar WHERE {
       GRAPH ?g {
         {
@@ -37,7 +37,7 @@ const QUERY_DEFINITIONS: &str = "
 
 const QUERY_REFERENCES: &str = "
     PREFIX lsif: <https://microsoft.github.io/language-server-protocol/specifications/lsif/0.6.0/specification/>
-    PREFIX max: <urn:tower-lsp-max:core:>
+    PREFIX max: <urn:lsp-max:core:>
     SELECT ?srcDocUri ?srcStartLine ?srcStartChar ?srcEndLine ?srcEndChar ?refDocUri ?refStartLine ?refStartChar ?refEndLine ?refEndChar WHERE {
       GRAPH ?g {
         {

@@ -13,11 +13,11 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
                 file_path: o.file_path.clone(),
                 line: o.line,
                 column: o.column,
-                message: "Plain tower-lsp found in codebase. All tower LSP hosts must migrate to tower-lsp-max.".to_string(),
+                message: "Plain tower-lsp found in codebase. All tower LSP hosts must migrate to lsp-max.".to_string(),
                 forbidden_implication: "Pass(plain LSP) => Pass(LSP 3.18)".to_string(),
                 blocking: true,
-                required_correction: "Replace plain 'tower-lsp' dependency and use 'tower-lsp-max'.".to_string(),
-                required_next_proof: "Run cargo check / cargo test to verify tower-lsp-max integration.".to_string(),
+                required_correction: "Replace plain 'tower-lsp' dependency and use 'lsp-max'.".to_string(),
+                required_next_proof: "Run cargo check / cargo test to verify lsp-max integration.".to_string(),
             });
         }
 

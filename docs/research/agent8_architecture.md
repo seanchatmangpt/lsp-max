@@ -1,14 +1,14 @@
 # Research Analysis: Agent-8 Architecture and Ecosystem Readiness
 
 ## Executive Summary
-This report analyzes research papers and internal theses related to the `tower-lsp-max` ecosystem. The architecture represents a "Blue Ocean" shift in software engineering, transitioning from artisanal, manual construction of Language Server Protocol (LSP) implementations to an automated, ontology-driven generative pipeline. By integrating formal process-mining mathematics (OCED), incremental AST compilation (Salsa/auto-lsp), and typestate-enforced Rust implementations, the ecosystem achieves sub-millisecond semantic intelligence with mathematical guarantees of correctness.
+This report analyzes research papers and internal theses related to the `lsp-max` ecosystem. The architecture represents a "Blue Ocean" shift in software engineering, transitioning from artisanal, manual construction of Language Server Protocol (LSP) implementations to an automated, ontology-driven generative pipeline. By integrating formal process-mining mathematics (OCED), incremental AST compilation (Salsa/auto-lsp), and typestate-enforced Rust implementations, the ecosystem achieves sub-millisecond semantic intelligence with mathematical guarantees of correctness.
 
 ---
 
 ## 1. Core Research Themes
 
 ### 1.1 Object-Centric Process Mining (OCPM) & Evidence Algebra
-The foundational theory is rooted in Object-Centric Event Data (OCED) formalisms, pioneered by Dr. Wil van der Aalst. The `tower-lsp-max` ecosystem adopts `wasm4pm-compat` as its absolute baseline type authority, enforcing the disjoint universes of events and objects.
+The foundational theory is rooted in Object-Centric Event Data (OCED) formalisms, pioneered by Dr. Wil van der Aalst. The `lsp-max` ecosystem adopts `wasm4pm-compat` as its absolute baseline type authority, enforcing the disjoint universes of events and objects.
 *   **Key Paper:** *Type-Safe Process-Evidence Engineering* (Chatman, 2026).
 *   **Relevance:** Establishes the mathematical "laws" that all process evidence must follow. This ensures that the composed server architecture handles data that is formally valid, preventing "structural fracturing."
 
@@ -20,7 +20,7 @@ The integration of `auto-lsp` provides a "Syntactic Turn," moving away from brit
 ### 1.3 Ontology-Driven Generative Scaffolding (`ggen`)
 The `ggen` pipeline uses formal RDF ontologies to scaffold entire LSP implementations.
 *   **Key Concept:** Combinatorial Maximalism.
-*   **Relevance:** Reduces engineering time for new LSPs from months to seconds. The `tower-lsp-max` pack acts as a functor mapping ontologies to verified implementations, allowing infinite scaling of semantic intelligence across frameworks.
+*   **Relevance:** Reduces engineering time for new LSPs from months to seconds. The `lsp-max` pack acts as a functor mapping ontologies to verified implementations, allowing infinite scaling of semantic intelligence across frameworks.
 
 ### 1.4 Typestate & Type-Theoretic Implementation
 The ecosystem utilizes Rust's advanced type system (typestate patterns, const-generics, sealed capabilities) to encode process invariants at compile time.
@@ -28,11 +28,11 @@ The ecosystem utilizes Rust's advanced type system (typestate patterns, const-ge
 
 ---
 
-## 2. Relevance to `tower-lsp-max` Ecosystem Readiness
+## 2. Relevance to `lsp-max` Ecosystem Readiness
 
-| Topic | Relevance to `tower-lsp-max` |
+| Topic | Relevance to `lsp-max` |
 | :--- | :--- |
-| **Software Architecture** | Composed server model: `tower-lsp-max` (transport) + `AutoLspAdapter` (syntax) + `wasm4pm` (execution). |
+| **Software Architecture** | Composed server model: `lsp-max` (transport) + `AutoLspAdapter` (syntax) + `wasm4pm` (execution). |
 | **API Management** | LSP capability negotiation is formalized; `anti-llm-lsp` governs agentic API interactions. |
 | **Distributed Systems** | Autonomic mesh state management; LSIF-based cross-repository indexing. |
 | **Maturity Models** | Transition from Level 1 (Artisanal/Manual) to Level 5 (Ontology-Driven/Generative/Self-Verifying). |
@@ -44,9 +44,9 @@ The ecosystem utilizes Rust's advanced type system (typestate patterns, const-ge
 
 ### Primary Research (Workspace Papers)
 1. **Chatman, S. (2026).** *Type-Safe Process-Evidence Engineering: A Mathematical Framework for Object-Centric Conformance Checking.* Ph.D. Dissertation, Department of Computer Science.
-2. **tower-lsp-max Architecture Team.** *The Blue Ocean Singularity: Redefining Software Architecture through Ontology-Driven Generative Intelligence and Axiomatic Process Boundaries.* (Internal Thesis).
-3. **tower-lsp-max Architecture Team.** *The Syntactic Turn: Automating Abstract Syntax Tree Generation and Incremental Compilation.* (Internal Thesis).
-4. **tower-lsp-max Architecture Team.** *The Axiomatic Foundation: wasm4pm-compat as the Baseline Type Authority.* (Internal Thesis).
+2. **lsp-max Architecture Team.** *The Blue Ocean Singularity: Redefining Software Architecture through Ontology-Driven Generative Intelligence and Axiomatic Process Boundaries.* (Internal Thesis).
+3. **lsp-max Architecture Team.** *The Syntactic Turn: Automating Abstract Syntax Tree Generation and Incremental Compilation.* (Internal Thesis).
+4. **lsp-max Architecture Team.** *The Axiomatic Foundation: wasm4pm-compat as the Baseline Type Authority.* (Internal Thesis).
 
 ### External Foundations (Cited in Research)
 [1] **van der Aalst, W. M. P. (2016).** *Process Mining: Data Science in Action*, 2nd ed. Springer.

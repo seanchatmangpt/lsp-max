@@ -1,12 +1,12 @@
 # Law-State Runtime Primitives and Machine Transitions
 
-This document details the low-level execution semantics, typestate representations, and cryptographic transition laws enforced by `tower-lsp-max-runtime`.
+This document details the low-level execution semantics, typestate representations, and cryptographic transition laws enforced by `lsp-max-runtime`.
 
 ---
 
 ## The Generic Typestate Machine: `Machine<L, P, D>`
 
-The core of the `tower-lsp-max-runtime` engine is the generic typestate machine:
+The core of the `lsp-max-runtime` engine is the generic typestate machine:
 
 ```rust
 pub struct Machine<L: Law, P: Phase, D: Data> {

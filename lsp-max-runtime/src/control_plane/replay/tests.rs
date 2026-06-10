@@ -86,14 +86,14 @@ fn test_verifier_end_to_end() {
         .insert(&Quad::new(
             rcpt_node.clone(),
             NamedNode::new("http://www.w3.org/1999/02/22-rdf-syntax-ns#type").unwrap(),
-            Term::NamedNode(NamedNode::new("urn:tower-lsp-max:core:Receipt").unwrap()),
+            Term::NamedNode(NamedNode::new("urn:lsp-max:core:Receipt").unwrap()),
             GraphName::DefaultGraph,
         ))
         .unwrap();
     store
         .insert(&Quad::new(
             rcpt_node.clone(),
-            NamedNode::new("urn:tower-lsp-max:core:resultHash").unwrap(),
+            NamedNode::new("urn:lsp-max:core:resultHash").unwrap(),
             Term::Literal(Literal::new_simple_literal(expected_hash.clone())),
             GraphName::DefaultGraph,
         ))
@@ -101,7 +101,7 @@ fn test_verifier_end_to_end() {
     store
         .insert(&Quad::new(
             rcpt_node.clone(),
-            NamedNode::new("urn:tower-lsp-max:core:queryHash").unwrap(),
+            NamedNode::new("urn:lsp-max:core:queryHash").unwrap(),
             Term::Literal(Literal::new_simple_literal(query_hash.clone())),
             GraphName::DefaultGraph,
         ))
@@ -109,7 +109,7 @@ fn test_verifier_end_to_end() {
     store
         .insert(&Quad::new(
             rcpt_node.clone(),
-            NamedNode::new("urn:tower-lsp-max:core:graphHash").unwrap(),
+            NamedNode::new("urn:lsp-max:core:graphHash").unwrap(),
             Term::Literal(Literal::new_simple_literal("g1")),
             GraphName::DefaultGraph,
         ))
@@ -126,7 +126,7 @@ fn test_verifier_end_to_end() {
 
     // Check that a max:Replay is recorded in the store
     let check_replay_q = "
-        PREFIX max: <urn:tower-lsp-max:core:>
+        PREFIX max: <urn:lsp-max:core:>
         ASK {
             ?r a max:Replay ;
                max:queryHash ?qHash ;

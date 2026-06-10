@@ -30,9 +30,9 @@ impl ConfigService {
         if let Ok(path_str) = std::env::var("TOWER_LSP_MAX_CONFIG") {
             PathBuf::from(path_str)
         } else if let Ok(home) = std::env::var("HOME") {
-            PathBuf::from(home).join(".tower-lsp-max-config.json")
+            PathBuf::from(home).join(".lsp-max-config.json")
         } else {
-            PathBuf::from(".tower-lsp-max-config.json")
+            PathBuf::from(".lsp-max-config.json")
         }
     }
 

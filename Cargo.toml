@@ -40,10 +40,10 @@ tokio = { version = "1.17", optional = true, features = ["time", "macros", "rt",
 tokio-util = { version = "0.7", optional = true, features = ["codec"] }
 lsp-max-macros = { version = "26.6.9", path = "./lsp-max-macros" }
 lsp-max-protocol = { version = "26.6.9", path = "./lsp-max-protocol" }
-lsp-max-lsif = { path = "./crates/tower-lsp-max-lsif", version = "26.6.9" }
+lsp-max-lsif = { path = "./crates/lsp-max-lsif", version = "26.6.9" }
 lsp-max-runtime = { version = "26.6.9", path = "./lsp-max-runtime" }
 lsp-max-agent = { version = "26.6.9", path = "./lsp-max-agent" }
-lsp-max-base = { path = "./crates/tower-lsp-max-base", version = "26.6.9" }
+lsp-max-base = { path = "./crates/lsp-max-base", version = "26.6.9" }
 tower = { version = "0.4", default-features = false, features = ["util"] }
 tracing = "0.1"
 
@@ -70,13 +70,13 @@ members = [
     "lsp-max-protocol",
     "lsp-max-runtime",
     "lsp-max-agent",
-    "crates/tower-lsp-max-specgen",
-    "crates/tower-lsp-max-cli",
+    "crates/lsp-max-specgen",
+    "crates/lsp-max-cli",
     "crates/playground",
-    "crates/tower-lsp-max-client",
-    "crates/tower-lsp-max-base",
-    "crates/tower-lsp-max-live",
-    "crates/tower-lsp-max-lsif",
+    "crates/lsp-max-client",
+    "crates/lsp-max-base",
+    "crates/lsp-max-live",
+    "crates/lsp-max-lsif",
     "crates/lsp-max-adapters/lsp-max-ast",
     "examples/wasm4pm-lsp",
     "examples/pattern-lsp",

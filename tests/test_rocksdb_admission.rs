@@ -25,9 +25,9 @@ fn test_rocksdb_config_and_path_resolution() {
 
     std::env::remove_var("TOWER_LSP_MAX_DB_PATH");
 
-    // 2. Check .tower-lsp-max-config.json resolution
+    // 2. Check .lsp-max-config.json resolution
     let temp_dir_2 = tempfile::tempdir().unwrap();
-    let config_file_path = temp_dir_2.path().join(".tower-lsp-max-config.json");
+    let config_file_path = temp_dir_2.path().join(".lsp-max-config.json");
     let db_path_2 = temp_dir_2.path().join("db2");
 
     let config_json = serde_json::json!({
@@ -46,10 +46,10 @@ fn test_rocksdb_config_and_path_resolution() {
 
     std::env::remove_var("TOWER_LSP_MAX_CONFIG");
 
-    // 3. Check fallback in test mode (should contain tower-lsp-max-db-)
+    // 3. Check fallback in test mode (should contain lsp-max-db-)
     std::env::set_var("TOWER_LSP_MAX_TEST", "true");
     let resolved = resolve_db_path();
-    assert!(resolved.to_str().unwrap().contains("tower-lsp-max-db-"));
+    assert!(resolved.to_str().unwrap().contains("lsp-max-db-"));
 
     let store = StoreFactory::open().unwrap();
     drop(store);
@@ -226,7 +226,7 @@ fn test_transaction_isolation_dirty_reads_prevention() {
             oxigraph::model::NamedNode::new("http://www.w3.org/1999/02/22-rdf-syntax-ns#type")
                 .unwrap(),
             oxigraph::model::Term::NamedNode(
-                oxigraph::model::NamedNode::new("urn:tower-lsp-max:core:Metadata").unwrap(),
+                oxigraph::model::NamedNode::new("urn:lsp-max:core:Metadata").unwrap(),
             ),
             active_graph.clone(),
         );
@@ -277,7 +277,7 @@ fn test_transaction_isolation_dirty_reads_prevention() {
             oxigraph::model::NamedNode::new("http://www.w3.org/1999/02/22-rdf-syntax-ns#type")
                 .unwrap(),
             oxigraph::model::Term::NamedNode(
-                oxigraph::model::NamedNode::new("urn:tower-lsp-max:core:Metadata").unwrap(),
+                oxigraph::model::NamedNode::new("urn:lsp-max:core:Metadata").unwrap(),
             ),
             active_graph,
         );

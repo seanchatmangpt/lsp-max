@@ -103,7 +103,7 @@ pub fn map_diagnostic_to_quads(
         subject.clone(),
         oxigraph::model::NamedNode::new("http://www.w3.org/1999/02/22-rdf-syntax-ns#type").unwrap(),
         oxigraph::model::Term::NamedNode(
-            oxigraph::model::NamedNode::new("urn:tower-lsp-max:core:Diagnostic").unwrap(),
+            oxigraph::model::NamedNode::new("urn:lsp-max:core:Diagnostic").unwrap(),
         ),
         graph_name.clone(),
     ));
@@ -111,21 +111,21 @@ pub fn map_diagnostic_to_quads(
         subject.clone(),
         oxigraph::model::NamedNode::new("http://www.w3.org/1999/02/22-rdf-syntax-ns#type").unwrap(),
         oxigraph::model::Term::NamedNode(
-            oxigraph::model::NamedNode::new("urn:tower-lsp-max:core:Artifact").unwrap(),
+            oxigraph::model::NamedNode::new("urn:lsp-max:core:Artifact").unwrap(),
         ),
         graph_name.clone(),
     ));
 
     quads.push(oxigraph::model::Quad::new(
         subject.clone(),
-        oxigraph::model::NamedNode::new("urn:tower-lsp-max:core:lawId").unwrap(),
+        oxigraph::model::NamedNode::new("urn:lsp-max:core:lawId").unwrap(),
         oxigraph::model::Term::Literal(oxigraph::model::Literal::new_simple_literal(&diag.law_id)),
         graph_name.clone(),
     ));
 
     quads.push(oxigraph::model::Quad::new(
         subject.clone(),
-        oxigraph::model::NamedNode::new("urn:tower-lsp-max:core:message").unwrap(),
+        oxigraph::model::NamedNode::new("urn:lsp-max:core:message").unwrap(),
         oxigraph::model::Term::Literal(oxigraph::model::Literal::new_simple_literal(
             &diag.lsp.message,
         )),
@@ -135,7 +135,7 @@ pub fn map_diagnostic_to_quads(
     for route in &diag.doc_routes {
         quads.push(oxigraph::model::Quad::new(
             subject.clone(),
-            oxigraph::model::NamedNode::new("urn:tower-lsp-max:core:docUri").unwrap(),
+            oxigraph::model::NamedNode::new("urn:lsp-max:core:docUri").unwrap(),
             oxigraph::model::Term::Literal(oxigraph::model::Literal::new_simple_literal(
                 &route.path,
             )),
@@ -145,7 +145,7 @@ pub fn map_diagnostic_to_quads(
 
     if let Some(ref obligation) = diag.receipt_obligation {
         for rcpt_id in &obligation.required_receipts {
-            let rcpt_uri = format!("urn:tower-lsp-max:receipt:{}", rcpt_id);
+            let rcpt_uri = format!("urn:lsp-max:receipt:{}", rcpt_id);
             quads.push(oxigraph::model::Quad::new(
                 subject.clone(),
                 oxigraph::model::NamedNode::new("http://www.w3.org/ns/prov#wasGeneratedBy")

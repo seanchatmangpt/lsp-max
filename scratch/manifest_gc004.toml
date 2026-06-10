@@ -19,8 +19,8 @@ forbidden_owner = "ggen_lsp_observer"
 [[proofs]]
 id = "ggen-does-not-own-tower-domain"
 kind = "authority-boundary"
-domain = "tower-lsp-max"
-expected_owner = "tower_lsp_max_pack_lsp"
+domain = "lsp-max"
+expected_owner = "lsp_max_pack_lsp"
 forbidden_owner = "ggen_lsp_observer"
 
 [[proofs]]

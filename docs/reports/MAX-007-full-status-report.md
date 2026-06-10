@@ -1,7 +1,7 @@
 # MAX-007 Full Status Report
 
 ## Executive Summary
-This report provides the full status verification of the `tower-lsp-max` workspace. Milestones 1 and 2 from the refactoring project roadmap have been successfully completed, and Milestones 3–7 remain in the PLANNED status. All validation checks (formatting, compilation, tests, and linting) pass cleanly for the current state of the workspace. A final conformance verdict has been reached with 393 tests passed (with 0 failures).
+This report provides the full status verification of the `lsp-max` workspace. Milestones 1 and 2 from the refactoring project roadmap have been successfully completed, and Milestones 3–7 remain in the PLANNED status. All validation checks (formatting, compilation, tests, and linting) pass cleanly for the current state of the workspace. A final conformance verdict has been reached with 393 tests passed (with 0 failures).
 
 ## Milestone Status Summary Table
 
@@ -9,9 +9,9 @@ This report provides the full status verification of the `tower-lsp-max` workspa
 |---|------|-------|--------------|--------|
 | 1 | Core Test Helpers & Quick-wins | Extract common duplex-stream test helpers and refactor `tests/test_max_rpc_zero_coverage.rs`. | None | DONE |
 | 2 | Playground AST Handlers | Refactor completions and diagnostics handlers into modules under 500 LOC. | M1 | DONE |
-| 3 | Protocol Core Library | Refactor `tower-lsp-max-protocol/src/lib.rs` into modular sub-files. | M1 | PLANNED |
-| 4 | Runtime Library | Extract inline test modules and modularize `tower-lsp-max-runtime/src/lib.rs`. | M1 | PLANNED |
-| 5 | tower-lsp-max Core Library | Refactor `src/lib.rs`, `src/service.rs`, and `src/service/client.rs` to keep them <= 500 LOC. | M3, M4 | PLANNED |
+| 3 | Protocol Core Library | Refactor `lsp-max-protocol/src/lib.rs` into modular sub-files. | M1 | PLANNED |
+| 4 | Runtime Library | Extract inline test modules and modularize `lsp-max-runtime/src/lib.rs`. | M1 | PLANNED |
+| 5 | lsp-max Core Library | Refactor `src/lib.rs`, `src/service.rs`, and `src/service/client.rs` to keep them <= 500 LOC. | M3, M4 | PLANNED |
 | 6 | Integration Tests | Split integration tests in `tests/` into smaller files. | M1 | PLANNED |
 | 7 | Code Generator & Generated Code | Refactor generator renderer and split generated schemas to be <= 500 LOC. | M1, M5 | PLANNED |
 
@@ -39,7 +39,7 @@ Output:
 Command: cargo test --workspace
 Exit Status: 0
 Output:
-     Running unittests src/lib.rs (target/debug/deps/tower_lsp_max-910667188e249710)
+     Running unittests src/lib.rs (target/debug/deps/lsp_max-910667188e249710)
 running 48 tests
 test result: ok. 48 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
 
@@ -79,35 +79,35 @@ test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fini
 running 6 tests
 test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.06s
 
-     Running unittests src/lib.rs (target/debug/deps/tower_lsp_max_agent-10b45425f7d9cb1a)
+     Running unittests src/lib.rs (target/debug/deps/lsp_max_agent-10b45425f7d9cb1a)
 running 0 tests
 test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
-     Running unittests src/main.rs (target/debug/deps/tower_lsp_max_cli-b1166737c29a944b)
+     Running unittests src/main.rs (target/debug/deps/lsp_max_cli-b1166737c29a944b)
 running 33 tests
 test result: ok. 33 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.82s
 
-     Running unittests src/lib.rs (target/debug/deps/tower_lsp_max_macros-e8d2a901e6e6df69)
+     Running unittests src/lib.rs (target/debug/deps/lsp_max_macros-e8d2a901e6e6df69)
 running 0 tests
 test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
-     Running unittests src/lib.rs (target/debug/deps/tower_lsp_max_playground-fd15d931813121d5)
+     Running unittests src/lib.rs (target/debug/deps/lsp_max_playground-fd15d931813121d5)
 running 0 tests
 test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
-     Running unittests src/main.rs (target/debug/deps/tower_lsp_max_playground-a1c95b64b6c73477)
+     Running unittests src/main.rs (target/debug/deps/lsp_max_playground-a1c95b64b6c73477)
 running 0 tests
 test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
-     Running unittests src/lib.rs (target/debug/deps/tower_lsp_max_protocol-ca251b3dae0e9f7e)
+     Running unittests src/lib.rs (target/debug/deps/lsp_max_protocol-ca251b3dae0e9f7e)
 running 25 tests
 test result: ok. 25 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
-     Running unittests src/lib.rs (target/debug/deps/tower_lsp_max_runtime-2d1264c04367851d)
+     Running unittests src/lib.rs (target/debug/deps/lsp_max_runtime-2d1264c04367851d)
 running 114 tests
 test result: ok. 114 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.09s
 
-     Running unittests src/main.rs (target/debug/deps/tower_lsp_max_specgen-fec6aaf1599e00ee)
+     Running unittests src/main.rs (target/debug/deps/lsp_max_specgen-fec6aaf1599e00ee)
 running 0 tests
 test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
@@ -115,23 +115,23 @@ test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fini
 running 23 tests
 test result: ok. 23 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
-   Doc-tests tower_lsp_max
+   Doc-tests lsp_max
 running 3 tests
 test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.83s
 
-   Doc-tests tower_lsp_max_agent
+   Doc-tests lsp_max_agent
 running 0 tests
 test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
-   Doc-tests tower_lsp_max_macros
+   Doc-tests lsp_max_macros
 running 0 tests
 test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
-   Doc-tests tower_lsp_max_playground
+   Doc-tests lsp_max_playground
 running 0 tests
 test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
-   Doc-tests tower_lsp_max_runtime
+   Doc-tests lsp_max_runtime
 running 0 tests
 test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 ```

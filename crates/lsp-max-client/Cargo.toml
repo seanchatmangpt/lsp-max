@@ -5,7 +5,7 @@ edition = "2021"
 authors = ["Tower-LSP Authors", "Sean Chatman <info@chatmangpt.com>"]
 description = "Language Server Protocol Client framework based on tower"
 license = "MIT OR Apache-2.0"
-repository = "https://github.com/seanchatmangpt/tower-lsp-max"
+repository = "https://github.com/seanchatmangpt/lsp-max"
 
 [dependencies]
 lsp-max-macros = { path = "../../lsp-max-macros", version = "26.6.9" }

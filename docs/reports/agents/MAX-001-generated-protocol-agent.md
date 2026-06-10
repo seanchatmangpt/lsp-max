@@ -1,7 +1,7 @@
 # Report: MAX-001 Generated Protocol Agent Analysis
 
 ## Summary
-An exhaustive analysis and audit of the generated Language Server Protocol (LSP) 3.18 Rust surface within the `tower-lsp-max` workspace was conducted. The redundant, unused source file `tower-lsp-max-protocol/src/generated_3_18.rs` was removed, and the correctness of the active protocol boundary `tower-lsp-max-protocol/src/lsp_3_18.rs` and its specgen test suite was verified.
+An exhaustive analysis and audit of the generated Language Server Protocol (LSP) 3.18 Rust surface within the `lsp-max` workspace was conducted. The redundant, unused source file `lsp-max-protocol/src/generated_3_18.rs` was removed, and the correctness of the active protocol boundary `lsp-max-protocol/src/lsp_3_18.rs` and its specgen test suite was verified.
 
 ---
 
@@ -10,20 +10,20 @@ An exhaustive analysis and audit of the generated Language Server Protocol (LSP)
 ### 1. Where is the generated LSP 3.18 Rust surface?
 The LSP 3.18 Rust surface resides in two active locations within the workspace:
 *   **Generated Build Artifact**: `generated/lsp_3_18.rs` (301,818 bytes).
-*   **Committed Crate Source**: `tower-lsp-max-protocol/src/lsp_3_18.rs` (301,818 bytes).
-*   *Note*: A redundant physical file `tower-lsp-max-protocol/src/generated_3_18.rs` (298,234 bytes) also existed in the crate source directory but has been removed as it was completely unused by the build system.
+*   **Committed Crate Source**: `lsp-max-protocol/src/lsp_3_18.rs` (301,818 bytes).
+*   *Note*: A redundant physical file `lsp-max-protocol/src/generated_3_18.rs` (298,234 bytes) also existed in the crate source directory but has been removed as it was completely unused by the build system.
 
 ### 2. Is it committed source, generated artifact, or build output?
 *   `generated/lsp_3_18.rs` is a generated artifact / build output, ignored via the root `.gitignore` file (`generated/`).
-*   `tower-lsp-max-protocol/src/lsp_3_18.rs` is a committed source file. Keeping this file committed ensures that consumers of the `tower-lsp-max-protocol` crate can build the package directly without having the generator tools or the official metamodel JSON files available locally in their build environments.
+*   `lsp-max-protocol/src/lsp_3_18.rs` is a committed source file. Keeping this file committed ensures that consumers of the `lsp-max-protocol` crate can build the package directly without having the generator tools or the official metamodel JSON files available locally in their build environments.
 
 ### 3. Is there a stable module exposing it?
-Yes. The module is declared in `tower-lsp-max-protocol/src/lib.rs` on line 1:
+Yes. The module is declared in `lsp-max-protocol/src/lib.rs` on line 1:
 ```rust
 pub mod lsp_3_18;
 pub use lsp_3_18 as generated_3_18;
 ```
-This exposes the generated code as `tower_lsp_max_protocol::lsp_3_18` and re-exports it under the alias `tower_lsp_max_protocol::generated_3_18`.
+This exposes the generated code as `lsp_max_protocol::lsp_3_18` and re-exports it under the alias `lsp_max_protocol::generated_3_18`.
 
 ### 4. Does generated output contain serde derives?
 Yes. All structures and enums carry standard serialization and deserialization derives:
@@ -38,7 +38,7 @@ pub struct Location {
 Extends and mixins are flattened correctly using `#[serde(flatten)]` attributes, optional fields use `#[serde(default)]`, and primitive-based enums use `#[serde(transparent)]`.
 
 ### 5. Does generated output use LspAny / serde_json::Value intentionally?
-Yes. Complex metamodel types, such as intersection types (`Type::And`), union types (`Type::Or`), tuple types (`Type::Tuple`), and literal value constraints (`Type::Literal`), are intentionally mapped to `LspAny` (which is a type alias for `serde_json::Value`) by the generator in `crates/tower-lsp-max-specgen/src/render.rs`:
+Yes. Complex metamodel types, such as intersection types (`Type::And`), union types (`Type::Or`), tuple types (`Type::Tuple`), and literal value constraints (`Type::Literal`), are intentionally mapped to `LspAny` (which is a type alias for `serde_json::Value`) by the generator in `crates/lsp-max-specgen/src/render.rs`:
 ```rust
 Type::And { .. } | Type::Or { .. } | Type::Tuple { .. } | Type::Literal { .. } => {
     quote! { LspAny }
@@ -77,24 +77,24 @@ Yes. The generator reads and iterates over fields, structures, and enums from `V
 ---
 
 ## Hard Law Compliance
-*   **Why Generated Rust is Checked In**: The generated protocol file `tower-lsp-max-protocol/src/lsp_3_18.rs` is checked in to allow the crate to compile cleanly out-of-the-box as a standard Rust dependency. Running the code generator dynamically in `build.rs` is avoided, ensuring the build system has zero hidden generated boundaries and does not require downstream clients to host metadata files or code generator binaries.
-*   **How Clients Consume It**: Clients consume the protocol surface statically via the stable `tower_lsp_max_protocol::lsp_3_18` (or `generated_3_18`) module namespace.
+*   **Why Generated Rust is Checked In**: The generated protocol file `lsp-max-protocol/src/lsp_3_18.rs` is checked in to allow the crate to compile cleanly out-of-the-box as a standard Rust dependency. Running the code generator dynamically in `build.rs` is avoided, ensuring the build system has zero hidden generated boundaries and does not require downstream clients to host metadata files or code generator binaries.
+*   **How Clients Consume It**: Clients consume the protocol surface statically via the stable `lsp_max_protocol::lsp_3_18` (or `generated_3_18`) module namespace.
 
 ---
 
 ## Cleanups Performed
-*   **Removed Redundant File**: The physical file `tower-lsp-max-protocol/src/generated_3_18.rs` was verified to be unused by the compilation graph (since `lib.rs` maps the `generated_3_18` alias to `lsp_3_18`). This file differed slightly in comment spacing and formatting from `lsp_3_18.rs`.
-*   **Action**: Deleted `tower-lsp-max-protocol/src/generated_3_18.rs`.
+*   **Removed Redundant File**: The physical file `lsp-max-protocol/src/generated_3_18.rs` was verified to be unused by the compilation graph (since `lib.rs` maps the `generated_3_18` alias to `lsp_3_18`). This file differed slightly in comment spacing and formatting from `lsp_3_18.rs`.
+*   **Action**: Deleted `lsp-max-protocol/src/generated_3_18.rs`.
 
 ---
 
 ## Verification
 *   **Compilation Verification**: Successful target-specific cargo check:
     ```bash
-    cargo check -p tower-lsp-max-protocol
+    cargo check -p lsp-max-protocol
     ```
 *   **Test Suite Verification**: Verified the specgen serialization tests pass successfully:
     ```bash
-    cargo test -p tower-lsp-max-specgen
+    cargo test -p lsp-max-specgen
     ```
     This ran 5 tests verifying position, range, markup content, client info, and workspace edit serialization.

@@ -18,7 +18,7 @@ pub fn extract_workspaces_from_store(
     let doc_type = oxigraph::model::Term::NamedNode(
         oxigraph::model::NamedNode::new("https://microsoft.github.io/language-server-protocol/specifications/lsif/0.6.0/specification/Document").unwrap()
     );
-    let uri_pred = oxigraph::model::NamedNode::new("urn:tower-lsp-max:core:uri").unwrap();
+    let uri_pred = oxigraph::model::NamedNode::new("urn:lsp-max:core:uri").unwrap();
 
     let mut document_uris = Vec::new();
     for quad in store.quads_for_pattern(
@@ -58,7 +58,7 @@ pub fn extract_workspaces_from_store(
 
     if workspaces.is_empty() && !document_uris.is_empty() {
         workspaces.push(WorkspaceEvidencePayload {
-            id: "urn:tower-lsp-max:workspace:default".to_string(),
+            id: "urn:lsp-max:workspace:default".to_string(),
             kind: "Workspace".to_string(),
             document_uris,
         });
@@ -101,10 +101,10 @@ pub fn extract_ranges_from_store(
             .unwrap_or(0)
     }
 
-    let sl = oxigraph::model::NamedNode::new("urn:tower-lsp-max:range:startLine").unwrap();
-    let sc = oxigraph::model::NamedNode::new("urn:tower-lsp-max:range:startCharacter").unwrap();
-    let el = oxigraph::model::NamedNode::new("urn:tower-lsp-max:range:endLine").unwrap();
-    let ec = oxigraph::model::NamedNode::new("urn:tower-lsp-max:range:endCharacter").unwrap();
+    let sl = oxigraph::model::NamedNode::new("urn:lsp-max:range:startLine").unwrap();
+    let sc = oxigraph::model::NamedNode::new("urn:lsp-max:range:startCharacter").unwrap();
+    let el = oxigraph::model::NamedNode::new("urn:lsp-max:range:endLine").unwrap();
+    let ec = oxigraph::model::NamedNode::new("urn:lsp-max:range:endCharacter").unwrap();
 
     let mut ranges = Vec::new();
     for quad in store.quads_for_pattern(
@@ -133,12 +133,12 @@ pub fn extract_diagnostics_from_store(
     let rdf_type =
         oxigraph::model::NamedNode::new("http://www.w3.org/1999/02/22-rdf-syntax-ns#type").unwrap();
     let diag_type = oxigraph::model::Term::NamedNode(
-        oxigraph::model::NamedNode::new("urn:tower-lsp-max:core:Diagnostic").unwrap(),
+        oxigraph::model::NamedNode::new("urn:lsp-max:core:Diagnostic").unwrap(),
     );
-    let msg_pred = oxigraph::model::NamedNode::new("urn:tower-lsp-max:core:message").unwrap();
-    let sev_pred = oxigraph::model::NamedNode::new("urn:tower-lsp-max:core:severity").unwrap();
-    let code_pred = oxigraph::model::NamedNode::new("urn:tower-lsp-max:core:code").unwrap();
-    let source_pred = oxigraph::model::NamedNode::new("urn:tower-lsp-max:core:source").unwrap();
+    let msg_pred = oxigraph::model::NamedNode::new("urn:lsp-max:core:message").unwrap();
+    let sev_pred = oxigraph::model::NamedNode::new("urn:lsp-max:core:severity").unwrap();
+    let code_pred = oxigraph::model::NamedNode::new("urn:lsp-max:core:code").unwrap();
+    let source_pred = oxigraph::model::NamedNode::new("urn:lsp-max:core:source").unwrap();
 
     fn lit_str(
         store: &oxigraph::store::Store,
@@ -191,16 +191,16 @@ pub fn extract_receipts_from_store(
     let rdf_type =
         oxigraph::model::NamedNode::new("http://www.w3.org/1999/02/22-rdf-syntax-ns#type").unwrap();
     let rcpt_type = oxigraph::model::Term::NamedNode(
-        oxigraph::model::NamedNode::new("urn:tower-lsp-max:core:Receipt").unwrap(),
+        oxigraph::model::NamedNode::new("urn:lsp-max:core:Receipt").unwrap(),
     );
     let prev_hash_pred =
-        oxigraph::model::NamedNode::new("urn:tower-lsp-max:core:prevHash").unwrap();
+        oxigraph::model::NamedNode::new("urn:lsp-max:core:prevHash").unwrap();
     let result_hash_pred =
-        oxigraph::model::NamedNode::new("urn:tower-lsp-max:core:resultHash").unwrap();
+        oxigraph::model::NamedNode::new("urn:lsp-max:core:resultHash").unwrap();
     let query_hash_pred =
-        oxigraph::model::NamedNode::new("urn:tower-lsp-max:core:queryHash").unwrap();
+        oxigraph::model::NamedNode::new("urn:lsp-max:core:queryHash").unwrap();
     let graph_hash_pred =
-        oxigraph::model::NamedNode::new("urn:tower-lsp-max:core:graphHash").unwrap();
+        oxigraph::model::NamedNode::new("urn:lsp-max:core:graphHash").unwrap();
 
     fn lit_str(
         store: &oxigraph::store::Store,

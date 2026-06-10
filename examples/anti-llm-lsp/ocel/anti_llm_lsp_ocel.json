@@ -126,7 +126,7 @@
       "attributes": {},
       "relationships": [
         {
-          "objectId": "repo_tower_lsp_max",
+          "objectId": "repo_lsp_max",
           "qualifier": "repository"
         }
       ],
@@ -219,10 +219,10 @@
       },
       "type": "Receipt"
     },
-    "repo_tower_lsp_max": {
+    "repo_lsp_max": {
       "attributes": {
-        "name": "tower-lsp-max",
-        "path": "/Users/sac/tower-lsp-max"
+        "name": "lsp-max",
+        "path": "/Users/sac/lsp-max"
       },
       "type": "Repository"
     },

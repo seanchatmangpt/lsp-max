@@ -8,10 +8,10 @@ fn test_gc004_pack_domain_lsp_intelligence() {
 
     // Test 1: Verify the pack LSPs exist and are not monolithic
     let clap_src = PathBuf::from(workspace).join("crates/ggen-pack-clap-noun-verb/src/main.rs");
-    let tower_src = PathBuf::from(workspace).join("crates/ggen-pack-tower-lsp-max/src/main.rs");
+    let tower_src = PathBuf::from(workspace).join("crates/ggen-pack-lsp-max/src/main.rs");
 
     assert!(clap_src.exists(), "clap-noun-verb-pack-lsp source missing");
-    assert!(tower_src.exists(), "tower-lsp-max-pack-lsp source missing");
+    assert!(tower_src.exists(), "lsp-max-pack-lsp source missing");
 
     // Test 2: Prove no-observer-write law (static scan)
     // The language servers must only emit diagnostics and never write to disk directly

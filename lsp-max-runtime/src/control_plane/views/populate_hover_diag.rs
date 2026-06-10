@@ -8,7 +8,7 @@ use url::Url;
 
 const QUERY_HOVER: &str = "
     PREFIX lsif: <https://microsoft.github.io/language-server-protocol/specifications/lsif/0.6.0/specification/>
-    PREFIX max: <urn:tower-lsp-max:core:>
+    PREFIX max: <urn:lsp-max:core:>
     SELECT ?srcDocUri ?srcStartLine ?srcStartChar ?srcEndLine ?srcEndChar ?hoverData WHERE {
       GRAPH ?g {
         {
@@ -30,7 +30,7 @@ const QUERY_HOVER: &str = "
 
 const QUERY_LSIF_DIAGNOSTICS: &str = "
     PREFIX lsif: <https://microsoft.github.io/language-server-protocol/specifications/lsif/0.6.0/specification/>
-    PREFIX max: <urn:tower-lsp-max:core:>
+    PREFIX max: <urn:lsp-max:core:>
     SELECT ?docUri ?diagData WHERE {
       GRAPH ?g {
         ?doc lsif:textDocument_diagnostic ?diagResult .
@@ -41,7 +41,7 @@ const QUERY_LSIF_DIAGNOSTICS: &str = "
 ";
 
 const QUERY_LIVE_DIAGNOSTICS: &str = "
-    PREFIX max: <urn:tower-lsp-max:core:>
+    PREFIX max: <urn:lsp-max:core:>
     SELECT ?docUri ?message ?lawId WHERE {
       GRAPH ?g {
         ?diag a max:Diagnostic .

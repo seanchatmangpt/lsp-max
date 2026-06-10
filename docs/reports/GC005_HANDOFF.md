@@ -21,7 +21,7 @@ The following events are captured in the aggregated receipt stream:
 
 ### Repositories Involved
 - **Producers:** `~/ggen` (Branch: `feat/ggen-lsp-source-laws`)
-- **Consumer/Tracker:** `~/tower-lsp-max` (Branch: `master`)
+- **Consumer/Tracker:** `~/lsp-max` (Branch: `master`)
 
 ## Raw Evidence Stream (Aggregate)
 ```json

@@ -55,7 +55,7 @@ async fn test_quick_fix_missing_moniker_notebook_sync() {
     )
     .await;
 
-    let doc_uri = "file:///Users/sac/tower-lsp-max/dummy_notebook.rs";
+    let doc_uri = "file:///Users/sac/lsp-max/dummy_notebook.rs";
     let code_text = r#"
 struct Dummy;
 
@@ -186,7 +186,7 @@ async fn test_code_action_out_of_bounds_no_panic_integration() {
     let _init_resp =
         wait_for_response(client_received_responses.clone(), 1, Duration::from_secs(2)).await;
 
-    let doc_uri = "file:///Users/sac/tower-lsp-max/dummy.rs";
+    let doc_uri = "file:///Users/sac/lsp-max/dummy.rs";
     let code_text = "fn main() {}\n";
     write_msg(
         &client_tx_shared,
@@ -209,7 +209,7 @@ async fn test_code_action_out_of_bounds_no_panic_integration() {
                 "context":{
                     "diagnostics":[{
                         "range":{"start":{"line":100,"character":0},"end":{"line":100,"character":0}},
-                        "severity":1,"code":"TLM005","source":"tower-lsp-max-playground",
+                        "severity":1,"code":"TLM005","source":"lsp-max-playground",
                         "message":"`init` is not a valid method. Did you mean `initialize`?"
                     }]
                 }
@@ -285,7 +285,7 @@ async fn test_quick_fix_missing_file_operations() {
     )
     .await;
 
-    let doc_uri = "file:///Users/sac/tower-lsp-max/dummy_file_ops.rs";
+    let doc_uri = "file:///Users/sac/lsp-max/dummy_file_ops.rs";
     let code_text = r#"
 struct Dummy;
 
@@ -419,7 +419,7 @@ async fn test_code_action_adversarial_ranges() {
     let _init_resp =
         wait_for_response(client_received_responses.clone(), 1, Duration::from_secs(2)).await;
 
-    let doc_uri = "file:///Users/sac/tower-lsp-max/dummy_adv_ranges.rs";
+    let doc_uri = "file:///Users/sac/lsp-max/dummy_adv_ranges.rs";
     let code_text = "fn main() {}\n";
     write_msg(
         &client_tx_shared,
@@ -443,7 +443,7 @@ async fn test_code_action_adversarial_ranges() {
                 "context":{
                     "diagnostics":[{
                         "range":{"start":{"line":0,"character":10},"end":{"line":0,"character":5}},
-                        "severity":1,"code":"TLM005","source":"tower-lsp-max-playground",
+                        "severity":1,"code":"TLM005","source":"lsp-max-playground",
                         "message":"`init` is not a valid method. Did you mean `initialize`?"
                     }]
                 }
@@ -469,7 +469,7 @@ async fn test_code_action_adversarial_ranges() {
                 "context":{
                     "diagnostics":[{
                         "range":{"start":{"line":u32::MAX,"character":u32::MAX},"end":{"line":u32::MAX,"character":u32::MAX}},
-                        "severity":1,"code":"TLM005","source":"tower-lsp-max-playground",
+                        "severity":1,"code":"TLM005","source":"lsp-max-playground",
                         "message":"`init` is not a valid method. Did you mean `initialize`?"
                     }]
                 }

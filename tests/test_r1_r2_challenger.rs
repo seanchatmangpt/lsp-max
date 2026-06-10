@@ -77,7 +77,7 @@ fn test_r1_positive_lsif_graph_types_serialization() {
         project_root: "file:///".to_string(),
         position_encoding: PositionEncoding::Utf16,
         tool_info: Some(ToolInfo {
-            name: "tower-lsp-max".to_string(),
+            name: "lsp-max".to_string(),
             version: Some("26.6.5".to_string()),
             args: None,
         }),

@@ -2,7 +2,7 @@
 /// is consistent with the canonical metaModel.json.
 ///
 /// Marked #[ignore] to avoid slowing CI on every run; invoke explicitly with:
-///   cargo test -p tower-lsp-max-specgen -- --ignored
+///   cargo test -p lsp-max-specgen -- --ignored
 use serde::Deserialize;
 use std::collections::HashSet;
 use std::fs;
@@ -16,7 +16,7 @@ struct InventoryEntry {
 fn workspace_root() -> std::path::PathBuf {
     // Walk up from the manifest dir until we find Cargo.toml at the root.
     let manifest = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    // crates/tower-lsp-max-specgen -> workspace root is two levels up
+    // crates/lsp-max-specgen -> workspace root is two levels up
     manifest
         .parent()
         .expect("parent of specgen")

@@ -1,6 +1,6 @@
-# Logical Architecture: tower-lsp-max v26.6.5
+# Logical Architecture: lsp-max v26.6.5
 
-This document details the multi-layered pipeline, data flow interfaces, and boundaries of the Oxigraph v0.5.8 control plane in `tower-lsp-max`.
+This document details the multi-layered pipeline, data flow interfaces, and boundaries of the Oxigraph v0.5.8 control plane in `lsp-max`.
 
 ---
 

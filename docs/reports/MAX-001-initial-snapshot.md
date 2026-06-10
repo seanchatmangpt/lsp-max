@@ -7,29 +7,29 @@
 - `.agents/ORIGINAL_REQUEST.md`
 - `.agents/sentinel/BRIEFING.md`
 - `.agents/sentinel/handoff.md`
-- `crates/tower-lsp-max-cli/src/nouns/agent.rs`
-- `crates/tower-lsp-max-cli/src/nouns/diagnostics.rs`
-- `crates/tower-lsp-max-cli/src/nouns/plugin.rs`
-- `crates/tower-lsp-max-cli/src/nouns/server.rs`
-- `crates/tower-lsp-max-cli/src/nouns/state.rs`
-- `crates/tower-lsp-max-cli/src/nouns/telemetry.rs`
+- `crates/lsp-max-cli/src/nouns/agent.rs`
+- `crates/lsp-max-cli/src/nouns/diagnostics.rs`
+- `crates/lsp-max-cli/src/nouns/plugin.rs`
+- `crates/lsp-max-cli/src/nouns/server.rs`
+- `crates/lsp-max-cli/src/nouns/state.rs`
+- `crates/lsp-max-cli/src/nouns/telemetry.rs`
 
 ## Existing crates
-- `tower-lsp-max-macros`
-- `tower-lsp-max-protocol`
-- `tower-lsp-max-runtime`
-- `tower-lsp-max-agent`
-- `crates/tower-lsp-max-specgen`
-- `crates/tower-lsp-max-cli`
+- `lsp-max-macros`
+- `lsp-max-protocol`
+- `lsp-max-runtime`
+- `lsp-max-agent`
+- `crates/lsp-max-specgen`
+- `crates/lsp-max-cli`
 
 ## Existing generated files
 - `generated/lsp_3_18.rs`
 - `generated/lsp_minimal.rs`
-- `tower-lsp-max-protocol/src/generated_3_18.rs`
-- `tower-lsp-max-protocol/src/lsp_3_18.rs`
+- `lsp-max-protocol/src/generated_3_18.rs`
+- `lsp-max-protocol/src/lsp_3_18.rs`
 
 ## Existing docs
-- `docs/adr/ADR-0001-tower-lsp-max-purpose.md`
+- `docs/adr/ADR-0001-lsp-max-purpose.md`
 - `docs/law/law-state-protocol-frame.md`
 - `docs/reports/LSP-3.18-RESEARCH.md`
 - `docs/reports/SPECGEN-001-bootstrap-report.md`

@@ -12,8 +12,8 @@
       "end_line": 9999
     },
     "lsp": {
-      "pack_id": "ggen-pack-tower-lsp-max",
-      "template_path": "/Users/sac/ggen/crates/ggen-pack-tower-lsp-max/templates/lsp.tmpl",
+      "pack_id": "ggen-pack-lsp-max",
+      "template_path": "/Users/sac/ggen/crates/ggen-pack-lsp-max/templates/lsp.tmpl",
       "query_path": null,
       "bound_variables": [
         "port"

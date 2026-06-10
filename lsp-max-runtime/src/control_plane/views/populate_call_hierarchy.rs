@@ -12,7 +12,7 @@ use url::Url;
 
 const QUERY_CALL_PREPARE: &str = "
     PREFIX lsif: <https://microsoft.github.io/language-server-protocol/specifications/lsif/0.6.0/specification/>
-    PREFIX max: <urn:tower-lsp-max:core:>
+    PREFIX max: <urn:lsp-max:core:>
     SELECT ?srcDocUri ?srcStartLine ?srcStartChar ?srcEndLine ?srcEndChar
            ?itemDocUri ?itemName ?itemKind ?itemDetail
            ?itemStartLine ?itemStartChar ?itemEndLine ?itemEndChar
@@ -38,7 +38,7 @@ const QUERY_CALL_PREPARE: &str = "
 
 const QUERY_CALL_INCOMING: &str = "
     PREFIX lsif: <https://microsoft.github.io/language-server-protocol/specifications/lsif/0.6.0/specification/>
-    PREFIX max: <urn:tower-lsp-max:core:>
+    PREFIX max: <urn:lsp-max:core:>
     SELECT ?itemDocUri ?itemStartLine ?itemStartChar ?itemEndLine ?itemEndChar
            ?callerDocUri ?callerName ?callerKind ?callerDetail
            ?callerStartLine ?callerStartChar ?callerEndLine ?callerEndChar
@@ -67,7 +67,7 @@ const QUERY_CALL_INCOMING: &str = "
 
 const QUERY_CALL_OUTGOING: &str = "
     PREFIX lsif: <https://microsoft.github.io/language-server-protocol/specifications/lsif/0.6.0/specification/>
-    PREFIX max: <urn:tower-lsp-max:core:>
+    PREFIX max: <urn:lsp-max:core:>
     SELECT ?itemDocUri ?itemStartLine ?itemStartChar ?itemEndLine ?itemEndChar
            ?calleeDocUri ?calleeName ?calleeKind ?calleeDetail
            ?calleeStartLine ?calleeStartChar ?calleeEndLine ?calleeEndChar

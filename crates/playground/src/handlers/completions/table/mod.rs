@@ -81,7 +81,7 @@ pub fn domain_label(d: &Domain) -> &'static str {
         Domain::SemanticTokens => "Semantic Tokens",
         Domain::Workspace => "Workspace",
         Domain::Window => "Window",
-        Domain::Max => "tower-lsp-max Extensions",
+        Domain::Max => "lsp-max Extensions",
     }
 }
 

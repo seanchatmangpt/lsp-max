@@ -1,11 +1,11 @@
 # ARD Addendum: Oxigraph v0.5.8 & SPARQL 1.2 Control Plane
 
 ## 1. Context and Objective
-This document outlines the architectural blueprints for integrating `oxigraph` v0.5.8 as the Admitted Graph Control Plane for `tower-lsp-max` v26.6.5. It translates the LSIF and LiveLSP states into formally defined RDF graphs and specifies the SPARQL queries required to enforce protocol invariants, provenance, and capability projection.
+This document outlines the architectural blueprints for integrating `oxigraph` v0.5.8 as the Admitted Graph Control Plane for `lsp-max` v26.6.5. It translates the LSIF and LiveLSP states into formally defined RDF graphs and specifies the SPARQL queries required to enforce protocol invariants, provenance, and capability projection.
 
 ## 2. Vocabulary & Namespace Blueprint
 
-To integrate LSIF and LiveLSP into the RDF ecosystem, we establish the following namespace prefixes mapping `tower-lsp-max` constructs to standard public ontologies and bounded private namespaces.
+To integrate LSIF and LiveLSP into the RDF ecosystem, we establish the following namespace prefixes mapping `lsp-max` constructs to standard public ontologies and bounded private namespaces.
 
 ### 2.1 Prefixes
 ```turtle
@@ -14,8 +14,8 @@ To integrate LSIF and LiveLSP into the RDF ecosystem, we establish the following
 @prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .
 @prefix prov:  <http://www.w3.org/ns/prov#> .
 @prefix lsif:  <https://microsoft.github.io/language-server-protocol/lsif/0.6.0/> .
-@prefix max:   <urn:tower-lsp-max:core:> .
-@prefix rcpt:  <urn:tower-lsp-max:receipt:> .
+@prefix max:   <urn:lsp-max:core:> .
+@prefix rcpt:  <urn:lsp-max:receipt:> .
 @prefix proj:  <urn:project:local:> .
 ```
 
@@ -59,7 +59,7 @@ The boundary between the hot-path Registry and the Oxigraph store is managed via
 ```rust
 use oxigraph::store::Store;
 use oxrdf::{Quad, NamedNode, Subject, Term, GraphName};
-use tower_lsp_max_lsif::lsif::Element;
+use lsp_max_lsif::lsif::Element;
 
 pub struct AdmittedGraph {
     /// The underlying Oxigraph RocksDB store.
@@ -110,7 +110,7 @@ ASK {
 Finds all diagnostics missing a cryptographic receipt.
 
 ```sparql
-PREFIX max:  <urn:tower-lsp-max:core:>
+PREFIX max:  <urn:lsp-max:core:>
 PREFIX prov: <http://www.w3.org/ns/prov#>
 
 SELECT ?diagnostic WHERE {
@@ -140,7 +140,7 @@ SELECT ?contents WHERE {
 
 ## 5. Verification Artifacts (Test Infrastructure)
 
-For CI and test pipelines, the `tower-lsp-max` framework will leverage Oxigraph's in-memory mode to prevent RocksDB disk overhead:
+For CI and test pipelines, the `lsp-max` framework will leverage Oxigraph's in-memory mode to prevent RocksDB disk overhead:
 
 ```rust
 #[cfg(test)]
@@ -170,4 +170,4 @@ mod tests {
 ```
 
 ## 6. Conclusion
-The integration of Oxigraph v0.5.8 provides a mathematically robust, standards-compliant (SPARQL 1.1/1.2) control plane. By strictly separating the `AdmittedGraph` (RDF/SPARQL) from the hot-path `LsifReader` and LSP router, `tower-lsp-max` achieves verifiable provenance and structural integrity without sacrificing interactive latency.
+The integration of Oxigraph v0.5.8 provides a mathematically robust, standards-compliant (SPARQL 1.1/1.2) control plane. By strictly separating the `AdmittedGraph` (RDF/SPARQL) from the hot-path `LsifReader` and LSP router, `lsp-max` achieves verifiable provenance and structural integrity without sacrificing interactive latency.

@@ -6,7 +6,7 @@ This report analyzes research papers related to WebAssembly (WASM), Rust, type s
 ## Key Findings
 
 ### 1. Curry-Howard Correspondence as a Design Principle
-In the context of the `tower-lsp-max` and `wasm4pm` ecosystems, the **Curry-Howard correspondence** is not merely a theoretical observation but a fundamental design principle. As demonstrated in *Type-Safe Process-Evidence Engineering* (Chatman, 2026), the Rust type system is used to encode process-mining laws such that:
+In the context of the `lsp-max` and `wasm4pm` ecosystems, the **Curry-Howard correspondence** is not merely a theoretical observation but a fundamental design principle. As demonstrated in *Type-Safe Process-Evidence Engineering* (Chatman, 2026), the Rust type system is used to encode process-mining laws such that:
 - **Types represent propositions** (e.g., "The workflow net is sound").
 - **Programs represent proofs** (e.g., a passing compilation is a constructive proof of soundness).
 - **Type-checking is verification** (illegal state transitions are rejected at compile-time).
@@ -35,7 +35,7 @@ WASM is identified as a primary target for high-performance, type-safe execution
 
 ### Primary Sources
 - **Chatman, S. (2026).** *Type-Safe Process-Evidence Engineering: A Mathematical Framework for Object-Centric Conformance Checking*. PhD Thesis, Department of Computer Science. (Focus: Evidence algebra, Rust typestate, Curry-Howard).
-- **tower-lsp-max Architecture Team. (2026).** *The Blue Ocean Singularity: Redefining Software Architecture through Ontology-Driven Generative Intelligence and Axiomatic Process Boundaries*. (Focus: wasm4pm-compat, generative functors, OCED).
+- **lsp-max Architecture Team. (2026).** *The Blue Ocean Singularity: Redefining Software Architecture through Ontology-Driven Generative Intelligence and Axiomatic Process Boundaries*. (Focus: wasm4pm-compat, generative functors, OCED).
 
 ### Foundational Literature
 - **van der Aalst, W. M. P. (2016).** *Process Mining: Data Science in Action*. 2nd ed. Springer.

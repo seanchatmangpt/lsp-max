@@ -7,7 +7,7 @@ use wasm4pm_compat::receipt::{Digest, ReceiptEnvelope, ReceiptRefusal, ReplayHin
 use wasm4pm_compat::state::Raw;
 use wasm4pm_compat::witness::{Ocel20, Wasm4pmBridge};
 
-/// Admitter that bridges tower-lsp-max's AdmittedRelationGraph to
+/// Admitter that bridges lsp-max's AdmittedRelationGraph to
 /// Wasm4pm's Ocel20 witness validation and formatting laws.
 pub struct Ocel20GraphAdmitter;
 
@@ -75,7 +75,7 @@ impl Admit for Ocel20GraphAdmitter {
     }
 }
 
-/// Admitter that bridges tower-lsp-max's AdmittedRelationGraph to
+/// Admitter that bridges lsp-max's AdmittedRelationGraph to
 /// Wasm4pm's graduation bridge under Wasm4pmBridge witness.
 pub struct Wasm4pmBridgeGraphAdmitter;
 
@@ -109,7 +109,7 @@ impl Admit for Wasm4pmBridgeGraphAdmitter {
 
         let digest = Digest::new(format!("blake3:{}", to_hex(&receipt.consequence_hash.0)));
         let replay_hint = ReplayHint::new(format!(
-            "tower-lsp-max://replay/sequence/{}",
+            "lsp-max://replay/sequence/{}",
             receipt.sequence
         ));
 

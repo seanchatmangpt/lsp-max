@@ -5,7 +5,7 @@ use walkdir::WalkDir;
 #[ignore = "BLOCKED: examples/wasm4pm-lsp is a sanctioned domain LSP example in this workspace (per CLAUDE.md) — ownership law requires architectural alignment before this gate can be enforced"]
 fn test_gc007_wasm4pm_lsp_ownership_surface() {
     let workspace = "/Users/sac/ggen";
-    let tower_workspace = "/Users/sac/tower-lsp-max"; // If existed
+    let tower_workspace = "/Users/sac/lsp-max"; // If existed
 
     let mut workspaces_to_check = vec![PathBuf::from(workspace)];
     if PathBuf::from(tower_workspace).exists() {

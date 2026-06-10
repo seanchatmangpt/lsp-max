@@ -4,14 +4,14 @@
 MAX_IMPLEMENTATION_COMPLETE
 
 ## Overview
-This report documents the surface comparison between the Language Server Protocol (LSP) version 3.18.0 meta-model, the generated Rust types, and the actual server implementation/routing in `tower-lsp-max`. 
+This report documents the surface comparison between the Language Server Protocol (LSP) version 3.18.0 meta-model, the generated Rust types, and the actual server implementation/routing in `lsp-max`. 
 
 The primary objective of the LSP Surface Comparator is to map the protocol's vocabulary against the server's behavioral capabilities, verifying compliance and highlighting gaps.
 
 ## The Critical Distinction: Vocabulary vs. Routing vs. Implementation Coverage
 When evaluating LSP compatibility, a simple "supported" flag is insufficient. We define three tiers of protocol coverage:
 1. **Vocabulary Coverage:** Whether the protocol's requests, notifications, structures, enumerations, and type aliases are represented as Rust types in the codebase.
-   - *Status:* **100% complete**. All types defined in the 3.18.0 meta-model are generated inside `tower-lsp-max-protocol/src/lsp_3_18.rs`.
+   - *Status:* **100% complete**. All types defined in the 3.18.0 meta-model are generated inside `lsp-max-protocol/src/lsp_3_18.rs`.
 2. **Routing Coverage:** Whether the server registers a JSON-RPC method handler (via the `LanguageServer` trait and macro generation) so that incoming requests are accepted by the router.
    - *Status:* **Partial**. 66 standard LSP methods and 11 custom `max/` extension methods are registered. However, routing a method that returns `method_not_found` is a routing placeholder, not a functional implementation.
 3. **Implementation Coverage:** Whether a routed method has a concrete implementation that obeys the semantic contract of the LSP specification, rather than returning a placeholder error or behaving as a stub.
@@ -20,7 +20,7 @@ When evaluating LSP compatibility, a simple "supported" flag is insufficient. We
 ---
 
 ## Meta-Model Surface Area Metrics
-*   **Fixture File:** `crates/tower-lsp-max-specgen/fixtures/metaModel-3.18.json` (LSP 3.18.0)
+*   **Fixture File:** `crates/lsp-max-specgen/fixtures/metaModel-3.18.json` (LSP 3.18.0)
 *   **Requests:** 69
 *   **Notifications:** 26
 *   **Structures:** 387
@@ -47,7 +47,7 @@ There are 40 enumerations in the meta-model, defining protocol kinds, tags, and 
 There are 22 type aliases, mapping alternative representations or simplified forms (e.g., `DocumentSelector`, `ProgressToken`, `LSPAny`).
 
 ### Q6: Which are represented in generated Rust?
-**All 69 requests, 26 notifications, 387 structures, 40 enumerations, and 22 type aliases are fully represented** as Rust types/constants in `tower-lsp-max-protocol/src/lsp_3_18.rs` and its identical counterpart `generated/lsp_3_18.rs`.
+**All 69 requests, 26 notifications, 387 structures, 40 enumerations, and 22 type aliases are fully represented** as Rust types/constants in `lsp-max-protocol/src/lsp_3_18.rs` and its identical counterpart `generated/lsp_3_18.rs`.
 
 ### Q7: Which are routed in server code?
 The server routes **66 standard LSP methods** (54 requests, 12 notifications) via the `LanguageServer` trait annotation in `src/lib.rs`. The generated router also intercepts and routes `$/cancelRequest` and `exit` directly.
@@ -77,7 +77,7 @@ The following are marked as unsupported in `FEATURES.md` or annotated as unsuppo
 ---
 
 ## Required Follow-up Gates
-To evolve `tower-lsp-max` beyond vocabulary and basic routing coverage:
+To evolve `lsp-max` beyond vocabulary and basic routing coverage:
 1. **Implement 3.18.0 Handlers:** Upgrade the stub implementations of `textDocument/inlineCompletion` and `workspace/textDocumentContent` to provide real semantic capabilities.
 2. **Standardize Server-to-Client Refresh Handling:** Resolve the direction mismatch on `workspace/textDocumentContent/refresh`, which is currently routed as an incoming handler returning `method_not_found`, but should be implemented as an outgoing client request.
 3. **Notebook and Tracing Parity:** Re-evaluate the status of notebook document notifications and tracing APIs, implementing handlers if downstream clients require them.

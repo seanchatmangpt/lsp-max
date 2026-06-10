@@ -1,12 +1,12 @@
 # Law State Runtime Agent Report (MAX-001)
 
 ## Executive Summary
-This report presents the implementation of the genuine cryptographic receipt chain and typestate replay system in the `tower-lsp-max-runtime` crate. The system ensures mathematical, cryptographic state-transition safety for an LSP lifecycle server. The implementation strictly adheres to the **Hard Law** mandate: no mocks, no placeholders, and fully verified typestate reconstruction via cryptographic receipt validation.
+This report presents the implementation of the genuine cryptographic receipt chain and typestate replay system in the `lsp-max-runtime` crate. The system ensures mathematical, cryptographic state-transition safety for an LSP lifecycle server. The implementation strictly adheres to the **Hard Law** mandate: no mocks, no placeholders, and fully verified typestate reconstruction via cryptographic receipt validation.
 
 ---
 
 ## 1. Architectural Overview
-The `tower-lsp-max-runtime` crate tracks the typestate transitions of an LSP server across five distinct phases:
+The `lsp-max-runtime` crate tracks the typestate transitions of an LSP server across five distinct phases:
 1. **Uninitialized** (Initial state, no capabilities)
 2. **Initializing** (Client capabilities received)
 3. **Initialized** (Server capabilities registered, fully operational)
@@ -20,7 +20,7 @@ To enforce verifiable execution and prevent state tampering, we implement a cryp
 ## 2. Cryptographic Hashing Design
 
 ### A. SHA-256 Hash Function
-A pure-Rust implementation of the **SHA-256** cryptographic hash function is defined at the top of `tower-lsp-max-runtime/src/lib.rs`. It does not rely on any external crates, using standard bitwise operators and constant schedules to perform the padding and message schedule expansion.
+A pure-Rust implementation of the **SHA-256** cryptographic hash function is defined at the top of `lsp-max-runtime/src/lib.rs`. It does not rely on any external crates, using standard bitwise operators and constant schedules to perform the padding and message schedule expansion.
 
 For empty inputs, the hash is verified to be:
 `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`
@@ -74,7 +74,7 @@ Each phase implements the `replay` function of the `TypestateKernel` trait:
 ---
 
 ## 5. Testing and Clippy Results
-All modifications were verified by executing `cargo test` and `cargo clippy` inside `tower-lsp-max-runtime/`:
+All modifications were verified by executing `cargo test` and `cargo clippy` inside `lsp-max-runtime/`:
 
 ### A. Test Execution
 ```bash
@@ -85,5 +85,5 @@ cargo test
 * `tests::test_kernel_admit_replay` passed: verified successful state reconstruction via `replay()`, and confirmed that tampered receipt IDs or invalid hashes trigger a panic using `std::panic::catch_unwind`.
 
 ### B. Clippy Quality Status
-* **Crate:** `tower-lsp-max-runtime`
+* **Crate:** `lsp-max-runtime`
 * **Violations:** 0 outstanding warnings or errors.

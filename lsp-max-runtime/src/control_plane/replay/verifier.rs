@@ -127,7 +127,7 @@ impl QueryConsequenceReplayVerifier {
         // Step 3: Retrieve query string (checking the DB first, then local registry)
         let mut db_query_str = None;
         let db_lookup_q = format!(
-            "PREFIX max: <urn:tower-lsp-max:core:> SELECT ?qStr WHERE {{ ?q a max:Query ; max:queryHash \"{}\" ; max:queryString ?qStr . }}",
+            "PREFIX max: <urn:lsp-max:core:> SELECT ?qStr WHERE {{ ?q a max:Query ; max:queryHash \"{}\" ; max:queryString ?qStr . }}",
             query_hash
         );
         if let Ok(evaluator) = SparqlEvaluator::new().parse_query(&db_lookup_q) {
@@ -180,7 +180,7 @@ impl QueryConsequenceReplayVerifier {
     pub fn verify_all(&mut self, store: &Store) -> Result<ReplaySummary, String> {
         // Query to find all receipts in the store
         let query_receipts = "
-            PREFIX max: <urn:tower-lsp-max:core:>
+            PREFIX max: <urn:lsp-max:core:>
             SELECT ?receipt ?resultHash ?queryHash ?graphHash ?g WHERE {
               {
                 ?receipt a max:Receipt ;
@@ -279,14 +279,14 @@ impl QueryConsequenceReplayVerifier {
 
             // Insert replay results into the store
             let replay_uuid = self.entropy.next_uuid();
-            let replay_uri = format!("urn:tower-lsp-max:replay:{}", replay_uuid);
+            let replay_uri = format!("urn:lsp-max:replay:{}", replay_uuid);
             let replay_node = NamedOrBlankNode::NamedNode(NamedNode::new(&replay_uri).unwrap());
 
             store
                 .insert(&Quad::new(
                     replay_node.clone(),
                     NamedNode::new("http://www.w3.org/1999/02/22-rdf-syntax-ns#type").unwrap(),
-                    Term::NamedNode(NamedNode::new("urn:tower-lsp-max:core:Replay").unwrap()),
+                    Term::NamedNode(NamedNode::new("urn:lsp-max:core:Replay").unwrap()),
                     target_graph.clone(),
                 ))
                 .map_err(|e| e.to_string())?;
@@ -294,7 +294,7 @@ impl QueryConsequenceReplayVerifier {
             store
                 .insert(&Quad::new(
                     replay_node.clone(),
-                    NamedNode::new("urn:tower-lsp-max:core:queryHash").unwrap(),
+                    NamedNode::new("urn:lsp-max:core:queryHash").unwrap(),
                     Term::Literal(Literal::new_simple_literal(query_hash.clone())),
                     target_graph.clone(),
                 ))
@@ -303,7 +303,7 @@ impl QueryConsequenceReplayVerifier {
             store
                 .insert(&Quad::new(
                     replay_node.clone(),
-                    NamedNode::new("urn:tower-lsp-max:core:graphHash").unwrap(),
+                    NamedNode::new("urn:lsp-max:core:graphHash").unwrap(),
                     Term::Literal(Literal::new_simple_literal(graph_hash.clone())),
                     target_graph.clone(),
                 ))
@@ -312,7 +312,7 @@ impl QueryConsequenceReplayVerifier {
             store
                 .insert(&Quad::new(
                     replay_node.clone(),
-                    NamedNode::new("urn:tower-lsp-max:core:resultHash").unwrap(),
+                    NamedNode::new("urn:lsp-max:core:resultHash").unwrap(),
                     Term::Literal(Literal::new_simple_literal(actual_hash.clone())),
                     target_graph.clone(),
                 ))

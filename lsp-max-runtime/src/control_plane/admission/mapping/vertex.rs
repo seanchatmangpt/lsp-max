@@ -14,7 +14,7 @@ pub(super) fn map_vertex(
     );
 
     let class_uri = match vertex {
-        Vertex::MetaData { .. } => "urn:tower-lsp-max:core:Metadata",
+        Vertex::MetaData { .. } => "urn:lsp-max:core:Metadata",
         Vertex::Project { .. } => "https://microsoft.github.io/language-server-protocol/specifications/lsif/0.6.0/specification/Project",
         Vertex::Document { .. } => "https://microsoft.github.io/language-server-protocol/specifications/lsif/0.6.0/specification/Document",
         Vertex::ResultSet { .. } => "https://microsoft.github.io/language-server-protocol/specifications/lsif/0.6.0/specification/ResultSet",
@@ -29,7 +29,7 @@ pub(super) fn map_vertex(
         Vertex::TypeDefinitionResult { .. } => "https://microsoft.github.io/language-server-protocol/specifications/lsif/0.6.0/specification/TypeDefinitionResult",
         Vertex::CallHierarchyResult { .. } => "https://microsoft.github.io/language-server-protocol/specifications/lsif/0.6.0/specification/CallHierarchyResult",
         Vertex::TypeHierarchyResult { .. } => "https://microsoft.github.io/language-server-protocol/specifications/lsif/0.6.0/specification/TypeHierarchyResult",
-        _ => "urn:tower-lsp-max:core:GenericVertex",
+        _ => "urn:lsp-max:core:GenericVertex",
     };
 
     quads.push(oxigraph::model::Quad::new(
@@ -48,7 +48,7 @@ pub(super) fn map_vertex(
         } => {
             quads.push(oxigraph::model::Quad::new(
                 subject.clone(),
-                oxigraph::model::NamedNode::new("urn:tower-lsp-max:core:version").unwrap(),
+                oxigraph::model::NamedNode::new("urn:lsp-max:core:version").unwrap(),
                 oxigraph::model::Term::Literal(oxigraph::model::Literal::new_simple_literal(
                     version,
                 )),
@@ -56,7 +56,7 @@ pub(super) fn map_vertex(
             ));
             quads.push(oxigraph::model::Quad::new(
                 subject.clone(),
-                oxigraph::model::NamedNode::new("urn:tower-lsp-max:core:projectRoot").unwrap(),
+                oxigraph::model::NamedNode::new("urn:lsp-max:core:projectRoot").unwrap(),
                 oxigraph::model::Term::Literal(oxigraph::model::Literal::new_simple_literal(
                     project_root,
                 )),
@@ -69,7 +69,7 @@ pub(super) fn map_vertex(
             };
             quads.push(oxigraph::model::Quad::new(
                 subject.clone(),
-                oxigraph::model::NamedNode::new("urn:tower-lsp-max:core:positionEncoding").unwrap(),
+                oxigraph::model::NamedNode::new("urn:lsp-max:core:positionEncoding").unwrap(),
                 oxigraph::model::Term::Literal(oxigraph::model::Literal::new_simple_literal(
                     pos_enc_str,
                 )),
@@ -85,7 +85,7 @@ pub(super) fn map_vertex(
             if let Some(k) = kind {
                 quads.push(oxigraph::model::Quad::new(
                     subject.clone(),
-                    oxigraph::model::NamedNode::new("urn:tower-lsp-max:core:kind").unwrap(),
+                    oxigraph::model::NamedNode::new("urn:lsp-max:core:kind").unwrap(),
                     oxigraph::model::Term::Literal(oxigraph::model::Literal::new_simple_literal(k)),
                     graph_name.clone(),
                 ));
@@ -93,7 +93,7 @@ pub(super) fn map_vertex(
             if let Some(res) = resource {
                 quads.push(oxigraph::model::Quad::new(
                     subject.clone(),
-                    oxigraph::model::NamedNode::new("urn:tower-lsp-max:core:resource").unwrap(),
+                    oxigraph::model::NamedNode::new("urn:lsp-max:core:resource").unwrap(),
                     oxigraph::model::Term::Literal(oxigraph::model::Literal::new_simple_literal(
                         res,
                     )),
@@ -103,7 +103,7 @@ pub(super) fn map_vertex(
             if let Some(cont) = contents {
                 quads.push(oxigraph::model::Quad::new(
                     subject.clone(),
-                    oxigraph::model::NamedNode::new("urn:tower-lsp-max:core:contents").unwrap(),
+                    oxigraph::model::NamedNode::new("urn:lsp-max:core:contents").unwrap(),
                     oxigraph::model::Term::Literal(oxigraph::model::Literal::new_simple_literal(
                         cont,
                     )),
@@ -116,13 +116,13 @@ pub(super) fn map_vertex(
         } => {
             quads.push(oxigraph::model::Quad::new(
                 subject.clone(),
-                oxigraph::model::NamedNode::new("urn:tower-lsp-max:core:uri").unwrap(),
+                oxigraph::model::NamedNode::new("urn:lsp-max:core:uri").unwrap(),
                 oxigraph::model::Term::Literal(oxigraph::model::Literal::new_simple_literal(uri)),
                 graph_name.clone(),
             ));
             quads.push(oxigraph::model::Quad::new(
                 subject.clone(),
-                oxigraph::model::NamedNode::new("urn:tower-lsp-max:core:languageId").unwrap(),
+                oxigraph::model::NamedNode::new("urn:lsp-max:core:languageId").unwrap(),
                 oxigraph::model::Term::Literal(oxigraph::model::Literal::new_simple_literal(
                     language_id,
                 )),
@@ -134,7 +134,7 @@ pub(super) fn map_vertex(
         } => {
             quads.push(oxigraph::model::Quad::new(
                 subject.clone(),
-                oxigraph::model::NamedNode::new("urn:tower-lsp-max:core:startLine").unwrap(),
+                oxigraph::model::NamedNode::new("urn:lsp-max:core:startLine").unwrap(),
                 oxigraph::model::Term::Literal(oxigraph::model::Literal::new_simple_literal(
                     start.line.to_string(),
                 )),
@@ -142,7 +142,7 @@ pub(super) fn map_vertex(
             ));
             quads.push(oxigraph::model::Quad::new(
                 subject.clone(),
-                oxigraph::model::NamedNode::new("urn:tower-lsp-max:core:startCharacter").unwrap(),
+                oxigraph::model::NamedNode::new("urn:lsp-max:core:startCharacter").unwrap(),
                 oxigraph::model::Term::Literal(oxigraph::model::Literal::new_simple_literal(
                     start.character.to_string(),
                 )),
@@ -150,7 +150,7 @@ pub(super) fn map_vertex(
             ));
             quads.push(oxigraph::model::Quad::new(
                 subject.clone(),
-                oxigraph::model::NamedNode::new("urn:tower-lsp-max:core:endLine").unwrap(),
+                oxigraph::model::NamedNode::new("urn:lsp-max:core:endLine").unwrap(),
                 oxigraph::model::Term::Literal(oxigraph::model::Literal::new_simple_literal(
                     end.line.to_string(),
                 )),
@@ -158,7 +158,7 @@ pub(super) fn map_vertex(
             ));
             quads.push(oxigraph::model::Quad::new(
                 subject.clone(),
-                oxigraph::model::NamedNode::new("urn:tower-lsp-max:core:endCharacter").unwrap(),
+                oxigraph::model::NamedNode::new("urn:lsp-max:core:endCharacter").unwrap(),
                 oxigraph::model::Term::Literal(oxigraph::model::Literal::new_simple_literal(
                     end.character.to_string(),
                 )),
@@ -202,7 +202,7 @@ pub(super) fn map_vertex(
                 if let Some(tt) = tag_type {
                     quads.push(oxigraph::model::Quad::new(
                         subject.clone(),
-                        oxigraph::model::NamedNode::new("urn:tower-lsp-max:core:tagType").unwrap(),
+                        oxigraph::model::NamedNode::new("urn:lsp-max:core:tagType").unwrap(),
                         oxigraph::model::Term::Literal(
                             oxigraph::model::Literal::new_simple_literal(tt),
                         ),
@@ -212,7 +212,7 @@ pub(super) fn map_vertex(
                 if let Some(t) = text {
                     quads.push(oxigraph::model::Quad::new(
                         subject.clone(),
-                        oxigraph::model::NamedNode::new("urn:tower-lsp-max:core:text").unwrap(),
+                        oxigraph::model::NamedNode::new("urn:lsp-max:core:text").unwrap(),
                         oxigraph::model::Term::Literal(
                             oxigraph::model::Literal::new_simple_literal(t),
                         ),
@@ -222,7 +222,7 @@ pub(super) fn map_vertex(
                 if let Some(sk) = symbol_kind {
                     quads.push(oxigraph::model::Quad::new(
                         subject.clone(),
-                        oxigraph::model::NamedNode::new("urn:tower-lsp-max:core:symbolKind")
+                        oxigraph::model::NamedNode::new("urn:lsp-max:core:symbolKind")
                             .unwrap(),
                         oxigraph::model::Term::Literal(
                             oxigraph::model::Literal::new_simple_literal(sk),
@@ -233,7 +233,7 @@ pub(super) fn map_vertex(
                 if let Some(det) = detail {
                     quads.push(oxigraph::model::Quad::new(
                         subject.clone(),
-                        oxigraph::model::NamedNode::new("urn:tower-lsp-max:core:detail").unwrap(),
+                        oxigraph::model::NamedNode::new("urn:lsp-max:core:detail").unwrap(),
                         oxigraph::model::Term::Literal(
                             oxigraph::model::Literal::new_simple_literal(det),
                         ),
@@ -243,7 +243,7 @@ pub(super) fn map_vertex(
                 if let Some(fr) = full_range {
                     quads.push(oxigraph::model::Quad::new(
                         subject.clone(),
-                        oxigraph::model::NamedNode::new("urn:tower-lsp-max:core:fullStartLine")
+                        oxigraph::model::NamedNode::new("urn:lsp-max:core:fullStartLine")
                             .unwrap(),
                         oxigraph::model::Term::Literal(
                             oxigraph::model::Literal::new_simple_literal(fr.start.line.to_string()),
@@ -253,7 +253,7 @@ pub(super) fn map_vertex(
                     quads.push(oxigraph::model::Quad::new(
                         subject.clone(),
                         oxigraph::model::NamedNode::new(
-                            "urn:tower-lsp-max:core:fullStartCharacter",
+                            "urn:lsp-max:core:fullStartCharacter",
                         )
                         .unwrap(),
                         oxigraph::model::Term::Literal(
@@ -265,7 +265,7 @@ pub(super) fn map_vertex(
                     ));
                     quads.push(oxigraph::model::Quad::new(
                         subject.clone(),
-                        oxigraph::model::NamedNode::new("urn:tower-lsp-max:core:fullEndLine")
+                        oxigraph::model::NamedNode::new("urn:lsp-max:core:fullEndLine")
                             .unwrap(),
                         oxigraph::model::Term::Literal(
                             oxigraph::model::Literal::new_simple_literal(fr.end.line.to_string()),
@@ -274,7 +274,7 @@ pub(super) fn map_vertex(
                     ));
                     quads.push(oxigraph::model::Quad::new(
                         subject.clone(),
-                        oxigraph::model::NamedNode::new("urn:tower-lsp-max:core:fullEndCharacter")
+                        oxigraph::model::NamedNode::new("urn:lsp-max:core:fullEndCharacter")
                             .unwrap(),
                         oxigraph::model::Term::Literal(
                             oxigraph::model::Literal::new_simple_literal(
@@ -295,7 +295,7 @@ pub(super) fn map_vertex(
         } => {
             quads.push(oxigraph::model::Quad::new(
                 subject.clone(),
-                oxigraph::model::NamedNode::new("urn:tower-lsp-max:core:scheme").unwrap(),
+                oxigraph::model::NamedNode::new("urn:lsp-max:core:scheme").unwrap(),
                 oxigraph::model::Term::Literal(oxigraph::model::Literal::new_simple_literal(
                     scheme,
                 )),
@@ -303,7 +303,7 @@ pub(super) fn map_vertex(
             ));
             quads.push(oxigraph::model::Quad::new(
                 subject.clone(),
-                oxigraph::model::NamedNode::new("urn:tower-lsp-max:core:identifier").unwrap(),
+                oxigraph::model::NamedNode::new("urn:lsp-max:core:identifier").unwrap(),
                 oxigraph::model::Term::Literal(oxigraph::model::Literal::new_simple_literal(
                     identifier,
                 )),
@@ -316,7 +316,7 @@ pub(super) fn map_vertex(
             };
             quads.push(oxigraph::model::Quad::new(
                 subject.clone(),
-                oxigraph::model::NamedNode::new("urn:tower-lsp-max:core:kind").unwrap(),
+                oxigraph::model::NamedNode::new("urn:lsp-max:core:kind").unwrap(),
                 oxigraph::model::Term::Literal(oxigraph::model::Literal::new_simple_literal(
                     kind_str,
                 )),
@@ -331,7 +331,7 @@ pub(super) fn map_vertex(
             };
             quads.push(oxigraph::model::Quad::new(
                 subject.clone(),
-                oxigraph::model::NamedNode::new("urn:tower-lsp-max:core:unique").unwrap(),
+                oxigraph::model::NamedNode::new("urn:lsp-max:core:unique").unwrap(),
                 oxigraph::model::Term::Literal(oxigraph::model::Literal::new_simple_literal(
                     unique_str,
                 )),
@@ -347,13 +347,13 @@ pub(super) fn map_vertex(
         } => {
             quads.push(oxigraph::model::Quad::new(
                 subject.clone(),
-                oxigraph::model::NamedNode::new("urn:tower-lsp-max:core:name").unwrap(),
+                oxigraph::model::NamedNode::new("urn:lsp-max:core:name").unwrap(),
                 oxigraph::model::Term::Literal(oxigraph::model::Literal::new_simple_literal(name)),
                 graph_name.clone(),
             ));
             quads.push(oxigraph::model::Quad::new(
                 subject.clone(),
-                oxigraph::model::NamedNode::new("urn:tower-lsp-max:core:manager").unwrap(),
+                oxigraph::model::NamedNode::new("urn:lsp-max:core:manager").unwrap(),
                 oxigraph::model::Term::Literal(oxigraph::model::Literal::new_simple_literal(
                     manager,
                 )),
@@ -361,7 +361,7 @@ pub(super) fn map_vertex(
             ));
             quads.push(oxigraph::model::Quad::new(
                 subject.clone(),
-                oxigraph::model::NamedNode::new("urn:tower-lsp-max:core:version").unwrap(),
+                oxigraph::model::NamedNode::new("urn:lsp-max:core:version").unwrap(),
                 oxigraph::model::Term::Literal(oxigraph::model::Literal::new_simple_literal(
                     version,
                 )),
@@ -370,7 +370,7 @@ pub(super) fn map_vertex(
             if let Some(repo) = repository {
                 quads.push(oxigraph::model::Quad::new(
                     subject.clone(),
-                    oxigraph::model::NamedNode::new("urn:tower-lsp-max:core:repositoryUrl")
+                    oxigraph::model::NamedNode::new("urn:lsp-max:core:repositoryUrl")
                         .unwrap(),
                     oxigraph::model::Term::Literal(oxigraph::model::Literal::new_simple_literal(
                         &repo.url,
@@ -379,7 +379,7 @@ pub(super) fn map_vertex(
                 ));
                 quads.push(oxigraph::model::Quad::new(
                     subject.clone(),
-                    oxigraph::model::NamedNode::new("urn:tower-lsp-max:core:repositoryType")
+                    oxigraph::model::NamedNode::new("urn:lsp-max:core:repositoryType")
                         .unwrap(),
                     oxigraph::model::Term::Literal(oxigraph::model::Literal::new_simple_literal(
                         &repo.type_,
@@ -392,7 +392,7 @@ pub(super) fn map_vertex(
             if let Ok(json_str) = serde_json::to_string(result) {
                 quads.push(oxigraph::model::Quad::new(
                     subject.clone(),
-                    oxigraph::model::NamedNode::new("urn:tower-lsp-max:core:hoverData").unwrap(),
+                    oxigraph::model::NamedNode::new("urn:lsp-max:core:hoverData").unwrap(),
                     oxigraph::model::Term::Literal(oxigraph::model::Literal::new_simple_literal(
                         &json_str,
                     )),
@@ -404,7 +404,7 @@ pub(super) fn map_vertex(
             if let Ok(json_str) = serde_json::to_string(result) {
                 quads.push(oxigraph::model::Quad::new(
                     subject.clone(),
-                    oxigraph::model::NamedNode::new("urn:tower-lsp-max:core:diagnosticData")
+                    oxigraph::model::NamedNode::new("urn:lsp-max:core:diagnosticData")
                         .unwrap(),
                     oxigraph::model::Term::Literal(oxigraph::model::Literal::new_simple_literal(
                         &json_str,

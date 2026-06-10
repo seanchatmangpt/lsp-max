@@ -1,6 +1,6 @@
 # Anti-LLM Admissibility Canary LSP Server
 
-`anti-llm-lsp` is a specialized LSP server proving ground and admissibility verification canary built on `tower-lsp-max` (LSP 3.18). It detects common LLM-generated code patterns, unverified claims, and incorrect routing abstractions, demonstrating the enforcement of inverted LSP laws within a development environment.
+`anti-llm-lsp` is a specialized LSP server proving ground and admissibility verification canary built on `lsp-max` (LSP 3.18). It detects common LLM-generated code patterns, unverified claims, and incorrect routing abstractions, demonstrating the enforcement of inverted LSP laws within a development environment.
 
 ## How the Canary Works
 

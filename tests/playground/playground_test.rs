@@ -72,7 +72,7 @@ async fn test_playground_integration() {
     )
     .await;
 
-    let doc_uri = "file:///Users/sac/tower-lsp-max/dummy_server.rs";
+    let doc_uri = "file:///Users/sac/lsp-max/dummy_server.rs";
     let code_text = r#"
 struct DummyServer;
 

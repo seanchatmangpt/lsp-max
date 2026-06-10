@@ -1,7 +1,7 @@
 {
   "checkpoint": "GALL-CHECKPOINT-008",
   "producing_workspace": "~/ggen",
-  "storing_workspace": "~/tower-lsp-max",
+  "storing_workspace": "~/lsp-max",
   "export_reason": "checkpoint tracking",
   "exported_artifact_digest": "36f1eff8b4a2641166d0c2e7f06cfc7f1410628f2f0259b012f7424520d23f79"
 }

@@ -109,7 +109,7 @@ complete browser demo.
 
 The admissibility canary. This LSP server runs in CI and detects:
 
-- Reintroduction of forbidden identifiers (`tower_lsp::`, `tower_lsp_max::`)
+- Reintroduction of forbidden identifiers (`tower_lsp::`, `lsp_max::`)
 - Fake receipts (receipt JSON not backed by BLAKE3 hash of actual file content)
 - Victory language in code, comments, or commit messages
 - Version-law violations (non-CalVer strings)

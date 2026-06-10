@@ -36,9 +36,9 @@ impl AgentConfig {
         let config_path = if let Ok(path_str) = std::env::var("TOWER_LSP_MAX_CONFIG") {
             Some(PathBuf::from(path_str))
         } else if let Ok(home) = std::env::var("HOME") {
-            Some(PathBuf::from(home).join(".tower-lsp-max-config.json"))
+            Some(PathBuf::from(home).join(".lsp-max-config.json"))
         } else {
-            Some(PathBuf::from(".tower-lsp-max-config.json"))
+            Some(PathBuf::from(".lsp-max-config.json"))
         };
 
         if let Some(path) = config_path {
@@ -124,13 +124,13 @@ pub struct LspAgent;
 impl LspAgent {
     pub fn invoke_task(task: &str) -> Result<String, String> {
         let config = AgentConfig::load();
-        let system_prompt = "You are the tower-lsp-max AI Agent. Your role is to perform analysis, code generation, and diagnostic checking for the Language Server Protocol implementation. Please process the user's task and return a precise, structured, and complete answer.";
+        let system_prompt = "You are the lsp-max AI Agent. Your role is to perform analysis, code generation, and diagnostic checking for the Language Server Protocol implementation. Please process the user's task and return a precise, structured, and complete answer.";
         Self::run_query(&config, system_prompt, task)
     }
 
     pub fn chat(message: &str) -> Result<String, String> {
         let config = AgentConfig::load();
-        let system_prompt = "You are the tower-lsp-max AI Agent. You are in a chat session with the user. Help them with their queries regarding Language Server Protocol, cargo workspaces, capabilities, and system configuration.";
+        let system_prompt = "You are the lsp-max AI Agent. You are in a chat session with the user. Help them with their queries regarding Language Server Protocol, cargo workspaces, capabilities, and system configuration.";
         Self::run_query(&config, system_prompt, message)
     }
 
@@ -141,7 +141,7 @@ impl LspAgent {
     ) -> Result<String, String> {
         let api_key = match &config.api_key {
             Some(k) => k,
-            None => return Err("API key is not configured. Please set the TOWER_LSP_MAX_API_KEY environment variable or run `tower-lsp-max-cli config set api_key <your-key>`.".to_string()),
+            None => return Err("API key is not configured. Please set the TOWER_LSP_MAX_API_KEY environment variable or run `lsp-max-cli config set api_key <your-key>`.".to_string()),
         };
 
         let url = format!("{}/chat/completions", config.api_base.trim_end_matches('/'));

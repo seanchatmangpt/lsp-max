@@ -1,9 +1,9 @@
 # PRD/ARD: The Calculus of Manufactured Intelligence 
-## tower-lsp-max v26.6.5 — Oxigraph/SPARQL Admitted Graph Control Plane
+## lsp-max v26.6.5 — Oxigraph/SPARQL Admitted Graph Control Plane
 
 **Release Classification:** `Status: PARTIAL_ALIVE → ALIVE candidate | Release: v26.6.5`
 
-This document serves as the formal architectural thesis and product requirements definition for `tower-lsp-max` v26.6.5. It transcends traditional heuristic software engineering, framing the system through the **Calculus of Manufactured Intelligence**: where process discovery, LSIF projection, SPARQL graph evaluation, POWL alignments, and BLAKE3 receipts form a zero-trust mathematical execution calculus.
+This document serves as the formal architectural thesis and product requirements definition for `lsp-max` v26.6.5. It transcends traditional heuristic software engineering, framing the system through the **Calculus of Manufactured Intelligence**: where process discovery, LSIF projection, SPARQL graph evaluation, POWL alignments, and BLAKE3 receipts form a zero-trust mathematical execution calculus.
 
 ---
 
@@ -21,7 +21,7 @@ $$ \alpha: \Omega_{\mathrm{raw}} \rightharpoonup \Omega^{\star} \sqcup \bot_{\ma
 
 where $O^{\star} = \alpha(O)$ is **admitted, bounded, typed, queryable, process-ready state**.
 
-The ultimate objective of `tower-lsp-max`, realized through the integration of the Oxigraph/SPARQL control plane, is the execution of **Manufactured Intelligence**:
+The ultimate objective of `lsp-max`, realized through the integration of the Oxigraph/SPARQL control plane, is the execution of **Manufactured Intelligence**:
 
 $$ \boxed{ \mathfrak{MI}(O) = \rho \circ \mu \circ \kappa \circ \pi \circ \alpha (O) } $$
 
@@ -46,7 +46,7 @@ Let $\lambda \in \mathcal{L}$. We define a meaning-bearing relation extractor, t
 $$ \eta: \mathcal{L} \to \mathcal{G}_{cand} $$
 where $\mathcal{G}_{cand} = (V_{cand}, E_{cand}, \ell_V, \ell_E)$.
 
-Admission into the core `tower-lsp-max` Registry is a strict constraint intersection:
+Admission into the core `lsp-max` Registry is a strict constraint intersection:
 $$ O^{\star} = \alpha(O) = O \cap \mathsf{Type} \cap \mathsf{Shape} \cap \mathsf{Authority} \cap \mathsf{Process} \cap \mathsf{Receiptability} $$
 
 If any predicate fails, $\alpha(O) = \bot_{\mathrm{refused}}^{i}$, with refusal class $i \in \{\mathrm{untyped}, \mathrm{unauthorized}, \mathrm{unshaped}, \mathrm{unroutable}, \mathrm{unreceiptable}, \mathrm{nonreplayable}\}$.
@@ -55,7 +55,7 @@ If any predicate fails, $\alpha(O) = \bot_{\mathrm{refused}}^{i}$, with refusal 
 
 ## 3. RDF / SPARQL / Oxigraph Control Plane (The $\kappa$ Layer)
 
-`tower-lsp-max` v26.6.5 materializes the validation and projection layer ($\kappa$ and $\pi$) via **Oxigraph v0.5.8**.
+`lsp-max` v26.6.5 materializes the validation and projection layer ($\kappa$ and $\pi$) via **Oxigraph v0.5.8**.
 
 Let admitted graph state be an RDF dataset:
 $$ \mathcal{D}^{\star} = \langle G_0, G_1, \dots, G_k \rangle $$
@@ -107,7 +107,7 @@ Oxigraph is the control plane, not the execution kernel.
 Let $\mathbf{Exec}$ be the category whose objects are admitted execution states and morphisms are bounded transitions $f_i: S_i^{\star} \to S_{i+1}^{\star}$.
 Let $\mathbf{Hash}$ be the category of digest states.
 
-The receipt functor implemented in `tower-lsp-max`:
+The receipt functor implemented in `lsp-max`:
 $$ \rho: \mathbf{Exec} \to \mathbf{Hash} $$
 such that:
 $$ \rho(S_{i+1}) = H_{i+1} = \mathrm{BLAKE3}( H_i \Vert id(f_i) \Vert S_{i+1} \Vert meta_i ) $$

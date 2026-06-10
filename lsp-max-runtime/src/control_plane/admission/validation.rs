@@ -10,9 +10,9 @@ pub fn resolve_db_path() -> std::path::PathBuf {
     let config_path = if let Ok(path_str) = std::env::var("TOWER_LSP_MAX_CONFIG") {
         Some(std::path::PathBuf::from(path_str))
     } else if let Ok(home) = std::env::var("HOME") {
-        Some(std::path::PathBuf::from(home).join(".tower-lsp-max-config.json"))
+        Some(std::path::PathBuf::from(home).join(".lsp-max-config.json"))
     } else {
-        Some(std::path::PathBuf::from(".tower-lsp-max-config.json"))
+        Some(std::path::PathBuf::from(".lsp-max-config.json"))
     };
 
     if let Some(path) = config_path {
@@ -34,11 +34,11 @@ pub fn resolve_db_path() -> std::path::PathBuf {
 
     if is_test {
         let temp_dir = std::env::temp_dir();
-        temp_dir.join(format!("tower-lsp-max-db-{}", uuid::Uuid::new_v4()))
+        temp_dir.join(format!("lsp-max-db-{}", uuid::Uuid::new_v4()))
     } else if let Ok(home) = std::env::var("HOME") {
-        std::path::PathBuf::from(home).join(".local/share/tower-lsp-max/db")
+        std::path::PathBuf::from(home).join(".local/share/lsp-max/db")
     } else {
-        std::env::temp_dir().join("tower-lsp-max-db")
+        std::env::temp_dir().join("lsp-max-db")
     }
 }
 
@@ -55,7 +55,7 @@ pub fn validate_shacl_shapes(quads: &[oxigraph::model::Quad]) -> Result<(), Grap
         };
 
         // Severity validation
-        if predicate_str == "urn:tower-lsp-max:core:severity"
+        if predicate_str == "urn:lsp-max:core:severity"
             && object_str != "error"
             && object_str != "warning"
             && object_str != "info"
@@ -68,10 +68,10 @@ pub fn validate_shacl_shapes(quads: &[oxigraph::model::Quad]) -> Result<(), Grap
         }
 
         // Datatype validation for line/char numbers
-        if (predicate_str == "urn:tower-lsp-max:core:startLine"
-            || predicate_str == "urn:tower-lsp-max:core:startCharacter"
-            || predicate_str == "urn:tower-lsp-max:core:endLine"
-            || predicate_str == "urn:tower-lsp-max:core:endCharacter")
+        if (predicate_str == "urn:lsp-max:core:startLine"
+            || predicate_str == "urn:lsp-max:core:startCharacter"
+            || predicate_str == "urn:lsp-max:core:endLine"
+            || predicate_str == "urn:lsp-max:core:endCharacter")
             && object_str.parse::<u32>().is_err()
         {
             return Err(GraphAdmissionError::ParsingFailed(format!(
@@ -81,7 +81,7 @@ pub fn validate_shacl_shapes(quads: &[oxigraph::model::Quad]) -> Result<(), Grap
         }
 
         // positionEncoding validation
-        if predicate_str == "urn:tower-lsp-max:core:positionEncoding"
+        if predicate_str == "urn:lsp-max:core:positionEncoding"
             && object_str != "utf-8"
             && object_str != "utf-16"
             && object_str != "utf-32"
@@ -93,28 +93,28 @@ pub fn validate_shacl_shapes(quads: &[oxigraph::model::Quad]) -> Result<(), Grap
         }
 
         // version validation
-        if predicate_str == "urn:tower-lsp-max:core:version" && object_str.is_empty() {
+        if predicate_str == "urn:lsp-max:core:version" && object_str.is_empty() {
             return Err(GraphAdmissionError::NamespaceViolation(
                 "SHACL PropertyShape violation: version is empty".to_string(),
             ));
         }
 
         // projectRoot validation
-        if predicate_str == "urn:tower-lsp-max:core:projectRoot" && object_str.is_empty() {
+        if predicate_str == "urn:lsp-max:core:projectRoot" && object_str.is_empty() {
             return Err(GraphAdmissionError::NamespaceViolation(
                 "SHACL PropertyShape violation: projectRoot is empty".to_string(),
             ));
         }
 
         // uri validation
-        if predicate_str == "urn:tower-lsp-max:core:uri" && object_str.is_empty() {
+        if predicate_str == "urn:lsp-max:core:uri" && object_str.is_empty() {
             return Err(GraphAdmissionError::NamespaceViolation(
                 "SHACL PropertyShape violation: uri is empty".to_string(),
             ));
         }
 
         // languageId validation
-        if predicate_str == "urn:tower-lsp-max:core:languageId" && object_str.is_empty() {
+        if predicate_str == "urn:lsp-max:core:languageId" && object_str.is_empty() {
             return Err(GraphAdmissionError::NamespaceViolation(
                 "SHACL PropertyShape violation: languageId is empty".to_string(),
             ));

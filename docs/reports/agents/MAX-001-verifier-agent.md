@@ -34,24 +34,24 @@
  M .agents/teamwork_preview_explorer_m1_3/ORIGINAL_REQUEST.md
  M .agents/teamwork_preview_explorer_m1_3/handoff.md
  M .agents/teamwork_preview_explorer_m1_3/progress.md
- M crates/tower-lsp-max-cli/src/main.rs
- M crates/tower-lsp-max-cli/src/nouns/agent.rs
- M crates/tower-lsp-max-cli/src/nouns/client.rs
- M crates/tower-lsp-max-cli/src/nouns/config.rs
- M crates/tower-lsp-max-cli/src/nouns/diagnostics.rs
- M crates/tower-lsp-max-cli/src/nouns/metamodel.rs
- M crates/tower-lsp-max-cli/src/nouns/plugin.rs
- M crates/tower-lsp-max-cli/src/nouns/server.rs
- M crates/tower-lsp-max-cli/src/nouns/state.rs
- M crates/tower-lsp-max-cli/src/nouns/telemetry.rs
- M crates/tower-lsp-max-cli/src/nouns/workspace.rs
- M docs/adr/ADR-0001-tower-lsp-max-purpose.md
+ M crates/lsp-max-cli/src/main.rs
+ M crates/lsp-max-cli/src/nouns/agent.rs
+ M crates/lsp-max-cli/src/nouns/client.rs
+ M crates/lsp-max-cli/src/nouns/config.rs
+ M crates/lsp-max-cli/src/nouns/diagnostics.rs
+ M crates/lsp-max-cli/src/nouns/metamodel.rs
+ M crates/lsp-max-cli/src/nouns/plugin.rs
+ M crates/lsp-max-cli/src/nouns/server.rs
+ M crates/lsp-max-cli/src/nouns/state.rs
+ M crates/lsp-max-cli/src/nouns/telemetry.rs
+ M crates/lsp-max-cli/src/nouns/workspace.rs
+ M docs/adr/ADR-0001-lsp-max-purpose.md
  M src/lib.rs
  M src/service.rs
  M src/service/layers.rs
  M src/service/state.rs
- D tower-lsp-max-protocol/src/generated_3_18.rs
- M tower-lsp-max-runtime/src/lib.rs
+ D lsp-max-protocol/src/generated_3_18.rs
+ M lsp-max-runtime/src/lib.rs
 ```
 
 ## Forbidden Files

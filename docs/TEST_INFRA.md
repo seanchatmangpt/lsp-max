@@ -1,6 +1,6 @@
 # Composed Language Server Test Infrastructure
 
-This document outlines the testing philosophy, feature inventory, test architecture, real-world application scenarios, and coverage thresholds for the end-to-end (E2E) verification of the `tower-lsp-max` substrate.
+This document outlines the testing philosophy, feature inventory, test architecture, real-world application scenarios, and coverage thresholds for the end-to-end (E2E) verification of the `lsp-max` substrate.
 
 ---
 
@@ -214,7 +214,7 @@ The client/test runner communicates with the composed server over standard chann
 ┌─────────────┐                    ┌─────────────────┐                    ┌──────────────────┐
 │             │  JSON-RPC Request  │                 │  Fanned-out /      │                  │
 │ Integration ├───────────────────>│ Composed Server ├───────────────────>│ Mock Upstreams   │
-│ Test Runner │                    │ (tower-lsp-max) │  Routed Request    │ (Spawning Pipes) │
+│ Test Runner │                    │ (lsp-max) │  Routed Request    │ (Spawning Pipes) │
 │             │<───────────────────┤                 │<───────────────────┤                  │
 └─────────────┘  JSON-RPC Response └─────────────────┘  JSON-RPC Response └──────────────────┘
 ```
@@ -235,7 +235,7 @@ Mock upstreams are constructed programmatically via a `MockServerBuilder`:
 The E2E and integration tests are organized as follows:
 
 ```
-/Users/sac/tower-lsp-max/
+/Users/sac/lsp-max/
 ├── tests/
 │   ├── e2e/
 │   │   ├── main.rs                   # Main test harness entrypoint

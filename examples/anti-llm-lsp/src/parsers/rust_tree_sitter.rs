@@ -41,7 +41,7 @@ fn traverse_node(node: Node, source: &[u8], filepath: &str, obs: &mut Vec<Observ
 
     // Check for tower_lsp:: namespace references
     if kind == "scoped_identifier"
-        && (text.starts_with("tower_lsp::") || text.starts_with("tower_lsp_max::"))
+        && (text.starts_with("tower_lsp::") || text.starts_with("lsp_max::"))
         && !text.starts_with("lsp_max::")
     {
         obs.push(Observation {

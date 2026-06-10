@@ -425,7 +425,7 @@ mod tests {
             project_root: "file:///".to_string(),
             position_encoding: PositionEncoding::Utf16,
             tool_info: Some(ToolInfo {
-                name: "tower-lsp-max".to_string(),
+                name: "lsp-max".to_string(),
                 version: Some("1.0.0".to_string()),
                 args: None,
             }),

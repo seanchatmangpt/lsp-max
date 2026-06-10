@@ -2,12 +2,12 @@
 
 In Rust, futures are cancelled by being dropped. This is a fundamental aspect of the `Future` trait and the async ecosystem. When a future is dropped, it is no longer polled, and its state is cleaned up.
 
-## Cancellation in `tower-lsp-max`
+## Cancellation in `lsp-max`
 
-In `tower-lsp-max`, server-side handling of client requests is tracked in the `Pending` map. When a request is started, it is wrapped in a `future::abortable` wrapper, which provides an `AbortHandle`.
+In `lsp-max`, server-side handling of client requests is tracked in the `Pending` map. When a request is started, it is wrapped in a `future::abortable` wrapper, which provides an `AbortHandle`.
 
 1.  A client sends a request.
-2.  `tower-lsp-max` starts an asynchronous task to handle the request.
+2.  `lsp-max` starts an asynchronous task to handle the request.
 3.  The request ID and its `AbortHandle` are stored in the `Pending` map.
 4.  If the client sends a `$/cancelRequest` notification with that ID:
     - The `AbortHandle` is used to abort the future.
@@ -40,12 +40,12 @@ If `do_some_work().await` is cancelled, `remove_temp_file` is never called.
 
 To ensure resources are released even when a future is cancelled (dropped), use the RAII (Resource Acquisition Is Initialization) pattern. In Rust, this means implementing the `Drop` trait.
 
-`tower-lsp-max` provides a `CancellationGuard` helper to make this easier.
+`lsp-max` provides a `CancellationGuard` helper to make this easier.
 
 ### Example: Basic Cleanup
 
 ```rust
-use tower_lsp_max::service::CancellationGuard;
+use lsp_max::service::CancellationGuard;
 
 async fn handle_request() -> Result<(), Error> {
     let temp_file = create_temp_file().await?;
@@ -73,7 +73,7 @@ async fn handle_request() -> Result<(), Error> {
 The `OnDrop` trait provides a convenient `.on_drop()` method for any type.
 
 ```rust
-use tower_lsp_max::service::OnDrop;
+use lsp_max::service::OnDrop;
 
 async fn handle_request() -> Result<(), Error> {
     let (temp_file, _guard) = create_temp_file().await?.on_drop(|| {

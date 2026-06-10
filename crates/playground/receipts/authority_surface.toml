@@ -8,7 +8,7 @@ wasm4pm_compat = "~/wasm4pm-compat"
 
 [roles]
 ggen = "Projection Producer"
-tower_lsp_max = "Integration Boundary"
+lsp_max = "Integration Boundary"
 wasm4pm_lsp = "Process Evidence Observer"
 gc005_wasm4pm_adapter = "Neutral Transport Adapter"
 

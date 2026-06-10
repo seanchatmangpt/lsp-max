@@ -14,7 +14,7 @@ Delta:
   ggen-lsp now exclusively manages projection state, receipt state, boundary state, drift, evidence, and projection opportunity.
   Created PackObserver registry inside ggen-lsp.
   clap-noun-verb-pack-lsp created to own CLI domain interpretation (e.g. missing CLAP-PACK-HANDLER).
-  tower-lsp-max-pack-lsp created to own LSP composition domain interpretation (e.g. unguarded mutation).
+  lsp-max-pack-lsp created to own LSP composition domain interpretation (e.g. unguarded mutation).
   Pack-domain LSPs securely return PackObservations without modifying the filesystem.
   ggen-lsp securely merges domain findings while retaining exact pack source_ids.
   Bypass-kill verified that corrupting domain shapes does not trigger generic projection errors, and corrupting receipts does not trigger pack-domain errors.
@@ -30,8 +30,8 @@ DOGFOOD-GATE-004 Proof:
 
 Export Metadata:
   producing_workspace: ~/ggen
-  storing_workspace: ~/tower-lsp-max
-  export_reason: checkpoint tracking within tower-lsp-max playground
+  storing_workspace: ~/lsp-max
+  export_reason: checkpoint tracking within lsp-max playground
   exported_artifact_digest: aa2dcd61030b414f2dcb84f007604170e89ac12a781c9202aaa21dc93c5e2d99
   export_receipt_digest: 866c1e6b5a0ab8a237c250b58f41929a68759eb39d81076fd1d3d78c540c3280
 

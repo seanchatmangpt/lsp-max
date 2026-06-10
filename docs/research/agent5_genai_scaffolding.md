@@ -7,7 +7,7 @@ This report analyzes the intersection of formal process-mining theory, type-theo
 
 ## 1. Local Foundational Research (Bibliography)
 
-The following entries are extracted from the `tower-lsp-max` thesis and supporting documentation, representing the mathematical core of the `ggen` ecosystem.
+The following entries are extracted from the `lsp-max` thesis and supporting documentation, representing the mathematical core of the `ggen` ecosystem.
 
 *   **[1] W. M. P. van der Aalst.** *Process Mining: Data Science in Action*, 2nd ed. Springer, 2016.  
     *   **Relevance:** Establishes the "evidence-first" principle. If the code claims to work but the event log cannot prove a lawful process occurred, the system has failed. This is the bedrock of `ggen`'s verification layer.
@@ -20,7 +20,7 @@ The following entries are extracted from the `tower-lsp-max` thesis and supporti
 *   **[5] L. Cardelli.** *Type systems*. CRC Press, 1997.  
     *   **Relevance:** Foundations for encoding invariants as types. `ggen` maps formal process laws to Rust's type system (typestates, const-generics) to ensure that malformed software state transitions are rejected at compile-time.
 *   **[6] Sean Chatman.** *Type-Safe Process-Evidence Engineering: A Mathematical Framework for Object-Centric Conformance Checking*. PhD Thesis, 2026.  
-    *   **Relevance:** The primary architectural blueprint for the `tower-lsp-max` and `ggen` ecosystem, unifying Petri-net theory with Rust implementation.
+    *   **Relevance:** The primary architectural blueprint for the `lsp-max` and `ggen` ecosystem, unifying Petri-net theory with Rust implementation.
 
 ---
 

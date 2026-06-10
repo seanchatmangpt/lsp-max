@@ -42,7 +42,7 @@ SELECT ?s ?p ?o ?g WHERE {
 
 pub const QUERY_INVARIANT_2: &str = "
 PREFIX prov: <http://www.w3.org/ns/prov#>
-PREFIX max:  <urn:tower-lsp-max:core:>
+PREFIX max:  <urn:lsp-max:core:>
 ASK {
   {
     { ?artifact a max:Artifact } UNION { ?artifact a max:Diagnostic }
@@ -66,7 +66,7 @@ ASK {
 
 pub const QUERY_INVARIANT_2_SELECT: &str = "
 PREFIX prov: <http://www.w3.org/ns/prov#>
-PREFIX max:  <urn:tower-lsp-max:core:>
+PREFIX max:  <urn:lsp-max:core:>
 SELECT ?artifact ?g WHERE {
   {
     { ?artifact a max:Artifact } UNION { ?artifact a max:Diagnostic }
@@ -90,7 +90,7 @@ SELECT ?artifact ?g WHERE {
 
 pub const QUERY_INVARIANT_3: &str = "
 PREFIX lsif: <https://microsoft.github.io/language-server-protocol/specifications/lsif/0.6.0/specification/>
-PREFIX max:  <urn:tower-lsp-max:core:>
+PREFIX max:  <urn:lsp-max:core:>
 ASK {
   {
     ?range a lsif:Range .
@@ -116,7 +116,7 @@ ASK {
 
 pub const QUERY_INVARIANT_3_SELECT: &str = "
 PREFIX lsif: <https://microsoft.github.io/language-server-protocol/specifications/lsif/0.6.0/specification/>
-PREFIX max:  <urn:tower-lsp-max:core:>
+PREFIX max:  <urn:lsp-max:core:>
 SELECT ?range ?g WHERE {
   {
     ?range a lsif:Range .
@@ -323,7 +323,7 @@ SELECT ?s ?p ?o ?g WHERE {
 ";
 
 pub const QUERY_INVARIANT_5: &str = "
-PREFIX max:  <urn:tower-lsp-max:core:>
+PREFIX max:  <urn:lsp-max:core:>
 ASK {
   {
     ?receipt a max:Receipt ;
@@ -358,7 +358,7 @@ ASK {
 ";
 
 pub const QUERY_INVARIANT_5_SELECT: &str = "
-PREFIX max:  <urn:tower-lsp-max:core:>
+PREFIX max:  <urn:lsp-max:core:>
 SELECT ?receipt ?expectedResultHash ?actualResultHash ?g WHERE {
   {
     ?receipt a max:Receipt ;

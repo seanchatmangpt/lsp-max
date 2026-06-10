@@ -1,4 +1,4 @@
-//! Core abstractions for the tower-lsp-max framework.
+//! Core abstractions for the lsp-max framework.
 //! These traits enforce the unidirectional data flow from raw observation to static semantic index.
 
 /// Represents a raw observation of source code from an editor or filesystem.

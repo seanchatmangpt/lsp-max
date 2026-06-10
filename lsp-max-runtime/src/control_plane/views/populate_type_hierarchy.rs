@@ -8,7 +8,7 @@ use url::Url;
 
 const QUERY_TYPE_PREPARE: &str = "
     PREFIX lsif: <https://microsoft.github.io/language-server-protocol/specifications/lsif/0.6.0/specification/>
-    PREFIX max: <urn:tower-lsp-max:core:>
+    PREFIX max: <urn:lsp-max:core:>
     SELECT ?srcDocUri ?srcStartLine ?srcStartChar ?srcEndLine ?srcEndChar
            ?itemDocUri ?itemName ?itemKind ?itemDetail
            ?itemStartLine ?itemStartChar ?itemEndLine ?itemEndChar
@@ -34,7 +34,7 @@ const QUERY_TYPE_PREPARE: &str = "
 
 const QUERY_TYPE_SUPERTYPES: &str = "
     PREFIX lsif: <https://microsoft.github.io/language-server-protocol/specifications/lsif/0.6.0/specification/>
-    PREFIX max: <urn:tower-lsp-max:core:>
+    PREFIX max: <urn:lsp-max:core:>
     SELECT ?srcDocUri ?srcStartLine ?srcStartChar ?srcEndLine ?srcEndChar
            ?destDocUri ?destName ?destKind ?destDetail
            ?destStartLine ?destStartChar ?destEndLine ?destEndChar
@@ -61,7 +61,7 @@ const QUERY_TYPE_SUPERTYPES: &str = "
 
 const QUERY_TYPE_SUBTYPES: &str = "
     PREFIX lsif: <https://microsoft.github.io/language-server-protocol/specifications/lsif/0.6.0/specification/>
-    PREFIX max: <urn:tower-lsp-max:core:>
+    PREFIX max: <urn:lsp-max:core:>
     SELECT ?srcDocUri ?srcStartLine ?srcStartChar ?srcEndLine ?srcEndChar
            ?destDocUri ?destName ?destKind ?destDetail
            ?destStartLine ?destStartChar ?destEndLine ?destEndChar

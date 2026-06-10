@@ -976,7 +976,7 @@
         let mut builder = lsp_max_protocol::lsif_builder::LsifBuilder::new(&mut buffer);
         
         builder.emit_metadata("0.6.0", lsp_max_protocol::lsif::ToolInfo {
-            name: "tower-lsp-max".to_string(),
+            name: "lsp-max".to_string(),
             version: Some("26.6.4".to_string()),
             args: None,
         }).map_err(|e| Error::internal_error())?;

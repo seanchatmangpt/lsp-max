@@ -13,7 +13,7 @@
 
 ## 1. LSP 3.18.0 Meta-Model Inventory
 
-An inspection of `crates/tower-lsp-max-specgen/fixtures/metaModel-3.18.json` reveals the following distribution of protocol definitions:
+An inspection of `crates/lsp-max-specgen/fixtures/metaModel-3.18.json` reveals the following distribution of protocol definitions:
 *   **Structures:** 387
 *   **Enumerations:** 40
 *   **Type Aliases:** 22
@@ -31,7 +31,7 @@ These definitions contain complex types, including:
 
 ## 2. Generator Architecture Analysis
 
-The `tower-lsp-max-specgen` generator parses the meta-model JSON and outputs formatted Rust structures. It consists of three main source modules:
+The `lsp-max-specgen` generator parses the meta-model JSON and outputs formatted Rust structures. It consists of three main source modules:
 *   `src/metamodel.rs`: Represents the AST schema of the official LSP meta-model. Defines the 11 type kinds inside the `Type` enum: `Base`, `Reference`, `Array`, `Map`, `And`, `Or`, `Tuple`, `StringLiteral`, `IntegerLiteral`, `BooleanLiteral`, and `Literal`.
 *   `src/render.rs`: Maps the parsed AST into Rust code using the `quote` macro.
 *   `src/main.rs`: Provides the CLI wrapper interface to read the input JSON, invoke `Renderer`, and write the output using `prettyplease`.

@@ -73,4 +73,4 @@ By treating the space of process models as a **Riemannian manifold** with consta
 
 ## 5. Summary of Findings
 
-The integration of Semantic Web technologies into `tower-lsp-max` is not merely for data storage but for **logical grounding**. By mapping code intelligence (LSIF) to an RDF control plane (Oxigraph) and enforcing lifecycle laws via Evidence Algebra, the system achieves a "Type-Safe Process-Evidence" state where the code itself is a proof of its own conformance to defined ontologies.
+The integration of Semantic Web technologies into `lsp-max` is not merely for data storage but for **logical grounding**. By mapping code intelligence (LSIF) to an RDF control plane (Oxigraph) and enforcing lifecycle laws via Evidence Algebra, the system achieves a "Type-Safe Process-Evidence" state where the code itself is a proof of its own conformance to defined ontologies.

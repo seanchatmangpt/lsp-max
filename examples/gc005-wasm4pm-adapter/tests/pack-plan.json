@@ -3,7 +3,7 @@
     "ggen-pack-proofs": "cbdf4393eeced6922e5b45a5b09678187a791a9b386c2208a71f5239dafcdff1"
   },
   "outputs": [
-    "/Users/sac/tower-lsp-max/crates/gc005-wasm4pm-adapter/tests"
+    "/Users/sac/lsp-max/crates/gc005-wasm4pm-adapter/tests"
   ],
   "required_receipts": true,
   "resolved_packs": [

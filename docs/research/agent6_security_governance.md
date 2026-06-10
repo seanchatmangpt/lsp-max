@@ -1,7 +1,7 @@
 # Research Report: Agent-6 Security Governance & anti-llm-lsp
 
 ## Executive Summary
-This report analyzes internal and external research papers related to cybersecurity, LLM hallucinations, anomaly detection, and system trust. The findings provide the mathematical and architectural foundation for the `anti-llm-lsp` security layer and the broader semantic AI governance framework within the `tower-lsp-max` ecosystem.
+This report analyzes internal and external research papers related to cybersecurity, LLM hallucinations, anomaly detection, and system trust. The findings provide the mathematical and architectural foundation for the `anti-llm-lsp` security layer and the broader semantic AI governance framework within the `lsp-max` ecosystem.
 
 ## 1. Bibliography
 

@@ -4,22 +4,22 @@
 MAX_IMPLEMENTATION_COMPLETE
 
 ## MetaModel Fixtures
-The following metamodel fixtures are present in the `crates/tower-lsp-max-specgen/fixtures/` directory:
+The following metamodel fixtures are present in the `crates/lsp-max-specgen/fixtures/` directory:
 1.  **Official LSP 3.18 MetaModel Fixture:**
     *   **File Name:** `metaModel-3.18.json`
-    *   **Path:** `crates/tower-lsp-max-specgen/fixtures/metaModel-3.18.json`
+    *   **Path:** `crates/lsp-max-specgen/fixtures/metaModel-3.18.json`
     *   **Size:** 434,246 bytes
     *   **Details:** Confirmed via internal metadata to represent LSP version `3.18.0`. It contains the complete schema specification including `requests`, `notifications`, `structures`, `enumerations`, and `typeAliases`.
 2.  **Minimal MetaModel Fixture:**
     *   **File Name:** `minimal-metaModel.json`
-    *   **Path:** `crates/tower-lsp-max-specgen/fixtures/minimal-metaModel.json`
+    *   **Path:** `crates/lsp-max-specgen/fixtures/minimal-metaModel.json`
     *   **Size:** 889 bytes
     *   **Details:** Used for fast-path boot testing and validation of the generator toolchain.
 
 Both fixtures are successfully read and parsed using `serde_json` into the `MetaModel` AST.
 
 ## Supported Type Kinds
-The parser explicitly supports all 11 type kinds defined by the official Language Server Protocol meta-model. These are declared inside the `Type` enum in `crates/tower-lsp-max-specgen/src/metamodel.rs`:
+The parser explicitly supports all 11 type kinds defined by the official Language Server Protocol meta-model. These are declared inside the `Type` enum in `crates/lsp-max-specgen/src/metamodel.rs`:
 *   `Base { name: BaseTypeName }`: Maps core types (e.g., `URI`, `DocumentUri`, `integer`, `string`, `boolean`).
 *   `Reference { name: String }`: References to other named structures, enums, or type aliases.
 *   `Array { element: Box<Type> }`: Arrays of other types.
@@ -50,11 +50,11 @@ Although the memory-resident AST (the "known law") tracks all complex type struc
 The specification generator is invoked with the following commands to produce Rust code:
 1.  **Minimal LSP Specification Generation:**
     ```bash
-    cargo run -p tower-lsp-max-specgen -- --input crates/tower-lsp-max-specgen/fixtures/minimal-metaModel.json --output generated/lsp_minimal.rs
+    cargo run -p lsp-max-specgen -- --input crates/lsp-max-specgen/fixtures/minimal-metaModel.json --output generated/lsp_minimal.rs
     ```
 2.  **Full LSP 3.18.0 Specification Generation:**
     ```bash
-    cargo run -p tower-lsp-max-specgen -- --input crates/tower-lsp-max-specgen/fixtures/metaModel-3.18.json --output generated/lsp_3_18.rs
+    cargo run -p lsp-max-specgen -- --input crates/lsp-max-specgen/fixtures/metaModel-3.18.json --output generated/lsp_3_18.rs
     ```
 
 ## Required Follow-up Gates

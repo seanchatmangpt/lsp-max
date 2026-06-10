@@ -2,7 +2,7 @@
 
 ## 1. Executive Summary
 
-This report establishes the formal mapping strategy for translating Language Server Index Format (LSIF) 0.6.0 elements and compilation diagnostic observations into W3C RDF quads (`oxrdf::Quad`) within `tower-lsp-max` v26.6.5. By utilizing snapshot-isolated named graphs, standard ontologies, and a robust Rust translation layer, this design bridges the gap between interactive Language Server intelligence and semantically verifiable, cryptographically replayable static analysis datasets.
+This report establishes the formal mapping strategy for translating Language Server Index Format (LSIF) 0.6.0 elements and compilation diagnostic observations into W3C RDF quads (`oxrdf::Quad`) within `lsp-max` v26.6.5. By utilizing snapshot-isolated named graphs, standard ontologies, and a robust Rust translation layer, this design bridges the gap between interactive Language Server intelligence and semantically verifiable, cryptographically replayable static analysis datasets.
 
 ---
 
@@ -22,8 +22,8 @@ In compliance with the Anti-Laundering Doctrine specified in `docs/v26.6.5/prd-a
 | `sh` | `http://www.w3.org/ns/shacl#` | W3C Shapes Constraint Language |
 | `odrl` | `http://www.w3.org/ns/odrl/2/` | W3C Rights Expression Language |
 | `lsif` | `https://microsoft.github.io/language-server-protocol/specifications/lsif/0.6.0/specification/` | LSIF Core Specification Namespace |
-| `max` | `urn:tower-lsp-max:core:` | Bounded private core framework namespace |
-| `rcpt` | `urn:tower-lsp-max:receipt:` | Bounded private cryptographic receipts |
+| `max` | `urn:lsp-max:core:` | Bounded private core framework namespace |
+| `rcpt` | `urn:lsp-max:receipt:` | Bounded private cryptographic receipts |
 | `proj` | `urn:project:local:` | Local workspace project resources |
 
 ---
@@ -69,7 +69,7 @@ Every RDF statement must be ingested as an `oxrdf::Quad` bound to a specific Nam
   ```turtle
   proj:metadata_1 max:toolInfo proj:tool_1 .
   proj:tool_1 a max:Tool ;
-              max:name "tower-lsp-max" ;
+              max:name "lsp-max" ;
               max:version "1.0.0" .
   ```
 
@@ -274,14 +274,14 @@ Below is the proposed implementation interface for the RDF translation module. I
 
 ```rust
 use oxrdf::{Quad, NamedNode, Subject, Term, GraphName, Literal};
-use tower_lsp_max_lsif::lsif::{Element, Vertex, Edge, Id, ItemEdgeProperty};
-use tower_lsp_max_protocol::MaxDiagnostic;
+use lsp_max_lsif::lsif::{Element, Vertex, Edge, Id, ItemEdgeProperty};
+use lsp_max_protocol::MaxDiagnostic;
 
 /// Const prefixes for target namespaces
 pub const RDF_TYPE: &str = "http://www.w3.org/1999/02/22-rdf-syntax-ns#type";
 pub const LSIF_NS: &str = "https://microsoft.github.io/language-server-protocol/specifications/lsif/0.6.0/specification/";
-pub const MAX_NS: &str = "urn:tower-lsp-max:core:";
-pub const RCPT_NS: &str = "urn:tower-lsp-max:receipt:";
+pub const MAX_NS: &str = "urn:lsp-max:core:";
+pub const RCPT_NS: &str = "urn:lsp-max:receipt:";
 pub const PROJ_NS: &str = "urn:project:local:";
 pub const PROV_NS: &str = "http://www.w3.org/ns/prov#";
 pub const XSD_NS: &str = "http://www.w3.org/2001/XMLSchema#";
@@ -333,9 +333,9 @@ impl LsifRdfMapper {
                     &s,
                     &format!("{}positionEncoding", MAX_NS),
                     Term::Literal(Literal::new_simple_literal(match position_encoding {
-                        tower_lsp_max_lsif::lsif::PositionEncoding::Utf8 => "utf-8",
-                        tower_lsp_max_lsif::lsif::PositionEncoding::Utf16 => "utf-16",
-                        tower_lsp_max_lsif::lsif::PositionEncoding::Utf32 => "utf-32",
+                        lsp_max_lsif::lsif::PositionEncoding::Utf8 => "utf-8",
+                        lsp_max_lsif::lsif::PositionEncoding::Utf16 => "utf-16",
+                        lsp_max_lsif::lsif::PositionEncoding::Utf32 => "utf-32",
                     }))
                 ));
 
@@ -384,10 +384,10 @@ impl LsifRdfMapper {
 
                 if let Some(range_tag) = tag {
                     match range_tag {
-                        tower_lsp_max_lsif::lsif::RangeTag::Declaration { text, kind, full_range, detail }
-                        | tower_lsp_max_lsif::lsif::RangeTag::Definition { text, kind, full_range, detail } => {
+                        lsp_max_lsif::lsif::RangeTag::Declaration { text, kind, full_range, detail }
+                        | lsp_max_lsif::lsif::RangeTag::Definition { text, kind, full_range, detail } => {
                             let tag_type = match range_tag {
-                                tower_lsp_max_lsif::lsif::RangeTag::Declaration { .. } => "declaration",
+                                lsp_max_lsif::lsif::RangeTag::Declaration { .. } => "declaration",
                                 _ => "definition",
                             };
                             quads.push(make_quad(&s, &format!("{}tagType", MAX_NS), Term::Literal(Literal::new_simple_literal(tag_type))));
@@ -401,11 +401,11 @@ impl LsifRdfMapper {
                                 quads.push(make_quad(&s, &format!("{}detail", MAX_NS), Term::Literal(Literal::new_simple_literal(det))));
                             }
                         }
-                        tower_lsp_max_lsif::lsif::RangeTag::Reference { text } => {
+                        lsp_max_lsif::lsif::RangeTag::Reference { text } => {
                             quads.push(make_quad(&s, &format!("{}tagType", MAX_NS), Term::Literal(Literal::new_simple_literal("reference"))));
                             quads.push(make_quad(&s, &format!("{}text", MAX_NS), Term::Literal(Literal::new_simple_literal(text))));
                         }
-                        tower_lsp_max_lsif::lsif::RangeTag::Unknown { text } => {
+                        lsp_max_lsif::lsif::RangeTag::Unknown { text } => {
                             quads.push(make_quad(&s, &format!("{}tagType", MAX_NS), Term::Literal(Literal::new_simple_literal("unknown"))));
                             quads.push(make_quad(&s, &format!("{}text", MAX_NS), Term::Literal(Literal::new_simple_literal(text))));
                         }
@@ -444,10 +444,10 @@ impl LsifRdfMapper {
                 quads.push(make_quad(&s, RDF_TYPE, Term::NamedNode(new_node(&format!("{}HoverResult", LSIF_NS)))));
                 
                 let content_str = match &result.contents {
-                    tower_lsp_max_lsif::lsif::HoverContents::String(str) => str.clone(),
-                    tower_lsp_max_lsif::lsif::HoverContents::Markup(m) => m.value.clone(),
-                    tower_lsp_max_lsif::lsif::HoverContents::MarkedString(ms) => format!("{:?}", ms),
-                    tower_lsp_max_lsif::lsif::HoverContents::MarkedStringArray(arr) => format!("{:?}", arr),
+                    lsp_max_lsif::lsif::HoverContents::String(str) => str.clone(),
+                    lsp_max_lsif::lsif::HoverContents::Markup(m) => m.value.clone(),
+                    lsp_max_lsif::lsif::HoverContents::MarkedString(ms) => format!("{:?}", ms),
+                    lsp_max_lsif::lsif::HoverContents::MarkedStringArray(arr) => format!("{:?}", arr),
                 };
                 quads.push(make_quad(&s, &format!("{}contents", LSIF_NS), Term::Literal(Literal::new_simple_literal(&content_str))));
             }
@@ -684,7 +684,7 @@ ASK {
 ### 7.2 Diagnostic Unsigned Provenance Verification Query
 Detects any diagnostic observations that lack a cryptographically bound receipt under requirement `PRD-R6`:
 ```sparql
-PREFIX max:  <urn:tower-lsp-max:core:>
+PREFIX max:  <urn:lsp-max:core:>
 PREFIX prov: <http://www.w3.org/ns/prov#>
 
 SELECT ?diagnostic WHERE {

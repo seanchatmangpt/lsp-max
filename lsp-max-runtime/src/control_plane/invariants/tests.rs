@@ -37,7 +37,7 @@ fn test_invariant_2_unreceipted() {
         .insert(&Quad::new(
             node("urn:diagnostic1"),
             NamedNode::new("http://www.w3.org/1999/02/22-rdf-syntax-ns#type").unwrap(),
-            term("urn:tower-lsp-max:core:Diagnostic"),
+            term("urn:lsp-max:core:Diagnostic"),
             oxigraph::model::GraphName::DefaultGraph,
         ))
         .unwrap();
@@ -102,14 +102,14 @@ fn test_invariant_5_false_alive() {
         .insert(&Quad::new(
             node("urn:rcpt1"),
             NamedNode::new("http://www.w3.org/1999/02/22-rdf-syntax-ns#type").unwrap(),
-            term("urn:tower-lsp-max:core:Receipt"),
+            term("urn:lsp-max:core:Receipt"),
             oxigraph::model::GraphName::DefaultGraph,
         ))
         .unwrap();
     store
         .insert(&Quad::new(
             node("urn:rcpt1"),
-            NamedNode::new("urn:tower-lsp-max:core:resultHash").unwrap(),
+            NamedNode::new("urn:lsp-max:core:resultHash").unwrap(),
             Term::Literal(oxigraph::model::Literal::new_simple_literal("expected")),
             oxigraph::model::GraphName::DefaultGraph,
         ))
@@ -117,7 +117,7 @@ fn test_invariant_5_false_alive() {
     store
         .insert(&Quad::new(
             node("urn:rcpt1"),
-            NamedNode::new("urn:tower-lsp-max:core:queryHash").unwrap(),
+            NamedNode::new("urn:lsp-max:core:queryHash").unwrap(),
             Term::Literal(oxigraph::model::Literal::new_simple_literal("q1")),
             oxigraph::model::GraphName::DefaultGraph,
         ))
@@ -125,7 +125,7 @@ fn test_invariant_5_false_alive() {
     store
         .insert(&Quad::new(
             node("urn:rcpt1"),
-            NamedNode::new("urn:tower-lsp-max:core:graphHash").unwrap(),
+            NamedNode::new("urn:lsp-max:core:graphHash").unwrap(),
             Term::Literal(oxigraph::model::Literal::new_simple_literal("g1")),
             oxigraph::model::GraphName::DefaultGraph,
         ))
@@ -135,14 +135,14 @@ fn test_invariant_5_false_alive() {
         .insert(&Quad::new(
             node("urn:replay1"),
             NamedNode::new("http://www.w3.org/1999/02/22-rdf-syntax-ns#type").unwrap(),
-            term("urn:tower-lsp-max:core:Replay"),
+            term("urn:lsp-max:core:Replay"),
             oxigraph::model::GraphName::DefaultGraph,
         ))
         .unwrap();
     store
         .insert(&Quad::new(
             node("urn:replay1"),
-            NamedNode::new("urn:tower-lsp-max:core:resultHash").unwrap(),
+            NamedNode::new("urn:lsp-max:core:resultHash").unwrap(),
             Term::Literal(oxigraph::model::Literal::new_simple_literal(
                 "actual_different",
             )),
@@ -152,7 +152,7 @@ fn test_invariant_5_false_alive() {
     store
         .insert(&Quad::new(
             node("urn:replay1"),
-            NamedNode::new("urn:tower-lsp-max:core:queryHash").unwrap(),
+            NamedNode::new("urn:lsp-max:core:queryHash").unwrap(),
             Term::Literal(oxigraph::model::Literal::new_simple_literal("q1")),
             oxigraph::model::GraphName::DefaultGraph,
         ))
@@ -160,7 +160,7 @@ fn test_invariant_5_false_alive() {
     store
         .insert(&Quad::new(
             node("urn:replay1"),
-            NamedNode::new("urn:tower-lsp-max:core:graphHash").unwrap(),
+            NamedNode::new("urn:lsp-max:core:graphHash").unwrap(),
             Term::Literal(oxigraph::model::Literal::new_simple_literal("g1")),
             oxigraph::model::GraphName::DefaultGraph,
         ))

@@ -12,7 +12,7 @@ pub fn parse_cargo_toml(filepath: &str, content: &str) -> Vec<Observation> {
 
         // Check for tower-lsp dependency
         if (trimmed.contains("tower-lsp") || trimmed.contains("tower_lsp"))
-            && !(trimmed.contains("tower-lsp-max") || trimmed.contains("lsp_max"))
+            && !(trimmed.contains("lsp-max") || trimmed.contains("lsp_max"))
         {
             obs.push(Observation {
                 file_path: filepath.to_string(),

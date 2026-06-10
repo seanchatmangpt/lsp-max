@@ -8,9 +8,9 @@
 
 ## Executive Summary
 
-This report provides a detailed, comprehensive surface area comparison between the official Language Server Protocol (LSP) 3.18.0 specification (the meta-model) and its implementation in `tower-lsp-max`.
+This report provides a detailed, comprehensive surface area comparison between the official Language Server Protocol (LSP) 3.18.0 specification (the meta-model) and its implementation in `lsp-max`.
 
-All requests, notifications, structures, enumerations, and type aliases defined in the LSP 3.18.0 meta-model are fully supported, routed, and exposed in `tower-lsp-max`.
+All requests, notifications, structures, enumerations, and type aliases defined in the LSP 3.18.0 meta-model are fully supported, routed, and exposed in `lsp-max`.
 
 ### Summary of Surface Metrics
 
@@ -29,11 +29,11 @@ Category | Meta-Model Count | Represented in Rust Crate? | Server Routed? | Clie
 When evaluating protocol compatibility, it is vital to distinguish between different coverage categories:
 
 1. **Vocabulary Coverage (Types):** The compilation-level existence of structures and data structures representing the protocol definitions.
-   - *Example:* The structure `InlineCompletionParams` exists in the `tower-lsp-max-protocol` library. This is vocabulary-complete.
+   - *Example:* The structure `InlineCompletionParams` exists in the `lsp-max-protocol` library. This is vocabulary-complete.
 2. **Routing Coverage (Router Registration):** The configuration of the JSON-RPC server router to accept and delegate a specific method string rather than returning a generic transport-level error.
    - *Example:* The method `textDocument/inlineCompletion` is declared on the `LanguageServer` trait. When the server starts, the router registers this method.
 3. **Implementation Coverage (Behavioral Logic):** The actual code execution block that processes the client request, implements logic, and responds with semantics.
-   - *Status:* `tower-lsp-max` provides 100% routing and vocabulary coverage for all LSP 3.18.0 requests and notifications. Traits and client helpers are fully exposed to allow downstream implementations to implement the behavioral logic seamlessly.
+   - *Status:* `lsp-max` provides 100% routing and vocabulary coverage for all LSP 3.18.0 requests and notifications. Traits and client helpers are fully exposed to allow downstream implementations to implement the behavioral logic seamlessly.
 
 ---
 
@@ -152,7 +152,7 @@ Below is the exhaustive comparison of all 26 notifications in the LSP 3.18.0 met
 
 ## 3. Structures
 
-The LSP 3.18.0 meta-model defines **387 structures**. The generator correctly translates every structure into a Rust structure inside `tower-lsp-max-protocol/src/lsp_3_18.rs`. 
+The LSP 3.18.0 meta-model defines **387 structures**. The generator correctly translates every structure into a Rust structure inside `lsp-max-protocol/src/lsp_3_18.rs`. 
 
 Notable 3.18.0 structure additions fully represented in the vocabulary:
 - `InlineCompletionParams`, `InlineCompletionList`, `InlineCompletionItem`, `InlineCompletionRegistrationOptions`, `InlineCompletionContext`, `InlineCompletionOptions`, `InlineCompletionClientCapabilities`
@@ -212,7 +212,7 @@ Below is the list of all **40 enumerations** defined in the LSP 3.18.0 meta-mode
 
 ## 5. Type Aliases
 
-Below is the list of all **22 type aliases** defined in the LSP 3.18.0 meta-model. All 22 are mapped directly as Rust type aliases in `tower-lsp-max-protocol`.
+Below is the list of all **22 type aliases** defined in the LSP 3.18.0 meta-model. All 22 are mapped directly as Rust type aliases in `lsp-max-protocol`.
 
 # | Type Alias Name | Mapped Rust Type | Notes
 --- | --- | ---

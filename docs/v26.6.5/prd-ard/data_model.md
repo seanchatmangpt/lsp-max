@@ -1,4 +1,4 @@
-# Ontology & Vocabulary Mapping: tower-lsp-max v26.6.5
+# Ontology & Vocabulary Mapping: lsp-max v26.6.5
 
 This document specifies the exact mapping of LSIF, LiveLSP diagnostics, and verification receipt metadata to W3C RDF triples.
 
@@ -34,8 +34,8 @@ All triples must use the following standard namespace prefixes:
 @prefix sh:      <http://www.w3.org/ns/shacl#> .
 @prefix odrl:    <http://www.w3.org/ns/odrl/2/> .
 @prefix lsif:    <https://microsoft.github.io/language-server-protocol/specifications/lsif/0.6.0/specification/> .
-@prefix max:     <urn:tower-lsp-max:core:> .
-@prefix rcpt:    <urn:tower-lsp-max:receipt:> .
+@prefix max:     <urn:lsp-max:core:> .
+@prefix rcpt:    <urn:lsp-max:receipt:> .
 @prefix proj:    <urn:project:local:> .
 ```
 
@@ -139,8 +139,8 @@ proj:range_101 a lsif:Range ;
 ```turtle
 @prefix prov: <http://www.w3.org/ns/prov#> .
 @prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
-@prefix max:  <urn:tower-lsp-max:core:> .
-@prefix rcpt: <urn:tower-lsp-max:receipt:> .
+@prefix max:  <urn:lsp-max:core:> .
+@prefix rcpt: <urn:lsp-max:receipt:> .
 @prefix proj: <urn:project:local:> .
 
 # A compiler diagnostic warning

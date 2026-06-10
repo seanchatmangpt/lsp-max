@@ -1,6 +1,6 @@
-# tower-lsp-max-specgen
+# lsp-max-specgen
 
-Generator target for `tower-lsp-max` protocol types.
+Generator target for `lsp-max` protocol types.
 
 Input: official LSP 3.18 meta-model JSON:
 
@@ -35,4 +35,4 @@ The first generated layer is deliberately conservative:
 - closed enumerations map to serde enums
 - complex `or` / `and` types are preserved in comments and currently lower to `serde_json::Value` unless a stable named form is generated later
 
-For `tower-lsp-max`, this generated protocol layer is not the law-state engine. It is the transport vocabulary that the law-state engine projects through.
+For `lsp-max`, this generated protocol layer is not the law-state engine. It is the transport vocabulary that the law-state engine projects through.

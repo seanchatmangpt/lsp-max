@@ -1,12 +1,12 @@
 # Max Protocol Law: Access, Diagnostic Refusal, and Repair Transactions
 
-This document defines the custom JSON-RPC protocol interface implemented by `tower-lsp-max` in the `max/` namespace. These interfaces govern state queries, diagnostic explanations, atomic repair transactions, correctness gates, and verification receipts.
+This document defines the custom JSON-RPC protocol interface implemented by `lsp-max` in the `max/` namespace. These interfaces govern state queries, diagnostic explanations, atomic repair transactions, correctness gates, and verification receipts.
 
 ---
 
 ## Schema Rules for the `max/` Namespace
 
-All custom RPC methods implemented by `tower-lsp-max` are namespaced under the `max/` prefix. They enforce strict type-safe schemas for inputs and responses. These endpoints are designed to interact with autonomous agents to query, inspect, and transition the project state via verifiable, cryptographic transaction mechanisms.
+All custom RPC methods implemented by `lsp-max` are namespaced under the `max/` prefix. They enforce strict type-safe schemas for inputs and responses. These endpoints are designed to interact with autonomous agents to query, inspect, and transition the project state via verifiable, cryptographic transaction mechanisms.
 
 ---
 
@@ -110,7 +110,7 @@ All custom RPC methods implemented by `tower-lsp-max` are namespaced under the `
 
 ## Diagnostics as Refused Transitions
 
-In the `tower-lsp-max` paradigm, a diagnostic is **not** a user-interface warning or a formatting suggestion. It is a formal **refusal by the admission kernel to transition state**. 
+In the `lsp-max` paradigm, a diagnostic is **not** a user-interface warning or a formatting suggestion. It is a formal **refusal by the admission kernel to transition state**. 
 
 When an agent attempts to transition the codebase (e.g. committing a file change or invoking a pipeline transition), the admission kernel checks the active laws. If a violation is detected, a state transition is blocked, and a `MaxDiagnostic` is emitted.
 
@@ -130,7 +130,7 @@ The structure of a diagnostic is formally defined as:
 
 ## Code Actions as Repair Transactions
 
-To resolve a refused transition, agents must execute atomic state repair vectors. Under `tower-lsp-max`, these are represented by the `MaxCodeAction` struct. Instead of generic text edits, they represent formal **state repair transactions** containing plans for verification, fallback, and logging.
+To resolve a refused transition, agents must execute atomic state repair vectors. Under `lsp-max`, these are represented by the `MaxCodeAction` struct. Instead of generic text edits, they represent formal **state repair transactions** containing plans for verification, fallback, and logging.
 
 ### The `MaxCodeAction` Structure
 Each `MaxCodeAction` consists of:

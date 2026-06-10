@@ -8,14 +8,14 @@ use wasm4pm_compat::ocel::{
 pub fn generate_anti_llm_ocel_log() -> OCEL {
     // 1. Create Objects
     let objects = vec![
-        OCELObject::new("repo_tower_lsp_max".to_string(), "Repository")
+        OCELObject::new("repo_lsp_max".to_string(), "Repository")
             .with_attribute(OCELEventAttribute::string(
                 "name",
-                "tower-lsp-max".to_string(),
+                "lsp-max".to_string(),
             ))
             .with_attribute(OCELEventAttribute::string(
                 "path",
-                "/Users/sac/tower-lsp-max".to_string(),
+                "/Users/sac/lsp-max".to_string(),
             )),
         OCELObject::new("crate_anti_llm_lsp".to_string(), "Crate").with_attribute(
             OCELEventAttribute::string("name", "anti-llm-lsp".to_string()),
@@ -83,7 +83,7 @@ pub fn generate_anti_llm_ocel_log() -> OCEL {
     // 2. Create Events with E2O relationships embedded
     let mut ev_repo_scan = OCELEvent::new("ev_repo_scan".to_string(), "RepositoryScanned");
     ev_repo_scan.relationships.push(
-        OCELRelationship::new("ev_repo_scan".to_string(), "repo_tower_lsp_max".to_string())
+        OCELRelationship::new("ev_repo_scan".to_string(), "repo_lsp_max".to_string())
             .qualified("repository"),
     );
 

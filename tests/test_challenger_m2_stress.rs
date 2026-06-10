@@ -376,7 +376,7 @@ async fn test_quick_fix_code_actions_bounds_stress() {
         wait_for_response(client_received_responses.clone(), 1, Duration::from_secs(2)).await;
 
     // Open a document with very short text
-    let doc_uri = "file:///Users/sac/tower-lsp-max/dummy.rs";
+    let doc_uri = "file:///Users/sac/lsp-max/dummy.rs";
     let code_text = "fn main() {}\n";
     let open_ntf = serde_json::json!({
         "jsonrpc": "2.0",
@@ -429,7 +429,7 @@ async fn test_quick_fix_code_actions_bounds_stress() {
                             "range": range,
                             "severity": 1,
                             "code": "TLM005",
-                            "source": "tower-lsp-max-playground",
+                            "source": "lsp-max-playground",
                             "message": "`init` is not a valid method. Did you mean `initialize`?"
                         }
                     ]

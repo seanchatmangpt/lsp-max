@@ -2,7 +2,7 @@
 name = "bevy-lsp"
 version = "0.1.0"
 description = "Bevy Language Server"
-authors = ["tower-lsp-max"]
+authors = ["lsp-max"]
 license = "MIT"
 
 [ontology]
@@ -20,27 +20,27 @@ rules = [
 [[generation.rules]]
 name = "scaffold"
 query = { inline = "SELECT ?server_name ?language_id WHERE { BIND(\"bevy\" AS ?server_name) BIND(\"tree_sitter_rust\" AS ?language_id) }" }
-template = { file = "/Users/sac/ggen/marketplace/templates/tower-lsp-max/backend.rs.tera" }
+template = { file = "/Users/sac/ggen/marketplace/templates/lsp-max/backend.rs.tera" }
 output_file = "src/backend.rs"
 mode = "Overwrite"
 
 [[generation.rules]]
 name = "cli"
 query = { inline = "SELECT ?server_name WHERE { BIND(\"bevy\" AS ?server_name) }" }
-template = { file = "/Users/sac/ggen/marketplace/templates/tower-lsp-max/cli.rs.tera" }
+template = { file = "/Users/sac/ggen/marketplace/templates/lsp-max/cli.rs.tera" }
 output_file = "src/main.rs"
 mode = "Overwrite"
 
 [[generation.rules]]
 name = "semantics"
 query = { inline = "SELECT ?server_name WHERE { BIND(\"bevy\" AS ?server_name) }" }
-template = { file = "/Users/sac/ggen/marketplace/templates/tower-lsp-max/semantics.rs.tera" }
+template = { file = "/Users/sac/ggen/marketplace/templates/lsp-max/semantics.rs.tera" }
 output_file = "src/semantics.rs"
 mode = "Overwrite"
 
 [[generation.rules]]
 name = "build"
 query = { inline = "SELECT ?tree_sitter_crate WHERE { BIND(\"tree_sitter_rust\" AS ?tree_sitter_crate) }" }
-template = { file = "/Users/sac/ggen/marketplace/templates/tower-lsp-max/build.rs.tera" }
+template = { file = "/Users/sac/ggen/marketplace/templates/lsp-max/build.rs.tera" }
 output_file = "build.rs"
 mode = "Overwrite"

@@ -11,15 +11,15 @@ Admission receipt:
   GC007 enforces the structural code-law that authority implementations must reside within
   their respective authority workspaces.
 
-  The wasm4pm-lsp observer has been formally relocated from the tower-lsp-max integration
+  The wasm4pm-lsp observer has been formally relocated from the lsp-max integration
   boundary to the sealed ~/wasm4pm process authority workspace.
 
   Dogfood-projected tests verify that no shadow or authority-claiming wasm4pm-lsp
-  exists within the mutable ggen or tower-lsp-max workspaces.
+  exists within the mutable ggen or lsp-max workspaces.
 
 Export Metadata:
-  producing_workspace: ~/tower-lsp-max
-  storing_workspace: ~/tower-lsp-max
+  producing_workspace: ~/lsp-max
+  storing_workspace: ~/lsp-max
   export_reason: checkpoint tracking
   exported_artifact_digest: 2e2fe6894a87f0022bab91b02d13e2ac5c26bed71d29992f8cfac307221fbd7d
   export_receipt_digest: c493b4f21f36f7c810e8e36a7e5f31a70d3ba6c0a6f6ad11af5f4ee29756bf6d

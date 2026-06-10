@@ -13,7 +13,7 @@ Admission receipt:
   conformance authority.
 
   No shadow crates (wasm4pm, wasm4pm-proper, wasm4pm-compat) exist within the
-  ggen or tower-lsp-max workspaces.
+  ggen or lsp-max workspaces.
 
   The neutral adapter pattern is strictly enforced via gc005-wasm4pm-adapter.
   This adapter does not implement conformance logic, nor does it emit FIT independently;
@@ -26,13 +26,13 @@ Admission receipt:
   Dogfood-projected tests verify these code laws and filesystem constraints.
 
 Export Metadata:
-  producing_workspace: ~/tower-lsp-max
-  storing_workspace: ~/tower-lsp-max
+  producing_workspace: ~/lsp-max
+  storing_workspace: ~/lsp-max
   export_reason: checkpoint tracking
   exported_artifact_digest: 8f1b44ba77d5235cae97df7c21e014809cbb45159dce874a8defd6d34b990df8
   export_receipt_digest: a8b190ad6cf67f326cfe4ff2a0a236fc3cffb2f08d275c75265c8d32b739b56e
 
 Admitted Boundary:
-  workspace = ~/tower-lsp-max
+  workspace = ~/lsp-max
   conformance_authority = wasm4pm
   adapter = gc005-wasm4pm-adapter

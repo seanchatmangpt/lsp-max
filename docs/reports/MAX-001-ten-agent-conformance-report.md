@@ -8,13 +8,13 @@
 ## Repository Snapshot
 - **Current Git HEAD**: `479e7b564b328b047f0fa99234f2e0c65579a922`
 - **Workspace Crates**:
-  - `tower-lsp-max` (core server library)
-  - `tower-lsp-max-macros` (JSON-RPC macro attributes)
-  - `tower-lsp-max-protocol` (LSP 3.18.0 types and re-exports)
-  - `tower-lsp-max-runtime` (typestate transition lifecycle and receipt chain kernel)
-  - `tower-lsp-max-agent` (LLM communication module)
-  - `crates/tower-lsp-max-cli` (Clap-based noun-verb CLI interface)
-  - `crates/tower-lsp-max-specgen` (LSP metamodel specification generator)
+  - `lsp-max` (core server library)
+  - `lsp-max-macros` (JSON-RPC macro attributes)
+  - `lsp-max-protocol` (LSP 3.18.0 types and re-exports)
+  - `lsp-max-runtime` (typestate transition lifecycle and receipt chain kernel)
+  - `lsp-max-agent` (LLM communication module)
+  - `crates/lsp-max-cli` (Clap-based noun-verb CLI interface)
+  - `crates/lsp-max-specgen` (LSP metamodel specification generator)
 
 ---
 
@@ -36,16 +36,16 @@
 ---
 
 ## Current Architecture
-The `tower-lsp-max` framework is architected around a multi-layered verification and execution model:
-1. **LSP Transport Layer**: Managed by the core `tower-lsp-max` crate, serving JSON-RPC over stdio, TCP, or websocket.
-2. **Typestate Runtime Layer**: Contained in `tower-lsp-max-runtime`, enforcing strict compile-time state transitions through the `TypestateKernel` trait and preserving negotiated capabilities.
+The `lsp-max` framework is architected around a multi-layered verification and execution model:
+1. **LSP Transport Layer**: Managed by the core `lsp-max` crate, serving JSON-RPC over stdio, TCP, or websocket.
+2. **Typestate Runtime Layer**: Contained in `lsp-max-runtime`, enforcing strict compile-time state transitions through the `TypestateKernel` trait and preserving negotiated capabilities.
 3. **Autonomic Registry**: Anchored by `ServerRegistry`, which dynamically records active diagnostics, active verification gates, and cryptographic receipt logs.
-4. ** एक्ट्यूएशन/Actuation CLI Layer**: Provided by `tower-lsp-max-cli` using the clap-based noun-verb routing model.
+4. ** एक्ट्यूएशन/Actuation CLI Layer**: Provided by `lsp-max-cli` using the clap-based noun-verb routing model.
 
 ---
 
 ## Protocol Coverage
-- **Vocabulary Coverage**: 100% of the 3.18.0 meta-model types (69 requests, 26 notifications, 387 structures, 40 enums, and 22 type aliases) are represented as compile-time Rust types inside `tower-lsp-max-protocol/src/lsp_3_18.rs`.
+- **Vocabulary Coverage**: 100% of the 3.18.0 meta-model types (69 requests, 26 notifications, 387 structures, 40 enums, and 22 type aliases) are represented as compile-time Rust types inside `lsp-max-protocol/src/lsp_3_18.rs`.
 - **Routing Coverage**: The `LanguageServer` trait routes **77 RPC methods** (66 standard LSP methods and 11 custom `max/*` extension methods).
 - **Client Helpers**: 12 requests and 4 notifications are exposed as client-bound methods on the `Client` struct.
 - **Stub Gaps**: The new 3.18.0 requests (`textDocument/inlineCompletion`, `workspace/textDocumentContent`, and `workspace/textDocumentContent/refresh`) are routed but return `method_not_found` stubs.
@@ -87,30 +87,30 @@ The zero-cost typestate machine kernel (`Machine<L, P, D>`) governs transition s
  M .agents/teamwork_preview_explorer_m1_1/...
  M .agents/teamwork_preview_explorer_m1_2/...
  M .agents/teamwork_preview_explorer_m1_3/...
- M crates/tower-lsp-max-cli/src/main.rs
- M crates/tower-lsp-max-cli/src/nouns/agent.rs
- M crates/tower-lsp-max-cli/src/nouns/client.rs
- M crates/tower-lsp-max-cli/src/nouns/config.rs
- M crates/tower-lsp-max-cli/src/nouns/diagnostics.rs
- M crates/tower-lsp-max-cli/src/nouns/metamodel.rs
- M crates/tower-lsp-max-cli/src/nouns/plugin.rs
- M crates/tower-lsp-max-cli/src/nouns/server.rs
- M crates/tower-lsp-max-cli/src/nouns/state.rs
- M crates/tower-lsp-max-cli/src/nouns/telemetry.rs
- M crates/tower-lsp-max-cli/src/nouns/workspace.rs
- M docs/adr/ADR-0001-tower-lsp-max-purpose.md
+ M crates/lsp-max-cli/src/main.rs
+ M crates/lsp-max-cli/src/nouns/agent.rs
+ M crates/lsp-max-cli/src/nouns/client.rs
+ M crates/lsp-max-cli/src/nouns/config.rs
+ M crates/lsp-max-cli/src/nouns/diagnostics.rs
+ M crates/lsp-max-cli/src/nouns/metamodel.rs
+ M crates/lsp-max-cli/src/nouns/plugin.rs
+ M crates/lsp-max-cli/src/nouns/server.rs
+ M crates/lsp-max-cli/src/nouns/state.rs
+ M crates/lsp-max-cli/src/nouns/telemetry.rs
+ M crates/lsp-max-cli/src/nouns/workspace.rs
+ M docs/adr/ADR-0001-lsp-max-purpose.md
  M src/lib.rs
  M src/service.rs
  M src/service/layers.rs
  M src/service/state.rs
- D tower-lsp-max-protocol/src/generated_3_18.rs
- M tower-lsp-max-runtime/src/lib.rs
+ D lsp-max-protocol/src/generated_3_18.rs
+ M lsp-max-runtime/src/lib.rs
 ```
 
 ---
 
 ## Known Limitations
-The workspace is currently blocked by noisy clippy compiler warnings elevated to errors in the auto-generated types file `tower-lsp-max-protocol/src/lsp_3_18.rs`. These are primarily `clippy::upper_case_acronyms` (e.g. for `URI`), `clippy::doc_lazy_continuation` in the generated description lists, and `dead_code` warnings on request/notification parameter structures that are generated but unused.
+The workspace is currently blocked by noisy clippy compiler warnings elevated to errors in the auto-generated types file `lsp-max-protocol/src/lsp_3_18.rs`. These are primarily `clippy::upper_case_acronyms` (e.g. for `URI`), `clippy::doc_lazy_continuation` in the generated description lists, and `dead_code` warnings on request/notification parameter structures that are generated but unused.
 
 ---
 

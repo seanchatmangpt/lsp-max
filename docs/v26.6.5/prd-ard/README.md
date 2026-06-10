@@ -9,7 +9,7 @@
 
 ## 1. Documentation Overview & Map
 
-This documentation suite defines the product requirements, architectural design decisions, semantic data schemas, system invariants, execution sequence flows, and verification policies for the Oxigraph-backed Admitted Graph Control Plane in `tower-lsp-max` v26.6.5.
+This documentation suite defines the product requirements, architectural design decisions, semantic data schemas, system invariants, execution sequence flows, and verification policies for the Oxigraph-backed Admitted Graph Control Plane in `lsp-max` v26.6.5.
 
 ```mermaid
 graph TD

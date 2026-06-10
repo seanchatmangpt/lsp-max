@@ -167,7 +167,7 @@ impl AutonomicMesh {
                         severity: Some(lsp_types_max::DiagnosticSeverity::ERROR),
                         code: None,
                         code_description: None,
-                        source: Some("tower-lsp-max".to_string()),
+                        source: Some("lsp-max".to_string()),
                         message: format!(
                             "Dispatch depth {} exceeds limit {MAX_DISPATCH_DEPTH}; recursive hook chain terminated",
                             self.dispatch_depth

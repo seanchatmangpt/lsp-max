@@ -26,7 +26,7 @@ Admitted Boundary:
 
 Export Metadata:
   producing_workspace: ~/ggen
-  storing_workspace: ~/tower-lsp-max
-  export_reason: checkpoint tracking within tower-lsp-max playground
+  storing_workspace: ~/lsp-max
+  export_reason: checkpoint tracking within lsp-max playground
   exported_artifact_digest: acb53f1ece164e2a35be621dc38fcd0492bc46dbc217de440b8f8900af06ea11
   export_receipt_digest: cb65a6954139b51d2f99018aa0d3bac5aa8aaf38a121e1337169c8e6c8947214
