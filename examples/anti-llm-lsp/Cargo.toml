@@ -1,6 +1,6 @@
 [package]
 name = "anti-llm-lsp"
-version = "26.6.8"
+version = "26.6.9"
 edition = "2021"
 publish = false
 
@@ -15,7 +15,7 @@ toml = "0.8"
 regex = "1.10"
 glob = "0.3"
 tower-lsp-max = { path = "../../" }
-lsp-types-max = { path = "../../../lsp-types-max", version = "26.6.8", features = ["proposed"] }
+lsp-types-max = { path = "../../../lsp-types-max", version = "26.6.9", features = ["proposed"] }
 chrono = { version = "0.4", features = ["serde"] }
 url = "2.5"
 tree-sitter = { workspace = true }

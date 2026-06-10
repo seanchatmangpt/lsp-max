@@ -1,6 +1,6 @@
 [package]
 name = "tower-lsp-max"
-version = "26.6.8"
+version = "26.6.9"
 authors = ["Eyal Kalderon <ebkalderon@gmail.com>"]
 edition = "2021"
 rust-version = "1.70.0"
@@ -30,7 +30,7 @@ dashmap = "5.1"
 futures = { version = "0.3", default-features = false, features = ["std", "async-await"] }
 httparse = "1.8"
 libc = "0.2"
-lsp-types-max = { path = "../lsp-types-max", version = "26.6.8", features = ["proposed"] }
+lsp-types-max = { path = "../lsp-types-max", version = "26.6.9", features = ["proposed"] }
 url = { version = "2.5", features = ["serde"] }
 memchr = "2.5"
 windows-sys = { version = "0.52", features = ["Win32_System_Threading", "Win32_Foundation"] }
@@ -38,11 +38,11 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 tokio = { version = "1.17", optional = true, features = ["time", "macros", "rt", "io-util", "net"] }
 tokio-util = { version = "0.7", optional = true, features = ["codec"] }
-tower-lsp-max-macros = { version = "26.6.8", path = "./tower-lsp-max-macros" }
-tower-lsp-max-protocol = { version = "26.6.8", path = "./tower-lsp-max-protocol" }
+tower-lsp-max-macros = { version = "26.6.9", path = "./tower-lsp-max-macros" }
+tower-lsp-max-protocol = { version = "26.6.9", path = "./tower-lsp-max-protocol" }
 tower-lsp-max-lsif = { path = "./crates/tower-lsp-max-lsif" }
-tower-lsp-max-runtime = { version = "26.6.8", path = "./tower-lsp-max-runtime" }
-tower-lsp-max-agent = { version = "26.6.8", path = "./tower-lsp-max-agent" }
+tower-lsp-max-runtime = { version = "26.6.9", path = "./tower-lsp-max-runtime" }
+tower-lsp-max-agent = { version = "26.6.9", path = "./tower-lsp-max-agent" }
 tower-lsp-max-base = { path = "./crates/tower-lsp-max-base" }
 tower = { version = "0.4", default-features = false, features = ["util"] }
 tracing = "0.1"
@@ -98,8 +98,8 @@ repository = "https://github.com/ebkalderon/tower-lsp"
 edition = "2021"
 
 [workspace.dependencies]
-wasm4pm-compat = { version = "26.6.8", features = ["formats", "strict", "wasm4pm"] }
-lsp-types-max = { path = "../lsp-types-max", version = "26.6.8", features = ["proposed"] }
+wasm4pm-compat = { version = "26.6.9", features = ["formats", "strict", "wasm4pm"] }
+lsp-types-max = { path = "../lsp-types-max", version = "26.6.9", features = ["proposed"] }
 tree-sitter = "0.26.5"
 tree-sitter-language = "0.1.7"
 downcast-rs = "2.0.2"

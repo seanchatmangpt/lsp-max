@@ -1,6 +1,6 @@
 [package]
 name = "tower-lsp-max-client"
-version = "26.6.8"
+version = "26.6.9"
 edition = "2021"
 authors = ["Tower-LSP Authors", "Sean Chatman <info@chatmangpt.com>"]
 description = "Language Server Protocol Client framework based on tower"
@@ -8,9 +8,9 @@ license = "MIT OR Apache-2.0"
 repository = "https://github.com/seanchatmangpt/tower-lsp-max"
 
 [dependencies]
-tower-lsp-max-macros = { path = "../../tower-lsp-max-macros", version = "26.6.8" }
+tower-lsp-max-macros = { path = "../../tower-lsp-max-macros", version = "26.6.9" }
 tower-lsp-max-protocol = { path = "../../tower-lsp-max-protocol" }
-lsp-types = { package = "lsp-types-max", path = "../../../lsp-types-max", version = "26.6.8" }
+lsp-types = { package = "lsp-types-max", path = "../../../lsp-types-max", version = "26.6.9" }
 tower = { version = "0.4", features = ["util"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"

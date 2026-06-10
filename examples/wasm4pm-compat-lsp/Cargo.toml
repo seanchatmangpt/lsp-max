@@ -1,6 +1,6 @@
 [package]
 name = "wasm4pm-compat-lsp"
-version = "26.6.8"
+version = "26.6.9"
 edition = "2021"
 description = "Static analysis rules and checks for wasm4pm-compat boundary admission and loss policy compliance"
 publish = false
