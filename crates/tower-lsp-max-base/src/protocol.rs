@@ -3,8 +3,8 @@
 
 use bytes::{Buf, BufMut, BytesMut};
 use memchr::memmem;
-use serde::Serialize;
 use serde::de::DeserializeOwned;
+use serde::Serialize;
 use std::fmt::{self, Display, Formatter};
 use std::num::ParseIntError;
 use std::str::Utf8Error;
