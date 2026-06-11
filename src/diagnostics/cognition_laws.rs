@@ -91,6 +91,77 @@ fn fresh_name_manifest(breed_id: &str) -> Vec<&'static str> {
     }
 }
 
+/// Parse dispatch.rs to build a map of breed_id → module stem that actually
+/// implements it.  Falls back to `breed_id` itself when no override is found.
+/// This is the source-of-truth derivation: convention-free, self-updating.
+///
+/// Two-pass approach:
+/// 1. Parse all `module::Struct` tokens from use declarations to build struct→module.
+/// 2. Parse `"breed_id" => run_breed(&Struct, ...)` match arms to bind breed_id→module.
+fn dispatch_module_map(dispatch_src: &str) -> std::collections::BTreeMap<String, String> {
+    let mut struct_to_module: std::collections::BTreeMap<String, String> = std::collections::BTreeMap::new();
+
+    // Pass 1: extract all `module::Struct` tokens from the source.
+    // Split the entire file on whitespace/commas/braces/parens to get tokens.
+    for token in dispatch_src.split(|c: char| c == ',' || c == '{' || c == '}' || c == '(' || c == ')' || c == '\n' || c == '\t' || c == ' ') {
+        let token = token.trim();
+        // Skip comment fragments
+        if token.starts_with("//") { continue; }
+        if let Some(pos) = token.find("::") {
+            let module_part = token[..pos].trim();
+            let struct_part = token[pos+2..].trim();
+            // module must be all lowercase snake_case; struct must start with uppercase
+            if !module_part.is_empty()
+                && !struct_part.is_empty()
+                && module_part.chars().all(|c| c.is_alphanumeric() || c == '_')
+                && struct_part.chars().next().map_or(false, |c| c.is_uppercase())
+                && module_part != "crate" && module_part != "super" && module_part != "self"
+            {
+                struct_to_module.entry(struct_part.to_string())
+                    .or_insert_with(|| module_part.to_string());
+            }
+        }
+    }
+
+    // Pass 2: match `"breed_id" => run_breed(&StructName, ...)` or `"breed_id" => StructName.run(...)` arms.
+    let mut map = std::collections::BTreeMap::new();
+    for line in dispatch_src.lines() {
+        let trimmed = line.trim();
+        if let Some(rest) = trimmed.strip_prefix('"') {
+            if let Some(end) = rest.find('"') {
+                let breed_id = &rest[..end];
+                let after = rest[end+1..].trim();
+                if after.starts_with("=>") {
+                    let arm = after[2..].trim();
+                    // `run_breed(&StructName, ...)` or `StructName.run(...)`
+                    let struct_name = if let Some(inner) = arm.strip_prefix("run_breed(&") {
+                        inner.split(',').next().unwrap_or("").trim().to_string()
+                    } else {
+                        arm.split(|c: char| c == '.' || c == '(' || c == ' ')
+                            .next().unwrap_or("").trim().to_string()
+                    };
+                    if !struct_name.is_empty() {
+                        let module = struct_to_module.get(&struct_name)
+                            .cloned()
+                            .unwrap_or_else(|| {
+                                // Convention fallback: PascalCase → snake_case
+                                struct_name.chars().enumerate()
+                                    .map(|(i, c)| if c.is_uppercase() && i > 0 {
+                                        format!("_{}", c.to_lowercase())
+                                    } else {
+                                        c.to_lowercase().to_string()
+                                    })
+                                    .collect()
+                            });
+                        map.insert(breed_id.to_string(), module);
+                    }
+                }
+            }
+        }
+    }
+    map
+}
+
 /// Run all cognition breed laws against the workspace at `root_path`.
 /// Returns a list of diagnostics — empty means all laws satisfied.
 pub fn audit_breeds(root_path: &Path) -> Vec<BreedDiagnostic> {
@@ -114,6 +185,11 @@ pub fn audit_breeds(root_path: &Path) -> Vec<BreedDiagnostic> {
             }]
         }
     };
+
+    // Derive module locations from dispatch.rs — source-of-truth, not convention.
+    let dispatch_path = wasm4pm.join("crates/wasm4pm-cognition/src/breeds/dispatch.rs");
+    let dispatch_src = std::fs::read_to_string(&dispatch_path).unwrap_or_default();
+    let module_map = dispatch_module_map(&dispatch_src);
 
     // Support both array-of-objects and {breeds: [...]} shapes.
     let breeds_val = registry
@@ -155,17 +231,9 @@ pub fn audit_breeds(root_path: &Path) -> Vec<BreedDiagnostic> {
             continue;
         }
 
-        // Some early breeds are co-located in a related module (e.g. eliza→frame.rs,
-        // mycin→production_rules.rs). Accept any of the canonical alternate paths.
-        let alternate_modules: &[(&str, &str)] = &[
-            ("eliza", "frame"),
-            ("mycin", "production_rules"),
-        ];
-        let module_path_str: String = alternate_modules
-            .iter()
-            .find(|(b, _)| *b == bid.as_str())
-            .map(|(_, m)| format!("crates/wasm4pm-cognition/src/breeds/{m}.rs"))
-            .unwrap_or_else(|| format!("crates/wasm4pm-cognition/src/breeds/{bid}.rs"));
+        // Derive module path from dispatch.rs parse — not from naming convention.
+        let module_stem = module_map.get(&bid).cloned().unwrap_or_else(|| bid.clone());
+        let module_path_str = format!("crates/wasm4pm-cognition/src/breeds/{module_stem}.rs");
         let module = wasm4pm.join(&module_path_str);
         let ocpn   = wasm4pm.join(format!("ocel/models/l1/{bid}.ocpn.json"));
         let report = wasm4pm.join(format!("ocel/reports/{bid}.json"));
@@ -344,21 +412,18 @@ pub fn audit_breeds(root_path: &Path) -> Vec<BreedDiagnostic> {
             }
         }
 
-        // COG-012: dispatch arm presence — grep dispatch.rs for the breed id string
-        let dispatch_rs = wasm4pm.join("crates/wasm4pm-cognition/src/breeds/dispatch.rs");
-        if dispatch_rs.exists() {
-            if let Ok(dispatch_src) = std::fs::read_to_string(&dispatch_rs) {
-                let arm_present = dispatch_src.contains(&format!("\"{bid}\""))
-                    || dispatch_src.contains(&format!("BreedId::{}", snake_to_pascal(&bid)));
-                if !arm_present {
-                    diags.push(BreedDiagnostic {
-                        law_id: "COG-012",
-                        breed_id: bid.clone(),
-                        message: format!("[COG-012] '{bid}' has no dispatch arm in src/breeds/dispatch.rs — breed is unreachable at runtime"),
-                        severity: severity("COG-012"),
-                        artifact_path: dispatch_rs.to_string_lossy().into(),
-                    });
-                }
+        // COG-012: dispatch arm presence — use already-parsed dispatch_src
+        if !dispatch_src.is_empty() {
+            let arm_present = dispatch_src.contains(&format!("\"{bid}\""))
+                || dispatch_src.contains(&format!("BreedId::{}", snake_to_pascal(&bid)));
+            if !arm_present {
+                diags.push(BreedDiagnostic {
+                    law_id: "COG-012",
+                    breed_id: bid.clone(),
+                    message: format!("[COG-012] '{bid}' has no dispatch arm in src/breeds/dispatch.rs — breed is unreachable at runtime"),
+                    severity: severity("COG-012"),
+                    artifact_path: dispatch_path.to_string_lossy().into(),
+                });
             }
         }
     }
@@ -436,6 +501,33 @@ mod tests {
         // A path with no registry.json silently returns no diagnostics.
         let diags = audit_breeds(Path::new("/tmp/nonexistent_workspace_xyz"));
         assert!(diags.is_empty());
+    }
+
+    #[test]
+    fn dispatch_module_map_derives_non_conventional_locations() {
+        // Simulate the dispatch.rs use list that has frame::Eliza and production_rules::Mycin.
+        let src = r#"
+use crate::breeds::{
+    frame::Eliza, frames_inheritance::FramesInheritance,
+    production_rules::Mycin,
+    cbr::Cbr,
+};
+
+fn dispatch(breed: &str, input: &BreedInput) {
+    match breed {
+        "eliza" => run_breed(&Eliza, input),
+        "mycin" => run_breed(&Mycin, input),
+        "cbr"   => run_breed(&Cbr, input),
+    }
+}
+"#;
+        let map = dispatch_module_map(src);
+        assert_eq!(map.get("eliza").map(|s| s.as_str()), Some("frame"),
+            "eliza should derive from frame::Eliza import");
+        assert_eq!(map.get("mycin").map(|s| s.as_str()), Some("production_rules"),
+            "mycin should derive from production_rules::Mycin import");
+        assert_eq!(map.get("cbr").map(|s| s.as_str()), Some("cbr"),
+            "cbr conventional naming should work");
     }
 
     #[test]
