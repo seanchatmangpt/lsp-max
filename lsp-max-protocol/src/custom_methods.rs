@@ -184,3 +184,90 @@ impl Request for MaxReleaseActuation {
     type Result = ReleaseActuationResult;
     const METHOD: &'static str = "max/releaseActuation";
 }
+
+// ── Rule-pack protocol methods (ERRC Innovation 2 + 4) ────────────────────
+
+/// max/rulePacks — list all active rule packs with their metadata and
+/// dependency graph.
+pub const METHOD_RULE_PACKS: &str = "max/rulePacks";
+
+/// max/rulePackStatus — return the conformance status contributed by a single
+/// rule pack: which of its rules fired, on which files, and the resulting
+/// per-axis verdict.
+pub const METHOD_RULE_PACK_STATUS: &str = "max/rulePackStatus";
+
+/// max/rulePackDiff — compare two snapshots (by seq number) and return which
+/// rule-pack findings were added, removed, or unchanged.
+pub const METHOD_RULE_PACK_DIFF: &str = "max/rulePackDiff";
+
+/// max/workspaceConformance — return the workspace-level ConformanceVector:
+/// the aggregate of all per-file vectors across all open documents.
+/// Refused axes propagate from any file; axes with no coverage remain Unknown.
+pub const METHOD_WORKSPACE_CONFORMANCE: &str = "max/workspaceConformance";
+
+/// Rule-pack descriptor returned by `max/rulePacks`.
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct RulePackDescriptor {
+    /// Pack identifier.
+    pub id: String,
+    /// Pack semantic version.
+    pub version: String,
+    /// Rule IDs contained in this pack.
+    pub rule_ids: Vec<String>,
+    /// Packs this pack depends on.
+    pub depends_on: Vec<String>,
+    /// Number of rules that fired in the last workspace scan.
+    pub active_rule_count: usize,
+}
+
+/// Per-pack status returned by `max/rulePackStatus`.
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct RulePackStatusResult {
+    /// Pack identifier.
+    pub pack_id: String,
+    /// Rules that fired, grouped by file URI.
+    pub findings_by_uri: std::collections::HashMap<String, Vec<String>>,
+    /// The ConformanceVector contribution from this pack alone.
+    pub conformance: ConformanceVector,
+}
+
+/// Diff entry returned by `max/rulePackDiff`.
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct RulePackDiffEntry {
+    /// Rule ID of the changed finding.
+    pub rule_id: String,
+    /// File URI.
+    pub uri: String,
+    /// Line number (0-based).
+    pub line: u32,
+    /// `"added"`, `"removed"`, or `"unchanged"`.
+    pub change: String,
+}
+
+pub enum MaxRulePacks {}
+impl Request for MaxRulePacks {
+    type Params = ();
+    type Result = Vec<RulePackDescriptor>;
+    const METHOD: &'static str = "max/rulePacks";
+}
+
+pub enum MaxRulePackStatus {}
+impl Request for MaxRulePackStatus {
+    type Params = String; // pack_id
+    type Result = RulePackStatusResult;
+    const METHOD: &'static str = "max/rulePackStatus";
+}
+
+pub enum MaxRulePackDiff {}
+impl Request for MaxRulePackDiff {
+    type Params = (u64, u64); // (seq_before, seq_after)
+    type Result = Vec<RulePackDiffEntry>;
+    const METHOD: &'static str = "max/rulePackDiff";
+}
+
+pub enum MaxWorkspaceConformance {}
+impl Request for MaxWorkspaceConformance {
+    type Params = ();
+    type Result = ConformanceVector;
+    const METHOD: &'static str = "max/workspaceConformance";
+}

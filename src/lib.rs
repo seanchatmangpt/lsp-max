@@ -125,6 +125,13 @@ pub mod gate;
 /// Module containing helper functions to apply workspace and text edits.
 pub mod workspace_edit;
 
+/// Bridge trait eliminating hand-rolled regex-pattern LSP server boilerplate.
+pub mod rule_pack_server;
+pub use rule_pack_server::{Rule, RulePack, RulePackServer};
+
+/// LSP 3.18 and LSIF protocol coverage matrices.
+pub mod coverage;
+
 pub(crate) use diagnostics::update_diagnostics;
 
 fn _assert_object_safe() {

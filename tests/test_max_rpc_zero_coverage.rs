@@ -418,3 +418,222 @@ async fn test_max_conformance_delta_returns_result() {
         "conformanceDelta result must have 'current_seq' key"
     );
 }
+
+// ---------------------------------------------------------------------------
+// Full lifecycle: initialize → diagnostic → repair → conformance → release
+// Tests the complete customer-facing value path end-to-end across the
+// JSON-RPC transport boundary.
+// ---------------------------------------------------------------------------
+
+#[tokio::test(flavor = "current_thread")]
+async fn test_full_lifecycle_diagnostic_repair_conformance_release() {
+    let (tx, rx, _h, _guard) = boot_server().await;
+
+    // Step 1: snapshot to materialize current diagnostics.
+    // On a fresh boot, auth.receipt does not exist so diag-auth-generator is present.
+    write_msg(
+        &tx,
+        serde_json::json!({"jsonrpc":"2.0","id":10,"method":"max/snapshot"}),
+    )
+    .await;
+    let snap1_resp = wait_for_response(rx.clone(), 10, Duration::from_secs(3)).await;
+    assert!(
+        snap1_resp.get("result").is_some(),
+        "max/snapshot (step 1) must return 'result', got: {}",
+        snap1_resp
+    );
+    let snapshot_id1 = {
+        let raw = &snap1_resp["result"];
+        if let Some(s) = raw.as_str() {
+            s.to_string()
+        } else if let Some(s) = raw.get("id").and_then(|v| v.as_str()) {
+            s.to_string()
+        } else {
+            raw.to_string().trim_matches('"').to_string()
+        }
+    };
+    assert!(
+        snapshot_id1.starts_with("snap-"),
+        "Expected snapshot_id to start with 'snap-', got: {}",
+        snapshot_id1
+    );
+
+    // Step 2: retrieve conformance vector for the initial snapshot.
+    write_msg(
+        &tx,
+        serde_json::json!({
+            "jsonrpc": "2.0",
+            "id": 11,
+            "method": "max/conformanceVector",
+            "params": { "id": snapshot_id1 }
+        }),
+    )
+    .await;
+    let cv1_resp = wait_for_response(rx.clone(), 11, Duration::from_secs(3)).await;
+    assert!(
+        cv1_resp.get("result").is_some(),
+        "max/conformanceVector (initial) must return 'result', got: {}",
+        cv1_resp
+    );
+    let refused_count1 = cv1_resp["result"]["refused"]
+        .as_array()
+        .map(|a| a.len())
+        .unwrap_or(0);
+    // diag-uninitialized-admission is ERROR severity -> refused axis present
+    assert!(
+        refused_count1 >= 1,
+        "Expected at least 1 refused axis before repair, got cv: {}",
+        cv1_resp["result"]
+    );
+
+    // Step 3: explain the auth-generator diagnostic (INFORMATION, no preconditions).
+    write_msg(
+        &tx,
+        serde_json::json!({
+            "jsonrpc": "2.0",
+            "id": 12,
+            "method": "max/explainDiagnostic",
+            "params": "diag-auth-generator"
+        }),
+    )
+    .await;
+    let explain_resp = wait_for_response(rx.clone(), 12, Duration::from_secs(3)).await;
+    assert!(
+        explain_resp.get("result").is_some(),
+        "max/explainDiagnostic must return 'result', got: {}",
+        explain_resp
+    );
+    assert_eq!(
+        explain_resp["result"]["diagnostic_id"].as_str().unwrap_or(""),
+        "diag-auth-generator",
+        "explainDiagnostic must return the requested diagnostic"
+    );
+
+    // Step 4: retrieve repair plan for the auth-generator diagnostic.
+    write_msg(
+        &tx,
+        serde_json::json!({
+            "jsonrpc": "2.0",
+            "id": 13,
+            "method": "max/repairPlan",
+            "params": "diag-auth-generator"
+        }),
+    )
+    .await;
+    let plan_resp = wait_for_response(rx.clone(), 13, Duration::from_secs(3)).await;
+    assert!(
+        plan_resp.get("result").is_some(),
+        "max/repairPlan must return 'result', got: {}",
+        plan_resp
+    );
+    let plans = plan_resp["result"]
+        .as_array()
+        .expect("repairPlan must return array");
+    assert!(
+        !plans.is_empty(),
+        "repairPlan for diag-auth-generator must return at least one action"
+    );
+    let action = plans[0].clone();
+
+    // Step 5: apply the repair transaction (no preconditions on auth-generator action).
+    write_msg(
+        &tx,
+        serde_json::json!({
+            "jsonrpc": "2.0",
+            "id": 14,
+            "method": "max/applyRepairTransaction",
+            "params": action
+        }),
+    )
+    .await;
+    let repair_resp = wait_for_response(rx.clone(), 14, Duration::from_secs(3)).await;
+    assert!(
+        repair_resp.get("result").is_some(),
+        "max/applyRepairTransaction must return 'result', got: {}",
+        repair_resp
+    );
+    let receipt_id = repair_resp["result"]["receipt_id"]
+        .as_str()
+        .unwrap_or("");
+    assert!(
+        receipt_id.starts_with("rcpt-"),
+        "repair receipt_id must start with 'rcpt-', got: {}",
+        repair_resp["result"]
+    );
+
+    // Step 6: take a second snapshot to capture post-repair state.
+    write_msg(
+        &tx,
+        serde_json::json!({"jsonrpc":"2.0","id":15,"method":"max/snapshot"}),
+    )
+    .await;
+    let snap2_resp = wait_for_response(rx.clone(), 15, Duration::from_secs(3)).await;
+    assert!(
+        snap2_resp.get("result").is_some(),
+        "max/snapshot (post-repair) must return 'result', got: {}",
+        snap2_resp
+    );
+    let snapshot_id2 = {
+        let raw = &snap2_resp["result"];
+        if let Some(s) = raw.as_str() {
+            s.to_string()
+        } else if let Some(s) = raw.get("id").and_then(|v| v.as_str()) {
+            s.to_string()
+        } else {
+            raw.to_string().trim_matches('"').to_string()
+        }
+    };
+    assert!(
+        snapshot_id2.starts_with("snap-"),
+        "Expected second snapshot_id to start with 'snap-', got: {}",
+        snapshot_id2
+    );
+
+    // Step 7: retrieve conformance vector for post-repair snapshot and verify fields.
+    write_msg(
+        &tx,
+        serde_json::json!({
+            "jsonrpc": "2.0",
+            "id": 16,
+            "method": "max/conformanceVector",
+            "params": { "id": snapshot_id2 }
+        }),
+    )
+    .await;
+    let cv2_resp = wait_for_response(rx.clone(), 16, Duration::from_secs(3)).await;
+    assert!(
+        cv2_resp.get("result").is_some(),
+        "max/conformanceVector (post-repair) must return 'result', got: {}",
+        cv2_resp
+    );
+    let cv2 = &cv2_resp["result"];
+    assert!(
+        cv2.get("admitted").is_some(),
+        "post-repair conformanceVector must have 'admitted' field"
+    );
+    assert!(
+        cv2.get("refused").is_some(),
+        "post-repair conformanceVector must have 'refused' field"
+    );
+
+    // Step 8: releaseActuation - must return a well-formed JSON-RPC response.
+    // It may succeed or error (no active instance for this id), but transport must be sound.
+    write_msg(
+        &tx,
+        serde_json::json!({
+            "jsonrpc": "2.0",
+            "id": 17,
+            "method": "max/releaseActuation",
+            "params": { "instance_id": "lifecycle-test-instance" }
+        }),
+    )
+    .await;
+    let release_resp = wait_for_response(rx.clone(), 17, Duration::from_secs(3)).await;
+    assert!(
+        release_resp.get("result").is_some() || release_resp.get("error").is_some(),
+        "max/releaseActuation must return a well-formed JSON-RPC response, got: {}",
+        release_resp
+    );
+
+    cleanup_receipts();
+}
