@@ -4,6 +4,7 @@
 
 use std::collections::{HashMap, HashSet};
 use std::str::FromStr;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 
 use lsp_max::lsp_types::{Diagnostic, DiagnosticSeverity, NumberOrString, Position, Range};
@@ -19,19 +20,26 @@ use crate::receipt::CompositorReceipt;
 /// to the editor via `lsp_max::Client::publish_diagnostics`.
 pub struct FlushCoordinator {
     sender: mpsc::Sender<String>,
+    /// Cumulative count of signals dropped due to a full channel.
+    /// Incremented on each `try_send` failure; readable via `signal_drop_count()`.
+    drop_counter: Arc<AtomicU64>,
 }
 
 impl FlushCoordinator {
     /// Spawn the flush coordinator background task.
     /// Returns a `FlushCoordinator` whose `signal_flush` can be passed to `CompositorClient`.
+    /// `gate` must be the same `Arc<GateFile>` passed to `DiagnosticBuffer::new()` so both
+    /// sites share a single authoritative gate path.
     pub fn spawn(
         buffer: Arc<DiagnosticBuffer>,
         ctx: Arc<MergeContext>,
         client: lsp_max::Client,
         pool: Arc<ChildProcessPool>,
+        gate: Arc<GateFile>,
     ) -> Self {
-        let gate = GateFile::for_workspace();
-        let (tx, mut rx) = mpsc::channel::<String>(256);
+        // Channel capacity 512 — sized to absorb BM-11 requirement of ≥ 500 concurrent
+        // server signals within one debounce window without dropping.
+        let (tx, mut rx) = mpsc::channel::<String>(512);
         tokio::spawn(async move {
             loop {
                 // Wait for at least one URI signal.
@@ -49,10 +57,13 @@ impl FlushCoordinator {
                 }
 
                 // Flush each pending URI and push to the editor.
+                // Track batch-level ANDON state for the gate write below.
+                // Computed fresh per flush — not monotonic.
+                let mut batch_has_andon = false;
                 for uri in &pending {
                     let result = buffer.flush(uri);
-
                     if result.has_andon_block {
+                        batch_has_andon = true;
                         tracing::warn!(
                             uri = %uri,
                             codes = ?result.andon_codes(),
@@ -159,18 +170,37 @@ impl FlushCoordinator {
 
                 // Materialize global ANDON state to the gate file after each batch.
                 // One write per debounce window regardless of URI count — O(1).
+                // Uses batch_has_andon computed from actual flush results this cycle —
+                // not the former monotonic flag, so a batch with zero ANDON blocks
+                // correctly writes CLEAR (false) to the gate.
                 // PreToolUse hooks read this file with a single syscall, no IPC.
-                gate.write(buffer.last_andon_block());
+                gate.write(batch_has_andon);
             }
         });
 
-        Self { sender: tx }
+        Self {
+            sender: tx,
+            drop_counter: Arc::new(AtomicU64::new(0)),
+        }
     }
 
     /// Signal that `uri` needs flushing.
-    /// Non-blocking — the signal is silently dropped if the channel is full or the receiver
-    /// has gone away (e.g. after server shutdown).
+    /// Non-blocking — if the channel is full, the signal is dropped, the drop counter is
+    /// incremented, and a `tracing::warn` is emitted so the event is observable.
+    /// If the receiver has gone away (server shutdown), the signal is silently discarded.
     pub fn signal_flush(&self, uri: &str) {
-        let _ = self.sender.try_send(uri.to_string());
+        if let Err(_e) = self.sender.try_send(uri.to_string()) {
+            self.drop_counter.fetch_add(1, Ordering::Relaxed);
+            tracing::warn!(
+                uri = %uri,
+                "flush-coordinator: signal channel full, drop — uri flush deferred until next batch"
+            );
+        }
+    }
+
+    /// Cumulative count of URI flush signals dropped because the channel was full.
+    /// A non-zero value indicates backpressure; the compositor state endpoint surfaces this.
+    pub fn signal_drop_count(&self) -> u64 {
+        self.drop_counter.load(Ordering::Relaxed)
     }
 }

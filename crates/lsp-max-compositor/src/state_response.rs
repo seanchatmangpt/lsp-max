@@ -23,4 +23,8 @@ pub struct CompositorStateResponse {
     /// Unix timestamp (milliseconds since epoch) when this response was computed.
     /// CI gates can compare this against their own clock to verify freshness.
     pub query_timestamp_ms: u64,
+    /// Cumulative count of URI flush signals dropped because the flush-coordinator
+    /// channel was full. A non-zero value indicates backpressure — signals arrived
+    /// faster than the debounce loop could drain them.
+    pub signal_drop_count: u64,
 }

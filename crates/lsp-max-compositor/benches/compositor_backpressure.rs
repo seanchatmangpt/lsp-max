@@ -83,7 +83,7 @@ fn bench_flush_merge_serial(c: &mut Criterion) {
 
     for n_uris in [10usize, 100, 256, 500] {
         // Pre-populate: 3 servers each posting 10 diagnostics per URI.
-        let buffer = DiagnosticBuffer::new(ctx.clone());
+        let buffer = DiagnosticBuffer::new(ctx.clone(), Arc::new(lsp_max_compositor::GateFile::from_path(std::path::PathBuf::from("/tmp/test-gate"))));
         let uris: Vec<String> = (0..n_uris)
             .map(|i| format!("file:///bench/{i}.rs"))
             .collect();

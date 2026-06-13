@@ -24,7 +24,13 @@ async fn main() {
     }
     let merge_ctx = match &config {
         Some(cfg) => MergeContext::from_config(cfg),
-        None => MergeContext::new(vec!["WASM4PM-".into(), "ANTI-LLM-".into(), "GGEN-".into()]),
+        None => {
+            tracing::warn!(
+                "lsp-max.toml not found in workspace tree — using static ANDON prefixes \
+                 [WASM4PM-, ANTI-LLM-, GGEN-]; C_D = static default"
+            );
+            MergeContext::new(vec!["WASM4PM-".into(), "ANTI-LLM-".into(), "GGEN-".into()])
+        }
     };
     eprintln!(
         "merge context: {} andon prefix(es)",

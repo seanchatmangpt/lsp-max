@@ -1,9 +1,9 @@
 use clap_noun_verb::error::NounVerbError;
 use clap_noun_verb::Result;
 use clap_noun_verb_macros::verb;
-use serde::Serialize;
-use lsp_max_protocol::{LawAxis, ConformanceVector};
+use lsp_max_protocol::{ConformanceVector, LawAxis};
 use lsp_max_runtime::AutonomicMesh;
+use serde::Serialize;
 
 // ==============================================================================
 // 1. Domain Tier
@@ -213,7 +213,11 @@ pub fn vector_rpc(instance_id: String) -> Result<ConformanceVectorRpcResult> {
     let mut mesh = AutonomicMesh::load_from_file(&state_path)
         .map_err(|e| NounVerbError::execution_error(e.to_string()))?;
     let response = mesh
-        .dispatch_rpc(&instance_id, "max/conformanceVector", serde_json::Value::Null)
+        .dispatch_rpc(
+            &instance_id,
+            "max/conformanceVector",
+            serde_json::Value::Null,
+        )
         .map_err(NounVerbError::execution_error)?;
     mesh.save_to_file(&state_path)
         .map_err(|e| NounVerbError::execution_error(e.to_string()))?;
@@ -339,7 +343,11 @@ pub fn delta(instance_id: String) -> Result<ConformanceDeltaResult> {
     let mut mesh = AutonomicMesh::load_from_file(&state_path)
         .map_err(|e| NounVerbError::execution_error(e.to_string()))?;
     let raw = mesh
-        .dispatch_rpc(&instance_id, "max/conformanceDelta", serde_json::Value::Null)
+        .dispatch_rpc(
+            &instance_id,
+            "max/conformanceDelta",
+            serde_json::Value::Null,
+        )
         .map_err(NounVerbError::execution_error)?;
     mesh.save_to_file(&state_path)
         .map_err(|e| NounVerbError::execution_error(e.to_string()))?;

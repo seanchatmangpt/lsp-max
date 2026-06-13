@@ -54,7 +54,7 @@ fn bench_deposit_contention(c: &mut Criterion) {
     let mut group = c.benchmark_group("deposit_contention");
 
     for n in [5usize, 50, 500] {
-        let buffer = Arc::new(DiagnosticBuffer::new(ctx.clone()));
+        let buffer = Arc::new(DiagnosticBuffer::new(ctx.clone(), Arc::new(lsp_max_compositor::GateFile::from_path(std::path::PathBuf::from("/tmp/test-gate")))));
         group.throughput(Throughput::Elements(n as u64));
         group.bench_with_input(BenchmarkId::new("N", n), &n, |b, &n| {
             let entries: Vec<_> = (0..n)
@@ -106,7 +106,7 @@ fn bench_flush_latency(c: &mut Criterion) {
         (500, 10),
         (500, 100),
     ] {
-        let buffer = DiagnosticBuffer::new(ctx.clone());
+        let buffer = DiagnosticBuffer::new(ctx.clone(), Arc::new(lsp_max_compositor::GateFile::from_path(std::path::PathBuf::from("/tmp/test-gate"))));
         // Pre-populate: N servers × K diagnostics each for the same URI.
         for i in 0..n {
             let entries: Vec<_> = (0..k)

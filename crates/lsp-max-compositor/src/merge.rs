@@ -33,6 +33,26 @@ impl MergeResult {
     }
 }
 
+/// Workspace-wide ANDON prefix registry for diagnostic merge decisions.
+///
+/// # L7 Speciation — PARTIAL
+///
+/// The formal model claims each project-server entry in `lsp-max.toml` carries an
+/// independent law-collapse function Λ_CD^(D). In the current implementation, per-server
+/// `andon_code_prefixes` lists are aggregated into a single workspace-wide union at
+/// construction time (via `CompositorConfig::all_andon_prefixes()`). Merge evaluation
+/// then tests every diagnostic against this union, not against the originating server's
+/// individual prefix set.
+///
+/// Status: PARTIAL — the union is a superset of every individual Λ_CD^(D), so the
+/// implementation is more restrictive than the formal claim (no law violation escapes),
+/// but the per-server isolation the formal model describes is not enforced. A diagnostic
+/// code from server A will trigger ANDON even if only server B declared that prefix.
+///
+/// Next step to ADMIT: route each `DiagnosticEntry` through the originating server's
+/// prefix set at merge time rather than testing against the constructed union. This
+/// requires `MergeContext` to carry a `HashMap<server_id, Vec<String>>` and
+/// `merge_diagnostics` to receive the per-entry server identity.
 pub struct MergeContext {
     andon_prefixes: Vec<String>,
 }

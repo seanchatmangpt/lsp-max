@@ -2,6 +2,7 @@ use crate::child_process::ChildProcessPool;
 use crate::connections::ChildConnections;
 use crate::diagnostic_buffer::DiagnosticBuffer;
 use crate::flush_coordinator::FlushCoordinator;
+use crate::gate_file::GateFile;
 use crate::{CompositorConfig, ExtensionRouter, MergeContext};
 use lsp_max::jsonrpc::Result;
 use lsp_max::lsp_types::*;
@@ -18,6 +19,9 @@ pub struct CompositorServer {
     buffer: Arc<DiagnosticBuffer>,
     pool: Arc<ChildProcessPool>,
     config: Arc<CompositorConfig>,
+    /// Shared gate file — written eagerly by DiagnosticBuffer::deposit() and per-batch by
+    /// FlushCoordinator. Read here for the health snapshot.
+    gate: Arc<GateFile>,
     /// Shared FlushCoordinator — used by the exit watcher to push empty diagnostics
     /// to the editor after a child process exits.
     flush_coord: Arc<FlushCoordinator>,
@@ -332,6 +336,7 @@ impl CompositorServer {
             global_andon_block,
             child_server_count,
             query_timestamp_ms,
+            signal_drop_count: self.flush_coord.signal_drop_count(),
         }
     }
 
@@ -344,7 +349,7 @@ impl CompositorServer {
             child_server_count: self.pool.server_ids_snapshot().len(),
             child_server_ids: self.pool.server_ids_snapshot(),
             buffered_uri_count: self.buffer.buffered_uri_count(),
-            has_any_andon_block: self.buffer.last_andon_block(),
+            has_any_andon_block: self.gate.read().unwrap_or(false),
         }
     }
 
@@ -432,19 +437,24 @@ pub async fn run_stdio(
     let stdout = tokio::io::stdout();
     let connections = Arc::new(ChildConnections::new());
     let merge_ctx = Arc::new(merge_ctx);
-    let buffer = Arc::new(DiagnosticBuffer::new(Arc::clone(&merge_ctx)));
+    // GateFile constructed once and shared between DiagnosticBuffer (eager deposit write)
+    // and FlushCoordinator (per-batch write after debounce). Single authoritative path.
+    let gate = Arc::new(GateFile::for_workspace());
+    let buffer = Arc::new(DiagnosticBuffer::new(Arc::clone(&merge_ctx), Arc::clone(&gate)));
     let pool = Arc::new(ChildProcessPool::new());
     // Client is Clone — spawn the flush coordinator so child-server deposits automatically
     // trigger debounced publish_diagnostics calls to the editor.
     let buffer_for_coord = Arc::clone(&buffer);
     let merge_ctx_for_coord = Arc::clone(&merge_ctx);
     let pool_for_coord = Arc::clone(&pool);
+    let gate_for_coord = Arc::clone(&gate);
     let (service, socket) = LspService::new(|client: Client| {
         let flush_coord = Arc::new(FlushCoordinator::spawn(
             Arc::clone(&buffer_for_coord),
             Arc::clone(&merge_ctx_for_coord),
             client.clone(),
             Arc::clone(&pool_for_coord),
+            Arc::clone(&gate_for_coord),
         ));
         CompositorServer {
             client,
@@ -454,6 +464,7 @@ pub async fn run_stdio(
             buffer,
             pool: Arc::clone(&pool),
             config: Arc::clone(&config),
+            gate: Arc::clone(&gate),
             flush_coord,
             merged_capabilities: Arc::new(RwLock::new(None)),
         }

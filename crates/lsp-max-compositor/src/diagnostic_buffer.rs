@@ -2,11 +2,11 @@
 // Child servers deposit diagnostics here via deposit().
 // flush() calls MergeContext::merge() and returns the MergeResult.
 
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
 use dashmap::DashMap;
 
+use crate::gate_file::GateFile;
 use crate::merge::{DiagnosticEntry, MergeContext, MergeResult};
 use crate::registry::ChildTier;
 
@@ -17,23 +17,25 @@ pub struct DiagnosticBuffer {
     /// Keyed by URI. Value is Vec of (server_id, tier, entries) tuples.
     inner: DashMap<String, Vec<(String, ChildTier, Vec<DiagnosticEntry>)>>,
     ctx: Arc<MergeContext>,
-    /// Advisory flag: set to true when any flush produces has_andon_block == true.
-    /// Monotonic — once set, stays true until restart. Use compositor_state() for
-    /// authoritative current state.
-    last_andon_block: AtomicBool,
+    /// Gate file shared with FlushCoordinator — written eagerly on deposit() when
+    /// an incoming entry matches an ANDON prefix, eliminating the debounce staleness window.
+    gate: Arc<GateFile>,
 }
 
 impl DiagnosticBuffer {
-    pub fn new(ctx: Arc<MergeContext>) -> Self {
+    pub fn new(ctx: Arc<MergeContext>, gate: Arc<GateFile>) -> Self {
         Self {
             inner: DashMap::new(),
             ctx,
-            last_andon_block: AtomicBool::new(false),
+            gate,
         }
     }
 
     /// Record diagnostics from a child server for a URI.
     /// Replaces any previous entries from the same server_id for that URI.
+    /// If any incoming entry matches an ANDON prefix (severity == 1 and code has an ANDON
+    /// prefix), the gate file is written IMMEDIATELY — before the debounce window expires.
+    /// Status: CANDIDATE until FlushCoordinator confirms or clears after a full flush.
     pub fn deposit(
         &self,
         uri: &str,
@@ -41,6 +43,25 @@ impl DiagnosticBuffer {
         tier: ChildTier,
         entries: Vec<DiagnosticEntry>,
     ) {
+        // Eager ANDON gate write: check incoming entries before storing them.
+        // This eliminates the ~100ms debounce staleness window for ANDON signals.
+        let has_incoming_andon = entries.iter().any(|e| {
+            e.severity == 1
+                && self
+                    .ctx
+                    .andon_prefixes()
+                    .iter()
+                    .any(|p| e.code.starts_with(p.as_str()))
+        });
+        if has_incoming_andon {
+            tracing::warn!(
+                uri = %uri,
+                server_id = %server_id,
+                "diagnostic-buffer: ANDON prefix matched on deposit — gate BLOCKED (eager write)"
+            );
+            self.gate.write(true);
+        }
+
         let mut slot = self.inner.entry(uri.to_string()).or_default();
         // Replace previous from same server_id
         slot.retain(|(sid, _, _)| sid != server_id);
@@ -49,7 +70,6 @@ impl DiagnosticBuffer {
 
     /// Merge all deposited diagnostics for a URI and return the result.
     /// Does not clear the buffer — call clear_uri() after the result is delivered.
-    /// Updates the advisory last_andon_block flag if the result has an ANDON block.
     pub fn flush(&self, uri: &str) -> MergeResult {
         let inputs = match self.inner.get(uri) {
             None => return self.ctx.merge(vec![]),
@@ -58,17 +78,7 @@ impl DiagnosticBuffer {
                 .map(|(_, tier, entries)| (tier.clone(), entries.clone()))
                 .collect(),
         };
-        let result = self.ctx.merge(inputs);
-        if result.has_andon_block {
-            self.last_andon_block.store(true, Ordering::Relaxed);
-        }
-        result
-    }
-
-    /// Advisory cached flag: true if any flush since startup produced an ANDON block.
-    /// Monotonic — not cleared by clear_uri(). Use compositor_state() for authoritative data.
-    pub fn last_andon_block(&self) -> bool {
-        self.last_andon_block.load(Ordering::Relaxed)
+        self.ctx.merge(inputs)
     }
 
     /// Clear all deposited diagnostics for a URI (call after successful delivery to editor).

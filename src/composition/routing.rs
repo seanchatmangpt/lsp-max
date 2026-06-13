@@ -624,8 +624,7 @@ impl ComposedServer {
                         match conn.request(method, params_val.clone(), timeout_ms).await {
                             Ok(_) => {
                                 let mut s = self.state.lock().await;
-                                if let Some(src) =
-                                    s.capability_tracker.sources.get_mut(&source_id)
+                                if let Some(src) = s.capability_tracker.sources.get_mut(&source_id)
                                 {
                                     src.health = SourceHealth::Healthy;
                                 }
@@ -661,8 +660,7 @@ impl ComposedServer {
                         match conn.request(method, params_val.clone(), timeout_ms).await {
                             Ok(_) => {
                                 let mut s = self.state.lock().await;
-                                if let Some(src) =
-                                    s.capability_tracker.sources.get_mut(&source_id)
+                                if let Some(src) = s.capability_tracker.sources.get_mut(&source_id)
                                 {
                                     src.health = SourceHealth::Healthy;
                                 }

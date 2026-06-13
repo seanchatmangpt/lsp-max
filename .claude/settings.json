@@ -9,6 +9,24 @@
             "command": "lsp-max-cli gate check"
           }
         ]
+      },
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "lsp-max-cli gate check"
+          }
+        ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "lsp-max-cli gate check"
+          }
+        ]
       }
     ]
   }

@@ -389,6 +389,35 @@ ANDON law applies inside the compositor: if any REFUSED_BY_LAW Error is present 
 `MergeResult.has_andon_block = true`; the CompositorReceipt records the prefixes_fingerprint
 encoding which $\mathcal{A}$ governed the flush. Do not gate or release while ANDON is set.
 
+### L7 Speciation Status
+
+**Formal claim:** each project-server entry in `lsp-max.toml` carries an independent
+law-collapse function Λ_CD^(D), isolating which ANDON prefixes apply per diagnostic source.
+
+**Current implementation:** per-server `andon_code_prefixes` lists are aggregated into a
+single workspace-wide union at `MergeContext` construction time
+(`CompositorConfig::all_andon_prefixes()`). Every diagnostic is evaluated against this
+union regardless of which server emitted it.
+
+**Gap:** a diagnostic code from server A will trigger ANDON even if only server B declared
+that prefix. The per-server isolation the formal model describes is not enforced at merge
+time; it is only enforced at construction time (each server either uses its own list or
+falls back to the static defaults).
+
+**Status: PARTIAL** — the union is a superset of every individual Λ_CD^(D). The
+implementation is more restrictive than the formal claim: no law violation escapes. The
+formal claim of per-server isolation is overstated relative to what the code enforces.
+
+**Fallback observability (Part A):** when `lsp-max.toml` is absent from the workspace
+tree, `CompositorConfig::load()` returns `None` and main.rs falls back to the static
+prefix set `[WASM4PM-, ANTI-LLM-, GGEN-]`. This fallback now emits a `tracing::warn!`
+making the C_D collapse observable in structured logs. Silent fallback is REFUSED.
+
+**Next step to ADMIT L7 Speciation:** `MergeContext` must carry a
+`HashMap<server_id, Vec<String>>` and `merge_diagnostics` must receive per-entry server
+identity so each diagnostic is tested against its originating server's prefix set, not the
+workspace-wide union.
+
 ---
 
 ## anti-llm-cheat-lsp
@@ -532,6 +561,19 @@ refuse victory language
 refuse unsupported admission
 refuse route/protocol/receipt substitution
 ```
+
+---
+
+## ANDON Gate — PreToolUse Hook (Λ_CD^runtime)
+
+A `PreToolUse` hook in `.claude/settings.json` runs `lsp-max-cli gate check` before every **Bash, Edit, and Write** tool call.
+
+- **Exit 0** — gate is clear; the tool proceeds.
+- **Exit 1** — ANDON is ACTIVE; the tool is blocked until the gate clears.
+
+This enforces `Λ_CD^runtime`: no shell-side action (build, test, release, format) and no file mutation (edit, write) may proceed while an active ANDON signal is present. Resolve all `WASM4PM-*` and `GGEN-*` diagnostics before the gate will clear.
+
+Coverage: **Bash** (shell actions), **Edit** (in-place file mutations), **Write** (new or overwrite file mutations). All three advance artifact state and are gated equally.
 
 ---
 
