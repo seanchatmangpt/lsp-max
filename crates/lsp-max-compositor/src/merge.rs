@@ -124,6 +124,17 @@ impl MergeContext {
         }
     }
 
+    /// Register a per-server prefix override and rebuild the server's automaton.
+    /// Intended for testing and dynamic configuration; prefer `from_config` in production.
+    pub fn add_server_prefix_override(&mut self, server_id: String, prefixes: Vec<String>) {
+        let automaton = build_automaton(&prefixes);
+        self.server_prefix_overrides
+            .insert(server_id.clone(), prefixes);
+        if let Some(a) = automaton {
+            self.server_automatons.insert(server_id, a);
+        }
+    }
+
     pub fn andon_prefixes_count(&self) -> usize {
         self.andon_prefixes.len()
     }

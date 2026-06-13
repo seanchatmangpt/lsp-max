@@ -1177,6 +1177,89 @@ fn child_process_pool_remove_returns_proc() {
     assert_eq!(pool.server_ids_snapshot().len(), 0);
 }
 
+// ── 13. gate_last_written dedup — redundant write suppression ────────────────
+
+#[test]
+fn diagnostic_buffer_gate_last_written_suppresses_redundant_write() {
+    // Verifies the gate_last_written AtomicBool optimization: when two consecutive
+    // deposits both carry an ANDON code at severity 1, the gate file must be written
+    // exactly once (on the first deposit). The second deposit sees the flag already set
+    // and skips the ~50µs file I/O (BM-5 finding).
+    //
+    // Measurement: record file mtime after the first deposit, then deposit again and
+    // assert the mtime has not changed.
+    use lsp_max_compositor::diagnostic_buffer::DiagnosticBuffer;
+    use lsp_max_compositor::merge::MergeContext;
+    use lsp_max_compositor::GateFile;
+    use std::path::PathBuf;
+    use std::sync::Arc;
+
+    let gate_path = PathBuf::from(format!("/tmp/test-gate-dedup-{}", std::process::id()));
+    let _ = std::fs::remove_file(&gate_path);
+
+    let gate = Arc::new(GateFile::from_path(gate_path.clone()));
+    let ctx = Arc::new(MergeContext::new(vec![
+        "WASM4PM-".to_string(),
+        "ANTI-LLM-".to_string(),
+    ]));
+    let buffer = DiagnosticBuffer::new(Arc::clone(&ctx), Arc::clone(&gate));
+
+    let andon_entry = || {
+        make_entry(
+            "file:///foo.rs",
+            1,
+            0,
+            "WASM4PM-CROWN-001",
+            "missing output_hash",
+            1, // Error — triggers eager gate write
+            ChildTier::DiagnosticsOnly,
+        )
+    };
+
+    // First deposit — gate transitions clear → ANDON; file must be written.
+    buffer.deposit(
+        "file:///foo.rs",
+        "wasm4pm-lsp",
+        ChildTier::DiagnosticsOnly,
+        vec![andon_entry()],
+    );
+    assert_eq!(
+        gate.read(),
+        Some(true),
+        "gate must be BLOCKED after first ANDON deposit"
+    );
+
+    let mtime_after_first = std::fs::metadata(&gate_path)
+        .expect("gate file must exist after first deposit")
+        .modified()
+        .expect("mtime must be readable");
+
+    // Small sleep so any second write would produce a distinguishably later mtime.
+    std::thread::sleep(std::time::Duration::from_millis(20));
+
+    // Second deposit with the same ANDON code — gate_last_written is already true,
+    // so the write() call must be skipped entirely.
+    buffer.deposit(
+        "file:///foo.rs",
+        "wasm4pm-lsp",
+        ChildTier::DiagnosticsOnly,
+        vec![andon_entry()],
+    );
+
+    let mtime_after_second = std::fs::metadata(&gate_path)
+        .expect("gate file must still exist")
+        .modified()
+        .expect("mtime must be readable");
+
+    assert_eq!(
+        mtime_after_first, mtime_after_second,
+        "gate file mtime must not change on redundant ANDON deposit (gate_last_written suppression)"
+    );
+
+    // Gate must still read BLOCKED — value unchanged.
+    assert_eq!(gate.read(), Some(true), "gate must remain BLOCKED");
+}
+
 // ── gate_file tests ──────────────────────────────────────────────────────────
 
 #[test]

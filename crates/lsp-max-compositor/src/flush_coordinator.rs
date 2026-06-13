@@ -213,20 +213,25 @@ impl FlushCoordinator {
 
                     let receipt =
                         CompositorReceipt::new(uri.clone(), &result, ctx.andon_prefixes());
-                    if receipt.has_andon_block {
-                        tracing::error!(
-                            uri = %receipt.uri,
-                            andon_codes = ?receipt.andon_codes,
-                            prefixes_fingerprint = receipt.prefixes_fingerprint,
-                            "compositor-receipt: ANDON block at flush — gate BLOCKED, law violated"
-                        );
-                    } else {
-                        tracing::debug!(
-                            uri = %receipt.uri,
-                            diagnostic_count = receipt.diagnostic_count,
-                            prefixes_fingerprint = receipt.prefixes_fingerprint,
-                            "compositor-receipt: flush ADMITTED"
-                        );
+                    match receipt.status() {
+                        crate::receipt::ReceiptStatus::Blocked => {
+                            tracing::error!(
+                                uri = %receipt.uri,
+                                andon_codes = ?receipt.andon_codes,
+                                prefixes_fingerprint = receipt.prefixes_fingerprint,
+                                status = %receipt.status(),
+                                "compositor-receipt: ANDON block — status BLOCKED"
+                            );
+                        }
+                        crate::receipt::ReceiptStatus::Admitted => {
+                            tracing::debug!(
+                                uri = %receipt.uri,
+                                diagnostic_count = receipt.diagnostic_count,
+                                prefixes_fingerprint = receipt.prefixes_fingerprint,
+                                status = %receipt.status(),
+                                "compositor-receipt: flush ADMITTED"
+                            );
+                        }
                     }
 
                     // Compute per-server acks from the merge result and notify child servers.
@@ -268,14 +273,25 @@ impl FlushCoordinator {
 
                 // Materialize global ANDON state to the gate file after each batch.
                 // One write per debounce window regardless of URI count — O(1).
-                // Uses batch_has_andon computed from actual flush results this cycle —
-                // not the former monotonic flag, so a batch with zero ANDON blocks
-                // correctly writes CLEAR (false) to the gate.
                 // PreToolUse hooks read this file with a single syscall, no IPC.
-                gate.write(batch_has_andon);
+                //
+                // Correctness: if this batch was clean but other URIs (flushed in a prior
+                // debounce window) still have active ANDON violations in the buffer, writing
+                // `false` would incorrectly CLEAR the gate. Check the full buffer when the
+                // batch is clean — O(remaining_buffered_URIs) per clean window, which is the
+                // common case and cheap relative to the file I/O already done this cycle.
+                let effective_andon = if batch_has_andon {
+                    true
+                } else {
+                    buffer
+                        .buffered_uris()
+                        .iter()
+                        .any(|u| buffer.flush(u).has_andon_block)
+                };
+                gate.write(effective_andon);
                 // Sync buffer's last-written flag so deposit() skips redundant writes
                 // correctly on the next round (especially important for ANDON → clear transitions).
-                buffer.sync_gate_written(batch_has_andon);
+                buffer.sync_gate_written(effective_andon);
             }
         });
 

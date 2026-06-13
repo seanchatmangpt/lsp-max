@@ -1,6 +1,32 @@
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 
+/// Machine-readable emission status of a CompositorReceipt.
+///
+/// BLOCKED: has_andon_block was true at construction — receipt must not be treated
+///          as evidence of admission. ANDON law violations were present.
+/// ADMITTED: no ANDON block — diagnostics were merged and published under a clear gate.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ReceiptStatus {
+    Admitted,
+    Blocked,
+}
+
+impl ReceiptStatus {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            ReceiptStatus::Admitted => "ADMITTED",
+            ReceiptStatus::Blocked => "BLOCKED",
+        }
+    }
+}
+
+impl std::fmt::Display for ReceiptStatus {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.as_str())
+    }
+}
+
 /// Per-flush merge provenance record emitted by FlushCoordinator.
 ///
 /// Encodes what law set governed this flush (via prefixes_fingerprint),
@@ -9,6 +35,11 @@ use std::hash::{Hash, Hasher};
 ///
 /// This is NOT a cryptographic receipt — it is a lightweight audit
 /// trail for identifying which law set was active at each flush.
+///
+/// CONSTRUCTION GUARD: when `has_andon_block` is true, `status()` returns
+/// `ReceiptStatus::Blocked`. Callers MUST check `status()` before treating
+/// this receipt as evidence of admission. A BLOCKED receipt is a structural
+/// refusal — not a warning.
 #[derive(Debug, Clone)]
 pub struct CompositorReceipt {
     /// URI that was flushed.
@@ -36,6 +67,25 @@ impl CompositorReceipt {
             has_andon_block,
             andon_codes,
             prefixes_fingerprint,
+        }
+    }
+
+    /// Returns true when ANDON law violations were present at flush time.
+    /// A blocked receipt must not be used as evidence of admission.
+    pub fn is_blocked(&self) -> bool {
+        self.has_andon_block
+    }
+
+    /// Machine-readable emission status.
+    ///
+    /// Returns `ReceiptStatus::Blocked` when `has_andon_block` is true.
+    /// This is the structural guard: a receipt with BLOCKED status must not be
+    /// used as evidence of admission. ANDON law violations were present at flush time.
+    pub fn status(&self) -> ReceiptStatus {
+        if self.has_andon_block {
+            ReceiptStatus::Blocked
+        } else {
+            ReceiptStatus::Admitted
         }
     }
 }
@@ -67,6 +117,30 @@ mod tests {
         let receipt = CompositorReceipt::new("file:///test.rs".to_string(), &result, &prefixes);
         assert!(receipt.has_andon_block);
         assert_eq!(receipt.uri, "file:///test.rs");
+    }
+
+    #[test]
+    fn receipt_status_blocked_when_andon_active() {
+        let result = make_merge_result(true);
+        let prefixes = vec!["WASM4PM-".to_string()];
+        let receipt = CompositorReceipt::new("file:///test.rs".to_string(), &result, &prefixes);
+        assert_eq!(receipt.status(), ReceiptStatus::Blocked);
+        assert_eq!(receipt.status().as_str(), "BLOCKED");
+    }
+
+    #[test]
+    fn receipt_status_admitted_when_no_andon() {
+        let result = make_merge_result(false);
+        let prefixes = vec!["WASM4PM-".to_string()];
+        let receipt = CompositorReceipt::new("file:///test.rs".to_string(), &result, &prefixes);
+        assert_eq!(receipt.status(), ReceiptStatus::Admitted);
+        assert_eq!(receipt.status().as_str(), "ADMITTED");
+    }
+
+    #[test]
+    fn blocked_receipt_is_not_admitted() {
+        // Structural guard: a BLOCKED receipt must never compare equal to ADMITTED.
+        assert_ne!(ReceiptStatus::Blocked, ReceiptStatus::Admitted);
     }
 
     #[test]

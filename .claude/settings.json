@@ -2,29 +2,22 @@
   "hooks": {
     "PreToolUse": [
       {
-        "matcher": "Bash",
+        "matcher": {"tool_name": {"regex": "^(Bash|Edit|Write|TaskCreate|NotebookEdit|mcp__.*)$"}},
         "hooks": [
           {
             "type": "command",
             "command": "lsp-max-cli gate check"
           }
         ]
-      },
+      }
+    ],
+    "PostToolUse": [
       {
-        "matcher": "Edit",
+        "matcher": {"tool_name": {"regex": "^(Bash|Edit|Write)$"}},
         "hooks": [
           {
             "type": "command",
-            "command": "lsp-max-cli gate check"
-          }
-        ]
-      },
-      {
-        "matcher": "Write",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "lsp-max-cli gate check"
+            "command": "cd /Users/sac/lsp-max && lsp-max-cli diagnostic snapshot 2>/dev/null || true"
           }
         ]
       }

@@ -664,6 +664,59 @@ Do not collapse OPEN into ADMITTED. The gap is present until structural enforcem
 
 ---
 
+## Λ_CD Predicate — Formal Implementation Status
+
+### Formal Definition
+
+```text
+Λ_CD(a) = Λ(a) ∧ ¬∃ d ∈ D_t : d.law_id ∈ A ∧ d.severity = Error
+```
+
+Where:
+- `Λ(a)` — the agent's base admissibility predicate (bounded receipts, no victory language, no forbidden implications)
+- `D_t` — the diagnostic context at time `t`, the set of all active diagnostics pushed into the agent's world
+- `A` — the constrained set of law axis IDs this gate governs (e.g. `WASM4PM-*`, `ANTI-LLM-*`, `GGEN-*`)
+- `d.law_id ∈ A` — the diagnostic code falls within the governed set
+- `d.severity = Error` — only Error-severity violations block; Warning and Hint do not
+
+The predicate is false — and the gate is BLOCKED — whenever any Error-severity diagnostic with a governed law ID is present in `D_t`.
+
+### Conjunct Status Table
+
+| Conjunct | Implementation | File:Line | Status |
+|---|---|---|---|
+| Gate file write | `GateFile::set_andon()` writes `b"1"` eagerly on first ANDON Error; clears to `b"0"` when `D_t` drains | `crates/lsp-max-compositor/src/gate_file.rs` | ADMITTED |
+| Gate hook PreToolUse | `.claude/settings.json` runs `lsp-max-cli gate check` before every Bash, Edit, Write tool call; exit 1 blocks | `.claude/settings.json` + `crates/lsp-max-cli/src/nouns/gate.rs` | ADMITTED |
+| Per-server C_D routing (L7) | `prefixes_for_server()` returns per-server prefix list; `MergeContext` currently uses workspace-wide union — per-server `HashMap<server_id, Vec<String>>` at merge time is CANDIDATE | `crates/lsp-max-compositor/src/merge.rs` | PARTIAL |
+| Receipt blocking | `CompositorReceipt` is emitted only after flush; `has_andon_block = true` propagates into receipt; gate file write precedes receipt emission | `crates/lsp-max-compositor/src/receipt.rs` + `flush_coordinator.rs` | ADMITTED |
+| D_t context format | `DiagnosticBuffer` carries server_id, law_id (code prefix), severity, and URI per entry; format is structurally sound but `D_t` injection into subagent context window is not yet wired | `crates/lsp-max-compositor/src/receipt.rs` | CANDIDATE |
+
+### SELECT→PUSH Model — Current Position
+
+The current implementation straddles two models. The gate file is the **SELECT side**: the agent (or its PreToolUse hook) reads the gate file on demand — one syscall, one byte — to determine whether `Λ_CD` holds. This is pull-based; the agent selects the gate state from the world. The **PUSH side** — where the world injects `D_t` as a structured context block into the agent's active context window before each tool call — is not yet implemented. A full `Λ_CD` enforcement model requires both: SELECT gives the agent a fast synchronous check, while PUSH ensures the agent sees the governing diagnostic set even when it does not know to ask. The `D_t` context format (CANDIDATE above) is the prerequisite for the PUSH side. Until PUSH is wired, subagent sessions that do not run `lsp-max-cli gate check` as a preamble can proceed without knowledge of active ANDON signals.
+
+### Boundary Statement
+
+"The gate governs the constrained set; everything outside A remains the agent's own judgment."
+
+The gate does not replace the agent's full admissibility predicate `Λ(a)`. It enforces only the law axes enumerated in `A`. Diagnostic codes outside `A`, stylistic choices, architectural trade-offs, and work outside governed surfaces remain under agent judgment. The gate is a floor, not a ceiling.
+
+### Session Audit Summary — 2026-06-13
+
+22 conjuncts audited across the Λ_CD implementation surface.
+
+```text
+ADMITTED:  5  (gate file write, PreToolUse hook, receipt blocking, speciation test suite, subagent gate check availability)
+PARTIAL:   1  (L7 per-server C_D routing — union is conservative superset; isolation gap documented)
+CANDIDATE: 1  (D_t context format — structurally present; PUSH injection not wired)
+OPEN:      11 (subagent structural enforcement, dx-verify sibling violations, gc006 sealed-repo test, D_t PUSH wiring, and others — see Current Framework Status section)
+BLOCKED:   0
+```
+
+Do not collapse OPEN or CANDIDATE into ADMITTED. The counts above are bounded statuses, not victory claims.
+
+---
+
 ## Final Prime
 
 This project is not about making an LSP demo.

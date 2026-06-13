@@ -26,6 +26,9 @@ impl GateFile {
         }
     }
 
+    /// Construct from an explicit path. The write path uses write-then-rename atomicity:
+    /// a sibling `.tmp` file is written first, then `rename(2)` atomically replaces the gate
+    /// file. This eliminates the truncate window that would otherwise produce a false CLEAR.
     pub fn from_path(path: PathBuf) -> Self {
         Self { path }
     }
@@ -37,10 +40,22 @@ impl GateFile {
     /// Write the current ANDON state. `true` = ANDON set (gate CLOSED), `false` = clear.
     /// Best-effort: errors are logged but do not propagate — gate file loss is advisory,
     /// not fatal. The enforcement path falls back to the LSP query.
+    ///
+    /// Uses write-then-rename atomicity: the byte is written to a sibling `.tmp` file first,
+    /// then `rename(2)` atomically replaces the gate file. A reader racing the write window
+    /// always observes either the previous complete state or the new complete state — never
+    /// an empty file that would produce a false CLEAR.
     pub fn write(&self, andon: bool) {
         let byte: &[u8] = if andon { b"1" } else { b"0" };
-        if let Err(e) = std::fs::write(&self.path, byte) {
-            tracing::warn!(path = %self.path.display(), err = %e, "gate-file: write failed");
+        // Write to sibling tmp file then rename — rename(2) is atomic, eliminates torn-read window.
+        let tmp = self.path.with_extension("tmp");
+        if let Err(e) = std::fs::write(&tmp, byte) {
+            tracing::warn!(path = %tmp.display(), err = %e, "gate-file: tmp write failed, gate unchanged");
+            return;
+        }
+        if let Err(e) = std::fs::rename(&tmp, &self.path) {
+            tracing::warn!(error = %e, "gate-file: rename failed, stale state possible");
+            let _ = std::fs::remove_file(&tmp);
         }
     }
 

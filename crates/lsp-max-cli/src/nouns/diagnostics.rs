@@ -1,6 +1,7 @@
 use clap_noun_verb::Result;
 use clap_noun_verb_macros::verb;
 use lsp_max_runtime::AutonomicMesh;
+use lsp_types_max::NumberOrString;
 use serde::Serialize;
 
 // ==============================================================================
@@ -395,6 +396,176 @@ pub fn apply_repair(instance_id: String, transaction_id: String) -> Result<Apply
         transaction_id,
     })
 }
+// ==============================================================================
+// D_t snapshot verb
+//
+// Emits the current diagnostic set in a compact, structured format suitable for
+// injection into an agent context window (system prompt or context block).
+//
+// FORMAT:
+//   D_t @ <RFC3339 timestamp>: <N> diagnostics, <ANDON_COUNT> ANDON blocks
+//   <URI>:<line>:<char> [<SEV>] <CODE> — <MESSAGE>
+//   ...
+//
+// Exit 0 — no ANDON blocks; gate is clear.
+// Exit 1 — one or more ANDON blocks present.
+//
+// ANDON prefixes (static defaults, matching compositor fallback):
+//   WASM4PM-   ANTI-LLM-   GGEN-
+//
+// The compositor DiagnosticBuffer is not accessible from the CLI (it lives in an
+// in-process Arc). This verb reads from the AutonomicMesh state file, which is the
+// same source used by all other diagnostics verbs.  When the compositor is not
+// running, the mesh state file reflects the last persisted state.
+// ==============================================================================
+
+/// Default ANDON code prefixes — same as compositor fallback when lsp-max.toml is absent.
+const ANDON_PREFIXES: &[&str] = &["WASM4PM-", "ANTI-LLM-", "GGEN-"];
+
+fn is_andon_code(code: &str) -> bool {
+    ANDON_PREFIXES.iter().any(|p| code.starts_with(p))
+}
+
+fn sev_label(sev: Option<lsp_types_max::DiagnosticSeverity>) -> &'static str {
+    match sev {
+        Some(s) if s == lsp_types_max::DiagnosticSeverity::ERROR => "ERROR",
+        Some(s) if s == lsp_types_max::DiagnosticSeverity::WARNING => "WARN",
+        Some(s) if s == lsp_types_max::DiagnosticSeverity::INFORMATION => "INFO",
+        Some(s) if s == lsp_types_max::DiagnosticSeverity::HINT => "HINT",
+        _ => "ERROR",
+    }
+}
+
+fn code_string(code: &Option<NumberOrString>) -> String {
+    match code {
+        Some(NumberOrString::String(s)) => s.clone(),
+        Some(NumberOrString::Number(n)) => n.to_string(),
+        None => String::new(),
+    }
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct DtEntry {
+    pub uri: String,
+    pub line: u32,
+    pub character: u32,
+    pub severity: String,
+    pub code: String,
+    pub message: String,
+    pub is_andon: bool,
+}
+
+#[derive(Serialize)]
+pub struct SnapshotResult {
+    pub timestamp: String,
+    pub total: usize,
+    pub andon_count: usize,
+    pub entries: Vec<DtEntry>,
+    /// The formatted D_t block ready for context injection.
+    pub dt_block: String,
+}
+
+// ==============================================================================
+// D_t snapshot service logic — extracted to keep the verb thin (FM-1.1)
+// ==============================================================================
+
+pub struct DtSnapshotService {
+    state_path: String,
+}
+
+impl DtSnapshotService {
+    pub fn new() -> Self {
+        Self {
+            state_path: crate::nouns::get_state_path(),
+        }
+    }
+
+    pub fn build(&self) -> SnapshotResult {
+        let mesh = AutonomicMesh::load_from_file(&self.state_path)
+            .unwrap_or_else(|_| AutonomicMesh::new());
+        let timestamp = chrono::Utc::now().to_rfc3339();
+        let mut entries: Vec<DtEntry> = Vec::new();
+        for (instance_id, inst) in &mesh.instances {
+            for diag in &inst.diagnostics {
+                let code = code_string(&diag.lsp.code);
+                let is_andon = is_andon_code(&code);
+                entries.push(DtEntry {
+                    uri: instance_id.clone(),
+                    line: diag.lsp.range.start.line,
+                    character: diag.lsp.range.start.character,
+                    severity: sev_label(diag.lsp.severity).to_string(),
+                    code,
+                    message: diag.lsp.message.clone(),
+                    is_andon,
+                });
+            }
+        }
+        entries.sort_by(|a, b| {
+            b.is_andon
+                .cmp(&a.is_andon)
+                .then(a.uri.cmp(&b.uri))
+                .then(a.line.cmp(&b.line))
+        });
+        let total = entries.len();
+        let andon_count = entries.iter().filter(|e| e.is_andon).count();
+        let block = Self::format_block(&timestamp, &entries, total, andon_count);
+        SnapshotResult {
+            timestamp,
+            total,
+            andon_count,
+            entries,
+            dt_block: block,
+        }
+    }
+
+    fn format_block(
+        timestamp: &str,
+        entries: &[DtEntry],
+        total: usize,
+        andon_count: usize,
+    ) -> String {
+        let mut block = format!(
+            "D_t @ {}: {} diagnostics, {} ANDON blocks",
+            timestamp, total, andon_count
+        );
+        for e in entries {
+            let code_part = if e.code.is_empty() {
+                String::new()
+            } else {
+                format!("{} \u{2014} ", e.code)
+            };
+            block.push_str(&format!(
+                "\n{}:{}:{} [{}] {}{}",
+                e.uri, e.line, e.character, e.severity, code_part, e.message
+            ));
+        }
+        block
+    }
+}
+
+/// Emit D_t — the current diagnostic set formatted for agent context injection.
+///
+/// Prints one header line followed by one line per diagnostic:
+///   `D_t @ <RFC3339>: <N> diagnostics, <ANDON> ANDON blocks`
+///   `<URI>:<line>:<char> [<SEV>] <CODE> — <MESSAGE>`
+///
+/// Exit 0 if no ANDON blocks; exit 1 if any ANDON block is present.
+#[verb("snapshot")]
+pub fn snapshot() -> Result<SnapshotResult> {
+    let svc = DtSnapshotService::new();
+    let result = svc.build();
+    println!("{}", result.dt_block);
+    if result.andon_count > 0 {
+        return Err(clap_noun_verb::error::NounVerbError::execution_error(
+            format!(
+                "D_t ANDON: {} block(s) active — gate is BLOCKED",
+                result.andon_count
+            ),
+        ));
+    }
+    Ok(result)
+}
+
 #[cfg(test)]
 mod tests {
     use super::DiagnosticsService;
