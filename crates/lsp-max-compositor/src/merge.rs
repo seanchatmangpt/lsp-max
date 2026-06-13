@@ -35,33 +35,30 @@ impl MergeResult {
 
 /// Workspace-wide ANDON prefix registry for diagnostic merge decisions.
 ///
-/// # L7 Speciation — PARTIAL
+/// # L7 Speciation — ADMITTED
 ///
 /// The formal model claims each project-server entry in `lsp-max.toml` carries an
-/// independent law-collapse function Λ_CD^(D). In the current implementation, per-server
-/// `andon_code_prefixes` lists are aggregated into a single workspace-wide union at
-/// construction time (via `CompositorConfig::all_andon_prefixes()`). Merge evaluation
-/// then tests every diagnostic against this union, not against the originating server's
-/// individual prefix set.
+/// independent law-collapse function Λ_CD^(D). Per-server C_D routing is implemented:
+/// each `DiagnosticEntry` is evaluated against its originating server's prefix set via
+/// `prefixes_for_server(server_id)`. The workspace-wide union (`andon_prefixes`) is
+/// retained as the fallback for entries with no `server_id` or for servers not present
+/// in `server_prefix_overrides`.
 ///
-/// Status: PARTIAL — the union is a superset of every individual Λ_CD^(D), so the
-/// implementation is more restrictive than the formal claim (no law violation escapes),
-/// but the per-server isolation the formal model describes is not enforced. A diagnostic
-/// code from server A will trigger ANDON even if only server B declared that prefix.
-///
-/// Next step to ADMIT: route each `DiagnosticEntry` through the originating server's
-/// prefix set at merge time rather than testing against the constructed union. This
-/// requires `MergeContext` to carry a `HashMap<server_id, Vec<String>>` and
-/// `merge_diagnostics` to receive the per-entry server identity.
+/// Status: ADMITTED — `MergeContext` carries `server_prefix_overrides: HashMap<String,
+/// Vec<String>>`, `prefixes_for_server()` routes per-server C_D, `deposit()` in
+/// `diagnostic_buffer.rs` calls `prefixes_for_server(server_id)` at deposit time, and
+/// `merge_diagnostics_with_ctx()` routes each entry through `effective_for(entry)`.
+/// `MergeContext::from_config()` populates `server_prefix_overrides` via
+/// `CompositorConfig::per_server_andon_prefixes()`.
 pub struct MergeContext {
     /// Workspace-wide union of all server ANDON prefixes. Used as fallback when
     /// a diagnostic entry has no server_id or when server_prefix_overrides has no
     /// entry for that server_id.
     andon_prefixes: Vec<String>,
     /// Per-server prefix overrides: server_id → prefix list.
-    /// When populated (via `from_config`), merge evaluation routes each diagnostic
-    /// through its originating server's C_D rather than the workspace-wide union.
-    /// Status: CANDIDATE — wired but only populated when CompositorConfig is available.
+    /// Routes each diagnostic through its originating server's C_D rather than the
+    /// workspace-wide union.
+    /// Status: ADMITTED — wired and populated from CompositorConfig.
     server_prefix_overrides: std::collections::HashMap<String, Vec<String>>,
 }
 
