@@ -1,3 +1,4 @@
+use crate::config::AntiLlmConfig;
 use crate::diagnostics::AntiLlmDiagnostic;
 use crate::observations::Observation;
 use crate::parsers::{
@@ -15,9 +16,6 @@ use std::sync::OnceLock;
 // ── Line index — O(n) build, O(log n) lookup ──────────────────────────────────
 
 fn build_line_index(content: &[u8]) -> Vec<usize> {
-    // Collect byte offsets of every '\n'. Index i holds the byte offset of the
-    // newline that ends line (i+1). A binary search on this gives line number
-    // for any byte offset in O(log n) instead of O(n).
     let mut offsets = Vec::with_capacity(content.len() / 40 + 1);
     offsets.push(0); // line 1 starts at byte 0
     for pos in memchr::memchr_iter(b'\n', content) {
@@ -34,46 +32,81 @@ fn byte_to_line(line_index: &[usize], byte_offset: usize) -> usize {
 }
 
 // ── Raw-smell automaton (compiled once) ───────────────────────────────────────
+//
+// Victory-language terms are intentionally absent here. They are owned by
+// `rules::claims::VICTORY_TERMS` and detected by a separate pass so that
+// per-repo domain-term exemptions can be applied before emitting diagnostics.
 
 const RAW_SMELL_PATTERNS: &[&str] = &[
-    "tower-lsp",
-    "tower_lsp",
-    "CLAP",
-    "Victory confirmed",
-    "fully admitted",
-    "all gaps resolved",
-    "successfully proven",
-    "Routing to PackPlan",
-    "test result: ok",
-    "v1.0.0",
-    "version = \"1.0.0\"",
-    "CLAP-DEBUG",
-    "CLAP-DEBUG-PATH",
-    "Content was:",
-    "Path was:",
-    "static scan as route proof",
-    "static scan",
-    "route proof",
-    "ChangelogCoverage(15 rows) => SpecCoverage(LSP 3.18)",
-    "ChangelogCoverage(15 rows) \u{21d2} SpecCoverage(LSP 3.18)",
-    "15-row changelog matrix is being treated as full LSP 3.18 combinatorial coverage",
-    "ANTI-LLM-OCEL-001-TRIGGER",
-    "ANTI-LLM-OCEL-002-TRIGGER",
-    "\"bypassed_compat\": true",
-    "use wasm4pm::",
+    "tower-lsp",                                            // 0 — needs lsp-max suffix check
+    "tower_lsp",                                            // 1 — needs lsp-max suffix check
+    "CLAP",                                                 // 2
+    "Routing to PackPlan",                                  // 3
+    "test result: ok",                                      // 4
+    "v1.0.0",                                               // 5
+    "version = \"1.0.0\"",                                  // 6
+    "CLAP-DEBUG",                                           // 7
+    "CLAP-DEBUG-PATH",                                      // 8
+    "Content was:",                                         // 9
+    "Path was:",                                            // 10
+    "static scan as route proof", // 11 (before "static scan" — LeftmostLongest)
+    "static scan",                // 12
+    "route proof",                // 13
+    "ChangelogCoverage(15 rows) => SpecCoverage(LSP 3.18)", // 14
+    "ChangelogCoverage(15 rows) \u{21d2} SpecCoverage(LSP 3.18)", // 15
+    "15-row changelog matrix is being treated as full LSP 3.18 combinatorial coverage", // 16
+    "ANTI-LLM-OCEL-001-TRIGGER",  // 17
+    "ANTI-LLM-OCEL-002-TRIGGER",  // 18
+    "\"bypassed_compat\": true",  // 19
+    "use wasm4pm::",              // 20
 ];
 
 fn raw_smell_ac() -> &'static AhoCorasick {
     static AC: OnceLock<AhoCorasick> = OnceLock::new();
     AC.get_or_init(|| {
-        // LeftmostLongest: when patterns overlap at the same start position (e.g. "CLAP" vs
-        // "CLAP-DEBUG", or "static scan" vs "static scan as route proof"), the longest match
-        // wins. This preserves the most-specific diagnostic construct name.
         aho_corasick::AhoCorasickBuilder::new()
             .match_kind(aho_corasick::MatchKind::LeftmostLongest)
             .build(RAW_SMELL_PATTERNS)
             .unwrap()
     })
+}
+
+// ── TEST-001 helper — classify .contains() receiver ──────────────────────────
+
+/// Classify a test-file line that contains both `assert` and `.contains`.
+///
+/// Returns the `construct` string for the resulting observation:
+///
+/// - `"assert_contains_string"` — argument is a string literal, e.g.
+///   `assert!(x.to_string().contains("VariantName"))`. This is the real cheat:
+///   the test couples to the Display representation instead of the type.
+///
+/// - `"assert_contains_structural"` — argument is a reference or enum path,
+///   e.g. `assert!(vec.contains(&Enum::Variant))`. This is structural equality
+///   via `PartialEq` — acceptable.
+///
+/// - `"assert_contains"` — receiver cannot be classified from the line text.
+///   Flagged conservatively as a potential cheat.
+fn classify_contains(line: &str) -> &'static str {
+    // Find the `.contains(` token to examine what immediately follows the `(`.
+    let Some(pos) = line.find(".contains(") else {
+        return "assert_contains";
+    };
+    let after = line[pos + ".contains(".len()..].trim_start();
+
+    if after.starts_with('"') || after.starts_with("r\"") || after.starts_with("r#\"") {
+        // String literal argument → Display / output cheat
+        "assert_contains_string"
+    } else if after.starts_with('&') || after.starts_with("&&") {
+        // Reference argument → structural PartialEq check (Vec::contains(&T))
+        "assert_contains_structural"
+    } else if after.starts_with("format!") || after.starts_with("&format!") {
+        // format!() argument → the string is constructed then searched → cheat
+        "assert_contains_string"
+    } else {
+        // Cannot classify — flag conservatively
+        "assert_contains"
+    }
 }
 
 // ── File scanner ──────────────────────────────────────────────────────────────
@@ -103,7 +136,6 @@ pub fn scan_file(filepath: &str) -> Vec<Observation> {
 
     // 1. Raw text scan — single AhoCorasick pass over entire file
     if !is_self_excluded {
-        // Build line index once — O(n) using SIMD memchr, then O(log n) per match.
         let line_index = build_line_index(content.as_bytes());
 
         for mat in raw_smell_ac().find_iter(&content) {
@@ -137,7 +169,19 @@ pub fn scan_file(filepath: &str) -> Vec<Observation> {
         }
     }
 
-    // 2. Test-file checks
+    // 2. Victory-language scan (delegated to claims rule vocabulary)
+    //    Domain-term exemptions are applied later in evaluate_diagnostics.
+    if !is_self_excluded {
+        // Pass empty domain_terms — exemptions apply at evaluate time.
+        obs.extend(claims::scan_for_victory(
+            filepath,
+            &content,
+            "raw_text",
+            &[],
+        ));
+    }
+
+    // 3. Test-file checks
     let is_test_file = filepath.contains("tests/")
         || filepath.ends_with("_test.rs")
         || filepath.contains("/test/");
@@ -145,6 +189,7 @@ pub fn scan_file(filepath: &str) -> Vec<Observation> {
         for (line_idx, line) in content.lines().enumerate() {
             let line_num = line_idx + 1;
             if line.contains("assert") && line.contains(".contains") {
+                let construct = classify_contains(line);
                 obs.push(Observation {
                     file_path: filepath.to_string(),
                     start_byte: 0,
@@ -152,10 +197,12 @@ pub fn scan_file(filepath: &str) -> Vec<Observation> {
                     line: line_num,
                     column: 1,
                     kind: "test_smell".to_string(),
-                    construct: "assert_contains".to_string(),
+                    construct: construct.to_string(),
                     context: line.to_string(),
-                    message: "String assertion containing '.contains' detected in test file"
-                        .to_string(),
+                    message: format!(
+                        ".contains() assertion classified as '{}' in test file",
+                        construct
+                    ),
                 });
             }
             if !filepath.contains("dogfood.rs") && line.contains("negative_controls") {
@@ -174,7 +221,7 @@ pub fn scan_file(filepath: &str) -> Vec<Observation> {
         }
     }
 
-    // 3. Type-specific parsers
+    // 4. Type-specific parsers
     if filename == "Cargo.toml" {
         obs.extend(cargo_toml::parse_cargo_toml(filepath, &content));
     } else if filename == "Cargo.lock" {
@@ -213,8 +260,6 @@ pub fn scan_directory(dirpath: &str) -> Vec<Observation> {
         return obs;
     }
 
-    // ignore::WalkBuilder skips target/, .git/, node_modules/ via .gitignore automatically.
-    // We still explicitly add fixtures/ as an override since it may not be in .gitignore.
     let walker = ignore::WalkBuilder::new(path)
         .hidden(false)
         .add_custom_ignore_filename(".anti-llm-ignore")
@@ -230,10 +275,22 @@ pub fn scan_directory(dirpath: &str) -> Vec<Observation> {
     obs
 }
 
+/// Evaluate diagnostics with a default (all-empty) config.
+///
+/// Suitable for programmatic callers that do not have a scan directory.
+/// Callers with a directory should prefer `evaluate_diagnostics_with_config`.
 pub fn evaluate_diagnostics(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
+    evaluate_diagnostics_with_config(obs, &AntiLlmConfig::default())
+}
+
+/// Evaluate diagnostics using a per-repo config loaded from `anti-llm.toml`.
+pub fn evaluate_diagnostics_with_config(
+    obs: &[Observation],
+    config: &AntiLlmConfig,
+) -> Vec<AntiLlmDiagnostic> {
     let mut diags = Vec::new();
 
-    diags.extend(surface::evaluate(obs));
+    diags.extend(surface::evaluate(obs, config));
     diags.extend(authority::evaluate(obs));
     diags.extend(receipts::evaluate(obs));
     diags.extend(routes::evaluate(obs));
@@ -247,10 +304,13 @@ pub fn evaluate_diagnostics(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
     diags.extend(ts_rules::evaluate(obs));
 
     let has_non_victory_errors = diags.iter().any(|d| d.code != "ANTI-LLM-CLAIM-004");
-    diags.extend(claims::evaluate(obs, has_non_victory_errors));
+    diags.extend(claims::evaluate(
+        obs,
+        &config.claim.domain_terms,
+        has_non_victory_errors,
+    ));
 
-    // Deduplicate diagnostics by (file_path, line, code) — prevents the same violation
-    // from appearing multiple times when multiple parsers emit overlapping observations.
+    // Deduplicate by (file_path, line, code)
     let mut seen = std::collections::HashSet::new();
     diags.retain(|d| seen.insert((d.file_path.clone(), d.line, d.code.clone())));
 
