@@ -273,6 +273,9 @@ impl FlushCoordinator {
                 // correctly writes CLEAR (false) to the gate.
                 // PreToolUse hooks read this file with a single syscall, no IPC.
                 gate.write(batch_has_andon);
+                // Sync buffer's last-written flag so deposit() skips redundant writes
+                // correctly on the next round (especially important for ANDON → clear transitions).
+                buffer.sync_gate_written(batch_has_andon);
             }
         });
 

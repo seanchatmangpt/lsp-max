@@ -1,10 +1,14 @@
 //! Micro-benchmarks for lsp-max-compositor hot paths.
 //!
-//! Four benchmark families — all sync, no subprocess, no async runtime:
-//!   BM-1  deposit_contention   — DashMap shard lock under N concurrent writers
-//!   BM-2  flush_latency        — merge cost at (N servers × K diagnostics per URI)
-//!   BM-3  merge_diagnostics_cpu — HashMap growth path vs REFUSED_BY_LAW sort branch
-//!   BM-4  andon_prefix_match   — MergeContext::is_andon_for_server() (daachorse automaton) at scale
+//! Eight benchmark families — all sync, no subprocess, no async runtime:
+//!   BM-1  deposit_contention            — papaya HashMap under N concurrent writers
+//!   BM-2  flush_latency                 — merge cost at (N servers × K diagnostics per URI)
+//!   BM-3  merge_diagnostics_cpu         — HashMap growth path vs REFUSED_BY_LAW sort branch
+//!   BM-4  andon_prefix_match            — MergeContext::is_andon_for_server (daachorse automaton) at scale
+//!   BM-5  deposit_andon_hot_path        — per-call deposit() cost: clean vs ANDON variants (highest-freq path)
+//!   BM-6  multi_uri_flush_fanout        — flush M distinct URIs (real editor: 10–50 open files)
+//!   BM-7  merge_context_construction    — MergeContext::new() automaton build time vs prefix count
+//!   BM-8  signal_flush_channel_throughput — kanal try_send throughput: sequential + concurrent N senders
 //!
 //! Receipt written by `just bench-compositor`.
 
@@ -272,10 +276,7 @@ fn bench_andon_prefix_match(c: &mut Criterion) {
             group.bench_function(format!("{id}_match"), |b| {
                 b.iter(|| {
                     for _ in 0..call_count {
-                        black_box(ctx_ref.is_andon_for_server(
-                            black_box(matching_code),
-                            None,
-                        ));
+                        black_box(ctx_ref.is_andon_for_server(black_box(matching_code), None));
                     }
                 });
             });
@@ -287,14 +288,294 @@ fn bench_andon_prefix_match(c: &mut Criterion) {
             group.bench_function(format!("{id}_no_match"), |b| {
                 b.iter(|| {
                     for _ in 0..call_count {
-                        black_box(ctx_ref2.is_andon_for_server(
-                            black_box(nonmatching_code),
-                            None,
-                        ));
+                        black_box(ctx_ref2.is_andon_for_server(black_box(nonmatching_code), None));
                     }
                 });
             });
         }
+    }
+    group.finish();
+}
+
+// ── BM-5: deposit_andon_hot_path ──────────────────────────────────────────────
+// deposit() is called N×K times per keystroke cycle — it is the highest-frequency
+// path in the compositor. This bench isolates the per-call cost at diagnostic
+// volumes that match real editor sessions (10–100 diagnostics per server per file).
+// Both clean (no ANDON) and dirty (ANDON prefixes present) variants measured
+// because the automaton check runs on every entry regardless of match outcome.
+
+fn bench_deposit_andon_hot_path(c: &mut Criterion) {
+    let ctx = make_ctx();
+    let mut group = c.benchmark_group("deposit_andon_hot_path");
+
+    for k in [10usize, 100, 500] {
+        let gate = Arc::new(lsp_max_compositor::GateFile::from_path(
+            std::path::PathBuf::from("/tmp/test-gate-deposit"),
+        ));
+
+        // Clean entries — no ANDON prefix. Common case in a healthy workspace.
+        let clean_entries: Vec<DiagnosticEntry> = (0..k)
+            .map(|j| {
+                make_entry(
+                    "file:///bench/a.rs",
+                    j as u32,
+                    0,
+                    &format!("RUST-E{j:04}"),
+                    "type error",
+                    1,
+                    ChildTier::Primary,
+                )
+            })
+            .collect();
+
+        // Dirty entries — every entry has an ANDON prefix. Gate-triggering worst case.
+        let dirty_entries: Vec<DiagnosticEntry> = (0..k)
+            .map(|j| {
+                make_entry(
+                    "file:///bench/b.rs",
+                    j as u32,
+                    0,
+                    &format!("WASM4PM-CHEAT-C{j:04}"),
+                    "law violation",
+                    1,
+                    ChildTier::Primary,
+                )
+            })
+            .collect();
+
+        group.throughput(Throughput::Elements(k as u64));
+
+        let buf_clean = Arc::new(DiagnosticBuffer::new(ctx.clone(), Arc::clone(&gate)));
+        let clean = clean_entries.clone();
+        group.bench_function(format!("clean_{k}diags"), |b| {
+            b.iter(|| {
+                buf_clean.deposit(
+                    black_box("file:///bench/a.rs"),
+                    black_box("server-0"),
+                    ChildTier::Primary,
+                    black_box(clean.clone()),
+                );
+            });
+        });
+
+        let buf_dirty = Arc::new(DiagnosticBuffer::new(ctx.clone(), Arc::clone(&gate)));
+        let dirty = dirty_entries.clone();
+        group.bench_function(format!("andon_{k}diags"), |b| {
+            b.iter(|| {
+                buf_dirty.deposit(
+                    black_box("file:///bench/b.rs"),
+                    black_box("server-0"),
+                    ChildTier::Primary,
+                    black_box(dirty.clone()),
+                );
+            });
+        });
+    }
+    group.finish();
+}
+
+// ── BM-6: multi_uri_flush_fanout ──────────────────────────────────────────────
+// Real editor sessions have 10–50 open files. The coordinator flushes per URI;
+// flushing M URIs in sequence means M HashMap lookups + M merge calls.
+// This bench measures the flush fanout cost vs single-URI baseline.
+
+fn bench_multi_uri_flush_fanout(c: &mut Criterion) {
+    let ctx = make_ctx();
+    let mut group = c.benchmark_group("multi_uri_flush_fanout");
+
+    for m in [1usize, 10, 50] {
+        let gate = Arc::new(lsp_max_compositor::GateFile::from_path(
+            std::path::PathBuf::from("/tmp/test-gate-multi"),
+        ));
+        let buffer = Arc::new(DiagnosticBuffer::new(ctx.clone(), Arc::clone(&gate)));
+        let uris: Vec<String> = (0..m)
+            .map(|i| format!("file:///bench/file{i}.rs"))
+            .collect();
+
+        // Pre-populate: 5 servers × 20 diagnostics for each URI.
+        for uri in &uris {
+            for s in 0..5usize {
+                let entries: Vec<_> = (0..20)
+                    .map(|j| {
+                        make_entry(
+                            uri,
+                            j as u32,
+                            0,
+                            &format!("CODE-{j}"),
+                            "msg",
+                            2,
+                            ChildTier::Primary,
+                        )
+                    })
+                    .collect();
+                buffer.deposit(uri, &format!("server-{s}"), ChildTier::Primary, entries);
+            }
+        }
+
+        group.throughput(Throughput::Elements(m as u64));
+        let uris_ref = uris.clone();
+        let buf_ref = Arc::clone(&buffer);
+        group.bench_with_input(BenchmarkId::new("M_uris", m), &m, |b, _| {
+            b.iter(|| {
+                for uri in &uris_ref {
+                    let result = buf_ref.flush(black_box(uri));
+                    black_box(result.diagnostics.len());
+                }
+            });
+        });
+    }
+    group.finish();
+}
+
+// ── BM-7: merge_context_construction ──────────────────────────────────────────
+// MergeContext::new() builds the daachorse automaton from the prefix list.
+// This is a one-shot cost at server startup and on lsp-max.toml reload.
+// For large deployments (many servers with per-server overrides), the union prefix
+// set can grow; this bench measures construction time vs prefix count so we can
+// set a budget for startup latency.
+
+fn bench_merge_context_construction(c: &mut Criterion) {
+    let mut group = c.benchmark_group("merge_context_construction");
+
+    let prefix_sets: &[(&str, &[&str])] = &[
+        ("3_prefixes", &["WASM4PM-", "ANTI-LLM-", "GGEN-"]),
+        (
+            "10_prefixes",
+            &[
+                "WASM4PM-",
+                "ANTI-LLM-",
+                "GGEN-",
+                "CROWN-",
+                "DRIFT-",
+                "OCEL-",
+                "FM5-",
+                "EARL-",
+                "SPC-",
+                "BLAKE3-",
+            ],
+        ),
+        (
+            "50_prefixes",
+            // Simulate a large enterprise deployment with many diagnostic namespaces.
+            &[
+                "WASM4PM-",
+                "ANTI-LLM-",
+                "GGEN-",
+                "CROWN-",
+                "DRIFT-",
+                "OCEL-",
+                "FM5-",
+                "EARL-",
+                "SPC-",
+                "BLAKE3-",
+                "NS01-",
+                "NS02-",
+                "NS03-",
+                "NS04-",
+                "NS05-",
+                "NS06-",
+                "NS07-",
+                "NS08-",
+                "NS09-",
+                "NS10-",
+                "NS11-",
+                "NS12-",
+                "NS13-",
+                "NS14-",
+                "NS15-",
+                "NS16-",
+                "NS17-",
+                "NS18-",
+                "NS19-",
+                "NS20-",
+                "NS21-",
+                "NS22-",
+                "NS23-",
+                "NS24-",
+                "NS25-",
+                "NS26-",
+                "NS27-",
+                "NS28-",
+                "NS29-",
+                "NS30-",
+                "NS31-",
+                "NS32-",
+                "NS33-",
+                "NS34-",
+                "NS35-",
+                "NS36-",
+                "NS37-",
+                "NS38-",
+                "NS39-",
+                "NS40-",
+            ],
+        ),
+    ];
+
+    for (label, prefixes) in prefix_sets {
+        let prefix_vec: Vec<String> = prefixes.iter().map(|s| s.to_string()).collect();
+        group.bench_function(format!("build_{label}"), |b| {
+            b.iter(|| {
+                // Construction is the entire cost — automaton compiled here.
+                let ctx = MergeContext::new(black_box(prefix_vec.clone()));
+                black_box(ctx);
+            });
+        });
+    }
+    group.finish();
+}
+
+// ── BM-8: signal_flush_channel_throughput ─────────────────────────────────────
+// signal_flush() is called after every deposit() — N×K times per keystroke cycle.
+// It uses kanal try_send (non-blocking). This bench measures raw channel send
+// throughput: how fast can we enqueue FlushSignal structs before backpressure kicks in.
+// Tests both sequential (single-threaded accumulation) and concurrent (N threads,
+// mirrors real compositor_client fanout) variants.
+
+fn bench_signal_flush_channel_throughput(c: &mut Criterion) {
+    use lsp_max_compositor::flush_coordinator::FlushSignal;
+
+    let mut group = c.benchmark_group("signal_flush_channel_throughput");
+
+    // Sequential: one sender, measure raw try_send cost with headroom in the channel.
+    for batch in [100usize, 500, 1_000] {
+        group.throughput(Throughput::Elements(batch as u64));
+        group.bench_function(format!("sequential_{batch}sends"), |b| {
+            b.iter(|| {
+                // Use a fresh channel per iteration so it never fills up.
+                let (tx, _rx) = kanal::bounded::<FlushSignal>(batch + 1);
+                for i in 0..batch {
+                    let sig = FlushSignal {
+                        uri: format!("file:///bench/file{i}.rs"),
+                        server_id: format!("server-{i}"),
+                    };
+                    let _ = tx.try_send(black_box(sig));
+                }
+            });
+        });
+    }
+
+    // Concurrent: N threads each send 1 signal — mirrors the deposit() → signal_flush()
+    // call pattern where each CompositorClient is on its own tokio task.
+    for n in [10usize, 100, 500] {
+        group.throughput(Throughput::Elements(n as u64));
+        group.bench_function(format!("concurrent_{n}senders"), |b| {
+            b.iter(|| {
+                let (tx, _rx) = kanal::bounded::<FlushSignal>(n + 1);
+                std::thread::scope(|s| {
+                    for i in 0..n {
+                        let tx = tx.clone();
+                        s.spawn(move || {
+                            let sig = FlushSignal {
+                                uri: "file:///bench/main.rs".to_string(),
+                                server_id: format!("server-{i}"),
+                            };
+                            let _ = tx.try_send(black_box(sig));
+                        });
+                    }
+                });
+            });
+        });
     }
     group.finish();
 }
@@ -306,6 +587,10 @@ criterion_group!(
     bench_deposit_contention,
     bench_flush_latency,
     bench_merge_diagnostics_cpu,
-    bench_andon_prefix_match
+    bench_andon_prefix_match,
+    bench_deposit_andon_hot_path,
+    bench_multi_uri_flush_fanout,
+    bench_merge_context_construction,
+    bench_signal_flush_channel_throughput,
 );
 criterion_main!(compositor_micro_benches);
