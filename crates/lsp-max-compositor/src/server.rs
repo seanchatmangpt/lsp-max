@@ -120,11 +120,9 @@ impl lsp_max::LanguageServer for CompositorServer {
         // Merge child capabilities.  The compositor always advertises FULL
         // text_document_sync regardless of what children report, because the
         // compositor itself normalises change notifications before fan-out.
-        let mut merged =
-            crate::capability_merge::merge_capabilities(&child_capabilities);
-        merged.text_document_sync = Some(TextDocumentSyncCapability::Kind(
-            TextDocumentSyncKind::FULL,
-        ));
+        let mut merged = crate::capability_merge::merge_capabilities(&child_capabilities);
+        merged.text_document_sync =
+            Some(TextDocumentSyncCapability::Kind(TextDocumentSyncKind::FULL));
 
         // Store for introspection.
         if let Ok(mut guard) = self.merged_capabilities.write() {
@@ -324,10 +322,16 @@ impl CompositorServer {
 
         let child_server_count = self.pool.server_ids_snapshot().len();
 
+        let query_timestamp_ms = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_millis() as u64)
+            .unwrap_or(0);
+
         CompositorStateResponse {
             uris: uri_states,
             global_andon_block,
             child_server_count,
+            query_timestamp_ms,
         }
     }
 
@@ -348,14 +352,11 @@ impl CompositorServer {
     /// last initialize() call, serialized as JSON for introspection.
     /// Returns None if initialize() has not yet been called.
     pub fn compositor_capabilities(&self) -> Option<serde_json::Value> {
-        self.merged_capabilities
-            .read()
-            .ok()
-            .and_then(|guard| {
-                guard.as_ref().map(|caps| {
-                    serde_json::to_value(caps).unwrap_or(serde_json::Value::Null)
-                })
-            })
+        self.merged_capabilities.read().ok().and_then(|guard| {
+            guard
+                .as_ref()
+                .map(|caps| serde_json::to_value(caps).unwrap_or(serde_json::Value::Null))
+        })
     }
 
     /// Flush the diagnostic buffer for a URI and return the merged result.

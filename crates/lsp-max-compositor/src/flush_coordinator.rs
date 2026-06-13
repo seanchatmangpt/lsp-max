@@ -100,11 +100,8 @@ impl FlushCoordinator {
                             .await;
                     }
 
-                    let receipt = CompositorReceipt::new(
-                        uri.clone(),
-                        &result,
-                        ctx.andon_prefixes(),
-                    );
+                    let receipt =
+                        CompositorReceipt::new(uri.clone(), &result, ctx.andon_prefixes());
                     if receipt.has_andon_block {
                         tracing::error!(
                             uri = %receipt.uri,

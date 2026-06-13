@@ -1,0 +1,43 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "lsp-max-compositor",
+  "description": "LSP compositor — fans out to child servers, merges diagnostics with REFUSED_BY_LAW tier-invariant enforcement, exposes max/compositorState and max/compositorHealth endpoints",
+  "owner": {
+    "name": "Sean Chatman",
+    "email": "xpointsh@gmail.com"
+  },
+  "plugins": [
+    {
+      "name": "lsp-max-compositor",
+      "description": "LSP compositor — fans out to child servers, merges diagnostics with REFUSED_BY_LAW tier-invariant enforcement, exposes max/compositorState and max/compositorHealth endpoints",
+      "version": "26.6.9",
+      "author": {
+        "name": "Sean Chatman",
+        "email": "xpointsh@gmail.com"
+      },
+      "source": "/Users/sac/lsp-max/target/release/lsp-max-compositor",
+      "category": "development",
+      "strict": false,
+      "lspServers": {
+        "lsp-max-compositor": {
+          "command": "/Users/sac/lsp-max/target/release/lsp-max-compositor",
+          "args": ["--stdio"],
+          "extensionToLanguage": {
+            ".ocel.json": "ocel",
+            ".receipt.json": "receipt",
+            ".ocel.jsonl": "ocel",
+            ".json": "json",
+            ".rs": "rust",
+            ".ts": "typescript",
+            ".tsx": "typescriptreact",
+            ".jsonl": "jsonl",
+            ".md": "markdown",
+            ".ttl": "turtle",
+            ".rq": "sparql",
+            ".tera": "tera"
+          }
+        }
+      }
+    }
+  ]
+}

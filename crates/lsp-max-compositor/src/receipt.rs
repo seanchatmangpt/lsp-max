@@ -25,11 +25,7 @@ pub struct CompositorReceipt {
 }
 
 impl CompositorReceipt {
-    pub fn new(
-        uri: String,
-        result: &crate::merge::MergeResult,
-        andon_prefixes: &[String],
-    ) -> Self {
+    pub fn new(uri: String, result: &crate::merge::MergeResult, andon_prefixes: &[String]) -> Self {
         let diagnostic_count = result.diagnostics.len();
         let has_andon_block = result.has_andon_block;
         let andon_codes = result.andon_codes().iter().map(|s| s.to_string()).collect();
@@ -81,8 +77,7 @@ mod tests {
         let r_a = CompositorReceipt::new("file:///x.ts".to_string(), &result, &prefixes_a);
         let r_b = CompositorReceipt::new("file:///x.ts".to_string(), &result, &prefixes_b);
         assert_eq!(
-            r_a.prefixes_fingerprint,
-            r_b.prefixes_fingerprint,
+            r_a.prefixes_fingerprint, r_b.prefixes_fingerprint,
             "fingerprint must be order-independent (sorted before hashing)"
         );
     }

@@ -98,8 +98,7 @@ fn merge_into(dst: &mut ServerCapabilities, src: &ServerCapabilities) {
         dst.color_provider = src.color_provider.clone();
     }
     if dst.document_on_type_formatting_provider.is_none() {
-        dst.document_on_type_formatting_provider =
-            src.document_on_type_formatting_provider.clone();
+        dst.document_on_type_formatting_provider = src.document_on_type_formatting_provider.clone();
     }
     if dst.document_range_formatting_provider.is_none() {
         dst.document_range_formatting_provider = src.document_range_formatting_provider.clone();

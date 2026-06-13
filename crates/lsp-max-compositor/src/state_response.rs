@@ -20,4 +20,7 @@ pub struct CompositorStateResponse {
     pub global_andon_block: bool,
     /// Number of child servers currently in the pool.
     pub child_server_count: usize,
+    /// Unix timestamp (milliseconds since epoch) when this response was computed.
+    /// CI gates can compare this against their own clock to verify freshness.
+    pub query_timestamp_ms: u64,
 }

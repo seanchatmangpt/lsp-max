@@ -349,6 +349,48 @@ REFUSED_BY_LAW_WITH_RECEIPT
 
 ---
 
+## lsp-max-compositor
+
+Build here:
+
+```text
+crates/lsp-max-compositor
+```
+
+Purpose: multi-server fan-out and merge layer. When a single LSP session must aggregate
+diagnostics, hovers, or code actions from N child LSP processes, the compositor owns the
+lifecycle.
+
+```text
+child_process   — spawns and reaps server subprocesses; exit watcher clears stale state
+fanout          — broadcasts inbound client requests to all children in parallel
+merge           — ConformanceVector-aware diagnostic dedup; REFUSED_BY_LAW codes survive always
+capability_merge — Primary wins hover/completion; DiagnosticsOnly excluded; sync FULL forced
+diagnostic_buffer — DashMap per-URI staging; deposit() replaces same server_id; flush() is non-destructive
+flush_coordinator — 100ms debounce mpsc; emits CompositorReceipt (prefixes_fingerprint) after each push
+registry        — ChildTier (Primary | Secondary | DiagnosticsOnly) + ExtensionRouter
+compositor_state  — via state_response; live registry snapshot; non-destructive, bypasses debounce
+compositor_health — via health_response; per-child liveness, O(1)
+```
+
+Law: the compositor is read-only toward client files — all mutation still routes through the
+CodeAction → clap-noun-verb → Receipt chain.
+
+Routing invariant:
+
+```text
+textDocument/hover | completion | definition   → FirstSuccess (Primary tier only)
+textDocument/publishDiagnostics               → FanAll (all tiers; REFUSED_BY_LAW survives merge)
+textDocument/didOpen | didChange | didClose   → Notify (fan all, no response expected)
+unknown methods                                → PrimaryOnly
+```
+
+ANDON law applies inside the compositor: if any REFUSED_BY_LAW Error is present after merge,
+`MergeResult.has_andon_block = true`; the CompositorReceipt records the prefixes_fingerprint
+encoding which $\mathcal{A}$ governed the flush. Do not gate or release while ANDON is set.
+
+---
+
 ## anti-llm-cheat-lsp
 
 Build here:

@@ -968,11 +968,26 @@ fn uri_andon_state_serializes_to_json() {
         }],
         global_andon_block: true,
         child_server_count: 2,
+        query_timestamp_ms: 0,
     };
 
     let json = serde_json::to_string(&response).unwrap();
     assert!(json.contains("WASM4PM-CROWN-001"));
     assert!(json.contains("\"global_andon_block\":true"));
+}
+
+#[test]
+fn compositor_state_response_has_timestamp_field() {
+    use lsp_max_compositor::state_response::CompositorStateResponse;
+    let resp = CompositorStateResponse {
+        uris: vec![],
+        global_andon_block: false,
+        child_server_count: 0,
+        query_timestamp_ms: 1_700_000_000_000,
+    };
+    let json = serde_json::to_string(&resp).unwrap();
+    assert!(json.contains("query_timestamp_ms"));
+    assert!(json.contains("1700000000000"));
 }
 
 // ── health_response tests ────────────────────────────────────────────────────
@@ -1064,7 +1079,10 @@ fn merged_capabilities_starts_as_none() {
 
     let caps = merge_capabilities(&[]);
     let json = serde_json::to_value(&caps);
-    assert!(json.is_ok(), "default ServerCapabilities must serialize to JSON");
+    assert!(
+        json.is_ok(),
+        "default ServerCapabilities must serialize to JSON"
+    );
 }
 
 #[test]
