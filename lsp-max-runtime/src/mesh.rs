@@ -360,6 +360,7 @@ impl AutonomicMesh {
                             instance_id: iid,
                             old_score: old,
                             new_score,
+                            timestamp: String::new(),
                         };
                         self.conformance_delta_log.push_back(entry);
                         if self.conformance_delta_log.len() > MAX_CONFORMANCE_DELTA_LOG {

@@ -75,6 +75,7 @@ pub async fn max_release_actuation(params: Value) -> Result<Value> {
             instance_id: instance_id.clone(),
             old_score: 100.0,
             new_score: 100.0,
+            timestamp: crate::rfc3339_now(),
         });
     const MAX_DELTA_LOG: usize = 4096;
     if registry.conformance_delta_log.len() > MAX_DELTA_LOG {
