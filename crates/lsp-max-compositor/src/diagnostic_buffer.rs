@@ -44,12 +44,12 @@ impl DiagnosticBuffer {
         entries: Vec<DiagnosticEntry>,
     ) {
         // Eager ANDON gate write: check incoming entries before storing them.
-        // This eliminates the ~100ms debounce staleness window for ANDON signals.
+        // Uses per-server prefix set (L7 Speciation) — each server's own C_D, not the union.
+        // Falls back to workspace union when server has no override in lsp-max.toml.
+        let effective_prefixes = self.ctx.prefixes_for_server(server_id);
         let has_incoming_andon = entries.iter().any(|e| {
             e.severity == 1
-                && self
-                    .ctx
-                    .andon_prefixes()
+                && effective_prefixes
                     .iter()
                     .any(|p| e.code.starts_with(p.as_str()))
         });
