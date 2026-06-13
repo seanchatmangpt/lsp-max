@@ -84,6 +84,16 @@ where
 ///
 /// `store` and `uri` are read at trigger time (not at spawn time), so the
 /// activation count reflects accumulated edits up to that point.
+#[tracing::instrument(
+    name = "debounce_adaptive",
+    skip(store, f),
+    fields(
+        uri = ?uri,
+        base_delay_ms = base_delay.as_millis(),
+        activations = tracing::field::Empty,
+        multiplier = tracing::field::Empty,
+    )
+)]
 pub fn debounce_adaptive<F, Fut>(
     store: DocumentStore,
     uri: Url,
@@ -97,6 +107,7 @@ where
     let (tx, mut rx) = watch::channel(());
     let handle = DebounceHandle { tx: Arc::new(tx) };
 
+    let span = tracing::Span::current();
     tokio::spawn(async move {
         loop {
             if rx.changed().await.is_err() {
@@ -104,6 +115,8 @@ where
             }
             let acts = store.activation_count(&uri);
             let multiplier = (acts as f64 / 10.0).sqrt().clamp(1.0, 8.0);
+            span.record("activations", acts);
+            span.record("multiplier", multiplier);
             let delay = base_delay.mul_f64(multiplier);
             while let Ok(Ok(())) = time::timeout(delay, rx.changed()).await {}
             f().await;

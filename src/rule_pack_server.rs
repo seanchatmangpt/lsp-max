@@ -465,6 +465,16 @@ impl WorkspaceIndex {
     /// workspace vector.  Axes that are `admitted` in at least one document
     /// (and never refused) are `admitted`.  Axes with no evidence from any
     /// document remain `unknown`.
+    #[tracing::instrument(
+        name = "workspace_conformance",
+        skip(self),
+        fields(
+            doc_count = self.docs.len(),
+            admitted_count = tracing::field::Empty,
+            refused_count = tracing::field::Empty,
+            score = tracing::field::Empty,
+        )
+    )]
     pub fn workspace_conformance(&self) -> ConformanceVector {
         let mut workspace_refused: std::collections::HashSet<LawAxis> = Default::default();
         let mut workspace_admitted: std::collections::HashSet<LawAxis> = Default::default();
@@ -495,12 +505,21 @@ impl WorkspaceIndex {
             .cloned()
             .collect();
 
-        let total = admitted.len() + refused.len();
+        let cv_admitted_len = admitted.len();
+        let cv_refused_len = refused.len();
+        let total = cv_admitted_len + cv_refused_len;
         let score = if total == 0 {
             None
         } else {
-            Some(admitted.len() as f64 / total as f64 * 100.0)
+            Some(cv_admitted_len as f64 / total as f64 * 100.0)
         };
+
+        let span = tracing::Span::current();
+        span.record("admitted_count", cv_admitted_len);
+        span.record("refused_count", cv_refused_len);
+        if let Some(s) = score {
+            span.record("score", s);
+        }
 
         let mut cv = ConformanceVector {
             admitted,
@@ -606,7 +625,7 @@ impl WorkspaceRuleEvaluator {
 
 /// Very small glob matcher: `**` means any path segment sequence, `*` means any
 /// characters except `/`.  Only used for URI matching.
-fn glob_matches(glob: &str, uri: &str) -> bool {
+pub fn glob_matches(glob: &str, uri: &str) -> bool {
     if glob.is_empty() || glob == "**" {
         return true;
     }
@@ -686,6 +705,26 @@ pub trait RulePackServer {
     /// The shared workspace index.  Servers that want cross-file diagnostics
     /// must hold a `WorkspaceIndex` field and return it here.
     fn workspace_index(&self) -> Option<&WorkspaceIndex> {
+        None
+    }
+
+    /// Optional SPC monitor for scan-latency anomaly detection.
+    /// Override to return `Some(&self.spc_monitor)` to enable Western Electric rule checks.
+    fn spc_monitor(&self) -> Option<&std::sync::Mutex<crate::primitives::SpcMonitor>> {
+        None
+    }
+
+    /// Optional per-rule latency tracker map for dynamic EvalBudget reclassification.
+    fn latency_trackers(
+        &self,
+    ) -> Option<&Arc<DashMap<String, crate::primitives::RuleLatencyTracker>>> {
+        None
+    }
+
+    /// Optional circuit breaker protecting the rule-evaluation loop.
+    fn rule_circuit_breaker(
+        &self,
+    ) -> Option<&Arc<parking_lot::Mutex<crate::primitives::CircuitBreaker>>> {
         None
     }
 
@@ -773,7 +812,25 @@ pub trait RulePackServer {
     /// `EvalBudget` classification.
     ///
     /// Returns `(sync_findings, background_findings)`.
+    #[tracing::instrument(
+        name = "scan_uri_classified",
+        skip(self, content),
+        fields(
+            uri = ?uri,
+            content_bytes = content.len(),
+            sync_count = tracing::field::Empty,
+            bg_count = tracing::field::Empty,
+        )
+    )]
     fn scan_uri_classified(&self, uri: &DocumentUri, content: &str) -> ClassifiedFindings {
+        // Circuit breaker gate — returns empty findings when Open.
+        if let Some(cb_arc) = self.rule_circuit_breaker() {
+            if !cb_arc.lock().is_allowed() {
+                tracing::warn!(uri = ?uri, "CircuitBreaker: scan short-circuited (Open)");
+                return (Vec::new(), Vec::new());
+            }
+        }
+
         let mut sync_r = Vec::new();
         let mut bg_r = Vec::new();
 
@@ -787,6 +844,9 @@ pub trait RulePackServer {
                             error = %e,
                             "RulePackServer: skipping rule with invalid regex"
                         );
+                        if let Some(cb) = self.rule_circuit_breaker() {
+                            cb.lock().record_failure();
+                        }
                         continue;
                     }
                 };
@@ -831,12 +891,55 @@ pub trait RulePackServer {
                     }
                 }
 
-                match rule.eval_budget {
-                    EvalBudget::Sync => sync_r.extend(rule_findings),
-                    EvalBudget::Background => bg_r.extend(rule_findings),
+                // Dynamic EvalBudget reclassification: check if this Sync rule was promoted.
+                let effective_budget = if rule.eval_budget == EvalBudget::Sync {
+                    if self
+                        .latency_trackers()
+                        .and_then(|m| m.get(&rule.id))
+                        .map(|t| t.is_reclassified())
+                        .unwrap_or(false)
+                    {
+                        EvalBudget::Background
+                    } else {
+                        EvalBudget::Sync
+                    }
+                } else {
+                    EvalBudget::Background
+                };
+
+                match effective_budget {
+                    EvalBudget::Sync => {
+                        let t0 = std::time::Instant::now();
+                        sync_r.extend(rule_findings);
+                        let elapsed = t0.elapsed();
+                        if let Some(trackers) = self.latency_trackers() {
+                            let mut entry = trackers.entry(rule.id.clone()).or_default();
+                            let promoted = entry.record(elapsed);
+                            if promoted {
+                                tracing::info!(
+                                    rule_id = %rule.id,
+                                    elapsed_ms = elapsed.as_millis(),
+                                    "EvalBudget: Sync → Background (3 consecutive slow evals)"
+                                );
+                            }
+                        }
+                        if let Some(cb) = self.rule_circuit_breaker() {
+                            cb.lock().record_success();
+                        }
+                    }
+                    EvalBudget::Background => {
+                        bg_r.extend(rule_findings);
+                        if let Some(cb) = self.rule_circuit_breaker() {
+                            cb.lock().record_success();
+                        }
+                    }
                 }
             }
         }
+
+        let span = tracing::Span::current();
+        span.record("sync_count", sync_r.len());
+        span.record("bg_count", bg_r.len());
 
         (sync_r, bg_r)
     }
@@ -853,10 +956,36 @@ pub trait RulePackServer {
     /// Background findings are published from the calling task (Tokio will
     /// handle concurrency at the server level).
     async fn publish_findings_classified(&self, uri: DocumentUri, content: &str) {
+        let t_scan = std::time::Instant::now();
         let (sync_findings, bg_findings) = self.scan_uri_classified(&uri, content);
+        let scan_ms = t_scan.elapsed().as_secs_f64() * 1000.0;
+
+        if let Some(mon) = self.spc_monitor() {
+            if let Ok(mut guard) = mon.lock() {
+                match guard.push(scan_ms) {
+                    Some(crate::primitives::SpcAlert::Rule1(v)) => {
+                        tracing::warn!(duration_ms = v, "SPC Rule1: scan latency spike");
+                    }
+                    Some(crate::primitives::SpcAlert::Rule2)
+                    | Some(crate::primitives::SpcAlert::Rule3) => {
+                        tracing::warn!(duration_ms = scan_ms, "SPC: structural scan latency drift");
+                    }
+                    Some(crate::primitives::SpcAlert::Rule4) => {
+                        tracing::warn!(duration_ms = scan_ms, "SPC Rule4: latency near control limit");
+                    }
+                    None => {}
+                }
+            }
+        }
 
         let mut all_lsp: Vec<Diagnostic> = sync_findings.iter().map(|(_, d)| d.clone()).collect();
         all_lsp.extend(bg_findings.iter().map(|(_, d)| d.clone()));
+
+        // Capture old workspace score before updating conformance.
+        let old_score: f64 = self
+            .workspace_index()
+            .map(|idx| idx.workspace_conformance().score.unwrap_or(100.0))
+            .unwrap_or(100.0);
 
         // Update workspace index conformance.
         if let Some(idx) = self.workspace_index() {
@@ -867,6 +996,33 @@ pub trait RulePackServer {
                 .collect();
             let cv = build_conformance_vector(&all_max);
             idx.set_conformance(uri.as_str(), cv);
+        }
+
+        // Emit delta entry to REGISTRY when conformance score changes.
+        let new_score: f64 = self
+            .workspace_index()
+            .map(|idx| idx.workspace_conformance().score.unwrap_or(100.0))
+            .unwrap_or(100.0);
+
+        #[allow(clippy::float_cmp)]
+        if (old_score - new_score).abs() > f64::EPSILON {
+            if let Ok(mut registry) = crate::lock_registry() {
+                registry.action_seq = registry.action_seq.saturating_add(1);
+                let seq = registry.action_seq;
+                const MAX_DELTA_LOG: usize = 4096;
+                registry.conformance_delta_log.push_back(
+                    max_runtime::ConformanceDeltaEntry {
+                        seq,
+                        instance_id: uri.to_string(),
+                        old_score,
+                        new_score,
+                        timestamp: crate::rfc3339_now(),
+                    },
+                );
+                if registry.conformance_delta_log.len() > MAX_DELTA_LOG {
+                    registry.conformance_delta_log.pop_front();
+                }
+            }
         }
 
         self.client().publish_diagnostics(uri, all_lsp, None).await;
