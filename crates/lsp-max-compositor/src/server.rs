@@ -18,6 +18,9 @@ pub struct CompositorServer {
     buffer: Arc<DiagnosticBuffer>,
     pool: Arc<ChildProcessPool>,
     config: Arc<CompositorConfig>,
+    /// Shared FlushCoordinator — used by the exit watcher to push empty diagnostics
+    /// to the editor after a child process exits.
+    flush_coord: Arc<FlushCoordinator>,
     /// Merged ServerCapabilities stored after initialize() completes.
     /// None until the first initialize() call returns.
     merged_capabilities: Arc<RwLock<Option<lsp_max::lsp_types::ServerCapabilities>>>,
@@ -51,7 +54,7 @@ impl lsp_max::LanguageServer for CompositorServer {
                 let args: Vec<&str> = eff_args.iter().map(|s| s.as_str()).collect();
                 match crate::child_process::ChildProcess::spawn(entry.id.clone(), cmd, &args).await
                 {
-                    Ok(proc) => {
+                    Ok((proc, exit_fut)) => {
                         let tier = crate::registry::ChildTier::from_priority(&entry.priority);
                         match proc.initialize(root_uri.clone()).await {
                             Ok(caps) => {
@@ -67,6 +70,41 @@ impl lsp_max::LanguageServer for CompositorServer {
                             }
                         }
                         self.pool.register(entry.id.clone(), proc);
+
+                        // Spawn exit watcher: clear buffer entries and push empty diagnostics
+                        // to the editor for all URIs this server owned.
+                        let sid = entry.id.clone();
+                        let conns = Arc::clone(&self.connections);
+                        let buf = Arc::clone(&self.buffer);
+                        let flush = Arc::clone(&self.flush_coord);
+                        tokio::spawn(async move {
+                            match exit_fut.await {
+                                Ok(status) => {
+                                    tracing::warn!(
+                                        server_id = %sid,
+                                        exit_status = ?status,
+                                        "compositor: child server exited — clearing URIs"
+                                    );
+                                }
+                                Err(e) => {
+                                    tracing::warn!(
+                                        server_id = %sid,
+                                        error = %e,
+                                        "compositor: child exit watcher error"
+                                    );
+                                }
+                            }
+                            let uris = conns.uris_for_server(&sid);
+                            for uri in &uris {
+                                buf.clear_uri(uri);
+                                flush.signal_flush(uri);
+                            }
+                            tracing::info!(
+                                server_id = %sid,
+                                uri_count = uris.len(),
+                                "compositor: exit cleanup ADMITTED — empty diagnostics signalled"
+                            );
+                        });
                     }
                     Err(e) => {
                         tracing::warn!(
@@ -401,13 +439,12 @@ pub async fn run_stdio(
     let merge_ctx_for_coord = Arc::clone(&merge_ctx);
     let pool_for_coord = Arc::clone(&pool);
     let (service, socket) = LspService::new(|client: Client| {
-        let coordinator = Arc::new(FlushCoordinator::spawn(
+        let flush_coord = Arc::new(FlushCoordinator::spawn(
             Arc::clone(&buffer_for_coord),
             Arc::clone(&merge_ctx_for_coord),
             client.clone(),
             Arc::clone(&pool_for_coord),
         ));
-        let _ = coordinator; // coordinator is available for wiring into CompositorClients
         CompositorServer {
             client,
             router,
@@ -416,6 +453,7 @@ pub async fn run_stdio(
             buffer,
             pool: Arc::clone(&pool),
             config: Arc::clone(&config),
+            flush_coord,
             merged_capabilities: Arc::new(RwLock::new(None)),
         }
     });

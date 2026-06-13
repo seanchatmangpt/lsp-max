@@ -15,14 +15,16 @@ async fn child_process_spawn_cat_establishes_connection() {
     let result = ChildProcess::spawn("cat-server".to_string(), "cat", &[]).await;
 
     match result {
-        Ok(proc) => {
+        Ok((proc, _exit_fut)) => {
             assert_eq!(proc.server_id, "cat-server");
             // exit() is a fire-and-forget notification; no response expected.
             proc.handle.exit().await;
         }
         Err(e) => {
             // OPEN: cat not available in this environment.
-            eprintln!("child_process_spawn_cat_establishes_connection: OPEN — cat unavailable: {e}");
+            eprintln!(
+                "child_process_spawn_cat_establishes_connection: OPEN — cat unavailable: {e}"
+            );
         }
     }
 }
@@ -35,7 +37,7 @@ async fn child_process_pool_spawn_and_snapshot() {
     assert_eq!(pool.server_ids_snapshot().len(), 0);
 
     match ChildProcess::spawn("cat-pool-test".to_string(), "cat", &[]).await {
-        Ok(proc) => {
+        Ok((proc, _exit_fut)) => {
             pool.register("cat-pool-test".to_string(), proc);
             let ids = pool.server_ids_snapshot();
             assert!(
