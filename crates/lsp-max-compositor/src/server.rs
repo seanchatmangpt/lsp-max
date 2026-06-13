@@ -1,20 +1,22 @@
+use crate::child_process::ChildProcessPool;
 use crate::connections::ChildConnections;
 use crate::diagnostic_buffer::DiagnosticBuffer;
 use crate::flush_coordinator::FlushCoordinator;
-use crate::{ExtensionRouter, MergeContext};
+use crate::{CompositorConfig, ExtensionRouter, MergeContext};
 use lsp_max::jsonrpc::Result;
 use lsp_max::lsp_types::*;
 use lsp_max::{Client, LspService, Server};
 use std::sync::Arc;
 
 pub struct CompositorServer {
-    #[allow(dead_code)]
     client: Client,
     router: ExtensionRouter,
     #[allow(dead_code)]
     merge_ctx: Arc<MergeContext>,
     connections: Arc<ChildConnections>,
     buffer: Arc<DiagnosticBuffer>,
+    pool: Arc<ChildProcessPool>,
+    config: Arc<CompositorConfig>,
 }
 
 /// Extract the file extension (without leading dot) from a URI string.
@@ -29,7 +31,47 @@ fn ext_from_uri(uri: &str) -> String {
 
 #[lsp_max::async_trait]
 impl lsp_max::LanguageServer for CompositorServer {
-    async fn initialize(&self, _: InitializeParams) -> Result<InitializeResult> {
+    async fn initialize(&self, params: InitializeParams) -> Result<InitializeResult> {
+        #[allow(deprecated)]
+        let root_uri = params.root_uri.clone();
+
+        for entry in &self.config.server {
+            if let Some(cmd) = &entry.command {
+                let eff_args = entry.effective_args();
+                let args: Vec<&str> = eff_args.iter().map(|s| s.as_str()).collect();
+                match crate::child_process::ChildProcess::spawn(
+                    entry.id.clone(),
+                    cmd,
+                    &args,
+                )
+                .await
+                {
+                    Ok(proc) => {
+                        match proc.initialize(root_uri.clone()).await {
+                            Ok(_) => {
+                                tracing::info!(server_id = %entry.id, "compositor: child ADMITTED");
+                            }
+                            Err(e) => {
+                                tracing::warn!(
+                                    server_id = %entry.id,
+                                    error = %e,
+                                    "compositor: child initialize BLOCKED"
+                                );
+                            }
+                        }
+                        self.pool.register(entry.id.clone(), proc);
+                    }
+                    Err(e) => {
+                        tracing::warn!(
+                            server_id = %entry.id,
+                            error = %e,
+                            "compositor: child spawn BLOCKED"
+                        );
+                    }
+                }
+            }
+        }
+
         Ok(InitializeResult {
             capabilities: ServerCapabilities {
                 text_document_sync: Some(TextDocumentSyncCapability::Kind(
@@ -171,12 +213,13 @@ impl CompositorServer {
     }
 }
 
-pub async fn run_stdio(router: ExtensionRouter, merge_ctx: MergeContext) {
+pub async fn run_stdio(router: ExtensionRouter, merge_ctx: MergeContext, config: Arc<CompositorConfig>) {
     let stdin = tokio::io::stdin();
     let stdout = tokio::io::stdout();
     let connections = Arc::new(ChildConnections::new());
     let merge_ctx = Arc::new(merge_ctx);
     let buffer = Arc::new(DiagnosticBuffer::new(Arc::clone(&merge_ctx)));
+    let pool = Arc::new(ChildProcessPool::new());
     // Client is Clone — spawn the flush coordinator so child-server deposits automatically
     // trigger debounced publish_diagnostics calls to the editor.
     let buffer_for_coord = Arc::clone(&buffer);
@@ -194,6 +237,8 @@ pub async fn run_stdio(router: ExtensionRouter, merge_ctx: MergeContext) {
             merge_ctx,
             connections,
             buffer,
+            pool: Arc::clone(&pool),
+            config: Arc::clone(&config),
         }
     });
     let _ = Server::new(stdin, stdout, socket).serve(service).await;

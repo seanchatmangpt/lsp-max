@@ -10,6 +10,18 @@ pub struct ServerEntry {
     pub secondary_extensions: Vec<String>,
     pub priority: String,
     pub andon_code_prefixes: Option<Vec<String>>,
+    /// Path to the server binary. `None` means the server is not auto-spawned.
+    pub command: Option<String>,
+    /// Arguments passed to the server binary. Defaults to `["serve", "--stdio"]`.
+    pub args: Option<Vec<String>>,
+}
+
+impl ServerEntry {
+    pub fn effective_args(&self) -> Vec<String> {
+        self.args
+            .clone()
+            .unwrap_or_else(|| vec!["serve".to_string(), "--stdio".to_string()])
+    }
 }
 
 const DEFAULT_ANDON_PREFIXES: &[&str] = &["WASM4PM-", "ANTI-LLM-", "GGEN-"];
