@@ -1,0 +1,5 @@
+# Anti-LLM scanner exclusions for lsp-max repo
+# Agent workspace files (narrative only, not law surfaces)
+.agents/
+scratch/
+# Add per-scan exclusions via: anti-llm-cheat-lsp scan --dir <path> --ignore-dir <subdir>

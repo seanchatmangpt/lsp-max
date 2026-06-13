@@ -5,5 +5,8 @@
   "export_reason": "checkpoint tracking within lsp-max playground",
   "exported_artifact_digest": "aa2dcd61030b414f2dcb84f007604170e89ac12a781c9202aaa21dc93c5e2d99",
   "status": "DEMOTED_TO_HUMAN_REPORT",
-  "disclaimer": "This is a legacy receipt-shaped summary and not an admission authority. OCEL-only authority applies."
+  "disclaimer": "This is a legacy receipt-shaped summary and not an admission authority. OCEL-only authority applies.",
+  "output_hash": "aa2dcd61030b414f2dcb84f007604170e89ac12a781c9202aaa21dc93c5e2d99",
+  "run_id": "GALL-CHECKPOINT-004",
+  "replay_pointer": "legacy — no live replay; see producing_workspace ~/ggen for context"
 }

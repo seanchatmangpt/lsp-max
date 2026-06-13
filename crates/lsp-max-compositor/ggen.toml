@@ -1,0 +1,15 @@
+# ggen.toml — compositor scaffold rule
+# Reads lsp-max.toml server entries and generates the ExtensionRouter initialization
+# Run: ggen sync (from the lsp-max workspace root)
+
+[meta]
+name = "lsp-max-compositor"
+version = "26.6.9"
+
+[[rule]]
+name = "compositor-registry-init"
+description = "Generate ExtensionRouter::new_from_manifest() from lsp-max.toml server declarations"
+input = "lsp-max.toml"
+output = "crates/lsp-max-compositor/src/registry_init.rs"
+template = "crates/lsp-max-compositor/registry_init.tera"
+note = "Phase 4 scaffold — template not yet implemented. Adding a new server to the compositor is a single ServerEntry in lsp-max.toml."

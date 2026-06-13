@@ -3,5 +3,8 @@
   "producing_workspace": "~/lsp-max",
   "storing_workspace": "~/lsp-max",
   "export_reason": "checkpoint tracking",
-  "exported_artifact_digest": "8f1b44ba77d5235cae97df7c21e014809cbb45159dce874a8defd6d34b990df8"
+  "exported_artifact_digest": "8f1b44ba77d5235cae97df7c21e014809cbb45159dce874a8defd6d34b990df8",
+  "output_hash": "8f1b44ba77d5235cae97df7c21e014809cbb45159dce874a8defd6d34b990df8",
+  "run_id": "GALL-CHECKPOINT-006",
+  "replay_pointer": "legacy — no live replay; see producing_workspace ~/lsp-max"
 }

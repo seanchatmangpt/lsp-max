@@ -647,3 +647,32 @@ fn feature_matrix_methods_present_in_inventory() {
         );
     }
 }
+
+// -------------------------------------------------------------
+// P0/P4 New negative-control tests
+// -------------------------------------------------------------
+
+#[test]
+fn detects_allow_cheat_and_unsafe() {
+    let path = find_file_path("fixtures/negative_controls/allow_cheat_and_unsafe.rs");
+    let obs = engine::scan_file(&path.to_string_lossy());
+    let diags = engine::evaluate_diagnostics(&obs);
+    check_diag_code(&diags, "ANTI-LLM-STRANGE-010");
+    check_diag_code(&diags, "ANTI-LLM-STRANGE-011");
+}
+
+#[test]
+fn detects_calver_path_dep_violation() {
+    let path = find_file_path("fixtures/negative_controls/calver_path_dep_violation/Cargo.toml");
+    let obs = engine::scan_file(&path.to_string_lossy());
+    let diags = engine::evaluate_diagnostics(&obs);
+    check_diag_code(&diags, "ANTI-LLM-VERSION-002");
+}
+
+#[test]
+fn detects_calver_workspace_violation() {
+    let path = find_file_path("fixtures/negative_controls/calver_workspace_violation/Cargo.toml");
+    let obs = engine::scan_file(&path.to_string_lossy());
+    let diags = engine::evaluate_diagnostics(&obs);
+    check_diag_code(&diags, "ANTI-LLM-VERSION-003");
+}

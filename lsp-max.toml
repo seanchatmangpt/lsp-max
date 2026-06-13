@@ -1,0 +1,20 @@
+[[server]]
+id = "wasm4pm-lsp"
+primary_extensions = [".ocel.json", ".receipt.json", ".ocel.jsonl"]
+secondary_extensions = [".rs", ".ts", ".json"]
+priority = "diagnostics-only"
+andon_code_prefixes = ["WASM4PM-CROWN-", "WASM4PM-GALL-"]
+
+[[server]]
+id = "anti-llm-cheat-lsp"
+primary_extensions = [".rs", ".ts", ".tsx", ".json", ".jsonl", ".md"]
+secondary_extensions = []
+priority = "diagnostics-only"
+andon_code_prefixes = ["ANTI-LLM-CHEAT-C", "ANTI-LLM-VERSION-"]
+
+[[server]]
+id = "ggen-lsp"
+primary_extensions = [".ttl", ".rq", ".tera"]
+secondary_extensions = []
+priority = "full"
+andon_code_prefixes = ["GGEN-TPL-", "GGEN-YIELD-", "GGEN-SRC-"]
