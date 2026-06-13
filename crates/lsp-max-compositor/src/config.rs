@@ -38,6 +38,22 @@ impl CompositorConfig {
     /// Collect all ANDON code prefixes across all servers, deduplicated.
     /// Servers that declare `andon_code_prefixes` use their own list; servers
     /// without the field fall back to the legacy hardcoded defaults.
+    /// Per-server ANDON prefix map: server_id → prefix list.
+    /// Servers without explicit `andon_code_prefixes` get the static defaults.
+    /// Used by `MergeContext::from_config` to wire per-server C_D routing.
+    pub fn per_server_andon_prefixes(&self) -> std::collections::HashMap<String, Vec<String>> {
+        self.server
+            .iter()
+            .map(|s| {
+                let prefixes = s
+                    .andon_code_prefixes
+                    .clone()
+                    .unwrap_or_else(|| DEFAULT_ANDON_PREFIXES.iter().map(|p| p.to_string()).collect());
+                (s.id.clone(), prefixes)
+            })
+            .collect()
+    }
+
     pub fn all_andon_prefixes(&self) -> Vec<&str> {
         let mut seen = std::collections::HashSet::new();
         let mut out: Vec<&str> = Vec::new();

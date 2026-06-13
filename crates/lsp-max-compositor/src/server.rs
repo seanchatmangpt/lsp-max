@@ -256,7 +256,7 @@ impl lsp_max::LanguageServer for CompositorServer {
 
 impl CompositorServer {
     /// Fan a didOpen notification to all child servers registered for this URI's extension.
-    /// Collects handles while DashMap refs are held briefly, drops refs before awaiting.
+    /// Concurrent dispatch — O(max RTT) not O(N × RTT). DashMap refs dropped before spawn.
     async fn fanout_did_open(&self, uri: &str, params: DidOpenTextDocumentParams) {
         let targets = crate::fanout::servers_for_uri(&self.router, uri);
         let mut handles: Vec<(String, ChildServerHandle)> = Vec::with_capacity(targets.len());
@@ -265,13 +265,24 @@ impl CompositorServer {
                 handles.push((server.id.clone(), proc_ref.handle.clone()));
             }
         }
-        for (id, handle) in handles {
-            tracing::debug!(server_id = %id, uri = %uri, "compositor: fanout didOpen to child");
-            handle.did_open(params.clone()).await;
+        let tasks: Vec<_> = handles
+            .into_iter()
+            .map(|(id, handle)| {
+                let p = params.clone();
+                let u = uri.to_string();
+                tokio::spawn(async move {
+                    tracing::debug!(server_id = %id, uri = %u, "compositor: fanout didOpen to child");
+                    handle.did_open(p).await;
+                })
+            })
+            .collect();
+        for t in tasks {
+            let _ = t.await;
         }
     }
 
     /// Fan a didChange notification to all child servers registered for this URI's extension.
+    /// Concurrent dispatch — O(max RTT) not O(N × RTT).
     async fn fanout_did_change(&self, uri: &str, params: DidChangeTextDocumentParams) {
         let targets = crate::fanout::servers_for_uri(&self.router, uri);
         let mut handles: Vec<(String, ChildServerHandle)> = Vec::with_capacity(targets.len());
@@ -280,13 +291,24 @@ impl CompositorServer {
                 handles.push((server.id.clone(), proc_ref.handle.clone()));
             }
         }
-        for (id, handle) in handles {
-            tracing::debug!(server_id = %id, uri = %uri, "compositor: fanout didChange to child");
-            handle.did_change(params.clone()).await;
+        let tasks: Vec<_> = handles
+            .into_iter()
+            .map(|(id, handle)| {
+                let p = params.clone();
+                let u = uri.to_string();
+                tokio::spawn(async move {
+                    tracing::debug!(server_id = %id, uri = %u, "compositor: fanout didChange to child");
+                    handle.did_change(p).await;
+                })
+            })
+            .collect();
+        for t in tasks {
+            let _ = t.await;
         }
     }
 
     /// Fan a didClose notification to all child servers registered for this URI's extension.
+    /// Concurrent dispatch — O(max RTT) not O(N × RTT).
     async fn fanout_did_close(&self, uri: &str, params: DidCloseTextDocumentParams) {
         let targets = crate::fanout::servers_for_uri(&self.router, uri);
         let mut handles: Vec<(String, ChildServerHandle)> = Vec::with_capacity(targets.len());
@@ -295,9 +317,19 @@ impl CompositorServer {
                 handles.push((server.id.clone(), proc_ref.handle.clone()));
             }
         }
-        for (id, handle) in handles {
-            tracing::debug!(server_id = %id, uri = %uri, "compositor: fanout didClose to child");
-            handle.did_close(params.clone()).await;
+        let tasks: Vec<_> = handles
+            .into_iter()
+            .map(|(id, handle)| {
+                let p = params.clone();
+                let u = uri.to_string();
+                tokio::spawn(async move {
+                    tracing::debug!(server_id = %id, uri = %u, "compositor: fanout didClose to child");
+                    handle.did_close(p).await;
+                })
+            })
+            .collect();
+        for t in tasks {
+            let _ = t.await;
         }
     }
 
