@@ -7,13 +7,13 @@
 //!
 //! Laws enforced:
 //!   COG-001  Missing breed module (.rs file)
-//!   COG-002  Missing OCPN model (ocel/models/l1/<breed>.ocpn.json)
-//!   COG-003  Missing OCEL fitness report (ocel/reports/<breed>.json)
-//!   COG-004  Missing paper fixture (tests/fixtures/papers/<breed>.json)
+//!   COG-002  Missing OCPN model (ocel/models/l1/`<breed>`.ocpn.json)
+//!   COG-003  Missing OCEL fitness report (ocel/reports/`<breed>`.json)
+//!   COG-004  Missing paper fixture (tests/fixtures/papers/`<breed>`.json)
 //!   COG-005  Fixture missing expected.value — citation without assertion (A12)
 //!   COG-006  OCEL report fitness != 1.0
 //!   COG-007  OCEL report missing measured-fitness provenance (A10 evidence gap)
-//!   COG-008  Missing docs card (docs/breeds/<breed>.md)
+//!   COG-008  Missing docs card (docs/breeds/`<breed>`.md)
 //!   COG-009  Missing TS fixture mirror (packages/cognition/src/__tests__/fixtures/papers/)
 //!   COG-010  Oracle identifier leaked into production source (A8 — fresh-name violation)
 //!   COG-011  Premature PARTIAL_ALIVE: registry flipped but required artifacts absent (A10)
@@ -99,25 +99,40 @@ fn fresh_name_manifest(breed_id: &str) -> Vec<&'static str> {
 /// 1. Parse all `module::Struct` tokens from use declarations to build struct→module.
 /// 2. Parse `"breed_id" => run_breed(&Struct, ...)` match arms to bind breed_id→module.
 fn dispatch_module_map(dispatch_src: &str) -> std::collections::BTreeMap<String, String> {
-    let mut struct_to_module: std::collections::BTreeMap<String, String> = std::collections::BTreeMap::new();
+    let mut struct_to_module: std::collections::BTreeMap<String, String> =
+        std::collections::BTreeMap::new();
 
     // Pass 1: extract all `module::Struct` tokens from the source.
     // Split the entire file on whitespace/commas/braces/parens to get tokens.
-    for token in dispatch_src.split(|c: char| c == ',' || c == '{' || c == '}' || c == '(' || c == ')' || c == '\n' || c == '\t' || c == ' ') {
+    for token in dispatch_src.split(|c: char| {
+        c == ','
+            || c == '{'
+            || c == '}'
+            || c == '('
+            || c == ')'
+            || c == '\n'
+            || c == '\t'
+            || c == ' '
+    }) {
         let token = token.trim();
         // Skip comment fragments
-        if token.starts_with("//") { continue; }
+        if token.starts_with("//") {
+            continue;
+        }
         if let Some(pos) = token.find("::") {
             let module_part = token[..pos].trim();
-            let struct_part = token[pos+2..].trim();
+            let struct_part = token[pos + 2..].trim();
             // module must be all lowercase snake_case; struct must start with uppercase
             if !module_part.is_empty()
                 && !struct_part.is_empty()
                 && module_part.chars().all(|c| c.is_alphanumeric() || c == '_')
-                && struct_part.chars().next().map_or(false, |c| c.is_uppercase())
-                && module_part != "crate" && module_part != "super" && module_part != "self"
+                && struct_part.chars().next().is_some_and(|c| c.is_uppercase())
+                && module_part != "crate"
+                && module_part != "super"
+                && module_part != "self"
             {
-                struct_to_module.entry(struct_part.to_string())
+                struct_to_module
+                    .entry(struct_part.to_string())
                     .or_insert_with(|| module_part.to_string());
             }
         }
@@ -130,29 +145,40 @@ fn dispatch_module_map(dispatch_src: &str) -> std::collections::BTreeMap<String,
         if let Some(rest) = trimmed.strip_prefix('"') {
             if let Some(end) = rest.find('"') {
                 let breed_id = &rest[..end];
-                let after = rest[end+1..].trim();
-                if after.starts_with("=>") {
-                    let arm = after[2..].trim();
+                let after = rest[end + 1..].trim();
+                if let Some(arm_raw) = after.strip_prefix("=>") {
+                    let arm = arm_raw.trim();
                     // `run_breed(&StructName, ...)` or `StructName.run(...)`
                     let struct_name = if let Some(inner) = arm.strip_prefix("run_breed(&") {
                         inner.split(',').next().unwrap_or("").trim().to_string()
                     } else {
-                        arm.split(|c: char| c == '.' || c == '(' || c == ' ')
-                            .next().unwrap_or("").trim().to_string()
+                        arm.split(['.', '(', ' '])
+                            .next()
+                            .unwrap_or("")
+                            .trim()
+                            .to_string()
                     };
                     if !struct_name.is_empty() {
-                        let module = struct_to_module.get(&struct_name)
-                            .cloned()
-                            .unwrap_or_else(|| {
-                                // Convention fallback: PascalCase → snake_case
-                                struct_name.chars().enumerate()
-                                    .map(|(i, c)| if c.is_uppercase() && i > 0 {
-                                        format!("_{}", c.to_lowercase())
-                                    } else {
-                                        c.to_lowercase().to_string()
-                                    })
-                                    .collect()
-                            });
+                        let module =
+                            struct_to_module
+                                .get(&struct_name)
+                                .cloned()
+                                .unwrap_or_else(|| {
+                                    // Convention fallback: PascalCase → snake_case
+                                    {
+                                        let mut snake =
+                                            String::with_capacity(struct_name.len() + 4);
+                                        for (i, c) in struct_name.chars().enumerate() {
+                                            if c.is_uppercase() && i > 0 {
+                                                snake.push('_');
+                                                snake.push(c.to_ascii_lowercase());
+                                            } else {
+                                                snake.push(c.to_ascii_lowercase());
+                                            }
+                                        }
+                                        snake
+                                    }
+                                });
                         map.insert(breed_id.to_string(), module);
                     }
                 }
@@ -192,9 +218,7 @@ pub fn audit_breeds(root_path: &Path) -> Vec<BreedDiagnostic> {
     let module_map = dispatch_module_map(&dispatch_src);
 
     // Support both array-of-objects and {breeds: [...]} shapes.
-    let breeds_val = registry
-        .get("breeds")
-        .unwrap_or(&registry);
+    let breeds_val = registry.get("breeds").unwrap_or(&registry);
 
     let breeds = match breeds_val.as_array() {
         Some(a) => a.clone(),
@@ -204,7 +228,8 @@ pub fn audit_breeds(root_path: &Path) -> Vec<BreedDiagnostic> {
                     .map(|(k, v)| {
                         let mut entry = v.clone();
                         if let Some(o) = entry.as_object_mut() {
-                            o.entry("breed_id").or_insert(serde_json::Value::String(k.clone()));
+                            o.entry("breed_id")
+                                .or_insert(serde_json::Value::String(k.clone()));
                         }
                         entry
                     })
@@ -218,13 +243,19 @@ pub fn audit_breeds(root_path: &Path) -> Vec<BreedDiagnostic> {
     let mut diags: Vec<BreedDiagnostic> = Vec::new();
 
     for breed in &breeds {
-        let bid = match breed.get("breed_id").and_then(|v| v.as_str())
-            .or_else(|| breed.get("id").and_then(|v| v.as_str())) {
+        let bid = match breed
+            .get("breed_id")
+            .and_then(|v| v.as_str())
+            .or_else(|| breed.get("id").and_then(|v| v.as_str()))
+        {
             Some(s) => s.to_string(),
             None => continue,
         };
 
-        let status = breed.get("status").and_then(|v| v.as_str()).unwrap_or("UNKNOWN");
+        let status = breed
+            .get("status")
+            .and_then(|v| v.as_str())
+            .unwrap_or("UNKNOWN");
 
         // Only audit breeds that claim to be implemented.
         if status != "PARTIAL_ALIVE" {
@@ -235,11 +266,15 @@ pub fn audit_breeds(root_path: &Path) -> Vec<BreedDiagnostic> {
         let module_stem = module_map.get(&bid).cloned().unwrap_or_else(|| bid.clone());
         let module_path_str = format!("crates/wasm4pm-cognition/src/breeds/{module_stem}.rs");
         let module = wasm4pm.join(&module_path_str);
-        let ocpn   = wasm4pm.join(format!("ocel/models/l1/{bid}.ocpn.json"));
+        let ocpn = wasm4pm.join(format!("ocel/models/l1/{bid}.ocpn.json"));
         let report = wasm4pm.join(format!("ocel/reports/{bid}.json"));
-        let fix_rs = wasm4pm.join(format!("crates/wasm4pm-cognition/tests/fixtures/papers/{bid}.json"));
-        let fix_ts = wasm4pm.join(format!("packages/cognition/src/__tests__/fixtures/papers/{bid}.json"));
-        let doc    = wasm4pm.join(format!("docs/breeds/{bid}.md"));
+        let fix_rs = wasm4pm.join(format!(
+            "crates/wasm4pm-cognition/tests/fixtures/papers/{bid}.json"
+        ));
+        let fix_ts = wasm4pm.join(format!(
+            "packages/cognition/src/__tests__/fixtures/papers/{bid}.json"
+        ));
+        let doc = wasm4pm.join(format!("docs/breeds/{bid}.md"));
 
         // COG-001: breed module missing
         if !module.exists() {
@@ -279,7 +314,9 @@ pub fn audit_breeds(root_path: &Path) -> Vec<BreedDiagnostic> {
                     diags.push(BreedDiagnostic {
                         law_id: "COG-006",
                         breed_id: bid.clone(),
-                        message: format!("[COG-006] '{bid}' OCEL fitness report claims {fitness:.6} != 1.0"),
+                        message: format!(
+                            "[COG-006] '{bid}' OCEL fitness report claims {fitness:.6} != 1.0"
+                        ),
                         severity: severity("COG-006"),
                         artifact_path: report.to_string_lossy().into(),
                     });
@@ -332,7 +369,9 @@ pub fn audit_breeds(root_path: &Path) -> Vec<BreedDiagnostic> {
             diags.push(BreedDiagnostic {
                 law_id: "COG-008",
                 breed_id: bid.clone(),
-                message: format!("[COG-008] '{bid}' docs card missing — docs/breeds/{bid}.md (ceremony row 12)"),
+                message: format!(
+                    "[COG-008] '{bid}' docs card missing — docs/breeds/{bid}.md (ceremony row 12)"
+                ),
                 severity: severity("COG-008"),
                 artifact_path: doc.to_string_lossy().into(),
             });
@@ -358,12 +397,10 @@ pub fn audit_breeds(root_path: &Path) -> Vec<BreedDiagnostic> {
                     if source.contains(name) {
                         // Exclude lines that are comments documenting the oracle (// or ///)
                         // A non-comment occurrence is a strong A8 signal.
-                        let non_comment_hit = source
-                            .lines()
-                            .any(|line| {
-                                let trimmed = line.trim();
-                                !trimmed.starts_with("//") && line.contains(name)
-                            });
+                        let non_comment_hit = source.lines().any(|line| {
+                            let trimmed = line.trim();
+                            !trimmed.starts_with("//") && line.contains(name)
+                        });
                         if non_comment_hit {
                             diags.push(BreedDiagnostic {
                                 law_id: "COG-010",
@@ -384,7 +421,7 @@ pub fn audit_breeds(root_path: &Path) -> Vec<BreedDiagnostic> {
 
         // COG-011: premature PARTIAL_ALIVE (module exists but OCPN or report absent)
         let has_module = module.exists();
-        let has_ocpn   = ocpn.exists();
+        let has_ocpn = ocpn.exists();
         let has_report = report.exists();
         let has_fixture = fix_rs.exists();
         let dod_complete = has_module && has_ocpn && has_report && has_fixture;
@@ -433,15 +470,19 @@ pub fn audit_breeds(root_path: &Path) -> Vec<BreedDiagnostic> {
 
 /// Convert snake_case breed id to PascalCase for BreedId enum variant matching.
 fn snake_to_pascal(s: &str) -> String {
-    s.split('_')
-        .map(|w| {
-            let mut c = w.chars();
-            match c.next() {
-                None => String::new(),
-                Some(f) => f.to_uppercase().collect::<String>() + c.as_str(),
-            }
-        })
-        .collect()
+    let mut out = String::with_capacity(s.len());
+    let mut cap_next = true;
+    for c in s.chars() {
+        if c == '_' {
+            cap_next = true;
+        } else if cap_next {
+            out.extend(c.to_uppercase());
+            cap_next = false;
+        } else {
+            out.push(c);
+        }
+    }
+    out
 }
 
 /// Summary counts — used by the release gate check.
@@ -471,9 +512,15 @@ impl AuditSummary {
                 DiagnosticSeverity::WARNING => s.warning_count += 1,
                 _ => {}
             }
-            if d.law_id == "COG-010" { s.a8_violations += 1; }
-            if d.law_id == "COG-011" { s.a10_violations += 1; }
-            if d.law_id == "COG-005" { s.a12_violations += 1; }
+            if d.law_id == "COG-010" {
+                s.a8_violations += 1;
+            }
+            if d.law_id == "COG-011" {
+                s.a10_violations += 1;
+            }
+            if d.law_id == "COG-005" {
+                s.a12_violations += 1;
+            }
         }
         s
     }
@@ -522,12 +569,21 @@ fn dispatch(breed: &str, input: &BreedInput) {
 }
 "#;
         let map = dispatch_module_map(src);
-        assert_eq!(map.get("eliza").map(|s| s.as_str()), Some("frame"),
-            "eliza should derive from frame::Eliza import");
-        assert_eq!(map.get("mycin").map(|s| s.as_str()), Some("production_rules"),
-            "mycin should derive from production_rules::Mycin import");
-        assert_eq!(map.get("cbr").map(|s| s.as_str()), Some("cbr"),
-            "cbr conventional naming should work");
+        assert_eq!(
+            map.get("eliza").map(|s| s.as_str()),
+            Some("frame"),
+            "eliza should derive from frame::Eliza import"
+        );
+        assert_eq!(
+            map.get("mycin").map(|s| s.as_str()),
+            Some("production_rules"),
+            "mycin should derive from production_rules::Mycin import"
+        );
+        assert_eq!(
+            map.get("cbr").map(|s| s.as_str()),
+            Some("cbr"),
+            "cbr conventional naming should work"
+        );
     }
 
     #[test]
@@ -537,7 +593,10 @@ fn dispatch(breed: &str, input: &BreedInput) {
             .unwrap()
             .to_path_buf();
         let wasm4pm = super::wasm4pm_root(&root);
-        if !wasm4pm.join("crates/wasm4pm-cognition/breeds/registry.json").exists() {
+        if !wasm4pm
+            .join("crates/wasm4pm-cognition/breeds/registry.json")
+            .exists()
+        {
             // Not in a layout with ../wasm4pm sibling — skip.
             return;
         }
@@ -549,10 +608,16 @@ fn dispatch(breed: &str, input: &BreedInput) {
         let summary = AuditSummary::from_diagnostics(&diags);
         eprintln!(
             "Cognition audit: {} errors, {} warnings, {} A8, {} A10, {} A12",
-            summary.error_count, summary.warning_count,
-            summary.a8_violations, summary.a10_violations, summary.a12_violations
+            summary.error_count,
+            summary.warning_count,
+            summary.a8_violations,
+            summary.a10_violations,
+            summary.a12_violations
         );
         // A8 (oracle injection) is always a hard error — no registered breed may have one.
-        assert_eq!(summary.a8_violations, 0, "A8 oracle injection violations detected");
+        assert_eq!(
+            summary.a8_violations, 0,
+            "A8 oracle injection violations detected"
+        );
     }
 }

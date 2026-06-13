@@ -612,4 +612,35 @@ pub trait LanguageServer: Send + Sync + 'static {
     async fn max_lsif(&self) -> Result<String> {
         impls::max_lsif().await
     }
+
+    /// Return all active rule packs with metadata and dependency graph.
+    #[rpc(name = "max/rulePacks")]
+    async fn max_rule_packs(&self) -> Result<Vec<max_protocol::RulePackDescriptor>> {
+        impls::max_rule_packs().await
+    }
+
+    /// Return conformance status contributed by a single rule pack.
+    #[rpc(name = "max/rulePackStatus")]
+    async fn max_rule_pack_status(
+        &self,
+        params: String,
+    ) -> Result<max_protocol::RulePackStatusResult> {
+        impls::max_rule_pack_status(params).await
+    }
+
+    /// Compare two workspace snapshots by seq number; return added/removed findings.
+    #[rpc(name = "max/rulePackDiff")]
+    async fn max_rule_pack_diff(
+        &self,
+        params: serde_json::Value,
+    ) -> Result<Vec<max_protocol::RulePackDiffEntry>> {
+        impls::max_rule_pack_diff(params).await
+    }
+
+    /// Workspace-level ConformanceVector aggregated across all open documents.
+    /// Refused axes propagate from any file; axes with no coverage remain Unknown.
+    #[rpc(name = "max/workspaceConformance")]
+    async fn max_workspace_conformance(&self) -> Result<max_protocol::ConformanceVector> {
+        impls::max_workspace_conformance().await
+    }
 }

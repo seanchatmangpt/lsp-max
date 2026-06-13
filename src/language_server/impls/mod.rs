@@ -43,7 +43,8 @@ pub use repair::{
 };
 pub use semantic_ext::semantic_tokens_full_delta;
 pub use snapshot::{
-    max_conformance_delta, max_conformance_vector, max_export_analysis_bundle, max_snapshot,
+    max_conformance_delta, max_conformance_vector, max_export_analysis_bundle, max_rule_pack_diff,
+    max_rule_pack_status, max_rule_packs, max_snapshot, max_workspace_conformance,
 };
 pub use sync::*;
 pub use text_document::*;

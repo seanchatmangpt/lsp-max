@@ -1,8 +1,20 @@
 [package]
 name = "wasm4pm-lsp"
-version = "26.6.9"
-edition = "2021"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+description = "wasm4pm package manager language server example using lsp-max"
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+categories.workspace = true
+keywords.workspace = true
 publish = false
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
 lsp-max = { path = "../..", features = ["proposed"] }
@@ -10,6 +22,7 @@ tokio = { version = "1.0", features = ["full"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 gc005-wasm4pm-adapter = { path = "../gc005-wasm4pm-adapter" }
+dashmap = "5"
 
 [[bin]]
 name = "wasm4pm-lsp"

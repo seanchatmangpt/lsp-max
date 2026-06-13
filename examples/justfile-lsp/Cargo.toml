@@ -1,0 +1,26 @@
+[package]
+name = "justfile-lsp"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+description = "LSP server for Justfiles — enforces recipe naming patterns, shell safety, and project conventions"
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+categories.workspace = true
+keywords.workspace = true
+publish = false
+
+[[bin]]
+name = "justfile-lsp"
+path = "src/main.rs"
+
+[dependencies]
+lsp-max = { path = "../../" }
+lsp-types-max = { path = "../../../lsp-types-max", version = "26.6.8", features = ["proposed"] }
+tokio = { version = "1", features = ["rt", "rt-multi-thread", "macros", "io-std"] }
+parking_lot = { workspace = true }
+regex = { workspace = true }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"

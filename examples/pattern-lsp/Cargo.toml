@@ -1,8 +1,20 @@
 [package]
 name = "pattern-lsp"
-version = "0.1.0"
-edition = "2021"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+description = "Regex pattern language server example using lsp-max"
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+categories.workspace = true
+keywords.workspace = true
 publish = false
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
 clap = { version = "4.4", features = ["derive"] }
@@ -15,7 +27,9 @@ serde_json = "1.0"
 toml = "0.8"
 regex = "1.10"
 glob = "0.3"
+ignore = "0.4"
 lsp-max = { path = "../../" }
+parking_lot = { workspace = true }
 lsp-types-max = { path = "../../../lsp-types-max", version = "26.6.8", features = ["proposed"] }
 chrono = { version = "0.4", features = ["serde"] }
 url = "2.5.8"

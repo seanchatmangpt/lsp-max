@@ -17,8 +17,10 @@ pub struct LawSpec {
 /// Returns the canonical law table with all three diagnostic laws.
 ///
 /// `condition` returns `true` when the diagnostic should be **emitted** (law is violated).
-pub fn law_table() -> Vec<LawSpec> {
-    vec![
+/// The table is allocated exactly once and returned as a static slice on every call.
+pub fn law_table() -> &'static [LawSpec] {
+    static TABLE: std::sync::OnceLock<Vec<LawSpec>> = std::sync::OnceLock::new();
+    TABLE.get_or_init(|| vec![
         LawSpec {
             diag_id: "diag-uninitialized-admission",
             law_id: "LAW-001",
@@ -60,5 +62,5 @@ pub fn law_table() -> Vec<LawSpec> {
             repair_description: "Generate security authorization receipt",
             condition: |registry| !registry.receipts.contains_key("rcpt-security-auth"),
         },
-    ]
+    ])
 }

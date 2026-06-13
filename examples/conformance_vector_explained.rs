@@ -49,7 +49,7 @@
 //! - CI passes without evidence
 //! - The receipt chain is bypassed silently
 //!
-//! This is the exact failure mode the anti-llm-lsp canary watches for.
+//! This is the exact failure mode the anti-llm-cheat-lsp canary watches for.
 //!
 //! ## Why Unknown must not collapse into Refused
 //!

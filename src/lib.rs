@@ -132,6 +132,9 @@ pub use rule_pack_server::{Rule, RulePack, RulePackServer};
 /// LSP 3.18 and LSIF protocol coverage matrices.
 pub mod coverage;
 
+/// First-class framework primitives: `DocumentStore`, `DiagnosticSink`, `debounce`.
+pub mod primitives;
+
 pub(crate) use diagnostics::update_diagnostics;
 
 fn _assert_object_safe() {

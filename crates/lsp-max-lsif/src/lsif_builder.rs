@@ -315,6 +315,22 @@ impl<W: Write> LsifBuilder<W> {
         }))
     }
 
+    /// Convenience: emit `metaData` + `project` vertices and return the project id.
+    /// The caller is responsible for calling `begin_project` / `end_project` around
+    /// the document indexing loop.
+    pub fn emit_meta_project(&mut self, root: &str, lang: &str) -> io::Result<Id> {
+        self.emit_metadata(
+            "0.6.0",
+            root,
+            ToolInfo {
+                name: "lsp-max-lsif".into(),
+                version: Some(env!("CARGO_PKG_VERSION").into()),
+                args: None,
+            },
+        )?;
+        self.emit_project(Some(lang), Some(root.to_string()))
+    }
+
     pub fn end_project(&mut self, project_id: Id) -> io::Result<()> {
         if let Id::Number(n) = &project_id {
             self.open_projects.remove(&(*n as i64));

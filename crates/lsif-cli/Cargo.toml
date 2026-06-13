@@ -1,0 +1,23 @@
+[package]
+name = "lsif-cli"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+description = "CLI binary for the lsp-max LSIF indexer — index Rust and TypeScript, link cross-file references"
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+categories.workspace = true
+keywords.workspace = true
+
+[[bin]]
+name = "lsp-max-lsif"
+path = "src/main.rs"
+
+[dependencies]
+lsp-max-lsif = { path = "../lsp-max-lsif", version = "26.6.9" }
+lsif-rust = { path = "../lsif-rust", version = "26.6.9" }
+lsif-typescript = { path = "../lsif-typescript", version = "26.6.9" }
+lsif-linker = { path = "../lsif-linker", version = "26.6.9" }
+anyhow = { workspace = true }

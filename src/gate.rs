@@ -14,7 +14,7 @@ pub fn run_gate_logic(
         "gate-state-check" => current_state != crate::service::State::Uninitialized,
         "gate-receipt-check" | "gate-auth-check" => {
             let spec = crate::diagnostics::law_table::law_table()
-                .into_iter()
+                .iter()
                 .find(|s| s.gate_id == gate_id);
             let Some(spec) = spec else { return false };
             let path = root_path.join(spec.receipt_file);
@@ -30,7 +30,7 @@ pub fn run_gate_logic(
             // POWL conformance gate — admitted when a receipt exists for the declared model.
             // Full wasm4pm integration routes through control_plane::powl_conformance.
             let spec = crate::diagnostics::law_table::law_table()
-                .into_iter()
+                .iter()
                 .find(|s| s.gate_id == gate_id);
             match spec {
                 Some(spec) => root_path.join(spec.receipt_file).exists(),

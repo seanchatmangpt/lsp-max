@@ -504,7 +504,9 @@ async fn test_full_lifecycle_diagnostic_repair_conformance_release() {
         explain_resp
     );
     assert_eq!(
-        explain_resp["result"]["diagnostic_id"].as_str().unwrap_or(""),
+        explain_resp["result"]["diagnostic_id"]
+            .as_str()
+            .unwrap_or(""),
         "diag-auth-generator",
         "explainDiagnostic must return the requested diagnostic"
     );
@@ -552,9 +554,7 @@ async fn test_full_lifecycle_diagnostic_repair_conformance_release() {
         "max/applyRepairTransaction must return 'result', got: {}",
         repair_resp
     );
-    let receipt_id = repair_resp["result"]["receipt_id"]
-        .as_str()
-        .unwrap_or("");
+    let receipt_id = repair_resp["result"]["receipt_id"].as_str().unwrap_or("");
     assert!(
         receipt_id.starts_with("rcpt-"),
         "repair receipt_id must start with 'rcpt-', got: {}",

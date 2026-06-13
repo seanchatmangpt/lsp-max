@@ -7,9 +7,10 @@ use clap::Parser;
 use lsp_max::jsonrpc::Result;
 use lsp_max::lsp_types_max::*;
 use lsp_max::{Client, LanguageServer, LspService, Server};
+use parking_lot::RwLock;
 use serde_json::Value;
 use std::collections::HashMap;
-use std::sync::Mutex;
+use std::sync::OnceLock;
 use syn::spanned::Spanned;
 use syn::visit::Visit;
 use syn::{Expr, ExprCall, ExprMethodCall, Ident, UseTree};
@@ -40,10 +41,25 @@ struct CliArgs {
     log_level: String,
 }
 
+// ── Compiled-once fallback regex statics ─────────────────────────────────────
+
+fn invalid_input_re() -> &'static regex::Regex {
+    static RE: OnceLock<regex::Regex> = OnceLock::new();
+    RE.get_or_init(|| regex::Regex::new(r"\bInvalidInput\b").unwrap())
+}
+
+fn projection_re() -> &'static regex::Regex {
+    static RE: OnceLock<regex::Regex> = OnceLock::new();
+    RE.get_or_init(|| regex::Regex::new(r"\b(flatten_ocel_to_xes|project|flatten)\b").unwrap())
+}
+
+// ── Backend ───────────────────────────────────────────────────────────────────
+
 /// The stateful LSP server backend.
 struct Backend {
     client: Client,
-    files: Mutex<HashMap<Url, String>>,
+    /// Read-heavy: written on open/change, read on hover/code-action/diagnostics.
+    files: RwLock<HashMap<Url, String>>,
 }
 
 impl Backend {
@@ -51,14 +67,14 @@ impl Backend {
     fn new(client: Client) -> Self {
         Self {
             client,
-            files: Mutex::new(HashMap::new()),
+            files: RwLock::new(HashMap::new()),
         }
     }
 
     /// Update a file's content in the internal cache and trigger analysis.
     async fn update_and_analyze(&self, uri: Url, content: String) {
         {
-            let mut files = self.files.lock().unwrap();
+            let mut files = self.files.write();
             files.insert(uri.clone(), content.clone());
         }
 
@@ -126,45 +142,37 @@ impl Backend {
     fn analyze_with_regex(&self, content: &str) -> Vec<Diagnostic> {
         let mut diagnostics = Vec::new();
 
-        // Check 1: Violation of the Refusal Law (detecting generic `InvalidInput` usages)
-        if let Ok(invalid_input_re) = regex::Regex::new(r"\bInvalidInput\b") {
-            for mat in invalid_input_re.find_iter(content) {
-                let (line, col) = get_line_col(content, mat.start());
-                let end_col = col + (mat.end() - mat.start());
-                diagnostics.push(Diagnostic {
-                    range: Range {
-                        start: Position { line: line as u32, character: col as u32 },
-                        end: Position { line: line as u32, character: end_col as u32 },
-                    },
-                    severity: Some(DiagnosticSeverity::WARNING),
-                    code: Some(NumberOrString::String("W4PM-001".to_string())),
-                    source: Some("wasm4pm-compat-lsp".to_string()),
-                    message: "Refusal Law Violation: Avoid generic error types like `InvalidInput`. Always use a specific named law (e.g., `DanglingEventObjectLink`, `UnsoundWfNet`) to represent structural refusal.".to_string(),
-                    ..Default::default()
-                });
-            }
+        for mat in invalid_input_re().find_iter(content) {
+            let (line, col) = get_line_col(content, mat.start());
+            let end_col = col + (mat.end() - mat.start());
+            diagnostics.push(Diagnostic {
+                range: Range {
+                    start: Position { line: line as u32, character: col as u32 },
+                    end: Position { line: line as u32, character: end_col as u32 },
+                },
+                severity: Some(DiagnosticSeverity::WARNING),
+                code: Some(NumberOrString::String("W4PM-001".to_string())),
+                source: Some("wasm4pm-compat-lsp".to_string()),
+                message: "Refusal Law Violation: Avoid generic error types like `InvalidInput`. Always use a specific named law (e.g., `DanglingEventObjectLink`, `UnsoundWfNet`) to represent structural refusal.".to_string(),
+                ..Default::default()
+            });
         }
 
-        // Check 2: Violation of the Format Covenant (detecting lossy projections without LossPolicy)
-        if let Ok(projection_re) = regex::Regex::new(r"\b(flatten_ocel_to_xes|project|flatten)\b") {
-            for (i, line) in content.lines().enumerate() {
-                if projection_re.is_match(line)
-                    && !line.contains("LossPolicy")
-                    && !line.contains("policy")
-                {
-                    if let Some(mat) = projection_re.find(line) {
-                        diagnostics.push(Diagnostic {
-                            range: Range {
-                                start: Position { line: i as u32, character: mat.start() as u32 },
-                                end: Position { line: i as u32, character: mat.end() as u32 },
-                            },
-                            severity: Some(DiagnosticSeverity::ERROR),
-                            code: Some(NumberOrString::String("W4PM-002".to_string())),
-                            source: Some("wasm4pm-compat-lsp".to_string()),
-                            message: "Format Covenant Violation: Lossy projections (like OCEL to XES flattening) must explicitly specify a `LossPolicy` argument.".to_string(),
-                            ..Default::default()
-                        });
-                    }
+        let proj_re = projection_re();
+        for (i, line) in content.lines().enumerate() {
+            if proj_re.is_match(line) && !line.contains("LossPolicy") && !line.contains("policy") {
+                if let Some(mat) = proj_re.find(line) {
+                    diagnostics.push(Diagnostic {
+                        range: Range {
+                            start: Position { line: i as u32, character: mat.start() as u32 },
+                            end: Position { line: i as u32, character: mat.end() as u32 },
+                        },
+                        severity: Some(DiagnosticSeverity::ERROR),
+                        code: Some(NumberOrString::String("W4PM-002".to_string())),
+                        source: Some("wasm4pm-compat-lsp".to_string()),
+                        message: "Format Covenant Violation: Lossy projections (like OCEL to XES flattening) must explicitly specify a `LossPolicy` argument.".to_string(),
+                        ..Default::default()
+                    });
                 }
             }
         }
@@ -223,7 +231,7 @@ impl LanguageServer for Backend {
     async fn did_save(&self, params: DidSaveTextDocumentParams) {
         let uri = params.text_document.uri;
         let content = {
-            let files = self.files.lock().unwrap();
+            let files = self.files.read();
             files.get(&uri).cloned()
         };
         if let Some(text) = content {

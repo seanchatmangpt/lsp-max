@@ -242,53 +242,51 @@ struct LossReportVisitor<'a> {
 impl<'ast> Visit<'ast> for LossReportVisitor<'_> {
     fn visit_expr(&mut self, i: &'ast Expr) {
         match i {
-            Expr::Struct(expr_struct) => {
+            Expr::Struct(expr_struct)
                 if expr_struct
                     .path
                     .segments
                     .last()
-                    .is_some_and(|s| s.ident == "LossReport")
-                {
-                    let mut found_projection = false;
-                    let mut found_policy = false;
-                    for field in &expr_struct.fields {
-                        if let Member::Named(ident) = &field.member {
-                            if ident == "projection" {
-                                found_projection = true;
-                                check_projection_expr(&field.expr, field.span(), self.diagnostics);
-                            } else if ident == "policy" {
-                                found_policy = true;
-                                check_policy_expr(
-                                    &field.expr,
-                                    &self.policy_param_name,
-                                    field.span(),
-                                    self.diagnostics,
-                                );
-                            }
+                    .is_some_and(|s| s.ident == "LossReport") =>
+            {
+                let mut found_projection = false;
+                let mut found_policy = false;
+                for field in &expr_struct.fields {
+                    if let Member::Named(ident) = &field.member {
+                        if ident == "projection" {
+                            found_projection = true;
+                            check_projection_expr(&field.expr, field.span(), self.diagnostics);
+                        } else if ident == "policy" {
+                            found_policy = true;
+                            check_policy_expr(
+                                &field.expr,
+                                &self.policy_param_name,
+                                field.span(),
+                                self.diagnostics,
+                            );
                         }
                     }
-                    if !found_projection {
-                        let start = expr_struct.span().start();
-                        self.diagnostics.push(Diagnostic {
-                            code: "W4PM-LOS-002",
-                            message: "LossReport struct literal is missing 'projection' field."
-                                .to_string(),
-                            line: start.line,
-                            column: start.column,
-                            severity: Severity::Error,
-                        });
-                    }
-                    if !found_policy {
-                        let start = expr_struct.span().start();
-                        self.diagnostics.push(Diagnostic {
-                            code: "W4PM-LOS-002",
-                            message: "LossReport struct literal is missing 'policy' field."
-                                .to_string(),
-                            line: start.line,
-                            column: start.column,
-                            severity: Severity::Error,
-                        });
-                    }
+                }
+                if !found_projection {
+                    let start = expr_struct.span().start();
+                    self.diagnostics.push(Diagnostic {
+                        code: "W4PM-LOS-002",
+                        message: "LossReport struct literal is missing 'projection' field."
+                            .to_string(),
+                        line: start.line,
+                        column: start.column,
+                        severity: Severity::Error,
+                    });
+                }
+                if !found_policy {
+                    let start = expr_struct.span().start();
+                    self.diagnostics.push(Diagnostic {
+                        code: "W4PM-LOS-002",
+                        message: "LossReport struct literal is missing 'policy' field.".to_string(),
+                        line: start.line,
+                        column: start.column,
+                        severity: Severity::Error,
+                    });
                 }
             }
             Expr::Call(expr_call) => {

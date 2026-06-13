@@ -51,7 +51,7 @@ Traditional parsing reconstructs an Abstract Syntax Tree (AST) globally, an $\ma
 
 In the `auto-lsp` engine, we introduce a differential syntax calculus. Let the source document be a continuous manifold $\mathcal{M}_t$. A user keystroke or LLM token injection represents a highly localized perturbation vector $\Delta \mathbf{x}$. The Salsa-backed `AutoLspAdapter` computes the AST graph $\mathcal{G}$ using the Jacobian matrix of the syntax parser:
 $$ \mathcal{G}_{t+\Delta t} = \mathcal{G}_t + \oint_{\partial \mathcal{M}} \nabla_{\mathbf{AST}} \left( \frac{\partial \mathcal{G}}{\partial \mathbf{x}} \right) \cdot d\mathbf{x} $$
-By operating purely on the non-zero differentials (the dirtied nodes invalidated by the `texter` engine), the computational latency scales with the perturbation: $\lim_{\Delta t \to 0} f(\Delta \mathbf{x}) \to 0$. This localized differential calculation unlocks sub-millisecond execution, enabling `anti-llm-lsp` to intercept stochastic AI hallucinations on the exact tangent space of the semantic edit.
+By operating purely on the non-zero differentials (the dirtied nodes invalidated by the `texter` engine), the computational latency scales with the perturbation: $\lim_{\Delta t \to 0} f(\Delta \mathbf{x}) \to 0$. This localized differential calculation unlocks sub-millisecond execution, enabling `anti-llm-cheat-lsp` to intercept stochastic AI hallucinations on the exact tangent space of the semantic edit.
 
 ### 4.3 Functorial Scaffolding and Combinatorial Maximalism
 The `ggen` marketplace transcends procedural code generation, ascending to Category Theory. Let $\mathbf{Ont}$ be the category of all formal RDF ontologies, and $\mathbf{LSP_{Max}}$ be the category of all maximally capable, strict-baseline Language Servers.

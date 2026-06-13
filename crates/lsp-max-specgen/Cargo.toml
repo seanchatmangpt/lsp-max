@@ -1,10 +1,20 @@
 [package]
 name = "lsp-max-specgen"
-version = "0.1.0"
-edition = "2021"
-license = "MIT"
-description = "Generate Rust protocol types from the official LSP 3.18 metaModel.json."
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+description = "Generate Rust protocol types from the official LSP 3.18 metaModel.json"
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+categories.workspace = true
+keywords.workspace = true
 publish = false
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
 anyhow = "1"

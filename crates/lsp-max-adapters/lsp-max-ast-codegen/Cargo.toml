@@ -1,14 +1,20 @@
 [package]
 name = "lsp-max-ast-codegen"
-description = """
-Codegen crate for `auto_lsp`.
-"""
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+description = "Codegen crate for auto_lsp and AST modeling in lsp-max"
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+categories.workspace = true
+keywords.workspace = true
 readme = "README.md"
-version = "26.6.9"
-authors = { workspace = true }
-license = { workspace = true }
-repository = { workspace = true }
-edition = { workspace = true }
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
 serde = { version = "1.0.219", features = ["derive"] }

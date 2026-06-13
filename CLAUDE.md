@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 A fork of `tower-lsp` (Tower-based LSP framework) upgraded into **lsp-max**: a "law-state runtime projected through LSP." It maximizes LSP 3.18 capability coverage and adds a custom `max/*` protocol surface (snapshots, conformance vectors, receipts, repair plans, gates). Primary clients are agents, CI, and release gates — the editor is just one client.
 
-**Read `AGENTS.md` before substantive work. It is the project constitution and its laws are enforced by tooling** (the `examples/anti-llm-lsp` server detects violations). The most load-bearing laws:
+**Read `AGENTS.md` before substantive work. It is the project constitution and its laws are enforced by tooling** (the `examples/anti-llm-cheat-lsp` server detects violations). The most load-bearing laws:
 
 - **Never reference plain `tower-lsp`/`tower_lsp`** in code, manifests, tests, or docs — outside explicit negative-control fixtures. Everything is `lsp-max`.
 - **No victory language** in code, comments, reports, or commit messages ("done", "all clean", "fully admitted", "solved", "guaranteed"). Use bounded statuses only: `ADMITTED`, `CANDIDATE`, `BLOCKED`, `REFUSED`, `UNKNOWN`, `PARTIAL`, `OPEN`, etc.
@@ -46,7 +46,7 @@ Single test / single crate:
 ```sh
 cargo test -p <crate-name> <test_name>
 cargo test --test test_lsp318_capabilities    # one root integration-test file in tests/
-cargo test -p anti-llm-lsp --test dogfood     # example-crate integration test
+cargo test -p anti-llm-cheat-lsp --test dogfood     # example-crate integration test
 ```
 
 Clippy with `-D warnings` is the bar; run `just dx-polish` before considering a change complete.
@@ -66,10 +66,16 @@ The five-layer model: (1) actuation grammar → (2) local LSP state surface → 
 - **`crates/lsp-max-adapters/`** — ported `auto-lsp` stack (`lsp-max-ast-core`, `lsp-max-ast-codegen`, `lsp-max-ast`): tree-sitter-driven AST/codegen layer. Tree-sitter observes; it never admits.
 - **`crates/wasm4pm-lsp`**, **`crates/gc005-wasm4pm-adapter`** — process-mining LSP surfaces over the wasm4pm engine; dogfood tests (`dogfood_gc00*.rs`) validate gate conformance.
 - **`crates/playground`** — dev-dependency harness with demo binaries (`dogfood_harness`, `lsif_demo`).
-- **`examples/anti-llm-lsp`** — the diagnostic canary: an LSP that detects reintroduction of plain `tower-lsp`, fake receipts, fake routes, and victory language. Other examples (`pattern-lsp`, `clap-noun-verb-lsp`, `axum-lsp`, `bevy-lsp`, `tex-lsp`, `wasm4pm-compat-lsp`) are workspace members and must keep compiling.
+- **`examples/anti-llm-cheat-lsp`** — the diagnostic canary: an LSP that detects reintroduction of plain `tower-lsp`, fake receipts, fake routes, and victory language. Other examples (`pattern-lsp`, `clap-noun-verb-lsp`, `axum-lsp`, `bevy-lsp`, `tex-lsp`, `wasm4pm-compat-lsp`) are workspace members and must keep compiling.
 
 ## Code layout conventions
 
 - Keep files ≤ 500 LOC; split into submodules in a subdirectory matching the module name (`src/service/` next to `src/service.rs` is the established pattern).
 - Integration tests live in root `tests/` (one file per concern, e.g. `test_lsp318_capabilities.rs`) and per-crate `tests/` for dogfood suites.
 - LSP 3.18 feature claims require transcript + negative control + receipt; a feature row is `SUPPORTED_WITH_TRANSCRIPT`, `REFUSED_BY_LAW_WITH_RECEIPT`, or `BLOCKED` — never "implied" or "covered by normal LSP".
+
+## External consumers of lsp-max (e.g. sibling LSP crates)
+
+When a crate outside this workspace depends on `lsp-max` and also declares its own `tokio` dependency, it must include `"io-std"` in tokio features — `tokio::io::stdin` / `tokio::io::stdout` are behind that feature gate and are not inherited transitively from lsp-max.
+
+When constructing `CodeAction` literals, always use `..Default::default()` for the trailing fields rather than exhaustive field listing — lsp-types-max may add fields as LSP 3.18 evolves and exhaustive structs break at the call site.

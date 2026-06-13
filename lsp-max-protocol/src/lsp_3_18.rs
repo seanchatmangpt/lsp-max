@@ -88,10 +88,11 @@ pub type TextDocumentContentChangeEvent = TextDocumentContentChangePartialOrText
 /**MarkedString can be used to render human readable text. It is either a markdown string
 or a code-block that provides a language and a code snippet. The language identifier
 is semantically equal to the optional language identifier in fenced code blocks in GitHub
-issues. See https://help.github.com/articles/creating-and-highlighting-code-blocks/#syntax-highlighting
+issues. See <https://help.github.com/articles/creating-and-highlighting-code-blocks/#syntax-highlighting>
 
 The pair of a language and a value is an equivalent to markdown:
-```${language}
+```text
+${language}
 ${value}
 ```
 
@@ -857,7 +858,7 @@ and `${3:foo}`. `$0` defines the final tab stop, it defaults to
 the end of the snippet. Placeholders with equal identifiers are linked,
 that is typing in one will update others too.
 
-See also: https://microsoft.github.io/language-server-protocol/specifications/specification-current/#snippet_syntax*/
+See also: <https://microsoft.github.io/language-server-protocol/specifications/specification-current/#snippet_syntax>*/
     Snippet,
 }
 impl serde::Serialize for InsertTextFormat {
@@ -921,7 +922,7 @@ string.*/
 they match the indentation up to the cursor of the line for
 which the item is accepted.
 
-Consider a line like this: <2tabs><cursor><3tabs>foo. Accepting a
+Consider a line like this: `<2tabs><cursor><3tabs>`foo. Accepting a
 multi line completion item is indented using 2 tabs and all
 following lines inserted will be indented using 2 tabs as well.*/
     AdjustIndentation,
@@ -4640,7 +4641,7 @@ might resolve this property late using the resolve request.*/
 kind flag. Currently the protocol supports `plaintext` and `markdown` as markup kinds.
 
 If the kind is `markdown` then the value can contain fenced code blocks like in GitHub issues.
-See https://help.github.com/articles/creating-and-highlighting-code-blocks/#syntax-highlighting
+See <https://help.github.com/articles/creating-and-highlighting-code-blocks/#syntax-highlighting>
 
 Here is an example how such a string can be constructed using JavaScript / TypeScript:
 ```ts
@@ -4993,7 +4994,7 @@ in. This must not necessarily be the locale of the operating
 system.
 
 Uses IETF language tags as the value's syntax
-(See https://en.wikipedia.org/wiki/IETF_language_tag)
+(See <https://en.wikipedia.org/wiki/IETF_language_tag>)
 
 @since 3.16.0*/
     #[serde(default)]

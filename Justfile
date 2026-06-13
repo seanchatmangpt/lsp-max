@@ -13,6 +13,21 @@ export NC := '\033[0m'
 default:
     @just --list
 
+# --- Admission ---
+
+# Run perf_refactors benchmarks and write BLAKE3-signed admission receipt
+bench-admit:
+    @echo -e "${MAGENTA}============================================================${NC}"
+    @echo -e "${CYAN} Bench-Admit: Performance Refactors Admission Gate ${NC}"
+    @echo -e "${MAGENTA}============================================================${NC}"
+    @mkdir -p receipts
+    @bash scripts/write_bench_receipt.sh
+    @echo -e "${GREEN}✓ Receipt written. Run 'just test-perf-admission' to validate.${NC}"
+
+# Validate the perf-refactors receipt exists and is structurally sound
+test-perf-admission:
+    cargo test --test test_perf_admission -- --nocapture
+
 # --- Tests ---
 
 # Run all workspace tests

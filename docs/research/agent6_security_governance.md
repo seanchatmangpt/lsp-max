@@ -1,7 +1,7 @@
-# Research Report: Agent-6 Security Governance & anti-llm-lsp
+# Research Report: Agent-6 Security Governance & anti-llm-cheat-lsp
 
 ## Executive Summary
-This report analyzes internal and external research papers related to cybersecurity, LLM hallucinations, anomaly detection, and system trust. The findings provide the mathematical and architectural foundation for the `anti-llm-lsp` security layer and the broader semantic AI governance framework within the `lsp-max` ecosystem.
+This report analyzes internal and external research papers related to cybersecurity, LLM hallucinations, anomaly detection, and system trust. The findings provide the mathematical and architectural foundation for the `anti-llm-cheat-lsp` security layer and the broader semantic AI governance framework within the `lsp-max` ecosystem.
 
 ## 1. Bibliography
 
@@ -25,13 +25,13 @@ This report analyzes internal and external research papers related to cybersecur
 *   **Ali, T. (2024).** *HuntGPT: Integrating Explainable AI (XAI) and LLMs for Cybersecurity Operations*. (Cybertrust Framework).
     *   *Key Focus:* Combining LLMs with Explainable AI to provide actionable threat intelligence.
 
-## 2. Relevance to anti-llm-lsp Security Layer
+## 2. Relevance to anti-llm-cheat-lsp Security Layer
 
-The `anti-llm-lsp` server acts as a **diagnostic canary** and **semantic firewall**. Its design directly operationalizes the following research concepts:
+The `anti-llm-cheat-lsp` server acts as a **diagnostic canary** and **semantic firewall**. Its design directly operationalizes the following research concepts:
 
-*   **Real-Time Interception (The Syntactic Turn):** By utilizing the *Differential Syntax Calculus* described in the internal thesis, `anti-llm-lsp` intercepts stochastic AI hallucinations on the "exact tangent space of the semantic edit." This enables blocking malicious or hallucinated tokens as they are streamed, rather than after the file is saved.
-*   **Conformal Abstention & Admissibility:** The external work on *Conformal Abstention* (Tomasev et al., 2024) mirrors the admissibility gates in `anti-llm-lsp`. When the AI generates code that violates the `wasm4pm-compat` baseline authority, the system effectively forces "abstention" by emitting high-severity diagnostics (`ANTI-LLM-LSP318-COMB-001`).
-*   **Evidence-Based Trust:** Chatman’s (2026) *Evidence Algebra* provides the formal proof system for `anti-llm-lsp`. It ensures that every action taken by an AI agent is backed by a "Process-Evidence" receipt (OCEL 2.0), making the AI's behavior transparent and verifiable.
+*   **Real-Time Interception (The Syntactic Turn):** By utilizing the *Differential Syntax Calculus* described in the internal thesis, `anti-llm-cheat-lsp` intercepts stochastic AI hallucinations on the "exact tangent space of the semantic edit." This enables blocking malicious or hallucinated tokens as they are streamed, rather than after the file is saved.
+*   **Conformal Abstention & Admissibility:** The external work on *Conformal Abstention* (Tomasev et al., 2024) mirrors the admissibility gates in `anti-llm-cheat-lsp`. When the AI generates code that violates the `wasm4pm-compat` baseline authority, the system effectively forces "abstention" by emitting high-severity diagnostics (`ANTI-LLM-LSP318-COMB-001`).
+*   **Evidence-Based Trust:** Chatman’s (2026) *Evidence Algebra* provides the formal proof system for `anti-llm-cheat-lsp`. It ensures that every action taken by an AI agent is backed by a "Process-Evidence" receipt (OCEL 2.0), making the AI's behavior transparent and verifiable.
 
 ## 3. Relevance to Semantic AI Governance
 
@@ -42,4 +42,4 @@ Semantic AI Governance in this ecosystem shifts from "string-based linting" to *
 *   **Mitigating Modular Threats:** The *TrustAgent* taxonomy (Zhang et al., 2024) validates the project's approach of deconstructing agent behaviors into discrete, monitored events. By governing the "brain" (LLM) through the "tools" (LSP), the system creates a multi-layered defense against agent-driven sabotage.
 
 ## 4. Conclusion
-The fusion of Chatman’s mathematical formalisms with modern 2024 research on LLM trustworthiness creates a "Blue Ocean" for AI security. `anti-llm-lsp` is the concrete instantiation of this research, providing a sub-millisecond, type-safe gatekeeper that ensures generative AI agents operate within safe, deterministic, and semantically verified boundaries.
+The fusion of Chatman’s mathematical formalisms with modern 2024 research on LLM trustworthiness creates a "Blue Ocean" for AI security. `anti-llm-cheat-lsp` is the concrete instantiation of this research, providing a sub-millisecond, type-safe gatekeeper that ensures generative AI agents operate within safe, deterministic, and semantically verified boundaries.

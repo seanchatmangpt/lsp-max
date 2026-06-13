@@ -12,7 +12,7 @@ quadrant, and every quadrant has coverage.
 |----------|---------|----------|
 | [Tutorial](#tutorials) | Learning-oriented — guided first steps | `stdio.rs`, `tcp.rs`, `websocket.rs` |
 | [How-to](#how-to-guides) | Goal-oriented — specific task recipes | `custom_notification.rs`, `repro_lifecycle.rs`, `axum-lsp`, `bevy-lsp`, `tex-lsp`, `wasm/` |
-| [Reference](#reference) | Information-oriented — technical specification | `anti-llm-lsp`, `clap-noun-verb-lsp`, `pattern-lsp`, `wasm4pm-lsp`, `wasm4pm-compat-lsp`, `gc005-wasm4pm-adapter` |
+| [Reference](#reference) | Information-oriented — technical specification | `anti-llm-cheat-lsp`, `clap-noun-verb-lsp`, `pattern-lsp`, `wasm4pm-lsp`, `wasm4pm-compat-lsp`, `gc005-wasm4pm-adapter` |
 | [Explanation](#explanation) | Understanding-oriented — concepts and rationale | `agi-swarm-defense`, `receipt_chain_explained.rs`, `conformance_vector_explained.rs`, `calver_law_explained.rs` |
 
 ---
@@ -105,7 +105,7 @@ complete browser demo.
 > already knows what they want — they need to look it up.
 > Success = the reader found the fact they needed.
 
-### `anti-llm-lsp`
+### `anti-llm-cheat-lsp`
 
 The admissibility canary. This LSP server runs in CI and detects:
 
@@ -115,7 +115,7 @@ The admissibility canary. This LSP server runs in CI and detects:
 - Version-law violations (non-CalVer strings)
 
 Diagnostic codes: `ANTI-LLM-*`, `ANTI-LLM-VERSION-*`.
-Receipt: `examples/anti-llm-lsp/ocel/anti_llm_lsp_ocel.receipt.json`.
+Receipt: `examples/anti-llm-cheat-lsp/ocel/anti_llm_lsp_ocel.receipt.json`.
 
 ### `clap-noun-verb-lsp`
 
@@ -208,7 +208,7 @@ constraint trap that blanket bump scripts trigger.
 |----------|----------|--------|
 | Tutorial | `stdio.rs`, `tcp.rs`, `websocket.rs` | COVERED — three transport variants |
 | How-to | `custom_notification.rs`, `repro_lifecycle.rs`, `axum-lsp`, `bevy-lsp`, `tex-lsp`, `wasm/` | COVERED — six distinct tasks |
-| Reference | `anti-llm-lsp`, `clap-noun-verb-lsp`, `pattern-lsp`, `wasm4pm-lsp`, `wasm4pm-compat-lsp`, `gc005-wasm4pm-adapter` | COVERED — six reference implementations |
+| Reference | `anti-llm-cheat-lsp`, `clap-noun-verb-lsp`, `pattern-lsp`, `wasm4pm-lsp`, `wasm4pm-compat-lsp`, `gc005-wasm4pm-adapter` | COVERED — six reference implementations |
 | Explanation | `agi-swarm-defense`, `receipt_chain_explained.rs`, `conformance_vector_explained.rs`, `calver_law_explained.rs` | COVERED — four conceptual examples |
 
 All quadrants covered. No known gaps.

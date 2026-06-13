@@ -139,10 +139,10 @@ pub(crate) fn update_diagnostics(registry: &mut ServerRegistry) {
         let violated = (spec.condition)(registry);
 
         if violated && !cleared {
-            let diag = build_diagnostic(&spec);
+            let diag = build_diagnostic(spec);
             registry.diagnostics.insert(diag_id.clone(), diag.clone());
             let uri = get_receipt_uri(&root_path, spec.receipt_file);
-            let action = build_action(&spec, &diag, uri);
+            let action = build_action(spec, &diag, uri);
             registry.repair_plans.insert(diag_id, vec![action]);
         } else {
             registry.diagnostics.remove(&diag_id);

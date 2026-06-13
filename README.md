@@ -106,7 +106,7 @@ Domain-specific LSP servers are in `examples/`:
 
 | Example | Description |
 |---------|-------------|
-| `anti-llm-lsp` | Canary: detects forbidden identifiers, fake receipts, victory language |
+| `anti-llm-cheat-lsp` | Canary: detects forbidden identifiers, fake receipts, victory language |
 | `clap-noun-verb-lsp` | Noun/verb CLI surface demo |
 | `pattern-lsp` | Pattern detection LSP |
 | `wasm4pm-lsp` | Process-mining LSP over wasm4pm |

@@ -1,11 +1,19 @@
 [package]
 name = "lsp-max-client"
-version = "26.6.9"
-edition = "2021"
-authors = ["Tower-LSP Authors", "Sean Chatman <info@chatmangpt.com>"]
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+rust-version.workspace = true
 description = "Language Server Protocol Client framework based on tower"
-license = "MIT OR Apache-2.0"
-repository = "https://github.com/seanchatmangpt/lsp-max"
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+categories.workspace = true
+keywords.workspace = true
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
 lsp-max-macros = { path = "../../lsp-max-macros", version = "26.6.9" }

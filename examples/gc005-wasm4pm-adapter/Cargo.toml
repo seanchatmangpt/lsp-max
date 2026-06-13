@@ -1,8 +1,20 @@
 [package]
 name = "gc005-wasm4pm-adapter"
-version = "26.6.9"
-edition = "2021"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+description = "wasm4pm adapter for gc005 compliance validation"
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+categories.workspace = true
+keywords.workspace = true
 publish = false
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
 serde = { version = "1.0", features = ["derive"] }

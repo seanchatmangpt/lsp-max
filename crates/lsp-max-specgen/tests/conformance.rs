@@ -60,7 +60,7 @@ fn message_inventory_matches_metamodel() {
         expected_methods.insert(n.method.clone());
     }
 
-    let inv_path = root.join("examples/anti-llm-lsp/generated/lsp318_message_inventory.json");
+    let inv_path = root.join("examples/anti-llm-cheat-lsp/generated/lsp318_message_inventory.json");
     assert!(
         inv_path.exists(),
         "lsp318_message_inventory.json not found at {}",
@@ -91,7 +91,7 @@ fn message_inventory_matches_metamodel() {
     }
 
     // Also verify the spec graph file exists and has the same count.
-    let sg_path = root.join("examples/anti-llm-lsp/generated/lsp318_spec_graph.json");
+    let sg_path = root.join("examples/anti-llm-cheat-lsp/generated/lsp318_spec_graph.json");
     if sg_path.exists() {
         let sg_raw = fs::read_to_string(&sg_path)
             .unwrap_or_else(|e| panic!("failed to read spec_graph: {e}"));

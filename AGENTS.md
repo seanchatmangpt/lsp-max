@@ -16,7 +16,7 @@ The repository is not passive text. It is a law-bearing system.
 
 `AGENTS.md` is the constitution.  
 LSP is the live enforcement operator.  
-`anti-llm-lsp` is the diagnostic canary.  
+`anti-llm-cheat-lsp` is the diagnostic canary.  
 Receipts decide admissibility.  
 The team does not declare success.
 
@@ -47,7 +47,7 @@ This project is an F1 race team for agents.
 
 The agent is the driver.  
 `lsp-max` is the chassis/protocol surface.  
-`anti-llm-lsp` is telemetry.  
+`anti-llm-cheat-lsp` is telemetry.  
 The failset is the pit wall.  
 Receipts are scrutineering.  
 Negative controls are simulator crashes.  
@@ -349,28 +349,28 @@ REFUSED_BY_LAW_WITH_RECEIPT
 
 ---
 
-## anti-llm-lsp
+## anti-llm-cheat-lsp
 
 Build here:
 
 ```text
-examples/anti-llm-lsp
+examples/anti-llm-cheat-lsp
 ```
 
 Purpose:
 
 ```text
-anti-llm-lsp runs on lsp-max
-anti-llm-lsp does not depend on plain tower-lsp
-anti-llm-lsp exercises LSP 3.18 surfaces
-anti-llm-lsp detects attempts to reintroduce tower-lsp
+anti-llm-cheat-lsp runs on lsp-max
+anti-llm-cheat-lsp does not depend on plain tower-lsp
+anti-llm-cheat-lsp exercises LSP 3.18 surfaces
+anti-llm-cheat-lsp detects attempts to reintroduce tower-lsp
 ```
 
 Self-sealing law:
 
 ```text
-lsp-max hosts anti-llm-lsp
-anti-llm-lsp detects tower-lsp
+lsp-max hosts anti-llm-cheat-lsp
+anti-llm-cheat-lsp detects tower-lsp
 therefore lsp-max cannot silently regress to tower-lsp
 ```
 

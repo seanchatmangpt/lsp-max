@@ -1,0 +1,29 @@
+[package]
+name = "lsif-tests"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+description = "Conformance tests for the lsp-max LSIF indexer — ported from microsoft/lsif-node tsc-tests"
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+categories.workspace = true
+keywords.workspace = true
+
+[lib]
+name = "lsif_tests"
+
+[dependencies]
+lsp-max-lsif = { path = "../lsp-max-lsif", version = "26.6.9" }
+lsif-rust = { path = "../lsif-rust", version = "26.6.9" }
+lsif-typescript = { path = "../lsif-typescript", version = "26.6.9" }
+lsif-linker = { path = "../lsif-linker", version = "26.6.9" }
+serde_json = "1.0"
+
+[dev-dependencies]
+lsp-max-lsif = { path = "../lsp-max-lsif", version = "26.6.9" }
+lsif-rust = { path = "../lsif-rust", version = "26.6.9" }
+lsif-typescript = { path = "../lsif-typescript", version = "26.6.9" }
+lsif-linker = { path = "../lsif-linker", version = "26.6.9" }
+serde_json = "1.0"

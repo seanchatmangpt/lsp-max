@@ -21,23 +21,41 @@ pub struct LspDiagnostic {
     pub end_col: usize,
 }
 
+fn evd_direct_re() -> &'static regex::Regex {
+    static RE: std::sync::OnceLock<regex::Regex> = std::sync::OnceLock::new();
+    RE.get_or_init(|| {
+        regex::Regex::new(
+            r"\bEvidence\s*(::\s*raw\b|<[^>]*\b(Raw|Parsed)\b[^>]*>).*?\.(project|export|into_exportable|into_projected|into_receipted)\("
+        ).unwrap()
+    })
+}
+
+fn evd_type_re() -> &'static regex::Regex {
+    static RE: std::sync::OnceLock<regex::Regex> = std::sync::OnceLock::new();
+    RE.get_or_init(|| {
+        regex::Regex::new(
+            r"\b(RawOcelEvidence|RawXesEvidence|Evidence<.*,\s*(Raw|Parsed)\s*,.*>).*?\.(project|export|into_exportable|into_projected|into_receipted)\("
+        ).unwrap()
+    })
+}
+
+fn fmt_names_re() -> &'static regex::Regex {
+    static RE: std::sync::OnceLock<regex::Regex> = std::sync::OnceLock::new();
+    RE.get_or_init(|| {
+        regex::Regex::new(
+            r"\b(ocel_to_xes|xes_to_ocel|xes_to_oced|ocel_flatten_to_xes|xes_enrich_to_oced)\b",
+        )
+        .unwrap()
+    })
+}
+
 /// Checks the source code using regex patterns for rapid diagnostics.
 pub fn check_source_regex(source: &str) -> Vec<LspDiagnostic> {
     let mut diagnostics = Vec::new();
 
-    // W4PM-EVD: Direct export or projection on Raw/Parsed types
-    let evd_direct = regex::Regex::new(
-        r"\bEvidence\s*(::\s*raw\b|<[^>]*\b(Raw|Parsed)\b[^>]*>).*?\.(project|export|into_exportable|into_projected|into_receipted)\("
-    ).unwrap();
-    let evd_type = regex::Regex::new(
-        r"\b(RawOcelEvidence|RawXesEvidence|Evidence<.*,\s*(Raw|Parsed)\s*,.*>).*?\.(project|export|into_exportable|into_projected|into_receipted)\("
-    ).unwrap();
-
-    // W4PM-FMT: Names indicating direct formatting conversions
-    let fmt_names = regex::Regex::new(
-        r"\b(ocel_to_xes|xes_to_ocel|xes_to_oced|ocel_flatten_to_xes|xes_enrich_to_oced)\b",
-    )
-    .unwrap();
+    let evd_direct = evd_direct_re();
+    let evd_type = evd_type_re();
+    let fmt_names = fmt_names_re();
 
     for (line_idx, line) in source.lines().enumerate() {
         let line_num = line_idx + 1;

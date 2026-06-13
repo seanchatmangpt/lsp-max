@@ -1,10 +1,10 @@
 //! Coordinator that drives all materialized-view population sub-modules.
 //!
 //! Each logical group of SPARQL queries lives in its own module:
-//! - [`populate_defs_refs`]   — definitions and references
-//! - [`populate_hover_diag`]  — hovers and diagnostics
-//! - [`populate_call_hierarchy`] — call hierarchy (prepare / incoming / outgoing)
-//! - [`populate_type_hierarchy`] — type hierarchy (prepare / supertypes / subtypes)
+//! - [`super::populate_defs_refs`]   — definitions and references
+//! - [`super::populate_hover_diag`]  — hovers and diagnostics
+//! - [`super::populate_call_hierarchy`] — call hierarchy (prepare / incoming / outgoing)
+//! - [`super::populate_type_hierarchy`] — type hierarchy (prepare / supertypes / subtypes)
 
 use super::populate_call_hierarchy::populate_call_hierarchy;
 use super::populate_defs_refs::{populate_definitions, populate_references};

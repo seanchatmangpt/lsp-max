@@ -332,7 +332,7 @@ impl Client {
 
     /// Asks the client to refresh the content of a text document.
     ///
-    /// This corresponds to the [`workspace/textDocumentContent/refresh`] request.
+    /// This corresponds to the [`workspace/textDocumentContent/refresh`](lsp_max_protocol::lsp_3_18::TextDocumentContentRefreshRequest) request.
     pub async fn text_document_content_refresh(
         &self,
         params: lsp_max_protocol::lsp_3_18::TextDocumentContentRefreshParams,

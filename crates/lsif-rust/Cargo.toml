@@ -1,0 +1,24 @@
+[package]
+name = "lsif-rust"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+description = "LSIF indexer for Rust source files via auto-lsp tree-sitter AST"
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+categories.workspace = true
+keywords.workspace = true
+
+[build-dependencies]
+lsp-max-ast-codegen = { workspace = true }
+tree-sitter-rust = "0.23"
+
+[dependencies]
+lsp-max-lsif = { path = "../lsp-max-lsif", version = "26.6.9" }
+lsp-max-ast-core = { workspace = true }
+lsp-max-ast = { workspace = true }
+lsp-types-max = { path = "../../../lsp-types-max", version = "26.6.8" }
+tree-sitter = { workspace = true }
+tree-sitter-rust = "0.23"

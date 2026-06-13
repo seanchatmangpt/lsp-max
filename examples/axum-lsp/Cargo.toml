@@ -1,13 +1,28 @@
 [package]
 name = "axum-lsp"
-version = "0.1.0"
-edition = "2021"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+description = "Axum model language server example using lsp-max"
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+categories.workspace = true
+keywords.workspace = true
 publish = false
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
 clap-noun-verb = "26.6.2"
 clap-noun-verb-macros = "26.6.2"
 linkme = "0.3"
 lsp-max = { path = "../../" }
+lsp-types-max = { path = "../../../lsp-types-max", version = "26.6.8", features = ["proposed"] }
 tokio = { version = "1.17", features = ["full"] }
-tree-sitter-rust = "0.24"
+parking_lot = { workspace = true }
+regex = { workspace = true }
+toml = "0.8"

@@ -123,7 +123,7 @@ pub async fn code_action(params: CodeActionParams) -> Result<Option<CodeActionRe
             // Include the plan if any of its diagnostics overlap the requested range.
             // A diagnostic at the default (0,0)→(0,0) range is treated as workspace-wide
             // and is always included.
-            let overlaps = plan.action.diagnostics.as_ref().map_or(true, |diags| {
+            let overlaps = plan.action.diagnostics.as_ref().is_none_or(|diags| {
                 diags.iter().any(|d| {
                     let dr = d.range;
                     let zero = Range::default();

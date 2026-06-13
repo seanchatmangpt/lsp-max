@@ -1,10 +1,19 @@
 [package]
 name = "lsp-max-runtime"
-version = "26.6.9"
-edition = "2021"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+rust-version.workspace = true
 description = "Runtime snapshotting and state tracking for lsp-max"
-license = "MIT OR Apache-2.0"
-repository = "https://github.com/seanchatmangpt/lsp-max"
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+categories.workspace = true
+keywords.workspace = true
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
 lsp-max-protocol = { path = "../lsp-max-protocol", version = "26.6.9" }

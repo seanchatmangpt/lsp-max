@@ -1,18 +1,22 @@
 [package]
 name = "lsp-max"
-version = "26.6.9"
-authors = ["Eyal Kalderon <ebkalderon@gmail.com>"]
-edition = "2021"
-rust-version = "1.70.0"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+rust-version.workspace = true
 description = "Law-state LSP runtime: max LSP 3.18 coverage, process-mining conformance, receipt-chain admission"
-license = "MIT OR Apache-2.0"
-homepage = "https://github.com/seanchatmangpt/lsp-max"
-repository = "https://github.com/seanchatmangpt/lsp-max"
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
 documentation = "https://docs.rs/lsp-max/"
 readme = "README.md"
-categories = ["asynchronous"]
-keywords = ["language-server", "lsp", "tower"]
+categories.workspace = true
+keywords.workspace = true
 exclude = ["FEATURES.md"]
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
 
 [features]
 default = ["runtime-tokio"]
@@ -33,10 +37,12 @@ libc = "0.2"
 lsp-types-max = { path = "../lsp-types-max", version = "26.6.8", features = ["proposed"] }
 url = { version = "2.5", features = ["serde"] }
 memchr = "2.5"
+rustc-hash = { workspace = true }
 windows-sys = { version = "0.52", features = ["Win32_System_Threading", "Win32_Foundation"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-tokio = { version = "1.17", optional = true, features = ["time", "macros", "rt", "io-util", "net"] }
+tokio = { version = "1.17", optional = true, features = ["time", "macros", "rt", "io-util", "net", "sync"] }
+parking_lot = { workspace = true }
 tokio-util = { version = "0.7", optional = true, features = ["codec"] }
 lsp-max-macros = { version = "26.6.9", path = "./lsp-max-macros" }
 lsp-max-protocol = { version = "26.6.9", path = "./lsp-max-protocol" }
@@ -46,6 +52,8 @@ lsp-max-agent = { version = "26.6.9", path = "./lsp-max-agent" }
 lsp-max-base = { path = "./crates/lsp-max-base", version = "26.6.9" }
 tower = { version = "0.4", default-features = false, features = ["util"] }
 tracing = "0.1"
+regex = { workspace = true }
+tree-sitter = { workspace = true }
 
 [dev-dependencies]
 async-tungstenite = { version = "0.22", features = ["tokio-runtime"] }
@@ -61,6 +69,10 @@ wasm4pm-compat = { workspace = true }
 uuid = { version = "1.0", features = ["v4"] }
 ed25519-dalek = "2.0"
 walkdir.workspace = true
+chicago-tdd-tools = { path = "/Users/sac/chicago-tdd-tools" }
+lsif-rust = { path = "crates/lsif-rust" }
+lsif-typescript = { path = "crates/lsif-typescript" }
+tree-sitter-rust = "0.23"
 
 [workspace]
 resolver = "3"
@@ -81,22 +93,33 @@ members = [
     "examples/powl-lsp",
     "examples/wasm4pm-lsp",
     "examples/pattern-lsp",
-    "examples/anti-llm-lsp",
+    "examples/anti-llm-cheat-lsp",
     "examples/clap-noun-verb-lsp",
     "examples/wasm4pm-compat-lsp",
     "examples/axum-lsp",
     "examples/bevy-lsp",
     "examples/tex-lsp",
     "examples/gc005-wasm4pm-adapter",
+    "examples/justfile-lsp",
     "crates/lsp-max-adapters/lsp-max-ast-core",
     "crates/lsp-max-adapters/lsp-max-ast-codegen",
+    "crates/lsif-rust",
+    "crates/lsif-typescript",
+    "crates/lsif-linker",
+    "crates/lsif-cli",
+    "crates/lsif-tests",
 ]
 
 [workspace.package]
+version = "26.6.9"
 authors = ["Eyal Kalderon <ebkalderon@gmail.com>"]
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/seanchatmangpt/lsp-max"
+homepage = "https://github.com/seanchatmangpt/lsp-max"
 edition = "2021"
+rust-version = "1.82.0"
+categories = ["asynchronous", "development-tools"]
+keywords = ["language-server", "lsp", "tower", "lsp-3-18"]
 
 [workspace.dependencies]
 wasm4pm-compat = { version = "26.6.10", features = ["formats", "strict", "wasm4pm"] }
@@ -119,6 +142,7 @@ ariadne = "0.6.0"
 walkdir = "2.5.0"
 rayon-par-bridge = "0.1.0"
 bon = "3.6.4"
+rustc-hash = "2"
 lsp-max-ast-core = { path = "crates/lsp-max-adapters/lsp-max-ast-core", version = "26.6.9" }
 lsp-max-ast-codegen = { path = "crates/lsp-max-adapters/lsp-max-ast-codegen", version = "26.6.9" }
 lsp-max-ast = { path = "crates/lsp-max-adapters/lsp-max-ast", version = "26.6.9" }

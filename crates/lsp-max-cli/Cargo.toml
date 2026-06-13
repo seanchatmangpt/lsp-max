@@ -1,10 +1,19 @@
 [package]
 name = "lsp-max-cli"
-version = "26.6.9"
-edition = "2021"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+rust-version.workspace = true
 description = "Actuation grammar CLI for lsp-max: noun/verb surface built on clap-noun-verb"
-license = "MIT OR Apache-2.0"
-repository = "https://github.com/seanchatmangpt/lsp-max"
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+categories.workspace = true
+keywords.workspace = true
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
 clap-noun-verb = "26.6.2"
@@ -20,6 +29,10 @@ lsp-max-agent = { path = "../../lsp-max-agent", version = "26.6.9" }
 lsp-max-runtime = { path = "../../lsp-max-runtime", version = "26.6.9" }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+
+[[bin]]
+name = "lsp-coverage"
+path = "src/bin/lsp-coverage.rs"
 
 [dev-dependencies]
 tempfile = "3"

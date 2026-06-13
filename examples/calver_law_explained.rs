@@ -52,7 +52,7 @@
 //!
 //! ## The version-law diagnostic family
 //!
-//! `anti-llm-lsp` enforces CalVer through the `ANTI-LLM-VERSION-*` diagnostic
+//! `anti-llm-cheat-lsp` enforces CalVer through the `ANTI-LLM-VERSION-*` diagnostic
 //! family. Any `Cargo.toml` containing `version = "1.0.0"` or `version = "0.x.y"`
 //! in a published crate is a `ANTI-LLM-VERSION-001` violation. The canary watches
 //! for these because LLMs and scaffolding tools default to SemVer placeholders.
@@ -88,10 +88,10 @@
 // This file is intentionally a documentation-only example.
 //
 // To see the version in use:         Cargo.toml (workspace.package.version)
-// To see the version-law diagnostic: examples/anti-llm-lsp/src/
+// To see the version-law diagnostic: examples/anti-llm-cheat-lsp/src/
 // To see how sibling versions work:  Cargo.toml ([patch.crates-io] section)
 
 fn main() {
     println!("CalVer law explanation: see module-level doc comment above.");
-    println!("Version enforcement: examples/anti-llm-lsp/src/");
+    println!("Version enforcement: examples/anti-llm-cheat-lsp/src/");
 }

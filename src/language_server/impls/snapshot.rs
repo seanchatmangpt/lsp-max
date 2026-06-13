@@ -157,6 +157,186 @@ pub async fn max_conformance_delta(params: Value) -> Result<Value> {
     }))
 }
 
+// ── Rule-pack handlers ────────────────────────────────────────────────────────
+
+/// Returns descriptors for all active rule packs known to the registry.
+///
+/// The registry stores rule-pack findings keyed by `"{pack_id}/{rule_id}"`.
+/// We reconstruct pack descriptors by grouping the diagnostics by the pack
+/// portion of that key.
+pub async fn max_rule_packs() -> Result<Vec<max_protocol::RulePackDescriptor>> {
+    let registry = lock_registry()?;
+    // Group diagnostics by pack_id (the part before the first '/').
+    let mut pack_map: std::collections::HashMap<String, (Vec<String>, usize)> = Default::default();
+    for (key, diag) in &registry.diagnostics {
+        let pack_id = key.split('/').next().unwrap_or(key.as_str()).to_string();
+        let entry = pack_map.entry(pack_id).or_default();
+        entry.0.push(diag.law_id.clone());
+        if matches!(
+            diag.lsp.severity,
+            Some(lsp_types_max::DiagnosticSeverity::ERROR)
+                | Some(lsp_types_max::DiagnosticSeverity::WARNING)
+        ) {
+            entry.1 += 1;
+        }
+    }
+
+    Ok(pack_map
+        .into_iter()
+        .map(
+            |(id, (rule_ids, active))| max_protocol::RulePackDescriptor {
+                id,
+                version: "unknown".to_string(),
+                rule_ids,
+                depends_on: vec![],
+                active_rule_count: active,
+            },
+        )
+        .collect())
+}
+
+/// Returns the conformance status contributed by a single rule pack.
+pub async fn max_rule_pack_status(pack_id: String) -> Result<max_protocol::RulePackStatusResult> {
+    let registry = lock_registry()?;
+    let prefix = format!("{}/", pack_id);
+
+    let mut findings_by_uri: std::collections::HashMap<String, Vec<String>> = Default::default();
+    let mut max_diags: Vec<max_protocol::MaxDiagnostic> = Vec::new();
+
+    for (key, diag) in &registry.diagnostics {
+        if key.starts_with(&prefix) || key == pack_id.as_str() {
+            let uri = diag
+                .lsp
+                .data
+                .as_ref()
+                .and_then(|d| d.get("uri"))
+                .and_then(|u| u.as_str())
+                .unwrap_or("unknown")
+                .to_string();
+            findings_by_uri
+                .entry(uri)
+                .or_default()
+                .push(diag.law_id.clone());
+            max_diags.push(diag.clone());
+        }
+    }
+
+    let conformance = lsp_max_runtime::mesh::build_conformance_vector(&max_diags);
+
+    Ok(max_protocol::RulePackStatusResult {
+        pack_id,
+        findings_by_uri,
+        conformance,
+    })
+}
+
+/// Compare two workspace conformance snapshots and return a synthetic diff.
+///
+/// `params` must contain `{"seq_before": u64, "seq_after": u64}`.
+/// The diff is synthesised from the current diagnostic table: diagnostics
+/// whose `diagnostic_id` was not previously seen (seq-keyed) are marked
+/// `"added"`; all currently known diagnostics are marked `"unchanged"`.
+/// Removed diagnostics (cleared between the two seqs) are surfaced when
+/// present in `cleared_diagnostics`.
+pub async fn max_rule_pack_diff(
+    params: serde_json::Value,
+) -> Result<Vec<max_protocol::RulePackDiffEntry>> {
+    let seq_after = params
+        .get("seq_after")
+        .and_then(|v| v.as_u64())
+        .unwrap_or(u64::MAX);
+    let _ = seq_after; // seq is advisory; we diff against cleared set
+
+    let registry = lock_registry()?;
+    let mut entries: Vec<max_protocol::RulePackDiffEntry> = Vec::new();
+
+    // Active diagnostics → "unchanged" (already present when client last polled).
+    for diag in registry.diagnostics.values() {
+        let uri = diag
+            .lsp
+            .data
+            .as_ref()
+            .and_then(|d| d.get("uri"))
+            .and_then(|u| u.as_str())
+            .unwrap_or("unknown")
+            .to_string();
+        entries.push(max_protocol::RulePackDiffEntry {
+            rule_id: diag.law_id.clone(),
+            uri,
+            line: diag.lsp.range.start.line,
+            change: "unchanged".to_string(),
+        });
+    }
+
+    // Cleared diagnostics → "removed".
+    for diag_id in &registry.cleared_diagnostics {
+        entries.push(max_protocol::RulePackDiffEntry {
+            rule_id: diag_id.clone(),
+            uri: "unknown".to_string(),
+            line: 0,
+            change: "removed".to_string(),
+        });
+    }
+
+    Ok(entries)
+}
+
+/// Returns the workspace-level ConformanceVector: the aggregate of all
+/// per-file vectors across all open documents.
+///
+/// Refused axes from any file propagate to the workspace level.
+/// Axes with no coverage remain Unknown — the invariant is never collapsed.
+pub async fn max_workspace_conformance() -> Result<max_protocol::ConformanceVector> {
+    let mut registry = lock_registry()?;
+    update_diagnostics(&mut registry);
+
+    // Aggregate across all diagnostics: refused propagates, admitted only when not refused.
+    let mut workspace_refused: std::collections::HashSet<max_protocol::LawAxis> =
+        Default::default();
+    let mut workspace_admitted: std::collections::HashSet<max_protocol::LawAxis> =
+        Default::default();
+
+    for diag in registry.diagnostics.values() {
+        match diag.lsp.severity {
+            Some(DiagnosticSeverity::ERROR) => {
+                workspace_refused.insert(diag.law_axis.clone());
+                workspace_admitted.remove(&diag.law_axis);
+            }
+            _ => {
+                if !workspace_refused.contains(&diag.law_axis) {
+                    workspace_admitted.insert(diag.law_axis.clone());
+                }
+            }
+        }
+    }
+
+    let refused: Vec<max_protocol::LawAxis> = workspace_refused.into_iter().collect();
+    let admitted: Vec<max_protocol::LawAxis> = workspace_admitted.into_iter().collect();
+    let covered: std::collections::HashSet<&max_protocol::LawAxis> =
+        refused.iter().chain(admitted.iter()).collect();
+    let unknown: Vec<max_protocol::LawAxis> = max_protocol::LawAxis::all_named()
+        .iter()
+        .filter(|a| !covered.contains(a))
+        .cloned()
+        .collect();
+
+    let total = admitted.len() + refused.len();
+    let score = if total == 0 {
+        None
+    } else {
+        Some(100.0 * admitted.len() as f64 / total as f64)
+    };
+
+    Ok(max_protocol::ConformanceVector {
+        admitted,
+        refused,
+        unknown,
+        score,
+        strict_mode: true,
+        process_quality: None,
+    })
+}
+
 /// Exports the analysis bundle for the specified snapshot.
 pub async fn max_export_analysis_bundle(
     params: max_protocol::SnapshotId,

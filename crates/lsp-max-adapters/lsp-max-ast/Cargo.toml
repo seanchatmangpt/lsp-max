@@ -1,11 +1,19 @@
 [package]
 name = "lsp-max-ast"
-version = "26.6.9"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+rust-version.workspace = true
 description = "AST layer for lsp-max via tree-sitter"
-authors = { workspace = true }
-license = { workspace = true }
-repository = { workspace = true }
-edition = { workspace = true }
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+categories.workspace = true
+keywords.workspace = true
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
 lsp-max-ast-core = { path = "../lsp-max-ast-core", version = "26.6.9" }

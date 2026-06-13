@@ -11,7 +11,7 @@ A standard LSP implementation demands:
 2.  **State Management:** Thread-safe, incremental document synchronization (e.g., managing operational transformations on text diffs).
 3.  **Semantic Analysis:** Parsing source code into Abstract Syntax Trees (ASTs) and recursively querying them for diagnostics, symbols, and hovers.
 
-Prior to the `ggen` pipeline, creating a new LSP for a specific domain (such as a custom `anti-llm-lsp` or a framework-specific `axum-lsp`) required manually rewriting thousands of lines of boilerplate bridging these three domains. The engineering time required scaled linearly: $O(N)$ effort for $N$ target languages.
+Prior to the `ggen` pipeline, creating a new LSP for a specific domain (such as a custom `anti-llm-cheat-lsp` or a framework-specific `axum-lsp`) required manually rewriting thousands of lines of boilerplate bridging these three domains. The engineering time required scaled linearly: $O(N)$ effort for $N$ target languages.
 
 ## 2. The Generative Paradigm: The `lsp-max` Pack
 The introduction of the `lsp-max` pack into the `ggen` marketplace collapses this linear scaling equation. It achieves this by elevating the engineering abstraction from code authoring to ontological modeling.

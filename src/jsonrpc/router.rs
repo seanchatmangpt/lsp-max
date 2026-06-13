@@ -1,6 +1,6 @@
 //! Lightweight JSON-RPC router service.
 
-use std::collections::HashMap;
+use rustc_hash::FxHashMap;
 use std::convert::Infallible;
 use std::fmt::{self, Debug, Formatter};
 use std::future::Future;
@@ -20,7 +20,7 @@ use super::{Error, Id, Request, Response};
 /// A modular JSON-RPC 2.0 request router service.
 pub struct Router<S, E = Infallible> {
     server: Arc<S>,
-    methods: HashMap<&'static str, BoxService<Request, Option<Response>, E>>,
+    methods: FxHashMap<&'static str, BoxService<Request, Option<Response>, E>>,
 }
 
 impl<S: Send + Sync + 'static, E> Router<S, E> {
@@ -28,7 +28,7 @@ impl<S: Send + Sync + 'static, E> Router<S, E> {
     pub fn new(server: S) -> Self {
         Router {
             server: Arc::new(server),
-            methods: HashMap::new(),
+            methods: FxHashMap::default(),
         }
     }
 

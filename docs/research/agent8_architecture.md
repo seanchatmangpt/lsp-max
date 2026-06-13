@@ -15,7 +15,7 @@ The foundational theory is rooted in Object-Centric Event Data (OCED) formalisms
 ### 1.2 Incremental Compilation & Differential Syntax
 The integration of `auto-lsp` provides a "Syntactic Turn," moving away from brittle string-based tree-sitter traversal to strongly-typed, auto-generated ASTs.
 *   **Key Mechanism:** Salsa-driven incremental computation.
-*   **Relevance:** Enables sub-millisecond diagnostics and real-time AI sabotage detection in the `anti-llm-lsp` layer by only processing localized text changes (differentials) rather than full-document reparsing.
+*   **Relevance:** Enables sub-millisecond diagnostics and real-time AI sabotage detection in the `anti-llm-cheat-lsp` layer by only processing localized text changes (differentials) rather than full-document reparsing.
 
 ### 1.3 Ontology-Driven Generative Scaffolding (`ggen`)
 The `ggen` pipeline uses formal RDF ontologies to scaffold entire LSP implementations.
@@ -33,7 +33,7 @@ The ecosystem utilizes Rust's advanced type system (typestate patterns, const-ge
 | Topic | Relevance to `lsp-max` |
 | :--- | :--- |
 | **Software Architecture** | Composed server model: `lsp-max` (transport) + `AutoLspAdapter` (syntax) + `wasm4pm` (execution). |
-| **API Management** | LSP capability negotiation is formalized; `anti-llm-lsp` governs agentic API interactions. |
+| **API Management** | LSP capability negotiation is formalized; `anti-llm-cheat-lsp` governs agentic API interactions. |
 | **Distributed Systems** | Autonomic mesh state management; LSIF-based cross-repository indexing. |
 | **Maturity Models** | Transition from Level 1 (Artisanal/Manual) to Level 5 (Ontology-Driven/Generative/Self-Verifying). |
 | **Enterprise Architecture** | Direct mapping of business process ontologies (`domain.ttl`) to executable IDE intelligence. |

@@ -3,7 +3,7 @@
 //!
 //! # Why this exists
 //!
-//! Every example (`pattern-lsp`, `axum-lsp`, `anti-llm-lsp`) independently
+//! Every example (`pattern-lsp`, `axum-lsp`, `anti-llm-cheat-lsp`) independently
 //! duplicated the same four concerns:
 //!
 //! 1. **Scanner** — glob-walk the workspace, apply per-rule regex matches.
@@ -69,6 +69,18 @@ use lsp_types_max::{
 };
 use regex::Regex;
 use serde::{Deserialize, Serialize};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Type aliases
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// A single finding — an extended `MaxDiagnostic` paired with the plain
+/// LSP `Diagnostic` that is published to the client.
+pub type Finding = (MaxDiagnostic, Diagnostic);
+
+/// A pair of finding batches produced by `scan_uri_classified`:
+/// `(synchronous_findings, background_findings)`.
+pub type ClassifiedFindings = (Vec<Finding>, Vec<Finding>);
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Rule / RulePack — canonical TOML schema
@@ -711,14 +723,7 @@ pub trait RulePackServer {
     /// `EvalBudget` classification.
     ///
     /// Returns `(sync_findings, background_findings)`.
-    fn scan_uri_classified(
-        &self,
-        uri: &DocumentUri,
-        content: &str,
-    ) -> (
-        Vec<(MaxDiagnostic, Diagnostic)>,
-        Vec<(MaxDiagnostic, Diagnostic)>,
-    ) {
+    fn scan_uri_classified(&self, uri: &DocumentUri, content: &str) -> ClassifiedFindings {
         let mut sync_r = Vec::new();
         let mut bg_r = Vec::new();
 
@@ -787,7 +792,7 @@ pub trait RulePackServer {
     }
 
     /// Scan `content` against all rules (ignoring budget classification).
-    fn scan_uri(&self, uri: &DocumentUri, content: &str) -> Vec<(MaxDiagnostic, Diagnostic)> {
+    fn scan_uri(&self, uri: &DocumentUri, content: &str) -> Vec<Finding> {
         let (mut sync_r, bg_r) = self.scan_uri_classified(uri, content);
         sync_r.extend(bg_r);
         sync_r
@@ -1034,6 +1039,7 @@ mod tests {
                 index: WorkspaceIndex::new(),
             }
         }
+        #[allow(dead_code)]
         fn with_cross_file_rules(packs: Vec<RulePack>, _cross: Vec<CrossFileRule>) -> Self {
             Self::new(packs)
         }

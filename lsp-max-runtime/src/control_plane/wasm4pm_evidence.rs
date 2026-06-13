@@ -1,7 +1,7 @@
 //! wasm4pm evidence integration — coordinator module.
 //!
-//! Types and converters live in [`evidence_types`].
-//! Oxigraph store extractors live in [`evidence_extractors`].
+//! Types and converters live in [`super::evidence_types`].
+//! Oxigraph store extractors live in [`super::evidence_extractors`].
 
 pub use super::evidence_extractors::*;
 pub use super::evidence_types::*;

@@ -1,13 +1,19 @@
 [package]
 name = "lsp-max-ast-core"
-description = """
-Core crate for `auto_lsp`.
-"""
-version = "26.6.9"
-authors = { workspace = true }
-license = { workspace = true }
-repository = { workspace = true }
-edition = { workspace = true }
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+description = "Core crate for auto_lsp and AST modeling in lsp-max"
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+categories.workspace = true
+keywords.workspace = true
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
 lsp-types-max = { workspace = true }

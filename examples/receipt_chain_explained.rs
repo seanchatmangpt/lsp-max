@@ -63,7 +63,7 @@
 //!   write(receipt, {digest: hash})        ← receipt matches file ✓
 //! ```
 //!
-//! lsp-max's `write_ocel_outputs` in `examples/anti-llm-lsp/src/ocel.rs`
+//! lsp-max's `write_ocel_outputs` in `examples/anti-llm-cheat-lsp/src/ocel.rs`
 //! was fixed to use the correct pattern after the circular-hash bug was found.
 //!
 //! ## Why receipts are written *beside* artifacts, not inside them
@@ -88,10 +88,10 @@
 // It has no runnable code — the explanation is in the module doc above.
 //
 // To see a working receipt implementation, read:
-//   examples/anti-llm-lsp/src/ocel.rs  (write_ocel_outputs)
+//   examples/anti-llm-cheat-lsp/src/ocel.rs  (write_ocel_outputs)
 //   lsp-max-protocol/src/receipt.rs    (Receipt type)
 
 fn main() {
     println!("Receipt-chain explanation: see module-level doc comment above.");
-    println!("For a working implementation: examples/anti-llm-lsp/src/ocel.rs");
+    println!("For a working implementation: examples/anti-llm-cheat-lsp/src/ocel.rs");
 }
