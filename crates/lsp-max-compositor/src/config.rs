@@ -45,10 +45,12 @@ impl CompositorConfig {
         self.server
             .iter()
             .map(|s| {
-                let prefixes = s
-                    .andon_code_prefixes
-                    .clone()
-                    .unwrap_or_else(|| DEFAULT_ANDON_PREFIXES.iter().map(|p| p.to_string()).collect());
+                let prefixes = s.andon_code_prefixes.clone().unwrap_or_else(|| {
+                    DEFAULT_ANDON_PREFIXES
+                        .iter()
+                        .map(|p| p.to_string())
+                        .collect()
+                });
                 (s.id.clone(), prefixes)
             })
             .collect()

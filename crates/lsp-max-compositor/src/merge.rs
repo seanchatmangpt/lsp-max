@@ -87,7 +87,10 @@ fn build_automaton(prefixes: &[String]) -> Option<DoubleArrayAhoCorasick<u32>> {
 /// Returns true if `code` begins with any pattern in the automaton (prefix semantics).
 #[inline]
 fn automaton_is_prefix_match(automaton: &DoubleArrayAhoCorasick<u32>, code: &str) -> bool {
-    automaton.find_iter(code).next().is_some_and(|m| m.start() == 0)
+    automaton
+        .find_iter(code)
+        .next()
+        .is_some_and(|m| m.start() == 0)
 }
 
 impl MergeContext {
@@ -111,9 +114,7 @@ impl MergeContext {
         let server_prefix_overrides = config.per_server_andon_prefixes();
         let server_automatons = server_prefix_overrides
             .iter()
-            .filter_map(|(id, prefixes)| {
-                build_automaton(prefixes).map(|a| (id.clone(), a))
-            })
+            .filter_map(|(id, prefixes)| build_automaton(prefixes).map(|a| (id.clone(), a)))
             .collect();
         Self {
             andon_prefixes,
@@ -148,7 +149,7 @@ impl MergeContext {
 
     /// O(|code|) ANDON check via daachorse automaton. Falls back to linear scan if
     /// the automaton is absent (empty prefix set).
-    fn is_andon_for_server(&self, code: &str, server_id: Option<&str>) -> bool {
+    pub fn is_andon_for_server(&self, code: &str, server_id: Option<&str>) -> bool {
         let automaton = server_id
             .and_then(|sid| self.automaton_for_server(sid))
             .or(self.andon_automaton.as_ref());
@@ -160,9 +161,9 @@ impl MergeContext {
 
     pub fn merge(&self, inputs: Vec<(ChildTier, Vec<DiagnosticEntry>)>) -> MergeResult {
         let diagnostics = merge_diagnostics_with_ctx_auto(inputs, self);
-        let has_andon_block = diagnostics.iter().any(|d| {
-            d.severity == 1 && self.is_andon_for_server(&d.code, d.server_id.as_deref())
-        });
+        let has_andon_block = diagnostics
+            .iter()
+            .any(|d| d.severity == 1 && self.is_andon_for_server(&d.code, d.server_id.as_deref()));
         MergeResult {
             diagnostics,
             has_andon_block,

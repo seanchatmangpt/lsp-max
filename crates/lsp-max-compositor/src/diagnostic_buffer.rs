@@ -2,20 +2,26 @@
 // Child servers deposit diagnostics here via deposit().
 // flush() calls MergeContext::merge() and returns the MergeResult.
 
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
-use dashmap::DashMap;
+use papaya::HashMap;
 
 use crate::gate_file::GateFile;
 use crate::merge::{DiagnosticEntry, MergeContext, MergeResult};
 use crate::registry::ChildTier;
 
+type Slot = Mutex<Vec<(String, ChildTier, Vec<DiagnosticEntry>)>>;
+
 /// Per-URI diagnostic staging area.
 /// Child servers deposit diagnostics here via deposit().
 /// flush() calls MergeContext::merge() and returns the MergeResult.
+///
+/// `inner` is a papaya::HashMap — hazard-pointer-based, optimistic reads.
+/// The flush() read path never blocks concurrent writers (CANDIDATE for high-N scenarios).
+/// Interior mutability for each slot is provided by Mutex<Vec<...>>.
 pub struct DiagnosticBuffer {
-    /// Keyed by URI. Value is Vec of (server_id, tier, entries) tuples.
-    inner: DashMap<String, Vec<(String, ChildTier, Vec<DiagnosticEntry>)>>,
+    /// Keyed by URI. Value is a Mutex-guarded Vec of (server_id, tier, entries) tuples.
+    inner: HashMap<String, Arc<Slot>>,
     ctx: Arc<MergeContext>,
     /// Gate file shared with FlushCoordinator — written eagerly on deposit() when
     /// an incoming entry matches an ANDON prefix, eliminating the debounce staleness window.
@@ -25,7 +31,7 @@ pub struct DiagnosticBuffer {
 impl DiagnosticBuffer {
     pub fn new(ctx: Arc<MergeContext>, gate: Arc<GateFile>) -> Self {
         Self {
-            inner: DashMap::new(),
+            inner: HashMap::new(),
             ctx,
             gate,
         }
@@ -44,15 +50,11 @@ impl DiagnosticBuffer {
         entries: Vec<DiagnosticEntry>,
     ) {
         // Eager ANDON gate write: check incoming entries before storing them.
-        // Uses per-server prefix set (L7 Speciation) — each server's own C_D, not the union.
-        // Falls back to workspace union when server has no override in lsp-max.toml.
-        let effective_prefixes = self.ctx.prefixes_for_server(server_id);
-        let has_incoming_andon = entries.iter().any(|e| {
-            e.severity == 1
-                && effective_prefixes
-                    .iter()
-                    .any(|p| e.code.starts_with(p.as_str()))
-        });
+        // Uses per-server daachorse automaton (L7 Speciation) — O(|code|) vs former O(|P|×|code|).
+        // Falls back to workspace union automaton when server has no override in lsp-max.toml.
+        let has_incoming_andon = entries
+            .iter()
+            .any(|e| e.severity == 1 && self.ctx.is_andon_for_server(&e.code, Some(server_id)));
         if has_incoming_andon {
             tracing::warn!(
                 uri = %uri,
@@ -62,28 +64,35 @@ impl DiagnosticBuffer {
             self.gate.write(true);
         }
 
-        let mut slot = self.inner.entry(uri.to_string()).or_default();
-        // Replace previous from same server_id
-        slot.retain(|(sid, _, _)| sid != server_id);
-        slot.push((server_id.to_string(), tier, entries));
+        // get_or_insert_with registers the epoch guard internally via pin().
+        let guard = self.inner.pin();
+        let slot = guard.get_or_insert_with(uri.to_string(), || Arc::new(Mutex::new(Vec::new())));
+        let mut vec = slot.lock().expect("diagnostic-buffer slot lock: OPEN");
+        // Replace previous entries from same server_id.
+        vec.retain(|(sid, _, _)| sid != server_id);
+        vec.push((server_id.to_string(), tier, entries));
     }
 
     /// Merge all deposited diagnostics for a URI and return the result.
     /// Does not clear the buffer — call clear_uri() after the result is delivered.
     pub fn flush(&self, uri: &str) -> MergeResult {
-        let inputs = match self.inner.get(uri) {
+        let guard = self.inner.pin();
+        let inputs = match guard.get(uri) {
             None => return self.ctx.merge(vec![]),
-            Some(slot) => slot
-                .iter()
-                .map(|(_, tier, entries)| (tier.clone(), entries.clone()))
-                .collect(),
+            Some(slot) => {
+                let vec = slot.lock().expect("diagnostic-buffer slot lock: OPEN");
+                vec.iter()
+                    .map(|(_, tier, entries)| (tier.clone(), entries.clone()))
+                    .collect()
+            }
         };
         self.ctx.merge(inputs)
     }
 
     /// Clear all deposited diagnostics for a URI (call after successful delivery to editor).
     pub fn clear_uri(&self, uri: &str) {
-        self.inner.remove(uri);
+        let guard = self.inner.pin();
+        guard.remove(uri);
     }
 
     /// Number of URIs currently buffered.
@@ -93,6 +102,7 @@ impl DiagnosticBuffer {
 
     /// List all URIs that currently have buffered diagnostics.
     pub fn buffered_uris(&self) -> Vec<String> {
-        self.inner.iter().map(|e| e.key().clone()).collect()
+        let guard = self.inner.pin();
+        guard.iter().map(|(k, _)| k.clone()).collect()
     }
 }

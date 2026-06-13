@@ -35,9 +35,7 @@ fn mock_handle(capacity: usize) -> (ServerHandle, mpsc::Receiver<Value>) {
 
 #[tokio::test(flavor = "multi_thread")]
 async fn fanout_did_open_n500_completes_within_10ms() {
-    use lsp_max::lsp_types::{
-        DidOpenTextDocumentParams, TextDocumentItem, Uri,
-    };
+    use lsp_max::lsp_types::{DidOpenTextDocumentParams, TextDocumentItem, Uri};
     use std::str::FromStr;
 
     // ── 1. Construct N mock handles, spawn a receiver task for each ──────────

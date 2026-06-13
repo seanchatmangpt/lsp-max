@@ -761,12 +761,11 @@ async fn compositor_client_deposits_on_publish_diagnostics() {
 
 #[test]
 fn flush_coordinator_signal_flush_on_closed_channel_does_not_panic() {
-    // Build a coordinator by constructing only the sender side of an mpsc channel,
+    // Build a coordinator by constructing only the sender side of a kanal channel,
     // then drop the receiver to simulate server shutdown, and verify try_send
     // (which signal_flush uses internally) is panic-free.
     use lsp_max_compositor::flush_coordinator::FlushSignal;
-    use tokio::sync::mpsc;
-    let (tx, rx) = mpsc::channel::<FlushSignal>(4);
+    let (tx, rx) = kanal::bounded_async::<FlushSignal>(4);
     drop(rx); // receiver gone — channel is closed
               // try_send on a closed channel returns Err, which signal_flush discards silently.
     let result = tx.try_send(FlushSignal {

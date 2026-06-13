@@ -13,7 +13,6 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 
 use lsp_max::lsp_types::{Diagnostic, DiagnosticSeverity, NumberOrString, Position, Range};
-use tokio::sync::mpsc;
 use tokio::time::{Duration, Instant};
 
 use crate::child_process::ChildProcessPool;
@@ -44,7 +43,11 @@ impl UriFlushState {
     fn new(server_id: String, now: Instant) -> Self {
         let mut deposited = HashSet::new();
         deposited.insert(server_id);
-        Self { deposited, first_at: now, last_at: now }
+        Self {
+            deposited,
+            first_at: now,
+            last_at: now,
+        }
     }
 
     /// Adaptive flush deadline for this URI.
@@ -63,7 +66,7 @@ impl UriFlushState {
 /// Background coordinator that debounces URI flush signals and pushes merged diagnostics
 /// to the editor via `lsp_max::Client::publish_diagnostics`.
 pub struct FlushCoordinator {
-    sender: mpsc::Sender<FlushSignal>,
+    sender: kanal::AsyncSender<FlushSignal>,
     /// Cumulative count of signals dropped due to a full channel.
     /// Incremented on each `try_send` failure; readable via `signal_drop_count()`.
     drop_counter: Arc<AtomicU64>,
@@ -83,7 +86,7 @@ impl FlushCoordinator {
         expected_server_count: usize,
     ) -> Self {
         // Capacity ≥ expected_server_count × URIs per window — 512 handles N=500 at 1 URI.
-        let (tx, mut rx) = mpsc::channel::<FlushSignal>(512);
+        let (tx, rx) = kanal::bounded_async::<FlushSignal>(512);
         let drop_counter = Arc::new(AtomicU64::new(0));
         let _drop_counter_bg = Arc::clone(&drop_counter);
 
@@ -99,12 +102,14 @@ impl FlushCoordinator {
                     .min();
 
                 // Select: either a new signal arrives or the next deadline fires.
+                // kanal::AsyncReceiver::recv() returns Result<T, ReceiveError>;
+                // Err(ReceiveError::Closed) means all senders dropped — shutdown.
                 let timed_out = if let Some(dl) = next_deadline {
                     tokio::select! {
-                        sig = rx.recv() => {
-                            match sig {
-                                None => break, // channel closed — shutdown
-                                Some(s) => {
+                        res = rx.recv() => {
+                            match res {
+                                Err(_) => break, // channel closed — shutdown
+                                Ok(s) => {
                                     let now = Instant::now();
                                     per_uri
                                         .entry(s.uri.clone())
@@ -122,8 +127,8 @@ impl FlushCoordinator {
                 } else {
                     // No pending URIs — block until the first signal arrives.
                     match rx.recv().await {
-                        None => break,
-                        Some(s) => {
+                        Err(_) => break, // channel closed — shutdown
+                        Ok(s) => {
                             let now = Instant::now();
                             per_uri.insert(s.uri, UriFlushState::new(s.server_id, now));
                             false
@@ -135,9 +140,7 @@ impl FlushCoordinator {
                 let now = Instant::now();
                 let ready: Vec<String> = per_uri
                     .iter()
-                    .filter(|(_, state)| {
-                        timed_out || state.deadline(expected_server_count) <= now
-                    })
+                    .filter(|(_, state)| timed_out || state.deadline(expected_server_count) <= now)
                     .map(|(uri, _)| uri.clone())
                     .collect();
 
@@ -283,7 +286,11 @@ impl FlushCoordinator {
     /// Non-blocking — if the channel is full, the signal is dropped and the drop counter
     /// is incremented. A `tracing::warn` makes the event observable.
     pub fn signal_flush(&self, uri: &str, server_id: &str) {
-        let sig = FlushSignal { uri: uri.to_string(), server_id: server_id.to_string() };
+        let sig = FlushSignal {
+            uri: uri.to_string(),
+            server_id: server_id.to_string(),
+        };
+        // kanal try_send: returns Err(SendError) on full or closed channel — same drop semantics.
         if let Err(_e) = self.sender.try_send(sig) {
             self.drop_counter.fetch_add(1, Ordering::Relaxed);
             tracing::warn!(

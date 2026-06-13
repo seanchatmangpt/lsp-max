@@ -639,6 +639,31 @@ Do not collapse OPEN into ADMITTED. The gap is present until structural enforcem
 
 ---
 
+## Current Framework Status — 2026-06-13
+
+### ADMITTED
+- Concurrent fanout: O(max RTT) dispatch, N=500 in <1ms
+- Λ_CD eager gate write: ~400ns (was 100ms debounce window)
+- L7 Speciation: per-server C_D routing via `prefixes_for_server()` (union; see gap note below)
+- Channel capacity: 512 (zero signal loss at N=500)
+- Dynamic quorum debounce: flush fires at quorum or 2×spread (≤30ms cap)
+- daachorse ANDON prefix matching: O(|code|) classification, asymmetry eliminated
+- Workspace test suite: all tests ADMITTED except known OPEN items listed below
+- Clippy `-D warnings`: ADMITTED (zero warnings in workspace crates)
+
+### CANDIDATE
+- papaya::HashMap for DiagnosticBuffer (DashMap contention elimination)
+- kanal channel for FlushCoordinator (lower send latency — kanal integrated but not benchmarked at N=500)
+- simd-json for JSON-RPC framing (larger scope change; not yet prototyped)
+
+### OPEN
+- Subagent gate propagation: PreToolUse hooks do not cross Agent session boundaries (structural gap — see Subagent Gate Propagation section)
+- dx-verify sibling repo violations: `wasm4pm` codebase has uncommitted changes (`tps-metrics/Cargo.toml`) — outside this workspace
+- gc006 sealed-repo test (`test_gc006_authority_surface_lock`): BLOCKED — wasm4pm sibling has uncommitted changes; test is a known expected failure until sibling is clean
+- L7 Speciation per-server isolation: `MergeContext` uses workspace-wide union of ANDON prefixes; per-server `HashMap<server_id, Vec<String>>` routing is CANDIDATE (see L7 Speciation Status section)
+
+---
+
 ## Final Prime
 
 This project is not about making an LSP demo.

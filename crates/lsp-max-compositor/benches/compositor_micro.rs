@@ -4,13 +4,13 @@
 //!   BM-1  deposit_contention   — DashMap shard lock under N concurrent writers
 //!   BM-2  flush_latency        — merge cost at (N servers × K diagnostics per URI)
 //!   BM-3  merge_diagnostics_cpu — HashMap growth path vs REFUSED_BY_LAW sort branch
-//!   BM-4  andon_prefix_match   — is_refused_by_law_with_prefixes() at scale
+//!   BM-4  andon_prefix_match   — MergeContext::is_andon_for_server() (daachorse automaton) at scale
 //!
 //! Receipt written by `just bench-compositor`.
 
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use lsp_max_compositor::{
-    merge::{is_refused_by_law_with_prefixes, merge_diagnostics, DiagnosticEntry, MergeContext},
+    merge::{merge_diagnostics, DiagnosticEntry, MergeContext},
     registry::ChildTier,
     DiagnosticBuffer,
 };
@@ -54,7 +54,12 @@ fn bench_deposit_contention(c: &mut Criterion) {
     let mut group = c.benchmark_group("deposit_contention");
 
     for n in [5usize, 50, 500] {
-        let buffer = Arc::new(DiagnosticBuffer::new(ctx.clone(), Arc::new(lsp_max_compositor::GateFile::from_path(std::path::PathBuf::from("/tmp/test-gate")))));
+        let buffer = Arc::new(DiagnosticBuffer::new(
+            ctx.clone(),
+            Arc::new(lsp_max_compositor::GateFile::from_path(
+                std::path::PathBuf::from("/tmp/test-gate"),
+            )),
+        ));
         group.throughput(Throughput::Elements(n as u64));
         group.bench_with_input(BenchmarkId::new("N", n), &n, |b, &n| {
             let entries: Vec<_> = (0..n)
@@ -106,7 +111,12 @@ fn bench_flush_latency(c: &mut Criterion) {
         (500, 10),
         (500, 100),
     ] {
-        let buffer = DiagnosticBuffer::new(ctx.clone(), Arc::new(lsp_max_compositor::GateFile::from_path(std::path::PathBuf::from("/tmp/test-gate"))));
+        let buffer = DiagnosticBuffer::new(
+            ctx.clone(),
+            Arc::new(lsp_max_compositor::GateFile::from_path(
+                std::path::PathBuf::from("/tmp/test-gate"),
+            )),
+        );
         // Pre-populate: N servers × K diagnostics each for the same URI.
         for i in 0..n {
             let entries: Vec<_> = (0..k)
@@ -214,6 +224,10 @@ fn bench_merge_diagnostics_cpu(c: &mut Criterion) {
 }
 
 // ── BM-4: andon_prefix_match ──────────────────────────────────────────────────
+// Routes through MergeContext::is_andon_for_server — the production path using
+// the daachorse DoubleArrayAhoCorasick automaton. The automaton is built once at
+// MergeContext construction and reused across all calls, giving O(|code|) cost
+// independent of prefix count. Both match and no-match should converge to ~10ns.
 
 fn bench_andon_prefix_match(c: &mut Criterion) {
     let mut group = c.benchmark_group("andon_prefix_match");
@@ -246,27 +260,36 @@ fn bench_andon_prefix_match(c: &mut Criterion) {
         for (prefix_label, prefixes) in prefix_sets {
             let id = format!("{prefix_label}_{call_count}calls");
 
-            // Matching variant — early exit on first prefix match.
+            // Build MergeContext once — automaton construction happens here, not in the hot loop.
+            // Arc because DoubleArrayAhoCorasick doesn't implement Clone.
+            let ctx = Arc::new(MergeContext::new(
+                prefixes.iter().map(|s| s.to_string()).collect(),
+            ));
+
+            // Matching variant — code with a known-match prefix.
             let matching_code = "WASM4PM-CHEAT-C001";
+            let ctx_ref = Arc::clone(&ctx);
             group.bench_function(format!("{id}_match"), |b| {
                 b.iter(|| {
                     for _ in 0..call_count {
-                        black_box(is_refused_by_law_with_prefixes(
+                        black_box(ctx_ref.is_andon_for_server(
                             black_box(matching_code),
-                            black_box(prefixes),
+                            None,
                         ));
                     }
                 });
             });
 
-            // Non-matching variant — exhausts all prefixes.
+            // Non-matching variant — code that exhausts the entire automaton before returning false.
+            // This is the *common case* in a clean workspace (no violations).
             let nonmatching_code = "RUST-E0001";
+            let ctx_ref2 = Arc::clone(&ctx);
             group.bench_function(format!("{id}_no_match"), |b| {
                 b.iter(|| {
                     for _ in 0..call_count {
-                        black_box(is_refused_by_law_with_prefixes(
+                        black_box(ctx_ref2.is_andon_for_server(
                             black_box(nonmatching_code),
-                            black_box(prefixes),
+                            None,
                         ));
                     }
                 });
