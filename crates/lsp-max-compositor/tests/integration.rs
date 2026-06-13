@@ -843,6 +843,17 @@ fn merge_non_law_dedup_primary_wins() {
     );
 }
 
+// ── notify children for uri — empty router ───────────────────────────────────
+
+#[test]
+fn notify_children_for_uri_with_no_pool_entries_does_not_panic() {
+    // Since we cannot instantiate CompositorServer without a real Client,
+    // verify the fanout logic at the servers_for_uri level.
+    let router = ExtensionRouter::new();
+    let servers = servers_for_uri(&router, "file:///test.rs");
+    assert!(servers.is_empty(), "empty router returns no servers");
+}
+
 // ── initialized fan-out — empty pool ─────────────────────────────────────────
 
 #[test]

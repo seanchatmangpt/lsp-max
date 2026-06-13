@@ -141,6 +141,7 @@ impl lsp_max::LanguageServer for CompositorServer {
         if servers.is_empty() {
             tracing::debug!(uri = %uri, ext = %ext, "did_open: no child servers registered for extension");
         }
+        self.fanout_did_open(&uri, params).await;
     }
 
     async fn did_change(&self, params: DidChangeTextDocumentParams) {
@@ -159,16 +160,64 @@ impl lsp_max::LanguageServer for CompositorServer {
         if servers.is_empty() {
             tracing::debug!(uri = %uri, ext = %ext, "did_change: no child servers registered for extension");
         }
+        self.fanout_did_change(&uri, params).await;
     }
 
     async fn did_close(&self, params: DidCloseTextDocumentParams) {
         let uri = params.text_document.uri.to_string();
         self.buffer.clear_uri(&uri);
         tracing::debug!(uri = %uri, "compositor: cleared diagnostic buffer on close");
+        self.fanout_did_close(&uri, params).await;
     }
 }
 
 impl CompositorServer {
+    /// Fan a didOpen notification to all child servers registered for this URI's extension.
+    /// Collects handles while DashMap refs are held briefly, drops refs before awaiting.
+    async fn fanout_did_open(&self, uri: &str, params: DidOpenTextDocumentParams) {
+        let targets = crate::fanout::servers_for_uri(&self.router, uri);
+        let mut handles: Vec<(String, ChildServerHandle)> = Vec::with_capacity(targets.len());
+        for server in &targets {
+            if let Some(proc_ref) = self.pool.get(&server.id) {
+                handles.push((server.id.clone(), proc_ref.handle.clone()));
+            }
+        }
+        for (id, handle) in handles {
+            tracing::debug!(server_id = %id, uri = %uri, "compositor: fanout didOpen to child");
+            handle.did_open(params.clone()).await;
+        }
+    }
+
+    /// Fan a didChange notification to all child servers registered for this URI's extension.
+    async fn fanout_did_change(&self, uri: &str, params: DidChangeTextDocumentParams) {
+        let targets = crate::fanout::servers_for_uri(&self.router, uri);
+        let mut handles: Vec<(String, ChildServerHandle)> = Vec::with_capacity(targets.len());
+        for server in &targets {
+            if let Some(proc_ref) = self.pool.get(&server.id) {
+                handles.push((server.id.clone(), proc_ref.handle.clone()));
+            }
+        }
+        for (id, handle) in handles {
+            tracing::debug!(server_id = %id, uri = %uri, "compositor: fanout didChange to child");
+            handle.did_change(params.clone()).await;
+        }
+    }
+
+    /// Fan a didClose notification to all child servers registered for this URI's extension.
+    async fn fanout_did_close(&self, uri: &str, params: DidCloseTextDocumentParams) {
+        let targets = crate::fanout::servers_for_uri(&self.router, uri);
+        let mut handles: Vec<(String, ChildServerHandle)> = Vec::with_capacity(targets.len());
+        for server in &targets {
+            if let Some(proc_ref) = self.pool.get(&server.id) {
+                handles.push((server.id.clone(), proc_ref.handle.clone()));
+            }
+        }
+        for (id, handle) in handles {
+            tracing::debug!(server_id = %id, uri = %uri, "compositor: fanout didClose to child");
+            handle.did_close(params.clone()).await;
+        }
+    }
+
     /// Flush the diagnostic buffer for a URI and return the merged result.
     /// Provides a testable entry point that exercises the full buffer→merge→MergeResult path.
     pub fn flush_uri(&self, uri: &str) -> crate::merge::MergeResult {
