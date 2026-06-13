@@ -5,7 +5,7 @@ generated/
 *.log
 .agents/
 vendors/
-.claude/
+.claude/*
 !.claude/settings.json
 **/refund_receipt.txt
 **/target_e2e/
