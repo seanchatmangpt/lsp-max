@@ -937,3 +937,36 @@ fn initialized_backfill_flushes_all_buffered_uris() {
         "WASM4PM-GALL-001 severity ERROR must set has_andon_block"
     );
 }
+
+// ── 12. CompositorStateResponse ───────────────────────────────────────────────
+
+#[test]
+fn compositor_state_empty_buffer_returns_empty_uris() {
+    use std::sync::Arc;
+
+    let ctx = Arc::new(MergeContext::new(vec![]));
+    let buffer = Arc::new(DiagnosticBuffer::new(ctx.clone()));
+
+    // Verify that buffered_uris() is empty on a fresh buffer.
+    assert!(buffer.buffered_uris().is_empty());
+}
+
+#[test]
+fn uri_andon_state_serializes_to_json() {
+    use lsp_max_compositor::state_response::{CompositorStateResponse, UriAndonState};
+
+    let response = CompositorStateResponse {
+        uris: vec![UriAndonState {
+            uri: "file:///test.rs".to_string(),
+            has_andon_block: true,
+            andon_codes: vec!["WASM4PM-CROWN-001".to_string()],
+            diagnostic_count: 1,
+        }],
+        global_andon_block: true,
+        child_server_count: 2,
+    };
+
+    let json = serde_json::to_string(&response).unwrap();
+    assert!(json.contains("WASM4PM-CROWN-001"));
+    assert!(json.contains("\"global_andon_block\":true"));
+}

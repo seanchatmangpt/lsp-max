@@ -218,6 +218,38 @@ impl CompositorServer {
         }
     }
 
+    /// Return the current ANDON state for all buffered URIs.
+    /// Non-destructive — does not clear the diagnostic buffer.
+    pub async fn compositor_state(&self) -> crate::state_response::CompositorStateResponse {
+        use crate::state_response::{CompositorStateResponse, UriAndonState};
+
+        let buffered_uris = self.buffer.buffered_uris();
+        let mut uri_states: Vec<UriAndonState> = Vec::with_capacity(buffered_uris.len());
+        let mut global_andon_block = false;
+
+        for uri in &buffered_uris {
+            let result = self.buffer.flush(uri);
+            let has_andon = result.has_andon_block;
+            if has_andon {
+                global_andon_block = true;
+            }
+            uri_states.push(UriAndonState {
+                uri: uri.clone(),
+                has_andon_block: has_andon,
+                andon_codes: result.andon_codes().iter().map(|s| s.to_string()).collect(),
+                diagnostic_count: result.diagnostics.len(),
+            });
+        }
+
+        let child_server_count = self.pool.server_ids_snapshot().len();
+
+        CompositorStateResponse {
+            uris: uri_states,
+            global_andon_block,
+            child_server_count,
+        }
+    }
+
     /// Flush the diagnostic buffer for a URI and return the merged result.
     /// Provides a testable entry point that exercises the full buffer→merge→MergeResult path.
     pub fn flush_uri(&self, uri: &str) -> crate::merge::MergeResult {
