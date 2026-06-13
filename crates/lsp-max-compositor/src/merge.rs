@@ -58,6 +58,10 @@ impl MergeContext {
         self.andon_prefixes.len()
     }
 
+    pub fn andon_prefixes(&self) -> &[String] {
+        &self.andon_prefixes
+    }
+
     pub fn merge(&self, inputs: Vec<(ChildTier, Vec<DiagnosticEntry>)>) -> MergeResult {
         let refs: Vec<&str> = self.andon_prefixes.iter().map(|s| s.as_str()).collect();
         let diagnostics = merge_diagnostics(inputs, Some(&refs));
