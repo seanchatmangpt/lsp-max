@@ -616,9 +616,82 @@ impl ComposedServer {
                     Ok(Some(merged_res))
                 }
             }
-            CompositionStrategy::OrderedFanout
-            | CompositionStrategy::ObserveOnly
-            | CompositionStrategy::Deny => Err(Error::method_not_found()),
+            CompositionStrategy::OrderedFanout => {
+                // Fan out in order to all routable sources; no response value expected
+                // (these are notification-equivalent methods dispatched as requests).
+                for source_id in routable_sources {
+                    if let Some(conn) = self.upstreams.get(&source_id) {
+                        match conn.request(method, params_val.clone(), timeout_ms).await {
+                            Ok(_) => {
+                                let mut s = self.state.lock().await;
+                                if let Some(src) =
+                                    s.capability_tracker.sources.get_mut(&source_id)
+                                {
+                                    src.health = SourceHealth::Healthy;
+                                }
+                                sources_returned.lock().unwrap().push(source_id.clone());
+                                if let Some(src) = s.capability_tracker.sources.get(&source_id) {
+                                    source_health
+                                        .lock()
+                                        .unwrap()
+                                        .insert(source_id.clone(), format!("{:?}", src.health));
+                                }
+                            }
+                            Err(_) => {
+                                any_failed = true;
+                                let mut s = self.state.lock().await;
+                                s.capability_tracker
+                                    .degrade_source(&source_id, SourceHealth::TimedOut);
+                                if let Some(src) = s.capability_tracker.sources.get(&source_id) {
+                                    source_health
+                                        .lock()
+                                        .unwrap()
+                                        .insert(source_id.clone(), format!("{:?}", src.health));
+                                }
+                            }
+                        }
+                    }
+                }
+                Ok(None)
+            }
+            CompositionStrategy::ObserveOnly => {
+                // Fire-and-forget to all routable sources; always returns no response value.
+                for source_id in routable_sources {
+                    if let Some(conn) = self.upstreams.get(&source_id) {
+                        match conn.request(method, params_val.clone(), timeout_ms).await {
+                            Ok(_) => {
+                                let mut s = self.state.lock().await;
+                                if let Some(src) =
+                                    s.capability_tracker.sources.get_mut(&source_id)
+                                {
+                                    src.health = SourceHealth::Healthy;
+                                }
+                                sources_returned.lock().unwrap().push(source_id.clone());
+                                if let Some(src) = s.capability_tracker.sources.get(&source_id) {
+                                    source_health
+                                        .lock()
+                                        .unwrap()
+                                        .insert(source_id.clone(), format!("{:?}", src.health));
+                                }
+                            }
+                            Err(_) => {
+                                any_failed = true;
+                                let mut s = self.state.lock().await;
+                                s.capability_tracker
+                                    .degrade_source(&source_id, SourceHealth::TimedOut);
+                                if let Some(src) = s.capability_tracker.sources.get(&source_id) {
+                                    source_health
+                                        .lock()
+                                        .unwrap()
+                                        .insert(source_id.clone(), format!("{:?}", src.health));
+                                }
+                            }
+                        }
+                    }
+                }
+                Ok(None)
+            }
+            CompositionStrategy::Deny => Err(Error::method_not_found()),
         };
 
         if params_val.get("partialResultToken") == Some(&Value::Null) && any_failed {
