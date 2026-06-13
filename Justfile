@@ -28,6 +28,19 @@ bench-admit:
 test-perf-admission:
     cargo test --test test_perf_admission -- --nocapture
 
+# Run compositor micro-benchmarks and write BLAKE3-signed admission receipt
+bench-compositor:
+    @echo -e "${MAGENTA}============================================================${NC}"
+    @echo -e "${CYAN} Bench-Compositor: Scale Admission Gate ${NC}"
+    @echo -e "${MAGENTA}============================================================${NC}"
+    @mkdir -p receipts
+    @bash scripts/write_compositor_bench_receipt.sh
+    @echo -e "${GREEN}✓ Receipt written. Run 'just test-compositor-admission' to validate.${NC}"
+
+# Validate the compositor-scale receipt exists and is structurally sound
+test-compositor-admission:
+    cargo test --test test_compositor_perf_admission -- --nocapture
+
 # --- Tests ---
 
 # Run all workspace tests

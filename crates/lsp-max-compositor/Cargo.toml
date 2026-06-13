@@ -11,6 +11,18 @@ path = "src/main.rs"
 name = "lsp-echo-server"
 path = "src/bin/lsp_echo_server.rs"
 
+[[bench]]
+name = "compositor_micro"
+harness = false
+
+[[bench]]
+name = "compositor_fanout"
+harness = false
+
+[[bench]]
+name = "compositor_backpressure"
+harness = false
+
 [dependencies]
 lsp-max = { path = "../.." }
 lsp-max-client = { path = "../../crates/lsp-max-client" }
@@ -24,3 +36,6 @@ toml = "0.8"
 tracing = "0.1"
 dashmap = "5"
 anyhow = "1"
+
+[dev-dependencies]
+criterion = { version = "0.5", features = ["html_reports"] }
