@@ -19,20 +19,30 @@ struct NoopClient;
 impl LanguageClient for NoopClient {}
 
 /// A running child LSP server subprocess with an active JSON-RPC connection.
+/// The OS-level child process is owned by the exit-watcher task returned from `spawn`.
 pub struct ChildProcess {
     pub server_id: String,
     pub handle: ServerHandle,
-    // Keep the Child alive so the process is not dropped (and killed) prematurely.
-    _child: tokio::process::Child,
 }
 
 impl ChildProcess {
     /// Spawn a child LSP server and establish the JSON-RPC connection.
     ///
+    /// Returns `(ChildProcess, exit_future)`. The exit future resolves when the
+    /// child process exits (crash or clean exit). Callers should `tokio::spawn`
+    /// the exit future and drive cleanup there.
+    ///
     /// `command`: path to the server binary (e.g. "/usr/local/bin/wasm4pm-lsp")
     /// `args`: server arguments (e.g. ["serve", "--stdio"])
     /// `server_id`: logical name for this server (from lsp-max.toml)
-    pub async fn spawn(server_id: String, command: &str, args: &[&str]) -> std::io::Result<Self> {
+    pub async fn spawn(
+        server_id: String,
+        command: &str,
+        args: &[&str],
+    ) -> std::io::Result<(
+        Self,
+        impl std::future::Future<Output = std::io::Result<std::process::ExitStatus>>,
+    )> {
         let mut child = Command::new(command)
             .args(args)
             .stdin(Stdio::piped())
@@ -45,11 +55,28 @@ impl ChildProcess {
 
         let handle = ClientBuilder::new().build(NoopClient, stdout, stdin);
 
-        Ok(Self {
-            server_id,
-            handle,
-            _child: child,
-        })
+        // Background task owns the Child so wait() has exclusive &mut access.
+        // The oneshot carries the ExitStatus back to the caller's future.
+        let (exit_tx, exit_rx) = tokio::sync::oneshot::channel::<std::process::ExitStatus>();
+        tokio::spawn(async move {
+            match child.wait().await {
+                Ok(status) => {
+                    let _ = exit_tx.send(status);
+                }
+                Err(_) => {
+                    // Process unreachable — let the receiver detect the dropped sender.
+                }
+            }
+        });
+
+        let proc = Self { server_id, handle };
+        let exit_fut = async move {
+            exit_rx.await.map_err(|_| {
+                std::io::Error::other("exit watcher task dropped before sending status")
+            })
+        };
+
+        Ok((proc, exit_fut))
     }
 
     /// Send an LSP initialize + initialized handshake to the child server.
@@ -93,8 +120,10 @@ impl ChildProcessPool {
         command: &str,
         args: &[&str],
     ) -> std::io::Result<()> {
-        let proc = ChildProcess::spawn(server_id.clone(), command, args).await?;
+        let (proc, exit_fut) = ChildProcess::spawn(server_id.clone(), command, args).await?;
         self.processes.insert(server_id, proc);
+        // Drop the exit future — callers that need exit detection use spawn() directly.
+        drop(exit_fut);
         Ok(())
     }
 
@@ -112,6 +141,11 @@ impl ChildProcessPool {
     /// Insert an already-spawned and initialized `ChildProcess` into the pool.
     pub fn register(&self, server_id: String, proc: ChildProcess) {
         self.processes.insert(server_id, proc);
+    }
+
+    /// Remove and return the `ChildProcess` for `server_id`, if present.
+    pub fn remove(&self, server_id: &str) -> Option<ChildProcess> {
+        self.processes.remove(server_id).map(|(_, proc)| proc)
     }
 
     /// Returns all server IDs currently in the pool.
@@ -158,7 +192,7 @@ mod tests {
     async fn spawn_process_and_get_handle() {
         let result = ChildProcess::spawn("test-server".to_string(), "cat", &[]).await;
         // cat may not be available in all environments; if spawn fails, skip.
-        if let Ok(proc) = result {
+        if let Ok((proc, _exit_fut)) = result {
             assert_eq!(proc.server_id, "test-server");
         }
     }

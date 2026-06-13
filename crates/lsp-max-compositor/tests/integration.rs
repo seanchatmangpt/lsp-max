@@ -1087,3 +1087,15 @@ fn merged_capabilities_with_hover_serializes_correctly() {
         "merged caps JSON must contain hoverProvider when Primary sets it"
     );
 }
+
+#[test]
+fn child_process_pool_remove_returns_proc() {
+    // After remove on empty pool returns None — no panic.
+    use lsp_max_compositor::child_process::ChildProcessPool;
+    let pool = ChildProcessPool::new();
+    assert_eq!(pool.server_ids_snapshot().len(), 0);
+    let result = pool.remove("nonexistent");
+    assert!(result.is_none());
+    // Pool remains empty after remove.
+    assert_eq!(pool.server_ids_snapshot().len(), 0);
+}
