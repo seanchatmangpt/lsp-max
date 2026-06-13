@@ -7,6 +7,10 @@ edition = "2021"
 name = "lsp-max-compositor"
 path = "src/main.rs"
 
+[[bin]]
+name = "lsp-echo-server"
+path = "src/bin/lsp_echo_server.rs"
+
 [dependencies]
 lsp-max = { path = "../.." }
 lsp-max-client = { path = "../../crates/lsp-max-client" }

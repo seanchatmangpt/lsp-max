@@ -79,3 +79,12 @@ The five-layer model: (1) actuation grammar → (2) local LSP state surface → 
 When a crate outside this workspace depends on `lsp-max` and also declares its own `tokio` dependency, it must include `"io-std"` in tokio features — `tokio::io::stdin` / `tokio::io::stdout` are behind that feature gate and are not inherited transitively from lsp-max.
 
 When constructing `CodeAction` literals, always use `..Default::default()` for the trailing fields rather than exhaustive field listing — lsp-types-max may add fields as LSP 3.18 evolves and exhaustive structs break at the call site.
+
+## ANDON Gate — PreToolUse Hook (Lambda_CD^runtime)
+
+A `PreToolUse` hook in `.claude/settings.json` runs `lsp-max-cli gate check` before every Bash tool call.
+
+- **Exit 0** — gate is clear; Bash proceeds.
+- **Exit 1** — ANDON is set; Bash is blocked until the gate clears.
+
+This enforces `Lambda_CD^runtime`: no shell-side action (build, test, release, format) may proceed while an active ANDON signal is present. Resolve all `WASM4PM-*` and `GGEN-*` diagnostics before the gate will clear.
