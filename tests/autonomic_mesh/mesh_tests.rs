@@ -1,4 +1,5 @@
 /// Additional autonomic mesh tests: save/load, hooks, RPC, unicode, concurrency.
+use lsp_max_runtime::sha256;
 use lsp_max_runtime::{
     AutonomicMesh, HookEvent, InstanceId, LspInstance, LspPhase, MeshAction, PolicyState, Receipt,
     ReceiptRoutingHook,
@@ -25,7 +26,7 @@ fn test_save_load_preserves_instances() {
         instance_id: InstanceId::from("B"),
         receipt: Receipt {
             receipt_id: "rcpt-save-load".to_string(),
-            hash: "hash-save-load".to_string(),
+            hash: sha256(b"rcpt-save-load"),
             prev_receipt_hash: None,
         },
     });
@@ -133,7 +134,7 @@ fn test_receipt_routing_hook_partial_clear() {
         instance_id: InstanceId::from("LSP_2"),
         receipt: Receipt {
             receipt_id: "rcpt-routing-test".to_string(),
-            hash: "hash-routing-test".to_string(),
+            hash: sha256(b"rcpt-routing-test"),
             prev_receipt_hash: None,
         },
     });
@@ -170,7 +171,7 @@ fn test_receipt_routing_hook_clear_fires_event_per_diag() {
         instance_id: InstanceId::from("LSP_2"),
         receipt: Receipt {
             receipt_id: "rcpt-routing-test".to_string(),
-            hash: "hash-routing-test".to_string(),
+            hash: sha256(b"rcpt-routing-test"),
             prev_receipt_hash: None,
         },
     });

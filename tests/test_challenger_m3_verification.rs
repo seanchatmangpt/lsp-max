@@ -3,6 +3,7 @@ use lsp_max_protocol::{
     ChainDescriptor, ConformanceVector, HookDescriptor, HookGraphNode, LawAxis, ManifoldSnapshot,
     MaxDiagnostic, Receipt, SnapshotId,
 };
+use lsp_max_runtime::sha256;
 use lsp_max_runtime::MaxMethod;
 use lsp_types::request::Request;
 use lsp_types_max as lsp_types;
@@ -58,8 +59,8 @@ fn test_serialization_receipt() {
     // 2. Custom Receipt
     let custom_receipt = Receipt {
         receipt_id: "rec_123".to_string(),
-        hash: "hash_xyz".to_string(),
-        prev_receipt_hash: Some("prev_hash_123".to_string()),
+        hash: sha256(b"rec_123"),
+        prev_receipt_hash: Some(sha256(b"rec_000")),
     };
     let serialized = serde_json::to_string(&custom_receipt).unwrap();
     let deserialized: Receipt = serde_json::from_str(&serialized).unwrap();
@@ -175,7 +176,7 @@ fn test_serialization_manifold_snapshot() {
         }],
         receipts: vec![Receipt {
             receipt_id: "rec_1".to_string(),
-            hash: "hash_1".to_string(),
+            hash: sha256(b"rec_1"),
             prev_receipt_hash: None,
         }],
     };
