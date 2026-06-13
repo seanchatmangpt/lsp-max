@@ -66,6 +66,78 @@ impl std::fmt::Display for LawAxis {
 }
 
 // ---------------------------------------------------------------------------
+// LawAxisId — stable numeric index for named LawAxis variants
+// ---------------------------------------------------------------------------
+
+/// Stable numeric index for a named `LawAxis` variant.
+///
+/// All 11 named variants fit in bits 0–10 of a `u64`. `Custom` axes have no
+/// stable numeric identity and are excluded from bitmask arithmetic.
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
+pub struct LawAxisId(pub u8);
+
+impl LawAxisId {
+    pub const PROTOCOL: LawAxisId = LawAxisId(0);
+    pub const TYPE: LawAxisId = LawAxisId(1);
+    pub const FIXTURE: LawAxisId = LawAxisId(2);
+    pub const DOCUMENTATION: LawAxisId = LawAxisId(3);
+    pub const RELEASE: LawAxisId = LawAxisId(4);
+    pub const HOOK: LawAxisId = LawAxisId(5);
+    pub const REPAIR: LawAxisId = LawAxisId(6);
+    pub const RECEIPT: LawAxisId = LawAxisId(7);
+    pub const SECURITY: LawAxisId = LawAxisId(8);
+    pub const AUTOPOIESIS: LawAxisId = LawAxisId(9);
+    pub const DOMAIN: LawAxisId = LawAxisId(10);
+    /// Total number of named (non-Custom) axes.
+    pub const MAX_NAMED: u8 = 11;
+
+    /// Returns the bitmask for this axis — `1 << self.0`.
+    pub fn bit(self) -> u64 {
+        1u64 << self.0
+    }
+}
+
+/// Bidirectional mapping between `LawAxis` and `LawAxisId`.
+///
+/// `Custom` axes return `None` from `axis_to_id` — they contribute no bit.
+pub struct LawAxisRegistry;
+
+impl LawAxisRegistry {
+    pub fn axis_to_id(axis: &LawAxis) -> Option<LawAxisId> {
+        match axis {
+            LawAxis::Protocol => Some(LawAxisId::PROTOCOL),
+            LawAxis::Type => Some(LawAxisId::TYPE),
+            LawAxis::Fixture => Some(LawAxisId::FIXTURE),
+            LawAxis::Documentation => Some(LawAxisId::DOCUMENTATION),
+            LawAxis::Release => Some(LawAxisId::RELEASE),
+            LawAxis::Hook => Some(LawAxisId::HOOK),
+            LawAxis::Repair => Some(LawAxisId::REPAIR),
+            LawAxis::Receipt => Some(LawAxisId::RECEIPT),
+            LawAxis::Security => Some(LawAxisId::SECURITY),
+            LawAxis::Autopoiesis => Some(LawAxisId::AUTOPOIESIS),
+            LawAxis::Domain => Some(LawAxisId::DOMAIN),
+            LawAxis::Custom(_) => None,
+        }
+    }
+
+    pub fn id_to_axis(id: LawAxisId) -> LawAxis {
+        match id.0 {
+            0 => LawAxis::Protocol,
+            1 => LawAxis::Type,
+            2 => LawAxis::Fixture,
+            3 => LawAxis::Documentation,
+            4 => LawAxis::Release,
+            5 => LawAxis::Hook,
+            6 => LawAxis::Repair,
+            7 => LawAxis::Receipt,
+            8 => LawAxis::Security,
+            9 => LawAxis::Autopoiesis,
+            _ => LawAxis::Domain,
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
 // ConformanceGrade — DfLSS CTQ compiler-enforced grade levels
 // ---------------------------------------------------------------------------
 
@@ -136,6 +208,15 @@ pub struct ConformanceVector {
     pub strict_mode: bool,
     /// Process quality from POWL conformance check. None until wasm4pm graduation.
     pub process_quality: Option<ConformanceResult>,
+    /// Bitmask for admitted axes (bits 0–10 = Protocol..Domain). Not serialized.
+    #[serde(skip)]
+    pub admitted_bits: u64,
+    /// Bitmask for refused axes. Not serialized.
+    #[serde(skip)]
+    pub refused_bits: u64,
+    /// Bitmask for unknown axes. Not serialized.
+    #[serde(skip)]
+    pub unknown_bits: u64,
 }
 
 impl ConformanceVector {
@@ -145,6 +226,82 @@ impl ConformanceVector {
 
     pub fn admits_release(&self) -> bool {
         self.refused.is_empty() && (!self.strict_mode || self.unknown.is_empty())
+    }
+
+    /// Recompute all three bitmasks from the Vec fields.
+    ///
+    /// Call this after constructing from a struct literal or deserializing
+    /// from JSON, so the internal index stays consistent.
+    pub fn sync_bits_from_vecs(&mut self) {
+        self.admitted_bits = Self::vecs_to_bits(&self.admitted);
+        self.refused_bits = Self::vecs_to_bits(&self.refused);
+        self.unknown_bits = Self::vecs_to_bits(&self.unknown);
+        self.assert_bitmask_invariants();
+    }
+
+    fn vecs_to_bits(axes: &[LawAxis]) -> u64 {
+        axes.iter()
+            .filter_map(|a| LawAxisRegistry::axis_to_id(a))
+            .fold(0u64, |acc, id| acc | id.bit())
+    }
+
+    /// Mark an axis as admitted, removing it from refused and unknown sets.
+    pub fn set_admitted(&mut self, id: LawAxisId) {
+        let bit = id.bit();
+        self.refused_bits &= !bit;
+        self.unknown_bits &= !bit;
+        self.admitted_bits |= bit;
+        debug_assert_eq!(self.admitted_bits & self.refused_bits, 0);
+        debug_assert_eq!(self.admitted_bits & self.unknown_bits, 0);
+    }
+
+    /// Mark an axis as refused, removing it from admitted and unknown sets.
+    pub fn set_refused(&mut self, id: LawAxisId) {
+        let bit = id.bit();
+        self.admitted_bits &= !bit;
+        self.unknown_bits &= !bit;
+        self.refused_bits |= bit;
+        debug_assert_eq!(self.admitted_bits & self.refused_bits, 0);
+        debug_assert_eq!(self.refused_bits & self.unknown_bits, 0);
+    }
+
+    /// Mark an axis as unknown, removing it from admitted and refused sets.
+    pub fn set_unknown(&mut self, id: LawAxisId) {
+        let bit = id.bit();
+        self.admitted_bits &= !bit;
+        self.refused_bits &= !bit;
+        self.unknown_bits |= bit;
+        debug_assert_eq!(self.admitted_bits & self.unknown_bits, 0);
+        debug_assert_eq!(self.refused_bits & self.unknown_bits, 0);
+    }
+
+    pub fn is_admitted_bit(&self, id: LawAxisId) -> bool {
+        self.admitted_bits & id.bit() != 0
+    }
+    pub fn is_refused_bit(&self, id: LawAxisId) -> bool {
+        self.refused_bits & id.bit() != 0
+    }
+    pub fn is_unknown_bit(&self, id: LawAxisId) -> bool {
+        self.unknown_bits & id.bit() != 0
+    }
+
+    /// Assert all three bitmasks are mutually disjoint.
+    pub fn assert_bitmask_invariants(&self) {
+        debug_assert_eq!(
+            self.admitted_bits & self.refused_bits,
+            0,
+            "admitted and refused bits overlap"
+        );
+        debug_assert_eq!(
+            self.admitted_bits & self.unknown_bits,
+            0,
+            "admitted and unknown bits overlap"
+        );
+        debug_assert_eq!(
+            self.refused_bits & self.unknown_bits,
+            0,
+            "refused and unknown bits overlap"
+        );
     }
 }
 
@@ -157,6 +314,9 @@ impl Default for ConformanceVector {
             score: None,
             strict_mode: true,
             process_quality: None,
+            admitted_bits: 0,
+            refused_bits: 0,
+            unknown_bits: 0,
         }
     }
 }
@@ -174,6 +334,7 @@ mod tests {
             score: Some(100.0),
             strict_mode: true,
             process_quality: None,
+            ..Default::default()
         };
         assert!(cv.all_admitted());
     }
@@ -187,6 +348,7 @@ mod tests {
             score: Some(50.0),
             strict_mode: true,
             process_quality: None,
+            ..Default::default()
         };
         assert!(!cv.all_admitted());
     }
@@ -200,6 +362,7 @@ mod tests {
             score: None,
             strict_mode: true,
             process_quality: None,
+            ..Default::default()
         };
         assert!(!cv.all_admitted());
     }
@@ -239,6 +402,7 @@ mod tests {
             score: None,
             strict_mode: true,
             process_quality: None,
+            ..Default::default()
         };
         assert!(
             !cv.admits_release(),
@@ -255,6 +419,7 @@ mod tests {
             score: None,
             strict_mode: false,
             process_quality: None,
+            ..Default::default()
         };
         assert!(
             cv.admits_release(),
@@ -272,6 +437,7 @@ mod tests {
                 score: Some(0.0),
                 strict_mode: strict,
                 process_quality: None,
+                ..Default::default()
             };
             assert!(
                 !cv.admits_release(),
@@ -328,6 +494,7 @@ mod tests {
             score: Some(66.7),
             strict_mode: false,
             process_quality: None,
+            ..Default::default()
         };
         let json = serde_json::to_string(&cv).expect("serialize");
         let cv2: ConformanceVector = serde_json::from_str(&json).expect("deserialize");
@@ -336,5 +503,71 @@ mod tests {
         assert_eq!(cv2.unknown.len(), 1);
         assert!((cv2.score.unwrap() - 66.7).abs() < 1e-9);
         assert!(!cv2.strict_mode);
+    }
+
+    #[test]
+    fn law_axis_registry_roundtrip_all_named() {
+        let axes = [
+            LawAxis::Protocol,
+            LawAxis::Type,
+            LawAxis::Fixture,
+            LawAxis::Documentation,
+            LawAxis::Release,
+            LawAxis::Hook,
+            LawAxis::Repair,
+            LawAxis::Receipt,
+            LawAxis::Security,
+            LawAxis::Autopoiesis,
+            LawAxis::Domain,
+        ];
+        for axis in &axes {
+            let id = LawAxisRegistry::axis_to_id(axis).expect("named axis has id");
+            let back = LawAxisRegistry::id_to_axis(id);
+            assert_eq!(std::mem::discriminant(axis), std::mem::discriminant(&back));
+        }
+    }
+
+    #[test]
+    fn law_axis_registry_custom_returns_none() {
+        assert!(LawAxisRegistry::axis_to_id(&LawAxis::Custom("x".to_string())).is_none());
+    }
+
+    #[test]
+    fn bitmask_disjointness_enforced_by_setters() {
+        let mut cv = ConformanceVector::default();
+        cv.set_admitted(LawAxisId::PROTOCOL);
+        assert!(cv.is_admitted_bit(LawAxisId::PROTOCOL));
+        assert!(!cv.is_refused_bit(LawAxisId::PROTOCOL));
+        cv.set_refused(LawAxisId::PROTOCOL);
+        assert!(!cv.is_admitted_bit(LawAxisId::PROTOCOL));
+        assert!(cv.is_refused_bit(LawAxisId::PROTOCOL));
+        cv.assert_bitmask_invariants();
+    }
+
+    #[test]
+    fn sync_bits_from_vecs_matches_manual_setters() {
+        let mut cv = ConformanceVector {
+            admitted: vec![LawAxis::Protocol, LawAxis::Security],
+            refused: vec![LawAxis::Receipt],
+            unknown: vec![LawAxis::Domain],
+            ..Default::default()
+        };
+        cv.sync_bits_from_vecs();
+        assert!(cv.is_admitted_bit(LawAxisId::PROTOCOL));
+        assert!(cv.is_admitted_bit(LawAxisId::SECURITY));
+        assert!(cv.is_refused_bit(LawAxisId::RECEIPT));
+        assert!(cv.is_unknown_bit(LawAxisId::DOMAIN));
+        assert!(!cv.is_admitted_bit(LawAxisId::DOMAIN));
+        cv.assert_bitmask_invariants();
+    }
+
+    #[test]
+    fn bitmask_fields_skip_serde() {
+        let mut cv = ConformanceVector::default();
+        cv.set_admitted(LawAxisId::PROTOCOL);
+        let json = serde_json::to_string(&cv).unwrap();
+        assert!(!json.contains("admitted_bits"));
+        assert!(!json.contains("refused_bits"));
+        assert!(!json.contains("unknown_bits"));
     }
 }

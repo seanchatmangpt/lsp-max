@@ -455,14 +455,17 @@ impl WorkspaceIndex {
             Some(admitted.len() as f64 / total as f64 * 100.0)
         };
 
-        ConformanceVector {
+        let mut cv = ConformanceVector {
             admitted,
             refused,
             unknown,
             score,
             strict_mode: true,
             process_quality: None,
-        }
+            ..Default::default()
+        };
+        cv.sync_bits_from_vecs();
+        cv
     }
 }
 

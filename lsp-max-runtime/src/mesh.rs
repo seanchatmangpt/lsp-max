@@ -1,4 +1,4 @@
-use crate::mesh_hooks::{IntakeClearHook, IntakeDiagnosticHook};
+use crate::mesh_hooks::{IntakeClearHook, IntakeDiagnosticHook, OcelProcessHook};
 use crate::mesh_types::{
     AutonomicMeshState, ConformanceDeltaEntry, Hook, HookEvent, InstanceId, LspInstance, LspPhase,
     MaxDiagnostic, MeshAction, PolicyState,
@@ -71,14 +71,17 @@ pub fn build_conformance_vector(
         .cloned()
         .collect();
 
-    lsp_max_protocol::ConformanceVector {
+    let mut cv = lsp_max_protocol::ConformanceVector {
         admitted,
         refused,
         unknown,
         score: derived_score,
         strict_mode: true,
         process_quality: None,
-    }
+        ..Default::default()
+    };
+    cv.sync_bits_from_vecs();
+    cv
 }
 
 impl AutonomicMesh {
@@ -131,6 +134,7 @@ impl AutonomicMesh {
         }
         mesh.register_hook(Box::new(IntakeDiagnosticHook));
         mesh.register_hook(Box::new(IntakeClearHook));
+        mesh.register_hook(Box::new(OcelProcessHook::new()));
         Ok(mesh)
     }
 

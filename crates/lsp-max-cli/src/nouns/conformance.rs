@@ -83,13 +83,16 @@ impl ConformanceService {
             Some(100.0 * admitted.len() as f64 / total as f64)
         };
 
-        Ok(ConformanceVector {
+        let mut cv = ConformanceVector {
             admitted,
             refused,
             unknown,
             score,
             strict_mode: true,
-        })
+            ..Default::default()
+        };
+        cv.sync_bits_from_vecs();
+        Ok(cv)
     }
 
     pub fn score(&self, instance_id: &str) -> std::result::Result<f64, String> {
