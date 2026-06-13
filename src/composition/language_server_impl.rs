@@ -453,107 +453,6 @@ impl LanguageServer for ComposedServer {
             .ok_or_else(Error::internal_error)
     }
 
-    async fn max_snapshot(&self) -> Result<max_protocol::SnapshotId> {
-        Err(Error::method_not_found())
-    }
-
-    async fn max_conformance_vector(
-        &self,
-        _params: Option<max_protocol::SnapshotId>,
-    ) -> Result<max_protocol::ConformanceVector> {
-        Err(Error::method_not_found())
-    }
-
-    async fn max_explain_diagnostic(&self, _params: String) -> Result<max_protocol::MaxDiagnostic> {
-        Err(Error::method_not_found())
-    }
-
-    async fn max_repair_plan(&self, _params: String) -> Result<Vec<max_protocol::MaxCodeAction>> {
-        Err(Error::method_not_found())
-    }
-
-    async fn max_apply_repair_transaction(
-        &self,
-        _params: max_protocol::MaxCodeAction,
-    ) -> Result<max_protocol::Receipt> {
-        Err(Error::method_not_found())
-    }
-
-    async fn max_export_analysis_bundle(
-        &self,
-        _params: max_protocol::SnapshotId,
-    ) -> Result<max_protocol::AnalysisBundle> {
-        Err(Error::method_not_found())
-    }
-
-    async fn max_run_gate(&self, _params: max_protocol::GateId) -> Result<bool> {
-        Err(Error::method_not_found())
-    }
-
-    async fn max_clear_diagnostic(&self, _params: String) -> Result<()> {
-        Err(Error::method_not_found())
-    }
-
-    async fn max_receipt(&self, _params: String) -> Result<max_protocol::Receipt> {
-        Err(Error::method_not_found())
-    }
-
-    async fn max_release_actuation(&self, _params: Value) -> Result<Value> {
-        Err(Error::method_not_found())
-    }
-
-    async fn max_admission(&self) -> Result<serde_json::Value> {
-        Err(Error::method_not_found())
-    }
-
-    async fn max_autonomic_loop(&self) -> Result<serde_json::Value> {
-        Err(Error::method_not_found())
-    }
-
-    async fn max_chain(&self) -> Result<serde_json::Value> {
-        Err(Error::method_not_found())
-    }
-
-    async fn max_hook(&self) -> Result<serde_json::Value> {
-        Err(Error::method_not_found())
-    }
-
-    async fn max_hook_graph(&self) -> Result<serde_json::Value> {
-        Err(Error::method_not_found())
-    }
-
-    async fn max_lawful_transition(&self, _params: String) -> Result<serde_json::Value> {
-        Err(Error::method_not_found())
-    }
-
-    async fn max_ledger_report(&self) -> Result<String> {
-        Err(Error::method_not_found())
-    }
-
-    async fn max_manifold_snapshot(&self) -> Result<serde_json::Value> {
-        Err(Error::method_not_found())
-    }
-
-    async fn max_propagate(&self, _params: max_protocol::Receipt) -> Result<serde_json::Value> {
-        Err(Error::method_not_found())
-    }
-
-    async fn max_refusal(&self, _params: String) -> Result<serde_json::Value> {
-        Err(Error::method_not_found())
-    }
-
-    async fn max_replay(&self) -> Result<serde_json::Value> {
-        Err(Error::method_not_found())
-    }
-
-    async fn max_verify_ledger(&self) -> Result<serde_json::Value> {
-        Err(Error::method_not_found())
-    }
-
-    async fn max_conformance_delta(&self, _params: serde_json::Value) -> Result<serde_json::Value> {
-        Err(Error::method_not_found())
-    }
-
     async fn inline_completion(
         &self,
         params: InlineCompletionParams,
@@ -570,14 +469,6 @@ impl LanguageServer for ComposedServer {
         self.route_request("workspace/textDocumentContent", params)
             .await?
             .ok_or_else(Error::internal_error)
-    }
-
-    async fn max_dump_state(&self) -> Result<serde_json::Value> {
-        Err(Error::method_not_found())
-    }
-
-    async fn max_restore_state(&self, _params: serde_json::Value) -> Result<()> {
-        Err(Error::method_not_found())
     }
 
     async fn ranges_formatting(
@@ -620,17 +511,5 @@ impl LanguageServer for ComposedServer {
 
     async fn progress(&self, params: ProgressParams) {
         self.route_notification("$/progress", params).await;
-    }
-
-    async fn max_instance_list(&self) -> Result<Value> {
-        Err(Error::method_not_found())
-    }
-
-    async fn max_reset(&self) -> Result<()> {
-        Err(Error::method_not_found())
-    }
-
-    async fn max_lsif(&self) -> Result<String> {
-        Err(Error::method_not_found())
     }
 }

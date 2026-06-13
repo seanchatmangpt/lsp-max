@@ -48,34 +48,11 @@ struct OcelIndex {
     objects_end_line: u32,
 }
 
-#[derive(Debug, Clone)]
-enum GallVerdict {
-    Fit {
-        fitness: f32,
-    },
-    Deviation {
-        #[allow(dead_code)]
-        fitness: f32,
-        missing: Vec<String>,
-    },
-    Blocked {
-        #[allow(dead_code)]
-        reason: String,
-    },
-    Inconclusive,
-}
-
-#[derive(Debug, Clone)]
-struct ConformanceResult {
-    verdict: GallVerdict,
-    fitness: Option<f32>,
-}
-
 #[derive(Debug, Clone, Default)]
 struct DocumentState {
     text: String,
     index: Option<OcelIndex>,
-    conformance: Option<ConformanceResult>,
+    conformance: Vec<gc005_wasm4pm_adapter::ConformanceIssue>,
 }
 
 // ── Semantic token legend ────────────────────────────────────────────────────
@@ -389,51 +366,6 @@ fn find_quoted_value_range(text: &str, key: &str, value: &str) -> Option<Range> 
 
 // ── Conformance result from adapter issues ───────────────────────────────────
 
-fn conformance_from_issues(
-    issues: &[gc005_wasm4pm_adapter::ConformanceIssue],
-) -> Option<ConformanceResult> {
-    for issue in issues {
-        match issue.code.as_str() {
-            "WASM4PM-VERDICT-FIT" => {
-                // parse fitness from message "... FIT (Fitness: 1.0)"
-                let fitness = parse_fitness(&issue.message);
-                return Some(ConformanceResult {
-                    verdict: GallVerdict::Fit {
-                        fitness: fitness.unwrap_or(1.0),
-                    },
-                    fitness,
-                });
-            }
-            "WASM4PM-VERDICT-DEVIATION" => {
-                let fitness = parse_fitness(&issue.message);
-                return Some(ConformanceResult {
-                    verdict: GallVerdict::Deviation {
-                        fitness: fitness.unwrap_or(0.0),
-                        missing: vec![],
-                    },
-                    fitness,
-                });
-            }
-            "WASM4PM-VERDICT-BLOCKED" => {
-                return Some(ConformanceResult {
-                    verdict: GallVerdict::Blocked {
-                        reason: issue.message.clone(),
-                    },
-                    fitness: None,
-                });
-            }
-            "WASM4PM-VERDICT-INCONCLUSIVE" => {
-                return Some(ConformanceResult {
-                    verdict: GallVerdict::Inconclusive,
-                    fitness: None,
-                });
-            }
-            _ => {}
-        }
-    }
-    None
-}
-
 fn parse_fitness(msg: &str) -> Option<f32> {
     // Look for "Fitness: 0.9" pattern
     let marker = "Fitness: ";
@@ -462,14 +394,13 @@ impl Backend {
         };
 
         let index = parse_ocel(&text);
-        let conformance = conformance_from_issues(&issues);
 
         self.documents.insert(
             uri.clone(),
             DocumentState {
                 text: text.clone(),
                 index,
-                conformance,
+                conformance: issues.clone(),
             },
         );
 
@@ -892,8 +823,9 @@ impl lsp_max::LanguageServer for Backend {
         drop(doc);
 
         let fitness_prefix = conformance
-            .as_ref()
-            .and_then(|c| c.fitness)
+            .iter()
+            .find(|i| i.code == "WASM4PM-VERDICT-FIT" || i.code == "WASM4PM-VERDICT-DEVIATION")
+            .and_then(|i| parse_fitness(&i.message))
             .map(|f| format!("Fitness: {:.2} — ", f))
             .unwrap_or_default();
 
@@ -1095,22 +1027,24 @@ impl lsp_max::LanguageServer for Backend {
         let mut hints: Vec<InlayHint> = Vec::new();
 
         // Fitness hint on events key
-        if let Some(ref conf) = conformance {
-            if let Some(fitness) = conf.fitness {
-                hints.push(InlayHint {
-                    position: Position {
-                        line: idx.events_key_line,
-                        character: 8,
-                    },
-                    label: InlayHintLabel::String(format!(" fitness:{:.2}", fitness)),
-                    kind: Some(InlayHintKind::PARAMETER),
-                    text_edits: None,
-                    tooltip: None,
-                    padding_left: Some(true),
-                    padding_right: None,
-                    data: None,
-                });
-            }
+        if let Some(fitness) = conformance
+            .iter()
+            .find(|i| i.code == "WASM4PM-VERDICT-FIT" || i.code == "WASM4PM-VERDICT-DEVIATION")
+            .and_then(|i| parse_fitness(&i.message))
+        {
+            hints.push(InlayHint {
+                position: Position {
+                    line: idx.events_key_line,
+                    character: 8,
+                },
+                label: InlayHintLabel::String(format!(" fitness:{:.2}", fitness)),
+                kind: Some(InlayHintKind::PARAMETER),
+                text_edits: None,
+                tooltip: None,
+                padding_left: Some(true),
+                padding_right: None,
+                data: None,
+            });
         }
 
         // Orphan event hints
@@ -1176,54 +1110,58 @@ impl lsp_max::LanguageServer for Backend {
             data: None,
         });
 
-        // (2) Verdict-dependent lens on events key line
-        if let Some(ref conf) = conformance {
+        // (2) Verdict-dependent lens on events key line — read directly from adapter issues
+        {
             let events_line = idx.events_key_line;
-            match &conf.verdict {
-                GallVerdict::Fit { fitness } => {
-                    lenses.push(CodeLens {
-                        range: Range {
-                            start: Position {
-                                line: events_line,
-                                character: 0,
-                            },
-                            end: Position {
-                                line: events_line,
-                                character: 1,
-                            },
+            if let Some(fit) = conformance.iter().find(|i| i.code == "WASM4PM-VERDICT-FIT") {
+                let fitness = parse_fitness(&fit.message).unwrap_or(1.0);
+                lenses.push(CodeLens {
+                    range: Range {
+                        start: Position {
+                            line: events_line,
+                            character: 0,
                         },
-                        command: Some(Command {
-                            title: "⬡ Bind Receipt".to_string(),
-                            command: "conformance-receipt.bind".to_string(),
-                            arguments: Some(vec![
-                                serde_json::to_value(uri).unwrap_or_default(),
-                                serde_json::json!(fitness),
-                            ]),
-                        }),
-                        data: None,
-                    });
-                }
-                GallVerdict::Deviation { missing, .. } => {
-                    lenses.push(CodeLens {
-                        range: Range {
-                            start: Position {
-                                line: events_line,
-                                character: 0,
-                            },
-                            end: Position {
-                                line: events_line,
-                                character: 1,
-                            },
+                        end: Position {
+                            line: events_line,
+                            character: 1,
                         },
-                        command: Some(Command {
-                            title: format!("⚑ {} Missing Admissions", missing.len()),
-                            command: String::new(),
-                            arguments: None,
-                        }),
-                        data: None,
-                    });
-                }
-                _ => {}
+                    },
+                    command: Some(Command {
+                        title: "⬡ Bind Receipt".to_string(),
+                        command: "conformance-receipt.bind".to_string(),
+                        arguments: Some(vec![
+                            serde_json::to_value(uri).unwrap_or_default(),
+                            serde_json::json!(fitness),
+                        ]),
+                    }),
+                    data: None,
+                });
+            } else if conformance
+                .iter()
+                .any(|i| i.code == "WASM4PM-VERDICT-DEVIATION")
+            {
+                let missing_count = conformance
+                    .iter()
+                    .filter(|i| i.code == "WASM4PM-MISSING-ADMISSION")
+                    .count();
+                lenses.push(CodeLens {
+                    range: Range {
+                        start: Position {
+                            line: events_line,
+                            character: 0,
+                        },
+                        end: Position {
+                            line: events_line,
+                            character: 1,
+                        },
+                    },
+                    command: Some(Command {
+                        title: format!("⚑ {} Missing Admissions", missing_count),
+                        command: String::new(),
+                        arguments: None,
+                    }),
+                    data: None,
+                });
             }
         }
 
