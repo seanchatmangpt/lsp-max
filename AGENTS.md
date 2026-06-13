@@ -577,6 +577,68 @@ Coverage: **Bash** (shell actions), **Edit** (in-place file mutations), **Write*
 
 ---
 
+## Subagent Gate Propagation — Status: OPEN
+
+### The gap
+
+The `PreToolUse` hook in `.claude/settings.json` applies only to the parent Claude Code session. Subagents spawned via the `Agent` tool run in their own isolated session. They do **not** inherit the parent session's hooks. A subagent can therefore invoke Bash, Edit, or Write while the parent session's gate is BLOCKED.
+
+This is a structural gap. It is not a configuration error. The hook mechanism does not cross session boundaries.
+
+### What is available
+
+The gate file path is deterministic and world-readable. Any process — including a subagent — can read it directly with a single syscall.
+
+Path formula (FNV-1a of the working directory as a zero-padded 16-hex-digit suffix):
+
+```text
+$XDG_RUNTIME_DIR/lsp-max-gate-{fnv1a(cwd):016x}
+  or
+/tmp/lsp-max-gate-{fnv1a(cwd):016x}
+```
+
+Content: single byte — `b"0"` when clear, `b"1"` when ANDON is set. File absent means compositor is not running (gate not enforced).
+
+Reference implementations:
+
+- `crates/lsp-max-cli/src/nouns/gate.rs` — `GateService::gate_file_path()` and `GateService::check()`
+- `crates/lsp-max-compositor/src/gate_file.rs` — `GateFile::for_workspace()`
+
+Both use the same FNV-1a constants (`offset_basis = 0xcbf29ce484222325`, `prime = 0x100000001b3`) and format the hash with `{hash:016x}`.
+
+### Proposed mitigation (convention, not enforcement)
+
+Subagent prompts should include a gate-check preamble as the first Bash action:
+
+```bash
+lsp-max-cli gate check || exit 1
+```
+
+This reads the gate file, exits 1 if ANDON is set, and blocks further shell actions in that subagent invocation. It mirrors what the PreToolUse hook does in the parent session.
+
+Subagent prompt authors are responsible for including this preamble. There is no structural mechanism that forces it.
+
+### What this gap does not affect
+
+- The parent session's gate enforcement is unaffected.
+- The compositor continues to write the gate file correctly.
+- `lsp-max-cli gate check` remains the canonical single-syscall check for any caller.
+
+### Admitted / Refused / OPEN
+
+```text
+PreToolUse hook enforcement in parent session:   ADMITTED
+Gate file written by compositor:                 ADMITTED
+lsp-max-cli gate check available to subagents:  ADMITTED
+Structural enforcement in subagent sessions:     REFUSED — hook boundary is not crossable
+Convention-based mitigation (prompt preamble):   CANDIDATE — not structurally enforced
+Subagent gate propagation overall:               OPEN
+```
+
+Do not collapse OPEN into ADMITTED. The gap is present until structural enforcement exists.
+
+---
+
 ## Final Prime
 
 This project is not about making an LSP demo.

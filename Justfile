@@ -59,26 +59,38 @@ test-pre-publish: dx-verify dx-polish
 
 # Enforces strict architectural boundaries (no legacy, no shims)
 dx-verify:
-    @echo -e "${MAGENTA}============================================================${NC}"
-    @echo -e "${CYAN} 🚀 AutoDX: Architectural Boundary Verification ${NC}"
-    @echo -e "${MAGENTA}============================================================${NC}"
-    @echo -e "${BLUE}➜ Scanning for forbidden legacy residue...${NC}"
-    @FORBIDDEN="legacy|Legacy|LEGACY|deprecated|deprecation|facade|shim|backward compatibility|compatibility layer"; \
-    RESIDUE=$$(rg -n "$$FORBIDDEN" ../wasm4pm-compat ../wasm4pm --glob '!target/**' --glob '!target_lsp/**' --glob '!.git/**' --glob '!Cargo.lock' --glob '!package-lock.json' --glob '!pnpm-lock.yaml' || true); \
-    if [ -n "$$RESIDUE" ]; then \
-        echo -e "${RED}✗ Forbidden residue found! Architecture compromised.${NC}"; \
-        echo "$$RESIDUE" | head -n 15; \
-        exit 1; \
+    #!/usr/bin/env bash
+    set -euo pipefail
+    echo "============================================================"
+    echo " AutoDX: Architectural Boundary Verification"
+    echo "============================================================"
+    echo "➜ Scanning for forbidden legacy residue..."
+    FORBIDDEN="legacy|Legacy|LEGACY|deprecated|deprecation|facade|shim|backward compatibility|compatibility layer"
+    RESIDUE=$(rg -n "$FORBIDDEN" ../wasm4pm-compat ../wasm4pm \
+        --glob '!target/**' --glob '!target_lsp/**' --glob '!.git/**' \
+        --glob '!Cargo.lock' --glob '!package-lock.json' --glob '!pnpm-lock.yaml' \
+        --glob '!**/node_modules/**' --glob '!paper/**' --glob '!**/docs/**' \
+        --glob '!**/receipts/**' --glob '!**/*.md' --glob '!**/*.tex' --glob '!**/*.log' \
+        || true)
+    if [ -n "$RESIDUE" ]; then
+        echo "✗ Forbidden residue found! Architecture compromised."
+        echo "$RESIDUE" | head -n 15
+        exit 1
     fi
-    @echo -e "${GREEN}✓ No legacy residue found. Ecosystem is pristine.${NC}"
-    @echo -e "${BLUE}➜ Scanning for forbidden intermediary type authorities (wasm4pm_types, ocel_core)...${NC}"
-    @AUTHORITIES=$$(rg -n "wasm4pm_types|ocel_core" ../wasm4pm-compat ../wasm4pm --glob '!target/**' --glob '!target_lsp/**' --glob '!.git/**' --glob '!Cargo.lock' --glob '!package-lock.json' --glob '!pnpm-lock.yaml' || true); \
-    if [ -n "$$AUTHORITIES" ]; then \
-        echo -e "${RED}✗ Forbidden type authorities found! wasm4pm-compat is the sole baseline.${NC}"; \
-        echo "$$AUTHORITIES" | head -n 15; \
-        exit 1; \
+    echo "✓ No legacy residue found."
+    echo "➜ Scanning for forbidden intermediary type authorities (wasm4pm_types, ocel_core)..."
+    AUTHORITIES=$(rg -n "wasm4pm_types|ocel_core" ../wasm4pm-compat ../wasm4pm \
+        --glob '!target/**' --glob '!target_lsp/**' --glob '!.git/**' \
+        --glob '!Cargo.lock' --glob '!package-lock.json' --glob '!pnpm-lock.yaml' \
+        --glob '!**/node_modules/**' --glob '!paper/**' --glob '!**/docs/**' \
+        --glob '!**/receipts/**' --glob '!**/*.md' --glob '!**/*.tex' --glob '!**/*.log' \
+        || true)
+    if [ -n "$AUTHORITIES" ]; then
+        echo "✗ Forbidden type authorities found! wasm4pm-compat is the sole baseline."
+        echo "$AUTHORITIES" | head -n 15
+        exit 1
     fi
-    @echo -e "${GREEN}✓ Type authorities are mathematically sound.${NC}"
+    echo "✓ Type authorities are mathematically sound."
 
 # Runs formatters, linters, and strict clippy checks
 dx-polish:
