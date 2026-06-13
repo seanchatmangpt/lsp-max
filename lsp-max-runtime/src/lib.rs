@@ -14,8 +14,8 @@ pub mod typestate;
 
 pub use mesh::{build_conformance_vector, AutonomicMesh, MaxMesh};
 pub use mesh_hooks::{
-    CustomerRequestClassifierHook, IntakeClearHook, IntakeDiagnosticHook, PolicyEvaluationHook,
-    ReceiptRoutingHook,
+    CustomerRequestClassifierHook, IntakeClearHook, IntakeDiagnosticHook, OcelProcessHook,
+    PolicyEvaluationHook, ReceiptRoutingHook,
 };
 pub use mesh_types::{
     AutonomicMeshState, ConformanceDeltaEntry, ConformanceGrade, FailureMode, Hook, HookDescriptor,
@@ -45,9 +45,10 @@ mod hook_descriptor_tests {
         mesh.register_hook(Box::new(mesh_hooks::CustomerRequestClassifierHook::new()));
         mesh.register_hook(Box::new(mesh_hooks::PolicyEvaluationHook::new()));
         mesh.register_hook(Box::new(mesh_hooks::ReceiptRoutingHook::new()));
+        mesh.register_hook(Box::new(mesh_hooks::OcelProcessHook::new()));
 
         let descriptors = mesh.hook_descriptors();
-        assert_eq!(descriptors.len(), 5, "expected exactly 5 registered hooks");
+        assert_eq!(descriptors.len(), 6, "expected exactly 6 registered hooks");
 
         for d in &descriptors {
             assert!(!d.name.is_empty(), "hook name must not be empty");
@@ -77,6 +78,7 @@ mod hook_descriptor_tests {
             Box::new(mesh_hooks::CustomerRequestClassifierHook::new()),
             Box::new(mesh_hooks::PolicyEvaluationHook::new()),
             Box::new(mesh_hooks::ReceiptRoutingHook::new()),
+            Box::new(mesh_hooks::OcelProcessHook::new()),
         ];
         let expected_names = [
             "IntakeDiagnosticHook",
@@ -84,6 +86,7 @@ mod hook_descriptor_tests {
             "CustomerRequestClassifierHook",
             "PolicyEvaluationHook",
             "ReceiptRoutingHook",
+            "OcelProcessHook",
         ];
         for (hook, expected) in hooks.iter().zip(expected_names.iter()) {
             assert_eq!(hook.name(), *expected);
