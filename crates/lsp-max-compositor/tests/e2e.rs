@@ -1,53 +1,53 @@
 // e2e.rs — subprocess spawn + JSON-RPC pipeline tests.
-// These tests exercise the real ChildProcess::spawn path using `cat` as a
-// stand-in subprocess (cat echoes stdin to stdout, satisfying the pipe
-// contract without requiring a real LSP server binary).
-//
-// Status: ADMITTED where cat is available; OPEN where it is not.
+// Uses `lsp-echo-server` (a minimal LSP-speaking binary compiled from
+// src/bin/lsp_echo_server.rs) as the subprocess stand-in.  The binary
+// responds to `initialize` with `{"capabilities":{}}`, `shutdown` with null,
+// and exits on `exit`.
 
 use lsp_max_compositor::child_process::{ChildProcess, ChildProcessPool};
 
-/// Verify that spawning `cat` produces a ChildProcess with the correct
-/// server_id and a usable handle.  If `cat` is absent the test is OPEN
-/// (inconclusive) but does not fail.
+/// Path to the lsp-echo-server test helper binary, resolved at compile time.
+const LSP_ECHO_SERVER: &str = env!("CARGO_BIN_EXE_lsp-echo-server");
+
+/// Verify that spawning `lsp-echo-server` produces a ChildProcess with the
+/// correct server_id and a usable handle.
 #[tokio::test]
-async fn child_process_spawn_cat_establishes_connection() {
-    let result = ChildProcess::spawn("cat-server".to_string(), "cat", &[]).await;
+async fn child_process_spawn_echo_server_establishes_connection() {
+    let result =
+        ChildProcess::spawn("echo-server".to_string(), LSP_ECHO_SERVER, &[]).await;
 
     match result {
         Ok((proc, _exit_fut)) => {
-            assert_eq!(proc.server_id, "cat-server");
-            // exit() is a fire-and-forget notification; no response expected.
+            assert_eq!(proc.server_id, "echo-server");
             proc.handle.exit().await;
         }
         Err(e) => {
-            // OPEN: cat not available in this environment.
             eprintln!(
-                "child_process_spawn_cat_establishes_connection: OPEN — cat unavailable: {e}"
+                "child_process_spawn_echo_server_establishes_connection: BLOCKED — spawn failed: {e}"
             );
+            panic!("spawn failed: {e}");
         }
     }
 }
 
 /// Verify that ChildProcessPool::register followed by server_ids_snapshot
-/// reflects the registered entry when `cat` is available.
+/// reflects the registered entry.
 #[tokio::test]
 async fn child_process_pool_spawn_and_snapshot() {
     let pool = ChildProcessPool::new();
     assert_eq!(pool.server_ids_snapshot().len(), 0);
 
-    match ChildProcess::spawn("cat-pool-test".to_string(), "cat", &[]).await {
+    match ChildProcess::spawn("echo-pool-test".to_string(), LSP_ECHO_SERVER, &[]).await {
         Ok((proc, _exit_fut)) => {
-            pool.register("cat-pool-test".to_string(), proc);
+            pool.register("echo-pool-test".to_string(), proc);
             let ids = pool.server_ids_snapshot();
             assert!(
-                ids.contains(&"cat-pool-test".to_string()),
+                ids.contains(&"echo-pool-test".to_string()),
                 "server_ids_snapshot should contain registered id; got: {ids:?}"
             );
         }
         Err(e) => {
-            // OPEN: cat not available.
-            eprintln!("child_process_pool_spawn_and_snapshot: OPEN — cat unavailable: {e}");
+            panic!("spawn failed: {e}");
         }
     }
 }
