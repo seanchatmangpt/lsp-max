@@ -161,6 +161,51 @@ fn traverse_node(node: Node, source: &[u8], filepath: &str, obs: &mut Vec<Observ
         }
     }
 
+    // Check for allow(...) suppression attributes (STRANGE-010)
+    if kind == "attribute_item" && text.contains("allow(") {
+        obs.push(Observation {
+            file_path: filepath.to_string(),
+            start_byte: range.start_byte,
+            end_byte: range.end_byte,
+            line: range.start_point.row + 1,
+            column: range.start_point.column + 1,
+            kind: "ast_node".to_string(),
+            construct: "allow_cheat_attr".to_string(),
+            context: text.chars().take(120).collect(),
+            message: format!("Suppression attribute found: {}", text),
+        });
+    }
+
+    // Check for unsafe blocks (STRANGE-011)
+    if kind == "unsafe_block" {
+        obs.push(Observation {
+            file_path: filepath.to_string(),
+            start_byte: range.start_byte,
+            end_byte: range.end_byte,
+            line: range.start_point.row + 1,
+            column: range.start_point.column + 1,
+            kind: "ast_node".to_string(),
+            construct: "unsafe_block".to_string(),
+            context: text.chars().take(120).collect(),
+            message: "unsafe block found".to_string(),
+        });
+    }
+
+    // Check for unsafe functions and impls (STRANGE-011)
+    if (kind == "function_item" || kind == "impl_item") && text.starts_with("unsafe ") {
+        obs.push(Observation {
+            file_path: filepath.to_string(),
+            start_byte: range.start_byte,
+            end_byte: range.end_byte,
+            line: range.start_point.row + 1,
+            column: range.start_point.column + 1,
+            kind: "ast_node".to_string(),
+            construct: "unsafe_fn_or_impl".to_string(),
+            context: text.chars().take(120).collect(),
+            message: "unsafe function or impl found".to_string(),
+        });
+    }
+
     // Recurse to children
     let mut cursor = node.walk();
     if cursor.goto_first_child() {

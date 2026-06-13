@@ -1,6 +1,8 @@
 pub mod builder;
 pub mod client;
 pub mod server_handle;
+#[cfg(test)]
+mod tests;
 
 pub use builder::ClientBuilder;
 pub use client::{ClientError, LanguageClient};

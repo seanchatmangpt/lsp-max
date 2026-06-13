@@ -23,6 +23,42 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
                 required_next_proof: "Check project Cargo.toml metadata.".to_string(),
             });
         }
+
+        // PATH-DEP with explicit non-CalVer version
+        if o.construct == "path_dep_with_semver_version" {
+            diags.push(AntiLlmDiagnostic {
+                code: "ANTI-LLM-VERSION-002".to_string(),
+                category: "version".to_string(),
+                file_path: o.file_path.clone(),
+                line: o.line,
+                column: o.column,
+                message: "Path dependency declares explicit SemVer version; omit version field or use CalVer".to_string(),
+                forbidden_implication: "Path dep version pin => calver law".to_string(),
+                blocking: false,
+                required_correction: "Remove the version field from the path dependency or replace with a CalVer string (YY.M.D).".to_string(),
+                required_next_proof: "Check path dependency declarations in Cargo.toml.".to_string(),
+            });
+        }
+
+        // [workspace.package] with non-CalVer version
+        if o.construct == "workspace_semver_version" {
+            diags.push(AntiLlmDiagnostic {
+                code: "ANTI-LLM-VERSION-003".to_string(),
+                category: "version".to_string(),
+                file_path: o.file_path.clone(),
+                line: o.line,
+                column: o.column,
+                message:
+                    "Workspace root declares SemVer version; workspace must use CalVer (YY.M.D)"
+                        .to_string(),
+                forbidden_implication: "Workspace semver => calver law".to_string(),
+                blocking: false,
+                required_correction: "Replace workspace version with CalVer (e.g. 26.6.12)."
+                    .to_string(),
+                required_next_proof: "Check [workspace.package] version in root Cargo.toml."
+                    .to_string(),
+            });
+        }
     }
 
     diags

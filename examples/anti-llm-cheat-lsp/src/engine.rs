@@ -4,8 +4,8 @@ use crate::parsers::{
     cargo_lock, cargo_toml, json_rpc, markdown_claims, receipt_json, rust_tree_sitter, typescript,
 };
 use crate::rules::{
-    authority, claims, lsp318, mutation, ocel_rules, receipts, routes, rust_smells, surface, test,
-    typescript as ts_rules, version,
+    authority, claims, determinism, lsp318, mutation, ocel_rules, receipts, routes, rust_smells,
+    surface, test, typescript as ts_rules, version,
 };
 use aho_corasick::AhoCorasick;
 use std::fs;
@@ -241,6 +241,7 @@ pub fn evaluate_diagnostics(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
     diags.extend(version::evaluate(obs));
     diags.extend(test::evaluate(obs));
     diags.extend(rust_smells::evaluate(obs));
+    diags.extend(determinism::evaluate(obs));
     diags.extend(lsp318::evaluate(obs));
     diags.extend(ocel_rules::evaluate(obs));
     diags.extend(ts_rules::evaluate(obs));

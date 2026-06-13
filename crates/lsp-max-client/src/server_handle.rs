@@ -2,18 +2,31 @@ use crate::client::ClientError;
 use lsp_types::*;
 use serde_json::json;
 use serde_json::Value;
-use tokio::sync::mpsc;
+use std::collections::HashMap;
+use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::Arc;
+use tokio::sync::{mpsc, oneshot, Mutex};
 
 /// A handle to interact with the connected Language Server.
 /// This acts as the outbound proxy for the downstream client.
 #[derive(Debug, Clone)]
 pub struct ServerHandle {
-    pub(crate) outbound_tx: mpsc::Sender<Value>,
+    pub(crate) sender: mpsc::Sender<Value>,
+    pub(crate) pending: Arc<Mutex<HashMap<u64, oneshot::Sender<Value>>>>,
+    pub(crate) next_id: Arc<AtomicU64>,
 }
 
 impl ServerHandle {
-    pub fn new(outbound_tx: mpsc::Sender<Value>) -> Self {
-        Self { outbound_tx }
+    pub fn new(
+        sender: mpsc::Sender<Value>,
+        pending: Arc<Mutex<HashMap<u64, oneshot::Sender<Value>>>>,
+        next_id: Arc<AtomicU64>,
+    ) -> Self {
+        Self {
+            sender,
+            pending,
+            next_id,
+        }
     }
 
     /// Helper to send a notification
@@ -23,25 +36,51 @@ impl ServerHandle {
             "method": method,
             "params": params,
         });
-        let _ = self.outbound_tx.send(msg).await;
+        let _ = self.sender.send(msg).await;
     }
 
-    /// Helper to send a request (Note: returning default Ok(None) to maintain signature without blocking for response map logic in this baseline).
+    /// Helper to send a request and await a correlated response.
     async fn request<R>(
         &self,
         method: &str,
         params: impl serde::Serialize,
-    ) -> Result<Option<R>, ClientError> {
+    ) -> Result<Option<R>, ClientError>
+    where
+        R: serde::de::DeserializeOwned,
+    {
+        let id = self.next_id.fetch_add(1, Ordering::SeqCst);
         let msg = json!({
             "jsonrpc": "2.0",
-            "id": 0,
+            "id": id,
             "method": method,
             "params": params,
         });
-        let _ = self.outbound_tx.send(msg).await;
-        // In this execution baseline, outbound request tracking requires a response map.
-        // We route the request out and return Ok(None) to satisfy the API signature cleanly.
-        Ok(None)
+
+        let (tx, rx) = oneshot::channel::<Value>();
+        self.pending.lock().await.insert(id, tx);
+
+        if self.sender.send(msg).await.is_err() {
+            self.pending.lock().await.remove(&id);
+            return Ok(None);
+        }
+
+        match tokio::time::timeout(std::time::Duration::from_secs(30), rx).await {
+            Ok(Ok(result)) => {
+                if result.is_null() {
+                    return Ok(None);
+                }
+                match serde_json::from_value::<R>(result) {
+                    Ok(v) => Ok(Some(v)),
+                    Err(_) => Ok(None),
+                }
+            }
+            Ok(Err(_)) => Ok(None), // sender dropped
+            Err(_) => {
+                // timeout — clean up
+                self.pending.lock().await.remove(&id);
+                Ok(None)
+            }
+        }
     }
 
     // --- Lifecycle ---
@@ -50,8 +89,13 @@ impl ServerHandle {
         &self,
         params: InitializeParams,
     ) -> Result<InitializeResult, ClientError> {
-        let _ = self.request::<InitializeResult>("initialize", params).await;
-        Ok(InitializeResult::default())
+        match self
+            .request::<InitializeResult>("initialize", params)
+            .await?
+        {
+            Some(r) => Ok(r),
+            None => Ok(InitializeResult::default()),
+        }
     }
     pub async fn initialized(&self, params: InitializedParams) {
         self.notify("initialized", params).await;
@@ -94,10 +138,13 @@ impl ServerHandle {
         &self,
         params: CompletionItem,
     ) -> Result<CompletionItem, ClientError> {
-        let _ = self
+        match self
             .request::<CompletionItem>("completionItem/resolve", params.clone())
-            .await;
-        Ok(params)
+            .await?
+        {
+            Some(r) => Ok(r),
+            None => Ok(params),
+        }
     }
 
     pub async fn signature_help(
@@ -158,10 +205,13 @@ impl ServerHandle {
         self.request("textDocument/codeAction", params).await
     }
     pub async fn code_action_resolve(&self, params: CodeAction) -> Result<CodeAction, ClientError> {
-        let _ = self
+        match self
             .request::<CodeAction>("codeAction/resolve", params.clone())
-            .await;
-        Ok(params)
+            .await?
+        {
+            Some(r) => Ok(r),
+            None => Ok(params),
+        }
     }
 
     pub async fn code_lens(
@@ -171,10 +221,13 @@ impl ServerHandle {
         self.request("textDocument/codeLens", params).await
     }
     pub async fn code_lens_resolve(&self, params: CodeLens) -> Result<CodeLens, ClientError> {
-        let _ = self
+        match self
             .request::<CodeLens>("codeLens/resolve", params.clone())
-            .await;
-        Ok(params)
+            .await?
+        {
+            Some(r) => Ok(r),
+            None => Ok(params),
+        }
     }
 
     pub async fn formatting(
@@ -228,10 +281,13 @@ impl ServerHandle {
         self.request("textDocument/inlayHint", params).await
     }
     pub async fn inlay_hint_resolve(&self, params: InlayHint) -> Result<InlayHint, ClientError> {
-        let _ = self
+        match self
             .request::<InlayHint>("inlayHint/resolve", params.clone())
-            .await;
-        Ok(params)
+            .await?
+        {
+            Some(r) => Ok(r),
+            None => Ok(params),
+        }
     }
 
     // --- Workspace Features ---

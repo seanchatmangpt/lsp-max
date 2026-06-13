@@ -1,0 +1,11 @@
+pub mod config;
+pub mod connections;
+pub mod fanout;
+pub mod merge;
+pub mod registry;
+pub mod registry_init;
+pub mod server;
+pub use config::CompositorConfig;
+pub use connections::ChildConnections;
+pub use merge::MergeContext;
+pub use registry::{ChildServer, ChildTier, ExtensionRouter};

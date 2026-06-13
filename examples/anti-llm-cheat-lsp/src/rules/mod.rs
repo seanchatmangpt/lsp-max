@@ -1,5 +1,6 @@
 pub mod authority;
 pub mod claims;
+pub mod determinism;
 pub mod lsp318;
 pub mod mutation;
 pub mod ocel_rules;

@@ -1,0 +1,144 @@
+// Diagnostic merge — ConformanceVector-aware merge of multi-server diagnostic sets.
+// REFUSED_BY_LAW diagnostics: lower severity number wins dedup; tier_rank breaks ties.
+// Non-law diagnostics: Primary tier wins dedup by (uri, line, character, code).
+
+use crate::registry::ChildTier;
+
+#[derive(Debug, Clone)]
+pub struct DiagnosticEntry {
+    pub uri: String,
+    pub line: u32,
+    pub character: u32,
+    pub severity: u8, // 1=Error, 2=Warning, 3=Info, 4=Hint
+    pub code: String,
+    pub message: String,
+    pub source_tier: ChildTier,
+}
+
+pub struct MergeContext {
+    andon_prefixes: Vec<String>,
+}
+
+impl MergeContext {
+    pub fn new(prefixes: Vec<String>) -> Self {
+        Self {
+            andon_prefixes: prefixes,
+        }
+    }
+
+    pub fn from_config(config: &crate::config::CompositorConfig) -> Self {
+        Self {
+            andon_prefixes: config
+                .all_andon_prefixes()
+                .into_iter()
+                .map(|s| s.to_owned())
+                .collect(),
+        }
+    }
+
+    pub fn andon_prefixes_count(&self) -> usize {
+        self.andon_prefixes.len()
+    }
+
+    pub fn merge(&self, inputs: Vec<(ChildTier, Vec<DiagnosticEntry>)>) -> Vec<DiagnosticEntry> {
+        let refs: Vec<&str> = self.andon_prefixes.iter().map(|s| s.as_str()).collect();
+        merge_diagnostics(inputs, Some(&refs))
+    }
+}
+
+pub fn is_refused_by_law(code: &str) -> bool {
+    code.starts_with("WASM4PM-") || code.starts_with("ANTI-LLM-") || code.starts_with("GGEN-")
+}
+
+pub fn is_refused_by_law_with_prefixes(code: &str, prefixes: &[&str]) -> bool {
+    prefixes.iter().any(|p| code.starts_with(p))
+}
+
+fn tier_rank(tier: &ChildTier) -> u8 {
+    match tier {
+        ChildTier::Primary => 0,
+        ChildTier::Secondary => 1,
+        ChildTier::DiagnosticsOnly => 2,
+    }
+}
+
+/// Merge diagnostics from multiple tiers.
+/// Rules:
+/// 1. REFUSED_BY_LAW (code prefix WASM4PM-/ANTI-LLM-/GGEN-) are always included.
+/// 2. For REFUSED_BY_LAW codes: lower severity number wins dedup (1=Error beats 2=Warning);
+///    tier_rank breaks ties. This prevents a Primary-tier Warning from shadowing a
+///    DiagnosticsOnly-tier Error at the same (uri, line, character, code).
+/// 3. For non-law codes: Primary tier wins dedup (existing behavior).
+/// 4. Output sorted: REFUSED_BY_LAW errors first, then by severity asc, then uri, then line/character.
+///
+/// `andon_prefixes`: when `Some`, overrides the static law-prefix set for sorting.
+pub fn merge_diagnostics(
+    inputs: Vec<(ChildTier, Vec<DiagnosticEntry>)>,
+    andon_prefixes: Option<&[&str]>,
+) -> Vec<DiagnosticEntry> {
+    // Flatten and tag with tier, then deduplicate.
+    // Key: (uri, line, character, code).
+    // For REFUSED_BY_LAW codes: lower severity wins; tier_rank breaks ties.
+    // For non-law codes: lower tier_rank wins (Primary beats Secondary beats DiagnosticsOnly).
+    use std::collections::HashMap;
+
+    let static_prefixes: &[&str] = &["WASM4PM-", "ANTI-LLM-", "GGEN-"];
+    let effective_prefixes: &[&str] = andon_prefixes.unwrap_or(static_prefixes);
+
+    let mut map: HashMap<(String, u32, u32, String), DiagnosticEntry> = HashMap::new();
+
+    // Process Primary first so it wins non-law dedup, then others.
+    let mut ordered: Vec<(ChildTier, Vec<DiagnosticEntry>)> = inputs;
+    ordered.sort_by_key(|(tier, _)| tier_rank(tier));
+
+    for (tier, entries) in ordered {
+        for mut entry in entries {
+            entry.source_tier = tier.clone();
+            let key = (
+                entry.uri.clone(),
+                entry.line,
+                entry.character,
+                entry.code.clone(),
+            );
+            let insert = match map.get(&key) {
+                None => true,
+                Some(existing) => {
+                    if is_refused_by_law_with_prefixes(&entry.code, effective_prefixes) {
+                        // For law codes: lower severity number wins (1=Error beats 2=Warning).
+                        // Tier rank breaks ties so Primary wins when severity is equal.
+                        match entry.severity.cmp(&existing.severity) {
+                            std::cmp::Ordering::Less => true,
+                            std::cmp::Ordering::Greater => false,
+                            std::cmp::Ordering::Equal => {
+                                tier_rank(&entry.source_tier) < tier_rank(&existing.source_tier)
+                            }
+                        }
+                    } else {
+                        // Non-law codes: Primary tier wins (lower tier_rank wins).
+                        tier_rank(&entry.source_tier) < tier_rank(&existing.source_tier)
+                    }
+                }
+            };
+            if insert {
+                map.insert(key, entry);
+            }
+        }
+    }
+
+    let mut result: Vec<DiagnosticEntry> = map.into_values().collect();
+
+    result.sort_by(|a, b| {
+        let refused = |code: &str| is_refused_by_law_with_prefixes(code, effective_prefixes);
+        let a_law = refused(&a.code) && a.severity == 1;
+        let b_law = refused(&b.code) && b.severity == 1;
+        // REFUSED_BY_LAW errors first
+        b_law
+            .cmp(&a_law)
+            .then(a.severity.cmp(&b.severity))
+            .then(a.uri.cmp(&b.uri))
+            .then(a.line.cmp(&b.line))
+            .then(a.character.cmp(&b.character))
+    });
+
+    result
+}

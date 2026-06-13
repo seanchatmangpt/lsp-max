@@ -3,5 +3,8 @@
   "producing_workspace": "~/ggen",
   "storing_workspace": "~/lsp-max",
   "export_reason": "checkpoint tracking",
-  "exported_artifact_digest": "36f1eff8b4a2641166d0c2e7f06cfc7f1410628f2f0259b012f7424520d23f79"
+  "exported_artifact_digest": "36f1eff8b4a2641166d0c2e7f06cfc7f1410628f2f0259b012f7424520d23f79",
+  "output_hash": "36f1eff8b4a2641166d0c2e7f06cfc7f1410628f2f0259b012f7424520d23f79",
+  "run_id": "GALL-CHECKPOINT-008",
+  "replay_pointer": "legacy — no live replay; see producing_workspace ~/ggen"
 }
