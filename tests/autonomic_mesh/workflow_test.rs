@@ -1,4 +1,5 @@
 /// Customer service autonomic mesh workflow test.
+use lsp_max_runtime::sha256;
 use lsp_max_runtime::{
     AutonomicMesh, CustomerRequestClassifierHook, FailureMode, Hook, HookDescriptor, HookEvent,
     InstanceId, LspInstance, LspPhase, MeshAction, PolicyEvaluationHook, PolicyState, Receipt,
@@ -60,7 +61,7 @@ impl Hook for CustomerServiceWorkflowHook {
                         instance_id: InstanceId::from("LSP_2"),
                         receipt: Receipt {
                             receipt_id: "rcpt-refund-executed".to_string(),
-                            hash: "sha256-cryptographic-proof-of-refund-executed-successfully-0xdeadbeef".to_string(),
+                            hash: sha256(b"rcpt-refund-executed"),
                             prev_receipt_hash: None,
                         },
                     });
@@ -150,8 +151,7 @@ fn test_customer_service_autonomic_mesh_workflow() {
         instance_id: InstanceId::from("LSP_1"),
         receipt: Receipt {
             receipt_id: "rcpt-customer-proof".to_string(),
-            hash: "sha256-cryptographic-customer-proof-of-damaged-item-verification-hash"
-                .to_string(),
+            hash: sha256(b"rcpt-customer-proof"),
             prev_receipt_hash: None,
         },
     });

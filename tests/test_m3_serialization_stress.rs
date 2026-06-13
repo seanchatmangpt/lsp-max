@@ -9,6 +9,7 @@ use lsp_max::max_protocol::{
     ManifoldSnapshot, MaxDiagnostic, Receipt, ReceiptObligation, RepairAction, Repairability,
     SnapshotId, Terminality, TransitionAttempt,
 };
+use lsp_max::max_runtime::sha256;
 use serde_json::{json, Value};
 
 #[test]
@@ -62,6 +63,7 @@ fn test_conformance_vector_edge_cases() {
 #[test]
 fn test_receipt_backward_compatibility_and_defaults() {
     // 1. Missing prev_receipt_hash field entirely should deserialize cleanly with None
+    // Intentional arbitrary hash: testing that any String is accepted during deserialization
     let json_str = r#"{"receipt_id": "rcpt-1", "hash": "abc"}"#;
     let receipt: Receipt =
         serde_json::from_str(json_str).expect("deserialize receipt without prev_receipt_hash");
@@ -79,12 +81,12 @@ fn test_receipt_backward_compatibility_and_defaults() {
     // 3. Receipt with Some prev_receipt_hash round-trip
     let r_full = Receipt {
         receipt_id: "rcpt-2".to_string(),
-        hash: "def".to_string(),
-        prev_receipt_hash: Some("abc".to_string()),
+        hash: sha256(b"rcpt-2"),
+        prev_receipt_hash: Some(sha256(b"rcpt-1")),
     };
     let json_full = serde_json::to_string(&r_full).expect("serialize Receipt");
     let r_full_dec: Receipt = serde_json::from_str(&json_full).expect("deserialize Receipt");
-    assert_eq!(r_full_dec.prev_receipt_hash, Some("abc".to_string()));
+    assert_eq!(r_full_dec.prev_receipt_hash, Some(sha256(b"rcpt-1")));
 }
 
 #[test]
@@ -260,7 +262,7 @@ fn test_manifold_snapshot_serialization_extremes() {
         }],
         receipts: vec![Receipt {
             receipt_id: "rcpt-1".to_string(),
-            hash: "h1".to_string(),
+            hash: sha256(b"rcpt-1"),
             prev_receipt_hash: None,
         }],
     };
