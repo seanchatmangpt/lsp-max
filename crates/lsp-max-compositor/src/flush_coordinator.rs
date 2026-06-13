@@ -11,6 +11,7 @@ use tokio::sync::mpsc;
 
 use crate::diagnostic_buffer::DiagnosticBuffer;
 use crate::merge::MergeContext;
+use crate::receipt::CompositorReceipt;
 
 /// Background coordinator that debounces URI flush signals and pushes merged diagnostics
 /// to the editor via `lsp_max::Client::publish_diagnostics`.
@@ -23,7 +24,7 @@ impl FlushCoordinator {
     /// Returns a `FlushCoordinator` whose `signal_flush` can be passed to `CompositorClient`.
     pub fn spawn(
         buffer: Arc<DiagnosticBuffer>,
-        _ctx: Arc<MergeContext>,
+        ctx: Arc<MergeContext>,
         client: lsp_max::Client,
     ) -> Self {
         let (tx, mut rx) = mpsc::channel::<String>(256);
@@ -95,6 +96,27 @@ impl FlushCoordinator {
                         client
                             .publish_diagnostics(parsed_uri, lsp_diags, None)
                             .await;
+                    }
+
+                    let receipt = CompositorReceipt::new(
+                        uri.clone(),
+                        &result,
+                        ctx.andon_prefixes(),
+                    );
+                    if receipt.has_andon_block {
+                        tracing::error!(
+                            uri = %receipt.uri,
+                            andon_codes = ?receipt.andon_codes,
+                            prefixes_fingerprint = receipt.prefixes_fingerprint,
+                            "compositor-receipt: ANDON block at flush — gate BLOCKED, law violated"
+                        );
+                    } else {
+                        tracing::debug!(
+                            uri = %receipt.uri,
+                            diagnostic_count = receipt.diagnostic_count,
+                            prefixes_fingerprint = receipt.prefixes_fingerprint,
+                            "compositor-receipt: flush ADMITTED"
+                        );
                     }
                 }
             }

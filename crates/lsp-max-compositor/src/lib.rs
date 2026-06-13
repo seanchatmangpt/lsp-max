@@ -7,6 +7,7 @@ pub mod flush_coordinator;
 pub mod merge;
 pub mod registry;
 pub mod registry_init;
+pub mod receipt;
 pub mod server;
 pub use compositor_client::CompositorClient;
 pub use config::CompositorConfig;
