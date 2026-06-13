@@ -843,6 +843,28 @@ fn merge_non_law_dedup_primary_wins() {
     );
 }
 
+// ── initialized fan-out — empty pool ─────────────────────────────────────────
+
+#[test]
+fn initialized_fan_out_does_not_panic_with_empty_pool() {
+    // Verify that server_ids_snapshot() on an empty pool returns an empty Vec
+    // and that the fan-out iteration loop body is never entered.
+    // Full CompositorServer construction requires a real lsp_max::Client
+    // (not constructible in unit tests); this test covers the pool-level
+    // primitive that the fan-out delegates to.
+    use lsp_max_compositor::child_process::ChildProcessPool;
+    let pool = ChildProcessPool::new();
+    let ids = pool.server_ids_snapshot();
+    assert!(
+        ids.is_empty(),
+        "empty pool must return empty snapshot, got: {:?}",
+        ids
+    );
+    // The fan-out loop iterates over ids — with an empty vec it performs zero
+    // iterations and cannot panic. Verify the count explicitly.
+    assert_eq!(ids.len(), 0, "fan-out over empty snapshot must iterate zero times");
+}
+
 // ── initialized backfill ──────────────────────────────────────────────────────
 
 #[test]

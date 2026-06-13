@@ -112,6 +112,13 @@ impl ChildProcessPool {
     pub fn register(&self, server_id: String, proc: ChildProcess) {
         self.processes.insert(server_id, proc);
     }
+
+    /// Returns all server IDs currently in the pool.
+    /// Collect IDs first, then look up handles one at a time to avoid
+    /// holding DashMap refs across async await points.
+    pub fn server_ids_snapshot(&self) -> Vec<String> {
+        self.processes.iter().map(|e| e.key().clone()).collect()
+    }
 }
 
 impl Default for ChildProcessPool {
@@ -128,6 +135,19 @@ mod tests {
     fn pool_starts_empty() {
         let pool = ChildProcessPool::new();
         assert_eq!(pool.server_ids().len(), 0);
+    }
+
+    #[test]
+    fn server_ids_snapshot_empty_pool() {
+        let pool = ChildProcessPool::new();
+        assert_eq!(pool.server_ids_snapshot(), Vec::<String>::new());
+    }
+
+    #[test]
+    fn server_ids_snapshot_matches_server_ids() {
+        // With no registered processes both methods must agree.
+        let pool = ChildProcessPool::new();
+        assert_eq!(pool.server_ids_snapshot(), pool.server_ids());
     }
 
     // Spawn a real process (cat) to verify the spawn path works.

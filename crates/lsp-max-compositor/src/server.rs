@@ -1,4 +1,5 @@
 use crate::child_process::ChildProcessPool;
+use lsp_max_client::ServerHandle as ChildServerHandle;
 use crate::connections::ChildConnections;
 use crate::diagnostic_buffer::DiagnosticBuffer;
 use crate::flush_coordinator::FlushCoordinator;
@@ -87,8 +88,27 @@ impl lsp_max::LanguageServer for CompositorServer {
         })
     }
 
-    async fn initialized(&self, _: InitializedParams) {
-        tracing::info!("compositor: editor handshake complete — flushing backlog");
+    async fn initialized(&self, params: InitializedParams) {
+        tracing::info!("compositor: editor handshake complete — fanning initialized to children");
+
+        // Fan `initialized` to all child servers.
+        // Collect (server_id, ServerHandle clone) while holding each DashMap ref briefly,
+        // then drop all refs before any await point to avoid holding shard locks across awaits.
+        let child_ids = self.pool.server_ids_snapshot();
+        let mut handles: Vec<(String, ChildServerHandle)> =
+            Vec::with_capacity(child_ids.len());
+        for id in &child_ids {
+            if let Some(proc_ref) = self.pool.get(id) {
+                // Clone the handle — ServerHandle is Clone — then let proc_ref drop.
+                handles.push((id.clone(), proc_ref.handle.clone()));
+            }
+        }
+        for (id, handle) in handles {
+            tracing::debug!(server_id = %id, "compositor: forwarding initialized to child");
+            handle.initialized(params).await;
+        }
+
+        // Backfill: flush any diagnostics that arrived before the editor was ready.
         let uris = self.buffer.buffered_uris();
         if !uris.is_empty() {
             tracing::info!(
