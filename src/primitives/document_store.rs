@@ -10,6 +10,11 @@ pub struct VersionedDocument {
     pub content: String,
     /// LSP document version counter, incremented by the client on every edit.
     pub version: i32,
+    /// Number of times this document has been updated since it was opened.
+    ///
+    /// Used by adaptive debounce to estimate activation density ρ_act: the
+    /// higher this value, the longer the debounce quiet window should be.
+    pub activations: u64,
 }
 
 /// Versioned concurrent document store — replaces `RwLock<HashMap<Url, String>>`
@@ -29,9 +34,14 @@ impl DocumentStore {
 
     /// Registers an opened document with its initial content and version.
     pub fn open(&self, uri: Url, content: String, version: i32) {
-        self.inner
-            .write()
-            .insert(uri, VersionedDocument { content, version });
+        self.inner.write().insert(
+            uri,
+            VersionedDocument {
+                content,
+                version,
+                activations: 0,
+            },
+        );
     }
 
     /// Apply a batch of content-change events, then stamp the new version.
@@ -46,6 +56,7 @@ impl DocumentStore {
                 }
             }
             doc.version = version;
+            doc.activations = doc.activations.saturating_add(1);
         }
     }
 
@@ -76,6 +87,43 @@ impl DocumentStore {
     pub fn is_open(&self, uri: &Url) -> bool {
         self.inner.read().contains_key(uri)
     }
+
+    /// Returns a FNV-1a hash of the document content, or `None` if not open.
+    ///
+    /// Callers can use this to skip re-analysis when content hasn't changed,
+    /// without cloning the full String.
+    pub fn content_hash(&self, uri: &Url) -> Option<u64> {
+        self.inner
+            .read()
+            .get(uri)
+            .map(|d| fnv1a_64(d.content.as_bytes()))
+    }
+
+    /// Returns the number of times this document has been updated since open.
+    ///
+    /// Used to scale debounce delay: high-activation documents (many edits)
+    /// benefit from a longer quiet window before re-analysis fires.
+    pub fn activation_count(&self, uri: &Url) -> u64 {
+        self.inner
+            .read()
+            .get(uri)
+            .map(|d| d.activations)
+            .unwrap_or(0)
+    }
+}
+
+/// FNV-1a 64-bit hash — deterministic, non-cryptographic, allocation-free.
+///
+/// The ring structure: each byte is XOR'd into the accumulator then multiplied
+/// by the FNV prime. The result is an element of ℤ/2^64ℤ used as a content
+/// address; collision probability over realistic diagnostic sets is negligible.
+#[inline]
+pub(crate) fn fnv1a_64(bytes: &[u8]) -> u64 {
+    const OFFSET: u64 = 0xcbf29ce484222325;
+    const PRIME: u64 = 0x100000001b3;
+    bytes
+        .iter()
+        .fold(OFFSET, |h, &b| (h ^ b as u64).wrapping_mul(PRIME))
 }
 
 /// Apply one incremental change event to the document content.

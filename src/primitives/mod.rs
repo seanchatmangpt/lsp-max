@@ -7,4 +7,4 @@ pub use document_store::{DocumentStore, VersionedDocument};
 #[cfg(feature = "runtime-tokio")]
 mod debounce;
 #[cfg(feature = "runtime-tokio")]
-pub use debounce::{debounce, DebounceHandle};
+pub use debounce::{debounce, debounce_adaptive, DebounceHandle};

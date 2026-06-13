@@ -14,8 +14,10 @@ pub(crate) fn get_receipt_uri(root_path: &std::path::Path, filename: &str) -> ls
 }
 
 /// Build a `MaxDiagnostic` for a given `LawSpec`.
-fn build_diagnostic(spec: &LawSpec) -> max_protocol::MaxDiagnostic {
-    let diag_id = spec.diag_id.to_string();
+///
+/// `diag_id` is passed in pre-allocated from the caller so the static str is
+/// converted to `String` exactly once per law-spec per cycle.
+fn build_diagnostic(spec: &LawSpec, diag_id: String) -> max_protocol::MaxDiagnostic {
     let lsp_diag = Diagnostic {
         range: Range::default(),
         severity: Some(spec.severity),
@@ -139,7 +141,7 @@ pub(crate) fn update_diagnostics(registry: &mut ServerRegistry) {
         let violated = (spec.condition)(registry);
 
         if violated && !cleared {
-            let diag = build_diagnostic(spec);
+            let diag = build_diagnostic(spec, diag_id.clone());
             registry.diagnostics.insert(diag_id.clone(), diag.clone());
             let uri = get_receipt_uri(&root_path, spec.receipt_file);
             let action = build_action(spec, &diag, uri);

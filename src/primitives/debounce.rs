@@ -4,6 +4,10 @@ use std::time::Duration;
 use tokio::sync::watch;
 use tokio::time;
 
+use lsp_types_max::Url;
+
+use super::DocumentStore;
+
 /// Handle to a debounced callback.  Clone is O(1); all clones share the same
 /// trigger channel.
 ///
@@ -55,6 +59,52 @@ where
                 break;
             }
             // Drain rapid-fire triggers within the quiet window.
+            while let Ok(Ok(())) = time::timeout(delay, rx.changed()).await {}
+            f().await;
+        }
+    });
+
+    handle
+}
+
+/// Spawn a debounced callback whose quiet-window scales with the document's
+/// activation density ρ_act.
+///
+/// High-activation documents (many rapid edits) benefit from a longer quiet
+/// window: batching more invalidations into one re-analysis pass reduces
+/// redundant work.  The scaling formula is:
+///
+/// ```text
+/// delay = base_delay × clamp(√(activations / 10), 1.0, 8.0)
+/// ```
+///
+/// At `activations = 0` the multiplier is 1.0 (same as plain `debounce`).
+/// At `activations = 10` the multiplier is 1.0; at 40 it is 2.0; at 640 it
+/// saturates at 8.0 (8 × base_delay maximum).
+///
+/// `store` and `uri` are read at trigger time (not at spawn time), so the
+/// activation count reflects accumulated edits up to that point.
+pub fn debounce_adaptive<F, Fut>(
+    store: DocumentStore,
+    uri: Url,
+    base_delay: Duration,
+    f: F,
+) -> DebounceHandle
+where
+    F: Fn() -> Fut + Send + 'static,
+    Fut: Future<Output = ()> + Send + 'static,
+{
+    let (tx, mut rx) = watch::channel(());
+    let handle = DebounceHandle { tx: Arc::new(tx) };
+
+    tokio::spawn(async move {
+        loop {
+            if rx.changed().await.is_err() {
+                break;
+            }
+            let acts = store.activation_count(&uri);
+            let multiplier = (acts as f64 / 10.0).sqrt().clamp(1.0, 8.0);
+            let delay = base_delay.mul_f64(multiplier);
             while let Ok(Ok(())) = time::timeout(delay, rx.changed()).await {}
             f().await;
         }

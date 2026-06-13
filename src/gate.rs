@@ -1,5 +1,64 @@
 //! Validation gate logic for verifying server authorization, state checks, and compliance keys.
 
+// ---------------------------------------------------------------------------
+// Composable gate algebra (BreedGate pattern from dteam)
+// ---------------------------------------------------------------------------
+
+/// A named, composable law gate — a single intuitionistic proof obligation.
+///
+/// Each `LawGate` is a predicate over the server registry. `accept_gates`
+/// is their conjunction: a proof-tree root that is `true` iff every obligation
+/// is satisfied. Function-pointer representation makes gates stack-allocable,
+/// inspectable by name, and zero-heap.
+#[derive(Clone, Copy)]
+pub struct LawGate {
+    /// Human-readable name for this gate obligation (stable identifier).
+    pub name: &'static str,
+    /// The predicate to evaluate against the current server registry.
+    pub check: fn(&crate::ServerRegistry) -> bool,
+}
+
+impl std::fmt::Debug for LawGate {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("LawGate").field("name", &self.name).finish()
+    }
+}
+
+impl LawGate {
+    /// Evaluate this gate against `registry`.
+    pub fn eval(&self, registry: &crate::ServerRegistry) -> bool {
+        (self.check)(registry)
+    }
+}
+
+/// Returns `true` iff every gate in `gates` passes against `registry`.
+///
+/// Short-circuits on the first failing gate. The name of the failing gate
+/// can be found by iterating manually when diagnostics are needed.
+pub fn accept_gates(registry: &crate::ServerRegistry, gates: &[LawGate]) -> bool {
+    gates.iter().all(|g| g.eval(registry))
+}
+
+/// Default gate pack for law-state transition validation.
+///
+/// These are the baseline proof obligations every server must satisfy before
+/// a law-state transition is admitted. Additional gates can be composed by
+/// concatenating slices.
+pub const DEFAULT_GATES: &[LawGate] = &[
+    LawGate {
+        name: "not-uninitialized",
+        check: |r| r.current_state != crate::service::State::Uninitialized,
+    },
+    LawGate {
+        name: "receipt-present",
+        check: |r| !r.receipts.is_empty(),
+    },
+];
+
+// ---------------------------------------------------------------------------
+// Legacy per-ID gate dispatch
+// ---------------------------------------------------------------------------
+
 /// Evaluates a security gate check given its unique identifier, the current server state,
 /// and the workspace root path.
 ///
