@@ -30,7 +30,7 @@ impl ServerHandle {
     }
 
     /// Helper to send a notification
-    async fn notify(&self, method: &str, params: impl serde::Serialize) {
+    pub async fn notify(&self, method: &str, params: impl serde::Serialize) {
         let msg = json!({
             "jsonrpc": "2.0",
             "method": method,

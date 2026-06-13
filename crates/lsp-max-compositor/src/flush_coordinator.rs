@@ -2,13 +2,14 @@
 // Accepts URI signals from CompositorClient after deposit(), batches bursts within a 100ms
 // window, then flushes the DiagnosticBuffer and pushes merged diagnostics to the editor client.
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::str::FromStr;
 use std::sync::Arc;
 
 use lsp_max::lsp_types::{Diagnostic, DiagnosticSeverity, NumberOrString, Position, Range};
 use tokio::sync::mpsc;
 
+use crate::child_process::ChildProcessPool;
 use crate::diagnostic_buffer::DiagnosticBuffer;
 use crate::merge::MergeContext;
 use crate::receipt::CompositorReceipt;
@@ -26,6 +27,7 @@ impl FlushCoordinator {
         buffer: Arc<DiagnosticBuffer>,
         ctx: Arc<MergeContext>,
         client: lsp_max::Client,
+        pool: Arc<ChildProcessPool>,
     ) -> Self {
         let (tx, mut rx) = mpsc::channel::<String>(256);
         tokio::spawn(async move {
@@ -117,6 +119,42 @@ impl FlushCoordinator {
                             prefixes_fingerprint = receipt.prefixes_fingerprint,
                             "compositor-receipt: flush ADMITTED"
                         );
+                    }
+
+                    // Compute per-server acks from the merge result and notify child servers.
+                    let mut per_server: HashMap<String, (usize, bool)> = HashMap::new();
+                    for d in &result.diagnostics {
+                        if let Some(sid) = &d.server_id {
+                            let entry = per_server.entry(sid.clone()).or_insert((0, false));
+                            entry.0 += 1;
+                            if d.severity == 1 && crate::merge::is_refused_by_law(&d.code) {
+                                entry.1 = true;
+                            }
+                        }
+                    }
+
+                    // Collect (server_id, handle) while DashMap ref is held briefly,
+                    // then drop all refs before awaiting to avoid holding shard locks.
+                    let mut ack_targets: Vec<(String, lsp_max_client::ServerHandle)> =
+                        Vec::with_capacity(per_server.len());
+                    for sid in per_server.keys() {
+                        if let Some(proc_ref) = pool.get(sid) {
+                            ack_targets.push((sid.clone(), proc_ref.handle.clone()));
+                        }
+                    }
+
+                    for (sid, handle) in ack_targets {
+                        if let Some(&(admitted_count, has_andon)) = per_server.get(&sid) {
+                            let ack = crate::diagnostic_ack::DiagnosticAck {
+                                uri: uri.clone(),
+                                admitted_count,
+                                suppressed_count: 0, // pre-merge counts not yet tracked
+                                has_andon_contribution: has_andon,
+                            };
+                            if let Ok(ack_json) = serde_json::to_value(&ack) {
+                                handle.notify("max/diagnosticAck", ack_json).await;
+                            }
+                        }
                     }
                 }
             }

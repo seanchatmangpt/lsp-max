@@ -338,11 +338,13 @@ pub async fn run_stdio(router: ExtensionRouter, merge_ctx: MergeContext, config:
     // trigger debounced publish_diagnostics calls to the editor.
     let buffer_for_coord = Arc::clone(&buffer);
     let merge_ctx_for_coord = Arc::clone(&merge_ctx);
+    let pool_for_coord = Arc::clone(&pool);
     let (service, socket) = LspService::new(|client: Client| {
         let coordinator = Arc::new(FlushCoordinator::spawn(
             Arc::clone(&buffer_for_coord),
             Arc::clone(&merge_ctx_for_coord),
             client.clone(),
+            Arc::clone(&pool_for_coord),
         ));
         let _ = coordinator; // coordinator is available for wiring into CompositorClients
         CompositorServer {

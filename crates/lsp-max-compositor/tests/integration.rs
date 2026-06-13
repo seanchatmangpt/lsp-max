@@ -996,3 +996,30 @@ fn diagnostic_buffer_last_andon_block_starts_false() {
     let buffer = DiagnosticBuffer::new(ctx);
     assert!(!buffer.last_andon_block());
 }
+
+#[test]
+fn diagnostic_ack_serializes_to_json() {
+    use lsp_max_compositor::diagnostic_ack::DiagnosticAck;
+    let ack = DiagnosticAck {
+        uri: "file:///test.rs".to_string(),
+        admitted_count: 3,
+        suppressed_count: 1,
+        has_andon_contribution: true,
+    };
+    let json = serde_json::to_string(&ack).unwrap();
+    assert!(json.contains("\"admitted_count\":3"));
+    assert!(json.contains("\"has_andon_contribution\":true"));
+}
+
+#[test]
+fn diagnostic_ack_zero_suppressed_is_valid() {
+    use lsp_max_compositor::diagnostic_ack::DiagnosticAck;
+    let ack = DiagnosticAck {
+        uri: "file:///test.rs".to_string(),
+        admitted_count: 0,
+        suppressed_count: 0,
+        has_andon_contribution: false,
+    };
+    assert_eq!(ack.admitted_count, 0);
+    assert!(!ack.has_andon_contribution);
+}
