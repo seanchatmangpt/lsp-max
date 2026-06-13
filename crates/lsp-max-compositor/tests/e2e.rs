@@ -13,8 +13,7 @@ const LSP_ECHO_SERVER: &str = env!("CARGO_BIN_EXE_lsp-echo-server");
 /// correct server_id and a usable handle.
 #[tokio::test]
 async fn child_process_spawn_echo_server_establishes_connection() {
-    let result =
-        ChildProcess::spawn("echo-server".to_string(), LSP_ECHO_SERVER, &[]).await;
+    let result = ChildProcess::spawn("echo-server".to_string(), LSP_ECHO_SERVER, &[]).await;
 
     match result {
         Ok((proc, _exit_fut)) => {
