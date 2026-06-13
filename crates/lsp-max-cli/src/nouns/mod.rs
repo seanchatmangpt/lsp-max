@@ -2,6 +2,7 @@ pub mod admission;
 pub mod agent;
 pub mod client;
 pub mod config;
+pub mod conformance;
 pub mod diagnostics;
 pub mod event;
 pub mod gate;
