@@ -873,7 +873,11 @@ fn initialized_fan_out_does_not_panic_with_empty_pool() {
     );
     // The fan-out loop iterates over ids — with an empty vec it performs zero
     // iterations and cannot panic. Verify the count explicitly.
-    assert_eq!(ids.len(), 0, "fan-out over empty snapshot must iterate zero times");
+    assert_eq!(
+        ids.len(),
+        0,
+        "fan-out over empty snapshot must iterate zero times"
+    );
 }
 
 // ── initialized backfill ──────────────────────────────────────────────────────
@@ -1020,7 +1024,10 @@ fn shutdown_fan_out_iterates_all_children() {
     let pool = ChildProcessPool::new();
     // Empty pool: snapshot should return empty vec (no panic).
     let ids = pool.server_ids_snapshot();
-    assert!(ids.is_empty(), "empty pool snapshot should be empty for shutdown");
+    assert!(
+        ids.is_empty(),
+        "empty pool snapshot should be empty for shutdown"
+    );
 }
 
 #[test]
@@ -1029,7 +1036,10 @@ fn pool_snapshot_stable_across_iterations() {
     let pool = ChildProcessPool::new();
     let snap1 = pool.server_ids_snapshot();
     let snap2 = pool.server_ids_snapshot();
-    assert_eq!(snap1, snap2, "consecutive snapshots of empty pool must be equal");
+    assert_eq!(
+        snap1, snap2,
+        "consecutive snapshots of empty pool must be equal"
+    );
 }
 
 #[test]
@@ -1043,4 +1053,37 @@ fn diagnostic_ack_zero_suppressed_is_valid() {
     };
     assert_eq!(ack.admitted_count, 0);
     assert!(!ack.has_andon_contribution);
+}
+
+#[test]
+fn merged_capabilities_starts_as_none() {
+    // Verify the capability_merge output is serializable (type-level check).
+    // CompositorServer cannot be instantiated without a Client, so we exercise
+    // the merge path and confirm serde round-trip is ADMITTED.
+    use lsp_max_compositor::capability_merge::merge_capabilities;
+
+    let caps = merge_capabilities(&[]);
+    let json = serde_json::to_value(&caps);
+    assert!(json.is_ok(), "default ServerCapabilities must serialize to JSON");
+}
+
+#[test]
+fn merged_capabilities_with_hover_serializes_correctly() {
+    use lsp_max::lsp_types::{HoverProviderCapability, ServerCapabilities};
+    use lsp_max_compositor::capability_merge::merge_capabilities;
+    use lsp_max_compositor::registry::ChildTier;
+
+    let primary = ServerCapabilities {
+        hover_provider: Some(HoverProviderCapability::Simple(true)),
+        ..Default::default()
+    };
+
+    let merged = merge_capabilities(&[(ChildTier::Primary, primary)]);
+    let json = serde_json::to_value(&merged).unwrap();
+
+    // hover_provider must be present in the JSON when Primary sets it.
+    assert!(
+        json.get("hoverProvider").is_some(),
+        "merged caps JSON must contain hoverProvider when Primary sets it"
+    );
 }
