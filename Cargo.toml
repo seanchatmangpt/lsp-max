@@ -108,6 +108,7 @@ members = [
     "crates/lsif-linker",
     "crates/lsif-cli",
     "crates/lsif-tests",
+    "crates/lsp-max-compositor",
 ]
 
 [workspace.package]

@@ -1,6 +1,7 @@
 // CompositorClient — the compositor's client-side identity when connecting to a child server.
 // Receives pushes from child servers and deposits them into the shared DiagnosticBuffer.
-// Flush is intentionally NOT called here; callers/tests trigger flush explicitly.
+// When a FlushCoordinator is wired in, signals it after each deposit so the coordinator
+// can debounce and push merged diagnostics to the editor.
 
 use std::sync::Arc;
 
@@ -9,6 +10,7 @@ use lsp_max::lsp_types::{DiagnosticSeverity, NumberOrString, PublishDiagnosticsP
 use lsp_max_client::LanguageClient;
 
 use crate::diagnostic_buffer::DiagnosticBuffer;
+use crate::flush_coordinator::FlushCoordinator;
 use crate::merge::DiagnosticEntry;
 use crate::registry::ChildTier;
 
@@ -16,6 +18,7 @@ pub struct CompositorClient {
     server_id: String,
     tier: ChildTier,
     buffer: Arc<DiagnosticBuffer>,
+    flush_coordinator: Option<Arc<FlushCoordinator>>,
 }
 
 impl CompositorClient {
@@ -24,7 +27,14 @@ impl CompositorClient {
             server_id,
             tier,
             buffer,
+            flush_coordinator: None,
         }
+    }
+
+    /// Wire a FlushCoordinator so that every deposit automatically signals a flush.
+    pub fn with_flush_coordinator(mut self, coordinator: Arc<FlushCoordinator>) -> Self {
+        self.flush_coordinator = Some(coordinator);
+        self
     }
 }
 
@@ -52,10 +62,15 @@ impl LanguageClient for CompositorClient {
                 },
                 message: d.message.clone(),
                 source_tier: self.tier.clone(),
+                server_id: Some(self.server_id.clone()),
             })
             .collect();
 
         self.buffer
             .deposit(&uri, &self.server_id, self.tier.clone(), entries);
+
+        if let Some(coord) = &self.flush_coordinator {
+            coord.signal_flush(&uri);
+        }
     }
 }

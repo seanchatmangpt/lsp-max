@@ -16,6 +16,9 @@ all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
+anyhow = "1"
+colored = "2"
+chrono = { version = "0.4", features = ["clock"] }
 clap-noun-verb = "26.6.2"
 clap-noun-verb-macros = "26.6.2"
 serde = { version = "1.0", features = ["derive"] }

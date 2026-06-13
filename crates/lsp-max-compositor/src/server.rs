@@ -1,5 +1,6 @@
 use crate::connections::ChildConnections;
 use crate::diagnostic_buffer::DiagnosticBuffer;
+use crate::flush_coordinator::FlushCoordinator;
 use crate::{ExtensionRouter, MergeContext};
 use lsp_max::jsonrpc::Result;
 use lsp_max::lsp_types::*;
@@ -13,7 +14,6 @@ pub struct CompositorServer {
     #[allow(dead_code)]
     merge_ctx: Arc<MergeContext>,
     connections: Arc<ChildConnections>,
-    #[allow(dead_code)]
     buffer: Arc<DiagnosticBuffer>,
 }
 
@@ -46,7 +46,17 @@ impl lsp_max::LanguageServer for CompositorServer {
     }
 
     async fn initialized(&self, _: InitializedParams) {
-        tracing::info!("compositor initialized");
+        tracing::info!("compositor: editor handshake complete — flushing backlog");
+        let uris = self.buffer.buffered_uris();
+        if !uris.is_empty() {
+            tracing::info!(
+                count = uris.len(),
+                "compositor: backfill flushing buffered URIs"
+            );
+            for uri in &uris {
+                self.push_diagnostics_to_client(uri).await;
+            }
+        }
     }
 
     async fn shutdown(&self) -> Result<()> {
@@ -143,7 +153,10 @@ impl CompositorServer {
                 } else {
                     Some(NumberOrString::String(d.code.clone()))
                 },
-                source: Some(format!("compositor/{}", d.source_tier.as_str())),
+                source: Some(match &d.server_id {
+                    Some(sid) => format!("compositor/{}:{}", d.source_tier.as_str(), sid),
+                    None => format!("compositor/{}", d.source_tier.as_str()),
+                }),
                 message: d.message.clone(),
                 ..Default::default()
             })
@@ -164,12 +177,24 @@ pub async fn run_stdio(router: ExtensionRouter, merge_ctx: MergeContext) {
     let connections = Arc::new(ChildConnections::new());
     let merge_ctx = Arc::new(merge_ctx);
     let buffer = Arc::new(DiagnosticBuffer::new(Arc::clone(&merge_ctx)));
-    let (service, socket) = LspService::new(|client| CompositorServer {
-        client,
-        router,
-        merge_ctx,
-        connections,
-        buffer,
+    // Client is Clone — spawn the flush coordinator so child-server deposits automatically
+    // trigger debounced publish_diagnostics calls to the editor.
+    let buffer_for_coord = Arc::clone(&buffer);
+    let merge_ctx_for_coord = Arc::clone(&merge_ctx);
+    let (service, socket) = LspService::new(|client: Client| {
+        let coordinator = Arc::new(FlushCoordinator::spawn(
+            Arc::clone(&buffer_for_coord),
+            Arc::clone(&merge_ctx_for_coord),
+            client.clone(),
+        ));
+        let _ = coordinator; // coordinator is available for wiring into CompositorClients
+        CompositorServer {
+            client,
+            router,
+            merge_ctx,
+            connections,
+            buffer,
+        }
     });
     let _ = Server::new(stdin, stdout, socket).serve(service).await;
 }

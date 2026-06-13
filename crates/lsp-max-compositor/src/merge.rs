@@ -13,6 +13,7 @@ pub struct DiagnosticEntry {
     pub code: String,
     pub message: String,
     pub source_tier: ChildTier,
+    pub server_id: Option<String>,
 }
 
 pub struct MergeResult {
@@ -86,14 +87,28 @@ fn tier_rank(tier: &ChildTier) -> u8 {
     }
 }
 
-/// Merge diagnostics from multiple tiers.
-/// Rules:
-/// 1. REFUSED_BY_LAW (code prefix WASM4PM-/ANTI-LLM-/GGEN-) are always included.
-/// 2. For REFUSED_BY_LAW codes: lower severity number wins dedup (1=Error beats 2=Warning);
-///    tier_rank breaks ties. This prevents a Primary-tier Warning from shadowing a
-///    DiagnosticsOnly-tier Error at the same (uri, line, character, code).
-/// 3. For non-law codes: Primary tier wins dedup (existing behavior).
-/// 4. Output sorted: REFUSED_BY_LAW errors first, then by severity asc, then uri, then line/character.
+/// Merge diagnostics from multiple child-server tiers into a single ordered set.
+///
+/// # Soundness contract (REFUSED_BY_LAW)
+///
+/// For every REFUSED_BY_LAW entry in the inputs, exactly one entry survives in
+/// the output — the one with the minimum severity number (most severe), regardless
+/// of which tier emitted it. No law violation is silently dropped.
+///
+/// Formally: for all d in inputs where is_refused_by_law(d.code),
+/// there exists d' in output where d'.code == d.code
+/// and d'.severity == min(severity of all inputs with that (uri, line, char, code)).
+///
+/// # Deduplication for non-law codes
+///
+/// For non-REFUSED_BY_LAW entries, Primary tier wins deduplication at the same
+/// (uri, line, character, code) key. Secondary and DiagnosticsOnly entries at the
+/// same location are dropped if a Primary-tier entry exists for the same code.
+///
+/// # Output ordering
+///
+/// REFUSED_BY_LAW errors (severity == 1) sort first, then by severity ascending,
+/// then by uri, then by line/character.
 ///
 /// `andon_prefixes`: when `Some`, overrides the static law-prefix set for sorting.
 pub fn merge_diagnostics(

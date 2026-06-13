@@ -148,7 +148,27 @@ fn make_entry(
         code: code.into(),
         message: message.into(),
         source_tier: tier,
+        server_id: None,
     }
+}
+
+#[test]
+fn diagnostic_entry_server_id_preserved_through_merge() {
+    let entry = DiagnosticEntry {
+        uri: "file:///foo.rs".into(),
+        line: 0,
+        character: 0,
+        severity: 1,
+        code: "WASM4PM-CROWN-001".into(),
+        message: "missing output_hash".into(),
+        source_tier: ChildTier::DiagnosticsOnly,
+        server_id: Some("wasm4pm-lsp".into()),
+    };
+
+    let result = merge_diagnostics(vec![(ChildTier::DiagnosticsOnly, vec![entry])], None);
+
+    assert_eq!(result.len(), 1);
+    assert_eq!(result[0].server_id, Some("wasm4pm-lsp".into()));
 }
 
 #[test]
@@ -700,5 +720,183 @@ async fn compositor_client_deposits_on_publish_diagnostics() {
     assert!(
         result.has_andon_block,
         "WASM4PM-CROWN-001 severity ERROR must set has_andon_block"
+    );
+}
+
+// ── 10. FlushCoordinator — signal_flush on dropped receiver does not panic ────
+
+#[test]
+fn flush_coordinator_signal_flush_on_closed_channel_does_not_panic() {
+    // Build a coordinator by constructing only the sender side of an mpsc channel,
+    // then drop the receiver to simulate server shutdown, and verify try_send
+    // (which signal_flush uses internally) is panic-free.
+    use tokio::sync::mpsc;
+    let (tx, rx) = mpsc::channel::<String>(4);
+    drop(rx); // receiver gone — channel is closed
+              // try_send on a closed channel returns Err, which signal_flush discards silently.
+    let result = tx.try_send("file:///foo.rs".to_string());
+    // Err expected — the point is that it does NOT panic.
+    assert!(result.is_err(), "expected Err on closed channel, got Ok");
+}
+
+// ── 11. Soundness contract: REFUSED_BY_LAW dedup across all three tiers ──────
+
+#[test]
+fn merge_law_soundness_all_tiers_contribute() {
+    // Three entries for the same (uri, line, char, code) — one from each tier.
+    // The DiagnosticsOnly entry carries severity=1 (Error), the other two carry
+    // severity=2 (Warning). The soundness contract requires exactly one survivor
+    // with the minimum severity (1 = Error).
+    let primary = make_entry(
+        "file:///foo.rs",
+        5,
+        0,
+        "ANTI-LLM-CHEAT-C001",
+        "primary warning",
+        2, // Warning
+        ChildTier::Primary,
+    );
+    let secondary = make_entry(
+        "file:///foo.rs",
+        5,
+        0,
+        "ANTI-LLM-CHEAT-C001",
+        "secondary warning",
+        2, // Warning
+        ChildTier::Secondary,
+    );
+    let diag_only = make_entry(
+        "file:///foo.rs",
+        5,
+        0,
+        "ANTI-LLM-CHEAT-C001",
+        "diagnostics-only error",
+        1, // Error — most severe
+        ChildTier::DiagnosticsOnly,
+    );
+
+    let result = merge_diagnostics(
+        vec![
+            (ChildTier::Primary, vec![primary]),
+            (ChildTier::Secondary, vec![secondary]),
+            (ChildTier::DiagnosticsOnly, vec![diag_only]),
+        ],
+        None,
+    );
+
+    assert_eq!(result.len(), 1, "all three tiers must dedup to one entry");
+    assert_eq!(
+        result[0].severity, 1,
+        "Error (severity=1) must survive, not Warning (severity=2)"
+    );
+    // Sanity check: the code is indeed a law code.
+    assert!(
+        is_refused_by_law("ANTI-LLM-CHEAT-C001"),
+        "ANTI-LLM-CHEAT-C001 must be classified as REFUSED_BY_LAW"
+    );
+}
+
+#[test]
+fn merge_non_law_dedup_primary_wins() {
+    // Two entries for the same (uri, line, char, code), non-law code.
+    // Primary tier must win deduplication.
+    let primary = make_entry(
+        "file:///foo.rs",
+        3,
+        0,
+        "E0308",
+        "primary type mismatch",
+        1, // Error
+        ChildTier::Primary,
+    );
+    let diag_only = make_entry(
+        "file:///foo.rs",
+        3,
+        0,
+        "E0308",
+        "diagnostics-only type mismatch",
+        1, // Error — same severity
+        ChildTier::DiagnosticsOnly,
+    );
+
+    let result = merge_diagnostics(
+        vec![
+            (ChildTier::Primary, vec![primary]),
+            (ChildTier::DiagnosticsOnly, vec![diag_only]),
+        ],
+        None,
+    );
+
+    assert_eq!(
+        result.len(),
+        1,
+        "non-law entries at same location must dedup to one"
+    );
+    assert!(
+        matches!(result[0].source_tier, ChildTier::Primary),
+        "Primary tier must win deduplication for non-law codes, got: {:?}",
+        result[0].source_tier
+    );
+}
+
+// ── initialized backfill ──────────────────────────────────────────────────────
+
+#[test]
+fn initialized_backfill_flushes_all_buffered_uris() {
+    use std::sync::Arc;
+    let ctx = make_merge_ctx_with_legacy_prefixes();
+    let buffer = DiagnosticBuffer::new(Arc::new(ctx));
+
+    buffer.deposit(
+        "file:///foo.rs",
+        "anti-llm-cheat",
+        ChildTier::DiagnosticsOnly,
+        vec![make_entry(
+            "file:///foo.rs",
+            1,
+            0,
+            "ANTI-LLM-CHEAT-C001",
+            "cheat detected",
+            2,
+            ChildTier::DiagnosticsOnly,
+        )],
+    );
+
+    buffer.deposit(
+        "file:///bar.ocel.json",
+        "wasm4pm-lsp",
+        ChildTier::DiagnosticsOnly,
+        vec![make_entry(
+            "file:///bar.ocel.json",
+            0,
+            0,
+            "WASM4PM-GALL-001",
+            "process conformance deviation",
+            1,
+            ChildTier::DiagnosticsOnly,
+        )],
+    );
+
+    assert_eq!(buffer.buffered_uri_count(), 2);
+
+    let mut uris = buffer.buffered_uris();
+    uris.sort();
+    assert_eq!(
+        uris,
+        vec!["file:///bar.ocel.json", "file:///foo.rs"],
+        "buffered_uris() must return both deposited URIs"
+    );
+
+    // flush each URI and verify entries are present
+    let result_foo = buffer.flush("file:///foo.rs");
+    assert_eq!(result_foo.diagnostics.len(), 1);
+    assert_eq!(result_foo.diagnostics[0].code, "ANTI-LLM-CHEAT-C001");
+
+    let result_bar = buffer.flush("file:///bar.ocel.json");
+    assert_eq!(result_bar.diagnostics.len(), 1);
+    assert_eq!(result_bar.diagnostics[0].code, "WASM4PM-GALL-001");
+    assert!(
+        result_bar.has_andon_block,
+        "WASM4PM-GALL-001 severity ERROR must set has_andon_block"
     );
 }

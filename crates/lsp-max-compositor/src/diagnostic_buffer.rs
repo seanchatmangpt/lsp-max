@@ -63,4 +63,9 @@ impl DiagnosticBuffer {
     pub fn buffered_uri_count(&self) -> usize {
         self.inner.len()
     }
+
+    /// List all URIs that currently have buffered diagnostics.
+    pub fn buffered_uris(&self) -> Vec<String> {
+        self.inner.iter().map(|e| e.key().clone()).collect()
+    }
 }
