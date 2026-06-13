@@ -701,6 +701,19 @@ The current implementation straddles two models. The gate file is the **SELECT s
 
 The gate does not replace the agent's full admissibility predicate `Λ(a)`. It enforces only the law axes enumerated in `A`. Diagnostic codes outside `A`, stylistic choices, architectural trade-offs, and work outside governed surfaces remain under agent judgment. The gate is a floor, not a ceiling.
 
+### RFC Backlog — Architectural Priorities (2026-06-13)
+
+Three RFC-level changes identified via multi-agent architectural review. Ordered by effort tier:
+
+**RFC-1: D_t PUSH injection** (effort: days, impact: high, interface-safe)
+Extend `lsp-max-cli gate check` with `--format=agent-context` flag. When exit 1 (BLOCKED), stdout emits a structured JSON block — `active_andon_codes`, `governing_axes`, `available_repairs`, `since_seq` cursor — which the PreToolUse hook injects as a `<gate-context>` system-reminder block. Converts the 1-bit gate signal into the full governing diagnostic set in agent context. Moves D_t PUSH from OPEN toward ADMITTED. No interface breaks. Status: CANDIDATE.
+
+**RFC-2: Per-connection state — remove global REGISTRY/MESH singletons** (effort: weeks, impact: critical, breaks interface)
+`REGISTRY` and `MESH` are `OnceLock<Mutex<...>>` singletons in `src/lib.rs`. Every LSP method acquires the same global Mutex. Replace with a per-connection `ServerSession<S>` struct threaded through the Tower layer as an Extension. Removes `reset_registry_for_tests()`. Enables true multi-tenancy: N concurrent LSP connections each have isolated D_t, conformance_delta_log, action_seq, and GateFile handle. Status: OPEN.
+
+**RFC-3: Event-sourced D_t log — replace mutable HashMap dispatch** (effort: months, impact: critical, interface-safe)
+AutonomicMesh's `Vec<Box<dyn Hook>>` dispatch and `Vec<HookEvent>` log (capped at 1000 entries, never persisted) prevent causal replay and D_t addressability. Replace with an append-only lock-free ring buffer (65536 entries). Hooks become pure `(LawEvent) -> Vec<MeshAction>` functions. Live D_t is a materialized view maintained by a background tailer. Replay becomes a cursor read, not a destructive HashMap overwrite. Prerequisite for making D_t replay trustworthy. Status: OPEN.
+
 ### Session Audit Summary — 2026-06-13
 
 22 conjuncts audited across the Λ_CD implementation surface.
