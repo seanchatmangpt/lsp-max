@@ -18,6 +18,17 @@ impl ChildTier {
             ChildTier::DiagnosticsOnly => "diagnostics-only",
         }
     }
+
+    /// Map a priority string from `lsp-max.toml` to a `ChildTier`.
+    /// `"full"` and `"semantic"` are Primary; `"secondary"` is Secondary;
+    /// everything else (including `"diagnostics-only"`) is DiagnosticsOnly.
+    pub fn from_priority(priority: &str) -> Self {
+        match priority {
+            "full" | "semantic" => ChildTier::Primary,
+            "secondary" => ChildTier::Secondary,
+            _ => ChildTier::DiagnosticsOnly,
+        }
+    }
 }
 
 #[derive(Debug, Clone)]

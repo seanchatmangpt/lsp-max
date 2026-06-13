@@ -1,5 +1,4 @@
 use crate::child_process::ChildProcessPool;
-use lsp_max_client::ServerHandle as ChildServerHandle;
 use crate::connections::ChildConnections;
 use crate::diagnostic_buffer::DiagnosticBuffer;
 use crate::flush_coordinator::FlushCoordinator;
@@ -7,6 +6,7 @@ use crate::{CompositorConfig, ExtensionRouter, MergeContext};
 use lsp_max::jsonrpc::Result;
 use lsp_max::lsp_types::*;
 use lsp_max::{Client, LspService, Server};
+use lsp_max_client::ServerHandle as ChildServerHandle;
 use std::sync::Arc;
 
 pub struct CompositorServer {
@@ -36,21 +36,24 @@ impl lsp_max::LanguageServer for CompositorServer {
         #[allow(deprecated)]
         let root_uri = params.root_uri.clone();
 
+        // Collect (tier, ServerCapabilities) pairs from each spawned child.
+        let mut child_capabilities: Vec<(
+            crate::registry::ChildTier,
+            lsp_max::lsp_types::ServerCapabilities,
+        )> = Vec::new();
+
         for entry in &self.config.server {
             if let Some(cmd) = &entry.command {
                 let eff_args = entry.effective_args();
                 let args: Vec<&str> = eff_args.iter().map(|s| s.as_str()).collect();
-                match crate::child_process::ChildProcess::spawn(
-                    entry.id.clone(),
-                    cmd,
-                    &args,
-                )
-                .await
+                match crate::child_process::ChildProcess::spawn(entry.id.clone(), cmd, &args).await
                 {
                     Ok(proc) => {
+                        let tier = crate::registry::ChildTier::from_priority(&entry.priority);
                         match proc.initialize(root_uri.clone()).await {
-                            Ok(_) => {
+                            Ok(caps) => {
                                 tracing::info!(server_id = %entry.id, "compositor: child ADMITTED");
+                                child_capabilities.push((tier, caps));
                             }
                             Err(e) => {
                                 tracing::warn!(
@@ -73,13 +76,17 @@ impl lsp_max::LanguageServer for CompositorServer {
             }
         }
 
+        // Merge child capabilities.  The compositor always advertises FULL
+        // text_document_sync regardless of what children report, because the
+        // compositor itself normalises change notifications before fan-out.
+        let mut merged =
+            crate::capability_merge::merge_capabilities(&child_capabilities);
+        merged.text_document_sync = Some(TextDocumentSyncCapability::Kind(
+            TextDocumentSyncKind::FULL,
+        ));
+
         Ok(InitializeResult {
-            capabilities: ServerCapabilities {
-                text_document_sync: Some(TextDocumentSyncCapability::Kind(
-                    TextDocumentSyncKind::INCREMENTAL,
-                )),
-                ..Default::default()
-            },
+            capabilities: merged,
             server_info: Some(ServerInfo {
                 name: "lsp-max-compositor".to_string(),
                 version: Some(env!("CARGO_PKG_VERSION").to_string()),
@@ -95,8 +102,7 @@ impl lsp_max::LanguageServer for CompositorServer {
         // Collect (server_id, ServerHandle clone) while holding each DashMap ref briefly,
         // then drop all refs before any await point to avoid holding shard locks across awaits.
         let child_ids = self.pool.server_ids_snapshot();
-        let mut handles: Vec<(String, ChildServerHandle)> =
-            Vec::with_capacity(child_ids.len());
+        let mut handles: Vec<(String, ChildServerHandle)> = Vec::with_capacity(child_ids.len());
         for id in &child_ids {
             if let Some(proc_ref) = self.pool.get(id) {
                 // Clone the handle — ServerHandle is Clone — then let proc_ref drop.
@@ -138,11 +144,8 @@ impl lsp_max::LanguageServer for CompositorServer {
 
         // Send shutdown requests to all children — best-effort, 5 s timeout per child.
         for handle in &handles {
-            let _ = tokio::time::timeout(
-                tokio::time::Duration::from_secs(5),
-                handle.shutdown(),
-            )
-            .await;
+            let _ =
+                tokio::time::timeout(tokio::time::Duration::from_secs(5), handle.shutdown()).await;
         }
 
         // Send exit notification to all children.
@@ -359,7 +362,11 @@ impl CompositorServer {
     }
 }
 
-pub async fn run_stdio(router: ExtensionRouter, merge_ctx: MergeContext, config: Arc<CompositorConfig>) {
+pub async fn run_stdio(
+    router: ExtensionRouter,
+    merge_ctx: MergeContext,
+    config: Arc<CompositorConfig>,
+) {
     let stdin = tokio::io::stdin();
     let stdout = tokio::io::stdout();
     let connections = Arc::new(ChildConnections::new());

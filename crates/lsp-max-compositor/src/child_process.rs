@@ -3,7 +3,8 @@
 // lsp-max-client::ClientBuilder, and exposes a ServerHandle for request dispatch.
 
 use lsp_max::lsp_types::{
-    ClientCapabilities, ClientInfo, InitializeParams, InitializeResult, InitializedParams, Url,
+    ClientCapabilities, ClientInfo, InitializeParams, InitializeResult, InitializedParams,
+    ServerCapabilities, Url,
 };
 use lsp_max_client::{ClientBuilder, ClientError, LanguageClient, ServerHandle};
 use std::process::Stdio;
@@ -31,11 +32,7 @@ impl ChildProcess {
     /// `command`: path to the server binary (e.g. "/usr/local/bin/wasm4pm-lsp")
     /// `args`: server arguments (e.g. ["serve", "--stdio"])
     /// `server_id`: logical name for this server (from lsp-max.toml)
-    pub async fn spawn(
-        server_id: String,
-        command: &str,
-        args: &[&str],
-    ) -> std::io::Result<Self> {
+    pub async fn spawn(server_id: String, command: &str, args: &[&str]) -> std::io::Result<Self> {
         let mut child = Command::new(command)
             .args(args)
             .stdin(Stdio::piped())
@@ -56,7 +53,11 @@ impl ChildProcess {
     }
 
     /// Send an LSP initialize + initialized handshake to the child server.
-    pub async fn initialize(&self, root_uri: Option<Url>) -> Result<InitializeResult, ClientError> {
+    /// Returns the child's advertised ServerCapabilities on success.
+    pub async fn initialize(
+        &self,
+        root_uri: Option<Url>,
+    ) -> Result<ServerCapabilities, ClientError> {
         #[allow(deprecated)]
         let params = InitializeParams {
             process_id: Some(std::process::id()),
@@ -68,9 +69,9 @@ impl ChildProcess {
             }),
             ..Default::default()
         };
-        let result = self.handle.initialize(params).await?;
+        let result: InitializeResult = self.handle.initialize(params).await?;
         self.handle.initialized(InitializedParams {}).await;
-        Ok(result)
+        Ok(result.capabilities)
     }
 }
 
