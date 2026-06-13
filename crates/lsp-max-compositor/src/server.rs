@@ -7,7 +7,7 @@ use lsp_max::jsonrpc::Result;
 use lsp_max::lsp_types::*;
 use lsp_max::{Client, LspService, Server};
 use lsp_max_client::ServerHandle as ChildServerHandle;
-use std::sync::Arc;
+use std::sync::{Arc, RwLock};
 
 pub struct CompositorServer {
     client: Client,
@@ -18,6 +18,9 @@ pub struct CompositorServer {
     buffer: Arc<DiagnosticBuffer>,
     pool: Arc<ChildProcessPool>,
     config: Arc<CompositorConfig>,
+    /// Merged ServerCapabilities stored after initialize() completes.
+    /// None until the first initialize() call returns.
+    merged_capabilities: Arc<RwLock<Option<lsp_max::lsp_types::ServerCapabilities>>>,
 }
 
 /// Extract the file extension (without leading dot) from a URI string.
@@ -84,6 +87,11 @@ impl lsp_max::LanguageServer for CompositorServer {
         merged.text_document_sync = Some(TextDocumentSyncCapability::Kind(
             TextDocumentSyncKind::FULL,
         ));
+
+        // Store for introspection.
+        if let Ok(mut guard) = self.merged_capabilities.write() {
+            *guard = Some(merged.clone());
+        }
 
         Ok(InitializeResult {
             capabilities: merged,
@@ -298,6 +306,20 @@ impl CompositorServer {
         }
     }
 
+    /// Returns the ServerCapabilities advertised to the editor after the
+    /// last initialize() call, serialized as JSON for introspection.
+    /// Returns None if initialize() has not yet been called.
+    pub fn compositor_capabilities(&self) -> Option<serde_json::Value> {
+        self.merged_capabilities
+            .read()
+            .ok()
+            .and_then(|guard| {
+                guard.as_ref().map(|caps| {
+                    serde_json::to_value(caps).unwrap_or(serde_json::Value::Null)
+                })
+            })
+    }
+
     /// Flush the diagnostic buffer for a URI and return the merged result.
     /// Provides a testable entry point that exercises the full buffer→merge→MergeResult path.
     pub fn flush_uri(&self, uri: &str) -> crate::merge::MergeResult {
@@ -394,6 +416,7 @@ pub async fn run_stdio(
             buffer,
             pool: Arc::clone(&pool),
             config: Arc::clone(&config),
+            merged_capabilities: Arc::new(RwLock::new(None)),
         }
     });
     let _ = Server::new(stdin, stdout, socket).serve(service).await;
