@@ -483,6 +483,21 @@ pub async fn run_stdio(
     let merge_ctx_for_coord = Arc::clone(&merge_ctx);
     let pool_for_coord = Arc::clone(&pool);
     let gate_for_coord = Arc::clone(&gate);
+
+    // Heartbeat task: write a liveness timestamp every 10 s so gate check can distinguish
+    // a clean "never started" state from a compositor crash (fail-closed behaviour).
+    let gate_for_heartbeat = Arc::clone(&gate);
+    tokio::spawn(async move {
+        // Write once immediately so the heartbeat file exists before the first gate check.
+        gate_for_heartbeat.write_heartbeat();
+        let mut interval = tokio::time::interval(tokio::time::Duration::from_secs(10));
+        interval.tick().await; // consume the immediate tick already fired above
+        loop {
+            interval.tick().await;
+            gate_for_heartbeat.write_heartbeat();
+        }
+    });
+
     let (service, socket) = LspService::new(|client: Client| {
         let flush_coord = Arc::new(FlushCoordinator::spawn(
             Arc::clone(&buffer_for_coord),

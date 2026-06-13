@@ -275,19 +275,11 @@ impl FlushCoordinator {
                 // One write per debounce window regardless of URI count — O(1).
                 // PreToolUse hooks read this file with a single syscall, no IPC.
                 //
-                // Correctness: if this batch was clean but other URIs (flushed in a prior
-                // debounce window) still have active ANDON violations in the buffer, writing
-                // `false` would incorrectly CLEAR the gate. Check the full buffer when the
-                // batch is clean — O(remaining_buffered_URIs) per clean window, which is the
-                // common case and cheap relative to the file I/O already done this cycle.
-                let effective_andon = if batch_has_andon {
-                    true
-                } else {
-                    buffer
-                        .buffered_uris()
-                        .iter()
-                        .any(|u| buffer.flush(u).has_andon_block)
-                };
+                // Correctness: global_andon_active() reads an AtomicUsize counter maintained
+                // by DiagnosticBuffer::deposit() and flush() — O(1) regardless of URI count.
+                // The batch flush above already called buffer.flush() for each pending URI,
+                // which updates the counter before we read it here.
+                let effective_andon = batch_has_andon || buffer.global_andon_active();
                 gate.write(effective_andon);
                 // Sync buffer's last-written flag so deposit() skips redundant writes
                 // correctly on the next round (especially important for ANDON → clear transitions).
