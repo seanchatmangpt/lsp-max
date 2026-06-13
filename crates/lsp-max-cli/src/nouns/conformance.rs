@@ -211,12 +211,12 @@ pub struct ConformanceVectorRpcResult {
 pub fn vector_rpc(instance_id: String) -> Result<ConformanceVectorRpcResult> {
     let state_path = crate::nouns::get_state_path();
     let mut mesh = AutonomicMesh::load_from_file(&state_path)
-        .map_err(NounVerbError::execution_error)?;
+        .map_err(|e| NounVerbError::execution_error(e.to_string()))?;
     let response = mesh
         .dispatch_rpc(&instance_id, "max/conformanceVector", serde_json::Value::Null)
         .map_err(NounVerbError::execution_error)?;
     mesh.save_to_file(&state_path)
-        .map_err(NounVerbError::execution_error)?;
+        .map_err(|e| NounVerbError::execution_error(e.to_string()))?;
     let admitted = response
         .get("admitted")
         .and_then(|v| v.as_array())
@@ -254,13 +254,13 @@ pub struct RunGateResult {
 pub fn run_gate(instance_id: String, gate_id: String) -> Result<RunGateResult> {
     let state_path = crate::nouns::get_state_path();
     let mut mesh = AutonomicMesh::load_from_file(&state_path)
-        .map_err(NounVerbError::execution_error)?;
+        .map_err(|e| NounVerbError::execution_error(e.to_string()))?;
     let params = serde_json::json!({ "gate_id": gate_id });
     let response = mesh
         .dispatch_rpc(&instance_id, "max/runGate", params)
         .map_err(NounVerbError::execution_error)?;
     mesh.save_to_file(&state_path)
-        .map_err(NounVerbError::execution_error)?;
+        .map_err(|e| NounVerbError::execution_error(e.to_string()))?;
     let passed = response
         .as_bool()
         .or_else(|| response.get("passed").and_then(|v| v.as_bool()))
@@ -337,11 +337,11 @@ pub struct ConformanceDeltaResult {
 pub fn delta(instance_id: String) -> Result<ConformanceDeltaResult> {
     let state_path = crate::nouns::get_state_path();
     let mut mesh = AutonomicMesh::load_from_file(&state_path)
-        .map_err(NounVerbError::execution_error)?;
+        .map_err(|e| NounVerbError::execution_error(e.to_string()))?;
     let raw = mesh
         .dispatch_rpc(&instance_id, "max/conformanceDelta", serde_json::Value::Null)
         .map_err(NounVerbError::execution_error)?;
     mesh.save_to_file(&state_path)
-        .map_err(NounVerbError::execution_error)?;
+        .map_err(|e| NounVerbError::execution_error(e.to_string()))?;
     Ok(ConformanceDeltaResult { instance_id, raw })
 }
