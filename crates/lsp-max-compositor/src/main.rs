@@ -1,4 +1,5 @@
 use lsp_max_compositor::{CompositorConfig, ExtensionRouter, MergeContext};
+use std::sync::Arc;
 
 #[tokio::main]
 async fn main() {
@@ -29,5 +30,6 @@ async fn main() {
         "merge context: {} andon prefix(es)",
         merge_ctx.andon_prefixes_count()
     );
-    lsp_max_compositor::server::run_stdio(router, merge_ctx).await;
+    let config_arc = Arc::new(config.unwrap_or_else(|| CompositorConfig { server: vec![] }));
+    lsp_max_compositor::server::run_stdio(router, merge_ctx, config_arc).await;
 }

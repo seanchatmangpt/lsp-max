@@ -107,6 +107,11 @@ impl ChildProcessPool {
     pub fn server_ids(&self) -> Vec<String> {
         self.processes.iter().map(|e| e.key().clone()).collect()
     }
+
+    /// Insert an already-spawned and initialized `ChildProcess` into the pool.
+    pub fn register(&self, server_id: String, proc: ChildProcess) {
+        self.processes.insert(server_id, proc);
+    }
 }
 
 impl Default for ChildProcessPool {

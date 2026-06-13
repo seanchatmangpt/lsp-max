@@ -421,6 +421,8 @@ fn merge_context_from_config_uses_configured_prefixes() {
             secondary_extensions: vec![],
             priority: "high".into(),
             andon_code_prefixes: Some(vec!["CUSTOM-LAW-".into()]),
+            command: None,
+            args: None,
         }],
     };
 
@@ -458,6 +460,8 @@ fn merge_result_has_andon_block_false_for_non_error() {
             secondary_extensions: vec![],
             priority: "high".into(),
             andon_code_prefixes: Some(vec!["CUSTOM-LAW-".into()]),
+            command: None,
+            args: None,
         }],
     };
 
