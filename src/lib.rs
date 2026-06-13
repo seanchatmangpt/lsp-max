@@ -127,7 +127,7 @@ pub mod workspace_edit;
 
 /// Bridge trait eliminating hand-rolled regex-pattern LSP server boilerplate.
 pub mod rule_pack_server;
-pub use rule_pack_server::{Rule, RulePack, RulePackServer};
+pub use rule_pack_server::{Rule, RulePack, RulePackServer, ValidatedRulePackSet};
 
 /// LSP 3.18 and LSIF protocol coverage matrices.
 pub mod coverage;

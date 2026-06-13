@@ -31,6 +31,7 @@ fn test_serialization_conformance_vector() {
         score: Some(50.0),
         strict_mode: false,
         process_quality: None,
+        ..Default::default()
     };
     let serialized = serde_json::to_string(&custom_cv).unwrap();
     let deserialized: ConformanceVector = serde_json::from_str(&serialized).unwrap();
@@ -150,6 +151,7 @@ fn test_serialization_manifold_snapshot() {
             score: Some(100.0),
             strict_mode: true,
             process_quality: None,
+            ..Default::default()
         },
         hooks: vec![HookDescriptor {
             hook_id: "hook_1".to_string(),

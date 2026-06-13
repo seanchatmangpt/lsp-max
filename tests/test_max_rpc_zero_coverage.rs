@@ -465,7 +465,7 @@ async fn test_full_lifecycle_diagnostic_repair_conformance_release() {
             "jsonrpc": "2.0",
             "id": 11,
             "method": "max/conformanceVector",
-            "params": { "id": snapshot_id1 }
+            "params": snapshot_id1
         }),
     )
     .await;
@@ -596,7 +596,7 @@ async fn test_full_lifecycle_diagnostic_repair_conformance_release() {
             "jsonrpc": "2.0",
             "id": 16,
             "method": "max/conformanceVector",
-            "params": { "id": snapshot_id2 }
+            "params": snapshot_id2
         }),
     )
     .await;

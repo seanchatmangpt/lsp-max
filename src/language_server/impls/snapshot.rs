@@ -65,14 +65,16 @@ pub async fn max_snapshot() -> Result<max_protocol::SnapshotId> {
         .filter(|ax| !witnessed.contains(ax))
         .cloned()
         .collect();
-    let conformance_vector = max_protocol::ConformanceVector {
+    let mut conformance_vector = max_protocol::ConformanceVector {
         admitted,
         refused,
         unknown,
         score: derived_score,
         strict_mode: true,
         process_quality: None,
+        ..Default::default()
     };
+    conformance_vector.sync_bits_from_vecs();
 
     let receipts = registry.receipts.values().cloned().collect();
 
@@ -128,14 +130,17 @@ pub async fn max_conformance_vector(
             .filter(|ax| !witnessed.contains(ax))
             .cloned()
             .collect();
-        Ok(max_protocol::ConformanceVector {
+        let mut cv = max_protocol::ConformanceVector {
             admitted,
             refused,
             unknown,
             score: derived_score,
             strict_mode: true,
             process_quality: None,
-        })
+            ..Default::default()
+        };
+        cv.sync_bits_from_vecs();
+        Ok(cv)
     }
 }
 
@@ -327,14 +332,17 @@ pub async fn max_workspace_conformance() -> Result<max_protocol::ConformanceVect
         Some(100.0 * admitted.len() as f64 / total as f64)
     };
 
-    Ok(max_protocol::ConformanceVector {
+    let mut cv = max_protocol::ConformanceVector {
         admitted,
         refused,
         unknown,
         score,
         strict_mode: true,
         process_quality: None,
-    })
+        ..Default::default()
+    };
+    cv.sync_bits_from_vecs();
+    Ok(cv)
 }
 
 /// Exports the analysis bundle for the specified snapshot.
