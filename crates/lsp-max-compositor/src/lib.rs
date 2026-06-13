@@ -1,3 +1,4 @@
+pub mod child_process;
 pub mod compositor_client;
 pub mod config;
 pub mod connections;
