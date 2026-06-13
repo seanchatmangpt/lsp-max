@@ -122,6 +122,38 @@ impl lsp_max::LanguageServer for CompositorServer {
     }
 
     async fn shutdown(&self) -> Result<()> {
+        // Fan LSP shutdown to all child servers.
+        // shutdown is a request (expects a response); exit is a notification.
+        // Order: shutdown all first (collect results), then exit all.
+        let child_ids = self.pool.server_ids_snapshot();
+
+        // Collect handles while DashMap refs are held briefly, then drop all refs
+        // before any await point to avoid holding shard locks across awaits.
+        let mut handles: Vec<ChildServerHandle> = Vec::with_capacity(child_ids.len());
+        for id in &child_ids {
+            if let Some(proc_ref) = self.pool.get(id) {
+                handles.push(proc_ref.handle.clone());
+            }
+        }
+
+        // Send shutdown requests to all children — best-effort, 5 s timeout per child.
+        for handle in &handles {
+            let _ = tokio::time::timeout(
+                tokio::time::Duration::from_secs(5),
+                handle.shutdown(),
+            )
+            .await;
+        }
+
+        // Send exit notification to all children.
+        for handle in &handles {
+            handle.exit().await;
+        }
+
+        tracing::info!(
+            count = handles.len(),
+            "compositor: shutdown fan-out ADMITTED"
+        );
         Ok(())
     }
 

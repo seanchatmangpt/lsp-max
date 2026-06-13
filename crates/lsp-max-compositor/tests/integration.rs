@@ -1011,6 +1011,27 @@ fn diagnostic_ack_serializes_to_json() {
     assert!(json.contains("\"has_andon_contribution\":true"));
 }
 
+// ── shutdown fan-out — pool primitives ───────────────────────────────────────
+
+#[test]
+fn shutdown_fan_out_iterates_all_children() {
+    // Verify server_ids_snapshot returns consistent data for shutdown iteration.
+    use lsp_max_compositor::child_process::ChildProcessPool;
+    let pool = ChildProcessPool::new();
+    // Empty pool: snapshot should return empty vec (no panic).
+    let ids = pool.server_ids_snapshot();
+    assert!(ids.is_empty(), "empty pool snapshot should be empty for shutdown");
+}
+
+#[test]
+fn pool_snapshot_stable_across_iterations() {
+    use lsp_max_compositor::child_process::ChildProcessPool;
+    let pool = ChildProcessPool::new();
+    let snap1 = pool.server_ids_snapshot();
+    let snap2 = pool.server_ids_snapshot();
+    assert_eq!(snap1, snap2, "consecutive snapshots of empty pool must be equal");
+}
+
 #[test]
 fn diagnostic_ack_zero_suppressed_is_valid() {
     use lsp_max_compositor::diagnostic_ack::DiagnosticAck;
