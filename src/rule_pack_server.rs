@@ -971,7 +971,10 @@ pub trait RulePackServer {
                         tracing::warn!(duration_ms = scan_ms, "SPC: structural scan latency drift");
                     }
                     Some(crate::primitives::SpcAlert::Rule4) => {
-                        tracing::warn!(duration_ms = scan_ms, "SPC Rule4: latency near control limit");
+                        tracing::warn!(
+                            duration_ms = scan_ms,
+                            "SPC Rule4: latency near control limit"
+                        );
                     }
                     None => {}
                 }
@@ -1010,15 +1013,15 @@ pub trait RulePackServer {
                 registry.action_seq = registry.action_seq.saturating_add(1);
                 let seq = registry.action_seq;
                 const MAX_DELTA_LOG: usize = 4096;
-                registry.conformance_delta_log.push_back(
-                    max_runtime::ConformanceDeltaEntry {
+                registry
+                    .conformance_delta_log
+                    .push_back(max_runtime::ConformanceDeltaEntry {
                         seq,
                         instance_id: uri.to_string(),
                         old_score,
                         new_score,
                         timestamp: crate::rfc3339_now(),
-                    },
-                );
+                    });
                 if registry.conformance_delta_log.len() > MAX_DELTA_LOG {
                     registry.conformance_delta_log.pop_front();
                 }
@@ -1163,6 +1166,65 @@ pub trait RulePackServer {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// PrimitivesBundle — wired concrete holder for the three optional primitives
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Concrete holder for the three optional primitives that `RulePackServer`
+/// exposes via `spc_monitor`, `latency_trackers`, and `rule_circuit_breaker`.
+///
+/// Embed this inside any concrete server struct and delegate the three accessor
+/// methods to it via `self.primitives.*_ref()`.
+///
+/// All fields are initialised with `Default` values so construction never fails.
+#[derive(Debug)]
+pub struct PrimitivesBundle {
+    /// SPC monitor for scan-latency anomaly detection.
+    pub spc_monitor: std::sync::Mutex<crate::primitives::SpcMonitor>,
+    /// Per-rule latency tracker map for dynamic EvalBudget reclassification.
+    pub latency_trackers: Arc<DashMap<String, crate::primitives::RuleLatencyTracker>>,
+    /// Circuit breaker protecting the rule-evaluation loop.
+    pub circuit_breaker: Arc<parking_lot::Mutex<crate::primitives::CircuitBreaker>>,
+}
+
+impl Default for PrimitivesBundle {
+    fn default() -> Self {
+        Self {
+            spc_monitor: std::sync::Mutex::new(crate::primitives::SpcMonitor::default()),
+            latency_trackers: Arc::new(DashMap::new()),
+            circuit_breaker: Arc::new(parking_lot::Mutex::new(
+                crate::primitives::CircuitBreaker::default(),
+            )),
+        }
+    }
+}
+
+impl PrimitivesBundle {
+    /// Construct with all defaults.
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Borrow the SPC monitor for use in `RulePackServer::spc_monitor`.
+    pub fn spc_monitor_ref(&self) -> &std::sync::Mutex<crate::primitives::SpcMonitor> {
+        &self.spc_monitor
+    }
+
+    /// Borrow the latency tracker map for use in `RulePackServer::latency_trackers`.
+    pub fn latency_trackers_ref(
+        &self,
+    ) -> &Arc<DashMap<String, crate::primitives::RuleLatencyTracker>> {
+        &self.latency_trackers
+    }
+
+    /// Borrow the circuit breaker for use in `RulePackServer::rule_circuit_breaker`.
+    pub fn circuit_breaker_ref(
+        &self,
+    ) -> &Arc<parking_lot::Mutex<crate::primitives::CircuitBreaker>> {
+        &self.circuit_breaker
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Tests — Chicago TDD: real state changes, no mocks
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -1236,6 +1298,7 @@ mod tests {
         grammar: tree_sitter::Language,
         adapter: AutoLspAdapter,
         index: WorkspaceIndex,
+        primitives: PrimitivesBundle,
     }
 
     impl TestServer {
@@ -1245,6 +1308,7 @@ mod tests {
                 grammar: tree_sitter_rust::LANGUAGE.into(),
                 adapter: AutoLspAdapter::new_default(),
                 index: WorkspaceIndex::new(),
+                primitives: PrimitivesBundle::new(),
             }
         }
         #[allow(dead_code)]
@@ -1271,6 +1335,19 @@ mod tests {
         }
         fn workspace_index(&self) -> Option<&WorkspaceIndex> {
             Some(&self.index)
+        }
+        fn spc_monitor(&self) -> Option<&std::sync::Mutex<crate::primitives::SpcMonitor>> {
+            Some(self.primitives.spc_monitor_ref())
+        }
+        fn latency_trackers(
+            &self,
+        ) -> Option<&Arc<DashMap<String, crate::primitives::RuleLatencyTracker>>> {
+            Some(self.primitives.latency_trackers_ref())
+        }
+        fn rule_circuit_breaker(
+            &self,
+        ) -> Option<&Arc<parking_lot::Mutex<crate::primitives::CircuitBreaker>>> {
+            Some(self.primitives.circuit_breaker_ref())
         }
     }
 

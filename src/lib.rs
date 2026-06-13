@@ -127,7 +127,7 @@ pub mod workspace_edit;
 
 /// Bridge trait eliminating hand-rolled regex-pattern LSP server boilerplate.
 pub mod rule_pack_server;
-pub use rule_pack_server::{Rule, RulePack, RulePackServer, ValidatedRulePackSet};
+pub use rule_pack_server::{glob_matches, Rule, RulePack, RulePackServer, ValidatedRulePackSet};
 
 /// LSP 3.18 and LSIF protocol coverage matrices.
 pub mod coverage;
@@ -136,6 +136,52 @@ pub mod coverage;
 pub mod primitives;
 
 pub(crate) use diagnostics::update_diagnostics;
+
+/// Returns current UTC time as an RFC-3339 string (seconds precision), using only std::time.
+pub(crate) fn rfc3339_now() -> String {
+    use std::time::{SystemTime, UNIX_EPOCH};
+    let mut s = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_secs();
+    let sec = s % 60;
+    s /= 60;
+    let min = s % 60;
+    s /= 60;
+    let hour = s % 24;
+    s /= 24;
+    let mut year = 1970u64;
+    loop {
+        let leap = if (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0) {
+            1
+        } else {
+            0
+        };
+        let days = 365 + leap;
+        if s < days {
+            break;
+        }
+        s -= days;
+        year += 1;
+    }
+    let leap = if (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0) {
+        1
+    } else {
+        0
+    };
+    const MONTH_DAYS: [u64; 12] = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+    let mut month = 1u64;
+    for (i, &d) in MONTH_DAYS.iter().enumerate() {
+        let d = if i == 1 { d + leap } else { d };
+        if s < d {
+            month = i as u64 + 1;
+            break;
+        }
+        s -= d;
+    }
+    let day = s + 1;
+    format!("{year:04}-{month:02}-{day:02}T{hour:02}:{min:02}:{sec:02}Z")
+}
 
 fn _assert_object_safe() {
     fn assert_impl<T: LanguageServer>() {}

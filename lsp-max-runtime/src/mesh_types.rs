@@ -259,6 +259,8 @@ pub struct ConformanceDeltaEntry {
     pub instance_id: String,
     pub old_score: f64,
     pub new_score: f64,
+    /// RFC-3339 UTC timestamp of the delta. Empty string for legacy entries.
+    pub timestamp: String,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
