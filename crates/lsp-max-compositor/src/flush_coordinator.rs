@@ -1,6 +1,11 @@
-// FlushCoordinator — debounced flush-and-publish pipeline.
-// Accepts URI signals from CompositorClient after deposit(), batches bursts within a 100ms
-// window, then flushes the DiagnosticBuffer and pushes merged diagnostics to the editor client.
+// FlushCoordinator — adaptive quorum-based flush-and-publish pipeline.
+//
+// Replaces the fixed 100ms debounce with a dynamic debounce that fires as soon as all
+// expected servers have deposited for a URI (quorum), or after an adaptive timeout based
+// on observed inter-arrival spread (2× spread, clamped to [1ms, 30ms]).
+//
+// The goal is minimum user-perceived lag: if all 500 servers respond in 2ms, the editor
+// sees the merged result in 2ms — not 100ms.
 
 use std::collections::{HashMap, HashSet};
 use std::str::FromStr;
@@ -9,6 +14,7 @@ use std::sync::Arc;
 
 use lsp_max::lsp_types::{Diagnostic, DiagnosticSeverity, NumberOrString, Position, Range};
 use tokio::sync::mpsc;
+use tokio::time::{Duration, Instant};
 
 use crate::child_process::ChildProcessPool;
 use crate::diagnostic_buffer::DiagnosticBuffer;
@@ -16,10 +22,48 @@ use crate::gate_file::GateFile;
 use crate::merge::MergeContext;
 use crate::receipt::CompositorReceipt;
 
+const MIN_WAIT: Duration = Duration::from_millis(1);
+const MAX_WAIT: Duration = Duration::from_millis(30);
+
+/// Signal carrying both URI and originating server identity.
+/// The coordinator uses server_id to track quorum per URI.
+#[derive(Debug)]
+pub struct FlushSignal {
+    pub uri: String,
+    pub server_id: String,
+}
+
+/// Per-URI state tracked during the collection window.
+struct UriFlushState {
+    deposited: HashSet<String>,
+    first_at: Instant,
+    last_at: Instant,
+}
+
+impl UriFlushState {
+    fn new(server_id: String, now: Instant) -> Self {
+        let mut deposited = HashSet::new();
+        deposited.insert(server_id);
+        Self { deposited, first_at: now, last_at: now }
+    }
+
+    /// Adaptive flush deadline for this URI.
+    /// Returns `first_at` (i.e., fire immediately) when quorum is reached.
+    /// Otherwise: last_at + clamp(2 × spread, MIN_WAIT, MAX_WAIT).
+    fn deadline(&self, expected: usize) -> Instant {
+        if self.deposited.len() >= expected {
+            self.first_at // quorum — already past, fires immediately on next select!
+        } else {
+            let spread = self.last_at.saturating_duration_since(self.first_at);
+            self.last_at + (spread * 2).clamp(MIN_WAIT, MAX_WAIT)
+        }
+    }
+}
+
 /// Background coordinator that debounces URI flush signals and pushes merged diagnostics
 /// to the editor via `lsp_max::Client::publish_diagnostics`.
 pub struct FlushCoordinator {
-    sender: mpsc::Sender<String>,
+    sender: mpsc::Sender<FlushSignal>,
     /// Cumulative count of signals dropped due to a full channel.
     /// Incremented on each `try_send` failure; readable via `signal_drop_count()`.
     drop_counter: Arc<AtomicU64>,
@@ -27,34 +71,85 @@ pub struct FlushCoordinator {
 
 impl FlushCoordinator {
     /// Spawn the flush coordinator background task.
-    /// Returns a `FlushCoordinator` whose `signal_flush` can be passed to `CompositorClient`.
-    /// `gate` must be the same `Arc<GateFile>` passed to `DiagnosticBuffer::new()` so both
-    /// sites share a single authoritative gate path.
+    /// `expected_server_count` is the number of registered child servers — when all have
+    /// deposited for a URI, the flush fires immediately (zero additional wait).
+    /// `gate` must be the same `Arc<GateFile>` passed to `DiagnosticBuffer::new()`.
     pub fn spawn(
         buffer: Arc<DiagnosticBuffer>,
         ctx: Arc<MergeContext>,
         client: lsp_max::Client,
         pool: Arc<ChildProcessPool>,
         gate: Arc<GateFile>,
+        expected_server_count: usize,
     ) -> Self {
-        // Channel capacity 512 — sized to absorb BM-11 requirement of ≥ 500 concurrent
-        // server signals within one debounce window without dropping.
-        let (tx, mut rx) = mpsc::channel::<String>(512);
-        tokio::spawn(async move {
-            loop {
-                // Wait for at least one URI signal.
-                let Some(uri) = rx.recv().await else {
-                    break;
-                };
-                let mut pending: HashSet<String> = HashSet::new();
-                pending.insert(uri);
+        // Capacity ≥ expected_server_count × URIs per window — 512 handles N=500 at 1 URI.
+        let (tx, mut rx) = mpsc::channel::<FlushSignal>(512);
+        let drop_counter = Arc::new(AtomicU64::new(0));
+        let _drop_counter_bg = Arc::clone(&drop_counter);
 
-                // Drain any burst within a 100 ms debounce window.
-                let deadline =
-                    tokio::time::Instant::now() + tokio::time::Duration::from_millis(100);
-                while let Ok(Some(u)) = tokio::time::timeout_at(deadline, rx.recv()).await {
-                    pending.insert(u);
+        tokio::spawn(async move {
+            // per_uri: tracks which servers have deposited for each URI in the current window.
+            let mut per_uri: HashMap<String, UriFlushState> = HashMap::new();
+
+            loop {
+                // Compute the earliest deadline across all pending URIs.
+                let next_deadline = per_uri
+                    .values()
+                    .map(|s| s.deadline(expected_server_count))
+                    .min();
+
+                // Select: either a new signal arrives or the next deadline fires.
+                let timed_out = if let Some(dl) = next_deadline {
+                    tokio::select! {
+                        sig = rx.recv() => {
+                            match sig {
+                                None => break, // channel closed — shutdown
+                                Some(s) => {
+                                    let now = Instant::now();
+                                    per_uri
+                                        .entry(s.uri.clone())
+                                        .and_modify(|state| {
+                                            state.deposited.insert(s.server_id.clone());
+                                            state.last_at = now;
+                                        })
+                                        .or_insert_with(|| UriFlushState::new(s.server_id, now));
+                                    false
+                                }
+                            }
+                        }
+                        _ = tokio::time::sleep_until(dl) => true,
+                    }
+                } else {
+                    // No pending URIs — block until the first signal arrives.
+                    match rx.recv().await {
+                        None => break,
+                        Some(s) => {
+                            let now = Instant::now();
+                            per_uri.insert(s.uri, UriFlushState::new(s.server_id, now));
+                            false
+                        }
+                    }
+                };
+
+                // Collect URIs whose deadline has passed (quorum or adaptive timeout).
+                let now = Instant::now();
+                let ready: Vec<String> = per_uri
+                    .iter()
+                    .filter(|(_, state)| {
+                        timed_out || state.deadline(expected_server_count) <= now
+                    })
+                    .map(|(uri, _)| uri.clone())
+                    .collect();
+
+                if ready.is_empty() {
+                    continue;
                 }
+
+                for uri in &ready {
+                    per_uri.remove(uri);
+                }
+
+                let pending: HashSet<String> = ready.into_iter().collect();
 
                 // Flush each pending URI and push to the editor.
                 // Track batch-level ANDON state for the gate write below.
@@ -180,20 +275,21 @@ impl FlushCoordinator {
 
         Self {
             sender: tx,
-            drop_counter: Arc::new(AtomicU64::new(0)),
+            drop_counter,
         }
     }
 
-    /// Signal that `uri` needs flushing.
-    /// Non-blocking — if the channel is full, the signal is dropped, the drop counter is
-    /// incremented, and a `tracing::warn` is emitted so the event is observable.
-    /// If the receiver has gone away (server shutdown), the signal is silently discarded.
-    pub fn signal_flush(&self, uri: &str) {
-        if let Err(_e) = self.sender.try_send(uri.to_string()) {
+    /// Signal that `uri` received a deposit from `server_id`.
+    /// Non-blocking — if the channel is full, the signal is dropped and the drop counter
+    /// is incremented. A `tracing::warn` makes the event observable.
+    pub fn signal_flush(&self, uri: &str, server_id: &str) {
+        let sig = FlushSignal { uri: uri.to_string(), server_id: server_id.to_string() };
+        if let Err(_e) = self.sender.try_send(sig) {
             self.drop_counter.fetch_add(1, Ordering::Relaxed);
             tracing::warn!(
                 uri = %uri,
-                "flush-coordinator: signal channel full, drop — uri flush deferred until next batch"
+                server_id = %server_id,
+                "flush-coordinator: signal channel full, drop — flush deferred"
             );
         }
     }

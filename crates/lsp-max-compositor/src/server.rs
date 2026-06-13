@@ -101,7 +101,7 @@ impl lsp_max::LanguageServer for CompositorServer {
                             let uris = conns.uris_for_server(&sid);
                             for uri in &uris {
                                 buf.clear_uri(uri);
-                                flush.signal_flush(uri);
+                                flush.signal_flush(uri, &sid);
                             }
                             tracing::info!(
                                 server_id = %sid,
@@ -472,7 +472,10 @@ pub async fn run_stdio(
     // GateFile constructed once and shared between DiagnosticBuffer (eager deposit write)
     // and FlushCoordinator (per-batch write after debounce). Single authoritative path.
     let gate = Arc::new(GateFile::for_workspace());
-    let buffer = Arc::new(DiagnosticBuffer::new(Arc::clone(&merge_ctx), Arc::clone(&gate)));
+    let buffer = Arc::new(DiagnosticBuffer::new(
+        Arc::clone(&merge_ctx),
+        Arc::clone(&gate),
+    ));
     let pool = Arc::new(ChildProcessPool::new());
     // Client is Clone — spawn the flush coordinator so child-server deposits automatically
     // trigger debounced publish_diagnostics calls to the editor.
@@ -487,6 +490,7 @@ pub async fn run_stdio(
             client.clone(),
             Arc::clone(&pool_for_coord),
             Arc::clone(&gate_for_coord),
+            config.server.len(),
         ));
         CompositorServer {
             client,

@@ -70,7 +70,7 @@ impl LanguageClient for CompositorClient {
             .deposit(&uri, &self.server_id, self.tier.clone(), entries);
 
         if let Some(coord) = &self.flush_coordinator {
-            coord.signal_flush(&uri);
+            coord.signal_flush(&uri, &self.server_id);
         }
     }
 }

@@ -499,7 +499,12 @@ fn make_merge_ctx_with_legacy_prefixes() -> MergeContext {
 fn diagnostic_buffer_deposit_and_flush() {
     use std::sync::Arc;
     let ctx = make_merge_ctx_with_legacy_prefixes();
-    let buffer = DiagnosticBuffer::new(Arc::new(ctx), Arc::new(lsp_max_compositor::GateFile::from_path(std::path::PathBuf::from("/tmp/test-gate"))));
+    let buffer = DiagnosticBuffer::new(
+        Arc::new(ctx),
+        Arc::new(lsp_max_compositor::GateFile::from_path(
+            std::path::PathBuf::from("/tmp/test-gate"),
+        )),
+    );
 
     buffer.deposit(
         "file:///foo.rs",
@@ -542,7 +547,12 @@ fn diagnostic_buffer_deposit_and_flush() {
 fn diagnostic_buffer_deposit_replaces_previous_from_same_server() {
     use std::sync::Arc;
     let ctx = make_merge_ctx_with_legacy_prefixes();
-    let buffer = DiagnosticBuffer::new(Arc::new(ctx), Arc::new(lsp_max_compositor::GateFile::from_path(std::path::PathBuf::from("/tmp/test-gate"))));
+    let buffer = DiagnosticBuffer::new(
+        Arc::new(ctx),
+        Arc::new(lsp_max_compositor::GateFile::from_path(
+            std::path::PathBuf::from("/tmp/test-gate"),
+        )),
+    );
 
     buffer.deposit(
         "file:///foo.rs",
@@ -586,7 +596,12 @@ fn diagnostic_buffer_deposit_replaces_previous_from_same_server() {
 fn diagnostic_buffer_clear_uri_empties_buffer() {
     use std::sync::Arc;
     let ctx = make_merge_ctx_with_legacy_prefixes();
-    let buffer = DiagnosticBuffer::new(Arc::new(ctx), Arc::new(lsp_max_compositor::GateFile::from_path(std::path::PathBuf::from("/tmp/test-gate"))));
+    let buffer = DiagnosticBuffer::new(
+        Arc::new(ctx),
+        Arc::new(lsp_max_compositor::GateFile::from_path(
+            std::path::PathBuf::from("/tmp/test-gate"),
+        )),
+    );
 
     buffer.deposit(
         "file:///foo.rs",
@@ -614,7 +629,12 @@ fn diagnostic_buffer_clear_uri_empties_buffer() {
 fn server_clears_buffer_on_did_close() {
     use std::sync::Arc;
     let ctx = make_merge_ctx_with_legacy_prefixes();
-    let buffer = DiagnosticBuffer::new(Arc::new(ctx), Arc::new(lsp_max_compositor::GateFile::from_path(std::path::PathBuf::from("/tmp/test-gate"))));
+    let buffer = DiagnosticBuffer::new(
+        Arc::new(ctx),
+        Arc::new(lsp_max_compositor::GateFile::from_path(
+            std::path::PathBuf::from("/tmp/test-gate"),
+        )),
+    );
 
     buffer.deposit(
         "file:///foo.rs",
@@ -644,7 +664,12 @@ fn server_clears_buffer_on_did_close() {
 fn flush_uri_returns_merge_result_with_andon_block() {
     use std::sync::Arc;
     let ctx = make_merge_ctx_with_legacy_prefixes();
-    let buffer = DiagnosticBuffer::new(Arc::new(ctx), Arc::new(lsp_max_compositor::GateFile::from_path(std::path::PathBuf::from("/tmp/test-gate"))));
+    let buffer = DiagnosticBuffer::new(
+        Arc::new(ctx),
+        Arc::new(lsp_max_compositor::GateFile::from_path(
+            std::path::PathBuf::from("/tmp/test-gate"),
+        )),
+    );
 
     buffer.deposit(
         "file:///foo.rs",
@@ -686,7 +711,12 @@ async fn compositor_client_deposits_on_publish_diagnostics() {
     use std::sync::Arc;
 
     let ctx = make_merge_ctx_with_legacy_prefixes();
-    let buffer = Arc::new(DiagnosticBuffer::new(Arc::new(ctx), Arc::new(lsp_max_compositor::GateFile::from_path(std::path::PathBuf::from("/tmp/test-gate")))));
+    let buffer = Arc::new(DiagnosticBuffer::new(
+        Arc::new(ctx),
+        Arc::new(lsp_max_compositor::GateFile::from_path(
+            std::path::PathBuf::from("/tmp/test-gate"),
+        )),
+    ));
 
     let client = CompositorClient::new(
         "test-server".to_string(),
@@ -734,11 +764,15 @@ fn flush_coordinator_signal_flush_on_closed_channel_does_not_panic() {
     // Build a coordinator by constructing only the sender side of an mpsc channel,
     // then drop the receiver to simulate server shutdown, and verify try_send
     // (which signal_flush uses internally) is panic-free.
+    use lsp_max_compositor::flush_coordinator::FlushSignal;
     use tokio::sync::mpsc;
-    let (tx, rx) = mpsc::channel::<String>(4);
+    let (tx, rx) = mpsc::channel::<FlushSignal>(4);
     drop(rx); // receiver gone — channel is closed
               // try_send on a closed channel returns Err, which signal_flush discards silently.
-    let result = tx.try_send("file:///foo.rs".to_string());
+    let result = tx.try_send(FlushSignal {
+        uri: "file:///foo.rs".to_string(),
+        server_id: "test-server".to_string(),
+    });
     // Err expected — the point is that it does NOT panic.
     assert!(result.is_err(), "expected Err on closed channel, got Ok");
 }
@@ -886,7 +920,12 @@ fn initialized_fan_out_does_not_panic_with_empty_pool() {
 fn initialized_backfill_flushes_all_buffered_uris() {
     use std::sync::Arc;
     let ctx = make_merge_ctx_with_legacy_prefixes();
-    let buffer = DiagnosticBuffer::new(Arc::new(ctx), Arc::new(lsp_max_compositor::GateFile::from_path(std::path::PathBuf::from("/tmp/test-gate"))));
+    let buffer = DiagnosticBuffer::new(
+        Arc::new(ctx),
+        Arc::new(lsp_max_compositor::GateFile::from_path(
+            std::path::PathBuf::from("/tmp/test-gate"),
+        )),
+    );
 
     buffer.deposit(
         "file:///foo.rs",
@@ -949,7 +988,12 @@ fn compositor_state_empty_buffer_returns_empty_uris() {
     use std::sync::Arc;
 
     let ctx = Arc::new(MergeContext::new(vec![]));
-    let buffer = Arc::new(DiagnosticBuffer::new(ctx.clone(), Arc::new(lsp_max_compositor::GateFile::from_path(std::path::PathBuf::from("/tmp/test-gate")))));
+    let buffer = Arc::new(DiagnosticBuffer::new(
+        ctx.clone(),
+        Arc::new(lsp_max_compositor::GateFile::from_path(
+            std::path::PathBuf::from("/tmp/test-gate"),
+        )),
+    ));
 
     // Verify that buffered_uris() is empty on a fresh buffer.
     assert!(buffer.buffered_uris().is_empty());
@@ -1022,7 +1066,12 @@ fn diagnostic_buffer_gate_not_written_on_empty_deposit() {
     let ctx = Arc::new(MergeContext::new(vec![]));
     let buffer = DiagnosticBuffer::new(ctx, Arc::clone(&gate));
     // Deposit with no entries — gate must NOT be written (no ANDON signal).
-    buffer.deposit("file:///test.rs", "srv", lsp_max_compositor::registry::ChildTier::DiagnosticsOnly, vec![]);
+    buffer.deposit(
+        "file:///test.rs",
+        "srv",
+        lsp_max_compositor::registry::ChildTier::DiagnosticsOnly,
+        vec![],
+    );
     // Gate file should not exist or be unset.
     assert_ne!(gate.read(), Some(true));
 }
