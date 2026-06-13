@@ -2,6 +2,7 @@
 // Child servers deposit diagnostics here via deposit().
 // flush() calls MergeContext::merge() and returns the MergeResult.
 
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
 use dashmap::DashMap;
@@ -16,6 +17,10 @@ pub struct DiagnosticBuffer {
     /// Keyed by URI. Value is Vec of (server_id, tier, entries) tuples.
     inner: DashMap<String, Vec<(String, ChildTier, Vec<DiagnosticEntry>)>>,
     ctx: Arc<MergeContext>,
+    /// Advisory flag: set to true when any flush produces has_andon_block == true.
+    /// Monotonic — once set, stays true until restart. Use compositor_state() for
+    /// authoritative current state.
+    last_andon_block: AtomicBool,
 }
 
 impl DiagnosticBuffer {
@@ -23,6 +28,7 @@ impl DiagnosticBuffer {
         Self {
             inner: DashMap::new(),
             ctx,
+            last_andon_block: AtomicBool::new(false),
         }
     }
 
@@ -43,6 +49,7 @@ impl DiagnosticBuffer {
 
     /// Merge all deposited diagnostics for a URI and return the result.
     /// Does not clear the buffer — call clear_uri() after the result is delivered.
+    /// Updates the advisory last_andon_block flag if the result has an ANDON block.
     pub fn flush(&self, uri: &str) -> MergeResult {
         let inputs = match self.inner.get(uri) {
             None => return self.ctx.merge(vec![]),
@@ -51,7 +58,17 @@ impl DiagnosticBuffer {
                 .map(|(_, tier, entries)| (tier.clone(), entries.clone()))
                 .collect(),
         };
-        self.ctx.merge(inputs)
+        let result = self.ctx.merge(inputs);
+        if result.has_andon_block {
+            self.last_andon_block.store(true, Ordering::Relaxed);
+        }
+        result
+    }
+
+    /// Advisory cached flag: true if any flush since startup produced an ANDON block.
+    /// Monotonic — not cleared by clear_uri(). Use compositor_state() for authoritative data.
+    pub fn last_andon_block(&self) -> bool {
+        self.last_andon_block.load(Ordering::Relaxed)
     }
 
     /// Clear all deposited diagnostics for a URI (call after successful delivery to editor).

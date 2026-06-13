@@ -970,3 +970,29 @@ fn uri_andon_state_serializes_to_json() {
     assert!(json.contains("WASM4PM-CROWN-001"));
     assert!(json.contains("\"global_andon_block\":true"));
 }
+
+// ── health_response tests ────────────────────────────────────────────────────
+
+#[test]
+fn health_response_serializes_to_json() {
+    use lsp_max_compositor::health_response::CompositorHealth;
+    let h = CompositorHealth {
+        child_server_count: 3,
+        child_server_ids: vec!["wasm4pm-lsp".to_string()],
+        buffered_uri_count: 5,
+        has_any_andon_block: false,
+    };
+    let json = serde_json::to_string(&h).unwrap();
+    assert!(json.contains("\"child_server_count\":3"));
+    assert!(json.contains("wasm4pm-lsp"));
+}
+
+#[test]
+fn diagnostic_buffer_last_andon_block_starts_false() {
+    use lsp_max_compositor::diagnostic_buffer::DiagnosticBuffer;
+    use lsp_max_compositor::merge::MergeContext;
+    use std::sync::Arc;
+    let ctx = Arc::new(MergeContext::new(vec![]));
+    let buffer = DiagnosticBuffer::new(ctx);
+    assert!(!buffer.last_andon_block());
+}

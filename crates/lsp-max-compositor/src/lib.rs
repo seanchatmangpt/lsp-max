@@ -1,4 +1,5 @@
 pub mod child_process;
+pub mod health_response;
 pub mod state_response;
 pub mod compositor_client;
 pub mod config;

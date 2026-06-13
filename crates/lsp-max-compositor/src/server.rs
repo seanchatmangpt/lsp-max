@@ -250,6 +250,19 @@ impl CompositorServer {
         }
     }
 
+    /// Lightweight health snapshot. O(1) — does not iterate the diagnostic buffer.
+    /// Returns pool size, registered IDs, buffered URI count, and the advisory ANDON flag.
+    /// For authoritative current ANDON state use compositor_state().
+    pub fn compositor_health(&self) -> crate::health_response::CompositorHealth {
+        use crate::health_response::CompositorHealth;
+        CompositorHealth {
+            child_server_count: self.pool.server_ids_snapshot().len(),
+            child_server_ids: self.pool.server_ids_snapshot(),
+            buffered_uri_count: self.buffer.buffered_uri_count(),
+            has_any_andon_block: self.buffer.last_andon_block(),
+        }
+    }
+
     /// Flush the diagnostic buffer for a URI and return the merged result.
     /// Provides a testable entry point that exercises the full buffer→merge→MergeResult path.
     pub fn flush_uri(&self, uri: &str) -> crate::merge::MergeResult {
