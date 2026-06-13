@@ -1,6 +1,206 @@
 use crate::mesh_types::{
-    FailureMode, Hook, HookDescriptor, HookEvent, InstanceId, MeshAction, PolicyState, Receipt,
+    FailureMode, Hook, HookDescriptor, HookEvent, InstanceId, MaxDiagnostic, MeshAction,
+    PolicyState, Receipt,
 };
+
+/// Enforces three process-level laws by monitoring the OCEL of the LSP session.
+/// Text scanning detects what code looks like. This hook detects what process produced it.
+/// PROCESS-001: receipt emitted while unresolved diagnostics are active
+/// PROCESS-002: receipt emitted while instance is in ClarificationRequested
+/// PROCESS-003: diagnostic cleared with no intervening resolution event (oracle injection signal)
+pub struct OcelProcessHook {
+    active_diagnostics:
+        std::sync::Mutex<std::collections::HashMap<String, std::collections::HashSet<String>>>,
+    policy_states: std::sync::Mutex<std::collections::HashMap<String, PolicyState>>,
+    diag_emission_baselines: std::sync::Mutex<std::collections::HashMap<String, u64>>,
+    resolution_counts: std::sync::Mutex<std::collections::HashMap<String, u64>>,
+}
+
+impl Default for OcelProcessHook {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl OcelProcessHook {
+    pub fn new() -> Self {
+        Self {
+            active_diagnostics: std::sync::Mutex::new(std::collections::HashMap::new()),
+            policy_states: std::sync::Mutex::new(std::collections::HashMap::new()),
+            diag_emission_baselines: std::sync::Mutex::new(std::collections::HashMap::new()),
+            resolution_counts: std::sync::Mutex::new(std::collections::HashMap::new()),
+        }
+    }
+
+    fn make_diag(
+        law_id: &str,
+        id: &str,
+        msg: &str,
+        sev: lsp_types_max::DiagnosticSeverity,
+    ) -> Box<MaxDiagnostic> {
+        Box::new(MaxDiagnostic {
+            lsp: lsp_types_max::Diagnostic {
+                range: lsp_types_max::Range::default(),
+                severity: Some(sev),
+                code: Some(lsp_types_max::NumberOrString::String(law_id.to_string())),
+                message: msg.to_string(),
+                ..Default::default()
+            },
+            diagnostic_id: id.to_string(),
+            law_id: law_id.to_string(),
+            violated_invariant: msg.to_string(),
+            ..Default::default()
+        })
+    }
+}
+
+impl Hook for OcelProcessHook {
+    fn name(&self) -> &str {
+        "OcelProcessHook"
+    }
+
+    fn trigger(&self, event: &HookEvent) -> Vec<MeshAction> {
+        let mut actions = Vec::new();
+        match event {
+            HookEvent::DiagnosticEmitted {
+                instance_id,
+                diagnostic,
+            } => {
+                if let Ok(mut d) = self.active_diagnostics.lock() {
+                    d.entry(instance_id.0.clone())
+                        .or_default()
+                        .insert(diagnostic.diagnostic_id.clone());
+                }
+                let baseline = self
+                    .resolution_counts
+                    .lock()
+                    .ok()
+                    .and_then(|m| m.get(&instance_id.0).copied())
+                    .unwrap_or(0);
+                if let Ok(mut b) = self.diag_emission_baselines.lock() {
+                    b.insert(diagnostic.diagnostic_id.clone(), baseline);
+                }
+            }
+            HookEvent::DiagnosticCleared {
+                instance_id,
+                diagnostic_id,
+            } => {
+                let baseline = self
+                    .diag_emission_baselines
+                    .lock()
+                    .ok()
+                    .and_then(|m| m.get(diagnostic_id.as_str()).copied());
+                let current = self
+                    .resolution_counts
+                    .lock()
+                    .ok()
+                    .and_then(|m| m.get(&instance_id.0).copied())
+                    .unwrap_or(0);
+                if let Some(b) = baseline {
+                    if current == b {
+                        actions.push(MeshAction::AddDiagnostic {
+                            instance_id: instance_id.clone(),
+                            diagnostic: Self::make_diag(
+                                "PROCESS-003",
+                                &format!("process-003-{}", diagnostic_id),
+                                &format!("Process violation (PROCESS-003): '{}' cleared without resolution event — oracle injection signal. Text scanning cannot detect this.", diagnostic_id),
+                                lsp_types_max::DiagnosticSeverity::WARNING,
+                            ),
+                        });
+                    }
+                }
+                if let Ok(mut d) = self.active_diagnostics.lock() {
+                    if let Some(s) = d.get_mut(&instance_id.0) {
+                        s.remove(diagnostic_id.as_str());
+                    }
+                }
+                if let Ok(mut b) = self.diag_emission_baselines.lock() {
+                    b.remove(diagnostic_id.as_str());
+                }
+            }
+            HookEvent::ReceiptEmitted {
+                instance_id,
+                receipt,
+            } => {
+                let has_active = self
+                    .active_diagnostics
+                    .lock()
+                    .ok()
+                    .and_then(|m| m.get(&instance_id.0).map(|s| !s.is_empty()))
+                    .unwrap_or(false);
+                if has_active {
+                    actions.push(MeshAction::AddDiagnostic {
+                        instance_id: instance_id.clone(),
+                        diagnostic: Self::make_diag(
+                            "PROCESS-001",
+                            &format!("process-001-{}", receipt.receipt_id),
+                            &format!("Process violation (PROCESS-001): receipt '{}' emitted while violations active — stage not lawfully complete. Text scanning cannot detect this.", receipt.receipt_id),
+                            lsp_types_max::DiagnosticSeverity::ERROR,
+                        ),
+                    });
+                }
+                let in_clarification = self
+                    .policy_states
+                    .lock()
+                    .ok()
+                    .and_then(|m| m.get(&instance_id.0).cloned())
+                    .map(|s| s == PolicyState::ClarificationRequested)
+                    .unwrap_or(false);
+                if in_clarification {
+                    actions.push(MeshAction::AddDiagnostic {
+                        instance_id: instance_id.clone(),
+                        diagnostic: Self::make_diag(
+                            "PROCESS-002",
+                            &format!("process-002-{}", receipt.receipt_id),
+                            &format!("Process violation (PROCESS-002): receipt '{}' emitted while ClarificationRequested — pending clarification not resolved. Text scanning cannot detect this.", receipt.receipt_id),
+                            lsp_types_max::DiagnosticSeverity::ERROR,
+                        ),
+                    });
+                }
+            }
+            HookEvent::PolicyStateChanged {
+                instance_id,
+                to_state,
+                ..
+            } => {
+                if let Ok(mut s) = self.policy_states.lock() {
+                    s.insert(instance_id.0.clone(), to_state.clone());
+                }
+                if let Ok(mut c) = self.resolution_counts.lock() {
+                    *c.entry(instance_id.0.clone()).or_insert(0) += 1;
+                }
+            }
+            HookEvent::BoundedActionExecuted { instance_id, .. } => {
+                if let Ok(mut c) = self.resolution_counts.lock() {
+                    *c.entry(instance_id.0.clone()).or_insert(0) += 1;
+                }
+            }
+            HookEvent::InstanceReset { instance_id } => {
+                if let Ok(mut d) = self.active_diagnostics.lock() {
+                    d.remove(&instance_id.0);
+                }
+                if let Ok(mut s) = self.policy_states.lock() {
+                    s.remove(&instance_id.0);
+                }
+                if let Ok(mut c) = self.resolution_counts.lock() {
+                    c.remove(&instance_id.0);
+                }
+            }
+            _ => {}
+        }
+        actions
+    }
+
+    fn descriptor(&self) -> HookDescriptor {
+        HookDescriptor {
+            name: "OcelProcessHook",
+            input_type: "HookEvent::DiagnosticEmitted, HookEvent::DiagnosticCleared, HookEvent::ReceiptEmitted, HookEvent::PolicyStateChanged, HookEvent::BoundedActionExecuted, HookEvent::InstanceReset",
+            output_type: "MeshAction::AddDiagnostic",
+            trigger_law: "PROCESS-001, PROCESS-002, PROCESS-003",
+            failure_mode: FailureMode::EmitDiagnostic,
+        }
+    }
+}
 
 pub struct IntakeDiagnosticHook;
 
@@ -432,5 +632,108 @@ impl Hook for ReceiptRoutingHook {
             trigger_law: "LAW-ROUTING-001",
             failure_mode: FailureMode::EmitDiagnostic,
         }
+    }
+}
+
+#[cfg(test)]
+mod ocel_process_hook_tests {
+    use super::*;
+
+    fn diag(id: &str) -> Box<crate::mesh_types::MaxDiagnostic> {
+        Box::new(crate::mesh_types::MaxDiagnostic {
+            diagnostic_id: id.to_string(),
+            law_id: "COG-001".to_string(),
+            ..Default::default()
+        })
+    }
+    fn rcpt(id: &str) -> Receipt {
+        Receipt {
+            receipt_id: id.to_string(),
+            hash: "h".to_string(),
+            prev_receipt_hash: None,
+        }
+    }
+    fn inst(id: &str) -> InstanceId {
+        InstanceId::from(id)
+    }
+
+    #[test]
+    fn process_001_fires_with_active_diagnostic() {
+        let h = OcelProcessHook::new();
+        h.trigger(&HookEvent::DiagnosticEmitted {
+            instance_id: inst("A"),
+            diagnostic: diag("d1"),
+        });
+        let acts = h.trigger(&HookEvent::ReceiptEmitted {
+            instance_id: inst("A"),
+            receipt: rcpt("r1"),
+        });
+        assert!(acts
+            .iter()
+            .any(|a| matches!(a, MeshAction::AddDiagnostic { diagnostic, .. } if diagnostic.law_id == "PROCESS-001")));
+    }
+
+    #[test]
+    fn process_001_silent_when_no_active_diagnostics() {
+        let h = OcelProcessHook::new();
+        let acts = h.trigger(&HookEvent::ReceiptEmitted {
+            instance_id: inst("A"),
+            receipt: rcpt("r1"),
+        });
+        assert!(acts.is_empty());
+    }
+
+    #[test]
+    fn process_002_fires_in_clarification_requested_state() {
+        let h = OcelProcessHook::new();
+        h.trigger(&HookEvent::PolicyStateChanged {
+            instance_id: inst("B"),
+            from_state: PolicyState::Operational,
+            to_state: PolicyState::ClarificationRequested,
+        });
+        let acts = h.trigger(&HookEvent::ReceiptEmitted {
+            instance_id: inst("B"),
+            receipt: rcpt("r2"),
+        });
+        assert!(acts
+            .iter()
+            .any(|a| matches!(a, MeshAction::AddDiagnostic { diagnostic, .. } if diagnostic.law_id == "PROCESS-002")));
+    }
+
+    #[test]
+    fn process_003_fires_on_forced_clear() {
+        let h = OcelProcessHook::new();
+        h.trigger(&HookEvent::DiagnosticEmitted {
+            instance_id: inst("A"),
+            diagnostic: diag("d-oracle"),
+        });
+        let acts = h.trigger(&HookEvent::DiagnosticCleared {
+            instance_id: inst("A"),
+            diagnostic_id: "d-oracle".to_string(),
+        });
+        assert!(acts
+            .iter()
+            .any(|a| matches!(a, MeshAction::AddDiagnostic { diagnostic, .. } if diagnostic.law_id == "PROCESS-003")));
+    }
+
+    #[test]
+    fn process_003_silent_after_resolution_event() {
+        let h = OcelProcessHook::new();
+        h.trigger(&HookEvent::DiagnosticEmitted {
+            instance_id: inst("A"),
+            diagnostic: diag("d-legit"),
+        });
+        h.trigger(&HookEvent::BoundedActionExecuted {
+            instance_id: inst("A"),
+            action_id: "fix".to_string(),
+            description: "Applied repair".to_string(),
+        });
+        let acts = h.trigger(&HookEvent::DiagnosticCleared {
+            instance_id: inst("A"),
+            diagnostic_id: "d-legit".to_string(),
+        });
+        assert!(!acts
+            .iter()
+            .any(|a| matches!(a, MeshAction::AddDiagnostic { diagnostic, .. } if diagnostic.law_id == "PROCESS-003")));
     }
 }

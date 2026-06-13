@@ -22,6 +22,7 @@ fn test_protocol_conformance_vector_round_trip() {
         score: Some(66.7),
         strict_mode: true,
         process_quality: None,
+        ..Default::default()
     };
     let s = serde_json::to_string(&cv).expect("serialize ConformanceVector");
     let cv2: ConformanceVector = serde_json::from_str(&s).expect("deserialize ConformanceVector");

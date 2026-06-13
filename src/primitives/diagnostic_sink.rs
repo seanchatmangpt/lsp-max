@@ -15,6 +15,7 @@
 //! fiber bundle (URI → Vec<Diagnostic>) iff the curvature of the connection
 //! (version counter) is zero, which holds iff rules are context-free.
 
+use lsp_max_protocol::{LawAxis, MaxDiagnostic};
 use lsp_types_max::{Diagnostic, Url};
 use parking_lot::RwLock;
 use rustc_hash::FxHashMap;
@@ -34,7 +35,8 @@ use crate::service::Client;
 #[derive(Clone, Debug)]
 pub struct DiagnosticSink {
     client: Client,
-    last: Arc<RwLock<FxHashMap<Url, u64>>>,
+    /// `(axis_bits, fnv_hash)` — axis_bits is 0 for plain-LSP publishes.
+    last: Arc<RwLock<FxHashMap<Url, (u64, u64)>>>,
 }
 
 impl DiagnosticSink {
@@ -54,12 +56,36 @@ impl DiagnosticSink {
         let hash = hash_diagnostics(&diags);
         {
             let last = self.last.read();
-            if last.get(&uri).copied() == Some(hash) {
+            if last.get(&uri).map(|(_, fnv)| *fnv) == Some(hash) {
                 return;
             }
         }
-        self.last.write().insert(uri.clone(), hash);
+        self.last.write().insert(uri.clone(), (0u64, hash));
         self.client.publish_diagnostics(uri, diags, None).await;
+    }
+
+    /// Publish a batch of `MaxDiagnostic`s with hybrid axis-bitmask + FNV-1a dedup.
+    ///
+    /// The fast path checks whether the law-axis bit set AND the FNV-1a hash of
+    /// the underlying LSP diagnostics are both unchanged. Axis-set changes (most
+    /// common in law-state transitions) are detected by a single `u64` comparison.
+    /// Custom-axis diagnostics have no stable bit and fall through to FNV-1a only.
+    ///
+    /// No wire message is emitted when both checks agree the set is unchanged.
+    pub async fn publish_max(&self, uri: Url, diags: Vec<MaxDiagnostic>) {
+        let curr_bits = diagnostics_to_axis_bits(&diags);
+        let lsp_diags: Vec<Diagnostic> = diags.iter().map(|d| d.lsp.clone()).collect();
+        let curr_fnv = hash_diagnostics(&lsp_diags);
+        {
+            let last = self.last.read();
+            if let Some(&(prev_bits, prev_fnv)) = last.get(&uri) {
+                if prev_bits == curr_bits && prev_fnv == curr_fnv {
+                    return;
+                }
+            }
+        }
+        self.last.write().insert(uri.clone(), (curr_bits, curr_fnv));
+        self.client.publish_diagnostics(uri, lsp_diags, None).await;
     }
 
     /// Clear diagnostics for `uri`.  No-ops if already empty.
@@ -72,16 +98,37 @@ impl DiagnosticSink {
         }
     }
 
-    /// Returns the last published diagnostic count for `uri`, or `None` if
-    /// the URI has never been published to (or was cleared).
-    ///
-    /// Note: because the sink now stores a hash, not the Vec, this method
-    /// returns `Some(0)` when the last publish was an empty set and `None`
-    /// when never published. To get an exact count, callers must track it
-    /// separately.
+    /// Returns the FNV-1a hash of the last published diagnostic set, or `None`
+    /// if the URI has never been published to (or was cleared).
     pub fn last_published(&self, uri: &Url) -> Option<u64> {
-        self.last.read().get(uri).copied()
+        self.last.read().get(uri).map(|(_, fnv)| *fnv)
     }
+}
+
+/// Map a `LawAxis` to its bit position (bits 0–10 for named variants; `None` for Custom).
+fn law_axis_bit(axis: &LawAxis) -> Option<u64> {
+    match axis {
+        LawAxis::Protocol => Some(1 << 0),
+        LawAxis::Type => Some(1 << 1),
+        LawAxis::Fixture => Some(1 << 2),
+        LawAxis::Documentation => Some(1 << 3),
+        LawAxis::Release => Some(1 << 4),
+        LawAxis::Hook => Some(1 << 5),
+        LawAxis::Repair => Some(1 << 6),
+        LawAxis::Receipt => Some(1 << 7),
+        LawAxis::Security => Some(1 << 8),
+        LawAxis::Autopoiesis => Some(1 << 9),
+        LawAxis::Domain => Some(1 << 10),
+        LawAxis::Custom(_) => None,
+    }
+}
+
+/// Fold all named `LawAxis` bits from a `MaxDiagnostic` slice into a `u64` bitmask.
+fn diagnostics_to_axis_bits(diags: &[MaxDiagnostic]) -> u64 {
+    diags
+        .iter()
+        .filter_map(|d| law_axis_bit(&d.law_axis))
+        .fold(0u64, |acc, bit| acc | bit)
 }
 
 /// Structural FNV-1a hash over a `Vec<Diagnostic>` — allocation-free.

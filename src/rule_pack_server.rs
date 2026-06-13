@@ -262,6 +262,53 @@ pub fn compose_packs(packs: &[RulePack]) -> ComposedPacks {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// ValidatedRulePackSet — monoid-law newtype for conflict-free pack composition
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// A set of rule packs verified to have no rule-ID conflicts.
+///
+/// Constructible only via `new()` or `empty()`.  The `merge()` method composes
+/// two sets and re-validates, enforcing the monoid law at the type level:
+/// it is impossible to pass conflicting packs to `RulePackServer::rule_packs`.
+///
+/// `Custom(_)` axes and empty rule IDs are skipped during conflict detection
+/// (delegated to `compose_packs`).
+#[derive(Debug, Clone, Default)]
+pub struct ValidatedRulePackSet {
+    ordered: Vec<RulePack>,
+}
+
+impl ValidatedRulePackSet {
+    /// Validate `packs` and return a conflict-free set, or return the conflicts.
+    pub fn new(packs: &[RulePack]) -> Result<Self, Vec<PackConflict>> {
+        let composed = compose_packs(packs);
+        if composed.conflicts.is_empty() {
+            Ok(Self {
+                ordered: composed.ordered,
+            })
+        } else {
+            Err(composed.conflicts)
+        }
+    }
+
+    /// The monoid identity — an empty set of rule packs.
+    pub fn empty() -> Self {
+        Self::default()
+    }
+
+    /// Access the validated packs as a slice.
+    pub fn packs(&self) -> &[RulePack] {
+        &self.ordered
+    }
+
+    /// Combine two validated sets, re-checking for conflicts at merge time.
+    pub fn merge(mut self, other: ValidatedRulePackSet) -> Result<Self, Vec<PackConflict>> {
+        let combined: Vec<RulePack> = self.ordered.drain(..).chain(other.ordered).collect();
+        Self::new(&combined)
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // ERRC Innovation 1: RulePackSnapshot — immutable async-safe state clone
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -616,8 +663,8 @@ pub fn severity_to_lsp(severity: &str) -> DiagnosticSeverity {
 /// loaded `RulePack`s.
 #[allow(async_fn_in_trait)]
 pub trait RulePackServer {
-    /// The rule packs this server enforces.
-    fn rule_packs(&self) -> &[RulePack];
+    /// The rule packs this server enforces, pre-validated for conflicts.
+    fn rule_packs(&self) -> &ValidatedRulePackSet;
 
     /// Optional cross-file rules.  Default: empty.
     fn cross_file_rules(&self) -> &[CrossFileRule] {
@@ -730,7 +777,7 @@ pub trait RulePackServer {
         let mut sync_r = Vec::new();
         let mut bg_r = Vec::new();
 
-        for pack in self.rule_packs() {
+        for pack in self.rule_packs().packs() {
             for rule in &pack.rules {
                 let re = match Regex::new(&rule.pattern) {
                     Ok(r) => r,
@@ -879,6 +926,7 @@ pub trait RulePackServer {
             score: None,
             strict_mode: true,
             process_quality: None,
+            ..Default::default()
         })
     }
 
@@ -897,6 +945,7 @@ pub trait RulePackServer {
                 score: None,
                 strict_mode: true,
                 process_quality: None,
+                ..Default::default()
             })
     }
 
@@ -905,7 +954,7 @@ pub trait RulePackServer {
     /// Returns `None` if no workspace index is configured.
     fn evaluate_cross_file_rules(&self) -> Option<Vec<CrossFileViolation>> {
         let idx = self.workspace_index()?;
-        let packs = Arc::new(self.rule_packs().to_vec());
+        let packs = Arc::new(self.rule_packs().packs().to_vec());
         let snapshot = idx.snapshot(packs);
         let violations = WorkspaceRuleEvaluator::evaluate(&snapshot, self.cross_file_rules());
         Some(violations)
@@ -1027,7 +1076,7 @@ mod tests {
     // ── Minimal TestServer ───────────────────────────────────────────────────
 
     struct TestServer {
-        packs: Vec<RulePack>,
+        packs: ValidatedRulePackSet,
         grammar: tree_sitter::Language,
         adapter: AutoLspAdapter,
         index: WorkspaceIndex,
@@ -1036,7 +1085,7 @@ mod tests {
     impl TestServer {
         fn new(packs: Vec<RulePack>) -> Self {
             Self {
-                packs,
+                packs: ValidatedRulePackSet::new(&packs).unwrap_or_default(),
                 grammar: tree_sitter_rust::LANGUAGE.into(),
                 adapter: AutoLspAdapter::new_default(),
                 index: WorkspaceIndex::new(),
@@ -1049,7 +1098,7 @@ mod tests {
     }
 
     impl RulePackServer for TestServer {
-        fn rule_packs(&self) -> &[RulePack] {
+        fn rule_packs(&self) -> &ValidatedRulePackSet {
             &self.packs
         }
         fn grammar(&self) -> tree_sitter::Language {
@@ -1235,6 +1284,7 @@ mod tests {
                 score: Some(100.0),
                 strict_mode: true,
                 process_quality: None,
+                ..Default::default()
             },
         );
 
@@ -1253,6 +1303,7 @@ mod tests {
                 score: Some(0.0),
                 strict_mode: true,
                 process_quality: None,
+                ..Default::default()
             },
         );
 
