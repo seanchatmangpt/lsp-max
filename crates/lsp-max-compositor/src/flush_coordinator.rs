@@ -11,6 +11,7 @@ use tokio::sync::mpsc;
 
 use crate::child_process::ChildProcessPool;
 use crate::diagnostic_buffer::DiagnosticBuffer;
+use crate::gate_file::GateFile;
 use crate::merge::MergeContext;
 use crate::receipt::CompositorReceipt;
 
@@ -29,6 +30,7 @@ impl FlushCoordinator {
         client: lsp_max::Client,
         pool: Arc<ChildProcessPool>,
     ) -> Self {
+        let gate = GateFile::for_workspace();
         let (tx, mut rx) = mpsc::channel::<String>(256);
         tokio::spawn(async move {
             loop {
@@ -154,6 +156,11 @@ impl FlushCoordinator {
                         }
                     }
                 }
+
+                // Materialize global ANDON state to the gate file after each batch.
+                // One write per debounce window regardless of URI count — O(1).
+                // PreToolUse hooks read this file with a single syscall, no IPC.
+                gate.write(buffer.last_andon_block());
             }
         });
 

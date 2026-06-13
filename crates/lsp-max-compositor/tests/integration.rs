@@ -1117,3 +1117,45 @@ fn child_process_pool_remove_returns_proc() {
     // Pool remains empty after remove.
     assert_eq!(pool.server_ids_snapshot().len(), 0);
 }
+
+// ── gate_file tests ──────────────────────────────────────────────────────────
+
+#[test]
+fn gate_file_write_read_round_trip() {
+    use lsp_max_compositor::gate_file::GateFile;
+
+    let tmp = std::env::temp_dir().join(format!("lsp-max-gate-test-{}", std::process::id()));
+    let gate = GateFile::from_path(tmp.clone());
+
+    gate.write(false);
+    assert_eq!(gate.read(), Some(false));
+
+    gate.write(true);
+    assert_eq!(gate.read(), Some(true));
+
+    // Explicit remove so Drop doesn't race with assertions on CI.
+    gate.remove();
+    assert_eq!(gate.read(), None);
+}
+
+#[test]
+fn gate_file_missing_returns_none() {
+    use lsp_max_compositor::gate_file::GateFile;
+    use std::path::PathBuf;
+
+    let gate = GateFile::from_path(PathBuf::from("/tmp/lsp-max-gate-no-such-file-xyzzy"));
+    assert_eq!(gate.read(), None);
+}
+
+#[test]
+fn gate_file_drop_removes_file() {
+    use lsp_max_compositor::gate_file::GateFile;
+
+    let path = std::env::temp_dir().join(format!("lsp-max-gate-drop-{}", std::process::id()));
+    {
+        let gate = GateFile::from_path(path.clone());
+        gate.write(false);
+        assert!(path.exists());
+    } // Drop fires here
+    assert!(!path.exists());
+}

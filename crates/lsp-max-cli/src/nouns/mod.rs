@@ -4,6 +4,7 @@ pub mod client;
 pub mod config;
 pub mod diagnostics;
 pub mod event;
+pub mod gate;
 pub mod hook;
 pub mod metamodel;
 pub mod plugin;
