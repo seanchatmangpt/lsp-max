@@ -1,12 +1,14 @@
 // Integration tests for lsp-max-compositor: fanout dispatch, routing, merge, law codes.
 
+use lsp_max_compositor::compositor_client::CompositorClient;
 use lsp_max_compositor::config::{CompositorConfig, ServerEntry};
 use lsp_max_compositor::connections::ChildConnections;
+use lsp_max_compositor::diagnostic_buffer::DiagnosticBuffer;
 use lsp_max_compositor::fanout::{dispatch_strategy, servers_for_uri, DispatchStrategy};
 use lsp_max_compositor::merge::{
     is_refused_by_law, is_refused_by_law_with_prefixes, merge_diagnostics, DiagnosticEntry,
 };
-use lsp_max_compositor::{ChildServer, ChildTier, ExtensionRouter, MergeContext};
+use lsp_max_compositor::{ChildServer, ChildTier, ExtensionRouter, MergeContext, MergeResult};
 
 // ── 1. dispatch_strategy classification ──────────────────────────────────────
 
@@ -415,8 +417,288 @@ fn merge_context_from_config_uses_configured_prefixes() {
         ChildTier::DiagnosticsOnly,
     );
 
-    let result = context.merge(vec![(ChildTier::DiagnosticsOnly, vec![entry])]);
-    assert_eq!(result.len(), 1);
+    let result: MergeResult = context.merge(vec![(ChildTier::DiagnosticsOnly, vec![entry])]);
+    assert_eq!(result.diagnostics.len(), 1);
     // CUSTOM-LAW-001 with severity=1 sorts first (law error)
-    assert_eq!(result[0].code, "CUSTOM-LAW-001");
+    assert_eq!(result.diagnostics[0].code, "CUSTOM-LAW-001");
+    assert!(
+        result.has_andon_block,
+        "CUSTOM-LAW-001 severity 1 should set has_andon_block"
+    );
+}
+
+// ── 6c. MergeResult has_andon_block false for non-error ──────────────────────
+
+#[test]
+fn merge_result_has_andon_block_false_for_non_error() {
+    let config = CompositorConfig {
+        server: vec![ServerEntry {
+            id: "custom-law-server".into(),
+            primary_extensions: vec!["rs".into()],
+            secondary_extensions: vec![],
+            priority: "high".into(),
+            andon_code_prefixes: Some(vec!["CUSTOM-LAW-".into()]),
+        }],
+    };
+
+    let context = MergeContext::from_config(&config);
+
+    let entry = make_entry(
+        "file:///foo.rs",
+        1,
+        0,
+        "CUSTOM-LAW-001",
+        "custom law warning",
+        2, // Warning — not an Error
+        ChildTier::DiagnosticsOnly,
+    );
+
+    let result: MergeResult = context.merge(vec![(ChildTier::DiagnosticsOnly, vec![entry])]);
+    assert_eq!(result.diagnostics.len(), 1);
+    assert!(
+        !result.has_andon_block,
+        "severity=2 (Warning) must not set has_andon_block"
+    );
+}
+
+// ── 7. DiagnosticBuffer ───────────────────────────────────────────────────────
+
+fn make_merge_ctx_with_legacy_prefixes() -> MergeContext {
+    MergeContext::new(vec![
+        "WASM4PM-".to_string(),
+        "ANTI-LLM-".to_string(),
+        "GGEN-".to_string(),
+    ])
+}
+
+#[test]
+fn diagnostic_buffer_deposit_and_flush() {
+    use std::sync::Arc;
+    let ctx = make_merge_ctx_with_legacy_prefixes();
+    let buffer = DiagnosticBuffer::new(Arc::new(ctx));
+
+    buffer.deposit(
+        "file:///foo.rs",
+        "anti-llm-cheat",
+        ChildTier::DiagnosticsOnly,
+        vec![make_entry(
+            "file:///foo.rs",
+            1,
+            0,
+            "ANTI-LLM-CHEAT-C001",
+            "cheat detected",
+            1,
+            ChildTier::DiagnosticsOnly,
+        )],
+    );
+    buffer.deposit(
+        "file:///foo.rs",
+        "rust-analyzer",
+        ChildTier::Primary,
+        vec![make_entry(
+            "file:///foo.rs",
+            5,
+            0,
+            "E0308",
+            "type mismatch",
+            1,
+            ChildTier::Primary,
+        )],
+    );
+
+    let result = buffer.flush("file:///foo.rs");
+    assert_eq!(result.diagnostics.len(), 2);
+    assert!(
+        result.has_andon_block,
+        "ANTI-LLM-CHEAT-C001 severity 1 must set has_andon_block"
+    );
+}
+
+#[test]
+fn diagnostic_buffer_deposit_replaces_previous_from_same_server() {
+    use std::sync::Arc;
+    let ctx = make_merge_ctx_with_legacy_prefixes();
+    let buffer = DiagnosticBuffer::new(Arc::new(ctx));
+
+    buffer.deposit(
+        "file:///foo.rs",
+        "server-a",
+        ChildTier::Primary,
+        vec![make_entry(
+            "file:///foo.rs",
+            1,
+            0,
+            "X001",
+            "first",
+            1,
+            ChildTier::Primary,
+        )],
+    );
+    buffer.deposit(
+        "file:///foo.rs",
+        "server-a",
+        ChildTier::Primary,
+        vec![make_entry(
+            "file:///foo.rs",
+            1,
+            0,
+            "X002",
+            "second",
+            1,
+            ChildTier::Primary,
+        )],
+    );
+
+    let result = buffer.flush("file:///foo.rs");
+    assert_eq!(
+        result.diagnostics.len(),
+        1,
+        "second deposit must replace first"
+    );
+    assert_eq!(result.diagnostics[0].code, "X002");
+}
+
+#[test]
+fn diagnostic_buffer_clear_uri_empties_buffer() {
+    use std::sync::Arc;
+    let ctx = make_merge_ctx_with_legacy_prefixes();
+    let buffer = DiagnosticBuffer::new(Arc::new(ctx));
+
+    buffer.deposit(
+        "file:///foo.rs",
+        "server-a",
+        ChildTier::Primary,
+        vec![make_entry(
+            "file:///foo.rs",
+            1,
+            0,
+            "X001",
+            "msg",
+            1,
+            ChildTier::Primary,
+        )],
+    );
+    assert_eq!(buffer.buffered_uri_count(), 1);
+
+    buffer.clear_uri("file:///foo.rs");
+    assert_eq!(buffer.buffered_uri_count(), 0);
+}
+
+// ── 8. did_close eviction ─────────────────────────────────────────────────────
+
+#[test]
+fn server_clears_buffer_on_did_close() {
+    use std::sync::Arc;
+    let ctx = make_merge_ctx_with_legacy_prefixes();
+    let buffer = DiagnosticBuffer::new(Arc::new(ctx));
+
+    buffer.deposit(
+        "file:///foo.rs",
+        "server-a",
+        ChildTier::Primary,
+        vec![make_entry(
+            "file:///foo.rs",
+            1,
+            0,
+            "X001",
+            "msg",
+            1,
+            ChildTier::Primary,
+        )],
+    );
+    assert_eq!(buffer.buffered_uri_count(), 1);
+
+    buffer.clear_uri("file:///foo.rs");
+    assert_eq!(buffer.buffered_uri_count(), 0);
+
+    let result = buffer.flush("file:///foo.rs");
+    assert_eq!(result.diagnostics.len(), 0);
+    assert!(!result.has_andon_block);
+}
+
+#[test]
+fn flush_uri_returns_merge_result_with_andon_block() {
+    use std::sync::Arc;
+    let ctx = make_merge_ctx_with_legacy_prefixes();
+    let buffer = DiagnosticBuffer::new(Arc::new(ctx));
+
+    buffer.deposit(
+        "file:///foo.rs",
+        "anti-llm-cheat",
+        ChildTier::DiagnosticsOnly,
+        vec![make_entry(
+            "file:///foo.rs",
+            1,
+            0,
+            "ANTI-LLM-CHEAT-C001",
+            "cheat detected",
+            1,
+            ChildTier::DiagnosticsOnly,
+        )],
+    );
+
+    let result = buffer.flush("file:///foo.rs");
+    assert!(
+        result.has_andon_block,
+        "ANTI-LLM-CHEAT-C001 severity 1 must set has_andon_block"
+    );
+    assert!(
+        result.andon_codes().contains(&"ANTI-LLM-CHEAT-C001"),
+        "andon_codes() must include ANTI-LLM-CHEAT-C001, got: {:?}",
+        result.andon_codes()
+    );
+}
+
+// ── 9. CompositorClient deposits on publish_diagnostics ──────────────────────
+
+#[tokio::test]
+async fn compositor_client_deposits_on_publish_diagnostics() {
+    use lsp_max::lsp_types::{
+        Diagnostic, DiagnosticSeverity, NumberOrString, Position, PublishDiagnosticsParams, Range,
+        Uri,
+    };
+    use lsp_max_client::LanguageClient;
+    use std::str::FromStr;
+    use std::sync::Arc;
+
+    let ctx = make_merge_ctx_with_legacy_prefixes();
+    let buffer = Arc::new(DiagnosticBuffer::new(Arc::new(ctx)));
+
+    let client = CompositorClient::new(
+        "test-server".to_string(),
+        ChildTier::DiagnosticsOnly,
+        Arc::clone(&buffer),
+    );
+
+    let uri = Uri::from_str("file:///test.ocel.json").unwrap();
+    let params = PublishDiagnosticsParams {
+        uri: uri.clone(),
+        diagnostics: vec![Diagnostic {
+            range: Range {
+                start: Position {
+                    line: 0,
+                    character: 0,
+                },
+                end: Position {
+                    line: 0,
+                    character: 10,
+                },
+            },
+            severity: Some(DiagnosticSeverity::ERROR),
+            code: Some(NumberOrString::String("WASM4PM-CROWN-001".to_string())),
+            message: "missing output_hash".to_string(),
+            ..Default::default()
+        }],
+        version: None,
+    };
+
+    client.publish_diagnostics(params).await;
+
+    assert_eq!(buffer.buffered_uri_count(), 1);
+
+    let result = buffer.flush("file:///test.ocel.json");
+    assert!(
+        result.has_andon_block,
+        "WASM4PM-CROWN-001 severity ERROR must set has_andon_block"
+    );
 }

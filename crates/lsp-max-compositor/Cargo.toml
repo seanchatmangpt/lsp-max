@@ -9,8 +9,10 @@ path = "src/main.rs"
 
 [dependencies]
 lsp-max = { path = "../.." }
+lsp-max-client = { path = "../../crates/lsp-max-client" }
 lsp-max-protocol = { path = "../../lsp-max-protocol" }
 lsp-max-runtime = { path = "../../lsp-max-runtime" }
+async-trait = "0.1"
 tokio = { version = "1", features = ["full"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"

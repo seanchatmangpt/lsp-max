@@ -15,6 +15,23 @@ pub struct DiagnosticEntry {
     pub source_tier: ChildTier,
 }
 
+pub struct MergeResult {
+    pub diagnostics: Vec<DiagnosticEntry>,
+    /// True if any REFUSED_BY_LAW Error (severity == 1) is present in diagnostics.
+    /// Callers must inspect this before emitting receipts or completing workflows.
+    pub has_andon_block: bool,
+}
+
+impl MergeResult {
+    pub fn andon_codes(&self) -> Vec<&str> {
+        self.diagnostics
+            .iter()
+            .filter(|d| d.severity == 1 && is_refused_by_law(&d.code))
+            .map(|d| d.code.as_str())
+            .collect()
+    }
+}
+
 pub struct MergeContext {
     andon_prefixes: Vec<String>,
 }
@@ -40,9 +57,16 @@ impl MergeContext {
         self.andon_prefixes.len()
     }
 
-    pub fn merge(&self, inputs: Vec<(ChildTier, Vec<DiagnosticEntry>)>) -> Vec<DiagnosticEntry> {
+    pub fn merge(&self, inputs: Vec<(ChildTier, Vec<DiagnosticEntry>)>) -> MergeResult {
         let refs: Vec<&str> = self.andon_prefixes.iter().map(|s| s.as_str()).collect();
-        merge_diagnostics(inputs, Some(&refs))
+        let diagnostics = merge_diagnostics(inputs, Some(&refs));
+        let has_andon_block = diagnostics
+            .iter()
+            .any(|d| d.severity == 1 && is_refused_by_law_with_prefixes(&d.code, &refs));
+        MergeResult {
+            diagnostics,
+            has_andon_block,
+        }
     }
 }
 

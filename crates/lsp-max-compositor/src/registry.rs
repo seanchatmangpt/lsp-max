@@ -10,6 +10,16 @@ pub enum ChildTier {
     DiagnosticsOnly,
 }
 
+impl ChildTier {
+    pub fn as_str(&self) -> &str {
+        match self {
+            ChildTier::Primary => "primary",
+            ChildTier::Secondary => "secondary",
+            ChildTier::DiagnosticsOnly => "diagnostics-only",
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct ChildServer {
     pub id: String,
