@@ -248,5 +248,10 @@ pub fn evaluate_diagnostics(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
     let has_non_victory_errors = diags.iter().any(|d| d.code != "ANTI-LLM-CLAIM-004");
     diags.extend(claims::evaluate(obs, has_non_victory_errors));
 
+    // Deduplicate diagnostics by (file_path, line, code) — prevents the same violation
+    // from appearing multiple times when multiple parsers emit overlapping observations.
+    let mut seen = std::collections::HashSet::new();
+    diags.retain(|d| seen.insert((d.file_path.clone(), d.line, d.code.clone())));
+
     diags
 }

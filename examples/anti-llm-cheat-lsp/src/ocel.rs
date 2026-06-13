@@ -18,7 +18,10 @@ pub fn generate_anti_llm_ocel_log() -> OCEL {
             OCELEventAttribute::string("name", "anti-llm-cheat-lsp".to_string()),
         ),
         OCELObject::new("file_server_rs".to_string(), "File").with_attribute(
-            OCELEventAttribute::string("path", "examples/anti-llm-cheat-lsp/src/server.rs".to_string()),
+            OCELEventAttribute::string(
+                "path",
+                "examples/anti-llm-cheat-lsp/src/server.rs".to_string(),
+            ),
         ),
         OCELObject::new("range_server_rs_1".to_string(), "FileRange")
             .with_attribute(OCELEventAttribute::string(

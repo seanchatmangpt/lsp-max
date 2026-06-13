@@ -21,6 +21,12 @@ enum Commands {
     Scan {
         #[arg(long, default_value = ".")]
         dir: String,
+        #[arg(
+            long,
+            value_name = "DIR",
+            help = "Additional directory to ignore during scan"
+        )]
+        ignore_dirs: Vec<String>,
     },
 }
 
@@ -40,10 +46,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 std::process::exit(1);
             }
         }
-        Commands::Scan { dir } => {
+        Commands::Scan { dir, ignore_dirs } => {
             let _ = anti_llm_cheat_lsp::ocel::write_ocel_outputs(&dir);
-            let obs = anti_llm_cheat_lsp::engine::scan_directory(&dir);
+            let mut obs = anti_llm_cheat_lsp::engine::scan_directory(&dir);
+            if !ignore_dirs.is_empty() {
+                obs.retain(|o| !ignore_dirs.iter().any(|d| o.file_path.contains(d.as_str())));
+            }
             let diags = anti_llm_cheat_lsp::engine::evaluate_diagnostics(&obs);
+            let mut diags = diags;
+            diags.sort_by(|a, b| a.file_path.cmp(&b.file_path).then(a.line.cmp(&b.line)));
             println!("--- Anti-LLM Admissibility Scan Findings ---");
             println!("Observations: {}", obs.len());
             println!("Diagnostics emitted: {}", diags.len());

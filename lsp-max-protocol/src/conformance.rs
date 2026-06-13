@@ -241,7 +241,7 @@ impl ConformanceVector {
 
     fn vecs_to_bits(axes: &[LawAxis]) -> u64 {
         axes.iter()
-            .filter_map(|a| LawAxisRegistry::axis_to_id(a))
+            .filter_map(LawAxisRegistry::axis_to_id)
             .fold(0u64, |acc, id| acc | id.bit())
     }
 
