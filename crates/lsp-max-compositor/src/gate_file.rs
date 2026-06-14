@@ -15,14 +15,10 @@ pub struct GateFile {
 
 impl GateFile {
     /// Derive a workspace-specific gate file path from the working directory.
+    /// Routes through the single authoritative formula so the path cannot diverge.
     pub fn for_workspace() -> Self {
-        let workspace = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("/"));
-        let hash = fnv1a(workspace.to_string_lossy().as_bytes());
-        let dir = std::env::var("XDG_RUNTIME_DIR")
-            .map(PathBuf::from)
-            .unwrap_or_else(|_| PathBuf::from("/tmp"));
         Self {
-            path: dir.join(format!("lsp-max-gate-{hash:016x}")),
+            path: lsp_max::primitives::gate_file_path(),
         }
     }
 
@@ -139,13 +135,4 @@ impl Drop for GateFile {
     fn drop(&mut self) {
         self.remove();
     }
-}
-
-fn fnv1a(bytes: &[u8]) -> u64 {
-    let mut hash: u64 = 0xcbf29ce484222325;
-    for &b in bytes {
-        hash ^= b as u64;
-        hash = hash.wrapping_mul(0x100000001b3);
-    }
-    hash
 }
