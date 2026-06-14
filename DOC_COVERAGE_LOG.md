@@ -227,3 +227,51 @@ that resolves the `Receipt` law axis, and the gate (`admits_release`) reflects i
 
 ### Hard stops
 None.
+
+---
+
+## Iteration 5 — 2026-06-14 · commit edee13c (clean tree) · MAPPING iteration
+
+No triple closed by design: this iteration extends the coverage map from the 8
+single-file examples to the **root crate's documented public re-export surface**
+(`pub use` in `src/lib.rs`; 152 `///`-over-`pub` items in `src/`). The map is the
+product — it quantifies the remaining gap.
+
+### Public re-export surface vs example usage (tool-derived)
+
+| Public symbol (from `src/lib.rs`) | In a single-file example? | Status |
+|---|---|---|
+| `LspService`, `Server`, `LanguageServer` | 5 examples | ✅ exercised |
+| `Client` | 4 examples | ✅ exercised |
+| `ComposedServer` | 0 | ❌ documented-but-unexercised |
+| `CompositionState` / `SharedCompositionState` | 0 | ❌ documented-but-unexercised |
+| `SourceHealth` | 0 | ❌ documented-but-unexercised |
+| `RulePackServer`, `Rule`, `RulePack`, `ValidatedRulePackSet`, `glob_matches` | 0 single-file | ⊘ exercised by the `anti-llm-cheat-lsp` example *crate* (verify next) |
+| `Loopback`, `ExitedError`, `ClientSocket` | 0 | ❌ small utility types, unexercised |
+
+### Top gap: the composition layer ("autonomic LSP mesh", architecture layer 5)
+`ComposedServer`/`CompositionState`/`SourceHealth` are a headline documented
+capability with **zero** example coverage. The layer has pure, run-to-exit-
+witnessable logic (not just server I/O):
+- `src/composition/strategy.rs` — `SourceHealth` enum + `UpstreamSource` with
+  `is_routable()` / `supports_method()`
+- `src/composition/capability_tracker.rs` — `add_source`, `routable_sources_for_method`,
+  `degrade_source` (degrading a source removes its dynamic registrations)
+- `src/composition/merge.rs` — `merge_attributed`, `merge_deduped_locations`,
+  `merge_hovers_with_attribution` (pure observation-merge functions)
+
+### Prioritized next triple (iteration 6)
+`examples/composition_explained.rs`: build a capability tracker with two upstream
+sources, assert both route for a method, `degrade_source` one to a non-`Healthy`
+`SourceHealth`, assert it drops out of `routable_sources_for_method` — and merge
+attributed observations from two sources, asserting dedup/attribution. Fails if a
+degraded source still routes (the autonomic-mesh contract). Setup cost: full
+`UpstreamSource` struct + `AttributedObservation` fields — read before writing.
+
+### Caveat / no silent cap
+`degrade_source` early-returns on `SABOTAGE_SOURCE_HEALTH` env var — the witness
+must assert in a clean env (and may add a negative-control that sets it to show the
+sabotage path is detectable).
+
+### Hard stops
+None.
