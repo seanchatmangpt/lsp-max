@@ -76,6 +76,15 @@
 #![deny(missing_debug_implementations)]
 #![deny(missing_docs)]
 #![deny(unsafe_code)]
+// stdout is the LSP frame channel — a `print!`/`println!` anywhere in this
+// library interleaves log text ahead of the Content-Length header and corrupts
+// framing (the `Header must provide a Content-Length property` failure mode).
+// This is type-invisible: a write to stdout is type-identical whether it means
+// "log" or "protocol frame". Denying the lint makes the second writer to stdout
+// UNCONSTRUCTABLE — it cannot compile. Route all diagnostics through `tracing`
+// (stderr via the subscriber) or `eprintln!`; the frame writer uses the async
+// codec, not a print macro, so it is unaffected.
+#![deny(clippy::print_stdout)]
 #![allow(clippy::mutable_key_type)]
 
 pub extern crate lsp_types_max;
