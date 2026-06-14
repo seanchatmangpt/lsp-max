@@ -305,8 +305,8 @@ pub fn audit_breeds(root_path: &Path) -> Vec<BreedDiagnostic> {
                     && run_id_present;
                 if !has_provenance {
                     let missing_fields: Vec<&str> = [
-                        (!rv.get("measured_by").is_some()).then_some("measured_by"),
-                        (!rv.get("measured_on").is_some()).then_some("measured_on"),
+                        rv.get("measured_by").is_none().then_some("measured_by"),
+                        rv.get("measured_on").is_none().then_some("measured_on"),
                         (!run_id_present).then_some("run_id (or provenance.run_id)"),
                     ]
                     .into_iter()
