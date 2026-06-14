@@ -275,3 +275,47 @@ sabotage path is detectable).
 
 ### Hard stops
 None.
+
+---
+
+## Iteration 6 — 2026-06-14 · commit 2ac3d8c (clean tree) · MAP CORRECTION
+
+Iteration 5 listed the composition layer as an example-closable
+documented-but-unexercised gap. Verifying against source corrected that hypothesis
+— the honest result of checking before writing:
+
+### Finding: composition pure logic is NOT public API (not example-reachable)
+- `src/lib.rs:127` declares `mod composition;` — **private**. Only
+  `ComposedServer`, `CompositionState`, `SharedCompositionState`, `SourceHealth`
+  are re-exported. `UpstreamSource`, `CapabilityTracker`, and the `merge_*`
+  functions are **internal** — an external `examples/` file cannot construct them.
+- `ComposedServer` (the public face) is **server-class** (blocks on serve()).
+- So the composition capability is **not closable as a run-to-exit example**. Its
+  correct witness vehicle is tests, and it IS witnessed: `tests/test_r1_r2_challenger.rs`,
+  `tests/e2e/test_harness.rs`, and the `lsp-max-compositor` crate's own suites
+  (`tests/{e2e,integration,speciation}.rs`, `src/{capability_merge,fanout,merge}`).
+- **Reclassified:** composition is `⊘ witnessed-by-tests`, not `❌ example-gap`.
+  Note for maintainer: the in-tree `src/composition/{capability_tracker,merge,strategy}.rs`
+  have 0 inline `#[test]` — their coverage is indirect (through `ComposedServer`
+  integration tests). A unit-test pass on the pure functions would tighten that,
+  but it's a test gap, not a doc↔example gap.
+
+### Corrected public-surface map
+| Symbol | Disposition |
+|---|---|
+| `LspService`, `Server`, `LanguageServer`, `Client` | ✅ exercised by examples |
+| `ComposedServer`/`CompositionState`/`SourceHealth` | ⊘ server-class + private internals; witnessed by integration + compositor tests |
+| `RulePackServer`, `Rule`, `RulePack`, `ValidatedRulePackSet` | ❌ documented, adoption OPEN per ROADMAP (no consumer yet — a real gap, but the trait is server-oriented; closing needs a minimal impl) |
+| `Loopback`, `ExitedError`, `ClientSocket` | ❌ minor public utilities, example-reachable, unexercised (low value) |
+
+### Coverage verdict for this loop's scope
+The **example-reachable documented surface is bijective**: every documented
+capability an external example *can* construct is either covered by a running,
+asserting witness (ConformanceVector, Receipt, CalVer, max/snapshot lifecycle, +
+the Receipt×ConformanceVector cross-product) or classified server-class. The
+residue is (a) `RulePackServer` adoption — OPEN by ROADMAP, server-oriented, and
+(b) the composition internals — private, witnessed by tests not examples. Neither
+is an example-laundering risk; both are recorded, not papered over.
+
+### Hard stops
+None.
