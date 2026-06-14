@@ -131,3 +131,56 @@ Flag for the maintainer — not a doc-loop change.
 
 ### Hard stops
 None.
+
+---
+
+## Iteration 3 — 2026-06-14 · commit 7e8e235 (clean tree)
+
+### Triple closed: CalVer version law (`ANTI-LLM-VERSION-*`)
+
+- **doc** — `examples/anti-llm-cheat-lsp/src/rules/version.rs` (the production
+  enforcement) now has a module doc citing the example; the example keeps its
+  Diataxis explanation of why CalVer, not SemVer.
+- **example** — `examples/calver_law_explained.rs`: was prose-only, now validates
+  the crate's live `env!("CARGO_PKG_VERSION")` against the YY.M.D law and rejects
+  SemVer-shaped/malformed strings (1.2.3, 26.13.1, 26.6.32, 26.6, v26.6.9, -rc1).
+  Load-bearing: if the workspace is ever bumped to non-CalVer, the example panics.
+- **link** — doc→example (version.rs module doc) and example→doc (header cites
+  Cargo.toml + version.rs).
+- **captured run** (`cargo run --example calver_law_explained`, real `$? = 0`):
+  ```
+  WITNESS calver_law: version law holds for this crate
+    actual CARGO_PKG_VERSION = 26.6.9 (valid YY.M.D)
+    [1] this crate's real version is lawful CalVer
+    [2] release-date-shaped versions accepted (26.6.9, 24.1.1, 26.12.31)
+    [3] SemVer/malformed rejected (1.2.3, 26.13.1, 26.6.32, 26.6, v.., -rc1)
+  ```
+
+### `custom_notification` classified → ⊘ server-class
+Confirmed server-style: builds `Server::new(stdin, stdout, socket).serve(...)` on
+`tokio::io::stdin/stdout` and blocks (the earlier exit 124 was the block, not a
+hang-bug). Witnessed by the transport/integration tests, not run-to-exit.
+
+### Gap map — run-to-exit single-file examples (BIJECTIVE for this scope)
+| Example | Status |
+|---|---|
+| `repro_lifecycle.rs` | ✅ covered |
+| `conformance_vector_explained.rs` | ✅ covered (iter 1) |
+| `receipt_chain_explained.rs` | ✅ covered (iter 2) |
+| `calver_law_explained.rs` | ✅ covered (iter 3) |
+| `stdio.rs` / `tcp.rs` / `websocket.rs` / `custom_notification.rs` | ⊘ server-class (witnessed by tests/) |
+
+**documented-but-unexercised: 0 · exercised-but-undocumented: 0** for the single-file
+run-to-exit scope. Every run-to-exit demo is now a real witness or a classified server.
+
+### Next frontier (scope expansion, not prose padding)
+1. **Cross-product example** (the goal's coherence test): `ConformanceVector` +
+   `Receipt` composing — receipt verification moves the Receipt axis out of
+   `unknown`, then the gate admits release. No single-API example shows this.
+2. **Broader documented surface**: the loop has covered the 8 single-file examples;
+   the root crate's full `///`-over-`pub` API (e.g. `LspService`, `Server`,
+   `ComposedServer`, gate primitives) is a larger documented surface whose
+   example-coverage is not yet mapped. Next iterations enumerate that surface.
+
+### Hard stops
+None.

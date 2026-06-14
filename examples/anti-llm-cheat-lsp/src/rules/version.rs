@@ -1,3 +1,8 @@
+//! CalVer version law (`ANTI-LLM-VERSION-*`): the workspace version must be
+//! `YY.M.D`, not SemVer. For the rationale and a runnable witness that validates
+//! the live `CARGO_PKG_VERSION` and rejects SemVer-shaped strings, see
+//! `examples/calver_law_explained.rs` (`cargo run --example calver_law_explained`).
+
 use crate::diagnostics::AntiLlmDiagnostic;
 use crate::observations::Observation;
 
