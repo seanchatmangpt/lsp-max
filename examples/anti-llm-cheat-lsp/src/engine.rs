@@ -2,11 +2,13 @@ use crate::config::AntiLlmConfig;
 use crate::diagnostics::AntiLlmDiagnostic;
 use crate::observations::Observation;
 use crate::parsers::{
-    cargo_lock, cargo_toml, json_rpc, markdown_claims, receipt_json, rust_tree_sitter, typescript,
+    cargo_lock, cargo_toml, contract, fitness_report, ggen_toml, json_rpc, markdown_claims,
+    receipt_json, rust_tree_sitter, tera_template, typescript,
 };
 use crate::rules::{
-    authority, claims, determinism, lsp318, mutation, ocel_rules, receipts, routes, rust_smells,
-    surface, test, typescript as ts_rules, version,
+    authority, claims, complexity, contract as contract_rules, determinism, ggen, lsp318, mutation,
+    ocel_rules, oracle, receipts, routes, rust_smells, surface, test, trace, typescript as ts_rules,
+    version,
 };
 use aho_corasick::AhoCorasick;
 use std::fs;
@@ -246,6 +248,14 @@ pub fn scan_file(filepath: &str) -> Vec<Observation> {
         || filename.ends_with(".cjs")
     {
         obs.extend(typescript::parse_typescript(filepath, &content));
+    } else if filename == "ggen.toml" {
+        obs.extend(ggen_toml::parse_ggen_toml(filepath, &content));
+    } else if filename.ends_with(".tera") {
+        obs.extend(tera_template::parse_tera_template(filepath, &content));
+    } else if filename.ends_with(".json")
+        && (filepath.contains("ocel/reports") || filepath.contains("fitness_reports"))
+    {
+        obs.extend(fitness_report::parse_fitness_report(filepath, &content));
     }
 
     obs
@@ -271,6 +281,11 @@ pub fn scan_directory(dirpath: &str) -> Vec<Observation> {
             obs.extend(scan_file(&entry.path().to_string_lossy()));
         }
     }
+
+    // GGEN-YIELD-004: cross-file competing-authority detection across all ggen.toml files
+    obs.extend(ggen_toml::detect_competing_authority(&obs.clone()));
+    // CONTRACT-001/002: cross-file vocabulary schism detection
+    obs.extend(contract::detect_contract_schism(&obs.clone()));
 
     obs
 }
@@ -302,6 +317,11 @@ pub fn evaluate_diagnostics_with_config(
     diags.extend(lsp318::evaluate(obs));
     diags.extend(ocel_rules::evaluate(obs));
     diags.extend(ts_rules::evaluate(obs));
+    diags.extend(ggen::evaluate(obs));
+    diags.extend(complexity::evaluate(obs));
+    diags.extend(oracle::evaluate(obs));
+    diags.extend(trace::evaluate(obs));
+    diags.extend(contract_rules::evaluate(obs));
 
     let has_non_victory_errors = diags.iter().any(|d| d.code != "ANTI-LLM-CLAIM-004");
     diags.extend(claims::evaluate(

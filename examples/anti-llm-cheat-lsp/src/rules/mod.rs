@@ -1,6 +1,11 @@
 pub mod authority;
+pub mod complexity;
+pub mod contract;
+pub mod oracle;
+pub mod trace;
 pub mod claims;
 pub mod determinism;
+pub mod ggen;
 pub mod lsp318;
 pub mod mutation;
 pub mod ocel_rules;

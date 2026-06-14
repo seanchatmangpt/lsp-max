@@ -21,6 +21,7 @@
 
 use lsp_types_max::DiagnosticSeverity;
 use std::path::Path;
+use wasm4pm_compat::fresh_names::FRESH_NAME_PAIRS;
 
 /// Severity mapping per law — matches the ARD's defect classification.
 fn severity(law: &str) -> DiagnosticSeverity {
@@ -64,32 +65,6 @@ fn wasm4pm_root(root_path: &Path) -> std::path::PathBuf {
     root_path.parent().unwrap_or(root_path).join("wasm4pm")
 }
 
-/// Known hidden-oracle fresh names per breed (from anti-cheat-threat-model.md).
-/// If any of these appear in the production breed source, it is an A8 violation.
-fn fresh_name_manifest(breed_id: &str) -> Vec<&'static str> {
-    match breed_id {
-        "ltl_monitor" => vec!["zorp", "blee", "quux"],
-        "allen_temporal" => vec!["gamma", "delta", "eps", "pi"],
-        "fuzzy_logic" => vec!["tri_asymmetric", "flam_var"],
-        "bayesian_network" => vec!["qubit", "qres", "qchain"],
-        "csp_ac3" => vec!["vquux", "vblee", "vzorp"],
-        "default_logic" => vec!["gronk", "wibble", "dark_wibble"],
-        "htn_planning" => vec!["coach_task", "walk_task"],
-        "dempster_shafer" => vec!["flim", "flam"],
-        "frames_inheritance" => vec!["zilk", "welp", "snorf"],
-        "ebl" => vec!["obj2", "obj9"],
-        "asp" => vec!["zorp_atom", "blee_atom"],
-        "description_logic" => vec!["krumm", "blurp"],
-        "abductive_lp" => vec!["snag", "blarg"],
-        "circumscription" => vec!["korv", "glows"],
-        "analogy_sme" => vec!["gor", "lum", "rix"],
-        "naive_physics" => vec!["bolv", "mim", "pearl"],
-        "problog" => vec!["pfact_quux", "pfact_blee"],
-        "pomdp" => vec!["tampered_o"],
-        "meta_reasoning" => vec!["breed_zorp", "breed_blee"],
-        _ => vec![],
-    }
-}
 
 /// Parse dispatch.rs to build a map of breed_id → module stem that actually
 /// implements it.  Falls back to `breed_id` itself when no override is found.
@@ -321,15 +296,26 @@ pub fn audit_breeds(root_path: &Path) -> Vec<BreedDiagnostic> {
                         artifact_path: report.to_string_lossy().into(),
                     });
                 }
+                // run_id may be nested under provenance.run_id (23 of 55 reports) or
+                // absent entirely (10 minimal-schema reports). Accept either location.
+                let run_id_present = rv.get("run_id").is_some()
+                    || rv.get("provenance").and_then(|p| p.get("run_id")).is_some();
                 let has_provenance = rv.get("measured_by").is_some()
-                    || rv.get("provenance").is_some()
-                    || rv.get("run_id").is_some()
-                    || rv.get("measured_on").is_some();
+                    && rv.get("measured_on").is_some()
+                    && run_id_present;
                 if !has_provenance {
+                    let missing_fields: Vec<&str> = [
+                        (!rv.get("measured_by").is_some()).then_some("measured_by"),
+                        (!rv.get("measured_on").is_some()).then_some("measured_on"),
+                        (!run_id_present).then_some("run_id (or provenance.run_id)"),
+                    ]
+                    .into_iter()
+                    .flatten()
+                    .collect();
                     diags.push(BreedDiagnostic {
                         law_id: "COG-007",
                         breed_id: bid.clone(),
-                        message: format!("[COG-007] '{bid}' report lacks measured-fitness provenance (run_id/measured_by/measured_on) — bare fitness claim is A10"),
+                        message: format!("[COG-007] '{bid}' report lacks measured-fitness provenance — missing: {} (A10 evidence gap)", missing_fields.join(", ")),
                         severity: severity("COG-007"),
                         artifact_path: report.to_string_lossy().into(),
                     });
@@ -389,9 +375,16 @@ pub fn audit_breeds(root_path: &Path) -> Vec<BreedDiagnostic> {
         }
 
         // COG-010: fresh-name oracle leak into production source (A8)
+        // Fresh names are ontology-derived from wasm4pm_compat::fresh_names::FRESH_NAME_PAIRS.
         if module.exists() {
             if let Ok(source) = std::fs::read_to_string(&module) {
-                for name in fresh_name_manifest(&bid) {
+                let fresh_for_breed: Vec<&str> = FRESH_NAME_PAIRS
+                    .iter()
+                    .filter(|(b, _)| *b == bid.as_str())
+                    .map(|(_, n)| *n)
+                    .collect();
+                for name in &fresh_for_breed {
+                    let name = *name;
                     // Match whole-word occurrences only (exclude test-file paths and comments that
                     // merely document the oracle contract).
                     if source.contains(name) {
@@ -419,17 +412,27 @@ pub fn audit_breeds(root_path: &Path) -> Vec<BreedDiagnostic> {
             }
         }
 
-        // COG-011: premature PARTIAL_ALIVE (module exists but OCPN or report absent)
+        // COG-011: premature PARTIAL_ALIVE (module exists but OCPN or report absent,
+        //          or report exists but admitted=false)
         let has_module = module.exists();
         let has_ocpn = ocpn.exists();
         let has_report = report.exists();
         let has_fixture = fix_rs.exists();
-        let dod_complete = has_module && has_ocpn && has_report && has_fixture;
+        let report_admitted = if has_report {
+            std::fs::read_to_string(&report)
+                .ok()
+                .and_then(|s| serde_json::from_str::<serde_json::Value>(&s).ok())
+                .and_then(|v| v.get("admitted").and_then(|a| a.as_bool()))
+                .unwrap_or(false)
+        } else {
+            false
+        };
+        let dod_complete = has_module && has_ocpn && has_report && report_admitted && has_fixture;
         if !dod_complete && has_module {
-            // At least one required artifact missing — the registry flip is premature (A10).
             let missing: Vec<&str> = [
                 (!has_ocpn).then_some("OCPN"),
                 (!has_report).then_some("report"),
+                (has_report && !report_admitted).then_some("admitted=true in report"),
                 (!has_fixture).then_some("fixture"),
             ]
             .into_iter()
