@@ -91,6 +91,11 @@ pub struct CapabilityGap {
 // Receipt
 // ---------------------------------------------------------------------------
 
+/// A content-addressed ledger entry: `hash` is the digest of an artifact's exact
+/// bytes, and `prev_receipt_hash` closes the Merkle chain (`None` only for
+/// genesis). See the runnable witness in `examples/receipt_chain_explained.rs`,
+/// which demonstrates content-addressing, tamper detection, the circular-hash
+/// trap, and chain linkage — and panics if any of them regress.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct Receipt {
     pub receipt_id: String,

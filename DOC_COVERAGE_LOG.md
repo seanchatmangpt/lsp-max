@@ -77,3 +77,57 @@ None.
 - `ConformanceVector` + `Receipt` + gate: an end-to-end example where receipt
   verification moves the `Receipt` axis out of `unknown` and the gate then admits
   release — shows the admission model *composing*, not just each piece in isolation.
+
+---
+
+## Iteration 2 — 2026-06-14 · commit d3cb8d0 (clean tree)
+
+### Triple closed: `Receipt` (BLAKE3 content-addressing + Merkle chain)
+
+- **doc** — `lsp-max-protocol/src/core.rs` rustdoc on `Receipt` now references the
+  example; the example keeps its Diataxis explanation of why hash-the-artifact beats
+  trust-the-assertion.
+- **example** — `examples/receipt_chain_explained.rs`: was prose-only (printed a
+  pointer), now a real witness using the actual `Receipt` struct + `blake3`
+  (root dev-dep, same hash `anti-llm-cheat-lsp/src/ocel.rs` uses) + `tempfile`.
+  5 assertions: content-addressing verifies, tamper is detected, the circular-hash
+  trap is detectable, genesis has no prev hash, the chain link survives serde.
+- **link** — doc→example (rustdoc) and example→doc (`core.rs` / `ocel.rs`).
+- **captured run** (`cargo run --example receipt_chain_explained`, real `$? = 0`):
+  ```
+  WITNESS receipt_chain: 5 contract assertions held
+    [1] receipt from final bytes verifies against the file
+    [2] modifying the artifact makes the receipt fail to verify (tamper-evident)
+    [3] the circular-hash trap is detectable (digest != final file)
+    [4] genesis has no prev hash; the next receipt links the prior hash
+    [5] serde roundtrip preserves the chain link
+  ```
+
+### Step-7 finding (doc described behavior the *type* lacks)
+The old `receipt_chain_explained` and the doctrine describe BLAKE3 hashing/verification,
+but the `Receipt` *type* (`core.rs`) is a bare data carrier — no hash/verify method.
+The hashing lives in `anti-llm-cheat-lsp/src/ocel.rs` (`write_ocel_outputs`) and chain
+verification in `lsp-max-runtime/src/ledger.rs` (`verify_instance_ledger`, sha256, LSP_1
+conventions). The witness therefore demonstrates the doctrine *pattern* with the real
+`Receipt` struct as carrier, and points to those production sites — it does not pretend
+the type self-verifies.
+
+### Updated gap map (run-to-exit single-file examples)
+| Example | Status |
+|---|---|
+| `repro_lifecycle.rs` | ✅ covered |
+| `conformance_vector_explained.rs` | ✅ covered (iter 1) |
+| `receipt_chain_explained.rs` | ✅ covered (iter 2) |
+| `calver_law_explained.rs` | ❌ doc-without-example (queued) |
+| `custom_notification.rs` | ⚠ unclassified (exit 124 — server-style?) |
+| `stdio.rs` / `tcp.rs` / `websocket.rs` | ⊘ server-class (witnessed by tests/) |
+
+### Out-of-loop finding (reported, not chased)
+`tower-lsp-max-runtime/` is **tracked in this repo** (`src/lib.rs`,
+`refund_receipt.txt`) — the directory name embeds "tower-lsp", which AGENTS.md law #1
+forbids outside negative-control fixtures. `lsp-max-runtime/` is the live runtime
+crate (dep of the root); `tower-lsp-max-runtime/` appears to be a stale duplicate.
+Flag for the maintainer — not a doc-loop change.
+
+### Hard stops
+None.
