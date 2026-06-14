@@ -100,3 +100,11 @@ code { font-family: ui-monospace, monospace; color: var(--accent); font-size: 0.
 .svgwrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); padding: 8px; }
 .svglabel { fill: var(--dim); font-size: 12px; font-weight: 600; }
 .svgtext { fill: var(--ink); font-size: 11px; font-family: ui-monospace, monospace; }
+
+.confform { display: flex; gap: 10px; margin: 16px 0; flex-wrap: wrap; }
+.confinput { background: #06080d; color: var(--ink); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; font-family: ui-monospace, monospace; font-size: 13px; min-width: 220px; }
+.chips { display: inline-flex; flex-wrap: wrap; gap: 6px; }
+.chip { font-size: 11px; padding: 2px 8px; border-radius: 999px; font-family: ui-monospace, monospace; }
+.chip-admitted { background: rgba(90,209,168,.16); color: var(--accent); }
+.chip-refused { background: rgba(255,107,107,.16); color: var(--refused); }
+.chip-unknown { background: rgba(217,164,65,.16); color: var(--unknown); }
