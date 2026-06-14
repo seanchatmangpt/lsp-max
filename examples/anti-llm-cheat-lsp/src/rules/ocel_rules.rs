@@ -53,6 +53,54 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
             });
         }
 
+        // ADMIT-001: fitness report with bare constant (no measurement provenance)
+        if o.construct == "fitness_bare_constant" {
+            diags.push(AntiLlmDiagnostic {
+                code: "ANTI-LLM-ADMIT-001".to_string(),
+                category: "admission".to_string(),
+                file_path: o.file_path.clone(),
+                line: o.line,
+                column: o.column,
+                message: "Fitness report asserts fitness=1.0 and admitted=true without a provenance block — A10 premature admission. The report was asserted, not measured.".to_string(),
+                forbidden_implication: "FitnessReport => MeasuredFitness".to_string(),
+                blocking: true,
+                required_correction: "Add a provenance block with run_id, measured_by, and measured_on fields derived from an actual conformance run.".to_string(),
+                required_next_proof: "Fitness report includes provenance.run_id pointing to a logged conformance execution.".to_string(),
+            });
+        }
+
+        // ADMIT-002: registry PARTIAL_ALIVE without corresponding OCEL report
+        if o.construct == "partial_alive_no_ocel" {
+            diags.push(AntiLlmDiagnostic {
+                code: "ANTI-LLM-ADMIT-002".to_string(),
+                category: "admission".to_string(),
+                file_path: o.file_path.clone(),
+                line: o.line,
+                column: o.column,
+                message: format!("Registry marks '{}' as PARTIAL_ALIVE but no OCEL fitness report file exists — A10 premature status flip.", o.context),
+                forbidden_implication: "RegistryStatus(PARTIAL_ALIVE) => MeasuredFitnessReport".to_string(),
+                blocking: true,
+                required_correction: "Produce an OCEL fitness report with measured provenance before flipping status to PARTIAL_ALIVE.".to_string(),
+                required_next_proof: "Corresponding fitness report file exists with admitted=true and provenance.run_id.".to_string(),
+            });
+        }
+
+        // ADMIT-003: admitted=true without run_id in provenance
+        if o.construct == "admitted_no_run_id" {
+            diags.push(AntiLlmDiagnostic {
+                code: "ANTI-LLM-ADMIT-003".to_string(),
+                category: "admission".to_string(),
+                file_path: o.file_path.clone(),
+                line: o.line,
+                column: o.column,
+                message: "Fitness report sets admitted=true without run_id in provenance — admission cannot be traced to a measured run.".to_string(),
+                forbidden_implication: "AdmittedTrue => MeasuredRunId".to_string(),
+                blocking: true,
+                required_correction: "Add run_id (or provenance.run_id) to the fitness report from the actual conformance execution that earned admission.".to_string(),
+                required_next_proof: "run_id resolves to a log entry in the OCEL audit trail.".to_string(),
+            });
+        }
+
         if o.construct == "ocel_full_wasm4pm" || o.context.contains("use wasm4pm::") {
             diags.push(AntiLlmDiagnostic {
                 code: "ANTI-LLM-OCEL-004".to_string(),

@@ -29,6 +29,7 @@ async-codec-lite = { version = "0.0", optional = true }
 async-trait = "0.1"
 auto_impl = "1.0"
 lsp-max-ast = { workspace = true }
+wasm4pm-compat = { workspace = true }
 bytes = "1.0"
 dashmap = "5.1"
 futures = { version = "0.3", default-features = false, features = ["std", "async-await"] }
@@ -123,7 +124,7 @@ categories = ["asynchronous", "development-tools"]
 keywords = ["language-server", "lsp", "tower", "lsp-3-18"]
 
 [workspace.dependencies]
-wasm4pm-compat = { version = "26.6.10", features = ["formats", "strict", "wasm4pm"] }
+wasm4pm-compat = { version = "26.6.11", features = ["formats", "strict", "wasm4pm"] }
 lsp-types-max = { path = "../lsp-types-max", version = "26.6.8", features = ["proposed"] }
 tree-sitter = "0.26.5"
 tree-sitter-language = "0.1.7"
@@ -150,3 +151,4 @@ lsp-max-ast = { path = "crates/lsp-max-adapters/lsp-max-ast", version = "26.6.9"
 
 [patch.crates-io]
 wasm4pm = { path = "../wasm4pm/wasm4pm" }
+wasm4pm-compat = { path = "../wasm4pm-compat" }
