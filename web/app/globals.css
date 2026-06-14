@@ -72,3 +72,13 @@ code { font-family: ui-monospace, monospace; color: var(--accent); font-size: 0.
 .verbs li:first-child { border-top: none; }
 .verbs code { color: var(--ink); font-size: 12px; }
 .vdoc { color: var(--dim); font-size: 11px; }
+
+.sub { font-size: 16px; margin: 24px 0 8px; color: var(--ink); }
+.iters { color: var(--dim); font-size: 13px; }
+.tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
+.tbl th { text-align: left; color: var(--dim); font-weight: 600; padding: 6px 10px; border-bottom: 1px solid var(--line); }
+.tbl td { padding: 6px 10px; border-bottom: 1px solid var(--line); }
+.st { white-space: nowrap; font-weight: 600; }
+.st-covered { color: var(--accent); }
+.st-server-class { color: var(--unknown); }
+.st-gap { color: var(--refused); }

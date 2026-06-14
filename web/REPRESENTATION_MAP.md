@@ -32,12 +32,12 @@ be zero at all times — this is the inviolable rule).
 | Receipt ledger | `app/receipts` (RSC reads real `*.receipt.json`) | ✅ represented (iter 1) |
 | CLI noun-verb surface | `app/cli` (RSC parses real `nouns/*.rs`) | ✅ represented (iter 2) |
 | Example witnesses (live run) | — | ❌ exposed-but-unrepresented |
-| Coverage gap map | — | ❌ exposed-but-unrepresented |
+| Coverage gap map | `app/coverage` (RSC parses real DOC_COVERAGE_LOG.md) | ✅ represented (iter 3) |
 | Conformance verdict (live) | — | ❌ exposed-but-unrepresented |
 | OCEL process evidence | — | ❌ exposed-but-unrepresented |
 | Receipt-chain cross-product graph | — | ❌ (cross-product, after per-capability) |
 
-rendered-but-fabricated: **0** (inviolable). exposed-but-unrepresented: 5.
+rendered-but-fabricated: **0** (inviolable). exposed-but-unrepresented: 4.
 
 ## Iteration log
 
@@ -73,3 +73,12 @@ rendered-but-fabricated: **0** (inviolable). exposed-but-unrepresented: 5.
   arg `instance_id` ×102 — parsed from source, not invented.
 - exposed-but-unrepresented now 5: example witnesses, coverage map, conformance
   (live), OCEL, receipt-chain graph.
+
+### Iteration 3 — coverage view
+- `readCoverage()` parses iteration headers + status rows from the real
+  DOC_COVERAGE_LOG.md; throws if absent.
+- `app/coverage/page.tsx`: RSC rendering iterations + per-item covered/gap status.
+- Render witness (HTML): real example items (conformance_vector_explained.rs,
+  receipt_chain_explained.rs), real Iteration 1–6 headers, covered/gap counts.
+- exposed-but-unrepresented now 4: example witnesses (live run), conformance
+  (live), OCEL evidence, receipt-chain cross-product graph.
