@@ -39,23 +39,44 @@ impl MergeResult {
     }
 }
 
+/// Per-server C_D routing source for an attribution decision.
+///
+/// Records WHICH law-collapse function classified a diagnostic, so that
+/// "why is this URI in ANDON" resolves to a specific child server's Λ_CD^(D),
+/// not the workspace-wide union. This is the load-bearing distinction for
+/// per-server isolation: a `PerServer` route is attributable to one child;
+/// a `Union` route is an explicit last-resort with NO server identity.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum AndonRoute {
+    /// Classified by the originating server's own prefix set.
+    PerServer { server_id: String },
+    /// Last-resort: the diagnostic carried no server_id, so the workspace
+    /// union governed. This is the ONLY lawful use of the union for ANDON.
+    Union,
+    /// No automaton matched under the routed C_D — not an ANDON code.
+    NotAndon,
+}
+
 /// Workspace-wide ANDON prefix registry for diagnostic merge decisions.
 ///
-/// # L7 Speciation — ADMITTED
+/// # L7 Speciation — ADMITTED (strict per-server isolation)
 ///
-/// The formal model claims each project-server entry in `lsp-max.toml` carries an
-/// independent law-collapse function Λ_CD^(D). Per-server C_D routing is implemented:
-/// each `DiagnosticEntry` is evaluated against its originating server's prefix set via
-/// `prefixes_for_server(server_id)`. The workspace-wide union (`andon_prefixes`) is
-/// retained as the fallback for entries with no `server_id` or for servers not present
-/// in `server_prefix_overrides`.
+/// Each project-server entry in `lsp-max.toml` carries an independent law-collapse
+/// function Λ_CD^(D). A server that DECLARES its own C_D is classified STRICTLY by it:
+/// a `DiagnosticEntry` whose `server_id` has an entry in `server_prefix_overrides` is
+/// matched ONLY against that set, so a code declared only by server B does NOT put
+/// server A's diagnostic into ANDON — the union is never borrowed for a server with its
+/// own laws. A server with NO override has declared no laws of its own and falls back to
+/// the workspace baseline (`andon_prefixes`), surfaced as `AndonRoute::Union`; this is
+/// how universal receipt laws (`WASM4PM-CROWN-*`) still apply to an unconfigured child.
+/// A `None` server_id is the explicit no-identity last resort, also `Union`.
 ///
-/// Status: ADMITTED — `MergeContext` carries `server_prefix_overrides: HashMap<String,
-/// Vec<String>>`, `prefixes_for_server()` routes per-server C_D, `deposit()` in
-/// `diagnostic_buffer.rs` calls `prefixes_for_server(server_id)` at deposit time, and
-/// `merge_diagnostics_with_ctx()` routes each entry through `effective_for(entry)`.
-/// `MergeContext::from_config()` populates `server_prefix_overrides` via
-/// `CompositorConfig::per_server_andon_prefixes()`.
+/// Status: ADMITTED — `attribute_andon()` returns the routing source; `from_config()`
+/// gives EVERY configured server an entry in `server_prefix_overrides` (its own list or
+/// the static defaults) via `CompositorConfig::per_server_andon_prefixes()`, so a known
+/// server is always classified by its own C_D. The isolation guarantee for configured
+/// servers is witnessed by `merge/witness_isolation.rs` (mutation-checked: forcing the
+/// configured path to borrow the union fails `cross_server_prefix_does_not_leak_via_union`).
 pub struct MergeContext {
     /// Workspace-wide union of all server ANDON prefixes. Used as fallback when
     /// a diagnostic entry has no server_id or when server_prefix_overrides has no
@@ -151,23 +172,66 @@ impl MergeContext {
             .unwrap_or(self.andon_prefixes.as_slice())
     }
 
-    /// Returns the effective automaton for a server_id (per-server C_D, or workspace union).
+    /// Per-server C_D automaton. Returns `None` (NOT the union) when the server
+    /// declares no override — strict isolation: a server's diagnostics are
+    /// classified only by that server's own Λ_CD^(D).
     fn automaton_for_server(&self, server_id: &str) -> Option<&DoubleArrayAhoCorasick<u32>> {
-        self.server_automatons
-            .get(server_id)
-            .or(self.andon_automaton.as_ref())
+        self.server_automatons.get(server_id)
     }
 
-    /// O(|code|) ANDON check via daachorse automaton. Falls back to linear scan if
-    /// the automaton is absent (empty prefix set).
-    pub fn is_andon_for_server(&self, code: &str, server_id: Option<&str>) -> bool {
-        let automaton = server_id
-            .and_then(|sid| self.automaton_for_server(sid))
-            .or(self.andon_automaton.as_ref());
-        match automaton {
-            Some(a) => automaton_is_prefix_match(a, code),
-            None => false,
+    /// Attribute an ANDON classification to a specific routing source.
+    ///
+    /// Isolation applies to servers that DECLARE a C_D of their own: such a
+    /// server is classified ONLY against its own prefix set — a code declared by
+    /// server B must not put server A's diagnostic into ANDON, so the union is
+    /// never borrowed when the server has its own laws. A server with NO override
+    /// has declared no laws of its own and falls back to the workspace baseline
+    /// (`Union` route) — this is how universal receipt laws (e.g. `WASM4PM-CROWN-*`)
+    /// still apply to an unconfigured child. A `None` server_id is the explicit
+    /// no-identity last resort, also governed by the baseline as `Union`.
+    pub fn attribute_andon(&self, code: &str, server_id: Option<&str>) -> AndonRoute {
+        match server_id {
+            // CONFIGURED server: route strictly through its own C_D. Not matching
+            // its own set is NotAndon — the union is NOT borrowed. This is the
+            // per-server isolation guarantee.
+            Some(sid) => match self.automaton_for_server(sid) {
+                Some(a) => {
+                    if automaton_is_prefix_match(a, code) {
+                        AndonRoute::PerServer {
+                            server_id: sid.to_string(),
+                        }
+                    } else {
+                        AndonRoute::NotAndon
+                    }
+                }
+                // UNCONFIGURED server (no C_D of its own): fall back to the
+                // workspace baseline. Marked `Union` (not `PerServer`) so the
+                // attribution stays honest — the baseline governed, not the
+                // server's own law. Consistent with `prefixes_for_server`, which
+                // already falls back to `andon_prefixes` for unknown servers.
+                None => self.baseline_route(code),
+            },
+            // No server identity: the workspace baseline is the only available C_D.
+            None => self.baseline_route(code),
         }
+    }
+
+    /// Workspace-baseline ANDON classification, surfaced as `Union` so attribution
+    /// records that no per-server C_D governed the decision.
+    fn baseline_route(&self, code: &str) -> AndonRoute {
+        match self.andon_automaton.as_ref() {
+            Some(a) if automaton_is_prefix_match(a, code) => AndonRoute::Union,
+            _ => AndonRoute::NotAndon,
+        }
+    }
+
+    /// O(|code|) ANDON check via daachorse automaton.
+    ///
+    /// A server with its own C_D is classified strictly by it (no union borrow);
+    /// a server with no override, or no server_id at all, falls back to the
+    /// workspace baseline. Backed by `attribute_andon`.
+    pub fn is_andon_for_server(&self, code: &str, server_id: Option<&str>) -> bool {
+        !matches!(self.attribute_andon(code, server_id), AndonRoute::NotAndon)
     }
 
     pub fn merge(&self, inputs: Vec<(ChildTier, Vec<DiagnosticEntry>)>) -> MergeResult {
@@ -430,3 +494,6 @@ pub fn merge_diagnostics_with_ctx_auto(
     });
     result
 }
+
+#[cfg(test)]
+mod witness_isolation;

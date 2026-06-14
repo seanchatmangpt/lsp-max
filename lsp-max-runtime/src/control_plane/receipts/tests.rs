@@ -348,3 +348,86 @@ fn test_trace_attributes_and_ocel() {
         "0101010101010101010101010101010101010101010101010101010101010101"
     );
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Cross-product #1 witness: moniker ↔ OCEL join
+//
+// These admit the join consumer added in this same change (rule 2: consumer and
+// witness land together). The obligation is NOT mere re-run determinism — it is
+// that the join key is the moniker CONTENT identity, stable under unrelated
+// edits. A key derived from the LSIF numeric vertex id would pass a re-run check
+// and silently break when a source file changed.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// The join key is a pure function of `(scheme, identifier)` — same inputs map
+/// to the same OCEL objectId regardless of when or how often it is computed.
+#[test]
+fn moniker_join_key_is_pure_function_of_identity() {
+    assert_eq!(
+        moniker_object_id("rust", "a::alpha"),
+        moniker_object_id("rust", "a::alpha"),
+    );
+    assert_eq!(
+        moniker_object_id("rust", "a::alpha"),
+        "moniker:rust:a::alpha"
+    );
+}
+
+/// The join key derives ONLY from `(scheme, identifier)` — it has no access to
+/// any allocation-ordered numeric id, so distinct identifiers map to distinct
+/// keys. This is the formatting/key-shape contract of the join function.
+///
+/// NOTE: this is NOT the invariance witness. The function never sees other
+/// symbols, so it cannot exercise the real property — that the INDEXER assigns
+/// the same `identifier` after a symbol is inserted above. That indexer-level
+/// invariant is pinned by the committed integration test
+/// `moniker_identifiers_are_stable_under_symbol_inserted_above` in
+/// `crates/lsif-rust/tests/moniker_stability.rs`.
+#[test]
+fn moniker_join_key_distinguishes_distinct_identifiers() {
+    assert_ne!(
+        moniker_object_id("rust", "a::alpha"),
+        moniker_object_id("rust", "a::zzz_inserted_above"),
+    );
+}
+
+/// A receipt event and the LSIF moniker vertex resolve to the SAME OCEL object
+/// id — the load-bearing claim of cross-product #1. The CodeSymbol object's `id`
+/// equals the `objectId` the event references under the `produced_symbol`
+/// qualifier, so navigation and provenance traverse one identity.
+#[test]
+fn receipt_event_and_code_symbol_share_one_ocel_id() {
+    let receipt = CryptographicReceipt {
+        prev_hash: Blake3Hash([1u8; 32]),
+        discipline_id: Uuid::new_v4(),
+        law_id: Uuid::new_v4(),
+        consequence_hash: Blake3Hash([2u8; 32]),
+        sequence: 7,
+        signature: [0u8; 64],
+    };
+
+    let event =
+        receipt.to_ocel_event_for_symbol("e_1", "2026-06-13T00:00:00-07:00", "rust", "a::alpha");
+    let symbol = moniker_to_ocel_object(
+        "rust",
+        "a::alpha",
+        &MonikerKind::Export,
+        &UniquenessLevel::Project,
+    );
+
+    // The symbol object's id is the join key.
+    assert_eq!(symbol["id"], "moniker:rust:a::alpha");
+    assert_eq!(symbol["type"], "CodeSymbol");
+
+    // The event references that exact id under the produced_symbol qualifier.
+    let rels = event["relationships"].as_array().unwrap();
+    let produced = rels
+        .iter()
+        .find(|r| r["qualifier"] == "produced_symbol")
+        .expect("event must relate to the produced symbol");
+    assert_eq!(produced["objectId"], symbol["id"]);
+
+    // The base relationships from to_ocel_event are preserved (the join augments,
+    // it does not replace).
+    assert!(rels.iter().any(|r| r["qualifier"] == "governing_law"));
+}

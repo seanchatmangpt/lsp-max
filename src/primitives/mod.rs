@@ -7,8 +7,8 @@ mod spc;
 
 pub use circuit_breaker::{CircuitBreaker, CircuitState};
 pub use diagnostic_sink::DiagnosticSink;
-pub use gate_path::gate_file_path;
 pub use document_store::{DocumentStore, VersionedDocument};
+pub use gate_path::gate_file_path;
 pub use rule_latency::RuleLatencyTracker;
 pub use spc::{SpcAlert, SpcMonitor};
 

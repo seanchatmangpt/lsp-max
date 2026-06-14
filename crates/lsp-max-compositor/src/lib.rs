@@ -11,6 +11,7 @@ pub mod gate_file;
 pub mod health_response;
 pub mod merge;
 pub mod receipt;
+pub mod receipt_chain;
 pub mod registry;
 pub mod registry_init;
 pub mod server;

@@ -3,12 +3,12 @@ use crate::diagnostics::AntiLlmDiagnostic;
 use crate::observations::Observation;
 use crate::parsers::{
     cargo_lock, cargo_toml, contract, fitness_report, ggen_toml, json_rpc, markdown_claims,
-    receipt_json, rust_tree_sitter, tera_template, typescript,
+    receipt_json, refgraph, rust_tree_sitter, tera_template, typescript,
 };
 use crate::rules::{
     authority, claims, complexity, contract as contract_rules, determinism, ggen, lsp318, mutation,
-    ocel_rules, oracle, receipts, routes, rust_smells, surface, test, trace, typescript as ts_rules,
-    version,
+    ocel_rules, oracle, receipts, refgraph as refgraph_rules, routes, rust_smells, surface, test,
+    trace, typescript as ts_rules, version,
 };
 use aho_corasick::AhoCorasick;
 use std::fs;
@@ -286,6 +286,8 @@ pub fn scan_directory(dirpath: &str) -> Vec<Observation> {
     obs.extend(ggen_toml::detect_competing_authority(&obs.clone()));
     // CONTRACT-001/002: cross-file vocabulary schism detection
     obs.extend(contract::detect_contract_schism(&obs.clone()));
+    // REFGRAPH-001: bounded transitive failset over the reference closure
+    obs.extend(refgraph::detect_transitive_failset(&obs.clone()));
 
     obs
 }
@@ -322,6 +324,7 @@ pub fn evaluate_diagnostics_with_config(
     diags.extend(oracle::evaluate(obs));
     diags.extend(trace::evaluate(obs));
     diags.extend(contract_rules::evaluate(obs));
+    diags.extend(refgraph_rules::evaluate(obs));
 
     let has_non_victory_errors = diags.iter().any(|d| d.code != "ANTI-LLM-CLAIM-004");
     diags.extend(claims::evaluate(

@@ -65,7 +65,6 @@ fn wasm4pm_root(root_path: &Path) -> std::path::PathBuf {
     root_path.parent().unwrap_or(root_path).join("wasm4pm")
 }
 
-
 /// Parse dispatch.rs to build a map of breed_id → module stem that actually
 /// implements it.  Falls back to `breed_id` itself when no override is found.
 /// This is the source-of-truth derivation: convention-free, self-updating.

@@ -5,7 +5,7 @@ use std::sync::{Arc, Mutex};
 
 use crate::engine;
 use crate::virtual_docs::{
-    checkpoint_status, failset, forbidden_implications, lsp318_matrix, receipt_ledger,
+    checkpoint_status, failset, forbidden_implications, ggen_render, lsp318_matrix, receipt_ledger,
 };
 
 pub struct AntiLlmServer {
@@ -79,7 +79,7 @@ impl LanguageServer for AntiLlmServer {
         caps.workspace = Some(WorkspaceServerCapabilities {
             text_document_content: Some(OneOf::Right(TextDocumentContentRegistrationOptions {
                 text_document_content_options: TextDocumentContentOptions {
-                    schemes: vec!["anti-llm".to_string()],
+                    schemes: vec!["anti-llm".to_string(), "ggen".to_string()],
                 },
                 text_document_registration_options: TextDocumentRegistrationOptions {
                     document_selector: None,
@@ -192,6 +192,10 @@ impl LanguageServer for AntiLlmServer {
                 forbidden_implications::generate_implications_markdown()
             }
             "anti-llm://checkpoint-status" => checkpoint_status::generate_checkpoint_markdown(),
+            // ggen:// virtual document — render a ggen artifact for the ontology
+            // URI embedded in the `ggen://` path; never written to disk. The
+            // ontology symbol is whatever follows `ggen://`.
+            _ if uri.starts_with("ggen://") => ggen_render::generate_ggen_markdown(uri),
             _ => "".to_string(),
         };
 

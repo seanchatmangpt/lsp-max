@@ -10,10 +10,22 @@ use crate::observations::Observation;
 pub fn parse_ggen_toml(filepath: &str, content: &str) -> Vec<Observation> {
     let mut obs = Vec::new();
 
-    const SECOND_CLASS_SEGMENTS: &[&str] =
-        &["/generated/", "/output/", "/gen/", "\\generated\\", "\\output\\", "\\gen\\"];
-    const SECOND_CLASS_SUFFIXES: &[&str] =
-        &["/generated", "/output", "/gen", "\\generated", "\\output", "\\gen"];
+    const SECOND_CLASS_SEGMENTS: &[&str] = &[
+        "/generated/",
+        "/output/",
+        "/gen/",
+        "\\generated\\",
+        "\\output\\",
+        "\\gen\\",
+    ];
+    const SECOND_CLASS_SUFFIXES: &[&str] = &[
+        "/generated",
+        "/output",
+        "/gen",
+        "\\generated",
+        "\\output",
+        "\\gen",
+    ];
 
     for (line_idx, line) in content.lines().enumerate() {
         let line_num = line_idx + 1;
@@ -95,9 +107,7 @@ pub fn parse_ggen_toml(filepath: &str, content: &str) -> Vec<Observation> {
                             kind: "ggen_manifest".to_string(),
                             construct: "ggen_remote_fetch".to_string(),
                             context: value.to_string(),
-                            message: format!(
-                                "Remote ontology fetch in replay path: {value}"
-                            ),
+                            message: format!("Remote ontology fetch in replay path: {value}"),
                         });
                     }
                 }

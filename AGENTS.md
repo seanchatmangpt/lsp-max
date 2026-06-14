@@ -399,14 +399,22 @@ single workspace-wide union at `MergeContext` construction time
 (`CompositorConfig::all_andon_prefixes()`). Every diagnostic is evaluated against this
 union regardless of which server emitted it.
 
-**Gap:** a diagnostic code from server A will trigger ANDON even if only server B declared
-that prefix. The per-server isolation the formal model describes is not enforced at merge
-time; it is only enforced at construction time (each server either uses its own list or
-falls back to the static defaults).
+**Closed gap (RFC-C strict isolation):** attribution now routes strictly by `server_id`.
+`MergeContext::attribute_andon(code, server_id)` returns an `AndonRoute`:
+`PerServer { server_id }` when the originating server's own Λ_CD^(D) classifies the code,
+`Union` only when NO `server_id` is present (the explicit last resort), and `NotAndon`
+otherwise. A code declared only by server B no longer triggers ANDON on a server-A-sourced
+diagnostic — the union is no longer borrowed when a `server_id` is present.
 
-**Status: PARTIAL** — the union is a superset of every individual Λ_CD^(D). The
-implementation is more restrictive than the formal claim: no law violation escapes. The
-formal claim of per-server isolation is overstated relative to what the code enforces.
+**Status: ADMITTED** — per-server C_D isolation is enforced at merge time, witnessed by
+`merge/witness_isolation.rs` (constructed so a union-fallback regression fails the suite).
+The workspace union survives solely as the explicit no-`server_id` last resort.
+
+**Lineage (RFC-B):** each child server's contribution carries its own `CryptographicReceipt`
+chain link via `receipt_chain::ChildEvidence` (crypto reused from lsp-max-runtime, not
+forked); `CompositorReceipt::with_child_evidence` binds them so the merged verdict is
+traceable to per-child evidence by the moniker join key `moniker:{scheme}:{identifier}`.
+`CompositorReceipt::to_ocel_event` (RFC-C) makes the fan-out→merge→admit flush minable.
 
 **Fallback observability (Part A):** when `lsp-max.toml` is absent from the workspace
 tree, `CompositorConfig::load()` returns `None` and main.rs falls back to the static

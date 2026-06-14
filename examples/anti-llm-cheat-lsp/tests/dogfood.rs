@@ -676,3 +676,77 @@ fn detects_calver_workspace_violation() {
     let diags = engine::evaluate_diagnostics(&obs);
     check_diag_code(&diags, "ANTI-LLM-VERSION-003");
 }
+
+// -------------------------------------------------------------
+// Cross-product #4 — transitive cheat-detection (bounded reference closure)
+// -------------------------------------------------------------
+
+/// POSITIVE control: a genuine transitive dependent IS flagged.
+///
+/// `oracle_metric` is the unwitnessed seed; `compute_fitness` (depth 1) and
+/// `run_gate` (depth 2) reverse-reach it via `fn_reference` edges and must both
+/// appear as REFGRAPH-001 failset members.
+#[test]
+fn refgraph_positive_dependent_is_flagged() {
+    let dir = find_file_path("fixtures/positive_controls/refgraph_positive");
+    let obs = engine::scan_directory(&dir.to_string_lossy());
+    let diags = engine::evaluate_diagnostics(&obs);
+
+    check_diag_code(&diags, "ANTI-LLM-REFGRAPH-001");
+
+    let flagged: std::collections::HashSet<&str> = obs
+        .iter()
+        .filter(|o| o.kind == "failset_member")
+        .map(|o| o.construct.as_str())
+        .collect();
+    assert!(
+        flagged.contains("compute_fitness"),
+        "direct dependent compute_fitness must be in the failset, got {:?}",
+        flagged
+    );
+    assert!(
+        flagged.contains("run_gate"),
+        "transitive dependent run_gate must be in the failset, got {:?}",
+        flagged
+    );
+    // The seed itself is never a failset member.
+    assert!(
+        !flagged.contains("oracle_metric"),
+        "the unwitnessed seed must not be reported as its own dependent"
+    );
+}
+
+/// NEGATIVE control (the hard witness): a symbol that does NOT depend on the
+/// unwitnessed seed NEVER trips the gate. No false transitive ANDON.
+///
+/// The seed `oracle_metric` is present in the same scan, but the
+/// `add_one`/`independent_pure`/`independent_caller` component has no reference
+/// edge reaching it. Within the bounded reverse closure none of them is
+/// reverse-reachable from the seed, so none may be flagged.
+#[test]
+fn refgraph_negative_independent_never_trips() {
+    let dir = find_file_path("fixtures/negative_controls/refgraph_negative");
+    let obs = engine::scan_directory(&dir.to_string_lossy());
+    let diags = engine::evaluate_diagnostics(&obs);
+
+    let flagged: std::collections::HashSet<&str> = obs
+        .iter()
+        .filter(|o| o.kind == "failset_member")
+        .map(|o| o.construct.as_str())
+        .collect();
+
+    for sym in ["add_one", "independent_pure", "independent_caller"] {
+        assert!(
+            !flagged.contains(sym),
+            "independent symbol '{}' must NEVER enter the failset (no false transitive ANDON), got {:?}",
+            sym,
+            flagged
+        );
+    }
+    for d in &diags {
+        assert_ne!(
+            d.code, "ANTI-LLM-REFGRAPH-001",
+            "no REFGRAPH-001 diagnostic may be raised for the independent component"
+        );
+    }
+}

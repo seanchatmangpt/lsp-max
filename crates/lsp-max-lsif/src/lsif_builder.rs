@@ -1,3 +1,5 @@
+mod extended;
+
 use crate::lsif::*;
 use lsp_types_max::Position;
 use std::io::{self, Write};

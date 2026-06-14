@@ -12,9 +12,7 @@ pub fn parse_fitness_report(filepath: &str, content: &str) -> Vec<Observation> {
     let admitted = v.get("admitted").and_then(|a| a.as_bool()).unwrap_or(false);
     let has_provenance = v.get("provenance").is_some();
     let top_level_run_id = v.get("run_id").is_some();
-    let provenance_run_id = v.get("provenance")
-        .and_then(|p| p.get("run_id"))
-        .is_some();
+    let provenance_run_id = v.get("provenance").and_then(|p| p.get("run_id")).is_some();
     let has_run_id = top_level_run_id || provenance_run_id;
 
     // ADMIT-001: fitness=1.0 + admitted=true but no provenance block
@@ -28,9 +26,7 @@ pub fn parse_fitness_report(filepath: &str, content: &str) -> Vec<Observation> {
             kind: "fitness_report".to_string(),
             construct: "fitness_bare_constant".to_string(),
             context: format!("fitness={}, admitted={}, provenance=absent", fitness, admitted),
-            message: format!(
-                "Fitness report asserts 1.0/admitted without measurement provenance block — A10 premature admission"
-            ),
+            message: "Fitness report asserts 1.0/admitted without measurement provenance block — A10 premature admission".to_string(),
         });
     }
 

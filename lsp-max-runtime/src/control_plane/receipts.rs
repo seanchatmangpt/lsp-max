@@ -119,6 +119,78 @@ impl CryptographicReceipt {
     }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Moniker ↔ OCEL join (cross-product #1: provenance-carrying code index)
+//
+// The bridge that makes "go to definition" (an LSIF moniker vertex) and "show
+// the receipt chain that produced this symbol" (OCEL events relating to an
+// object) the same identity. The join key is the moniker's CONTENT identity
+// `(scheme, identifier)` — NOT the LSIF numeric vertex id, which is
+// allocation-order dependent and shifts under unrelated edits. Keying on the
+// numeric id would pass a re-run determinism check yet silently break the first
+// time any source file changed; the content address is stable under unrelated
+// edits (witnessed in `moniker_join` tests below).
+// ─────────────────────────────────────────────────────────────────────────────
+
+use lsp_max_lsif::lsif_types::{MonikerKind, UniquenessLevel};
+
+/// The single authoritative OCEL `objectId` for a code symbol, derived from its
+/// moniker content identity. Both the LSIF moniker vertex and the OCEL
+/// `CodeSymbol` object resolve to this string — it is the join key. Defining it
+/// in exactly one place keeps a competing authority from minting a second,
+/// divergent id format for the same symbol.
+pub fn moniker_object_id(scheme: &str, identifier: &str) -> String {
+    format!("moniker:{scheme}:{identifier}")
+}
+
+/// Export a code symbol (identified by its moniker) as an OCEL 2.0 object.
+/// Its `id` is the moniker join key, so any receipt event that produced this
+/// symbol can reference it by the same identity an LSIF consumer would resolve.
+pub fn moniker_to_ocel_object(
+    scheme: &str,
+    identifier: &str,
+    kind: &MonikerKind,
+    unique: &UniquenessLevel,
+) -> serde_json::Value {
+    serde_json::json!({
+        "id": moniker_object_id(scheme, identifier),
+        "type": "CodeSymbol",
+        "attributes": {
+            "scheme": scheme,
+            "identifier": identifier,
+            "kind": kind,
+            "unique": unique,
+        }
+    })
+}
+
+impl CryptographicReceipt {
+    /// Export the receipt as an OCEL 2.0 event that additionally relates to the
+    /// code symbol it produced, by the moniker join key. This is the load-bearing
+    /// half of cross-product #1: the receipt's operation-event and the LSIF
+    /// moniker vertex now share one OCEL object id, so navigation and provenance
+    /// are a single graph traversal.
+    pub fn to_ocel_event_for_symbol(
+        &self,
+        event_id: &str,
+        timestamp: &str,
+        scheme: &str,
+        identifier: &str,
+    ) -> serde_json::Value {
+        let mut event = self.to_ocel_event(event_id, timestamp);
+        if let Some(rels) = event
+            .get_mut("relationships")
+            .and_then(|r| r.as_array_mut())
+        {
+            rels.push(serde_json::json!({
+                "objectId": moniker_object_id(scheme, identifier),
+                "qualifier": "produced_symbol"
+            }));
+        }
+        event
+    }
+}
+
 /// Helper function to format bytes to hex string.
 pub fn to_hex(bytes: &[u8]) -> String {
     let mut s = String::with_capacity(bytes.len() * 2);

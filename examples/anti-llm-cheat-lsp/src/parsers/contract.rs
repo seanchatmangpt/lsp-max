@@ -5,7 +5,10 @@ use std::collections::{HashMap, HashSet};
 fn extract_breed_id(path: &str) -> Option<&str> {
     let idx = path.find("breeds/")?;
     let after = &path[idx + "breeds/".len()..];
-    let end = after.find('/').or_else(|| after.find(".rs")).unwrap_or(after.len());
+    let end = after
+        .find('/')
+        .or_else(|| after.find(".rs"))
+        .unwrap_or(after.len());
     Some(&after[..end])
 }
 
@@ -25,7 +28,10 @@ pub fn detect_contract_schism(all_obs: &[Observation]) -> Vec<Observation> {
     let mut obs = Vec::new();
 
     // Collect fn_definition observations
-    let fn_defs: Vec<&Observation> = all_obs.iter().filter(|o| o.kind == "fn_definition").collect();
+    let fn_defs: Vec<&Observation> = all_obs
+        .iter()
+        .filter(|o| o.kind == "fn_definition")
+        .collect();
 
     // Group by breed_id × (src vs test)
     let mut breed_src_fns: HashMap<&str, HashSet<&str>> = HashMap::new();
@@ -35,10 +41,16 @@ pub fn detect_contract_schism(all_obs: &[Observation]) -> Vec<Observation> {
     for o in &fn_defs {
         if let Some(breed_id) = extract_breed_id(&o.file_path) {
             if is_src_path(&o.file_path) {
-                breed_src_fns.entry(breed_id).or_default().insert(&o.construct);
+                breed_src_fns
+                    .entry(breed_id)
+                    .or_default()
+                    .insert(&o.construct);
                 breed_src_path.entry(breed_id).or_insert(&o.file_path);
             } else if is_test_path(&o.file_path) {
-                breed_test_fns.entry(breed_id).or_default().insert(&o.construct);
+                breed_test_fns
+                    .entry(breed_id)
+                    .or_default()
+                    .insert(&o.construct);
             }
         }
     }

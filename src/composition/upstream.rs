@@ -143,7 +143,8 @@ impl PersistentUpstream {
                         };
                         tracing::trace!(
                             "--- PersistentUpstream [{}] read message: {}",
-                            source_id_clone, msg
+                            source_id_clone,
+                            msg
                         );
                         // Check if this is a response to a pending request
                         if let Some(id) = msg.get("id").and_then(|v| v.as_i64()) {
@@ -151,7 +152,8 @@ impl PersistentUpstream {
                             if let Some(tx) = map.remove(&id) {
                                 tracing::trace!(
                                     "--- PersistentUpstream [{}] matched pending response id: {}",
-                                    source_id_clone, id
+                                    source_id_clone,
+                                    id
                                 );
                                 let _ = tx.send(msg);
                                 continue;
@@ -208,12 +210,15 @@ impl PersistentUpstream {
         self.pending.lock().await.insert(id, resp_tx);
         tracing::trace!(
             "--- PersistentUpstream [{}] sending request id: {}, method: {}",
-            self.source_id, id, method
+            self.source_id,
+            id,
+            method
         );
         self.write_tx.send(body).await.map_err(|e| e.to_string())?;
         tracing::trace!(
             "--- PersistentUpstream [{}] awaiting response for id: {}",
-            self.source_id, id
+            self.source_id,
+            id
         );
         let resp = tokio::time::timeout(Duration::from_millis(timeout_ms), resp_rx)
             .await
@@ -226,7 +231,8 @@ impl PersistentUpstream {
             .map_err(|_| "Response channel closed".to_string())?;
         tracing::trace!(
             "--- PersistentUpstream [{}] got response for id: {}",
-            self.source_id, id
+            self.source_id,
+            id
         );
         if let Some(err) = resp.get("error") {
             return Err(format!("Upstream error: {err}"));
@@ -240,7 +246,8 @@ impl PersistentUpstream {
         let body = serde_json::to_vec(&notif).map_err(|e| e.to_string())?;
         tracing::trace!(
             "--- PersistentUpstream [{}] sending notification method: {}",
-            self.source_id, method
+            self.source_id,
+            method
         );
         self.write_tx.send(body).await.map_err(|e| e.to_string())
     }
@@ -249,7 +256,8 @@ impl PersistentUpstream {
         let body = serde_json::to_vec(&msg).map_err(|e| e.to_string())?;
         tracing::trace!(
             "--- PersistentUpstream [{}] sending raw msg: {}",
-            self.source_id, msg
+            self.source_id,
+            msg
         );
         self.write_tx.send(body).await.map_err(|e| e.to_string())
     }

@@ -33,8 +33,18 @@ pub fn parse_tera_template(filepath: &str, content: &str) -> Vec<Observation> {
     }
 
     let tera_builtins: HashSet<&str> = [
-        "loop", "self", "super", "config", "now", "range", "throw",
-        "sparql_results", "row", "rows", "true", "false",
+        "loop",
+        "self",
+        "super",
+        "config",
+        "now",
+        "range",
+        "throw",
+        "sparql_results",
+        "row",
+        "rows",
+        "true",
+        "false",
     ]
     .iter()
     .copied()
@@ -82,14 +92,14 @@ fn extract_tera_variables(content: &str) -> Vec<(String, usize)> {
             if let Some(end) = rest.find("}}") {
                 let expr = rest[..end].trim();
                 // Root variable: before first '.', ' ', or '|'
-                let root = expr
-                    .split(|c: char| c == '.' || c == ' ' || c == '|')
-                    .next()
-                    .unwrap_or("")
-                    .trim();
+                let root = expr.split(['.', ' ', '|']).next().unwrap_or("").trim();
                 if !root.is_empty()
                     && root.chars().all(|c| c.is_alphanumeric() || c == '_')
-                    && !root.chars().next().map(|c| c.is_ascii_digit()).unwrap_or(false)
+                    && !root
+                        .chars()
+                        .next()
+                        .map(|c| c.is_ascii_digit())
+                        .unwrap_or(false)
                 {
                     vars.push((root.to_string(), line_num));
                 }
@@ -121,12 +131,15 @@ fn extract_sparql_select_vars(content: &str) -> HashSet<String> {
         return vars;
     }
 
-    let where_pos = after_select.to_uppercase().find("WHERE").unwrap_or(after_select.len());
+    let where_pos = after_select
+        .to_uppercase()
+        .find("WHERE")
+        .unwrap_or(after_select.len());
     let projection = &after_select[..where_pos];
 
     for token in projection.split_whitespace() {
-        if token.starts_with('?') {
-            vars.insert(token[1..].to_lowercase());
+        if let Some(rest) = token.strip_prefix('?') {
+            vars.insert(rest.to_lowercase());
         }
     }
 

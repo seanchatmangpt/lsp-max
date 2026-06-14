@@ -51,7 +51,7 @@ fn count_by_label(dump: &LsifDump, label: &str) -> usize {
 fn builder_vertex_labels_are_subset_of_spec() {
     use std::collections::HashSet;
     let spec: HashSet<&str> = SPEC_VERTEX_LABELS.iter().copied().collect();
-    for label in BUILDER_VERTEX_LABELS {
+    for (label, _) in BUILDER_VERTEX_LABELS {
         assert!(
             spec.contains(label),
             "BUILDER_VERTEX_LABELS contains {:?} which is not in SPEC_VERTEX_LABELS",
@@ -65,7 +65,7 @@ fn builder_vertex_labels_are_subset_of_spec() {
 fn builder_edge_labels_are_subset_of_spec() {
     use std::collections::HashSet;
     let spec: HashSet<&str> = SPEC_EDGE_LABELS.iter().copied().collect();
-    for label in BUILDER_EDGE_LABELS {
+    for (label, _) in BUILDER_EDGE_LABELS {
         assert!(
             spec.contains(label),
             "BUILDER_EDGE_LABELS contains {:?} which is not in SPEC_EDGE_LABELS",
@@ -327,9 +327,24 @@ pub fn add(a: u32, b: u32) -> u32 {
         // (e.g. a trait method vs an impl body).  A plain pub fn definition
         // produces only definitionResult.
         "declarationResult",
+        // OPEN-substrate extended surface: emittable via direct `LsifBuilder`
+        // calls (`lsif_builder/extended.rs`) but NOT driven by the rust indexer,
+        // so a basic snippet never produces them. Their status in the registry
+        // is `OpenSubstrate`; this consumer test scopes to indexer-driven labels.
+        "implementationResult",
+        "typeDefinitionResult",
+        "callHierarchyResult",
+        "typeHierarchyResult",
+        "foldingRangeResult",
+        "documentLinkResult",
+        "documentSymbolResult",
+        "semanticTokensResult",
+        "source",
+        "resultRange",
+        "packageInformation",
     ];
 
-    for label in BUILDER_VERTEX_LABELS {
+    for (label, _) in BUILDER_VERTEX_LABELS {
         if exempt.contains(label) {
             continue;
         }
@@ -375,9 +390,21 @@ impl S {
         // item edges appear alongside definition/declaration/reference
         // result sets; single-file snippet may not produce all of them.
         "item",
+        // OPEN-substrate extended surface: emittable via direct `LsifBuilder`
+        // calls (`lsif_builder/extended.rs`) but NOT driven by the rust indexer.
+        "textDocument/implementation",
+        "textDocument/typeDefinition",
+        "textDocument/callHierarchy",
+        "textDocument/typeHierarchy",
+        "textDocument/foldingRange",
+        "textDocument/documentLink",
+        "textDocument/documentSymbol",
+        "textDocument/semanticTokens/full",
+        "attach",
+        "packageInformation",
     ];
 
-    for label in BUILDER_EDGE_LABELS {
+    for (label, _) in BUILDER_EDGE_LABELS {
         if exempt.contains(label) {
             continue;
         }

@@ -767,13 +767,15 @@ impl ComposedServer {
         };
         tracing::trace!(
             "--- route_notification [{}] routable_sources: {:?}",
-            method, routable_sources
+            method,
+            routable_sources
         );
         for source_id in routable_sources {
             if let Some(conn) = self.upstreams.get(&source_id) {
                 tracing::trace!(
                     "--- route_notification [{}] calling conn.notify for {}",
-                    method, source_id
+                    method,
+                    source_id
                 );
                 if conn.notify(method, params_val.clone()).await.is_ok() {
                     tracing::trace!(

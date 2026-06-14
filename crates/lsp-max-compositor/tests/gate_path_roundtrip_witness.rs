@@ -24,7 +24,10 @@ fn gate_path_cross_author_roundtrip_witness() {
     // (c) write -> read round-trip on the agreed path.
     std::fs::write(&p1, b"1").expect("write b\"1\" to gate path failed");
     let read_back = std::fs::read(&compositor_path).expect("read gate path failed");
-    assert_eq!(read_back, b"1", "byte written via shared path != byte read via compositor path");
+    assert_eq!(
+        read_back, b"1",
+        "byte written via shared path != byte read via compositor path"
+    );
 
     // Restore CLEAR so we do not leave an ANDON byte behind.
     let _ = std::fs::write(&p1, b"0");
