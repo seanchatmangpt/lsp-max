@@ -26,6 +26,7 @@ export default async function RootLayout({
           <nav>
             <Link href="/receipts">Receipts</Link>
             <Link href="/cli">CLI</Link>
+            <Link href="/coverage">Coverage</Link>
           </nav>
         </header>
         <main className="main">{children}</main>

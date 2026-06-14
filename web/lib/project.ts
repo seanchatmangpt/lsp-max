@@ -124,6 +124,49 @@ export async function readCliSurface(): Promise<CliNoun[]> {
   return nouns;
 }
 
+/** A coverage row parsed from the real DOC_COVERAGE_LOG.md status tables. */
+export interface CoverageRow {
+  item: string;
+  status: "covered" | "gap" | "server-class" | "other";
+  raw: string;
+}
+export interface CoverageReport {
+  iterations: string[];
+  rows: CoverageRow[];
+  covered: number;
+  gaps: number;
+}
+
+/** Parse the real doc↔example coverage log produced by the doc-coverage loop.
+ *  Reads DOC_COVERAGE_LOG.md at the repo root; throws if absent. */
+export async function readCoverage(): Promise<CoverageReport> {
+  const md = await fs.readFile(path.join(REPO_ROOT, "DOC_COVERAGE_LOG.md"), "utf8");
+  const iterations = [...md.matchAll(/^##\s+(Iteration[^\n]*)/gm)].map((m) => m[1].trim());
+  const rows: CoverageRow[] = [];
+  const seen = new Set<string>();
+  for (const line of md.split("\n")) {
+    if (!line.startsWith("|")) continue;
+    if (!/✅|❌|⊘|⚠/.test(line)) continue;
+    const cells = line.split("|").map((c) => c.trim()).filter(Boolean);
+    if (cells.length < 2) continue;
+    const item = cells[0].replace(/`/g, "");
+    if (/^Example$|^Symbol$|^Capability$/.test(item) || seen.has(item)) continue;
+    seen.add(item);
+    const status: CoverageRow["status"] = line.includes("✅")
+      ? "covered"
+      : line.includes("⊘")
+        ? "server-class"
+        : "gap";
+    rows.push({ item, status, raw: line });
+  }
+  return {
+    iterations,
+    rows,
+    covered: rows.filter((r) => r.status === "covered").length,
+    gaps: rows.filter((r) => r.status === "gap").length,
+  };
+}
+
 /** Workspace version, read from the real Cargo.toml (CalVer YY.M.D). */
 export async function readWorkspaceVersion(): Promise<string> {
   const cargo = await fs.readFile(path.join(REPO_ROOT, "Cargo.toml"), "utf8");
