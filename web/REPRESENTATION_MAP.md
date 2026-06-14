@@ -34,10 +34,10 @@ be zero at all times — this is the inviolable rule).
 | Example witnesses (live run) | `app/witness` (server action runs real `cargo run --example`) | ✅ represented (iter 4) |
 | Coverage gap map | `app/coverage` (RSC parses real DOC_COVERAGE_LOG.md) | ✅ represented (iter 3) |
 | Conformance verdict (live) | — | ❌ exposed-but-unrepresented |
-| OCEL process evidence | — | ❌ exposed-but-unrepresented |
-| Receipt-chain cross-product graph | — | ❌ (cross-product, after per-capability) |
+| OCEL process evidence | `app/ocel` (RSC SVG graph from real *.ocel.json) | ✅ represented (iter 5) |
+| Receipt-chain cross-product graph | — | ⊘ NOT REAL: 0 receipts carry prev_receipt_hash; the real graph is the OCEL (iter 5) |
 
-rendered-but-fabricated: **0** (inviolable). exposed-but-unrepresented: 3.
+rendered-but-fabricated: **0** (inviolable). exposed-but-unrepresented: 1 (conformance live verdict).
 
 ## Iteration log
 
@@ -96,3 +96,19 @@ rendered-but-fabricated: **0** (inviolable). exposed-but-unrepresented: 3.
   This is the project *executing*, not a fixture — the frontier feature.
 - exposed-but-unrepresented now 3: conformance (live verdict), OCEL evidence,
   receipt-chain cross-product graph.
+
+### Iteration 5 — OCEL process graph + a fabrication averted
+- `readOcel()` parses the real `crates/playground/ocel/admitted_evidence.ocel.json`
+  (OCEL 2.0); throws if absent.
+- `app/ocel/page.tsx`: RSC rendering a bipartite SVG graph — events ↔ objects, every
+  edge an actual `relationships` entry from the log.
+- Render witness (HTML): real event types (checkpoint.admitted, diagnostic.published,
+  file.projected), object types (Artifact, Checkpoint), real object ids
+  (dogfood_gc002/003/004).
+- **Fabrication averted (the rule working):** the planned "receipt-chain graph" was
+  checked against data first — `grep prev_receipt_hash` over all receipts = 0. The
+  receipts do NOT chain, so rendering chain edges would be fabrication. Reclassified
+  ⊘ NOT REAL; the genuine process graph is the OCEL, now represented. This is the
+  inviolable rule catching a would-be closed-door attack before it shipped.
+- exposed-but-unrepresented now 1: conformance live verdict (assess next: does the
+  CLI conformance noun produce a verdict standalone, or refuse without server state?).
