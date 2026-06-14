@@ -8,12 +8,16 @@ The canary monitors files and uses a multi-layered detector stack to produce dia
 
 ### The Detector Stack
 
-1. **Raw Text Scanner:** Detects forbidden victory-claim terms (e.g., "Victory confirmed", "fully admitted"), template SemVer defaults ("1.0.0"), and log-based routing indicators ("Routing to PackPlan").
-2. **Tree-Sitter AST Scanner:** Traverses Rust source code to detect plain `tower-lsp` imports, namespace usage (`tower_lsp::`), unsafe code smells (`unwrap()`, `panic!()`), direct file mutation attempts on read-only paths (`std::fs::write`, `File::create`), and simple string-shaped matching for law checks.
+1. **Raw Text Scanner:** Detects forbidden victory-claim terms from the centralized vocabulary in `config.rs` (e.g., "Victory confirmed", "fully admitted"), template SemVer defaults ("1.0.0"), and log-based routing indicators ("Routing to PackPlan"). Vec/String `.contains()` misuse is detected and diagnosed separately from pattern-match paths.
+2. **Tree-Sitter AST Scanner:** Traverses Rust source code to detect plain `tower-lsp` imports, namespace usage (`tower_lsp::`), unsafe code smells (`unwrap()`, `panic!()`), direct file mutation attempts on read-only paths (`std::fs::write`, `File::create`), and string-shaped matching for law checks.
 3. **Cargo Manifest Parser:** Verifies `Cargo.toml` and `Cargo.lock` to ensure plain `tower-lsp` is not used and that CalVer version laws are enforced.
-4. **Markdown claims Parser:** Checks markdown documentation for overclaim victory words or unverified route claims.
+4. **Markdown Claims Parser:** Checks markdown documentation for overclaim victory words or unverified route claims.
 5. **JSON-RPC Transcript Parser:** Validates initialize capability transcripts to verify that client capabilities explicitly request LSP 3.18 features rather than relying on plain LSP fallback.
 6. **Receipt JSON Validator:** Inspects BLAKE3 cryptographically signed receipts to verify that mutations are accompanied by real admission proof.
+
+### Centralized Victory Vocabulary
+
+All forbidden victory-claim terms are defined in `src/config.rs` as the single source of truth. The engine (`engine.rs`) and all rule modules reference this list — no rule hand-rolls its own term list. This prevents drift where one rule detects "done" but another silently misses "fully admitted".
 
 ## LSP 3.18 Features and Virtual Documents
 

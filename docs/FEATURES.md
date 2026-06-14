@@ -12,7 +12,7 @@ be updated on every `lsp-max` release at minimum.
 Feel free to open a new [discussion thread] if there are any questions. Drive-by
 pull requests correcting this document are always welcome!
 
-[discussion thread]: https://github.com/ebkalderon/lsp-max/discussions
+[discussion thread]: https://github.com/seanchatmangpt/lsp-max/discussions
 
 <details><summary>Click here to expand/collapse the icon legend.</summary>
 

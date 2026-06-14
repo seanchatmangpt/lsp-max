@@ -2,7 +2,7 @@
   "hooks": {
     "PreToolUse": [
       {
-        "matcher": {"tool_name": {"regex": "^(Bash|Edit|Write|TaskCreate|NotebookEdit|mcp__.*)$"}},
+        "matcher": "Bash|Edit|Write|TaskCreate|NotebookEdit",
         "hooks": [
           {
             "type": "command",
@@ -13,7 +13,7 @@
     ],
     "PostToolUse": [
       {
-        "matcher": {"tool_name": {"regex": "^(Bash|Edit|Write)$"}},
+        "matcher": "Bash|Edit|Write",
         "hooks": [
           {
             "type": "command",

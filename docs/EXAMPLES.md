@@ -12,7 +12,7 @@ quadrant, and every quadrant has coverage.
 |----------|---------|----------|
 | [Tutorial](#tutorials) | Learning-oriented — guided first steps | `stdio.rs`, `tcp.rs`, `websocket.rs` |
 | [How-to](#how-to-guides) | Goal-oriented — specific task recipes | `custom_notification.rs`, `repro_lifecycle.rs`, `axum-lsp`, `bevy-lsp`, `tex-lsp`, `wasm/` |
-| [Reference](#reference) | Information-oriented — technical specification | `anti-llm-cheat-lsp`, `clap-noun-verb-lsp`, `pattern-lsp`, `wasm4pm-lsp`, `wasm4pm-compat-lsp`, `gc005-wasm4pm-adapter` |
+| [Reference](#reference) | Information-oriented — technical specification | `anti-llm-cheat-lsp`, `clap-noun-verb-lsp`, `pattern-lsp`, `wasm4pm-lsp`, `wasm4pm-compat-lsp`, `gc005-wasm4pm-adapter`, `lsp-max-compositor` |
 | [Explanation](#explanation) | Understanding-oriented — concepts and rationale | `agi-swarm-defense`, `receipt_chain_explained.rs`, `conformance_vector_explained.rs`, `calver_law_explained.rs` |
 
 ---
@@ -105,13 +105,26 @@ complete browser demo.
 > already knows what they want — they need to look it up.
 > Success = the reader found the fact they needed.
 
+### `lsp-max-compositor`
+
+Reference multi-server fan-out compositor implementing the Λ_CD gate:
+
+- Spawns N child LSP servers; fans `didOpen`/`didChange`/`didClose` concurrently.
+- Merges diagnostics with quorum-based debounce and per-server `C_D` attribution.
+- Emits `CompositorReceipt` (BLAKE3 per-flush provenance) and monitors child-process exits.
+- Exposes `max/compositorHealth` (O(1)), `max/compositorState` (ANDON snapshot), `max/diagnosticAck`.
+- ANDON gate (`gate_file.rs`) blocks shell actions while any `WASM4PM-*` / `GGEN-*` diagnostic is live.
+
+Crate: `crates/lsp-max-compositor`. Tests: `tests/integration.rs`, `tests/speciation.rs`.
+
 ### `anti-llm-cheat-lsp`
 
 The admissibility canary. This LSP server runs in CI and detects:
 
 - Reintroduction of forbidden identifiers (`tower_lsp::`, `lsp_max::`)
 - Fake receipts (receipt JSON not backed by BLAKE3 hash of actual file content)
-- Victory language in code, comments, or commit messages
+- Victory language in code, comments, or commit messages (centralized vocabulary in `config.rs`)
+- Vec/String `.contains()` misuse (different admission semantics)
 - Version-law violations (non-CalVer strings)
 
 Diagnostic codes: `ANTI-LLM-*`, `ANTI-LLM-VERSION-*`.

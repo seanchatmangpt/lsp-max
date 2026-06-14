@@ -30,6 +30,43 @@ projected through LSP." It adds:
   checked against declared process models via `wasm4pm`.
 - **`ConformanceVector`** — `admitted`/`refused`/`unknown` axes; unknown never
   collapses into admitted or refused.
+- **`lsp-max-compositor`** — multi-server fan-out hub: spawns child LSP servers,
+  merges their diagnostics, and enforces the Λ_CD gate.
+
+## Λ_CD runtime gate
+
+Every shell-side action (build, test, format, release) is blocked while an
+active ANDON signal is present. The gate is enforced by a `PreToolUse` hook that
+runs `lsp-max-cli gate check` before every `Bash` / `Edit` / `Write` /
+`TaskCreate` / `NotebookEdit` invocation.
+
+| State | Meaning |
+|-------|---------|
+| `OPEN` | No active ANDON — shell actions proceed |
+| `ANDON` | One or more `WASM4PM-*` / `GGEN-*` diagnostics are active — shell blocked |
+
+The gate file is a single byte (`0` = open, `1` = ANDON), written with
+`AcqRel` atomics and an O(1) counter so the write only occurs on state changes.
+
+ANDON classification uses [daachorse](https://crates.io/crates/daachorse) Aho-Corasick
+for O(|code|) prefix matching — no per-diagnostic regex overhead.
+
+## lsp-max-compositor
+
+`lsp-max-compositor` is a fan-out compositor that:
+
+1. Spawns N child LSP servers as subprocesses.
+2. Fans `textDocument/didOpen`, `didChange`, `didClose` to all children.
+3. Merges child diagnostics using quorum-based debounce (dynamic window, minimum
+   user lag) and server-ID attribution via the L7 Speciation state machine
+   (`PARTIAL → CANDIDATE → ADMITTED`, driven by per-server `C_D` counter in `deposit()`).
+4. Emits `CompositorReceipt` — per-flush law-set provenance with BLAKE3 digest.
+5. Monitors child-process exit and clears URIs on crash.
+
+Concurrency uses [papaya](https://crates.io/crates/papaya) lock-free maps and
+[kanal](https://crates.io/crates/kanal) async channels. The merge path runs
+`max/compositorHealth` (O(1)) and `max/compositorState` (SELECT-model ANDON
+snapshot) as lightweight introspection endpoints.
 
 ## Published crates
 
@@ -39,6 +76,7 @@ projected through LSP." It adds:
 | `lsp-max-macros` | Proc macros (`#[lsp_max::async_trait]`) |
 | `lsp-max-cli` | Actuation grammar: noun/verb CLI built on `clap-noun-verb` |
 | `lsp-max-client` | LSP client framework for driving servers in tests and agents |
+| `lsp-max-compositor` | Multi-server fan-out hub with Λ_CD gate, receipt emission, and quorum debounce |
 
 All other workspace crates are internal implementation details (`publish = false`).
 
@@ -88,7 +126,7 @@ async fn main() {
 
 ## Versioning
 
-`lsp-max` uses **CalVer** (`YY.M.D`). Version `26.6.9` = 2026-06-09. There are
+`lsp-max` uses **CalVer** (`YY.M.D`). Version `26.6.13` = 2026-06-13. There are
 no SemVer guarantees — version-law violations are a diagnostic family
 (`ANTI-LLM-VERSION-*`).
 
@@ -106,7 +144,7 @@ Domain-specific LSP servers are in `examples/`:
 
 | Example | Description |
 |---------|-------------|
-| `anti-llm-cheat-lsp` | Canary: detects forbidden identifiers, fake receipts, victory language |
+| `anti-llm-cheat-lsp` | Canary: detects forbidden identifiers, fake receipts, victory language, Vec/String contains misuse; centralized victory vocabulary |
 | `clap-noun-verb-lsp` | Noun/verb CLI surface demo |
 | `pattern-lsp` | Pattern detection LSP |
 | `wasm4pm-lsp` | Process-mining LSP over wasm4pm |
