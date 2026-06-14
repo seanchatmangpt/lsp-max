@@ -198,7 +198,8 @@ impl std::fmt::Display for ConformanceGrade {
 /// sets, and Unknown never collapses into either (doing so is a defect). See the
 /// runnable explanation and contract witness in
 /// `examples/conformance_vector_explained.rs`, which asserts this law and panics
-/// if it regresses.
+/// if it regresses. For the gate composing with receipt verification, see
+/// `examples/admission_pipeline.rs`.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ConformanceVector {
     /// Law axes that have been admitted (evidence present and valid)

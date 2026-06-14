@@ -95,7 +95,8 @@ pub struct CapabilityGap {
 /// bytes, and `prev_receipt_hash` closes the Merkle chain (`None` only for
 /// genesis). See the runnable witness in `examples/receipt_chain_explained.rs`,
 /// which demonstrates content-addressing, tamper detection, the circular-hash
-/// trap, and chain linkage — and panics if any of them regress.
+/// trap, and chain linkage — and panics if any of them regress. For receipt
+/// verification driving the conformance gate, see `examples/admission_pipeline.rs`.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct Receipt {
     pub receipt_id: String,
