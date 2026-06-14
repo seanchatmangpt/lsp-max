@@ -25,6 +25,7 @@ export default async function RootLayout({
           <span className="ver">v{version} · CalVer</span>
           <nav>
             <Link href="/receipts">Receipts</Link>
+            <Link href="/cli">CLI</Link>
           </nav>
         </header>
         <main className="main">{children}</main>

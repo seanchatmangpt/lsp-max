@@ -30,14 +30,14 @@ be zero at all times — this is the inviolable rule).
 | Capability | UI component | Status |
 |---|---|---|
 | Receipt ledger | `app/receipts` (RSC reads real `*.receipt.json`) | ✅ represented (iter 1) |
-| CLI noun-verb surface | — | ❌ exposed-but-unrepresented |
+| CLI noun-verb surface | `app/cli` (RSC parses real `nouns/*.rs`) | ✅ represented (iter 2) |
 | Example witnesses (live run) | — | ❌ exposed-but-unrepresented |
 | Coverage gap map | — | ❌ exposed-but-unrepresented |
 | Conformance verdict (live) | — | ❌ exposed-but-unrepresented |
 | OCEL process evidence | — | ❌ exposed-but-unrepresented |
 | Receipt-chain cross-product graph | — | ❌ (cross-product, after per-capability) |
 
-rendered-but-fabricated: **0** (inviolable). exposed-but-unrepresented: 6.
+rendered-but-fabricated: **0** (inviolable). exposed-but-unrepresented: 5.
 
 ## Iteration log
 
@@ -63,3 +63,13 @@ rendered-but-fabricated: **0** (inviolable). exposed-but-unrepresented: 6.
   clone would render an empty ledger. Not fabrication (files are real), but the
   witness is environment-local. Recorded, not faked. (The route source
   `web/app/receipts/page.tsx` was force-added past the same ignore rule.)
+
+### Iteration 2 — CLI surface view
+- `readCliSurface()` parses `#[verb("…")]` over `pub fn` from the real
+  `crates/lsp-max-cli/src/nouns/*.rs`; throws if the noun dir is gone.
+- `app/cli/page.tsx`: RSC rendering 18 nouns / ~80 verbs with real arg names.
+- Render witness (HTML): real nouns (conformance, diagnostics, snapshot,
+  telemetry, admission, metamodel), real verbs (breakdown, score, vector), real
+  arg `instance_id` ×102 — parsed from source, not invented.
+- exposed-but-unrepresented now 5: example witnesses, coverage map, conformance
+  (live), OCEL, receipt-chain graph.
