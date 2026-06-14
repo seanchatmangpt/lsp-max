@@ -121,7 +121,11 @@ async fn main() {
     #[cfg(all(feature = "runtime-agnostic", not(feature = "runtime-tokio")))]
     use tokio_util::compat::{TokioAsyncReadCompatExt, TokioAsyncWriteCompatExt};
 
-    tracing_subscriber::fmt().init();
+    // Logs MUST go to stderr: stdout is the LSP Content-Length transport, and
+    // any byte written there corrupts the frame stream.
+    tracing_subscriber::fmt()
+        .with_writer(std::io::stderr)
+        .init();
 
     let (stdin, stdout) = (tokio::io::stdin(), tokio::io::stdout());
     #[cfg(all(feature = "runtime-agnostic", not(feature = "runtime-tokio")))]

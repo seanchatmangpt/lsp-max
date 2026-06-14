@@ -23,6 +23,10 @@ use crate::service::{ClientSocket, ExitedError, RequestStream, ResponseSink};
 
 const DEFAULT_MAX_CONCURRENCY: usize = 4;
 const MESSAGE_QUEUE_SIZE: usize = 100;
+/// Bounded re-polls after stdin EOF to observe the service's `Exited`
+/// transition (driven by an in-flight `exit` call future) before falling
+/// back to an abnormal-termination exit code.
+const MAX_EXIT_OBSERVE_POLLS: usize = 16;
 
 /// Trait implemented by client loopback sockets.
 ///
@@ -188,16 +192,35 @@ where
             responses_tx.disconnect();
             client_abort.abort();
 
-            let exited_err = future::poll_fn(|cx| match service.poll_ready(cx) {
-                Poll::Ready(Err(err)) => Poll::Ready(Some(err)),
-                _ => Poll::Ready(None),
-            })
-            .await;
+            // After stdin EOF, surface the state machine's STORED exit code.
+            //
+            // An `exit` notification dispatched just before EOF transitions the
+            // service to `Exited` via its `call` future, at which point
+            // `poll_ready` reports `Err(ExitedError(get_exit_code()))` carrying
+            // the lawful code (0 on the ShutDown -> Exited path, 1 otherwise).
+            // There is a window where the `exit` call future has not yet driven
+            // the transition when EOF is first observed; polling once and falling
+            // back to a hardcoded `1` would discard a lawful `0`. Yield and
+            // re-poll a bounded number of times so the stored code is propagated
+            // rather than a fixed fallback.
+            for _ in 0..MAX_EXIT_OBSERVE_POLLS {
+                let exited_err = future::poll_fn(|cx| match service.poll_ready(cx) {
+                    Poll::Ready(Err(err)) => Poll::Ready(Some(err)),
+                    _ => Poll::Ready(None),
+                })
+                .await;
 
-            if let Some(err) = exited_err {
-                return Err(err);
+                if let Some(err) = exited_err {
+                    return Err(err);
+                }
+
+                // Not yet observed as Exited; let any in-flight `exit` call
+                // future make progress, then re-poll for the stored code.
+                tokio::task::yield_now().await;
             }
 
+            // No lawful Exited transition was observed (e.g. EOF without a prior
+            // `exit`/`shutdown`): per LSP, this is an abnormal termination.
             Err(T::Error::from(ExitedError(1)))
         };
 
