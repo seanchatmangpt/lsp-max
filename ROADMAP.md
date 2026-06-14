@@ -1,11 +1,21 @@
 # lsp-max Roadmap
 
-**As of:** 2026-06-12
-**Baseline commit:** 6ee4255
+**As of:** 2026-06-13
+**Baseline commit:** 1f1e0cf
 
 ---
 
 ## Completed
+
+### Λ_CD Runtime Gate + lsp-max-compositor (committed 1f1e0cf)
+- Single-byte ANDON gate file with AcqRel atomics and O(1) state-change counter
+- daachorse O(|code|) ANDON prefix classification; papaya + kanal merge pipeline
+- Concurrent fan-out to N child LSP servers; dynamic quorum-based debounce
+- L7 Speciation state machine: `PARTIAL → CANDIDATE → ADMITTED` via per-server `C_D`
+- `CompositorReceipt` per-flush BLAKE3 provenance; child exit watcher; `max/compositorHealth`, `max/compositorState`, `max/diagnosticAck`
+- `lsp-max-cli gate check` verb; `PreToolUse` hook wires Λ_CD^runtime enforcement
+- Benchmark suite: micro / fanout / backpressure at N∈{5,50,500}
+- `anti-llm-cheat-lsp`: centralized victory vocabulary in `config.rs`; Vec/String contains distinction
 
 ### ERRC Blue Ocean Innovations (committed 6ee4255)
 - `RulePackSnapshot` — Arc<DashMap> O(1) async-safe workspace state clone; mirrors rust-analyzer GlobalStateSnapshot
@@ -108,3 +118,21 @@ ggen sync --manifest .specify/specs/lsp-max/ggen.toml
 | 3 | max/ handler wiring (4 methods) | Medium | ✅ Done |
 | 4 | ggen SLO (ontology + SPARQL + templates + manifest) | Large | ✅ Done |
 | 5 | anti-llm-cheat-lsp → RulePackServer | Medium | ⬜ Remaining |
+
+---
+
+## Next priorities (post-1f1e0cf)
+
+| # | Item | Effort | Status |
+|---|------|--------|--------|
+| 6 | `anti-llm-cheat-lsp` new rule modules (contract, ggen, oracle, trace, complexity) | Medium | ⬜ In progress (untracked files) |
+| 7 | `WorkspaceIndex` wiring in `anti-llm-cheat-lsp` | Small | ⬜ Remaining |
+| 8 | Λ_CD RFC items from AGENTS.md backlog (3 priorities) | Large | ⬜ Remaining |
+
+### RFC Backlog Detail (item 8)
+
+Three Λ_CD architectural priorities recorded in AGENTS.md after the 1000x review:
+
+- **A — Agent-boundary enforcement**: subagent gate state must be queryable per-agent, not just globally. Goal: a subagent that hits ANDON sees a scoped block, not a global halt that affects the parent session.
+- **B — Per-server speciation receipt chain**: each child server in the compositor must emit its own `C_D` receipt chain so the compositor's `ADMITTED` verdict is traceable back to individual server evidence, not a merged aggregate.
+- **C — Compositor receipt → OCEL**: `CompositorReceipt` events must be derivable into an OCEL event log and mined for conformance against the declared compositor process model (fan-out → merge → admit).
