@@ -71,6 +71,59 @@ export async function readReceipts(): Promise<Receipt[]> {
   return found.sort((a, b) => (a.run_id ?? "").localeCompare(b.run_id ?? ""));
 }
 
+/** A verb (action) on a CLI noun, parsed from the real `#[verb("…")]` attrs. */
+export interface CliVerb {
+  verb: string;
+  fn: string;
+  args: string[];
+  doc?: string;
+}
+export interface CliNoun {
+  noun: string;
+  sourceFile: string;
+  verbs: CliVerb[];
+}
+
+const NOUNS_DIR = "crates/lsp-max-cli/src/nouns";
+
+/** Parse the real clap-noun-verb CLI surface from the noun source files. The
+ *  command surface is derived from `#[verb("…")]` attributes over `pub fn`s —
+ *  change the Rust source and this changes. Throws if the noun dir is absent. */
+export async function readCliSurface(): Promise<CliNoun[]> {
+  const absDir = path.join(REPO_ROOT, NOUNS_DIR);
+  const entries = await fs.readdir(absDir); // throws if the CLI is gone
+  const nouns: CliNoun[] = [];
+  for (const name of entries.sort()) {
+    if (!name.endsWith(".rs") || name === "mod.rs") continue;
+    const src = await fs.readFile(path.join(absDir, name), "utf8");
+    const verbs: CliVerb[] = [];
+    // Match: optional /// doc lines, then #[verb("x")], then pub fn name(args).
+    const re =
+      /#\[verb\("([^"]+)"\)\]\s*pub fn (\w+)\s*\(([^)]*)\)/g;
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(src)) !== null) {
+      const [full, verb, fn, rawArgs] = m;
+      const args = rawArgs
+        .split(",")
+        .map((a) => a.trim())
+        .filter(Boolean)
+        .map((a) => a.split(":")[0].trim());
+      // Grab the nearest /// doc line just above the #[verb].
+      const before = src.slice(0, m.index);
+      const docMatch = before.match(/\/\/\/ ([^\n]*)\n\s*$/);
+      verbs.push({ verb, fn, args, doc: docMatch?.[1]?.trim() });
+      void full;
+    }
+    if (verbs.length > 0) {
+      nouns.push({ noun: name.replace(/\.rs$/, ""), sourceFile: path.join(NOUNS_DIR, name), verbs });
+    }
+  }
+  if (nouns.length === 0) {
+    throw new Error(`No CLI verbs parsed from ${absDir} — the clap-noun-verb surface is missing.`);
+  }
+  return nouns;
+}
+
 /** Workspace version, read from the real Cargo.toml (CalVer YY.M.D). */
 export async function readWorkspaceVersion(): Promise<string> {
   const cargo = await fs.readFile(path.join(REPO_ROOT, "Cargo.toml"), "utf8");

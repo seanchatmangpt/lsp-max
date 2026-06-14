@@ -66,3 +66,9 @@ code { font-family: ui-monospace, monospace; color: var(--accent); font-size: 0.
 .claims li { padding: 4px 0; border-top: 1px solid var(--line); }
 .claims b { color: var(--ink); margin-right: 6px; }
 .src { margin: 10px 0 0; font-size: 11px; color: var(--dim); font-family: ui-monospace, monospace; }
+
+.verbs { list-style: none; margin: 0; padding: 0; }
+.verbs li { padding: 6px 0; border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 2px; }
+.verbs li:first-child { border-top: none; }
+.verbs code { color: var(--ink); font-size: 12px; }
+.vdoc { color: var(--dim); font-size: 11px; }
