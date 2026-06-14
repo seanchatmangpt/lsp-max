@@ -184,3 +184,46 @@ run-to-exit scope. Every run-to-exit demo is now a real witness or a classified 
 
 ### Hard stops
 None.
+
+---
+
+## Iteration 4 — 2026-06-14 · commit 118b2b0 (clean tree)
+
+### Cross-product closed: `Receipt` × `ConformanceVector` (composition)
+
+The goal's coherence test — capabilities composing, not just each in isolation.
+New example `examples/admission_pipeline.rs`: receipt verification is the *evidence*
+that resolves the `Receipt` law axis, and the gate (`admits_release`) reflects it.
+
+- **example** — composes the real `Receipt` (blake3 content-addressing) and
+  `ConformanceVector` (three-valued gate) types. Three composed states asserted:
+  - [A] receipt not yet checked → `Receipt` axis `unknown` → strict gate BLOCKS release
+  - [B] intact artifact verifies → `Receipt` admitted → gate ADMITS release
+  - [C] tampered artifact fails → `Receipt` refused → gate BLOCKS release
+  A tampered artifact propagates end-to-end to a blocked release — fake admission
+  cannot launder through the composition.
+- **link** — `ConformanceVector` and `Receipt` rustdoc both now cite
+  `examples/admission_pipeline.rs`; the example header cites both per-capability
+  examples and both types.
+- **captured run** (`cargo run --example admission_pipeline`, real `$? = 0`):
+  ```
+  WITNESS admission_pipeline: receipt verification drives the gate
+    [A] unverified receipt (unknown)  → admits_release = false (strict blocks)
+    [B] verified intact receipt       → admits_release = true
+    [C] tampered receipt (refused)    → admits_release = false
+  ```
+
+### Coverage state
+- Per-capability (single-file run-to-exit): bijective (4 covered, 4 server-class).
+- Cross-product: 1 of N closed (`Receipt`×`ConformanceVector`). The surface is
+  coherent for this pair, not yet complete across all capability pairs.
+
+### Next frontier
+- More cross-products as capabilities accrue per-capability witnesses (e.g.
+  `ComposedServer` + `SourceHealth`, gate primitives + receipts).
+- Map the root crate's full `///`-over-`pub` API surface (LspService, Server,
+  ComposedServer, gate primitives) against example coverage — the larger documented
+  surface beyond the 8 single-file examples.
+
+### Hard stops
+None.
