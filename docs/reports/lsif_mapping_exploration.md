@@ -8,7 +8,7 @@ This report establishes the formal mapping strategy for translating Language Ser
 
 ## 2. Ontology & Vocabulary Namespaces
 
-In compliance with the Anti-Laundering Doctrine specified in `docs/v26.6.5/prd-ard/data_model.md`, all generated RDF triples must utilize the following standard prefixes and namespace URIs:
+In compliance with the Anti-Laundering Doctrine specified in `docs/archive/v26.6.5/prd-ard/data_model.md`, all generated RDF triples must utilize the following standard prefixes and namespace URIs:
 
 | Prefix | Namespace URI | Description |
 |---|---|---|
