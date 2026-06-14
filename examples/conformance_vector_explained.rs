@@ -88,13 +88,119 @@
 //! A `ConformanceDeltaEntry` is appended to the delta log each time an axis moves,
 //! enabling `max/conformanceDelta` polling by agents.
 
-// This file is intentionally a documentation-only example.
+// The explanation above is the *claim*. The code below is the *witness*: it
+// constructs real `ConformanceVector`s and asserts the three-valued contract,
+// so this example FAILS TO RUN (panics, non-zero exit) if Unknown ever collapses
+// into Admitted or Refused. Run it:  cargo run --example conformance_vector_explained
 //
-// To see the ConformanceVector type: lsp-max-protocol/src/lib.rs
-// To see gate logic using it:       src/gate.rs
-// To see delta log:                 src/lib.rs (conformance_delta_log field)
+// Type:      lsp-max-protocol/src/conformance.rs
+// Gate use:  src/gate.rs
+// Delta log: src/lib.rs (conformance_delta_log field)
+
+use lsp_max::max_protocol::conformance::LawAxisRegistry;
+use lsp_max::max_protocol::{ConformanceVector, LawAxis};
+
+/// Build a vector from the three axis sets, syncing the bitmask index — the
+/// documented construction idiom (see `sync_bits_from_vecs`).
+fn vector(
+    admitted: Vec<LawAxis>,
+    refused: Vec<LawAxis>,
+    unknown: Vec<LawAxis>,
+    strict: bool,
+) -> ConformanceVector {
+    let mut cv = ConformanceVector {
+        admitted,
+        refused,
+        unknown,
+        strict_mode: strict,
+        ..Default::default()
+    };
+    cv.sync_bits_from_vecs();
+    cv
+}
 
 fn main() {
-    println!("ConformanceVector explanation: see module-level doc comment above.");
-    println!("For the type definition: lsp-max-protocol/src/lib.rs");
+    // [1] Fully resolved, all admitted ⇒ release is admitted.
+    let all_ok = vector(
+        vec![LawAxis::Protocol, LawAxis::Receipt],
+        vec![],
+        vec![],
+        true,
+    );
+    assert!(all_ok.all_admitted(), "no refused/unknown ⇒ all_admitted");
+    assert!(all_ok.admits_release(), "fully admitted ⇒ release admitted");
+
+    // [2] THE LOAD-BEARING LAW: an unknown axis is NOT admitted, and under strict
+    //     mode it BLOCKS release. Unknown does not optimistically collapse to Admitted.
+    let with_unknown = vector(
+        vec![LawAxis::Protocol],
+        vec![],
+        vec![LawAxis::Receipt],
+        true,
+    );
+    assert!(
+        !with_unknown.all_admitted(),
+        "unknown present ⇒ NOT all_admitted (no optimistic collapse)"
+    );
+    assert!(
+        !with_unknown.admits_release(),
+        "strict mode: an unknown axis BLOCKS release"
+    );
+
+    // [3] Same vector, non-strict: unknown is tolerated for release but STILL not
+    //     counted as admitted — toleration is not admission.
+    let with_unknown_lax = vector(
+        vec![LawAxis::Protocol],
+        vec![],
+        vec![LawAxis::Receipt],
+        false,
+    );
+    assert!(
+        with_unknown_lax.admits_release(),
+        "non-strict: unknown tolerated for release"
+    );
+    assert!(
+        !with_unknown_lax.all_admitted(),
+        "non-strict still does NOT count unknown as admitted"
+    );
+
+    // [4] A refused axis blocks release in any mode. Refused is distinct from
+    //     Unknown — Unknown never collapses to Refused either.
+    let with_refused = vector(
+        vec![LawAxis::Protocol],
+        vec![LawAxis::Security],
+        vec![],
+        false,
+    );
+    assert!(
+        !with_refused.admits_release(),
+        "refused ⇒ release blocked even non-strict"
+    );
+
+    // [5] Transition integrity via the bitmask index: moving an axis between sets
+    //     clears the prior set, so an axis can never be simultaneously unknown and
+    //     admitted — the exact overlap this three-valued type forbids.
+    let id = LawAxisRegistry::axis_to_id(&LawAxis::Receipt).expect("Receipt axis has an id");
+    let mut cv = ConformanceVector::default();
+    cv.set_unknown(id);
+    assert!(
+        cv.is_unknown_bit(id) && !cv.is_admitted_bit(id),
+        "set_unknown ⇒ axis is unknown, not admitted"
+    );
+    cv.set_admitted(id);
+    assert!(
+        cv.is_admitted_bit(id) && !cv.is_unknown_bit(id),
+        "set_admitted clears the unknown bit — sets stay disjoint"
+    );
+    cv.assert_bitmask_invariants(); // panics if any two sets overlap
+
+    println!("WITNESS conformance_vector: 5 contract assertions held");
+    println!("  [1] all-admitted vector admits release");
+    println!("  [2] unknown axis is NOT admitted and BLOCKS release under strict mode");
+    println!("  [3] non-strict tolerates unknown for release but never counts it admitted");
+    println!("  [4] refused axis blocks release in any mode (distinct from unknown)");
+    println!("  [5] set_unknown→set_admitted keeps the three axis sets disjoint");
+    println!();
+    println!("This example panics (non-zero exit) if Unknown ever collapses into");
+    println!("Admitted or Refused — that regression would break the gate contract.");
 }
