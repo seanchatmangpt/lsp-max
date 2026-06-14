@@ -55,7 +55,7 @@ where
         match self.state.get() {
             State::Initialized => self.inner.call(req),
             cur_state => {
-                println!(
+                tracing::trace!(
                     "NormalService: rejected request/notification '{}' because state is {:?}",
                     req.method(),
                     cur_state

@@ -347,13 +347,13 @@ impl ComposedServer {
         P: serde::Serialize,
         R: serde::de::DeserializeOwned,
     {
-        println!("--- route_request [{}] start", method);
+        tracing::trace!("--- route_request [{}] start", method);
         let params_val = serde_json::to_value(params).unwrap_or(Value::Null);
 
-        println!("--- route_request [{}] locking state at start", method);
+        tracing::trace!("--- route_request [{}] locking state at start", method);
         let (request_id, strategy_str, uri_opt, doc_version) = {
             let mut s = self.state.lock().await;
-            println!(
+            tracing::trace!(
                 "--- route_request [{}] locked state at start inside block",
                 method
             );
@@ -379,7 +379,7 @@ impl ComposedServer {
                 ver,
             )
         };
-        println!("--- route_request [{}] strategy: {}", method, strategy_str);
+        tracing::trace!("--- route_request [{}] strategy: {}", method, strategy_str);
 
         let sources_contacted = Arc::new(std::sync::Mutex::new(Vec::<String>::new()));
         let sources_returned = Arc::new(std::sync::Mutex::new(Vec::<String>::new()));

@@ -115,14 +115,14 @@ impl PersistentUpstream {
         tokio::spawn(async move {
             while let Some(msg) = write_rx.recv().await {
                 if let Ok(msg_str) = String::from_utf8(msg.clone()) {
-                    println!(
+                    tracing::trace!(
                         "--- PersistentUpstream [{}] writing: {}",
                         source_id_writer,
                         msg_str.trim()
                     );
                 }
                 if write_lsp_message(&mut writer_half, &msg).await.is_err() {
-                    println!("--- PersistentUpstream [{}] write failed", source_id_writer);
+                    tracing::trace!("--- PersistentUpstream [{}] write failed", source_id_writer);
                     break;
                 }
             }
@@ -141,7 +141,7 @@ impl PersistentUpstream {
                             Ok(v) => v,
                             Err(_) => continue,
                         };
-                        println!(
+                        tracing::trace!(
                             "--- PersistentUpstream [{}] read message: {}",
                             source_id_clone, msg
                         );
@@ -149,7 +149,7 @@ impl PersistentUpstream {
                         if let Some(id) = msg.get("id").and_then(|v| v.as_i64()) {
                             let mut map = pending_clone.lock().await;
                             if let Some(tx) = map.remove(&id) {
-                                println!(
+                                tracing::trace!(
                                     "--- PersistentUpstream [{}] matched pending response id: {}",
                                     source_id_clone, id
                                 );
@@ -158,7 +158,7 @@ impl PersistentUpstream {
                             }
                         }
                         // Not a matched response: it's an unsolicited notification or request
-                        println!(
+                        tracing::trace!(
                             "--- PersistentUpstream [{}] forwarding unsolicited message",
                             source_id_clone
                         );
@@ -168,7 +168,7 @@ impl PersistentUpstream {
                         });
                     }
                     _ => {
-                        println!(
+                        tracing::trace!(
                             "--- PersistentUpstream [{}] read loop terminated",
                             source_id_clone
                         );
@@ -206,12 +206,12 @@ impl PersistentUpstream {
         let body = serde_json::to_vec(&req).map_err(|e| e.to_string())?;
         let (resp_tx, resp_rx) = oneshot::channel();
         self.pending.lock().await.insert(id, resp_tx);
-        println!(
+        tracing::trace!(
             "--- PersistentUpstream [{}] sending request id: {}, method: {}",
             self.source_id, id, method
         );
         self.write_tx.send(body).await.map_err(|e| e.to_string())?;
-        println!(
+        tracing::trace!(
             "--- PersistentUpstream [{}] awaiting response for id: {}",
             self.source_id, id
         );
@@ -224,7 +224,7 @@ impl PersistentUpstream {
                 )
             })?
             .map_err(|_| "Response channel closed".to_string())?;
-        println!(
+        tracing::trace!(
             "--- PersistentUpstream [{}] got response for id: {}",
             self.source_id, id
         );
@@ -238,7 +238,7 @@ impl PersistentUpstream {
     pub async fn notify(&self, method: &str, params: Value) -> std::result::Result<(), String> {
         let notif = json!({"jsonrpc":"2.0","method":method,"params":params});
         let body = serde_json::to_vec(&notif).map_err(|e| e.to_string())?;
-        println!(
+        tracing::trace!(
             "--- PersistentUpstream [{}] sending notification method: {}",
             self.source_id, method
         );
@@ -247,7 +247,7 @@ impl PersistentUpstream {
 
     pub async fn send_raw(&self, msg: serde_json::Value) -> std::result::Result<(), String> {
         let body = serde_json::to_vec(&msg).map_err(|e| e.to_string())?;
-        println!(
+        tracing::trace!(
             "--- PersistentUpstream [{}] sending raw msg: {}",
             self.source_id, msg
         );

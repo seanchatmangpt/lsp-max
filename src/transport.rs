@@ -131,12 +131,12 @@ where
             while let Some(msg) = framed_stdin.next().await {
                 if let Ok(ref m) = msg {
                     match m {
-                        Message::Request(req) => println!(
+                        Message::Request(req) => tracing::trace!(
                             "--- Server::serve read_input got Request: method={}, id={:?}",
                             req.method(),
                             req.id()
                         ),
-                        Message::Response(res) => println!(
+                        Message::Response(res) => tracing::trace!(
                             "--- Server::serve read_input got Response: id={:?}",
                             res.id()
                         ),
@@ -144,7 +144,7 @@ where
                 }
                 match msg {
                     Ok(Message::Request(req)) => {
-                        println!(
+                        tracing::trace!(
                             "--- Server::serve read_input poll_ready start for {}",
                             req.method()
                         );
@@ -152,7 +152,7 @@ where
                             error!("{}", display_sources(&err));
                             return Err(err);
                         }
-                        println!(
+                        tracing::trace!(
                             "--- Server::serve read_input poll_ready end for {}",
                             req.method()
                         );

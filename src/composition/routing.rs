@@ -714,7 +714,7 @@ impl ComposedServer {
     where
         P: serde::Serialize,
     {
-        println!("--- route_notification [{}] start", method);
+        tracing::trace!("--- route_notification [{}] start", method);
         let params_val = serde_json::to_value(params).unwrap_or(Value::Null);
         let uri_opt = params_val
             .get("textDocument")
@@ -723,9 +723,9 @@ impl ComposedServer {
             .map(|s| s.to_string());
 
         if let Some(uri) = &uri_opt {
-            println!("--- route_notification [{}] locking state for uri", method);
+            tracing::trace!("--- route_notification [{}] locking state for uri", method);
             let mut s = self.state.lock().await;
-            println!("--- route_notification [{}] locked state for uri", method);
+            tracing::trace!("--- route_notification [{}] locked state for uri", method);
             if method == "textDocument/didOpen" {
                 let version = params_val
                     .get("textDocument")
@@ -743,7 +743,7 @@ impl ComposedServer {
                 if let VersionCheckResult::OutOfOrder { .. } =
                     s.doc_tracker.did_change(uri, version)
                 {
-                    println!("--- route_notification [{}] out of order return", method);
+                    tracing::trace!("--- route_notification [{}] out of order return", method);
                     return;
                 }
                 s.edit_gate.clear_for_uri(uri);
@@ -753,35 +753,35 @@ impl ComposedServer {
             }
         }
 
-        println!(
+        tracing::trace!(
             "--- route_notification [{}] locking state for routable_sources",
             method
         );
         let routable_sources = {
             let s = self.state.lock().await;
-            println!(
+            tracing::trace!(
                 "--- route_notification [{}] locked state for routable_sources inside block",
                 method
             );
             s.capability_tracker.routable_sources_for_method(method)
         };
-        println!(
+        tracing::trace!(
             "--- route_notification [{}] routable_sources: {:?}",
             method, routable_sources
         );
         for source_id in routable_sources {
             if let Some(conn) = self.upstreams.get(&source_id) {
-                println!(
+                tracing::trace!(
                     "--- route_notification [{}] calling conn.notify for {}",
                     method, source_id
                 );
                 if conn.notify(method, params_val.clone()).await.is_ok() {
-                    println!(
+                    tracing::trace!(
                         "--- route_notification [{}] locking state for source health updating",
                         method
                     );
                     let mut s = self.state.lock().await;
-                    println!(
+                    tracing::trace!(
                         "--- route_notification [{}] locked state for source health updating",
                         method
                     );
@@ -791,6 +791,6 @@ impl ComposedServer {
                 }
             }
         }
-        println!("--- route_notification [{}] end", method);
+        tracing::trace!("--- route_notification [{}] end", method);
     }
 }

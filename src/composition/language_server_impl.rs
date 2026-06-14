@@ -18,9 +18,9 @@ impl LanguageServer for ComposedServer {
     }
 
     async fn initialized(&self, params: InitializedParams) {
-        println!("--- ComposedServer::initialized start");
+        tracing::trace!("--- ComposedServer::initialized start");
         self.route_notification("initialized", params).await;
-        println!("--- ComposedServer::initialized end");
+        tracing::trace!("--- ComposedServer::initialized end");
     }
 
     async fn shutdown(&self) -> Result<()> {

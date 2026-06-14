@@ -121,20 +121,20 @@ impl<S: LanguageServer> Service<Request> for LspService<S> {
 
     fn poll_ready(&mut self, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
         let cur_state = self.state.get();
-        println!("--- LspService::poll_ready called, state = {:?}", cur_state);
+        tracing::trace!("--- LspService::poll_ready called, state = {:?}", cur_state);
         if cur_state == State::Exited {
             let code = self.state.get_exit_code();
             return Poll::Ready(Err(ExitedError(code)));
         }
         if self.state.poll_initializing(cx).is_pending() {
-            println!(
+            tracing::trace!(
                 "--- LspService::poll_ready returning Pending because poll_initializing is pending"
             );
             return Poll::Pending;
         }
-        println!("--- LspService::poll_ready delegating to inner");
+        tracing::trace!("--- LspService::poll_ready delegating to inner");
         let res = self.inner.poll_ready(cx);
-        println!("--- LspService::poll_ready inner returned {:?}", res);
+        tracing::trace!("--- LspService::poll_ready inner returned {:?}", res);
         res
     }
 
