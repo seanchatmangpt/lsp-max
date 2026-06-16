@@ -2,6 +2,7 @@ use crate::test_harness::TestHarness;
 use serde_json::json;
 
 #[tokio::test]
+#[ignore = "e2e: requires live server, run with --include-ignored"]
 async fn test_f2_t1_initial_advertisement() {
     let mut harness = TestHarness::new(2).await;
     // Set mock upstream 1 capability
@@ -47,6 +48,7 @@ async fn test_f2_t1_initial_advertisement() {
 }
 
 #[tokio::test]
+#[ignore = "e2e: requires live server, run with --include-ignored"]
 async fn test_f2_t1_dynamic_registration() {
     let mut harness = TestHarness::new(1).await;
     // Set up initial connection
@@ -102,6 +104,7 @@ async fn test_f2_t1_dynamic_registration() {
 }
 
 #[tokio::test]
+#[ignore = "e2e: requires live server, run with --include-ignored"]
 async fn test_f2_t1_dynamic_unregistration() {
     let mut harness = TestHarness::new(1).await;
     let init_params = json!({
@@ -170,6 +173,7 @@ async fn test_f2_t1_dynamic_unregistration() {
 }
 
 #[tokio::test]
+#[ignore = "e2e: requires live server, run with --include-ignored"]
 async fn test_f2_t1_intersection_rules() {
     let mut harness = TestHarness::new(2).await;
     {
@@ -202,6 +206,7 @@ async fn test_f2_t1_intersection_rules() {
 }
 
 #[tokio::test]
+#[ignore = "e2e: requires live server, run with --include-ignored"]
 async fn test_f2_t1_safety_constraint_gating() {
     let mut harness = TestHarness::new(1).await;
     {
@@ -235,6 +240,7 @@ async fn test_f2_t1_safety_constraint_gating() {
 }
 
 #[tokio::test]
+#[ignore = "e2e: requires live server, run with --include-ignored"]
 async fn test_f2_t2_dynamic_registration_duplicate() {
     let mut harness = TestHarness::new(1).await;
     let init_params = json!({
@@ -286,6 +292,7 @@ async fn test_f2_t2_dynamic_registration_duplicate() {
 }
 
 #[tokio::test]
+#[ignore = "e2e: requires live server, run with --include-ignored"]
 async fn test_f2_t2_dynamic_registration_missing_id() {
     let mut harness = TestHarness::new(1).await;
     let init_params = json!({
@@ -323,6 +330,7 @@ async fn test_f2_t2_dynamic_registration_missing_id() {
 }
 
 #[tokio::test]
+#[ignore = "e2e: requires live server, run with --include-ignored"]
 async fn test_f2_t2_intersection_with_unsupported_upstream() {
     let mut harness = TestHarness::new(2).await;
     {
@@ -365,6 +373,7 @@ async fn test_f2_t2_intersection_with_unsupported_upstream() {
 }
 
 #[tokio::test]
+#[ignore = "e2e: requires live server, run with --include-ignored"]
 async fn test_f2_t2_advertisement_client_incapable() {
     let mut harness = TestHarness::new(1).await;
     {
@@ -392,6 +401,7 @@ async fn test_f2_t2_advertisement_client_incapable() {
 }
 
 #[tokio::test]
+#[ignore = "e2e: requires live server, run with --include-ignored"]
 async fn test_f2_t2_dynamic_unregistration_nonexistent() {
     let mut harness = TestHarness::new(1).await;
     let init_params = json!({

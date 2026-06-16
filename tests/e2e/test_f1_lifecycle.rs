@@ -2,6 +2,7 @@ use crate::test_harness::TestHarness;
 use serde_json::json;
 
 #[tokio::test]
+#[ignore = "e2e: requires live server, run with --include-ignored"]
 async fn test_f1_t1_initialize_handshake() {
     let mut harness = TestHarness::new(1).await;
     let params = json!({
@@ -29,6 +30,7 @@ async fn test_f1_t1_initialize_handshake() {
 }
 
 #[tokio::test]
+#[ignore = "e2e: requires live server, run with --include-ignored"]
 async fn test_f1_t1_initialized_notification() {
     let mut harness = TestHarness::new(1).await;
     let init_params = json!({
@@ -62,6 +64,7 @@ async fn test_f1_t1_initialized_notification() {
 }
 
 #[tokio::test]
+#[ignore = "e2e: requires live server, run with --include-ignored"]
 async fn test_f1_t1_shutdown_request() {
     let mut harness = TestHarness::new(1).await;
     let init_params = json!({
@@ -83,6 +86,7 @@ async fn test_f1_t1_shutdown_request() {
 }
 
 #[tokio::test]
+#[ignore = "e2e: requires live server, run with --include-ignored"]
 async fn test_f1_t1_exit_notification() {
     let mut harness = TestHarness::new(1).await;
     let init_params = json!({
@@ -108,6 +112,7 @@ async fn test_f1_t1_exit_notification() {
 }
 
 #[tokio::test]
+#[ignore = "e2e: requires live server, run with --include-ignored"]
 async fn test_f1_t1_reject_requests_before_initialize() {
     let mut harness = TestHarness::new(1).await;
     // Sending hover before initialize
@@ -139,6 +144,7 @@ async fn test_f1_t1_reject_requests_before_initialize() {
 }
 
 #[tokio::test]
+#[ignore = "e2e: requires live server, run with --include-ignored"]
 async fn test_f1_t2_duplicate_initialize() {
     let mut harness = TestHarness::new(1).await;
     let init_params = json!({
@@ -164,6 +170,7 @@ async fn test_f1_t2_duplicate_initialize() {
 }
 
 #[tokio::test]
+#[ignore = "e2e: requires live server, run with --include-ignored"]
 async fn test_f1_t2_exit_without_shutdown() {
     let mut harness = TestHarness::new(1).await;
     let init_params = json!({
@@ -180,6 +187,7 @@ async fn test_f1_t2_exit_without_shutdown() {
 }
 
 #[tokio::test]
+#[ignore = "e2e: requires live server, run with --include-ignored"]
 async fn test_f1_t2_malformed_initialize_payload() {
     let mut harness = TestHarness::new(1).await;
     // Sending non-standard JSON payload
@@ -196,6 +204,7 @@ async fn test_f1_t2_malformed_initialize_payload() {
 }
 
 #[tokio::test]
+#[ignore = "e2e: requires live server, run with --include-ignored"]
 async fn test_f1_t2_shutdown_followed_by_request() {
     let mut harness = TestHarness::new(1).await;
     let init_params = json!({
@@ -230,6 +239,7 @@ async fn test_f1_t2_shutdown_followed_by_request() {
 }
 
 #[tokio::test]
+#[ignore = "e2e: requires live server, run with --include-ignored"]
 async fn test_f1_t2_initialize_with_unregistered_client_capabilities() {
     let mut harness = TestHarness::new(1).await;
     let init_params = json!({
