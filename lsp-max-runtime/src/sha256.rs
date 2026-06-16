@@ -212,3 +212,130 @@ pub fn validate_and_reconstruct_chain_checked(
 
     Ok((client_caps, server_caps))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // ---- sha256 core ----
+
+    #[test]
+    fn sha256_empty_known_vector() {
+        // SHA-256 of zero bytes is a fixed standard value.
+        let h = sha256(b"");
+        assert_eq!(
+            h,
+            "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        );
+    }
+
+    #[test]
+    fn sha256_output_is_64_hex_chars() {
+        let h = sha256(b"");
+        assert_eq!(h.len(), 64);
+        assert!(h.chars().all(|c| c.is_ascii_hexdigit()));
+    }
+
+    #[test]
+    fn sha256_hello_known_vector() {
+        let h = sha256(b"hello");
+        assert_eq!(
+            h,
+            "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824"
+        );
+    }
+
+    #[test]
+    fn sha256_deterministic() {
+        assert_eq!(sha256(b"hello"), sha256(b"hello"));
+    }
+
+    #[test]
+    fn sha256_differs_on_different_input() {
+        assert_ne!(sha256(b"hello"), sha256(b"world"));
+    }
+
+    // ---- validate_and_reconstruct_chain_checked ----
+
+    fn make_receipt(id: &str, hash: &str) -> lsp_max_protocol::Receipt {
+        lsp_max_protocol::Receipt {
+            receipt_id: id.to_string(),
+            hash: hash.to_string(),
+            prev_receipt_hash: None,
+        }
+    }
+
+    #[test]
+    fn chain_empty_history_is_err() {
+        let result = validate_and_reconstruct_chain_checked(&[]);
+        assert!(result.is_err(), "empty history must return Err");
+        assert!(result.unwrap_err().contains("must not be empty"));
+    }
+
+    #[test]
+    fn chain_single_valid_uninitialized_receipt() {
+        // A chain with only the genesis receipt should verify.
+        let h0 = sha256(b"rcpt-uninitialized");
+        let r0 = make_receipt("rcpt-uninitialized", &h0);
+        let result = validate_and_reconstruct_chain_checked(&[r0]);
+        assert!(result.is_ok(), "single-entry genesis chain must be CANDIDATE");
+    }
+
+    #[test]
+    fn chain_single_wrong_id_is_err() {
+        let h = sha256(b"rcpt-wrong");
+        let r = make_receipt("rcpt-wrong", &h);
+        let result = validate_and_reconstruct_chain_checked(&[r]);
+        assert!(result.is_err(), "wrong genesis receipt_id must return Err");
+    }
+
+    #[test]
+    fn chain_hash_mismatch_is_err() {
+        // Correct receipt_id but tampered hash.
+        let r = make_receipt(
+            "rcpt-uninitialized",
+            "0000000000000000000000000000000000000000000000000000000000000000",
+        );
+        let result = validate_and_reconstruct_chain_checked(&[r]);
+        assert!(result.is_err(), "hash mismatch must return Err");
+        assert!(result.unwrap_err().contains("Hash mismatch"));
+    }
+
+    #[test]
+    fn chain_two_entry_valid() {
+        // Genesis + Initializing transition with empty client caps.
+        let h0 = sha256(b"rcpt-uninitialized");
+        let r0 = make_receipt("rcpt-uninitialized", &h0);
+        let rcpt1_id = "rcpt-uninitialized-to-initializing:{}";
+        let h1 = sha256(format!("{}:{}", h0, rcpt1_id).as_bytes());
+        let r1 = make_receipt(rcpt1_id, &h1);
+        let result = validate_and_reconstruct_chain_checked(&[r0, r1]);
+        assert!(result.is_ok(), "two-entry valid chain must be CANDIDATE");
+        let (client_caps, _) = result.unwrap();
+        // Empty JSON object was embedded in the receipt_id.
+        assert_eq!(client_caps, serde_json::json!({}));
+    }
+
+    #[test]
+    fn chain_excess_entries_is_err() {
+        // Build a valid 5-entry chain then add a 6th.
+        let h0 = sha256(b"rcpt-uninitialized");
+        let r0 = make_receipt("rcpt-uninitialized", &h0);
+        let rcpt1_id = "rcpt-uninitialized-to-initializing:{}";
+        let h1 = sha256(format!("{}:{}", h0, rcpt1_id).as_bytes());
+        let r1 = make_receipt(rcpt1_id, &h1);
+        let rcpt2_id = "rcpt-initializing-to-initialized:{}";
+        let h2 = sha256(format!("{}:{}", h1, rcpt2_id).as_bytes());
+        let r2 = make_receipt(rcpt2_id, &h2);
+        let rcpt3_id = "rcpt-initialized-to-shutdown";
+        let h3 = sha256(format!("{}:{}", h2, rcpt3_id).as_bytes());
+        let r3 = make_receipt(rcpt3_id, &h3);
+        let rcpt4_id = "rcpt-shutdown-to-exited";
+        let h4 = sha256(format!("{}:{}", h3, rcpt4_id).as_bytes());
+        let r4 = make_receipt(rcpt4_id, &h4);
+        // Extra receipt beyond the protocol maximum.
+        let r_extra = make_receipt("rcpt-unknown-extra", "aaaa");
+        let result = validate_and_reconstruct_chain_checked(&[r0, r1, r2, r3, r4, r_extra]);
+        assert!(result.is_err(), "6-entry chain must return Err");
+    }
+}

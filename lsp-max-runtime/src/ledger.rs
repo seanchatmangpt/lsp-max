@@ -164,3 +164,128 @@ impl AutonomicMesh {
         report
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::mesh_types::{LspInstance, Receipt};
+
+    fn make_mesh_with_instance(instance: LspInstance) -> AutonomicMesh {
+        let mut mesh = AutonomicMesh::new();
+        mesh.add_instance(instance);
+        mesh
+    }
+
+    // ---- verify_instance_ledger: unknown instance ----
+
+    #[test]
+    fn ledger_unknown_instance_is_err() {
+        let mesh = AutonomicMesh::new();
+        let result = mesh.verify_instance_ledger("NONEXISTENT");
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("not found"));
+    }
+
+    // ---- verify_instance_ledger: empty receipt ledger ----
+
+    #[test]
+    fn ledger_empty_receipts_is_err() {
+        let instance = LspInstance::new("ANY_ID");
+        // No receipts attached — ledger is empty.
+        let mesh = make_mesh_with_instance(instance);
+        let result = mesh.verify_instance_ledger("ANY_ID");
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("empty"));
+    }
+
+    // ---- verify_instance_ledger: non-LSP_1 path (generic id check) ----
+
+    #[test]
+    fn ledger_generic_instance_valid_receipt() {
+        // For instances other than LSP_1 the verifier only checks that
+        // receipt_id and hash are non-empty.
+        let mut instance = LspInstance::new("LSP_2");
+        instance.receipts.push(Receipt {
+            receipt_id: "rcpt-some-event".to_string(),
+            hash: "deadbeef".to_string(),
+            prev_receipt_hash: None,
+        });
+        let mesh = make_mesh_with_instance(instance);
+        let result = mesh.verify_instance_ledger("LSP_2");
+        assert!(result.is_ok(), "non-empty receipt on generic instance must pass");
+    }
+
+    #[test]
+    fn ledger_generic_instance_empty_receipt_id_is_err() {
+        let mut instance = LspInstance::new("LSP_3");
+        instance.receipts.push(Receipt {
+            receipt_id: String::new(), // empty — violates the check
+            hash: "deadbeef".to_string(),
+            prev_receipt_hash: None,
+        });
+        let mesh = make_mesh_with_instance(instance);
+        let result = mesh.verify_instance_ledger("LSP_3");
+        assert!(result.is_err(), "empty receipt_id must return Err");
+        assert!(result.unwrap_err().contains("Empty receipt ID"));
+    }
+
+    #[test]
+    fn ledger_generic_instance_empty_hash_is_err() {
+        let mut instance = LspInstance::new("LSP_4");
+        instance.receipts.push(Receipt {
+            receipt_id: "rcpt-something".to_string(),
+            hash: String::new(), // empty — violates the check
+            prev_receipt_hash: None,
+        });
+        let mesh = make_mesh_with_instance(instance);
+        let result = mesh.verify_instance_ledger("LSP_4");
+        assert!(result.is_err(), "empty receipt hash must return Err");
+        assert!(result.unwrap_err().contains("Empty receipt hash"));
+    }
+
+    // ---- verify_instance_ledger: LSP_1 path — genesis receipt ----
+
+    #[test]
+    fn ledger_lsp1_valid_genesis() {
+        let mut instance = LspInstance::new("LSP_1");
+        instance.phase = LspPhase::Uninitialized;
+        let h0 = sha256(b"rcpt-uninitialized");
+        instance.receipts.push(Receipt {
+            receipt_id: "rcpt-uninitialized".to_string(),
+            hash: h0,
+            prev_receipt_hash: None,
+        });
+        let mesh = make_mesh_with_instance(instance);
+        let result = mesh.verify_instance_ledger("LSP_1");
+        assert!(result.is_ok(), "valid genesis receipt for LSP_1 must pass");
+    }
+
+    #[test]
+    fn ledger_lsp1_wrong_genesis_id_is_err() {
+        let mut instance = LspInstance::new("LSP_1");
+        instance.phase = LspPhase::Uninitialized;
+        instance.receipts.push(Receipt {
+            receipt_id: "rcpt-wrong".to_string(),
+            hash: sha256(b"rcpt-wrong"),
+            prev_receipt_hash: None,
+        });
+        let mesh = make_mesh_with_instance(instance);
+        let result = mesh.verify_instance_ledger("LSP_1");
+        assert!(result.is_err(), "wrong genesis receipt_id must return Err");
+    }
+
+    #[test]
+    fn ledger_lsp1_tampered_genesis_hash_is_err() {
+        let mut instance = LspInstance::new("LSP_1");
+        instance.phase = LspPhase::Uninitialized;
+        instance.receipts.push(Receipt {
+            receipt_id: "rcpt-uninitialized".to_string(),
+            hash: "0000000000000000000000000000000000000000000000000000000000000000"
+                .to_string(),
+            prev_receipt_hash: None,
+        });
+        let mesh = make_mesh_with_instance(instance);
+        let result = mesh.verify_instance_ledger("LSP_1");
+        assert!(result.is_err(), "tampered genesis hash must return Err");
+    }
+}
