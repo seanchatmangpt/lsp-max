@@ -81,7 +81,7 @@ async fn batch8_start(
         "jsonrpc":"2.0","id":1,"method":"initialize","params":{"capabilities":{}}
     });
     tx.write_all(&encode_message(&init)).await.unwrap();
-    let _r = tokio::time::timeout(Duration::from_secs(5), read_message(&mut reader))
+    let _r = tokio::time::timeout(Duration::from_millis(500), read_message(&mut reader))
         .await
         .unwrap()
         .unwrap();
@@ -99,7 +99,7 @@ async fn batch8_request(
     let req = serde_json::json!({"jsonrpc":"2.0","id":2,"method":method,"params":params});
     tx.write_all(&encode_message(&req)).await.unwrap();
     loop {
-        let msg = tokio::time::timeout(Duration::from_secs(5), read_message(reader))
+        let msg = tokio::time::timeout(Duration::from_millis(500), read_message(reader))
             .await
             .unwrap()
             .unwrap();
@@ -112,13 +112,13 @@ async fn batch8_request(
 async fn wait_flag_b8<T: Clone>(flag: &Arc<Mutex<Option<T>>>, label: &str) -> T {
     let start = std::time::Instant::now();
     loop {
-        if start.elapsed() > Duration::from_secs(3) {
+        if start.elapsed() > Duration::from_millis(300) {
             panic!("Timeout waiting for {}", label);
         }
         if let Some(v) = flag.lock().unwrap().clone() {
             return v;
         }
-        tokio::time::sleep(Duration::from_millis(10)).await;
+        tokio::time::sleep(Duration::from_millis(1)).await;
     }
 }
 

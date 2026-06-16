@@ -120,7 +120,7 @@ pub async fn boot_server_b1() -> (
         serde_json::json!({ "jsonrpc":"2.0","id":0,"method":"initialize","params":{"capabilities":{}} }),
     )
     .await;
-    wait_for_response_b1(responses.clone(), 0, Duration::from_secs(2)).await;
+    wait_for_response_b1(responses.clone(), 0, Duration::from_millis(200)).await;
 
     (client_tx_shared, responses, log, server_handle)
 }
@@ -133,7 +133,7 @@ async fn test_b1_initialized() {
         serde_json::json!({ "jsonrpc":"2.0","method":"initialized","params":{} }),
     )
     .await;
-    tokio::time::sleep(Duration::from_millis(50)).await;
+    tokio::time::sleep(Duration::from_millis(5)).await;
     assert!(
         *log.initialized.lock().unwrap(),
         "initialized handler was not called"
@@ -151,7 +151,7 @@ async fn test_b1_did_open() {
         }),
     )
     .await;
-    tokio::time::sleep(Duration::from_millis(50)).await;
+    tokio::time::sleep(Duration::from_millis(5)).await;
     assert!(
         *log.did_open.lock().unwrap(),
         "did_open handler was not called"
@@ -172,7 +172,7 @@ async fn test_b1_did_change() {
         }),
     )
     .await;
-    tokio::time::sleep(Duration::from_millis(50)).await;
+    tokio::time::sleep(Duration::from_millis(5)).await;
     assert!(
         *log.did_change.lock().unwrap(),
         "did_change handler was not called"
@@ -190,7 +190,7 @@ async fn test_b1_did_close() {
         }),
     )
     .await;
-    tokio::time::sleep(Duration::from_millis(50)).await;
+    tokio::time::sleep(Duration::from_millis(5)).await;
     assert!(
         *log.did_close.lock().unwrap(),
         "did_close handler was not called"
@@ -208,7 +208,7 @@ async fn test_b1_did_save() {
         }),
     )
     .await;
-    tokio::time::sleep(Duration::from_millis(50)).await;
+    tokio::time::sleep(Duration::from_millis(5)).await;
     assert!(
         *log.did_save.lock().unwrap(),
         "did_save handler was not called"
@@ -226,7 +226,7 @@ async fn test_b1_will_save() {
         }),
     )
     .await;
-    tokio::time::sleep(Duration::from_millis(50)).await;
+    tokio::time::sleep(Duration::from_millis(5)).await;
     assert!(
         *log.will_save.lock().unwrap(),
         "will_save handler was not called"
@@ -244,7 +244,7 @@ async fn test_b1_will_save_wait_until() {
         }),
     )
     .await;
-    let r = wait_for_response_b1(resp, 10, Duration::from_secs(2)).await;
+    let r = wait_for_response_b1(resp, 10, Duration::from_millis(200)).await;
     assert!(
         r.get("error").is_none(),
         "willSaveWaitUntil returned error: {:?}",
@@ -267,7 +267,7 @@ async fn test_b1_completion() {
         }),
     )
     .await;
-    let r = wait_for_response_b1(resp, 11, Duration::from_secs(2)).await;
+    let r = wait_for_response_b1(resp, 11, Duration::from_millis(200)).await;
     assert!(
         r.get("error").is_none(),
         "completion returned error: {:?}",

@@ -78,7 +78,7 @@ async fn wait_for_response_b9(
                 return guard.remove(pos);
             }
         }
-        tokio::time::sleep(Duration::from_millis(10)).await;
+        tokio::time::sleep(Duration::from_millis(1)).await;
     }
 }
 
@@ -95,7 +95,7 @@ async fn wait_for_event_b9<T: Clone>(
         if let Some(v) = cell.lock().unwrap().clone() {
             return v;
         }
-        tokio::time::sleep(Duration::from_millis(10)).await;
+        tokio::time::sleep(Duration::from_millis(1)).await;
     }
 }
 
@@ -150,7 +150,7 @@ async fn boot_batch9() -> (
         &client_tx_shared,
         serde_json::json!({"jsonrpc":"2.0","id":1,"method":"initialize","params":{"capabilities":{}}}),
     ).await;
-    wait_for_response_b9(responses.clone(), 1, Duration::from_secs(3)).await;
+    wait_for_response_b9(responses.clone(), 1, Duration::from_millis(300)).await;
     write_msg_b9(
         &client_tx_shared,
         serde_json::json!({"jsonrpc":"2.0","method":"initialized","params":{}}),
@@ -178,7 +178,7 @@ async fn shutdown_b9(
         serde_json::json!({"jsonrpc":"2.0","id":99,"method":"shutdown"}),
     )
     .await;
-    wait_for_response_b9(responses, 99, Duration::from_secs(2)).await;
+    wait_for_response_b9(responses, 99, Duration::from_millis(200)).await;
     write_msg_b9(&tx, serde_json::json!({"jsonrpc":"2.0","method":"exit"})).await;
     {
         let mut g = tx.lock().await;
@@ -208,7 +208,7 @@ async fn test_b9_notebook_document_did_save() {
 
     let saved = wait_for_event_b9(
         &events.did_save,
-        Duration::from_secs(2),
+        Duration::from_millis(200),
         "notebookDocument/didSave",
     )
     .await;
@@ -239,7 +239,7 @@ async fn test_b9_notebook_document_did_close() {
 
     let closed = wait_for_event_b9(
         &events.did_close,
-        Duration::from_secs(2),
+        Duration::from_millis(200),
         "notebookDocument/didClose",
     )
     .await;
@@ -267,7 +267,7 @@ async fn test_b9_work_done_progress_cancel() {
 
     let cancel = wait_for_event_b9(
         &events.work_done_cancel,
-        Duration::from_secs(2),
+        Duration::from_millis(200),
         "window/workDoneProgress/cancel",
     )
     .await;
@@ -296,7 +296,7 @@ async fn test_b9_progress_notification() {
     )
     .await;
 
-    let prog = wait_for_event_b9(&events.progress, Duration::from_secs(2), "$/progress").await;
+    let prog = wait_for_event_b9(&events.progress, Duration::from_millis(200), "$/progress").await;
     assert_eq!(
         prog.token,
         lsp::NumberOrString::String("progress-b9".to_string())
@@ -319,7 +319,7 @@ async fn test_b9_set_trace_notification() {
     )
     .await;
 
-    let trace = wait_for_event_b9(&events.set_trace, Duration::from_secs(2), "$/setTrace").await;
+    let trace = wait_for_event_b9(&events.set_trace, Duration::from_millis(200), "$/setTrace").await;
     assert_eq!(trace.value, lsp::TraceValue::Messages);
 
     shutdown_b9(tx, responses, server_handle, reader_handle).await;
