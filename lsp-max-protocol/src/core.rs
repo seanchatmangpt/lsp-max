@@ -269,4 +269,35 @@ mod tests {
         let r2: Receipt = serde_json::from_str(&json).expect("deserialize");
         assert_eq!(r2.prev_receipt_hash.as_deref(), Some("deadbeef"));
     }
+
+    #[test]
+    fn receipt_roundtrip_serde() {
+        // Construct a Receipt with all fields set, serialize to JSON, deserialize
+        // back, and assert field equality.
+        let r = Receipt {
+            receipt_id: "r-42".to_string(),
+            hash: "sha256:abcdef1234567890".to_string(),
+            prev_receipt_hash: Some("sha256:0000000000000000".to_string()),
+        };
+        let json = serde_json::to_string(&r).expect("serialize");
+        let r2: Receipt = serde_json::from_str(&json).expect("deserialize");
+        assert_eq!(r2.receipt_id, r.receipt_id);
+        assert_eq!(r2.hash, r.hash);
+        assert_eq!(r2.prev_receipt_hash, r.prev_receipt_hash);
+    }
+
+    #[test]
+    fn receipt_with_no_prev_hash_is_genesis() {
+        // A Receipt constructed with prev_receipt_hash = None is a genesis entry;
+        // the field must remain None after round-trip through serde.
+        let r = Receipt {
+            receipt_id: "r-genesis".to_string(),
+            hash: "sha256:genesis".to_string(),
+            prev_receipt_hash: None,
+        };
+        assert!(r.prev_receipt_hash.is_none());
+        let json = serde_json::to_string(&r).expect("serialize");
+        let r2: Receipt = serde_json::from_str(&json).expect("deserialize");
+        assert!(r2.prev_receipt_hash.is_none(), "genesis prev_receipt_hash must remain None after serde roundtrip");
+    }
 }

@@ -576,4 +576,96 @@ mod tests {
         assert!(!json.contains("refused_bits"));
         assert!(!json.contains("unknown_bits"));
     }
+
+    #[test]
+    fn empty_vector_blocks_strict() {
+        // Default vector: strict_mode=true, all sets empty.
+        // No refused axes and no unknown axes → admits_release passes.
+        // Confirm that strict_mode alone (without any unknown axes) does not
+        // block release — the block only fires when unknown is non-empty.
+        let v = ConformanceVector::default();
+        assert!(v.strict_mode);
+        assert!(v.refused.is_empty());
+        assert!(v.unknown.is_empty());
+        // empty + strict: passes because nothing is refused and nothing unknown
+        assert!(v.admits_release());
+    }
+
+    #[test]
+    fn all_admitted_passes() {
+        // Build a vector where every named axis is admitted; assert release
+        // is CANDIDATE in both strict and non-strict mode.
+        let mut cv = ConformanceVector {
+            admitted: LawAxis::all_named().to_vec(),
+            refused: vec![],
+            unknown: vec![],
+            score: Some(100.0),
+            strict_mode: true,
+            process_quality: None,
+            ..Default::default()
+        };
+        cv.sync_bits_from_vecs();
+        assert!(cv.all_admitted());
+        assert!(cv.admits_release());
+
+        cv.strict_mode = false;
+        assert!(cv.admits_release());
+    }
+
+    #[test]
+    fn refused_blocks_regardless_of_mode() {
+        // One refused axis must block admits_release in both strict and non-strict.
+        for strict in [true, false] {
+            let cv = ConformanceVector {
+                admitted: vec![LawAxis::Protocol],
+                refused: vec![LawAxis::Security],
+                unknown: vec![],
+                score: Some(50.0),
+                strict_mode: strict,
+                process_quality: None,
+                ..Default::default()
+            };
+            assert!(
+                !cv.admits_release(),
+                "refused axis must block release regardless of strict_mode (strict={})",
+                strict
+            );
+        }
+    }
+
+    #[test]
+    fn unknown_blocks_strict_only() {
+        // Unknown axes block admits_release when strict_mode=true but not when false.
+        let base = ConformanceVector {
+            admitted: vec![LawAxis::Protocol],
+            refused: vec![],
+            unknown: vec![LawAxis::Domain],
+            score: None,
+            strict_mode: true,
+            process_quality: None,
+            ..Default::default()
+        };
+        assert!(!base.admits_release(), "unknown must block in strict mode");
+
+        let lenient = ConformanceVector { strict_mode: false, ..base };
+        assert!(lenient.admits_release(), "unknown must not block in non-strict mode");
+    }
+
+    #[test]
+    fn set_unknown_then_admitted_is_disjoint() {
+        // Transition an axis from unknown → admitted via bitmask setters.
+        // After the transition the axis must be absent from the unknown set.
+        let mut cv = ConformanceVector::default();
+        cv.set_unknown(LawAxisId::PROTOCOL);
+        assert!(cv.is_unknown_bit(LawAxisId::PROTOCOL));
+        assert!(!cv.is_admitted_bit(LawAxisId::PROTOCOL));
+
+        cv.set_admitted(LawAxisId::PROTOCOL);
+        assert!(cv.is_admitted_bit(LawAxisId::PROTOCOL));
+        assert!(
+            !cv.is_unknown_bit(LawAxisId::PROTOCOL),
+            "axis must leave unknown set after transitioning to admitted"
+        );
+        cv.assert_bitmask_invariants();
+    }
 }
