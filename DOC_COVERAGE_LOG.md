@@ -361,3 +361,43 @@ rendered-but-fabricated: **0** (inviolable). exposed-but-unrepresented: 3
 
 ### Hard stops
 None.
+
+---
+
+## Iteration 9 — 2026-06-14 · OCEL process evidence representation
+
+### Gap closed: OCEL process evidence (web representation)
+
+- **gap** — `web/REPRESENTATION_MAP.md` listed "OCEL process evidence" as
+  `❌ exposed-but-unrepresented`. Real `*.ocel.json` files existed in
+  `crates/playground/ocel/` and `examples/anti-llm-cheat-lsp/ocel/` with no web
+  page rendering their content.
+- **data boundary** — `web/lib/project.ts`: added `OcelFile` interface and
+  `readOcelEvidence()`. Reads every `*.ocel.json` under the two known OCEL
+  directories; handles both OCEL2 array format (`admitted_evidence.ocel.json`) and
+  object-keyed format (`anti_llm_lsp_ocel.json`). Files lacking both an `events` and
+  `eventTypes` key are skipped (e.g. plain string-array inventories like
+  `ocel_event_inventory.json`, `ocel_object_inventory.json`). Throws if no OCEL
+  directory is present — the witness against fabrication.
+- **page** — `web/app/ocel/page.tsx`: RSC with `export const dynamic = "force-dynamic"`.
+  Renders each parsed OCEL file as a card: filename, event types list, object types
+  list, event/object counts, and a sample-events table (first 5 events with id, type,
+  timestamp). Source footnote per card.
+- **nav** — `web/app/layout.tsx`: added `<Link href="/ocel">OCEL</Link>` to the nav.
+- **gap map** — `web/REPRESENTATION_MAP.md`: updated OCEL row to
+  `✅ represented (iter 9)`; exposed-but-unrepresented decremented from 3 to 2.
+
+### Real data sourced (not fabricated)
+
+| File | Format | Events | Objects |
+|---|---|---|---|
+| `crates/playground/ocel/admitted_evidence.ocel.json` | OCEL2 array | 10 | 10 |
+| `examples/anti-llm-cheat-lsp/ocel/anti_llm_lsp_ocel.json` | object-keyed | 8 | 17 |
+
+Inventory files (`ocel_event_inventory.json`, `ocel_object_inventory.json`) are plain
+JSON arrays — they have no `events` or `eventTypes` key and are correctly skipped by
+the parser. No fixture data invented; every rendered value is read from disk at
+request time.
+
+### Hard stops
+None.

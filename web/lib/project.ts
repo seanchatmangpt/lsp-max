@@ -262,6 +262,132 @@ export async function readConformanceSurface(): Promise<ConformanceSurface> {
   return { axes, pipelineStates, sourceFile: CONFORMANCE_RS };
 }
 
+/** A single OCEL file's parsed summary. Every field comes from real *.ocel.json
+ *  data; the interface documents which OCEL2 keys were actually present. */
+export interface OcelFile {
+  sourceFile: string; // real path relative to repo root
+  eventTypes: { name: string }[];
+  objectTypes: { name: string }[];
+  eventCount: number;
+  objectCount: number;
+  sampleEvents: { id: string; type: string; time: string }[];
+}
+
+const OCEL_DIRS = [
+  "crates/playground/ocel",
+  "examples/anti-llm-cheat-lsp/ocel",
+];
+
+/** Read every real *.ocel.json under the known OCEL directories. Parses OCEL2
+ *  array format (events/objects are arrays) and object-keyed format (events/objects
+ *  are plain objects). Files that lack both an `events` and `eventTypes` key are
+ *  silently skipped (e.g. plain inventory arrays). Throws if no OCEL directory
+ *  exists at all — the project must be present. */
+export async function readOcelEvidence(): Promise<OcelFile[]> {
+  const found: OcelFile[] = [];
+  let anyDir = false;
+  for (const dir of OCEL_DIRS) {
+    const absDir = path.join(REPO_ROOT, dir);
+    let entries: string[];
+    try {
+      entries = await fs.readdir(absDir);
+    } catch {
+      continue; // dir may not exist in every checkout
+    }
+    anyDir = true;
+    for (const name of entries.sort()) {
+      if (!name.endsWith(".ocel.json")) continue;
+      const abs = path.join(absDir, name);
+      let raw: unknown;
+      try {
+        raw = await readJsonFile(abs);
+      } catch {
+        continue; // skip unparseable files
+      }
+      if (typeof raw !== "object" || raw === null) continue;
+      const obj = raw as Record<string, unknown>;
+
+      // Skip files that carry no event data (e.g. plain string-array inventories).
+      const hasEvents = "events" in obj || "eventTypes" in obj;
+      if (!hasEvents) continue;
+
+      // eventTypes: OCEL2 uses an array; some files use an object keyed by name.
+      let eventTypes: { name: string }[] = [];
+      if (Array.isArray(obj.eventTypes)) {
+        eventTypes = (obj.eventTypes as Record<string, unknown>[]).flatMap(
+          (et) =>
+            typeof et === "object" && et !== null && typeof (et as Record<string, unknown>).name === "string"
+              ? [{ name: (et as Record<string, unknown>).name as string }]
+              : [],
+        );
+      } else if (typeof obj.eventTypes === "object" && obj.eventTypes !== null) {
+        // object-keyed: { TypeName: { ... } } — keys are the type names.
+        eventTypes = Object.keys(obj.eventTypes as object).map((n) => ({ name: n }));
+      }
+
+      // objectTypes: same dual shape.
+      let objectTypes: { name: string }[] = [];
+      if (Array.isArray(obj.objectTypes)) {
+        objectTypes = (obj.objectTypes as Record<string, unknown>[]).flatMap(
+          (ot) =>
+            typeof ot === "object" && ot !== null && typeof (ot as Record<string, unknown>).name === "string"
+              ? [{ name: (ot as Record<string, unknown>).name as string }]
+              : [],
+        );
+      } else if (typeof obj.objectTypes === "object" && obj.objectTypes !== null) {
+        objectTypes = Object.keys(obj.objectTypes as object).map((n) => ({ name: n }));
+      }
+
+      // events: array or object-keyed.
+      let events: { id: string; type: string; time: string }[] = [];
+      if (Array.isArray(obj.events)) {
+        events = (obj.events as Record<string, unknown>[]).flatMap((ev) => {
+          if (typeof ev !== "object" || ev === null) return [];
+          const e = ev as Record<string, unknown>;
+          return [
+            {
+              id: typeof e.id === "string" ? e.id : String(e.id ?? ""),
+              type: typeof e.type === "string" ? e.type : String(e.type ?? ""),
+              time: typeof e.time === "string" ? e.time : String(e.time ?? ""),
+            },
+          ];
+        });
+      } else if (typeof obj.events === "object" && obj.events !== null) {
+        events = Object.entries(obj.events as Record<string, Record<string, unknown>>).map(
+          ([id, ev]) => ({
+            id,
+            type: typeof ev.type === "string" ? ev.type : String(ev.type ?? ""),
+            time: typeof ev.time === "string" ? ev.time : String(ev.time ?? ""),
+          }),
+        );
+      }
+
+      // objects: count only (the full list is not needed for the summary).
+      let objectCount = 0;
+      if (Array.isArray(obj.objects)) {
+        objectCount = (obj.objects as unknown[]).length;
+      } else if (typeof obj.objects === "object" && obj.objects !== null) {
+        objectCount = Object.keys(obj.objects as object).length;
+      }
+
+      found.push({
+        sourceFile: path.join(dir, name),
+        eventTypes,
+        objectTypes,
+        eventCount: events.length,
+        objectCount,
+        sampleEvents: events.slice(0, 5),
+      });
+    }
+  }
+  if (!anyDir) {
+    throw new Error(
+      `No OCEL directory found under ${REPO_ROOT}. The lsp-max OCEL process evidence is missing — the UI represents real OCEL data only.`,
+    );
+  }
+  return found;
+}
+
 /** Workspace version, read from the real Cargo.toml (CalVer YY.M.D). */
 export async function readWorkspaceVersion(): Promise<string> {
   const cargo = await fs.readFile(path.join(REPO_ROOT, "Cargo.toml"), "utf8");
