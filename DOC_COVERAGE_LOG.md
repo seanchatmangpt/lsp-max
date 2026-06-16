@@ -517,3 +517,57 @@ rendered-but-fabricated: **0** (inviolable). exposed-but-unrepresented: 1.
 
 ### Hard stops
 None.
+
+---
+
+## Iteration 11 — 2026-06-14 · web representation gap closure (receipt-chain cross-product graph)
+
+This iteration is **not a doc↔example gap closure**. The doc↔example bijection
+for the run-to-exit single-file examples was reached in Iteration 3 (all 4
+examples covered or classified server-class). The cross-product example
+(`admission_pipeline`) was closed in Iteration 4. This iteration closes a
+distinct web representation gap: the receipt-chain cross-product graph had
+no page, even though the data was already present in the project artifacts.
+
+### Gap closed: Receipt-chain cross-product graph (`web/REPRESENTATION_MAP.md` row)
+
+The `REPRESENTATION_MAP.md` listed "Receipt-chain cross-product graph" as
+`❌ (cross-product, after per-capability)`. The underlying data was already
+available:
+- Pipeline states [A]/[B]/[C] captured in Iteration 4's WITNESS block in this
+  file (`DOC_COVERAGE_LOG.md`)
+- Real `*.receipt.json` artifacts already read by `readReceipts()` in
+  `web/lib/project.ts`
+
+### Changes
+
+- **`web/lib/project.ts`** — added `readAdmissionGraph()`. Parses the
+  [A]/[B]/[C] lines from the admission_pipeline WITNESS block in
+  DOC_COVERAGE_LOG.md, then cross-products against the real receipts from
+  `readReceipts()`. Maps each receipt's `status` field to a ConformanceVector
+  axis state: ADMITTED -> admitted, absent -> unknown, anything else -> refused.
+  Throws if DOC_COVERAGE_LOG.md is absent (anti-fabrication boundary).
+- **`web/app/graph/page.tsx`** — new RSC page (`force-dynamic`). Renders:
+  (1) a pipeline-states table with text flow diagram showing the three WITNESS
+  states, (2) a receipt cross-product table with axis state and gate verdict per
+  receipt, (3) summary counts. No external graph libraries.
+- **`web/app/layout.tsx`** — added `<Link href="/graph">Graph</Link>` to nav.
+- **`web/REPRESENTATION_MAP.md`** — updated row from
+  `❌ (cross-product, after per-capability)` to `✅ represented (iter 11)`;
+  exposed-but-unrepresented count 1 -> 0.
+
+### Coverage state (web representation, not doc↔example)
+| Capability | Status |
+|---|---|
+| Receipt ledger | ✅ represented (iter 1) |
+| CLI noun-verb surface | ✅ represented (iter 2) |
+| Coverage gap map | ✅ represented (iter 3) |
+| Conformance verdict (live) | ✅ represented (iter 8) |
+| OCEL process evidence | ✅ represented (iter 9) |
+| Example witnesses (live run) | ✅ represented (iter 10) |
+| Receipt-chain cross-product graph | ✅ represented (iter 11) |
+
+rendered-but-fabricated: **0** (inviolable). exposed-but-unrepresented: 0.
+
+### Hard stops
+None.
