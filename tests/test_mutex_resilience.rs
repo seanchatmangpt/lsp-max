@@ -85,7 +85,7 @@ async fn wait_for_response(received: RxLog, id: i64, timeout: Duration) -> serde
                 return guard.remove(pos);
             }
         }
-        tokio::time::sleep(Duration::from_millis(10)).await;
+        tokio::time::sleep(Duration::from_millis(1)).await;
     }
 }
 
@@ -140,7 +140,7 @@ async fn boot_initialized_server() -> (
         }),
     )
     .await;
-    wait_for_response(received.clone(), 1, Duration::from_secs(5)).await;
+    wait_for_response(received.clone(), 1, Duration::from_millis(500)).await;
 
     // Send initialized notification
     write_msg(
@@ -153,7 +153,7 @@ async fn boot_initialized_server() -> (
     )
     .await;
 
-    tokio::time::sleep(Duration::from_millis(50)).await;
+    tokio::time::sleep(Duration::from_millis(5)).await;
 
     (client_tx_shared, received, server_handle, guard)
 }
@@ -175,7 +175,7 @@ async fn test_mesh_rpc_snapshot_succeeds_on_healthy_registry() {
     )
     .await;
 
-    let resp = wait_for_response(received, 99, Duration::from_secs(5)).await;
+    let resp = wait_for_response(received, 99, Duration::from_millis(500)).await;
     // Should get a result (not an error) — registry lock is healthy.
     assert!(resp.get("result").is_some(), "expected result, got: {resp}");
 }
@@ -197,7 +197,7 @@ async fn test_mesh_rpc_conformance_vector_succeeds_on_healthy_registry() {
     )
     .await;
 
-    let resp = wait_for_response(received, 100, Duration::from_secs(5)).await;
+    let resp = wait_for_response(received, 100, Duration::from_millis(500)).await;
     assert!(
         resp.get("result").is_some(),
         "expected result from conformanceVector, got: {resp}"
