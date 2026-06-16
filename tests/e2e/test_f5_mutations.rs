@@ -2,6 +2,7 @@ use crate::test_harness::TestHarness;
 use serde_json::json;
 
 #[tokio::test]
+#[ignore = "e2e: requires live server, run with --include-ignored"]
 async fn test_f5_t1_edit_gate_accept() {
     let mut harness = TestHarness::new(1).await;
     let init_params = json!({
@@ -38,6 +39,7 @@ async fn test_f5_t1_edit_gate_accept() {
 }
 
 #[tokio::test]
+#[ignore = "e2e: requires live server, run with --include-ignored"]
 async fn test_f5_t1_edit_gate_refuse() {
     let mut harness = TestHarness::new(1).await;
     let init_params = json!({
@@ -79,6 +81,7 @@ async fn test_f5_t1_edit_gate_refuse() {
 }
 
 #[tokio::test]
+#[ignore = "e2e: requires live server, run with --include-ignored"]
 async fn test_f5_t1_edit_gate_stale() {
     let mut harness = TestHarness::new(1).await;
     let init_params = json!({
@@ -131,6 +134,7 @@ async fn test_f5_t1_edit_gate_stale() {
 }
 
 #[tokio::test]
+#[ignore = "e2e: requires live server, run with --include-ignored"]
 async fn test_f5_t1_overlapping_edits() {
     let mut harness = TestHarness::new(2).await;
     let init_params = json!({
@@ -182,6 +186,7 @@ async fn test_f5_t1_overlapping_edits() {
 }
 
 #[tokio::test]
+#[ignore = "e2e: requires live server, run with --include-ignored"]
 async fn test_f5_t1_needs_rebase() {
     let mut harness = TestHarness::new(1).await;
     let init_params = json!({
@@ -220,6 +225,7 @@ async fn test_f5_t1_needs_rebase() {
 }
 
 #[tokio::test]
+#[ignore = "e2e: requires live server, run with --include-ignored"]
 async fn test_f5_t2_empty_edit_list() {
     let mut harness = TestHarness::new(1).await;
     let init_params = json!({
@@ -249,6 +255,7 @@ async fn test_f5_t2_empty_edit_list() {
 }
 
 #[tokio::test]
+#[ignore = "e2e: requires live server, run with --include-ignored"]
 async fn test_f5_t2_adjacent_non_overlapping() {
     let mut harness = TestHarness::new(2).await;
     let init_params = json!({
@@ -295,6 +302,7 @@ async fn test_f5_t2_adjacent_non_overlapping() {
 }
 
 #[tokio::test]
+#[ignore = "e2e: requires live server, run with --include-ignored"]
 async fn test_f5_t2_rebase_failure() {
     let mut harness = TestHarness::new(1).await;
     let init_params = json!({
@@ -347,6 +355,7 @@ async fn test_f5_t2_rebase_failure() {
 }
 
 #[tokio::test]
+#[ignore = "e2e: requires live server, run with --include-ignored"]
 async fn test_f5_t2_transactional_rollback() {
     let mut harness = TestHarness::new(1).await;
     let init_params = json!({
@@ -391,6 +400,7 @@ async fn test_f5_t2_transactional_rollback() {
 }
 
 #[tokio::test]
+#[ignore = "e2e: requires live server, run with --include-ignored"]
 async fn test_f5_t2_user_choice_reconciliation() {
     let mut harness = TestHarness::new(1).await;
     let init_params = json!({

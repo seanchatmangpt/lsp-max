@@ -43,7 +43,7 @@ impl CompositionState {
         for (id, addr) in upstream_addresses {
             tracker.add_source(UpstreamSource::new(id, addr));
         }
-        let upstream_timeout_ms = std::env::var("TOWER_LSP_MAX_TIMEOUT")
+        let upstream_timeout_ms = std::env::var("LSP_MAX_TIMEOUT")
             .ok()
             .and_then(|v| v.parse::<u64>().ok())
             .unwrap_or(150);

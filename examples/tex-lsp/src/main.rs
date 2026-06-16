@@ -121,7 +121,7 @@ fn run_verification_domain_logic() -> Result<bool, clap_noun_verb::error::NounVe
                 "Bad path",
             ))
         })?;
-        let uri: lsp_max::lsp_types_max::Url = url.as_str().parse().unwrap();
+        let uri: lsp_max::lsp_types_max::Uri = url.as_str().parse().unwrap();
 
         adapter.handle_did_open(
             lsp_max::lsp_types_max::DidOpenTextDocumentParams {

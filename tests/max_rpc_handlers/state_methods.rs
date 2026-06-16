@@ -17,7 +17,7 @@ async fn test_max_run_gate_returns_bool() {
         }),
     )
     .await;
-    let resp = wait_for_response(rx, 1, Duration::from_secs(5)).await;
+    let resp = wait_for_response(rx, 1, Duration::from_millis(500)).await;
 
     let result = expect_result(&resp);
     assert!(
@@ -42,7 +42,7 @@ async fn test_max_conformance_vector() {
         serde_json::json!({"jsonrpc":"2.0","id":1,"method":"max/snapshot"}),
     )
     .await;
-    let resp = wait_for_response(rx.clone(), 1, Duration::from_secs(3)).await;
+    let resp = wait_for_response(rx.clone(), 1, Duration::from_millis(300)).await;
     let snap_id: SnapshotId = serde_json::from_value(expect_result(&resp).clone()).unwrap();
 
     write_msg(
@@ -54,7 +54,7 @@ async fn test_max_conformance_vector() {
         }),
     )
     .await;
-    let resp = wait_for_response(rx, 2, Duration::from_secs(3)).await;
+    let resp = wait_for_response(rx, 2, Duration::from_millis(300)).await;
     let cv: ConformanceVector = serde_json::from_value(expect_result(&resp).clone()).unwrap();
 
     let admitted_set: std::collections::HashSet<String> =
@@ -77,7 +77,7 @@ async fn test_max_instance_list() {
         serde_json::json!({"jsonrpc":"2.0","id":1,"method":"max/instanceList"}),
     )
     .await;
-    let resp = wait_for_response(rx, 1, Duration::from_secs(3)).await;
+    let resp = wait_for_response(rx, 1, Duration::from_millis(300)).await;
     let result = expect_result(&resp);
 
     assert!(
@@ -125,7 +125,7 @@ async fn test_rpc_run_gate_returns_true_when_no_diagnostics() {
         }),
     )
     .await;
-    let resp = wait_for_response(rx, 1, Duration::from_secs(5)).await;
+    let resp = wait_for_response(rx, 1, Duration::from_millis(500)).await;
     let result = expect_result(&resp);
     assert!(result.is_boolean(), "max/runGate must return a boolean");
     assert_eq!(
@@ -149,7 +149,7 @@ async fn test_rpc_run_gate_returns_false_when_diagnostic_references_gate() {
         }),
     )
     .await;
-    let resp1 = wait_for_response(rx.clone(), 1, Duration::from_secs(5)).await;
+    let resp1 = wait_for_response(rx.clone(), 1, Duration::from_millis(500)).await;
     let result1 = expect_result(&resp1);
     assert_eq!(
         result1,
@@ -166,7 +166,7 @@ async fn test_rpc_run_gate_returns_false_when_diagnostic_references_gate() {
         }),
     )
     .await;
-    let resp2 = wait_for_response(rx, 2, Duration::from_secs(5)).await;
+    let resp2 = wait_for_response(rx, 2, Duration::from_millis(500)).await;
     let result2 = expect_result(&resp2);
     assert!(
         result2.is_boolean(),
@@ -184,7 +184,7 @@ async fn test_max_lsif_export() {
         serde_json::json!({"jsonrpc":"2.0","id":99,"method":"max/lsif"}),
     )
     .await;
-    let resp = wait_for_response(rx, 99, Duration::from_secs(3)).await;
+    let resp = wait_for_response(rx, 99, Duration::from_millis(300)).await;
 
     let lsif_str: String = serde_json::from_value(expect_result(&resp).clone()).unwrap();
     assert!(lsif_str.contains("\"label\":\"metaData\""));

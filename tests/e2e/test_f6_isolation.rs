@@ -2,6 +2,7 @@ use crate::test_harness::TestHarness;
 use serde_json::json;
 
 #[tokio::test]
+#[ignore = "e2e: requires live server, run with --include-ignored"]
 async fn test_f6_t1_upstream_crash_isolation() {
     let mut harness = TestHarness::new(2).await;
     let init_params = json!({
@@ -35,6 +36,7 @@ async fn test_f6_t1_upstream_crash_isolation() {
 }
 
 #[tokio::test]
+#[ignore = "e2e: requires live server, run with --include-ignored"]
 async fn test_f6_t1_upstream_timeout_partial_results() {
     let mut harness = TestHarness::new(2).await;
     let init_params = json!({
@@ -76,6 +78,7 @@ async fn test_f6_t1_upstream_timeout_partial_results() {
 }
 
 #[tokio::test]
+#[ignore = "e2e: requires live server, run with --include-ignored"]
 async fn test_f6_t1_upstream_invalid_json_rpc() {
     let mut harness = TestHarness::new(2).await;
     let init_params = json!({
@@ -109,6 +112,7 @@ async fn test_f6_t1_upstream_invalid_json_rpc() {
 }
 
 #[tokio::test]
+#[ignore = "e2e: requires live server, run with --include-ignored"]
 async fn test_f6_t1_source_degradation() {
     let mut harness = TestHarness::new(1).await;
     let init_params = json!({
@@ -146,6 +150,7 @@ async fn test_f6_t1_source_degradation() {
 }
 
 #[tokio::test]
+#[ignore = "e2e: requires live server, run with --include-ignored"]
 async fn test_f6_t1_reject_unsafe_edit() {
     let mut harness = TestHarness::new(1).await;
     let init_params = json!({
@@ -185,6 +190,7 @@ async fn test_f6_t1_reject_unsafe_edit() {
 }
 
 #[tokio::test]
+#[ignore = "e2e: requires live server, run with --include-ignored"]
 async fn test_f6_t2_upstream_infinite_loop() {
     let mut harness = TestHarness::new(1).await;
     let init_params = json!({
@@ -215,6 +221,7 @@ async fn test_f6_t2_upstream_infinite_loop() {
 }
 
 #[tokio::test]
+#[ignore = "e2e: requires live server, run with --include-ignored"]
 async fn test_f6_t2_recovery_from_degradation() {
     let mut harness = TestHarness::new(1).await;
     let init_params = json!({
@@ -260,6 +267,7 @@ async fn test_f6_t2_recovery_from_degradation() {
 }
 
 #[tokio::test]
+#[ignore = "e2e: requires live server, run with --include-ignored"]
 async fn test_f6_t2_all_upstreams_dead() {
     let mut harness = TestHarness::new(2).await;
     let init_params = json!({
@@ -293,6 +301,7 @@ async fn test_f6_t2_all_upstreams_dead() {
 }
 
 #[tokio::test]
+#[ignore = "e2e: requires live server, run with --include-ignored"]
 async fn test_f6_t2_partial_timeout_no_results() {
     let mut harness = TestHarness::new(2).await;
     let init_params = json!({
@@ -335,6 +344,7 @@ async fn test_f6_t2_partial_timeout_no_results() {
 }
 
 #[tokio::test]
+#[ignore = "e2e: requires live server, run with --include-ignored"]
 async fn test_f6_t2_channel_disconnect_handling() {
     let mut harness = TestHarness::new(1).await;
     let init_params = json!({

@@ -17,7 +17,7 @@ all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
-clap = { version = "4.4", features = ["derive"] }
+clap = { version = "4", features = ["derive"] }
 clap-noun-verb = "26.6.2"
 clap-noun-verb-macros = "26.6.2"
 tokio = { version = "1", features = ["full"] }
@@ -32,7 +32,7 @@ memchr = "2.5"
 rustc-hash = { workspace = true }
 lsp-max = { path = "../../" }
 parking_lot = { workspace = true }
-lsp-types-max = { path = "../../../lsp-types-max", version = "26.6.8", features = ["proposed"] }
+lsp-types-max = { path = "../../../lsp-types-max", version = "26.6.5", features = ["proposed"] }
 chrono = { version = "0.4", features = ["serde"] }
 url = "2.5"
 tree-sitter = { workspace = true }

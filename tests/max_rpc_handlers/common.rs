@@ -78,7 +78,7 @@ pub async fn wait_for_response(received: RxLog, id: i64, timeout: Duration) -> s
                 return guard.remove(pos);
             }
         }
-        tokio::time::sleep(Duration::from_millis(10)).await;
+        tokio::time::sleep(Duration::from_millis(1)).await;
     }
 }
 
@@ -122,7 +122,7 @@ pub async fn boot_server() -> (TxShared, RxLog, tokio::task::JoinHandle<()>, Ser
         serde_json::json!({"jsonrpc":"2.0","id":0,"method":"initialize","params":{"capabilities":{}}}),
     )
     .await;
-    wait_for_response(received.clone(), 0, Duration::from_secs(3)).await;
+    wait_for_response(received.clone(), 0, Duration::from_millis(300)).await;
 
     (client_tx_shared, received, server_handle, _guard)
 }

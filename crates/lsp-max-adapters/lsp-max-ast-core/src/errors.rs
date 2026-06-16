@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>
 use std::{collections::HashMap, path::PathBuf, str::Utf8Error};
 
 use ariadne::{ColorGenerator, Fmt, Label, ReportBuilder, Source};
-use lsp_types_max::Url;
+use lsp_types_max::Uri as Url;
 use thiserror::Error;
 
 use crate::document::Document;

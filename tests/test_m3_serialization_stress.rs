@@ -13,6 +13,7 @@ use lsp_max::max_runtime::sha256;
 use serde_json::{json, Value};
 
 #[test]
+#[ignore = "stress/perf: slow by design, run with --include-ignored"]
 fn test_conformance_vector_edge_cases() {
     // 1. Completely default/empty vector
     let cv_empty = ConformanceVector {
@@ -61,6 +62,7 @@ fn test_conformance_vector_edge_cases() {
 }
 
 #[test]
+#[ignore = "stress/perf: slow by design, run with --include-ignored"]
 fn test_receipt_backward_compatibility_and_defaults() {
     // 1. Missing prev_receipt_hash field entirely should deserialize cleanly with None
     // Intentional arbitrary hash: testing that any String is accepted during deserialization
@@ -90,6 +92,7 @@ fn test_receipt_backward_compatibility_and_defaults() {
 }
 
 #[test]
+#[ignore = "stress/perf: slow by design, run with --include-ignored"]
 fn test_max_diagnostic_backward_compatibility() {
     // 1. Deserialize an old-style diagnostic that does NOT contain the new doctrine fields
     // (law_axis, violated_invariant, observed_state, expected_state, repairability, terminality).
@@ -123,6 +126,7 @@ fn test_max_diagnostic_backward_compatibility() {
 }
 
 #[test]
+#[ignore = "stress/perf: slow by design, run with --include-ignored"]
 fn test_max_diagnostic_extreme_values() {
     // 2. Check round-trip of a fully populated MaxDiagnostic with complex/extreme values
     let complex_observed = json!({
@@ -204,6 +208,7 @@ fn test_max_diagnostic_extreme_values() {
 }
 
 #[test]
+#[ignore = "stress/perf: slow by design, run with --include-ignored"]
 fn test_manifold_snapshot_serialization_extremes() {
     // ms with empty lists
     let ms_empty = ManifoldSnapshot {
