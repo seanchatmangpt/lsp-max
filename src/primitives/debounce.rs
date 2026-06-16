@@ -94,6 +94,38 @@ where
         multiplier = tracing::field::Empty,
     )
 )]
+pub fn debounce_adaptive<F, Fut>(
+    store: DocumentStore,
+    uri: Url,
+    base_delay: Duration,
+    f: F,
+) -> DebounceHandle
+where
+    F: Fn() -> Fut + Send + 'static,
+    Fut: Future<Output = ()> + Send + 'static,
+{
+    let (tx, mut rx) = watch::channel(());
+    let handle = DebounceHandle { tx: Arc::new(tx) };
+
+    let span = tracing::Span::current();
+    tokio::spawn(async move {
+        loop {
+            if rx.changed().await.is_err() {
+                break;
+            }
+            let acts = store.activation_count(&uri);
+            let multiplier = (acts as f64 / 10.0).sqrt().clamp(1.0, 8.0);
+            span.record("activations", acts);
+            span.record("multiplier", multiplier);
+            let delay = base_delay.mul_f64(multiplier);
+            while let Ok(Ok(())) = time::timeout(delay, rx.changed()).await {}
+            f().await;
+        }
+    });
+
+    handle
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -156,36 +188,4 @@ mod tests {
         tokio::time::sleep(Duration::from_millis(80)).await;
         assert_eq!(counter.load(Ordering::SeqCst), 1);
     }
-}
-
-pub fn debounce_adaptive<F, Fut>(
-    store: DocumentStore,
-    uri: Url,
-    base_delay: Duration,
-    f: F,
-) -> DebounceHandle
-where
-    F: Fn() -> Fut + Send + 'static,
-    Fut: Future<Output = ()> + Send + 'static,
-{
-    let (tx, mut rx) = watch::channel(());
-    let handle = DebounceHandle { tx: Arc::new(tx) };
-
-    let span = tracing::Span::current();
-    tokio::spawn(async move {
-        loop {
-            if rx.changed().await.is_err() {
-                break;
-            }
-            let acts = store.activation_count(&uri);
-            let multiplier = (acts as f64 / 10.0).sqrt().clamp(1.0, 8.0);
-            span.record("activations", acts);
-            span.record("multiplier", multiplier);
-            let delay = base_delay.mul_f64(multiplier);
-            while let Ok(Ok(())) = time::timeout(delay, rx.changed()).await {}
-            f().await;
-        }
-    });
-
-    handle
 }
