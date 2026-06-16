@@ -39,6 +39,7 @@ export default async function Home() {
           <span className="stat-l">covered capabilities</span>
         </Link>
         <div className="stat">
+          {/* cov.gaps counts ❌-row table entries in DOC_COVERAGE_LOG.md — iter 13 adds no new gap rows (test consolidation status uses prose, not table emoji rows) */}
           <span className="stat-n">{cov.gaps}</span>
           <span className="stat-l">open gaps</span>
         </div>

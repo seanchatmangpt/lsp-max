@@ -662,3 +662,135 @@ rendered-but-fabricated: **0** (inviolable). exposed-but-unrepresented: 0.
 Build requires sibling repos (`../lsp-types-max`, `../wasm4pm-compat`,
 `../wasm4pm`). No live cargo build or example run was executed in this
 session. Items 1–3 are **CANDIDATE**, not ADMITTED.
+
+---
+
+## Iteration 13 — 2026-06-14 · branch claude/admiring-gates-4u6lqm · test consolidation
+
+### Scope
+
+This iteration is **not a doc↔example gap closure** for the run-to-exit scope
+(which reached bijection in Iteration 3). It records a test-suite consolidation
+pass targeting a default `cargo test` wall-clock ≤ 5 seconds, with slow and
+infrastructure-bound tests moved behind `--include-ignored`.
+
+### Finding 1 — e2e tests marked `#[ignore]`
+
+~96 tests across 16 files under `tests/e2e/` marked `#[ignore]`. These tests
+require a live LSP server loop (stdio transport, async task coordination) and
+are unsuitable for the fast default test run. They remain available via:
+`cargo test --include-ignored` or `just test-pre-publish`.
+
+Files affected: the full `tests/e2e/` directory (16 test suite files).
+
+Status: **CANDIDATE** (build/run not verified in this session — sibling repos
+required).
+
+### Finding 2 — stress/perf tests marked `#[ignore]`
+
+4 test files marked `#[ignore]`:
+- `test_challenger_m2_stress`
+- `test_m3_serialization_stress`
+- `test_perf_admission`
+- `test_compositor_perf_admission`
+
+These tests are wall-clock intensive by design (throughput / saturation
+measurements) and should not gate the default short-circuit run. Available via
+`--include-ignored`.
+
+Status: **CANDIDATE**.
+
+### Finding 3 — timeout budget reductions
+
+Timeout literals reduced from blocking values to development-friendly
+fast-fail values across the following test files:
+
+| File / suite | Before | After |
+|---|---|---|
+| `tests/lsp318_capabilities/` | `from_secs(5)` | `from_millis(500)` |
+| `tests/lsp318_capabilities/` | `from_secs(3)` | `from_millis(300)` |
+| `tests/max_rpc_handlers/` | `from_secs(5)` | `from_millis(500)` |
+| `test_mutex_resilience` | `from_secs(2)` | `from_millis(200)` |
+| `tests/dogfood_loop/` | `from_secs(1)` | `from_millis(100)` |
+| `tests/challenger_m2/` | `from_secs(5)` | `from_millis(500)` |
+| `tests/autonomic_mesh/` | `from_secs(5)` | `from_millis(500)` |
+| misc test files | `from_secs(1/2/3)` | `from_millis(100/200/300)` |
+
+All fast-path tests still time out if the implementation regresses — the
+reduced budgets are not permission slips for slowness; they fail faster under
+a hung or broken implementation.
+
+Status: **CANDIDATE**.
+
+### Finding 4 — fixed sleep reductions
+
+`tokio::time::sleep` / `std::thread::sleep` literals reduced:
+
+| Suite | Before | After |
+|---|---|---|
+| Integration tests (general) | `50ms` | `5ms` |
+| Integration tests (general) | `100ms` | `10ms` |
+| Integration tests (general) | `10ms` | `1ms` |
+
+These sleeps were stabilization pauses inserted before async tasks were
+properly awaited. The reduced values maintain ordering guarantees without
+inflating wall-clock time.
+
+Status: **CANDIDATE**.
+
+### Finding 5 — new inline unit tests (composition layer, protocol types, gate/primitives, jsonrpc/service, runtime)
+
+Inline `#[test]` modules added directly to production source files to close the
+inline-test gap noted in Iteration 6 (composition internals had 0 inline `#[test]`
+— coverage was entirely indirect through integration tests):
+
+- **Composition layer** (`src/composition/`): 439 lines of new unit tests covering
+  `strategy.rs`, `capability_tracker.rs`, `merge.rs` pure logic. Tests assert
+  `degrade_source` removes a source from `routable_sources_for_method`,
+  `merge_attributed` deduplicates and attributes observations, and `SourceHealth`
+  variant transitions are correct.
+- **Protocol types** (`lsp-max-protocol/src/`): inline tests for `ConformanceVector`
+  state-machine transitions and `Receipt` carrier struct.
+- **Gate/primitives** (`src/gate.rs`): inline tests for `admits_release` under all
+  three `SourceHealth` states.
+- **jsonrpc/service** (`src/`): inline tests for `Router` dispatch and
+  `ExitedError` equality / accessor.
+- **Runtime** (`lsp-max-runtime/src/`): inline tests for phase transition guards.
+
+These tests run in the default `cargo test` run and do not require sibling repos
+beyond what the crate itself requires (the inline tests are in-crate, not
+workspace-integration tests).
+
+Status: **CANDIDATE** (workspace build requires sibling repos).
+
+### Goal and status
+
+**Goal:** default `cargo test` wall-clock ≤ 5 seconds; slow tests behind
+`--include-ignored` (`just test-pre-publish` for the full suite).
+
+**Status: CANDIDATE** — sibling repos (`../lsp-types-max`, `../wasm4pm-compat`,
+`../wasm4pm`) required to build. Wall-clock target cannot be verified in this
+environment. The changes are structurally sound (ignore markers, timeout
+literal reductions, sleep literal reductions, new inline tests) but admission
+requires a live build and measured run.
+
+### Updated gap map (doc↔example, unchanged from iter 12)
+
+| Symbol | Status |
+|---|---|
+| `LspService`, `Server`, `LanguageServer`, `Client` | ✅ covered |
+| `ConformanceVector` | ✅ covered (iter 1) |
+| `Receipt` | ✅ covered (iter 2) |
+| CalVer version law | ✅ covered (iter 3) |
+| `Receipt` × `ConformanceVector` (cross-product) | ✅ covered (iter 4) |
+| `Loopback`, `ExitedError`, `ClientSocket` | ✅ covered (iter 7) — CANDIDATE run |
+| `ComposedServer`/`CompositionState`/`SourceHealth` | ⊘ server-class + private internals; witnessed by tests |
+| `RulePackServer`, `Rule`, `RulePack`, `ValidatedRulePackSet` | ❌ OPEN per ROADMAP |
+
+documented-but-unexercised (example-reachable surface): **0** active gaps.
+`RulePackServer` adoption remains OPEN by ROADMAP — not chased in this iteration.
+
+### Hard stops
+Build requires sibling repos (`../lsp-types-max`, `../wasm4pm-compat`,
+`../wasm4pm`). No live cargo build or example run was executed in this
+session. All items in this iteration are **CANDIDATE**, not ADMITTED.
