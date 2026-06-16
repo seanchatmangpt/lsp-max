@@ -23,7 +23,7 @@ clap-noun-verb = "26.6.2"
 clap-noun-verb-macros = "26.6.2"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-tokio = { version = "1.17", features = ["full"] }
+tokio = { version = "1", features = ["full"] }
 linkme = "0.3.36"
 lsp-max = { path = "../..", version = "26.6.9" }
 lsp-max-protocol = { path = "../../lsp-max-protocol", version = "26.6.9" }

@@ -22,7 +22,7 @@ clap-noun-verb-macros = "26.6.2"
 linkme = "0.3"
 lsp-max = { path = "../../" }
 lsp-types-max = { path = "../../../lsp-types-max", version = "26.6.8", features = ["proposed"] }
-tokio = { version = "1.17", features = ["full"] }
+tokio = { version = "1", features = ["full"] }
 parking_lot = { workspace = true }
 regex = { workspace = true }
 toml = "0.8"

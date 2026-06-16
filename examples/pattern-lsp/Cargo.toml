@@ -17,7 +17,7 @@ all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
-clap = { version = "4.4", features = ["derive"] }
+clap = { version = "4", features = ["derive"] }
 clap-noun-verb = "26.6.2"
 clap-noun-verb-macros = "26.6.2"
 linkme = "0.3"
