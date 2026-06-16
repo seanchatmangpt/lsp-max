@@ -85,7 +85,7 @@ async fn test_dogfood_loopback_integration() {
     .await;
 
     let init_resp =
-        wait_for_response(client_received_responses.clone(), 1, Duration::from_secs(2)).await;
+        wait_for_response(client_received_responses.clone(), 1, Duration::from_millis(200)).await;
     println!("Client: received initialize response: {:?}", init_resp);
     assert!(
         init_resp.get("result").is_some(),
@@ -116,7 +116,7 @@ async fn test_dogfood_loopback_integration() {
     .await;
 
     let inline_resp =
-        wait_for_response(client_received_responses.clone(), 2, Duration::from_secs(2)).await;
+        wait_for_response(client_received_responses.clone(), 2, Duration::from_millis(200)).await;
     println!(
         "Client: received inlineCompletion response: {:?}",
         inline_resp
@@ -146,7 +146,7 @@ async fn test_dogfood_loopback_integration() {
     .await;
 
     let content_resp =
-        wait_for_response(client_received_responses.clone(), 3, Duration::from_secs(2)).await;
+        wait_for_response(client_received_responses.clone(), 3, Duration::from_millis(200)).await;
     let content_result = content_resp.get("result").unwrap();
     assert_eq!(
         content_result.get("text").unwrap().as_str(),
@@ -169,7 +169,7 @@ async fn test_dogfood_loopback_integration() {
     .await;
 
     let format_resp =
-        wait_for_response(client_received_responses.clone(), 4, Duration::from_secs(2)).await;
+        wait_for_response(client_received_responses.clone(), 4, Duration::from_millis(200)).await;
     let format_result = format_resp.get("result").unwrap();
     assert_eq!(
         format_result
@@ -228,7 +228,7 @@ async fn test_dogfood_loopback_integration() {
     println!("Client: verifying notifications received by server");
     let start_verify = std::time::Instant::now();
     loop {
-        if start_verify.elapsed() > Duration::from_secs(3) {
+        if start_verify.elapsed() > Duration::from_millis(300) {
             panic!("Timeout waiting for server to receive all 4 notifications");
         }
         let did_open = events.did_open_notebook.lock().unwrap().is_some();
@@ -238,7 +238,7 @@ async fn test_dogfood_loopback_integration() {
         if did_open && set_trace && progress && cancel {
             break;
         }
-        tokio::time::sleep(Duration::from_millis(10)).await;
+        tokio::time::sleep(Duration::from_millis(1)).await;
     }
 
     {
@@ -269,7 +269,7 @@ async fn test_dogfood_loopback_integration() {
     let log_trace = wait_for_notification(
         client_received_notifications.clone(),
         "$/logTrace",
-        Duration::from_secs(2),
+        Duration::from_millis(200),
     )
     .await;
     assert_eq!(
@@ -301,7 +301,7 @@ async fn test_dogfood_loopback_integration() {
     let verify_resp = wait_for_response(
         client_received_responses.clone(),
         10,
-        Duration::from_secs(2),
+        Duration::from_millis(200),
     )
     .await;
     assert!(
@@ -319,7 +319,7 @@ async fn test_dogfood_loopback_integration() {
     let report_resp = wait_for_response(
         client_received_responses.clone(),
         11,
-        Duration::from_secs(2),
+        Duration::from_millis(200),
     )
     .await;
     let report_str = report_resp.get("result").unwrap().as_str().unwrap();
@@ -348,7 +348,7 @@ async fn test_dogfood_loopback_integration() {
     .await;
 
     let shutdown_resp =
-        wait_for_response(client_received_responses.clone(), 5, Duration::from_secs(2)).await;
+        wait_for_response(client_received_responses.clone(), 5, Duration::from_millis(200)).await;
     assert!(shutdown_resp.get("result").is_some());
 
     println!("Client: sending exit");

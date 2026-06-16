@@ -62,7 +62,7 @@ async fn test_rpc_attribute_diagnostics() {
     )
     .await;
     let _init_resp =
-        wait_for_response(client_received_responses.clone(), 1, Duration::from_secs(2)).await;
+        wait_for_response(client_received_responses.clone(), 1, Duration::from_millis(200)).await;
 
     write_msg(
         &client_tx_shared,
@@ -93,7 +93,7 @@ pub trait TestServer {
     let diag_ntf = wait_for_notification(
         client_received_notifications.clone(),
         "textDocument/publishDiagnostics",
-        Duration::from_secs(2),
+        Duration::from_millis(200),
     )
     .await;
 
@@ -130,7 +130,7 @@ pub trait TestServer {
     .await;
 
     let code_action_resp =
-        wait_for_response(client_received_responses.clone(), 2, Duration::from_secs(2)).await;
+        wait_for_response(client_received_responses.clone(), 2, Duration::from_millis(200)).await;
     let action_result = code_action_resp.get("result").unwrap().as_array().unwrap();
 
     assert!(!action_result.is_empty(), "Expected code actions, got none");
@@ -148,7 +148,7 @@ pub trait TestServer {
         serde_json::json!({"jsonrpc":"2.0","id":3,"method":"shutdown","params":null}),
     )
     .await;
-    let _ = wait_for_response(client_received_responses.clone(), 3, Duration::from_secs(2)).await;
+    let _ = wait_for_response(client_received_responses.clone(), 3, Duration::from_millis(200)).await;
 
     write_msg(
         &client_tx_shared,
@@ -194,7 +194,7 @@ async fn test_rpc_completion() {
     )
     .await;
     let _init_resp =
-        wait_for_response(client_received_responses.clone(), 1, Duration::from_secs(2)).await;
+        wait_for_response(client_received_responses.clone(), 1, Duration::from_millis(200)).await;
 
     write_msg(
         &client_tx_shared,
@@ -235,7 +235,7 @@ pub trait TestServer {
     .await;
 
     let completion_resp =
-        wait_for_response(client_received_responses.clone(), 2, Duration::from_secs(2)).await;
+        wait_for_response(client_received_responses.clone(), 2, Duration::from_millis(200)).await;
     let comp_result = completion_resp.get("result").unwrap();
     let comp_items = match comp_result {
         serde_json::Value::Array(arr) => arr.clone(),
@@ -283,7 +283,7 @@ impl LanguageServer for Backend {
     .await;
 
     let completion_resp_impl =
-        wait_for_response(client_received_responses.clone(), 3, Duration::from_secs(2)).await;
+        wait_for_response(client_received_responses.clone(), 3, Duration::from_millis(200)).await;
     let comp_result_impl = completion_resp_impl.get("result").unwrap();
     let comp_items_impl = match comp_result_impl {
         serde_json::Value::Array(arr) => arr.clone(),
@@ -308,7 +308,7 @@ impl LanguageServer for Backend {
         serde_json::json!({"jsonrpc":"2.0","id":4,"method":"shutdown","params":null}),
     )
     .await;
-    let _ = wait_for_response(client_received_responses.clone(), 4, Duration::from_secs(2)).await;
+    let _ = wait_for_response(client_received_responses.clone(), 4, Duration::from_millis(200)).await;
 
     write_msg(
         &client_tx_shared,

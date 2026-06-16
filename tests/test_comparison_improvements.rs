@@ -23,7 +23,7 @@ impl Mock {
     }
 
     async fn slow_handler(&self, params: Value) -> Result<Value> {
-        tokio::time::sleep(Duration::from_millis(100)).await;
+        tokio::time::sleep(Duration::from_millis(10)).await;
         Ok(params)
     }
 }

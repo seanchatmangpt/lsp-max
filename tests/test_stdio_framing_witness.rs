@@ -183,7 +183,7 @@ fn stdio_framing_witness() {
                 status = Some(s);
                 break;
             }
-            None => std::thread::sleep(Duration::from_millis(100)),
+            None => std::thread::sleep(Duration::from_millis(10)),
         }
     }
     let status = match status {
