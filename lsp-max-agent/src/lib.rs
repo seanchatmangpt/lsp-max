@@ -33,7 +33,7 @@ impl AgentConfig {
             .unwrap_or_else(|| "gpt-4o".to_string());
 
         let mut config_file_map = HashMap::new();
-        let config_path = if let Ok(path_str) = std::env::var("TOWER_LSP_MAX_CONFIG") {
+        let config_path = if let Ok(path_str) = std::env::var("LSP_MAX_CONFIG") {
             Some(PathBuf::from(path_str))
         } else if let Ok(home) = std::env::var("HOME") {
             Some(PathBuf::from(home).join(".lsp-max-config.json"))
