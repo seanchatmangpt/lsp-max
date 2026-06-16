@@ -176,8 +176,15 @@ mod tests {
 
     #[test]
     fn merge_deduped_locations_single_source() {
-        let loc = json!({"uri": "file:///a.rs", "range": {"start": {"line": 0, "character": 0}, "end": {"line": 0, "character": 5}}});
-        let result = merge_deduped_locations(vec![obs("src-1", "file:///a.rs", json!([loc.clone()]))]);
+        let loc = json!({
+            "uri": "file:///a.rs",
+            "range": {
+                "start": {"line": 0, "character": 0},
+                "end": {"line": 0, "character": 5}
+            }
+        });
+        let result =
+            merge_deduped_locations(vec![obs("src-1", "file:///a.rs", json!([loc.clone()]))]);
         assert_eq!(result.len(), 1);
         assert_eq!(result[0], loc);
     }
@@ -239,8 +246,7 @@ mod tests {
 
     #[test]
     fn merge_hovers_null_hover_ignored() {
-        let result =
-            merge_hovers_with_attribution(vec![("src-null".to_string(), Value::Null)]);
+        let result = merge_hovers_with_attribution(vec![("src-null".to_string(), Value::Null)]);
         // Null hover has no extractable text, result should be Null
         assert_eq!(result, Value::Null);
     }

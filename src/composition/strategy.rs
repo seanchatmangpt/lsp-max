@@ -193,27 +193,15 @@ mod tests {
 
     #[test]
     fn method_strategy_fanout() {
-        assert_eq!(
-            method_strategy("textDocument/didOpen"),
-            CompositionStrategy::OrderedFanout
-        );
-        assert_eq!(
-            method_strategy("textDocument/didChange"),
-            CompositionStrategy::OrderedFanout
-        );
-        assert_eq!(
-            method_strategy("textDocument/didSave"),
-            CompositionStrategy::OrderedFanout
-        );
+        assert_eq!(method_strategy("textDocument/didOpen"), CompositionStrategy::OrderedFanout);
+        assert_eq!(method_strategy("textDocument/didChange"), CompositionStrategy::OrderedFanout);
+        assert_eq!(method_strategy("textDocument/didSave"), CompositionStrategy::OrderedFanout);
     }
 
     #[test]
     fn method_strategy_hover_is_first_success() {
         // Per the routing table, hover uses FirstSuccess
-        assert_eq!(
-            method_strategy("textDocument/hover"),
-            CompositionStrategy::FirstSuccess
-        );
+        assert_eq!(method_strategy("textDocument/hover"), CompositionStrategy::FirstSuccess);
     }
 
     #[test]
@@ -230,22 +218,13 @@ mod tests {
 
     #[test]
     fn method_strategy_merge_deduped() {
-        assert_eq!(
-            method_strategy("textDocument/definition"),
-            CompositionStrategy::MergeDeduped
-        );
-        assert_eq!(
-            method_strategy("textDocument/references"),
-            CompositionStrategy::MergeDeduped
-        );
+        assert_eq!(method_strategy("textDocument/definition"), CompositionStrategy::MergeDeduped);
+        assert_eq!(method_strategy("textDocument/references"), CompositionStrategy::MergeDeduped);
     }
 
     #[test]
     fn method_strategy_ranked_providers() {
-        assert_eq!(
-            method_strategy("textDocument/completion"),
-            CompositionStrategy::RankedProviders
-        );
+        assert_eq!(method_strategy("textDocument/completion"), CompositionStrategy::RankedProviders);
     }
 
     #[test]
@@ -262,22 +241,13 @@ mod tests {
 
     #[test]
     fn method_strategy_observe_only() {
-        assert_eq!(
-            method_strategy("$/cancelRequest"),
-            CompositionStrategy::ObserveOnly
-        );
-        assert_eq!(
-            method_strategy("$/progress"),
-            CompositionStrategy::ObserveOnly
-        );
+        assert_eq!(method_strategy("$/cancelRequest"), CompositionStrategy::ObserveOnly);
+        assert_eq!(method_strategy("$/progress"), CompositionStrategy::ObserveOnly);
     }
 
     #[test]
     fn method_strategy_unknown_defaults_to_deny() {
-        assert_eq!(
-            method_strategy("nonexistent/method"),
-            CompositionStrategy::Deny
-        );
+        assert_eq!(method_strategy("nonexistent/method"), CompositionStrategy::Deny);
         assert_eq!(method_strategy(""), CompositionStrategy::Deny);
     }
 

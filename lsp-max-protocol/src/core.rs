@@ -298,6 +298,9 @@ mod tests {
         assert!(r.prev_receipt_hash.is_none());
         let json = serde_json::to_string(&r).expect("serialize");
         let r2: Receipt = serde_json::from_str(&json).expect("deserialize");
-        assert!(r2.prev_receipt_hash.is_none(), "genesis prev_receipt_hash must remain None after serde roundtrip");
+        assert!(
+            r2.prev_receipt_hash.is_none(),
+            "genesis prev_receipt_hash must remain None after serde roundtrip"
+        );
     }
 }

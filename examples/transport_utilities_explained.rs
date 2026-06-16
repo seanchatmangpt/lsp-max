@@ -37,9 +37,9 @@
 // Run: cargo run --example transport_utilities_explained
 // Exit 0 on all assertions held; panics (non-zero exit) if any contract breaks.
 
-use lsp_max::lsp_types_max::{InitializeParams, InitializeResult};
 use lsp_max::{Client, ExitedError, LanguageServer, Loopback, LspService};
 use lsp_max::jsonrpc::Result as RpcResult;
+use lsp_max::lsp_types_max::{InitializeParams, InitializeResult};
 
 struct MinimalBackend;
 
@@ -83,7 +83,7 @@ fn main() {
     // time by passing it through a generic function bounded on Loopback.
     fn assert_loopback<L: Loopback>(_socket: L) {}
     let (_service2, socket2) = LspService::new(|_client: Client| MinimalBackend);
-    assert_loopback(socket2);  // compiles only if ClientSocket: Loopback
+    assert_loopback(socket2); // compiles only if ClientSocket: Loopback
 
     println!("WITNESS transport_utilities: 4 assertions held");
     println!("  [1] ExitedError(0) != ExitedError(1); .code() reads inner i32");

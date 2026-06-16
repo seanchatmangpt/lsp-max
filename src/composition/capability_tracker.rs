@@ -338,9 +338,7 @@ mod tests {
         let mut tracker = CapabilityTracker::new();
         tracker.add_source(healthy_source("failing-server"));
         tracker.degrade_source("failing-server", SourceHealth::InitializationFailed);
-        assert!(tracker
-            .routable_sources_for_method("initialize")
-            .is_empty());
+        assert!(tracker.routable_sources_for_method("initialize").is_empty());
     }
 
     #[test]

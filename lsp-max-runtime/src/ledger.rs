@@ -280,8 +280,7 @@ mod tests {
         instance.phase = LspPhase::Uninitialized;
         instance.receipts.push(Receipt {
             receipt_id: "rcpt-uninitialized".to_string(),
-            hash: "0000000000000000000000000000000000000000000000000000000000000000"
-                .to_string(),
+            hash: "0000000000000000000000000000000000000000000000000000000000000000".to_string(),
             prev_receipt_hash: None,
         });
         let mesh = make_mesh_with_instance(instance);
