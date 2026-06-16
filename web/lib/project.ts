@@ -461,3 +461,70 @@ export async function readWitnessOutputs(): Promise<WitnessOutput[]> {
 
   return witnesses;
 }
+
+// ---------------------------------------------------------------------------
+// DepSummary — Rust workspace deps + npm package deps
+// ---------------------------------------------------------------------------
+
+/** A single Rust workspace.dependencies entry with a pinned version. */
+export interface RustDep {
+  name: string;
+  version: string;
+}
+
+/** Dependency surface parsed from real Cargo.toml and web/package.json. */
+export interface DepSummary {
+  workspaceVersion: string;
+  rustDeps: RustDep[];
+  npmDeps: Record<string, string>;
+  rustSource: string;
+  npmSource: string;
+}
+
+/** Read the real dependency surface: workspace.dependencies from Cargo.toml and
+ *  dependencies + devDependencies from web/package.json. Throws if either file is
+ *  absent — anti-fabrication boundary: values rendered on /deps come from these
+ *  real files, not from fixtures. */
+export async function readDepSummary(): Promise<DepSummary> {
+  const cargoPath = path.join(REPO_ROOT, "Cargo.toml");
+  const pkgPath = path.join(REPO_ROOT, "web", "package.json");
+  const cargo = await fs.readFile(cargoPath, "utf8");
+  const pkgText = await fs.readFile(pkgPath, "utf8");
+
+  // Capture workspace version from [workspace.package] section.
+  const verMatch = cargo.match(/^\[workspace\.package\][^\[]*version\s*=\s*"([^"]+)"/ms);
+  const workspaceVersion = verMatch ? verMatch[1] : "";
+
+  // Extract the [workspace.dependencies] block (everything between the header
+  // and the next section header).
+  const wdepMatch = cargo.match(/^\[workspace\.dependencies\]([\s\S]*?)(?=^\[|\z)/m);
+  const rustDeps: RustDep[] = [];
+  if (wdepMatch) {
+    const block = wdepMatch[1];
+    // Match lines with a pinned plain string version: name = "x.y.z"
+    // Skip path dependencies (lines containing `path =`).
+    const lineRe = /^\s*([\w][\w-]*)\s*=\s*"([^"]+)"/gm;
+    let lm: RegExpExecArray | null;
+    while ((lm = lineRe.exec(block)) !== null) {
+      rustDeps.push({ name: lm[1], version: lm[2] });
+    }
+  }
+
+  // Parse npm deps from package.json.
+  const pkg = JSON.parse(pkgText) as {
+    dependencies?: Record<string, string>;
+    devDependencies?: Record<string, string>;
+  };
+  const npmDeps: Record<string, string> = {
+    ...(pkg.dependencies ?? {}),
+    ...(pkg.devDependencies ?? {}),
+  };
+
+  return {
+    workspaceVersion,
+    rustDeps,
+    npmDeps,
+    rustSource: "Cargo.toml",
+    npmSource: "web/package.json",
+  };
+}

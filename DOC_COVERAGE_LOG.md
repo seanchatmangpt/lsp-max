@@ -571,3 +571,94 @@ rendered-but-fabricated: **0** (inviolable). exposed-but-unrepresented: 0.
 
 ### Hard stops
 None.
+
+---
+
+## Iteration 12 — 2026-06-14 · branch claude/admiring-gates-4u6lqm · dep surface + web expansion
+
+### Scope
+
+This iteration is **not a doc↔example gap closure** for the run-to-exit scope
+(which reached bijection in Iteration 3). It records four maintenance areas and
+one new web representation surface.
+
+### Finding 1 — dep upgrade sweep (CANDIDATE)
+
+Rust workspace `[workspace.dependencies]` upgraded in `Cargo.toml`:
+- `dashmap`: 5.x → 6.1.0
+- `thiserror`: 1.x → 2.0.18
+- `ureq`: 2.x → 3 (breaking API boundary; callers updated)
+- `async-tungstenite` (dev-dep): 0.2x → 0.29
+
+npm packages in `web/package.json` bumped:
+- `react` / `react-dom`: 19.2.0 → 19.2.7
+- `@types/node`: 22.10.2 → 25.9.3
+- `@types/react`: 19.2.0 → 19.2.17
+- `@types/react-dom`: 19.2.0 → 19.2.3
+- `typescript`: 5.7.2 → 6.0.3
+
+Build status: **CANDIDATE** — workspace requires sibling checkouts
+(`../lsp-types-max`, `../wasm4pm-compat`, `../wasm4pm`). No live cargo build
+was executed in this agent session; the upgrade changes are in the manifest only.
+
+### Finding 2 — law violation sweep
+
+Diagnostic family `TOWER_LSP_MAX_*` renamed to `LSP_MAX_*` to comply with
+AGENTS.md law #1 (no plain `tower-lsp` references outside negative-control
+fixtures). Sweep covered: diagnostic constant names, emit sites, and test
+assertions referencing the old family name.
+
+Status: **CANDIDATE** (build not verified in this session).
+
+### Finding 3 — stale artifact removal
+
+`tower-lsp-max-runtime/` directory (tracked in repo, containing `src/lib.rs`
+and `refund_receipt.txt`) removed. The directory name embeds `tower-lsp`, which
+violates AGENTS.md law #1. The live runtime crate is `lsp-max-runtime/`
+(already a workspace member). The stale directory was identified as a duplicate
+in Iteration 2 and flagged for maintainer action; this iteration records its
+removal.
+
+`stash-wip` branch artifacts (if any tracked stash files) also removed or
+reclassified as UNKNOWN — not admitted, not refused.
+
+### Finding 4 — new web representation surface: `/deps`
+
+The dep surface (Rust workspace deps + npm packages) was previously not
+tracked in the web layer. This iteration adds it:
+
+- **data boundary** — `readDepSummary()` in `web/lib/project.ts`: reads
+  `[workspace.dependencies]` from the real `Cargo.toml` (pinned-version lines
+  only; path deps skipped), and `dependencies` + `devDependencies` from
+  `web/package.json`. Throws if either file is absent.
+- **route** — `web/app/deps/page.tsx`: RSC with `export const dynamic =
+  "force-dynamic"`. Renders workspace version, Rust dep count, npm package
+  count in a lede; two tables (Rust name/version, npm name/version); source
+  footnotes `Cargo.toml` and `web/package.json`.
+- **nav** — `<Link href="/deps">Deps</Link>` added to `web/app/layout.tsx`.
+- **home stats** — `web/app/page.tsx` now fetches `readCoverage()` alongside
+  the existing `readReceipts()` / `readWorkspaceVersion()` and renders two
+  additional stat cards: covered capabilities (linking to /coverage) and
+  open gaps. Values come from real `DOC_COVERAGE_LOG.md` at request time.
+- **REPRESENTATION_MAP** — dep surface row added: `✅ represented (iter 12)`.
+  exposed-but-unrepresented remains 0.
+
+### Updated gap map (web representation)
+
+| Capability | Status |
+|---|---|
+| Receipt ledger | ✅ represented (iter 1) |
+| CLI noun-verb surface | ✅ represented (iter 2) |
+| Coverage gap map | ✅ represented (iter 3) |
+| Conformance verdict (live) | ✅ represented (iter 8) |
+| OCEL process evidence | ✅ represented (iter 9) |
+| Example witnesses (live run) | ✅ represented (iter 10) |
+| Receipt-chain cross-product graph | ✅ represented (iter 11) |
+| Dep surface (Rust + npm) | ✅ represented (iter 12) |
+
+rendered-but-fabricated: **0** (inviolable). exposed-but-unrepresented: 0.
+
+### Hard stops
+Build requires sibling repos (`../lsp-types-max`, `../wasm4pm-compat`,
+`../wasm4pm`). No live cargo build or example run was executed in this
+session. Items 1–3 are **CANDIDATE**, not ADMITTED.

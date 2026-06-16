@@ -1,13 +1,14 @@
 import Link from "next/link";
-import { readReceipts, readWorkspaceVersion } from "@/lib/project";
+import { readReceipts, readWorkspaceVersion, readCoverage } from "@/lib/project";
 
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
   // Real counts, computed from real artifacts at request time.
-  const [receipts, version] = await Promise.all([
+  const [receipts, version, cov] = await Promise.all([
     readReceipts(),
     readWorkspaceVersion(),
+    readCoverage(),
   ]);
   const admitted = receipts.filter((r) => r.status === "ADMITTED").length;
 
@@ -32,6 +33,14 @@ export default async function Home() {
         <div className="stat">
           <span className="stat-n">{version}</span>
           <span className="stat-l">CalVer</span>
+        </div>
+        <Link href="/coverage" className="stat">
+          <span className="stat-n">{cov.covered}</span>
+          <span className="stat-l">covered capabilities</span>
+        </Link>
+        <div className="stat">
+          <span className="stat-n">{cov.gaps}</span>
+          <span className="stat-l">open gaps</span>
         </div>
       </div>
 
