@@ -37,9 +37,9 @@
 // Run: cargo run --example transport_utilities_explained
 // Exit 0 on all assertions held; panics (non-zero exit) if any contract breaks.
 
-use lsp_max::{Client, ExitedError, LanguageServer, Loopback, LspService};
 use lsp_max::jsonrpc::Result as RpcResult;
 use lsp_max::lsp_types_max::{InitializeParams, InitializeResult};
+use lsp_max::{Client, ExitedError, LanguageServer, Loopback, LspService};
 
 struct MinimalBackend;
 

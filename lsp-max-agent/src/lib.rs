@@ -70,17 +70,16 @@ impl AgentConfig {
                 .unwrap_or(api_base)
         };
 
-        let final_model = if std::env::var("LSP_MAX_MODEL").is_ok()
-            || std::env::var("OPENAI_MODEL").is_ok()
-        {
-            model
-        } else {
-            config_file_map
-                .get("model")
-                .or_else(|| config_file_map.get("openai_model"))
-                .cloned()
-                .unwrap_or(model)
-        };
+        let final_model =
+            if std::env::var("LSP_MAX_MODEL").is_ok() || std::env::var("OPENAI_MODEL").is_ok() {
+                model
+            } else {
+                config_file_map
+                    .get("model")
+                    .or_else(|| config_file_map.get("openai_model"))
+                    .cloned()
+                    .unwrap_or(model)
+            };
 
         Self {
             api_key: final_api_key,

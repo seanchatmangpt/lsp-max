@@ -647,8 +647,14 @@ mod tests {
         };
         assert!(!base.admits_release(), "unknown must block in strict mode");
 
-        let lenient = ConformanceVector { strict_mode: false, ..base };
-        assert!(lenient.admits_release(), "unknown must not block in non-strict mode");
+        let lenient = ConformanceVector {
+            strict_mode: false,
+            ..base
+        };
+        assert!(
+            lenient.admits_release(),
+            "unknown must not block in non-strict mode"
+        );
     }
 
     #[test]

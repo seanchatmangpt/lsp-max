@@ -4,7 +4,7 @@ use std::time::Duration;
 use tokio::sync::watch;
 use tokio::time;
 
-use lsp_types_max::Url;
+use lsp_types_max::Uri as Url;
 
 use super::DocumentStore;
 

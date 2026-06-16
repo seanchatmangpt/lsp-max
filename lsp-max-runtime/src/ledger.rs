@@ -212,7 +212,10 @@ mod tests {
         });
         let mesh = make_mesh_with_instance(instance);
         let result = mesh.verify_instance_ledger("LSP_2");
-        assert!(result.is_ok(), "non-empty receipt on generic instance must pass");
+        assert!(
+            result.is_ok(),
+            "non-empty receipt on generic instance must pass"
+        );
     }
 
     #[test]

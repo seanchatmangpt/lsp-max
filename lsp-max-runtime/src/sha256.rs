@@ -239,7 +239,10 @@ mod tests {
     #[test]
     fn sha256_hello_known_vector() {
         let h = sha256(b"hello");
-        assert_eq!(h, "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824");
+        assert_eq!(
+            h,
+            "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824"
+        );
     }
 
     #[test]
@@ -275,7 +278,10 @@ mod tests {
         let h0 = sha256(b"rcpt-uninitialized");
         let r0 = make_receipt("rcpt-uninitialized", &h0);
         let result = validate_and_reconstruct_chain_checked(&[r0]);
-        assert!(result.is_ok(), "single-entry genesis chain must be CANDIDATE");
+        assert!(
+            result.is_ok(),
+            "single-entry genesis chain must be CANDIDATE"
+        );
     }
 
     #[test]

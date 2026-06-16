@@ -157,7 +157,7 @@ fn apply_incremental(content: &str, change: &TextDocumentContentChangeEvent) -> 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use lsp_types_max::Url;
+    use lsp_types_max::Uri as Url;
 
     fn test_url() -> Url {
         Url::parse("file:///tmp/test.rs").unwrap()
