@@ -20,14 +20,14 @@ pub struct AgentConfig {
 
 impl AgentConfig {
     pub fn load() -> Self {
-        let api_key = std::env::var("TOWER_LSP_MAX_API_KEY")
+        let api_key = std::env::var("LSP_MAX_API_KEY")
             .ok()
             .or_else(|| std::env::var("OPENAI_API_KEY").ok());
-        let api_base = std::env::var("TOWER_LSP_MAX_API_BASE")
+        let api_base = std::env::var("LSP_MAX_API_BASE")
             .ok()
             .or_else(|| std::env::var("OPENAI_API_BASE").ok())
             .unwrap_or_else(|| "https://api.openai.com/v1".to_string());
-        let model = std::env::var("TOWER_LSP_MAX_MODEL")
+        let model = std::env::var("LSP_MAX_MODEL")
             .ok()
             .or_else(|| std::env::var("OPENAI_MODEL").ok())
             .unwrap_or_else(|| "gpt-4o".to_string());
@@ -58,7 +58,7 @@ impl AgentConfig {
                 .cloned()
         });
 
-        let final_api_base = if std::env::var("TOWER_LSP_MAX_API_BASE").is_ok()
+        let final_api_base = if std::env::var("LSP_MAX_API_BASE").is_ok()
             || std::env::var("OPENAI_API_BASE").is_ok()
         {
             api_base
@@ -70,7 +70,7 @@ impl AgentConfig {
                 .unwrap_or(api_base)
         };
 
-        let final_model = if std::env::var("TOWER_LSP_MAX_MODEL").is_ok()
+        let final_model = if std::env::var("LSP_MAX_MODEL").is_ok()
             || std::env::var("OPENAI_MODEL").is_ok()
         {
             model
@@ -141,7 +141,7 @@ impl LspAgent {
     ) -> Result<String, String> {
         let api_key = match &config.api_key {
             Some(k) => k,
-            None => return Err("API key is not configured. Please set the TOWER_LSP_MAX_API_KEY environment variable or run `lsp-max-cli config set api_key <your-key>`.".to_string()),
+            None => return Err("API key is not configured. Please set the LSP_MAX_API_KEY environment variable or run `lsp-max-cli config set api_key <your-key>`.".to_string()),
         };
 
         let url = format!("{}/chat/completions", config.api_base.trim_end_matches('/'));
@@ -161,13 +161,14 @@ impl LspAgent {
         };
 
         let response = ureq::post(&url)
-            .set("Authorization", &format!("Bearer {}", api_key))
-            .set("Content-Type", "application/json")
+            .header("Authorization", &format!("Bearer {}", api_key))
+            .header("Content-Type", "application/json")
             .send_json(&body)
             .map_err(|e| format!("HTTP request failed: {}", e))?;
 
         let res_body: ChatResponse = response
-            .into_json()
+            .into_body()
+            .read_json::<ChatResponse>()
             .map_err(|e| format!("Failed to parse response JSON: {}", e))?;
 
         if let Some(choice) = res_body.choices.first() {
