@@ -18,7 +18,7 @@ pub mod telemetry;
 pub mod workspace;
 
 pub fn get_state_path() -> String {
-    std::env::var("TOWER_LSP_MAX_STATE_PATH").unwrap_or_else(|_| ".mesh_state.json".to_string())
+    std::env::var("LSP_MAX_STATE_PATH").unwrap_or_else(|_| ".mesh_state.json".to_string())
 }
 
 #[cfg(test)]

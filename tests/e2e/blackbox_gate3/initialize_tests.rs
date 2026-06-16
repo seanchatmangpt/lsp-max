@@ -4,6 +4,7 @@ use serde_json::json;
 /// 1. Composed Initialize: client sends initialize, upstream A advertises hover, upstream B does not;
 ///    verify downstream capabilities.
 #[tokio::test]
+#[ignore = "e2e: requires live server, run with --include-ignored"]
 async fn test_gate3_composed_initialize() {
     let mut harness = TestHarness::new(2).await;
 

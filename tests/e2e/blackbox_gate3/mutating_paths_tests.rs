@@ -3,6 +3,7 @@ use serde_json::json;
 
 /// 3. Mutating paths: verify formatting, rename, and code action edit behavior under version constraints.
 #[tokio::test]
+#[ignore = "e2e: requires live server, run with --include-ignored"]
 async fn test_gate3_mutating_paths_version_constraints() {
     println!("--- Mutating paths: Starting TestHarness::new");
     let mut harness = TestHarness::new(1).await;

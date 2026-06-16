@@ -73,7 +73,7 @@ pub async fn wait_for_response(received: RxLog, id: i64, timeout: Duration) -> V
                 return guard.remove(pos);
             }
         }
-        tokio::time::sleep(Duration::from_millis(10)).await;
+        tokio::time::sleep(Duration::from_millis(1)).await;
     }
 }
 
@@ -94,7 +94,7 @@ pub async fn wait_for_notification(received: RxLog, method: &str, timeout: Durat
                 return guard.remove(pos);
             }
         }
-        tokio::time::sleep(Duration::from_millis(10)).await;
+        tokio::time::sleep(Duration::from_millis(1)).await;
     }
 }
 

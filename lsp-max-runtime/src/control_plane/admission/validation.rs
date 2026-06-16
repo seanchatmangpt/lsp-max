@@ -1,13 +1,13 @@
 use super::types::GraphAdmissionError;
 
 pub fn resolve_db_path() -> std::path::PathBuf {
-    if let Ok(path_str) = std::env::var("TOWER_LSP_MAX_DB_PATH") {
+    if let Ok(path_str) = std::env::var("LSP_MAX_DB_PATH") {
         if !path_str.trim().is_empty() {
             return std::path::PathBuf::from(path_str);
         }
     }
 
-    let config_path = if let Ok(path_str) = std::env::var("TOWER_LSP_MAX_CONFIG") {
+    let config_path = if let Ok(path_str) = std::env::var("LSP_MAX_CONFIG") {
         Some(std::path::PathBuf::from(path_str))
     } else if let Ok(home) = std::env::var("HOME") {
         Some(std::path::PathBuf::from(home).join(".lsp-max-config.json"))
@@ -30,7 +30,7 @@ pub fn resolve_db_path() -> std::path::PathBuf {
     }
 
     let is_test =
-        std::env::var("CARGO_MANIFEST_DIR").is_ok() || std::env::var("TOWER_LSP_MAX_TEST").is_ok();
+        std::env::var("CARGO_MANIFEST_DIR").is_ok() || std::env::var("LSP_MAX_TEST").is_ok();
 
     if is_test {
         let temp_dir = std::env::temp_dir();
