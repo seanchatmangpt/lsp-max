@@ -123,3 +123,179 @@ pub(crate) fn merge_edits(base: Value, other: Value) -> Value {
     }
     merge_workspace_edits(base, other)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn obs(source_id: &str, uri: &str, data: Value) -> AttributedObservation {
+        AttributedObservation {
+            source_id: source_id.to_string(),
+            uri: uri.to_string(),
+            data,
+        }
+    }
+
+    // ── merge_attributed ─────────────────────────────────────────────────────────
+
+    #[test]
+    fn merge_attributed_empty_input_produces_empty_array() {
+        let result = merge_attributed(vec![]);
+        assert_eq!(result, Value::Array(vec![]));
+    }
+
+    #[test]
+    fn merge_attributed_single_source_preserves_fields() {
+        let result = merge_attributed(vec![obs("src-1", "file:///a.rs", json!({"x": 1}))]);
+        let arr = result.as_array().unwrap();
+        assert_eq!(arr.len(), 1);
+        assert_eq!(arr[0]["source"], "src-1");
+        assert_eq!(arr[0]["uri"], "file:///a.rs");
+        assert_eq!(arr[0]["data"]["x"], 1);
+    }
+
+    #[test]
+    fn merge_attributed_two_sources_produces_two_items() {
+        let result = merge_attributed(vec![
+            obs("src-1", "file:///a.rs", json!({"x": 1})),
+            obs("src-2", "file:///b.rs", json!({"x": 2})),
+        ]);
+        let arr = result.as_array().unwrap();
+        assert_eq!(arr.len(), 2);
+        assert_eq!(arr[0]["source"], "src-1");
+        assert_eq!(arr[1]["source"], "src-2");
+    }
+
+    // ── merge_deduped_locations ───────────────────────────────────────────────────
+
+    #[test]
+    fn merge_deduped_locations_empty_input_produces_empty_vec() {
+        let result = merge_deduped_locations(vec![]);
+        assert!(result.is_empty());
+    }
+
+    #[test]
+    fn merge_deduped_locations_single_source() {
+        let loc = json!({"uri": "file:///a.rs", "range": {"start": {"line": 0, "character": 0}, "end": {"line": 0, "character": 5}}});
+        let result = merge_deduped_locations(vec![obs("src-1", "file:///a.rs", json!([loc.clone()]))]);
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0], loc);
+    }
+
+    #[test]
+    fn merge_deduped_locations_deduplicates_identical_entries() {
+        let loc = json!({"uri": "file:///a.rs", "range": {"start": {"line": 0, "character": 0}, "end": {"line": 0, "character": 5}}});
+        let result = merge_deduped_locations(vec![
+            obs("src-1", "file:///a.rs", json!([loc.clone()])),
+            obs("src-2", "file:///a.rs", json!([loc.clone()])),
+        ]);
+        // Duplicate location should appear only once
+        assert_eq!(result.len(), 1);
+    }
+
+    #[test]
+    fn merge_deduped_locations_keeps_distinct_entries() {
+        let loc_a = json!({"uri": "file:///a.rs"});
+        let loc_b = json!({"uri": "file:///b.rs"});
+        let result = merge_deduped_locations(vec![
+            obs("src-1", "file:///a.rs", json!([loc_a.clone()])),
+            obs("src-2", "file:///b.rs", json!([loc_b.clone()])),
+        ]);
+        assert_eq!(result.len(), 2);
+    }
+
+    // ── merge_hovers_with_attribution ────────────────────────────────────────────
+
+    #[test]
+    fn merge_hovers_empty_input_produces_null() {
+        let result = merge_hovers_with_attribution(vec![]);
+        assert_eq!(result, Value::Null);
+    }
+
+    #[test]
+    fn merge_hovers_single_source_with_plain_text() {
+        let hover = json!({"contents": {"kind": "markdown", "value": "hover text"}});
+        let result = merge_hovers_with_attribution(vec![("src-1".to_string(), hover)]);
+        let contents = &result["contents"];
+        assert_eq!(contents["kind"], "markdown");
+        let val = contents["value"].as_str().unwrap();
+        assert!(val.contains("src-1"));
+        assert!(val.contains("hover text"));
+    }
+
+    #[test]
+    fn merge_hovers_two_sources_produces_separator() {
+        let hover_a = json!({"contents": {"kind": "markdown", "value": "text A"}});
+        let hover_b = json!({"contents": {"kind": "markdown", "value": "text B"}});
+        let result = merge_hovers_with_attribution(vec![
+            ("src-1".to_string(), hover_a),
+            ("src-2".to_string(), hover_b),
+        ]);
+        let val = result["contents"]["value"].as_str().unwrap();
+        assert!(val.contains("src-1"));
+        assert!(val.contains("src-2"));
+        assert!(val.contains("---"));
+    }
+
+    #[test]
+    fn merge_hovers_null_hover_ignored() {
+        let result =
+            merge_hovers_with_attribution(vec![("src-null".to_string(), Value::Null)]);
+        // Null hover has no extractable text, result should be Null
+        assert_eq!(result, Value::Null);
+    }
+
+    // ── merge_workspace_edits ────────────────────────────────────────────────────
+
+    #[test]
+    fn merge_workspace_edits_null_base_returns_other() {
+        let other = json!({"changes": {}});
+        let result = merge_workspace_edits(Value::Null, other.clone());
+        assert_eq!(result, other);
+    }
+
+    #[test]
+    fn merge_workspace_edits_null_other_returns_base() {
+        let base = json!({"changes": {}});
+        let result = merge_workspace_edits(base.clone(), Value::Null);
+        assert_eq!(result, base);
+    }
+
+    #[test]
+    fn merge_workspace_edits_merges_changes_for_same_uri() {
+        let edit_a = json!({"range": {"start": {"line": 0, "character": 0}, "end": {"line": 0, "character": 1}}, "newText": "a"});
+        let edit_b = json!({"range": {"start": {"line": 1, "character": 0}, "end": {"line": 1, "character": 1}}, "newText": "b"});
+        let base = json!({"changes": {"file:///a.rs": [edit_a.clone()]}});
+        let other = json!({"changes": {"file:///a.rs": [edit_b.clone()]}});
+        let result = merge_workspace_edits(base, other);
+        let edits = result["changes"]["file:///a.rs"].as_array().unwrap();
+        assert_eq!(edits.len(), 2);
+    }
+
+    // ── merge_edits ───────────────────────────────────────────────────────────────
+
+    #[test]
+    fn merge_edits_null_base_returns_other() {
+        let other = json!([{"edit": 1}]);
+        let result = merge_edits(Value::Null, other.clone());
+        assert_eq!(result, other);
+    }
+
+    #[test]
+    fn merge_edits_null_other_returns_base() {
+        let base = json!([{"edit": 1}]);
+        let result = merge_edits(base.clone(), Value::Null);
+        assert_eq!(result, base);
+    }
+
+    #[test]
+    fn merge_edits_two_arrays_concatenated() {
+        let base = json!([{"edit": 1}]);
+        let other = json!([{"edit": 2}]);
+        let result = merge_edits(base, other);
+        let arr = result.as_array().unwrap();
+        assert_eq!(arr.len(), 2);
+        assert_eq!(arr[0]["edit"], 1);
+        assert_eq!(arr[1]["edit"], 2);
+    }
+}

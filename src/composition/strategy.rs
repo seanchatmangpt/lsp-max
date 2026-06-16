@@ -179,6 +179,161 @@ impl UpstreamSource {
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn method_strategy_lifecycle() {
+        assert_eq!(method_strategy("initialize"), CompositionStrategy::SingleOwner);
+        assert_eq!(method_strategy("initialized"), CompositionStrategy::SingleOwner);
+        assert_eq!(method_strategy("shutdown"), CompositionStrategy::SingleOwner);
+        assert_eq!(method_strategy("exit"), CompositionStrategy::SingleOwner);
+    }
+
+    #[test]
+    fn method_strategy_fanout() {
+        assert_eq!(
+            method_strategy("textDocument/didOpen"),
+            CompositionStrategy::OrderedFanout
+        );
+        assert_eq!(
+            method_strategy("textDocument/didChange"),
+            CompositionStrategy::OrderedFanout
+        );
+        assert_eq!(
+            method_strategy("textDocument/didSave"),
+            CompositionStrategy::OrderedFanout
+        );
+    }
+
+    #[test]
+    fn method_strategy_hover_is_first_success() {
+        // Per the routing table, hover uses FirstSuccess
+        assert_eq!(
+            method_strategy("textDocument/hover"),
+            CompositionStrategy::FirstSuccess
+        );
+    }
+
+    #[test]
+    fn method_strategy_merge_attributed() {
+        assert_eq!(
+            method_strategy("textDocument/publishDiagnostics"),
+            CompositionStrategy::MergeAttributed
+        );
+        assert_eq!(
+            method_strategy("textDocument/documentSymbol"),
+            CompositionStrategy::MergeAttributed
+        );
+    }
+
+    #[test]
+    fn method_strategy_merge_deduped() {
+        assert_eq!(
+            method_strategy("textDocument/definition"),
+            CompositionStrategy::MergeDeduped
+        );
+        assert_eq!(
+            method_strategy("textDocument/references"),
+            CompositionStrategy::MergeDeduped
+        );
+    }
+
+    #[test]
+    fn method_strategy_ranked_providers() {
+        assert_eq!(
+            method_strategy("textDocument/completion"),
+            CompositionStrategy::RankedProviders
+        );
+    }
+
+    #[test]
+    fn method_strategy_transactional_edit_gate() {
+        assert_eq!(
+            method_strategy("textDocument/formatting"),
+            CompositionStrategy::TransactionalEditGate
+        );
+        assert_eq!(
+            method_strategy("textDocument/rename"),
+            CompositionStrategy::TransactionalEditGate
+        );
+    }
+
+    #[test]
+    fn method_strategy_observe_only() {
+        assert_eq!(
+            method_strategy("$/cancelRequest"),
+            CompositionStrategy::ObserveOnly
+        );
+        assert_eq!(
+            method_strategy("$/progress"),
+            CompositionStrategy::ObserveOnly
+        );
+    }
+
+    #[test]
+    fn method_strategy_unknown_defaults_to_deny() {
+        assert_eq!(
+            method_strategy("nonexistent/method"),
+            CompositionStrategy::Deny
+        );
+        assert_eq!(method_strategy(""), CompositionStrategy::Deny);
+    }
+
+    #[test]
+    fn upstream_source_new_is_healthy_and_routable() {
+        let src = UpstreamSource::new("test-src", "127.0.0.1:9999");
+        assert_eq!(src.id, "test-src");
+        assert_eq!(src.health, SourceHealth::Healthy);
+        assert!(src.is_routable());
+    }
+
+    #[test]
+    fn upstream_source_initialization_failed_is_not_routable() {
+        let mut src = UpstreamSource::new("src-a", "addr");
+        src.health = SourceHealth::InitializationFailed;
+        assert!(!src.is_routable());
+    }
+
+    #[test]
+    fn upstream_source_crashed_is_not_routable() {
+        let mut src = UpstreamSource::new("src-b", "addr");
+        src.health = SourceHealth::Crashed;
+        assert!(!src.is_routable());
+    }
+
+    #[test]
+    fn upstream_source_degraded_is_still_routable() {
+        let mut src = UpstreamSource::new("src-c", "addr");
+        src.health = SourceHealth::Degraded;
+        assert!(src.is_routable());
+    }
+
+    #[test]
+    fn upstream_source_supports_lifecycle_without_caps() {
+        let src = UpstreamSource::new("src-d", "addr");
+        assert!(src.supports_method("initialize"));
+        assert!(src.supports_method("shutdown"));
+        assert!(src.supports_method("exit"));
+    }
+
+    #[test]
+    fn upstream_source_does_not_support_hover_without_caps() {
+        let src = UpstreamSource::new("src-e", "addr");
+        // No server_capabilities set — hover not supported
+        assert!(!src.supports_method("textDocument/hover"));
+    }
+
+    #[test]
+    fn upstream_source_not_routable_does_not_support_any_method() {
+        let mut src = UpstreamSource::new("src-f", "addr");
+        src.health = SourceHealth::Crashed;
+        assert!(!src.supports_method("initialize"));
+        assert!(!src.supports_method("textDocument/hover"));
+    }
+}
+
 /// Derives whether a ServerCapabilities supports the given method.
 pub fn capability_supports_method(caps: &lsp_types_max::ServerCapabilities, method: &str) -> bool {
     match method {

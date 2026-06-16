@@ -302,6 +302,114 @@ impl CapabilityTracker {
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    fn healthy_source(id: &str) -> UpstreamSource {
+        UpstreamSource::new(id, "127.0.0.1:0")
+    }
+
+    #[test]
+    fn add_source_then_routes_lifecycle_method() {
+        let mut tracker = CapabilityTracker::new();
+        tracker.add_source(healthy_source("lang-server-1"));
+        let routable = tracker.routable_sources_for_method("initialize");
+        assert!(routable.contains(&"lang-server-1".to_string()));
+    }
+
+    #[test]
+    fn degraded_source_removed_from_routing() {
+        let mut tracker = CapabilityTracker::new();
+        tracker.add_source(healthy_source("lang-server-2"));
+        // Confirm it routes before degrading
+        assert!(tracker
+            .routable_sources_for_method("initialize")
+            .contains(&"lang-server-2".to_string()));
+        // Crash health means no longer routable
+        tracker.degrade_source("lang-server-2", SourceHealth::Crashed);
+        let routable = tracker.routable_sources_for_method("initialize");
+        assert!(!routable.contains(&"lang-server-2".to_string()));
+    }
+
+    #[test]
+    fn routable_sources_excludes_initialization_failed() {
+        let mut tracker = CapabilityTracker::new();
+        tracker.add_source(healthy_source("failing-server"));
+        tracker.degrade_source("failing-server", SourceHealth::InitializationFailed);
+        assert!(tracker
+            .routable_sources_for_method("initialize")
+            .is_empty());
+    }
+
+    #[test]
+    fn register_dynamic_returns_true_for_new_id() {
+        let mut tracker = CapabilityTracker::new();
+        tracker.add_source(healthy_source("src-a"));
+        let ok = tracker.register_dynamic("reg-1", "textDocument/hover", "src-a", json!({}));
+        assert!(ok);
+        assert!(tracker.dynamic_registrations.contains_key("reg-1"));
+    }
+
+    #[test]
+    fn register_dynamic_rejects_duplicate_id() {
+        let mut tracker = CapabilityTracker::new();
+        tracker.add_source(healthy_source("src-b"));
+        let first = tracker.register_dynamic("reg-dup", "textDocument/hover", "src-b", json!({}));
+        let second = tracker.register_dynamic("reg-dup", "textDocument/hover", "src-b", json!({}));
+        assert!(first);
+        assert!(!second);
+    }
+
+    #[test]
+    fn register_dynamic_rejects_empty_id() {
+        let mut tracker = CapabilityTracker::new();
+        tracker.add_source(healthy_source("src-c"));
+        let ok = tracker.register_dynamic("", "textDocument/hover", "src-c", json!({}));
+        assert!(!ok);
+    }
+
+    #[test]
+    fn degrade_source_to_degraded_keeps_routing() {
+        let mut tracker = CapabilityTracker::new();
+        tracker.add_source(healthy_source("src-degraded"));
+        tracker.degrade_source("src-degraded", SourceHealth::Degraded);
+        // Degraded is still routable
+        assert!(tracker
+            .routable_sources_for_method("initialize")
+            .contains(&"src-degraded".to_string()));
+    }
+
+    #[test]
+    fn degrade_source_removes_dynamic_registrations() {
+        let mut tracker = CapabilityTracker::new();
+        tracker.add_source(healthy_source("src-crash"));
+        tracker.register_dynamic("dyn-1", "textDocument/hover", "src-crash", json!({}));
+        tracker.register_dynamic("dyn-2", "textDocument/definition", "src-crash", json!({}));
+        assert_eq!(tracker.dynamic_registrations.len(), 2);
+        let removed = tracker.degrade_source("src-crash", SourceHealth::Crashed);
+        // Both dynamic registrations should be removed
+        assert_eq!(removed.len(), 2);
+        assert!(tracker.dynamic_registrations.is_empty());
+    }
+
+    #[test]
+    fn unregister_dynamic_returns_false_for_missing_id() {
+        let mut tracker = CapabilityTracker::new();
+        assert!(!tracker.unregister_dynamic("no-such-id"));
+    }
+
+    #[test]
+    fn unregister_dynamic_removes_registration() {
+        let mut tracker = CapabilityTracker::new();
+        tracker.add_source(healthy_source("src-d"));
+        tracker.register_dynamic("reg-del", "textDocument/hover", "src-d", json!({}));
+        assert!(tracker.unregister_dynamic("reg-del"));
+        assert!(!tracker.dynamic_registrations.contains_key("reg-del"));
+    }
+}
+
 pub fn client_supports(client_caps: &lsp_types_max::ClientCapabilities, method: &str) -> bool {
     let is_empty = client_caps.text_document.is_none()
         && client_caps.workspace.is_none()
