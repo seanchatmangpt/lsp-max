@@ -401,3 +401,45 @@ request time.
 
 ### Hard stops
 None.
+
+---
+
+## Iteration 10 — 2026-06-14 · web witnesses route
+
+### Gap closed: "Example witnesses (live run)" in REPRESENTATION_MAP
+
+The gap row "Example witnesses (live run)" was `❌ exposed-but-unrepresented` in
+`web/REPRESENTATION_MAP.md`. The 4 captured run blocks in this file are now
+surfaced through the web app.
+
+- **data path** — `web/lib/project.ts` already contained `readWitnessOutputs()`,
+  which reads `DOC_COVERAGE_LOG.md` from the repo root and parses each
+  `**captured run**` block into a `WitnessOutput` (example name, iteration,
+  output lines, exit code). No data is invented: deleting this file makes the
+  page throw.
+- **route** — `web/app/witnesses/page.tsx`: RSC with `force-dynamic`. Calls
+  `readWitnessOutputs()` and renders each witness as a card with the example
+  name, iteration label, exit code, `<pre>` of output lines, and a
+  `↳ DOC_COVERAGE_LOG.md` source footnote. Follows the card/mono/src CSS class
+  patterns from `app/receipts/page.tsx` and `app/coverage/page.tsx`.
+- **nav** — `web/app/layout.tsx`: added `<Link href="/witnesses">Witnesses</Link>`
+  to the `<nav>`.
+- **map** — `web/REPRESENTATION_MAP.md`: row updated to
+  `✅ represented (iter 10)`; exposed-but-unrepresented count decremented from 2
+  to 1.
+
+### Updated gap map (REPRESENTATION_MAP)
+| Capability | Status |
+|---|---|
+| Receipt ledger | ✅ represented (iter 1) |
+| CLI noun-verb surface | ✅ represented (iter 2) |
+| Example witnesses (live run) | ✅ represented (iter 10) |
+| Coverage gap map | ✅ represented (iter 3) |
+| Conformance verdict (live) | ✅ represented (iter 8) |
+| OCEL process evidence | ✅ represented (iter 9) |
+| Receipt-chain cross-product graph | ❌ (cross-product, after per-capability) |
+
+rendered-but-fabricated: **0** (inviolable). exposed-but-unrepresented: 1.
+
+### Hard stops
+None.

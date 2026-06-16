@@ -395,3 +395,69 @@ export async function readWorkspaceVersion(): Promise<string> {
   if (!m) throw new Error("workspace version not found in Cargo.toml");
   return m[1];
 }
+
+/** A captured witness output block parsed from DOC_COVERAGE_LOG.md.
+ *  Every field comes from the log — nothing is invented. */
+export interface WitnessOutput {
+  /** The example name as it appears after `cargo run --example`. */
+  example: string;
+  /** The iteration header under which this captured run was recorded. */
+  iteration: string;
+  /** The lines inside the fenced code block (the WITNESS lines). */
+  output: string[];
+  /** Exit code parsed from the header line, or null if not present. */
+  exitCode: number | null;
+}
+
+/** Parse the real captured run blocks from DOC_COVERAGE_LOG.md.
+ *  Each block is recorded under a `## Iteration N` header and follows a
+ *  "captured run" bullet that names the example and exit code.
+ *  The fences in the log are 2-space-indented (`  ``` `).
+ *  Throws if DOC_COVERAGE_LOG.md is absent. */
+export async function readWitnessOutputs(): Promise<WitnessOutput[]> {
+  const md = await fs.readFile(path.join(REPO_ROOT, "DOC_COVERAGE_LOG.md"), "utf8");
+  const witnesses: WitnessOutput[] = [];
+
+  // Split on iteration headers so each block carries its iteration label.
+  const iterSections = md.split(/(?=^## Iteration )/m);
+
+  for (const section of iterSections) {
+    const iterMatch = section.match(/^## (Iteration[^\n]*)/m);
+    const iteration = iterMatch ? iterMatch[1].trim() : "";
+
+    // Match every "captured run" bullet in this section.
+    // The bullet may span two lines when the exit code wraps; the fence is 2-space-indented.
+    // Group 1: example name (after `--example `, before `,` or `` ` `` or end of line)
+    // Group 2: exit code digits
+    // Group 3: fence content (the WITNESS lines, also 2-space-indented)
+    const captureRe =
+      /\*\*captured run\*\*\s*\(`cargo run --example ([^\s,`]+)[^)]*\$\?\s*=\s*(\d+)[^)]*\):\s*\n  ```\n([\s\S]*?)  ```/g;
+
+    let m: RegExpExecArray | null;
+    while ((m = captureRe.exec(section)) !== null) {
+      const exampleName = m[1];
+      const exitCode = parseInt(m[2], 10);
+      const fenceContent = m[3];
+      // Strip the 2-space prefix from each content line (it is indentation, not content).
+      const outputLines = fenceContent
+        .split("\n")
+        .filter((l, i, arr) => !(i === arr.length - 1 && l === ""))
+        .map((l) => (l.startsWith("  ") ? l.slice(2) : l));
+      witnesses.push({
+        example: exampleName,
+        iteration,
+        output: outputLines,
+        exitCode,
+      });
+    }
+  }
+
+  if (witnesses.length === 0) {
+    throw new Error(
+      `No captured run blocks found in ${path.join(REPO_ROOT, "DOC_COVERAGE_LOG.md")}. ` +
+        "The file must contain fenced WITNESS blocks following captured run bullets.",
+    );
+  }
+
+  return witnesses;
+}
