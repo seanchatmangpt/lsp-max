@@ -28,6 +28,9 @@ mod state;
 mod watchdog;
 
 /// Error that occurs when attempting to call the language server after it has already exited.
+///
+/// See also: [`examples/transport_utilities_explained.rs`] — a run-to-exit witness that
+/// demonstrates `ExitedError`, `ClientSocket`, and `Loopback` with real `assert!`s.
 #[derive(Clone, Debug, Eq, PartialEq)]
 #[repr(transparent)]
 pub struct ExitedError(pub i32);

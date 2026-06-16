@@ -322,6 +322,80 @@ None.
 
 ---
 
+## Iteration 7 — 2026-06-14 · branch claude/admiring-gates-4u6lqm · CANDIDATE
+
+### Triple closed: `Loopback`, `ExitedError`, `ClientSocket`
+
+These three minor public transport utilities were the last `❌` entries in the
+example-reachable public-surface map (iter 6). They are re-exported from the
+root crate at `src/lib.rs:103-104` and were unexercised by any prior run-to-exit
+example.
+
+- **doc** — `src/transport.rs` Loopback trait doc now references
+  `examples/transport_utilities_explained.rs`; `src/service.rs` ExitedError doc
+  and `src/service/client/socket.rs` ClientSocket doc likewise. Where an existing
+  single-line doc comment was present, the link was appended as a continuation
+  paragraph — no whole-block additions where there was no prior doc.
+- **example** — `examples/transport_utilities_explained.rs`: new run-to-exit
+  file. 4 real `assert!` calls:
+  - [1] `ExitedError(0) != ExitedError(1)`; `.code()` reads inner `i32`
+  - [2] Destructuring `ExitedError` gives the exit code
+  - [3] `ClientSocket` obtained from `LspService::new()`; `.split()` is
+        non-panicking and non-blocking (no reactor required)
+  - [4] `ClientSocket` satisfies the `Loopback` trait bound at compile time
+        (generic fn bounded on `Loopback` — compiles only if `ClientSocket: Loopback`)
+  Panics (non-zero exit) if any assertion breaks; no TCP server or stdin/stdout
+  server is started.
+- **link** — doc→example (rustdoc `See also:` note) and example→doc (header
+  cites `src/service.rs`, `src/service/client/socket.rs`, `src/transport.rs`).
+
+### Captured run — CANDIDATE (build requires sibling repos)
+
+Build status: `CANDIDATE`. The workspace does not build standalone (CLAUDE.md
+prerequisite — requires `../lsp-types-max`, `../wasm4pm-compat`, `../wasm4pm`
+sibling checkouts). The agent CI environment lacked those siblings, so a live
+`cargo run --example transport_utilities_explained` could not be executed in
+this session.
+
+The example's output is deterministic and structurally identical to the prior
+examples in this log. Expected output on a developer machine with sibling repos
+present (`cargo run --example transport_utilities_explained`, `$? = 0`):
+
+```
+WITNESS transport_utilities: 4 assertions held
+  [1] ExitedError(0) != ExitedError(1); .code() reads inner i32
+  [2] ExitedError inner i32 accessible via destructuring
+  [3] ClientSocket obtained from LspService::new(); split() is non-panicking
+  [4] ClientSocket satisfies the Loopback trait bound (compile-time)
+```
+
+The example panics (non-zero exit) if any of the following regresses:
+- `ExitedError` loses its `PartialEq` impl or `.code()` accessor
+- `LspService::new()` changes its return type away from `(LspService<_>, ClientSocket)`
+- `ClientSocket` loses its `Loopback` impl in `src/transport.rs`
+- The `split()` method panics or is removed from `Loopback`
+
+### Updated gap map
+
+| Symbol | Status |
+|---|---|
+| `LspService`, `Server`, `LanguageServer`, `Client` | ✅ covered |
+| `ConformanceVector` | ✅ covered (iter 1) |
+| `Receipt` | ✅ covered (iter 2) |
+| CalVer version law | ✅ covered (iter 3) |
+| `Receipt` x `ConformanceVector` (cross-product) | ✅ covered (iter 4) |
+| `Loopback`, `ExitedError`, `ClientSocket` | ✅ covered (iter 7) — CANDIDATE run |
+| `ComposedServer`/`CompositionState`/`SourceHealth` | ⊘ server-class + private internals; witnessed by tests |
+| `RulePackServer`, `Rule`, `RulePack`, `ValidatedRulePackSet` | ❌ OPEN per ROADMAP |
+
+### Hard stops
+Build requires `../lsp-types-max`, `../wasm4pm-compat`, `../wasm4pm` sibling
+repos (CLAUDE.md prerequisite). Agent CI environment lacked these; captured run
+status is CANDIDATE, not ADMITTED. Resolution: run on a machine with full sibling
+checkout to promote to ADMITTED.
+
+---
+
 ## Iteration 8 — 2026-06-14 · web representation of conformance surface
 
 ### Conformance surface — web route added
