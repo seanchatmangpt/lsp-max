@@ -88,3 +88,97 @@ A `PreToolUse` hook in `.claude/settings.json` runs `lsp-max-cli gate check` bef
 - **Exit 1** — ANDON is set; Bash is blocked until the gate clears.
 
 This enforces `Lambda_CD^runtime`: no shell-side action (build, test, release, format) may proceed while an active ANDON signal is present. Resolve all `WASM4PM-*` and `GGEN-*` diagnostics before the gate will clear.
+
+## Tooling & DX Workflow
+
+Build orchestration uses `just` recipes as the primary development interface. Key recipes:
+
+- **`just test`** — Run `cargo test --workspace`. Executes unit and integration tests across all crates; use for validation during development.
+- **`just test-e2e`** — Run `cargo test --test e2e`. Runs end-to-end integration tests against live LSP surfaces; validates gate conformance and agent workflows.
+- **`just test-pre-publish`** — Run `dx-verify` + `dx-polish` + tests with `--include-ignored`. Full pre-release pipeline: architectural boundary scan, code quality gates, and ignored test suites.
+- **`just dx-verify`** — Architectural boundary scan across sibling repos (`../lsp-types-max`, `../wasm4pm-compat`, `../wasm4pm`). Enforces: no plain `tower-lsp` references, no forbidden type crates, no legacy/deprecated/shim/facade language in sibling repos. **Must pass before any merge.**
+- **`just dx-polish`** — `cargo fmt --all` + `cargo clippy --workspace --all-targets --all-features -- -D warnings`. Code formatting and lint enforcement; `-D warnings` is non-negotiable.
+
+**ANDON Gate (PreToolUse Hook)**: The `.claude/settings.json` contains a `PreToolUse` hook that runs `lsp-max-cli gate check` before every Bash tool call. If the gate is set (exit 1), shell commands are blocked. The gate clears only when all `WASM4PM-*` and `GGEN-*` diagnostics are resolved. This enforces `Lambda_CD^runtime`: no build/test/release/format actions proceed while ANDON is active.
+
+**`scripts/` directory**: Contains utility scripts for law compliance, receipt validation, and diagnostic automation. Notable:
+- **`scripts/check-law-compliance.sh`** — Detects reintroduction of plain `tower-lsp` references and victory language across the codebase.
+- **`scripts/validate-receipt-chain.sh`** — Verifies SHA256 digests and boundary markers on received artifacts.
+- Other scripts support conformance scoring, admission law tracing, and gate-state inspection.
+
+Run scripts directly when debugging compliance issues or validating reception chains; they are not automatically invoked by recipes.
+
+## Common Anti-Patterns
+
+Avoid these patterns; they are enforced by linting, gate rules, and code review:
+
+1. **Using half-finished features** — Don't reference proposed LSP 3.18 features unless they are marked `SUPPORTED_WITH_TRANSCRIPT` with a receipt. `CANDIDATE` or `BLOCKED` features may be removed or changed before stabilization.
+
+2. **Error handling for impossible cases** — Don't add error branches for conditions the type system already guarantees are impossible (e.g., handling a `None` from a `let x = val.unwrap()` path). Well-typed code is self-documenting; redundant error handling obscures intent.
+
+3. **Inventing explanatory comments** — Don't comment *what* the code does; well-named functions and variables already convey that. Comments describe *why* and *context*: design decisions, invariants, and non-obvious coupling.
+
+4. **Exhaustive struct literals** — When constructing `CodeAction`, `Diagnostic`, `LSPRequest`, or similar types, use `..Default::default()` for trailing fields, not exhaustive field lists. As LSP 3.18 evolves, new fields may be added; exhaustive structs will break at the call site.
+
+5. **Collapsing `Unknown` into `Admitted` or `Refused`** — `ConformanceVector` law-axis sets distinguish three states. Never coerce `Unknown` to either polarity; it signals a gap in tracing or a precondition not yet met.
+
+6. **Using victory language** — Avoid "done", "all clean", "fully admitted", "solved", "guaranteed" in code, comments, commit messages, or reports. Use bounded statuses: `ADMITTED`, `CANDIDATE`, `BLOCKED`, `REFUSED`, `UNKNOWN`, `PARTIAL`, `OPEN`, etc.
+
+## Debugging & Troubleshooting
+
+### WASM4PM Build Failures
+
+Symptom: `cargo build` fails with "unresolved import `wasm4pm_compat`" or similar.
+
+**Check**: Verify sibling checkout:
+```sh
+ls ../wasm4pm ../wasm4pm-compat ../lsp-types-max
+```
+
+If missing, clone the repos into parent directory and re-run `just test`. The workspace uses `[patch.crates-io]` and path dependencies; they must be present in the filesystem, not fetched from crates.io.
+
+### Reception Validation Failures
+
+Symptom: Diagnostic `ANTI-LLM-CHEAT-LSP-RECEIPT-INVALID` or SHA256 chain mismatch.
+
+**Check**: Verify the receipt artifact chain:
+```sh
+scripts/validate-receipt-chain.sh <receipt-path>
+```
+
+Look for boundary markers (`-----BEGIN RECEIPT-----`), valid SHA256 digests, and checkpoint closure. Receipts are not valid if they lack boundary markers or have digest mismatches.
+
+### Conformance Score Anomalies
+
+Symptom: A feature row shows low conformance or unexpected `REFUSED` status despite code changes.
+
+**Check**: Trace admission law axes:
+```sh
+cargo test test_conformance_vector -- --nocapture
+cargo test -p lsp-max-protocol test_law_axis_admission -- --nocapture
+```
+
+Use the output to identify which law axis is refusing admission (e.g., transcript missing, negative control missing, receipt not signed). Conformance is cumulative; all law axes must pass.
+
+### Tower-LSP Reference Detection
+
+Symptom: Clippy or `dx-verify` fails with "forbidden: plain tower-lsp reference".
+
+**Check**: Run the compliance scanner:
+```sh
+scripts/check-law-compliance.sh
+```
+
+This greps for plain `tower-lsp`, `tower_lsp`, victory language, and fake receipt markers across the codebase. Fix any matches by renaming to `lsp-max` and ensuring all diagnostic claims have receipt artifacts.
+
+### Gate State Inspection
+
+Symptom: ANDON gate is set, blocking Bash commands; unclear what diagnostics are active.
+
+**Check**: Query gate state:
+```sh
+lsp-max-cli gate check  # Exit 0 = gate clear; exit 1 = gate set
+lsp-max-cli gate list   # (if available) List active WASM4PM-* / GGEN-* diagnostics
+```
+
+Or inspect the `.claude/settings.json` `PreToolUse` hook directly to see which gates are wired. Resolve all listed diagnostics to clear the ANDON signal.
