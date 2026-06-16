@@ -319,7 +319,8 @@ async fn test_b9_set_trace_notification() {
     )
     .await;
 
-    let trace = wait_for_event_b9(&events.set_trace, Duration::from_millis(200), "$/setTrace").await;
+    let trace =
+        wait_for_event_b9(&events.set_trace, Duration::from_millis(200), "$/setTrace").await;
     assert_eq!(trace.value, lsp::TraceValue::Messages);
 
     shutdown_b9(tx, responses, server_handle, reader_handle).await;

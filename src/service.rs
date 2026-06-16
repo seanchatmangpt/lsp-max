@@ -133,7 +133,10 @@ impl<S: LanguageServer> Service<Request> for LspService<S> {
         if self.state.poll_initializing(cx).is_pending() {
             return Poll::Pending;
         }
-        tracing::trace!("LspService::poll_ready delegating to inner (state={:?})", cur_state);
+        tracing::trace!(
+            "LspService::poll_ready delegating to inner (state={:?})",
+            cur_state
+        );
         self.inner.poll_ready(cx)
     }
 

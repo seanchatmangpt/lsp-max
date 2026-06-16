@@ -84,8 +84,12 @@ async fn test_dogfood_loopback_integration() {
     )
     .await;
 
-    let init_resp =
-        wait_for_response(client_received_responses.clone(), 1, Duration::from_millis(200)).await;
+    let init_resp = wait_for_response(
+        client_received_responses.clone(),
+        1,
+        Duration::from_millis(200),
+    )
+    .await;
     println!("Client: received initialize response: {:?}", init_resp);
     assert!(
         init_resp.get("result").is_some(),
@@ -115,8 +119,12 @@ async fn test_dogfood_loopback_integration() {
     )
     .await;
 
-    let inline_resp =
-        wait_for_response(client_received_responses.clone(), 2, Duration::from_millis(200)).await;
+    let inline_resp = wait_for_response(
+        client_received_responses.clone(),
+        2,
+        Duration::from_millis(200),
+    )
+    .await;
     println!(
         "Client: received inlineCompletion response: {:?}",
         inline_resp
@@ -145,8 +153,12 @@ async fn test_dogfood_loopback_integration() {
     )
     .await;
 
-    let content_resp =
-        wait_for_response(client_received_responses.clone(), 3, Duration::from_millis(200)).await;
+    let content_resp = wait_for_response(
+        client_received_responses.clone(),
+        3,
+        Duration::from_millis(200),
+    )
+    .await;
     let content_result = content_resp.get("result").unwrap();
     assert_eq!(
         content_result.get("text").unwrap().as_str(),
@@ -168,8 +180,12 @@ async fn test_dogfood_loopback_integration() {
     )
     .await;
 
-    let format_resp =
-        wait_for_response(client_received_responses.clone(), 4, Duration::from_millis(200)).await;
+    let format_resp = wait_for_response(
+        client_received_responses.clone(),
+        4,
+        Duration::from_millis(200),
+    )
+    .await;
     let format_result = format_resp.get("result").unwrap();
     assert_eq!(
         format_result
@@ -347,8 +363,12 @@ async fn test_dogfood_loopback_integration() {
     )
     .await;
 
-    let shutdown_resp =
-        wait_for_response(client_received_responses.clone(), 5, Duration::from_millis(200)).await;
+    let shutdown_resp = wait_for_response(
+        client_received_responses.clone(),
+        5,
+        Duration::from_millis(200),
+    )
+    .await;
     assert!(shutdown_resp.get("result").is_some());
 
     println!("Client: sending exit");

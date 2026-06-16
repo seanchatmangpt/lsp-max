@@ -145,21 +145,30 @@ mod tests {
 
     #[test]
     fn law_gate_eval_returns_true_when_predicate_passes() {
-        let gate = LawGate { name: "always-true", check: |_| true };
+        let gate = LawGate {
+            name: "always-true",
+            check: |_| true,
+        };
         let reg = minimal_registry(State::Initialized);
         assert!(gate.eval(&reg));
     }
 
     #[test]
     fn law_gate_eval_returns_false_when_predicate_fails() {
-        let gate = LawGate { name: "always-false", check: |_| false };
+        let gate = LawGate {
+            name: "always-false",
+            check: |_| false,
+        };
         let reg = minimal_registry(State::Initialized);
         assert!(!gate.eval(&reg));
     }
 
     #[test]
     fn law_gate_debug_shows_name() {
-        let gate = LawGate { name: "my-gate", check: |_| true };
+        let gate = LawGate {
+            name: "my-gate",
+            check: |_| true,
+        };
         assert!(format!("{gate:?}").contains("my-gate"));
     }
 
@@ -172,8 +181,14 @@ mod tests {
     #[test]
     fn accept_gates_all_pass() {
         let gates = [
-            LawGate { name: "g1", check: |_| true },
-            LawGate { name: "g2", check: |_| true },
+            LawGate {
+                name: "g1",
+                check: |_| true,
+            },
+            LawGate {
+                name: "g2",
+                check: |_| true,
+            },
         ];
         let reg = minimal_registry(State::Initialized);
         assert!(accept_gates(&reg, &gates));
@@ -182,8 +197,14 @@ mod tests {
     #[test]
     fn accept_gates_fails_on_first_false_gate() {
         let gates = [
-            LawGate { name: "fail", check: |_| false },
-            LawGate { name: "pass", check: |_| true },
+            LawGate {
+                name: "fail",
+                check: |_| false,
+            },
+            LawGate {
+                name: "pass",
+                check: |_| true,
+            },
         ];
         let reg = minimal_registry(State::Initialized);
         assert!(!accept_gates(&reg, &gates));

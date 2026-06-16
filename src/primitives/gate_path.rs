@@ -62,7 +62,9 @@ mod tests {
     fn gate_file_path_has_sixteen_hex_char_suffix() {
         let path = gate_file_path();
         let name = path.file_name().unwrap().to_string_lossy().into_owned();
-        let suffix = name.strip_prefix("lsp-max-gate-").expect("missing lsp-max-gate- prefix");
+        let suffix = name
+            .strip_prefix("lsp-max-gate-")
+            .expect("missing lsp-max-gate- prefix");
         assert_eq!(suffix.len(), 16, "hash suffix must be 16 hex chars");
         assert!(
             suffix.chars().all(|c| c.is_ascii_hexdigit()),
