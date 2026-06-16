@@ -1,6 +1,7 @@
 use serde_json::json;
 
 #[tokio::test]
+#[ignore = "e2e: requires live server, run with --include-ignored"]
 async fn test_f4_t3_diagnostics_filtering_contract() {
     let mut mock = crate::mock_server::MockServer::start().await;
     let upstreams = vec![("ggen-lsp".to_string(), mock.addr.to_string())];

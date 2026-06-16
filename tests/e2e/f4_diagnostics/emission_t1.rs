@@ -2,6 +2,7 @@ use crate::test_harness::TestHarness;
 use serde_json::json;
 
 #[tokio::test]
+#[ignore = "e2e: requires live server, run with --include-ignored"]
 async fn test_f4_t1_publish_diagnostics_forwarding() {
     let mut harness = TestHarness::new(1).await;
     let init_params = json!({
@@ -64,6 +65,7 @@ async fn test_f4_t1_publish_diagnostics_forwarding() {
 }
 
 #[tokio::test]
+#[ignore = "e2e: requires live server, run with --include-ignored"]
 async fn test_f4_t1_diagnose_drift_code() {
     let mut harness = TestHarness::new(1).await;
     let init_params = json!({
@@ -120,6 +122,7 @@ async fn test_f4_t1_diagnose_drift_code() {
 }
 
 #[tokio::test]
+#[ignore = "e2e: requires live server, run with --include-ignored"]
 async fn test_f4_t1_diagnose_missing_receipt() {
     let mut harness = TestHarness::new(1).await;
     let init_params = json!({
@@ -176,6 +179,7 @@ async fn test_f4_t1_diagnose_missing_receipt() {
 }
 
 #[tokio::test]
+#[ignore = "e2e: requires live server, run with --include-ignored"]
 async fn test_f4_t1_diagnose_incomplete_customization() {
     let mut harness = TestHarness::new(1).await;
     let init_params = json!({
@@ -232,6 +236,7 @@ async fn test_f4_t1_diagnose_incomplete_customization() {
 }
 
 #[tokio::test]
+#[ignore = "e2e: requires live server, run with --include-ignored"]
 async fn test_f4_t1_detect_projection_opportunity() {
     let mut harness = TestHarness::new(1).await;
     let init_params = json!({
