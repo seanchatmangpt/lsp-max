@@ -32,3 +32,46 @@ pub fn gate_file_path() -> PathBuf {
         .unwrap_or_else(|_| PathBuf::from("/tmp"));
     dir.join(format!("lsp-max-gate-{hash:016x}"))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn fnv1a_empty_bytes_returns_offset_basis() {
+        assert_eq!(fnv1a(b""), 0xcbf29ce484222325u64);
+    }
+
+    #[test]
+    fn fnv1a_deterministic_same_input_same_output() {
+        assert_eq!(fnv1a(b"lsp-max"), fnv1a(b"lsp-max"));
+    }
+
+    #[test]
+    fn fnv1a_distinct_inputs_differ() {
+        assert_ne!(fnv1a(b"foo"), fnv1a(b"bar"));
+    }
+
+    #[test]
+    fn gate_file_path_contains_lsp_max_gate_prefix() {
+        let path = gate_file_path();
+        assert!(path.to_string_lossy().contains("lsp-max-gate-"));
+    }
+
+    #[test]
+    fn gate_file_path_has_sixteen_hex_char_suffix() {
+        let path = gate_file_path();
+        let name = path.file_name().unwrap().to_string_lossy().into_owned();
+        let suffix = name.strip_prefix("lsp-max-gate-").expect("missing lsp-max-gate- prefix");
+        assert_eq!(suffix.len(), 16, "hash suffix must be 16 hex chars");
+        assert!(
+            suffix.chars().all(|c| c.is_ascii_hexdigit()),
+            "suffix must be lowercase hex, got: {suffix}"
+        );
+    }
+
+    #[test]
+    fn gate_file_path_is_deterministic() {
+        assert_eq!(gate_file_path(), gate_file_path());
+    }
+}

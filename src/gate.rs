@@ -118,3 +118,110 @@ pub fn run_gate_logic(
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::service::State;
+    use std::collections::HashMap;
+
+    fn minimal_registry(state: State) -> crate::ServerRegistry {
+        crate::ServerRegistry {
+            client_capabilities: None,
+            server_capabilities: None,
+            diagnostics: HashMap::new(),
+            repair_plans: HashMap::new(),
+            gates: HashMap::new(),
+            receipts: HashMap::new(),
+            snapshots: HashMap::new(),
+            cleared_diagnostics: std::collections::HashSet::new(),
+            current_state: state,
+            document_versions: HashMap::new(),
+            root_path: std::path::PathBuf::from("/tmp"),
+            action_seq: 0,
+            conformance_delta_log: std::collections::VecDeque::new(),
+        }
+    }
+
+    #[test]
+    fn law_gate_eval_returns_true_when_predicate_passes() {
+        let gate = LawGate { name: "always-true", check: |_| true };
+        let reg = minimal_registry(State::Initialized);
+        assert!(gate.eval(&reg));
+    }
+
+    #[test]
+    fn law_gate_eval_returns_false_when_predicate_fails() {
+        let gate = LawGate { name: "always-false", check: |_| false };
+        let reg = minimal_registry(State::Initialized);
+        assert!(!gate.eval(&reg));
+    }
+
+    #[test]
+    fn law_gate_debug_shows_name() {
+        let gate = LawGate { name: "my-gate", check: |_| true };
+        assert!(format!("{gate:?}").contains("my-gate"));
+    }
+
+    #[test]
+    fn accept_gates_empty_slice_always_passes() {
+        let reg = minimal_registry(State::Uninitialized);
+        assert!(accept_gates(&reg, &[]));
+    }
+
+    #[test]
+    fn accept_gates_all_pass() {
+        let gates = [
+            LawGate { name: "g1", check: |_| true },
+            LawGate { name: "g2", check: |_| true },
+        ];
+        let reg = minimal_registry(State::Initialized);
+        assert!(accept_gates(&reg, &gates));
+    }
+
+    #[test]
+    fn accept_gates_fails_on_first_false_gate() {
+        let gates = [
+            LawGate { name: "fail", check: |_| false },
+            LawGate { name: "pass", check: |_| true },
+        ];
+        let reg = minimal_registry(State::Initialized);
+        assert!(!accept_gates(&reg, &gates));
+    }
+
+    #[test]
+    fn default_gates_block_uninitialized_state() {
+        let reg = minimal_registry(State::Uninitialized);
+        assert!(!accept_gates(&reg, DEFAULT_GATES));
+    }
+
+    #[test]
+    fn run_gate_logic_some_gate_always_returns_true() {
+        let result = run_gate_logic(
+            "some-gate",
+            State::Uninitialized,
+            std::path::PathBuf::from("/tmp"),
+        );
+        assert!(result);
+    }
+
+    #[test]
+    fn run_gate_logic_state_check_passes_when_initialized() {
+        let result = run_gate_logic(
+            "gate-state-check",
+            State::Initialized,
+            std::path::PathBuf::from("/tmp"),
+        );
+        assert!(result);
+    }
+
+    #[test]
+    fn run_gate_logic_state_check_fails_when_uninitialized() {
+        let result = run_gate_logic(
+            "gate-state-check",
+            State::Uninitialized,
+            std::path::PathBuf::from("/tmp"),
+        );
+        assert!(!result);
+    }
+}

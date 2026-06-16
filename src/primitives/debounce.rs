@@ -94,6 +94,70 @@ where
         multiplier = tracing::field::Empty,
     )
 )]
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::sync::{
+        atomic::{AtomicU64, Ordering},
+        Arc,
+    };
+
+    #[tokio::test]
+    #[ignore]
+    async fn debounce_fires_callback_after_quiet_window() {
+        let counter = Arc::new(AtomicU64::new(0));
+        let c = Arc::clone(&counter);
+        let handle = debounce(Duration::from_millis(20), move || {
+            let c = Arc::clone(&c);
+            async move {
+                c.fetch_add(1, Ordering::SeqCst);
+            }
+        });
+        handle.trigger();
+        tokio::time::sleep(Duration::from_millis(80)).await;
+        assert_eq!(counter.load(Ordering::SeqCst), 1);
+    }
+
+    #[tokio::test]
+    #[ignore]
+    async fn debounce_coalesces_rapid_triggers_into_one_call() {
+        let counter = Arc::new(AtomicU64::new(0));
+        let c = Arc::clone(&counter);
+        let handle = debounce(Duration::from_millis(30), move || {
+            let c = Arc::clone(&c);
+            async move {
+                c.fetch_add(1, Ordering::SeqCst);
+            }
+        });
+        for _ in 0..5 {
+            handle.trigger();
+        }
+        tokio::time::sleep(Duration::from_millis(100)).await;
+        assert_eq!(
+            counter.load(Ordering::SeqCst),
+            1,
+            "five rapid triggers must coalesce into one callback"
+        );
+    }
+
+    #[tokio::test]
+    #[ignore]
+    async fn debounce_handle_clone_shares_trigger_channel() {
+        let counter = Arc::new(AtomicU64::new(0));
+        let c = Arc::clone(&counter);
+        let handle = debounce(Duration::from_millis(20), move || {
+            let c = Arc::clone(&c);
+            async move {
+                c.fetch_add(1, Ordering::SeqCst);
+            }
+        });
+        let handle2 = handle.clone();
+        handle2.trigger();
+        tokio::time::sleep(Duration::from_millis(80)).await;
+        assert_eq!(counter.load(Ordering::SeqCst), 1);
+    }
+}
+
 pub fn debounce_adaptive<F, Fut>(
     store: DocumentStore,
     uri: Url,

@@ -154,6 +154,122 @@ fn apply_incremental(content: &str, change: &TextDocumentContentChangeEvent) -> 
     out
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use lsp_types_max::Url;
+
+    fn test_url() -> Url {
+        Url::parse("file:///tmp/test.rs").unwrap()
+    }
+
+    fn whole_change(text: &str) -> TextDocumentContentChangeEvent {
+        TextDocumentContentChangeEvent {
+            range: None,
+            range_length: None,
+            text: text.to_string(),
+        }
+    }
+
+    #[test]
+    fn fnv1a_64_empty_returns_offset_basis() {
+        assert_eq!(fnv1a_64(b""), 0xcbf29ce484222325u64);
+    }
+
+    #[test]
+    fn fnv1a_64_deterministic() {
+        assert_eq!(fnv1a_64(b"hello"), fnv1a_64(b"hello"));
+    }
+
+    #[test]
+    fn fnv1a_64_distinct_inputs_produce_different_hashes() {
+        assert_ne!(fnv1a_64(b"hello"), fnv1a_64(b"world"));
+    }
+
+    #[test]
+    fn open_and_get_content_round_trips() {
+        let store = DocumentStore::new();
+        let uri = test_url();
+        store.open(uri.clone(), "hello".to_string(), 1);
+        assert_eq!(store.get_content(&uri).as_deref(), Some("hello"));
+    }
+
+    #[test]
+    fn version_tracks_open_version() {
+        let store = DocumentStore::new();
+        let uri = test_url();
+        store.open(uri.clone(), String::new(), 7);
+        assert_eq!(store.version(&uri), Some(7));
+    }
+
+    #[test]
+    fn update_whole_document_replaces_content_and_version() {
+        let store = DocumentStore::new();
+        let uri = test_url();
+        store.open(uri.clone(), "old".to_string(), 1);
+        store.update(&uri, vec![whole_change("new")], 2);
+        assert_eq!(store.get_content(&uri).as_deref(), Some("new"));
+        assert_eq!(store.version(&uri), Some(2));
+    }
+
+    #[test]
+    fn close_removes_document() {
+        let store = DocumentStore::new();
+        let uri = test_url();
+        store.open(uri.clone(), "x".to_string(), 1);
+        store.close(&uri);
+        assert_eq!(store.get_content(&uri), None);
+        assert!(!store.is_open(&uri));
+    }
+
+    #[test]
+    fn is_open_false_for_never_opened_uri() {
+        let store = DocumentStore::new();
+        assert!(!store.is_open(&test_url()));
+    }
+
+    #[test]
+    fn activation_count_increments_on_each_update() {
+        let store = DocumentStore::new();
+        let uri = test_url();
+        store.open(uri.clone(), "v1".to_string(), 1);
+        assert_eq!(store.activation_count(&uri), 0);
+        store.update(&uri, vec![whole_change("v2")], 2);
+        assert_eq!(store.activation_count(&uri), 1);
+        store.update(&uri, vec![whole_change("v3")], 3);
+        assert_eq!(store.activation_count(&uri), 2);
+    }
+
+    #[test]
+    fn content_hash_changes_when_content_changes() {
+        let store = DocumentStore::new();
+        let uri = test_url();
+        store.open(uri.clone(), "a".to_string(), 1);
+        let h1 = store.content_hash(&uri).unwrap();
+        store.update(&uri, vec![whole_change("b")], 2);
+        let h2 = store.content_hash(&uri).unwrap();
+        assert_ne!(h1, h2);
+    }
+
+    #[test]
+    fn with_applies_function_without_cloning_content() {
+        let store = DocumentStore::new();
+        let uri = test_url();
+        store.open(uri.clone(), "probe".to_string(), 42);
+        let version = store.with(&uri, |doc| doc.version).unwrap();
+        assert_eq!(version, 42);
+    }
+
+    #[test]
+    fn clone_shares_inner_store() {
+        let store = DocumentStore::new();
+        let clone = store.clone();
+        let uri = test_url();
+        store.open(uri.clone(), "shared".to_string(), 1);
+        assert_eq!(clone.get_content(&uri).as_deref(), Some("shared"));
+    }
+}
+
 /// Convert a `(line, utf16_col)` LSP position to a UTF-8 byte offset.
 fn lsp_pos_to_byte(content: &str, line: usize, character: usize) -> usize {
     // Walk to the start of `line`.
