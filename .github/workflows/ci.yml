@@ -15,6 +15,7 @@ on:
 env:
   CARGO_TERM_COLOR: always
   RUST_BACKTRACE: 1
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   # Format check
@@ -23,10 +24,34 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          path: lsp-max
+
+      # Sibling repos required by Cargo.toml path deps and [patch.crates-io].
+      # If any sibling repo is private, add a SIBLING_REPO_TOKEN secret (PAT
+      # with repo read access). Public repos work without a token.
+      - uses: actions/checkout@v4
+        with:
+          repository: seanchatmangpt/lsp-types-max
+          path: lsp-types-max
+          token: ${{ secrets.SIBLING_REPO_TOKEN || github.token }}
+
+      - uses: actions/checkout@v4
+        with:
+          repository: seanchatmangpt/wasm4pm-compat
+          path: wasm4pm-compat
+
+      - uses: actions/checkout@v4
+        with:
+          repository: seanchatmangpt/wasm4pm
+          path: wasm4pm
+
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt
+
       - run: cargo fmt --all -- --check
+        working-directory: lsp-max
 
   # Lint check with all features
   clippy:
@@ -34,11 +59,35 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          path: lsp-max
+
+      - uses: actions/checkout@v4
+        with:
+          repository: seanchatmangpt/lsp-types-max
+          path: lsp-types-max
+          token: ${{ secrets.SIBLING_REPO_TOKEN || github.token }}
+
+      - uses: actions/checkout@v4
+        with:
+          repository: seanchatmangpt/wasm4pm-compat
+          path: wasm4pm-compat
+
+      - uses: actions/checkout@v4
+        with:
+          repository: seanchatmangpt/wasm4pm
+          path: wasm4pm
+
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy
+
       - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: lsp-max
+
       - run: cargo clippy --workspace --all-targets --all-features -- -D warnings
+        working-directory: lsp-max
 
   # Test suite with 10m timeout
   test:
@@ -47,9 +96,33 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+        with:
+          path: lsp-max
+
+      - uses: actions/checkout@v4
+        with:
+          repository: seanchatmangpt/lsp-types-max
+          path: lsp-types-max
+          token: ${{ secrets.SIBLING_REPO_TOKEN || github.token }}
+
+      - uses: actions/checkout@v4
+        with:
+          repository: seanchatmangpt/wasm4pm-compat
+          path: wasm4pm-compat
+
+      - uses: actions/checkout@v4
+        with:
+          repository: seanchatmangpt/wasm4pm
+          path: wasm4pm
+
       - uses: dtolnay/rust-toolchain@stable
+
       - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: lsp-max
+
       - run: cargo test --workspace
+        working-directory: lsp-max
 
   # Documentation build and dead link check
   docs:
@@ -57,12 +130,38 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          path: lsp-max
+
+      - uses: actions/checkout@v4
+        with:
+          repository: seanchatmangpt/lsp-types-max
+          path: lsp-types-max
+          token: ${{ secrets.SIBLING_REPO_TOKEN || github.token }}
+
+      - uses: actions/checkout@v4
+        with:
+          repository: seanchatmangpt/wasm4pm-compat
+          path: wasm4pm-compat
+
+      - uses: actions/checkout@v4
+        with:
+          repository: seanchatmangpt/wasm4pm
+          path: wasm4pm
+
       - uses: dtolnay/rust-toolchain@stable
+
       - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: lsp-max
+
       - run: cargo doc --workspace --no-deps --all-features
+        working-directory: lsp-max
         env:
           RUSTDOCFLAGS: "-D warnings"
+
       - name: Check for dead links (if cargo-deadlinks available)
+        working-directory: lsp-max
         run: |
           if cargo install --list | grep -q cargo-deadlinks; then
             cargo deadlinks --check html 2>/dev/null || true
