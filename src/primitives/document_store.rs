@@ -1,4 +1,4 @@
-use lsp_types_max::{TextDocumentContentChangeEvent, Url};
+use lsp_types_max::{TextDocumentContentChangeEvent, Uri as Url};
 use parking_lot::RwLock;
 use rustc_hash::FxHashMap;
 use std::sync::Arc;
