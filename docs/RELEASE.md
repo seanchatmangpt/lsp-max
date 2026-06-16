@@ -38,6 +38,22 @@ All version updates are enforced by the `anti-llm-cheat-lsp` diagnostic suite (f
 
 **How:**
 
+**Option A: Using Just Recipe (Recommended)**
+
+```sh
+# Determine the new CalVer date: 2026-07-15 → version 26.7.15 (YY.M.D)
+just release-version-bump 26.7.15
+
+# This will:
+# 1. Update all version references via cargo set-version
+# 2. Verify all path deps are synced
+# 3. Run diagnostic canary (exit 0 required)
+# 4. Create a single commit with the version bump
+# 5. Verify gate passes (ANDON enforcement)
+```
+
+**Option B: Manual Steps**
+
 ```sh
 # 1. Determine the new CalVer date. Today is 2026-06-14, next release is 2026-07-15
 #    Next version: 26.7.15 (YY.M.D)
@@ -63,7 +79,7 @@ CalVer (YY.M.D) convention enforced by ANTI-LLM-VERSION-* diagnostics.
 https://claude.ai/code/session_01ESRv2v2dcXUvJj7VpkohkY"
 
 # 6. Verify the gate passes (required by ANDON)
-lsp-max-cli gate check
+cargo run -p lsp-max-cli -- gate check
 # Must exit 0 before proceeding
 ```
 
@@ -77,11 +93,28 @@ When a crate outside this workspace depends on `lsp-max` and declares its own `t
 
 **Prerequisite:** Version has been bumped (section 1).
 
-### Checklist
+### Checklist (One Command)
 
-- [ ] **Gate Clear**: Run `lsp-max-cli gate check` → exit 0
+**Quick Mode: Using Just Recipe**
+
+```sh
+just release-validate
+```
+
+This runs all checks in sequence:
+- Gate check (exit 0 required)
+- dx-verify (boundaries)
+- dx-polish (format + linting)
+- test-pre-publish (full integration suite)
+- qol-sync (sibling repos consistency)
+
+**Manual Checklist**
+
+If you prefer to run checks individually:
+
+- [ ] **Gate Clear**: Run `cargo run -p lsp-max-cli -- gate check` → exit 0
   ```sh
-  lsp-max-cli gate check
+  cargo run -p lsp-max-cli -- gate check
   ```
   If exit 1, resolve all active WASM4PM-* and GGEN-* diagnostics.
 
@@ -103,8 +136,9 @@ When a crate outside this workspace depends on `lsp-max` and declares its own `t
   ```
   Runs dx-verify + dx-polish + `cargo test --workspace -- --include-ignored`.
 
-- [ ] **Sibling Repos Versioned**: Ensure consistency with patch deps
+- [ ] **Sibling Repos Synced**: Fetch latest and verify patch deps
   ```sh
+  just qol-sync
   # Verify patch.crates-io overrides are in sync
   grep "wasm4pm.*=" Cargo.toml
   # Should match versions in ../wasm4pm/Cargo.toml and ../wasm4pm-compat/Cargo.toml
@@ -117,7 +151,7 @@ When a crate outside this workspace depends on `lsp-max` and declares its own `t
   # Verify no BLOCKED or REFUSED receipts are present for this release
   ```
 
-- [ ] **Cargo.lock Clean**: Workspace builds with deterministic lockfile
+- [ ] **Cargo.lock Deterministic**: Workspace builds reproducibly
   ```sh
   cargo update --aggressive
   cargo build --all-features
@@ -154,64 +188,45 @@ If ANY of the following are true, **do not proceed** — address and re-run chec
 
 ### Publish Order
 
-**Strict order** — Dependencies must be published before consumers:
+**Understanding the Order**
 
-1. **lsp-max-protocol** — Lowest-level: method declarations, ConformanceVector, MaxDiagnostic
-2. **lsp-max-runtime** — Depends on lsp-max-protocol
-3. **lsp-max-agent** — Depends on lsp-max-runtime
-4. **lsp-max-macros** — Internal macros (low-level dependency)
-5. **Root crate (lsp-max)** — Depends on all above
+The strict order below ensures no dependency errors during publish:
 
-### Per-Crate Publish Script
+1. **lsp-max-protocol** — Lowest-level types: `MaxDiagnostic`, `ConformanceVector`, method declarations
+2. **lsp-max-runtime** — State machine and phase transitions; depends on protocol
+3. **lsp-max-agent** — Agent analysis bundles; depends on runtime
+4. **lsp-max-macros** — Internal proc macros (low-level dependency)
+5. **lsp-max** — Root crate; depends on all above
 
-For each crate in order:
-
-```sh
-# Example: publishing lsp-max-protocol
-set -euo pipefail
-CRATE="lsp-max-protocol"
-VERSION="26.6.9"
-
-echo "Publishing $CRATE @ $VERSION..."
-
-# 1. Verify the crate exists and builds in isolation
-cargo build -p "$CRATE" --all-features
-
-# 2. Run tests for this crate
-cargo test -p "$CRATE"
-
-# 3. Dry-run publish to check manifests
-cargo publish -p "$CRATE" --dry-run
-
-# 4. Publish (blocks until crates.io indexes, ~2 min)
-cargo publish -p "$CRATE" \
-  --token "$CARGO_TOKEN" \
-  --allow-dirty  # workspace version already updated
-
-# 5. Wait for crates.io to index (polling)
-sleep 5
-until curl -s "https://crates.io/api/v1/crates/$CRATE/$VERSION" | grep -q '"version":"'$VERSION'"'; do
-  echo "Waiting for crates.io to index $CRATE/$VERSION..."
-  sleep 5
-done
-
-echo "✓ $CRATE/$VERSION published and indexed"
-```
+If you publish out of order, crates.io will reject the publish with a dependency resolution error. The recipes enforce the correct order automatically.
 
 ### Batch Publish (Automated)
 
-Use the recipe `release-publish` (see section 7):
+**Step 1: Dry-Run (No Credentials Needed)**
 
 ```sh
+just release-dry-run
+```
+
+This validates manifest files without publishing:
+- Checks Cargo.toml syntax
+- Verifies crate dependencies resolve
+- Tests packaging (same as `cargo package`)
+- **Does not upload** to crates.io
+
+**Step 2: Publish (Credentials Required)**
+
+```sh
+export CARGO_TOKEN="<your-crates-io-api-token>"
 just release-publish 26.6.9
 ```
 
-This script:
-- Exports `CARGO_TOKEN` from environment
-- Publishes in the strict dependency order
-- Polls crates.io for confirmation of each crate
+This recipe:
+- Publishes in strict dependency order: lsp-max-protocol → lsp-max-runtime → lsp-max-agent → lsp-max-macros → lsp-max
+- Polls crates.io after each publish to confirm indexing (up to 30 attempts)
 - Collects checksums and writes to `receipts/publish-checksums-26.6.9.txt`
 - Exits non-zero if any publish fails (enables rollback)
+- Records crate name, version, and SHA256 hash for verification
 
 ### Checksum Verification
 
@@ -603,161 +618,53 @@ In GitHub repository settings, add:
 
 ### Overview
 
-The following recipes automate release tasks. Add them to the project `Justfile` if not already present.
+The following recipes automate release tasks and are **already integrated into the `Justfile`**.
 
-### Recipes for Release Automation
+### Recipe Summary
 
-Add these to `Justfile`:
+| Recipe | Purpose | Arguments |
+|--------|---------|-----------|
+| `release-validate` | Run all pre-release checks | None |
+| `release-dry-run` | Test publish (no credentials) | None |
+| `release-publish` | Publish to crates.io | `VERSION` (e.g., 26.7.15) |
+| `release-version-bump` | Bump CalVer version | `NEWVERSION` (e.g., 26.7.15) |
+| `release-notes-extract` | Extract notes from DOC_COVERAGE_LOG | `DATE` and `VERSION` |
 
-```makefile
-# --- Release Automation ---
+To view the actual recipe implementations, run:
 
-# Validate all pre-release conditions
-release-validate:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "{{ MAGENTA }}════════════════════════════════════════════════════════{{ NC }}"
-    echo "{{ CYAN }}  Release Validation Checklist{{ NC }}"
-    echo "{{ MAGENTA }}════════════════════════════════════════════════════════{{ NC }}"
-    
-    echo "{{ BLUE }}► Gate check...{{ NC }}"
-    lsp-max-cli gate check || { echo "{{ RED }}✗ Gate is SET{{ NC }}"; exit 1; }
-    
-    echo "{{ BLUE }}► Boundaries (dx-verify)...{{ NC }}"
-    just dx-verify
-    
-    echo "{{ BLUE }}► Code polish (dx-polish)...{{ NC }}"
-    just dx-polish
-    
-    echo "{{ BLUE }}► Full test suite...{{ NC }}"
-    just test-pre-publish
-    
-    echo "{{ BLUE }}► Sibling repos synced...{{ NC }}"
-    just qol-sync
-    
-    echo "{{ GREEN }}✓ All pre-release checks passed{{ NC }}"
-
-# Dry-run publish for all crates (no token required)
-release-dry-run:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "{{ MAGENTA }}════════════════════════════════════════════════════════{{ NC }}"
-    echo "{{ CYAN }}  Dry-Run Publish (No Credentials Required){{ NC }}"
-    echo "{{ MAGENTA }}════════════════════════════════════════════════════════{{ NC }}"
-    
-    for crate in lsp-max-protocol lsp-max-runtime lsp-max-agent lsp-max-macros lsp-max; do
-        echo "{{ BLUE }}► $crate{{ NC }}"
-        cargo publish -p "$crate" --dry-run
-    done
-    
-    echo "{{ GREEN }}✓ All crates ready to publish{{ NC }}"
-
-# Publish to crates.io (requires CARGO_TOKEN in environment)
-release-publish VERSION:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    
-    if [ -z "${CARGO_TOKEN:-}" ]; then
-        echo "{{ RED }}✗ CARGO_TOKEN not set{{ NC }}"
-        exit 1
-    fi
-    
-    echo "{{ MAGENTA }}════════════════════════════════════════════════════════{{ NC }}"
-    echo "{{ CYAN }}  Publishing lsp-max {{ VERSION }}{{ NC }}"
-    echo "{{ MAGENTA }}════════════════════════════════════════════════════════{{ NC }}"
-    
-    mkdir -p receipts
-    CHECKSUM_FILE="receipts/publish-checksums-{{ VERSION }}.txt"
-    > "$CHECKSUM_FILE"  # Clear file
-    
-    for crate in lsp-max-protocol lsp-max-runtime lsp-max-agent lsp-max-macros lsp-max; do
-        echo "{{ BLUE }}► Publishing $crate @ {{ VERSION }}...{{ NC }}"
-        cargo publish -p "$crate" --token "$CARGO_TOKEN"
-        
-        # Wait for crates.io to index
-        attempt=0
-        while [ $attempt -lt 30 ]; do
-            if curl -s "https://crates.io/api/v1/crates/$crate/{{ VERSION }}" \
-                | grep -q "{{ VERSION }}"; then
-                echo "{{ GREEN }}  ✓ Indexed on crates.io{{ NC }}"
-                
-                # Record checksum
-                CHECKSUM=$(curl -s "https://crates.io/api/v1/crates/$crate/{{ VERSION }}" \
-                    | jq -r '.version.checksum')
-                echo "$crate | {{ VERSION }} | $CHECKSUM" >> "$CHECKSUM_FILE"
-                break
-            fi
-            attempt=$((attempt + 1))
-            sleep 2
-        done
-        
-        if [ $attempt -eq 30 ]; then
-            echo "{{ RED }}✗ Timeout waiting for $crate to index{{ NC }}"
-            exit 1
-        fi
-    done
-    
-    echo "{{ GREEN }}✓ All crates published{{ NC }}"
-    echo "{{ BLUE }}Checksums saved to: $CHECKSUM_FILE{{ NC }}"
-
-# Version bump (manual CalVer bump)
-release-version-bump NEWVERSION:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "{{ MAGENTA }}════════════════════════════════════════════════════════{{ NC }}"
-    echo "{{ CYAN }}  Bumping version to {{ NEWVERSION }}{{ NC }}"
-    echo "{{ MAGENTA }}════════════════════════════════════════════════════════{{ NC }}"
-    
-    cargo set-version {{ NEWVERSION }} --workspace
-    
-    # Verify all path deps updated
-    echo "{{ BLUE }}► Verifying path dependencies...{{ NC }}"
-    for crate in lsp-max-protocol lsp-max-runtime lsp-max-agent lsp-max-macros; do
-        count=$(grep -r "version = \"{{ NEWVERSION }}\"" . --include="Cargo.toml" | grep "$crate" | wc -l)
-        if [ "$count" -eq 0 ]; then
-            echo "{{ RED }}✗ $crate not updated{{ NC }}"
-            exit 1
-        fi
-    done
-    
-    # Run diagnostic canary
-    echo "{{ BLUE }}► Running diagnostic canary...{{ NC }}"
-    cargo run -p anti-llm-cheat-lsp -- check || exit 1
-    
-    git add Cargo.toml */Cargo.toml */*/Cargo.toml
-    git commit -m "chore: bump version to {{ NEWVERSION }} for release
-
-CalVer (YY.M.D) convention enforced by ANTI-LLM-VERSION-* diagnostics.
-
-https://claude.ai/code/session_01ESRv2v2dcXUvJj7VpkohkY"
-    
-    echo "{{ GREEN }}✓ Version bumped to {{ NEWVERSION }}{{ NC }}"
-
-# Extract release notes from DOC_COVERAGE_LOG
-release-notes-extract DATE VERSION:
-    #!/usr/bin/env bash
-    bash scripts/extract-release-notes.sh "{{ DATE }}" "{{ VERSION }}"
+```sh
+just --list | grep release-
 ```
+
+Or inspect `Justfile` directly at the end of the file.
 
 ### Usage Examples
 
 ```sh
-# 1. Bump version for July 2026 release
+# Step 1: Bump version for July 2026 release (monthly)
 just release-version-bump 26.7.15
 
-# 2. Validate all pre-release conditions
+# Step 2: Validate all pre-release conditions (gate, verify, polish, tests, sync)
 just release-validate
 
-# 3. Dry-run publish (no credentials)
+# Step 3: Dry-run publish (no credentials needed)
 just release-dry-run
 
-# 4. Publish to crates.io
-export CARGO_TOKEN="..."
+# Step 4: Publish to crates.io (requires CARGO_TOKEN)
+export CARGO_TOKEN="<crates-io-api-token>"
 just release-publish 26.7.15
 
-# 5. Extract release notes
+# Step 5: Verify checksums
+cat receipts/publish-checksums-26.7.15.txt
+
+# Step 6: Extract release notes from DOC_COVERAGE_LOG
 just release-notes-extract 2026-07-15 26.7.15
+
+# Step 7: Create GitHub release (manual, or via GitHub CLI)
+gh release create v26.7.15 --title "Release 26.7.15" --notes-file notes.md
 ```
+
+All steps use just recipes for consistency and automation. Run `just` alone to see all available recipes.
 
 ---
 
@@ -807,18 +714,15 @@ A: Run `just qol-sync` to fetch latest from `../wasm4pm` and `../wasm4pm-compat`
 | File | Purpose |
 |------|---------|
 | `Cargo.toml` | Workspace version definition (`[workspace.package]`) |
-| `DOC_COVERAGE_LOG.md` | Receipt log for admission claims; extract for release notes |
+| `Justfile` | Just recipes for release automation (section 7) |
+| `DOC_COVERAGE_LOG.md` | Receipt log for admission claims; source for release notes |
 | `CHANGELOG.md` | User-facing release notes (mirrors GitHub releases) |
-| `scripts/extract-release-notes.sh` | Extract DOC_COVERAGE_LOG iteration by date |
-| `scripts/write_bench_receipt.sh` | Perf-refactors admission receipt generation |
-| `scripts/write_compositor_bench_receipt.sh` | Compositor scale admission receipt generation |
 | `receipts/publish-checksums-*.txt` | Checksum verification logs (generated by `just release-publish`) |
+| `scripts/extract-release-notes.sh` | Extracts DOC_COVERAGE_LOG iteration by date for GitHub notes |
+| `scripts/write_bench_receipt.sh` | Generates perf-refactor admission receipts |
+| `scripts/write_compositor_bench_receipt.sh` | Generates compositor scale admission receipts |
+| `examples/anti-llm-cheat-lsp` | Diagnostic canary that enforces version laws and gates |
 | `.claude/settings.json` | ANDON gate hook (PreToolUse) blocks unsafe shell actions |
-| `examples/anti-llm-cheat-lsp` | Diagnostic canary for version-law violations |
-| `scripts/extract-release-notes.sh` | Extract DOC_COVERAGE_LOG by date (helper for GitHub notes) |
-| `scripts/write_bench_receipt.sh` | Perf refactor admission receipt generation |
-| `scripts/write_compositor_bench_receipt.sh` | Compositor scale admission receipt generation |
-| `Justfile` | Just recipes for automation (see section 7) |
 
 ---
 

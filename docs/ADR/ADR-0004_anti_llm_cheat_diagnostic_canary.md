@@ -1,93 +1,64 @@
 # ADR-0004: Anti-LLM-Cheat Diagnostic Canary
 
-## Status
-
-ACCEPTED
+**Status:** ACCEPTED
 
 ## Context
 
-lsp-max enforces architectural laws via CLAUDE.md and AGENTS.md:
-- Never use plain `tower_lsp` in production code or tests.
-- No victory language ("done", "solved", "all clean") in code comments, commit messages, or diagnostics.
-- ConformanceVector's three-valued logic must never collapse (Unknown→Admitted via silent upgrade).
-- Receipt claims in diagnostics must be backed by receipt artifacts; no fake receipts.
-- No intermediary type crates (wasm4pm_types, ocel_core) in the type authority chain.
+Law enforcement in lsp-max relies on receipt chains and ConformanceVector invariants. However, if a developer (or an LLM in autonomous mode) accidentally reintroduces plain `tower-lsp`, uses fake receipt claims, writes victory language ("done", "solved", "guaranteed") in code comments, or violates other lsp-max laws, these violations may not surface until post-deployment.
 
-These laws are **aspirational**. Code review and human inspection can enforce them, but humans are fallible, especially when working at scale or with LLM-driven commits. An LLM (including future Claude versions) might unintentionally violate a law while implementing a feature; or a contributor might claim a law is obeyed when it isn't.
+The anti-llm-cheat-lsp example is an LSP server that runs during CI (via `just test-pre-publish` and the ANDON gate) and detects violations by examining the compiled codebase. It is a **compile-time canary** — a negative control that proves the system can detect and refuse illegal changes.
 
-Without automated enforcement, laws become "suggestions." Over time, violations compound: a single `use tower_lsp::*` in a test becomes a pattern; victory language spreads via copy-paste; receipt forgery goes undetected.
-
-**The Solution: Anti-LLM-Cheat as a Compile-Time Canary**
-
-If every code commit must pass a linter that detects law violations *before merge*, then violations cannot be *undetected* (only *detected and consciously accepted*). This inverts the burden: violations must be explicit exceptions, not silent accumulation.
+Early detection reduces the cost of law violations from post-deployment (very expensive) to compile time (cheap and immediate).
 
 ## Decision
 
-Implement `examples/anti-llm-cheat-lsp` — an LSP server that **runs as a linter** and emits MaxDiagnostic entries for every law violation found in the codebase:
+Implement a dedicated example LSP server (`examples/anti-llm-cheat-lsp`) that performs the following checks at compile time (via AST analysis and diagnostics emission):
 
-1. **Stateless Scan**: On every `lsp-max-cli gate check` run, scan the entire workspace for violations (not just changed files).
-2. **Violation Detection**:
-   - Regex: `use tower_lsp` (or `tower-lsp` in Cargo.toml imports) → `ANTI-LLM-TOWER-LSP-USAGE`
-   - Regex: Victory language (`\b(done|solved|all clean|fully admitted|guaranteed|fixed)\b` in code/comments/commits) → `ANTI-LLM-VICTORY-LANGUAGE`
-   - AST: UnknownConformance that collapsed to Admitted without explicit receipt → `ANTI-LLM-UNKNOWN-COLLAPSE`
-   - File: Diagnostic claiming receipt path that does not exist in `.lsp-max-receipts/` → `ANTI-LLM-FAKE-RECEIPT`
-   - Cargo.toml: Type crates (`wasm4pm_types`, `ocel_core`, `*legacy*`) in `[dependencies]` or `[patch.crates-io]` → `ANTI-LLM-FORBIDDEN-TYPE-CRATE`
-   - Manifest: References to `tower-lsp` or `tower_lsp` outside explicit negative-control fixtures → `ANTI-LLM-TOWER-LSP-IMPORT`
+1. **Tower-lsp re-introduction**: Detects any use of `tower_lsp::` or `tower-lsp` imports outside of explicit negative-control test fixtures.
+2. **Victory language**: Scans code and comments for words like "done", "all clean", "fully solved", "guaranteed", etc. Maps to the `ANTI-LLM-VICTORY-*` diagnostic family.
+3. **Fake receipt artifacts**: Detects claims of "admission" without corresponding receipt artifacts in the codebase.
+4. **Fake routes**: Identifies LSP method handlers that claim capabilities but have no implementation.
+5. **Version law violations**: Checks that workspace version follows CalVer (YY.M.D), not SemVer.
 
-3. **Diagnostic Output**: Each violation is a MaxDiagnostic with:
-   - `source: "anti-llm-cheat"`
-   - `severity: Error` (blocks gate)
-   - `rule: String` (e.g., "ANTI-LLM-TOWER-LSP-USAGE")
-   - `message: String` (specific violation + fix suggestion)
-   - `receipt: Option<DiagnosticReceipt>` (null unless the violation itself is a fake receipt claim)
-
-4. **Gate Integration**: `lsp-max-cli gate check` runs anti-llm-cheat before final clearance. If any diagnostics are emitted, gate status is BLOCKED.
-
-5. **Negative Control**: anti-llm-cheat itself is a workspace member (not an external tool); it compiles under the same rules it enforces. Any law violation in anti-llm-cheat is doubly embarrassing.
+The canary runs as part of `just dx-verify` and blocks the gate (ANDON) if violations are found. Code cannot be merged until the canary clears.
 
 ## Consequences
 
-### Benefits
-- **Automated Enforcement**: No law violation can be undetected; they are emitted as diagnostics on every build.
-- **LLM-Resistant**: Even if an LLM-driven commit violates a law, the canary catches it before merge.
-- **Negative Control**: By living in the workspace, anti-llm-cheat is dogfooded; its own violations would block its tests.
-- **Clear Audit Trail**: Every violation is a timestamped diagnostic with rule, location, and suggested fix.
-- **Incentive Alignment**: Contributors cannot claim "all laws are obeyed" unless anti-llm-cheat agrees; claims are falsifiable.
+**Positive:**
+- Early detection: law violations are caught at compile time, not in production.
+- Automation: CI enforces the rules without manual code review.
+- Audit trail: each diagnostic emission logs the violation, boundary, and suggested fix.
+- Determinism: the same codebase always produces the same diagnostics; no false negatives.
 
-### Tradeoffs
-- **Maintenance Burden**: New laws require new regex/AST patterns in anti-llm-cheat; lag between law definition and enforcement.
-- **False Positives**: Regex patterns are fragile. A comment containing `"tower_lsp"` in a docstring or a variable named `done_count` would be falsely flagged. Requires careful exception lists.
-- **Performance**: Scanning the entire workspace on every gate check is O(n); large projects may see latency. Mitigated by caching (gate check on unchanged files uses prior receipt digest).
-- **Visibility**: Violations are emitted as LSP diagnostics (not build errors). A contributor might ignore them. Mitigated by PreToolUse hook that blocks Bash if gate is BLOCKED.
+**Negative:**
+- False positives: the canary may flag legitimate uses of certain words (e.g., "done" in domain-specific vocabulary).
+- Maintenance burden: the canary itself is code that must be tested and updated as laws evolve.
+- Complexity: developers must understand the canary's rules to avoid violations.
 
-## Alternatives
+**Neutral:**
+- The canary is a workspace example, not part of the shipped lsp-max library.
+- External projects that depend on lsp-max are not subject to the canary's checks; they enforce their own laws.
 
-### A1: Rely on Code Review
-Human reviewers catch violations during PR review; violations are discussed and corrected before merge.
+## Alternatives Considered
 
-**Rejected**: Scale doesn't work. With 10+ contributors or LLM-assisted commits, violations slip through. Review is async; lag between violation and detection is high.
+1. **Manual code review**: Relies on human vigilance; vulnerable to oversights.
+2. **Linting as a separate tool**: Decouples checks from CI; easier to ignore.
+3. **Type-system enforcement**: Would require non-standard Rust features (e.g., linear types); overkill.
+4. **Runtime checks**: Defers violations to execution time; too late.
 
-### A2: Post-Merge Audit via CI Script
-After merge, a CI script scans for violations and opens a ticket.
+The diagnostic canary was chosen because it:
+- Integrates into the LSP protocol itself (diagnostics are native LSP output).
+- Runs at compile time, not runtime (fast, deterministic).
+- Provides clear, actionable error messages to developers.
+- Is self-hosting: the canary is an lsp-max LSP that can be tested against itself.
 
-**Rejected**: Violation is already in main; damage is done. Post-detection doesn't prevent spread; exceptions accumulate.
+## Reference
 
-### A3: Runtime Enforcement Only (No Compile-Time Check)
-Laws are checked at server startup or during initialization; violations cause runtime errors.
-
-**Rejected**: Too late. A violation in code that doesn't run until a rare code path is activated might not be caught for months. Compile-time is earlier feedback.
-
-### A4: External Linter (Not a Workspace Member)
-Build an anti-llm-cheat tool outside the workspace; run it as part of CI.
-
-**Rejected**: Decoupling loses the "canary" property. External tool might have its own violations; no self-dogfood. Also, tight coupling to specific lsp-max laws means the external tool must be updated every time a law changes.
-
-## References
-
-- `examples/anti-llm-cheat-lsp/src/lib.rs` — Core detection logic (regex, AST, file checks).
-- `examples/anti-llm-cheat-lsp/tests/dogfood_gc001_tower_lsp_usage.rs` — Test: tower-lsp detection.
-- `examples/anti-llm-cheat-lsp/tests/dogfood_gc002_victory_language.rs` — Test: victory language detection.
-- `lsp-max-cli/src/gate.rs` — `gate check` invokes anti-llm-cheat.
-- `.claude/settings.json` — PreToolUse hook: `lsp-max-cli gate check` blocks Bash if ANDON is set.
-- AGENTS.md — Anti-LLM-Cheat section ("Compile-Time Law Enforcement").
-- CLAUDE.md — Law definitions ("Never reference plain tower-lsp", "No victory language").
+- **Example crate**: `examples/anti-llm-cheat-lsp`
+- **Diagnostic families**:
+  - `ANTI-LLM-CHEAT-*`: illegal tower-lsp re-introduction
+  - `ANTI-LLM-VICTORY-*`: victory language in code
+  - `ANTI-LLM-FAKE-*`: fake receipt claims or routes
+  - `ANTI-LLM-VERSION-*`: CalVer violations
+- **CI integration**: `.github/workflows/` (runs as part of test-pre-publish)
+- **Gate integration**: ANDON gate in `.claude/settings.json` blocks Bash until canary clears
