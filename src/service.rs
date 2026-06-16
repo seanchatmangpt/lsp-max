@@ -449,3 +449,25 @@ fn handle_mesh_rpc(
 
 #[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+mod unit_tests {
+    use super::*;
+
+    #[test]
+    fn exited_error_code() {
+        let e = ExitedError(42);
+        assert_eq!(e.code(), 42);
+    }
+
+    #[test]
+    fn exited_error_display() {
+        let e = ExitedError(1);
+        assert!(e.to_string().contains("1"));
+    }
+
+    #[test]
+    fn exited_error_ne() {
+        assert_ne!(ExitedError(0), ExitedError(1));
+    }
+}
