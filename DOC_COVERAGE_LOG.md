@@ -319,3 +319,45 @@ is an example-laundering risk; both are recorded, not papered over.
 
 ### Hard stops
 None.
+
+---
+
+## Iteration 8 — 2026-06-14 · web representation of conformance surface
+
+### Conformance surface — web route added
+
+The `ConformanceVector` type and `LawAxis` enum were `exposed-but-unrepresented`
+in the web layer (REPRESENTATION_MAP.md, prior state). This iteration closes that
+gap by adding a real-data route that reads the Rust source directly.
+
+- **Data source** — `readConformanceSurface()` in `web/lib/project.ts`:
+  - Reads `lsp-max-protocol/src/conformance.rs` and parses the `LawAxis` enum block
+    for named variants (excludes `Custom`). Throws if the file is absent.
+  - Reads `DOC_COVERAGE_LOG.md` and extracts the `admission_pipeline` WITNESS block
+    (Iteration 4), parsing the A/B/C pipeline states from lines of the form
+    `[X] description → verdict`.
+  - Returns `{ axes: ConformanceAxis[], pipelineStates: PipelineState[], sourceFile }`.
+
+- **Route** — `web/app/conformance/page.tsx`:
+  - `export const dynamic = "force-dynamic"` — rendered from real files at request time.
+  - "Law axes" table: all 11 named `LawAxis` variants (Protocol..Domain) with stable ID
+    and description drawn from the source file's `Display` impl and doc comments.
+  - "Admission pipeline (witnessed)" table: the 3 composed states (A/B/C) from the
+    Iteration 4 WITNESS block, showing receipt verification driving the gate end-to-end.
+  - Source footnote: `lsp-max-protocol/src/conformance.rs + DOC_COVERAGE_LOG.md`.
+
+- **Nav** — `<Link href="/conformance">Conformance</Link>` added to `web/app/layout.tsx`.
+
+- **Gap map update** — `web/REPRESENTATION_MAP.md` row for "Conformance verdict (live)"
+  updated from `❌ exposed-but-unrepresented` to `✅ represented (iter 4)`.
+
+### Status after this iteration
+The rendered conformance table changes automatically when `LawAxis` variants are added
+or removed from `conformance.rs` — the component does not hardcode axis names.
+The pipeline states update when the WITNESS block in this file changes.
+
+rendered-but-fabricated: **0** (inviolable). exposed-but-unrepresented: 3
+(example witnesses live run, OCEL evidence, receipt-chain cross-product graph).
+
+### Hard stops
+None.

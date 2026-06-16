@@ -215,6 +215,53 @@ export async function readOcel(): Promise<Ocel> {
   throw new Error(`No OCEL artifact found (${OCEL_CANDIDATES.join(", ")}): ${String(lastErr)}`);
 }
 
+/** A law axis variant parsed from the real LawAxis enum in conformance.rs. */
+export interface ConformanceAxis {
+  name: string;
+  id: number;
+}
+
+/** One pipeline state from the admission_pipeline WITNESS block in DOC_COVERAGE_LOG.md. */
+export interface PipelineState {
+  label: string;
+  description: string;
+  verdict: string;
+}
+
+export interface ConformanceSurface {
+  axes: ConformanceAxis[];
+  pipelineStates: PipelineState[];
+  sourceFile: string;
+}
+
+const CONFORMANCE_RS = "lsp-max-protocol/src/conformance.rs";
+
+/** Parse LawAxis variants from the real conformance.rs and the admission_pipeline
+ *  WITNESS block from DOC_COVERAGE_LOG.md. Throws if conformance.rs is absent. */
+export async function readConformanceSurface(): Promise<ConformanceSurface> {
+  const src = await fs.readFile(path.join(REPO_ROOT, CONFORMANCE_RS), "utf8");
+  const enumMatch = src.match(/pub enum LawAxis\s*\{([^}]+)\}/s);
+  if (!enumMatch) throw new Error(`LawAxis enum not found in ${CONFORMANCE_RS}`);
+  const axes: ConformanceAxis[] = [];
+  const variantRe = /^\s{4}([A-Z][A-Za-z]+),\s*$/gm;
+  let vm: RegExpExecArray | null;
+  while ((vm = variantRe.exec(enumMatch[1])) !== null) {
+    if (vm[1] !== "Custom") axes.push({ name: vm[1], id: axes.length });
+  }
+  if (axes.length === 0) throw new Error(`No LawAxis variants in ${CONFORMANCE_RS}`);
+  const logSrc = await fs.readFile(path.join(REPO_ROOT, "DOC_COVERAGE_LOG.md"), "utf8");
+  const witnessMatch = logSrc.match(/WITNESS admission_pipeline[^\n]*\n((?:\s+\[[A-Z]\][^\n]+\n)+)/);
+  const pipelineStates: PipelineState[] = [];
+  if (witnessMatch) {
+    const stateRe = /\[([A-Z])\]\s+(.+?)\s+(?:→|->)\s+(.+)/g;
+    let sm: RegExpExecArray | null;
+    while ((sm = stateRe.exec(witnessMatch[1])) !== null) {
+      pipelineStates.push({ label: sm[1], description: sm[2].trim(), verdict: sm[3].trim() });
+    }
+  }
+  return { axes, pipelineStates, sourceFile: CONFORMANCE_RS };
+}
+
 /** Workspace version, read from the real Cargo.toml (CalVer YY.M.D). */
 export async function readWorkspaceVersion(): Promise<string> {
   const cargo = await fs.readFile(path.join(REPO_ROOT, "Cargo.toml"), "utf8");
