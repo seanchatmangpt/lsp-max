@@ -233,25 +233,136 @@ Both laws were violated in the initial implementation (this session) and caught 
 
 ---
 
-## 6. Limitations and Open Questions
+## 6. Oracle Class Anti-LLM Cheat Detection: From Patterns to Process Mining
 
-### 6.1 The AhoCorasick / Multi-Pattern Gap
+### 6.1 The Five-Layer Hybrid Architecture
+
+The anti-cheat system operates as a five-layer cascade:
+
+```
+Layer 1: Raw Observations (Pattern Matching)
+  └─ Scans source code for suspicious patterns (unwrap, panic, expect, unsafe)
+  └─ Creates Observation structs with file/line/column/context metadata
+
+Layer 2: OCEL Event Construction
+  └─ Transforms observations into Object-Centric Event Logs (OCEL)
+  └─ Creates File and Pattern objects with blake3 content hashing
+  └─ Emits FileScanned and PatternMatched events with causal relationships
+
+Layer 3: OCEL Validation (wasm4pm-compat Boundary)
+  └─ Calls `wasm4pm_compat::ocel::validate()` to verify formal OCED axioms
+  └─ Rejects logs that violate disjoint event/object universes or mandatory E2O cardinality
+  └─ Ensures temporal continuity and causal graph acyclicity
+
+Layer 4: Oracle Inference (wasm4pm Engine)
+  └─ Runs conformance algorithms against Oracle class hypotheses (A8–A12)
+  └─ Maps each violation type to its corresponding adversary class
+  └─ Produces Oracle class witness markers with confidence scores [0.0, 1.0]
+
+Layer 5: Diagnostic Emission
+  └─ Emits `AntiLlmDiagnostic` with oracle_class and confidence fields
+  └─ Bridges pattern matching output to formal detection model
+  └─ Feeds diagnostics into LSP gate and CI/CD pre-command hooks
+```
+
+### 6.2 Oracle Classes A8–A12: Formal Adversary Detection
+
+Each Oracle class models a specific cheating pattern detectable through OCEL analysis:
+
+| Class | Name | Pattern | Detection Strategy |
+|-------|------|---------|-------------------|
+| A8 | Audit Log Tampering | Receipts/events without causal ancestors | Traverse OCEL causality graph backward; reject if event has no predecessor Computation/Test/Commit |
+| A9 | Temporal Anomaly | Impossible timestamps (effect before cause) | Topological sort OCEL events by causal order; flag if timestamp violates order |
+| A10 | Causal Violation | Mutations without observation predecessors | For each FileWrite/DiagnosticEmitted, require preceding FileRead/PatternMatched in E2O graph |
+| A11 | Unknown State Collapse | ConformanceVector UNKNOWN → ADMITTED without resolution | Track axis state transitions; refuse UNKNOWN→{ADMITTED,REFUSED} unless preceded by ResolutionEvent |
+| A12 | Cyclic Dependency | Cycles in event causality DAG | Run Tarjan's algorithm over OCEL causality graph; reject if cycle detected |
+
+### 6.3 Witness Markers as Type-Level Authority Labels
+
+The `witnesses_anti_cheat` module in `wasm4pm-compat` registers seven zero-cost witness markers:
+
+```rust
+witness_marker!(
+    OracleA8AuditLogTampering,
+    "anti-cheat/oracle-a8-audit-log-tampering",
+    WitnessFamily::Paper,
+    "A8 Oracle — Audit Log Tampering (lsp-max threat model)",
+    None
+);
+// ... similarly for A9, A10, A11, A12, LspMaxSessionWitness, AntiLlmScanWitness
+```
+
+These witness markers:
+- Travel with `Evidence<T, Admitted, W>` through the admission pipeline at zero runtime cost
+- Tag OCEL events with the authority class ("anti-cheat/oracle-a8-*") as they flow to the engine
+- Enable diagnostics to name the exact Oracle class that flagged a violation
+- Are queryable in `wasm4pm` via `oracle_class: Option<String>` fields in detection reports
+
+### 6.4 Integration with lsp-max-anti-cheat
+
+The `crates/lsp-max-anti-cheat/src/rules/ocel_rules.rs` module implements seven rule evaluators, each wired to an Oracle class:
+
+```rust
+pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
+    let mut diags = Vec::new();
+    for o in obs {
+        // OCEL-001: A10 (90%) — diagnostic without OCEL event
+        // OCEL-002: A8 (95%) — receipt without OCEL binding
+        // OCEL-003: A8 (99%) — bypassed compat boundary
+        // ADMIT-001: A11 (92%) — fitness=1.0 without provenance
+        // ADMIT-002: A10 (88%) — PARTIAL_ALIVE without OCEL
+        // ADMIT-003: A8 (93%) — admitted without run_id
+        // OCEL-004: A8 (85%) — full wasm4pm at compat boundary
+        // OCEL-005: A9 (97%) — temporal ordering violation
+        // OCEL-006: A11 (94%) — unknown state collapsed
+        // OCEL-007: A12 (99%) — causal cycle detected
+    }
+}
+```
+
+Each rule produces an `AntiLlmDiagnostic` carrying:
+- `oracle_class: Option<String>` — the witness KEY string (e.g., "anti-cheat/oracle-a8-audit-log-tampering")
+- `confidence: Option<f64>` — statistical confidence in the classification [0.0, 1.0]
+- `required_correction` — remediation steps (specific to the Oracle class)
+- `required_next_proof` — what evidence would prove the correction is valid
+
+### 6.5 Process Mining as Anti-Cheat Authority
+
+Traditional anti-cheat systems are adversarial (blacklist patterns). Oracle classes flip the model: they are **adversary-detection properties** derived from formal mathematics:
+
+1. **Audit Log Tampering (A8)**: The academic model of a tamper-resistant audit trail is the causal chain. If an event has no causal predecessor (ancestor in the E2O graph), it could only have been injected after the fact.
+
+2. **Temporal Anomaly (A9)**: Causality requires temporal ordering. A timestamp that precedes a causal ancestor is not merely suspicious — it is mathematically impossible.
+
+3. **Causal Violation (A10)**: Process mining's core insight is that observations (reads/tool calls) precede mutations (writes/diagnostics). A mutation without a causal observation is a "generation ex nihilo."
+
+4. **Unknown State Collapse (A11)**: `ConformanceVector` formalizes the burden of proof. An UNKNOWN axis means "no evidence yet." Collapsing it to ADMITTED without a resolution event is proof suppression.
+
+5. **Cyclic Dependency (A12)**: A DAG (directed acyclic graph) is fundamental to causality. A cycle means an event is its own ancestor — a logical impossibility.
+
+These are not heuristics. They are theorems from formal process mining, enforced structurally.
+
+---
+
+## 7. Limitations and Open Questions
+
+### 7.1 The AhoCorasick / Multi-Pattern Gap
 
 `anti-llm-cheat-lsp` uses `AhoCorasick` for O(n) multi-pattern search — it scans a document once regardless of how many patterns are active. `RulePackServer::scan_uri()` applies each rule's regex independently, giving O(n × rules) complexity. For large files with many rules, this is measurably slower.
 
 The architectural choice to use per-rule regex is deliberate: it enables `EvalBudget::Background` to move expensive rules off the hot path. But a `scan_uri_multi()` hook that accepts a compiled AhoCorasick automaton would let high-rule-count servers opt into the faster algorithm without abandoning the trait. This is the remaining bridge needed before `anti-llm-cheat-lsp` can adopt `RulePackServer`.
 
-### 6.2 ggen-lsp Framing Error
+### 7.2 ggen-lsp Framing Error
 
 During this session, attempts to use `ggen-lsp` via the LSP tool returned `Header must provide a Content-Length property` — a stdio framing bug in the plugin bridge. The diagnostics are therefore not live-pushed during editing sessions, which means `GGEN-SRC-001` and `GGEN-YIELD-002` violations are currently caught only by human review, not by the toolchain. The bug is in the LSP stdio wrapper, not in the diagnostic logic.
 
-### 6.3 The "Template per Row" Model
+### 7.3 The "Template per Row" Model
 
 ggen currently calls each template once per SPARQL result row. This means a server with ten rules generates ten `semantics.rs` files (one per row), each containing only its row's rule. Grouping multiple rows into a single file requires either a `GROUP BY` construct in SPARQL or a different template invocation model. The current workaround — defer multi-rule aggregation to the `load_packs()` filesystem loader at runtime — is correct but means the static `static_pack()` function in `semantics.rs` contains only the first matching row. A future ggen capability for "collect all rows into a sequence variable" would eliminate this limitation.
 
 ---
 
-## 7. Conclusion
+## 8. Conclusion
 
 The lsp-max `RulePackServer` trait and the ggen μ-pipeline together compress the distance from specification to working language server by roughly **4–6× in time and 8–9× in author-written code**. The gains are not primarily in the mechanics — regex compilation is fast regardless of abstraction level. They are in the **architecture of authority**: rules declared in RDF are queryable, versionable, and receipt-linked. Rules declared in a trait implementation are enforced by the compiler. Rules absorbed by the framework are not written at all.
 
