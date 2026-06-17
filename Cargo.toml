@@ -84,6 +84,8 @@ members = [
     "lsp-max-runtime",
     "lsp-max-agent",
     "crates/lsp-max-specgen",
+    "crates/lsp-max-anti-cheat",
+    "crates/lsp-max-anti-cheat-cli",
     "crates/lsp-max-cli",
     "crates/playground",
     "crates/lsp-max-client",
