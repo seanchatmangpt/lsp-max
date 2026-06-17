@@ -2,6 +2,7 @@ use crate::test_harness::TestHarness;
 use serde_json::json;
 
 #[tokio::test]
+#[ignore = "e2e: requires live server, run with --include-ignored"]
 async fn test_f4_t2_diagnostics_clear_on_save() {
     let mut harness = TestHarness::new(1).await;
     let init_params = json!({
@@ -101,6 +102,7 @@ async fn test_f4_t2_diagnostics_clear_on_save() {
 }
 
 #[tokio::test]
+#[ignore = "e2e: requires live server, run with --include-ignored"]
 async fn test_f4_t2_diagnostics_invalid_syntax() {
     let mut harness = TestHarness::new(1).await;
     let init_params = json!({
@@ -185,6 +187,7 @@ async fn test_f4_t2_diagnostics_invalid_syntax() {
 }
 
 #[tokio::test]
+#[ignore = "e2e: requires live server, run with --include-ignored"]
 async fn test_f4_t2_diagnostics_empty_array() {
     let mut harness = TestHarness::new(1).await;
     let init_params = json!({
@@ -264,6 +267,7 @@ async fn test_f4_t2_diagnostics_empty_array() {
 }
 
 #[tokio::test]
+#[ignore = "e2e: requires live server, run with --include-ignored"]
 async fn test_f4_t2_diagnostics_non_standard_severity() {
     let mut harness = TestHarness::new(1).await;
     let init_params = json!({
@@ -364,6 +368,7 @@ async fn test_f4_t2_diagnostics_non_standard_severity() {
 }
 
 #[tokio::test]
+#[ignore = "e2e: requires live server, run with --include-ignored"]
 async fn test_f4_t2_diagnostics_maximum_limit() {
     let mut harness = TestHarness::new(1).await;
     let init_params = json!({

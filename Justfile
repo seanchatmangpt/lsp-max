@@ -145,6 +145,28 @@ spec-graph:
         --emit-spec-graph examples/anti-llm-lsp/generated \
         --input vendors/vscode-languageserver-node/protocol/metaModel.json
 
+# --- DX Scripts (Developer Experience Tooling) ---
+
+# Check codebase law compliance (tower_lsp refs, victory language, etc)
+check-laws:
+    @bash scripts/check-law-compliance.sh
+
+# Analyze hot-path benchmarks for regressions (if benches/ exists)
+bench-hot:
+    @bash scripts/bench-hot-paths.sh
+
+# Run format and clippy checks (-D warnings)
+check-fmt:
+    @bash scripts/format-and-check.sh
+
+# Update doc coverage metrics and append to DOC_COVERAGE_LOG.md
+doc-coverage:
+    @bash scripts/update-doc-coverage.sh
+
+# Run all health checks in sequence (law, format, bench, doc-coverage)
+health-check:
+    @bash scripts/health-check.sh
+
 # --- AutoEtc (Operational & Context) ---
 
 # Generates context manifests for Generative AI / AGI consumption
@@ -170,3 +192,132 @@ etc-intel:
     @echo "## Crate Topography" >> .autodx/ecosystem-intel.md
     @cargo tree --depth 1 >> .autodx/ecosystem-intel.md || true
     @echo -e "${GREEN}✓ Intel manifest generated at .autodx/ecosystem-intel.md${NC}"
+
+# --- Release Automation (see docs/RELEASE.md) ---
+
+# Validate all pre-release conditions (gate, verify, polish, tests, sync)
+release-validate:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    echo -e "${MAGENTA}════════════════════════════════════════════════════════${NC}"
+    echo -e "${CYAN}  Release Validation Checklist${NC}"
+    echo -e "${MAGENTA}════════════════════════════════════════════════════════${NC}"
+
+    echo -e "${BLUE}► Gate check...${NC}"
+    cargo run -p lsp-max-cli -- gate check || { echo -e "${RED}✗ Gate is SET${NC}"; exit 1; }
+
+    echo -e "${BLUE}► Boundaries (dx-verify)...${NC}"
+    just dx-verify
+
+    echo -e "${BLUE}► Code polish (dx-polish)...${NC}"
+    just dx-polish
+
+    echo -e "${BLUE}► Full test suite...${NC}"
+    just test-pre-publish
+
+    echo -e "${BLUE}► Sibling repos synced...${NC}"
+    just qol-sync
+
+    echo -e "${GREEN}✓ All pre-release checks passed${NC}"
+
+# Dry-run publish for all crates (no token required)
+release-dry-run:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    echo -e "${MAGENTA}════════════════════════════════════════════════════════${NC}"
+    echo -e "${CYAN}  Dry-Run Publish (No Credentials Required)${NC}"
+    echo -e "${MAGENTA}════════════════════════════════════════════════════════${NC}"
+
+    for crate in lsp-max-protocol lsp-max-runtime lsp-max-agent lsp-max-macros lsp-max; do
+        echo -e "${BLUE}► $crate${NC}"
+        cargo publish -p "$crate" --dry-run
+    done
+
+    echo -e "${GREEN}✓ All crates ready to publish${NC}"
+
+# Publish to crates.io in dependency order (requires CARGO_TOKEN)
+release-publish VERSION:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    if [ -z "${CARGO_TOKEN:-}" ]; then
+        echo -e "${RED}✗ CARGO_TOKEN not set${NC}"
+        exit 1
+    fi
+
+    echo -e "${MAGENTA}════════════════════════════════════════════════════════${NC}"
+    echo -e "${CYAN}  Publishing lsp-max {{ VERSION }}${NC}"
+    echo -e "${MAGENTA}════════════════════════════════════════════════════════${NC}"
+
+    mkdir -p receipts
+    CHECKSUM_FILE="receipts/publish-checksums-{{ VERSION }}.txt"
+    > "$CHECKSUM_FILE"  # Clear file
+
+    for crate in lsp-max-protocol lsp-max-runtime lsp-max-agent lsp-max-macros lsp-max; do
+        echo -e "${BLUE}► Publishing $crate @ {{ VERSION }}...${NC}"
+        cargo publish -p "$crate" --token "$CARGO_TOKEN"
+
+        # Wait for crates.io to index (poll up to 2 minutes)
+        attempt=0
+        max_attempts=30
+        while [ $attempt -lt $max_attempts ]; do
+            if curl -s "https://crates.io/api/v1/crates/$crate/{{ VERSION }}" \
+                | grep -q "{{ VERSION }}"; then
+                echo -e "${GREEN}  ✓ Indexed on crates.io${NC}"
+
+                # Record checksum
+                CHECKSUM=$(curl -s "https://crates.io/api/v1/crates/$crate/{{ VERSION }}" \
+                    | jq -r '.version.checksum')
+                echo "$crate | {{ VERSION }} | $CHECKSUM" >> "$CHECKSUM_FILE"
+                break
+            fi
+            attempt=$((attempt + 1))
+            sleep 4
+        done
+
+        if [ $attempt -eq $max_attempts ]; then
+            echo -e "${RED}✗ Timeout waiting for $crate to index${NC}"
+            exit 1
+        fi
+    done
+
+    echo -e "${GREEN}✓ All crates published${NC}"
+    echo -e "${BLUE}Checksums saved to: $CHECKSUM_FILE${NC}"
+
+# Bump workspace version to CalVer format (e.g., 26.7.15)
+release-version-bump NEWVERSION:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    echo -e "${MAGENTA}════════════════════════════════════════════════════════${NC}"
+    echo -e "${CYAN}  Bumping version to {{ NEWVERSION }}${NC}"
+    echo -e "${MAGENTA}════════════════════════════════════════════════════════${NC}"
+
+    cargo set-version {{ NEWVERSION }} --workspace
+
+    # Verify all path deps updated
+    echo -e "${BLUE}► Verifying path dependencies...${NC}"
+    for crate in lsp-max-protocol lsp-max-runtime lsp-max-agent lsp-max-macros; do
+        count=$(grep -r "version = \"{{ NEWVERSION }}\"" . --include="Cargo.toml" | grep "$crate" | wc -l)
+        if [ "$count" -eq 0 ]; then
+            echo -e "${RED}✗ $crate not updated${NC}"
+            exit 1
+        fi
+    done
+
+    # Run diagnostic canary
+    echo -e "${BLUE}► Running diagnostic canary...${NC}"
+    cargo run -p anti-llm-cheat-lsp -- check || exit 1
+
+    git add Cargo.toml */Cargo.toml */*/Cargo.toml
+    git commit -m "chore: bump version to {{ NEWVERSION }} for release
+
+CalVer (YY.M.D) convention enforced by ANTI-LLM-VERSION-* diagnostics.
+
+https://claude.ai/code/session_01ESRv2v2dcXUvJj7VpkohkY"
+
+    echo -e "${GREEN}✓ Version bumped to {{ NEWVERSION }}${NC}"
+
+# Extract release notes from DOC_COVERAGE_LOG by date
+release-notes-extract DATE VERSION:
+    #!/usr/bin/env bash
+    bash scripts/extract-release-notes.sh "{{ DATE }}" "{{ VERSION }}"

@@ -3,6 +3,7 @@ use serde_json::json;
 use tempfile::NamedTempFile;
 
 #[tokio::test]
+#[ignore = "e2e: requires live server, run with --include-ignored"]
 async fn test_f7_t1_static_graph_definitions() {
     let mut harness = TestHarness::new(1).await;
     let init_params = json!({
@@ -26,6 +27,7 @@ async fn test_f7_t1_static_graph_definitions() {
 }
 
 #[tokio::test]
+#[ignore = "e2e: requires live server, run with --include-ignored"]
 async fn test_f7_t1_static_graph_references() {
     let mut harness = TestHarness::new(1).await;
     let init_params = json!({
@@ -49,6 +51,7 @@ async fn test_f7_t1_static_graph_references() {
 }
 
 #[tokio::test]
+#[ignore = "e2e: requires live server, run with --include-ignored"]
 async fn test_f7_t1_static_graph_hover() {
     let mut harness = TestHarness::new(1).await;
     let init_params = json!({
@@ -71,6 +74,7 @@ async fn test_f7_t1_static_graph_hover() {
 }
 
 #[tokio::test]
+#[ignore = "e2e: requires live server, run with --include-ignored"]
 async fn test_f7_t1_static_graph_attribution() {
     let mut harness = TestHarness::new(1).await;
     let init_params = json!({
@@ -97,6 +101,7 @@ async fn test_f7_t1_static_graph_attribution() {
 }
 
 #[tokio::test]
+#[ignore = "e2e: requires live server, run with --include-ignored"]
 async fn test_f7_t1_static_graph_routing() {
     let mut harness = TestHarness::new(1).await;
     let init_params = json!({
@@ -134,6 +139,7 @@ async fn test_f7_t1_static_graph_routing() {
 }
 
 #[tokio::test]
+#[ignore = "e2e: requires live server, run with --include-ignored"]
 async fn test_f7_t2_static_graph_corrupt_db() {
     let _temp_file = NamedTempFile::new().unwrap();
     // Simulate reading a corrupted DB
@@ -164,6 +170,7 @@ async fn test_f7_t2_static_graph_corrupt_db() {
 }
 
 #[tokio::test]
+#[ignore = "e2e: requires live server, run with --include-ignored"]
 async fn test_f7_t2_static_graph_out_of_bounds_query() {
     let mut harness = TestHarness::new(1).await;
     let init_params = json!({
@@ -187,6 +194,7 @@ async fn test_f7_t2_static_graph_out_of_bounds_query() {
 }
 
 #[tokio::test]
+#[ignore = "e2e: requires live server, run with --include-ignored"]
 async fn test_f7_t2_static_graph_unsupported_methods() {
     let mut harness = TestHarness::new(1).await;
     let init_params = json!({
@@ -215,6 +223,7 @@ async fn test_f7_t2_static_graph_unsupported_methods() {
 }
 
 #[tokio::test]
+#[ignore = "e2e: requires live server, run with --include-ignored"]
 async fn test_f7_t2_static_graph_stale_data_rejection() {
     let mut harness = TestHarness::new(1).await;
     let init_params = json!({
@@ -251,6 +260,7 @@ async fn test_f7_t2_static_graph_stale_data_rejection() {
 }
 
 #[tokio::test]
+#[ignore = "e2e: requires live server, run with --include-ignored"]
 async fn test_f7_t2_static_graph_duplicate_edges() {
     // Parser must handle duplicate edges in LSIF
     let mut harness = TestHarness::new(1).await;

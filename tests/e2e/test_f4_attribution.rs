@@ -2,6 +2,7 @@ use crate::test_harness::TestHarness;
 use serde_json::{json, Value};
 
 #[tokio::test]
+#[ignore = "e2e: requires live server, run with --include-ignored"]
 async fn test_f4_t1_attribution_diagnostics() {
     let mut harness = TestHarness::new(2).await;
     let init_params = json!({
@@ -72,6 +73,7 @@ async fn test_f4_t1_attribution_diagnostics() {
 }
 
 #[tokio::test]
+#[ignore = "e2e: requires live server, run with --include-ignored"]
 async fn test_f4_t1_attribution_hover_fragments() {
     let mut harness = TestHarness::new(2).await;
     let init_params = json!({
@@ -115,6 +117,7 @@ async fn test_f4_t1_attribution_hover_fragments() {
 }
 
 #[tokio::test]
+#[ignore = "e2e: requires live server, run with --include-ignored"]
 async fn test_f4_t1_document_version_increment() {
     let mut harness = TestHarness::new(1).await;
     let init_params = json!({
@@ -183,6 +186,7 @@ async fn test_f4_t1_document_version_increment() {
 }
 
 #[tokio::test]
+#[ignore = "e2e: requires live server, run with --include-ignored"]
 async fn test_f4_t1_drop_stale_response() {
     let mut harness = TestHarness::new(1).await;
     let init_params = json!({
@@ -229,6 +233,7 @@ async fn test_f4_t1_drop_stale_response() {
 }
 
 #[tokio::test]
+#[ignore = "e2e: requires live server, run with --include-ignored"]
 async fn test_f4_t1_encoding_utf16() {
     let mut harness = TestHarness::new(1).await;
     let init_params = json!({
@@ -272,6 +277,7 @@ async fn test_f4_t1_encoding_utf16() {
 }
 
 #[tokio::test]
+#[ignore = "e2e: requires live server, run with --include-ignored"]
 async fn test_f4_t2_diagnostics_clear() {
     let mut harness = TestHarness::new(2).await;
     let init_params = json!({
@@ -316,6 +322,7 @@ async fn test_f4_t2_diagnostics_clear() {
 }
 
 #[tokio::test]
+#[ignore = "e2e: requires live server, run with --include-ignored"]
 async fn test_f4_t2_out_of_order_did_change() {
     let mut harness = TestHarness::new(1).await;
     let init_params = json!({
@@ -364,6 +371,7 @@ async fn test_f4_t2_out_of_order_did_change() {
 }
 
 #[tokio::test]
+#[ignore = "e2e: requires live server, run with --include-ignored"]
 async fn test_f4_t2_invalid_utf16_surrogate() {
     let mut harness = TestHarness::new(1).await;
     let init_params = json!({
@@ -403,6 +411,7 @@ async fn test_f4_t2_invalid_utf16_surrogate() {
 }
 
 #[tokio::test]
+#[ignore = "e2e: requires live server, run with --include-ignored"]
 async fn test_f4_t2_empty_did_change() {
     let mut harness = TestHarness::new(1).await;
     let init_params = json!({
@@ -432,6 +441,7 @@ async fn test_f4_t2_empty_did_change() {
 }
 
 #[tokio::test]
+#[ignore = "e2e: requires live server, run with --include-ignored"]
 async fn test_f4_t2_stale_request_rejection() {
     let mut harness = TestHarness::new(1).await;
     let init_params = json!({

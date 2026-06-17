@@ -89,7 +89,7 @@ pub async fn roundtrip(method: &str, params: serde_json::Value) -> serde_json::V
     client_tx.write_all(&encode_message(&init)).await.unwrap();
 
     let mut reader = tokio::io::BufReader::new(&mut client_rx);
-    let _init_resp = tokio::time::timeout(Duration::from_secs(5), read_message(&mut reader))
+    let _init_resp = tokio::time::timeout(Duration::from_millis(500), read_message(&mut reader))
         .await
         .expect("timeout waiting for initialize response")
         .unwrap();
@@ -100,7 +100,7 @@ pub async fn roundtrip(method: &str, params: serde_json::Value) -> serde_json::V
     client_tx.write_all(&encode_message(&req)).await.unwrap();
 
     loop {
-        let msg = tokio::time::timeout(Duration::from_secs(5), read_message(&mut reader))
+        let msg = tokio::time::timeout(Duration::from_millis(500), read_message(&mut reader))
             .await
             .expect("timeout waiting for response")
             .unwrap();
@@ -123,7 +123,7 @@ pub async fn roundtrip_notification_then_shutdown(method: &str, params: serde_js
         "jsonrpc":"2.0","id":1,"method":"initialize","params":{"capabilities":{}}
     });
     client_tx.write_all(&encode_message(&init)).await.unwrap();
-    let _init_resp = tokio::time::timeout(Duration::from_secs(5), read_message(&mut reader))
+    let _init_resp = tokio::time::timeout(Duration::from_millis(500), read_message(&mut reader))
         .await
         .expect("timeout waiting for initialize response")
         .unwrap();
@@ -138,7 +138,7 @@ pub async fn roundtrip_notification_then_shutdown(method: &str, params: serde_js
         .unwrap();
 
     let resp = loop {
-        let msg = tokio::time::timeout(Duration::from_secs(5), read_message(&mut reader))
+        let msg = tokio::time::timeout(Duration::from_millis(500), read_message(&mut reader))
             .await
             .expect("timeout waiting for shutdown response")
             .unwrap();
@@ -168,7 +168,7 @@ pub async fn wait_for_response_b1(
                 return guard.remove(pos);
             }
         }
-        tokio::time::sleep(Duration::from_millis(10)).await;
+        tokio::time::sleep(Duration::from_millis(1)).await;
     }
 }
 

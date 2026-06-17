@@ -11,10 +11,10 @@ static TEST_MUTEX: Mutex<()> = Mutex::new(());
 fn test_rocksdb_config_and_path_resolution() {
     let _lock = TEST_MUTEX.lock().unwrap();
 
-    // 1. Check TOWER_LSP_MAX_DB_PATH env var resolution
+    // 1. Check LSP_MAX_DB_PATH env var resolution
     let temp_dir_1 = tempfile::tempdir().unwrap();
     let db_path_1 = temp_dir_1.path().join("db1");
-    std::env::set_var("TOWER_LSP_MAX_DB_PATH", db_path_1.to_str().unwrap());
+    std::env::set_var("LSP_MAX_DB_PATH", db_path_1.to_str().unwrap());
 
     let resolved = resolve_db_path();
     assert_eq!(resolved, db_path_1);
@@ -23,7 +23,7 @@ fn test_rocksdb_config_and_path_resolution() {
     assert!(db_path_1.exists());
     drop(store);
 
-    std::env::remove_var("TOWER_LSP_MAX_DB_PATH");
+    std::env::remove_var("LSP_MAX_DB_PATH");
 
     // 2. Check .lsp-max-config.json resolution
     let temp_dir_2 = tempfile::tempdir().unwrap();
@@ -35,7 +35,7 @@ fn test_rocksdb_config_and_path_resolution() {
     });
     std::fs::write(&config_file_path, config_json.to_string()).unwrap();
 
-    std::env::set_var("TOWER_LSP_MAX_CONFIG", config_file_path.to_str().unwrap());
+    std::env::set_var("LSP_MAX_CONFIG", config_file_path.to_str().unwrap());
 
     let resolved = resolve_db_path();
     assert_eq!(resolved, db_path_2);
@@ -44,16 +44,16 @@ fn test_rocksdb_config_and_path_resolution() {
     assert!(db_path_2.exists());
     drop(store);
 
-    std::env::remove_var("TOWER_LSP_MAX_CONFIG");
+    std::env::remove_var("LSP_MAX_CONFIG");
 
     // 3. Check fallback in test mode (should contain lsp-max-db-)
-    std::env::set_var("TOWER_LSP_MAX_TEST", "true");
+    std::env::set_var("LSP_MAX_TEST", "true");
     let resolved = resolve_db_path();
     assert!(resolved.to_str().unwrap().contains("lsp-max-db-"));
 
     let store = StoreFactory::open().unwrap();
     drop(store);
-    std::env::remove_var("TOWER_LSP_MAX_TEST");
+    std::env::remove_var("LSP_MAX_TEST");
 }
 
 #[test]
@@ -61,9 +61,9 @@ fn test_named_graph_invariant_validation() {
     let _lock = TEST_MUTEX.lock().unwrap();
 
     let temp_db = tempfile::tempdir().unwrap();
-    std::env::set_var("TOWER_LSP_MAX_DB_PATH", temp_db.path().to_str().unwrap());
+    std::env::set_var("LSP_MAX_DB_PATH", temp_db.path().to_str().unwrap());
     let store = StoreFactory::open().unwrap();
-    std::env::remove_var("TOWER_LSP_MAX_DB_PATH");
+    std::env::remove_var("LSP_MAX_DB_PATH");
 
     let active_graph = oxigraph::model::GraphName::NamedNode(
         oxigraph::model::NamedNode::new("urn:project:local:snapshot:snap-invariant-1").unwrap(),
@@ -125,9 +125,9 @@ fn test_thread_safety_concurrent_reads_writes() {
     let _lock = TEST_MUTEX.lock().unwrap();
 
     let temp_db = tempfile::tempdir().unwrap();
-    std::env::set_var("TOWER_LSP_MAX_DB_PATH", temp_db.path().to_str().unwrap());
+    std::env::set_var("LSP_MAX_DB_PATH", temp_db.path().to_str().unwrap());
     let store = StoreFactory::open().unwrap();
-    std::env::remove_var("TOWER_LSP_MAX_DB_PATH");
+    std::env::remove_var("LSP_MAX_DB_PATH");
 
     let num_threads = 10;
     let mut handles = Vec::new();
@@ -186,9 +186,9 @@ fn test_transaction_isolation_dirty_reads_prevention() {
     let _lock = TEST_MUTEX.lock().unwrap();
 
     let temp_db = tempfile::tempdir().unwrap();
-    std::env::set_var("TOWER_LSP_MAX_DB_PATH", temp_db.path().to_str().unwrap());
+    std::env::set_var("LSP_MAX_DB_PATH", temp_db.path().to_str().unwrap());
     let store = StoreFactory::open().unwrap();
-    std::env::remove_var("TOWER_LSP_MAX_DB_PATH");
+    std::env::remove_var("LSP_MAX_DB_PATH");
 
     let active_graph = oxigraph::model::GraphName::NamedNode(
         oxigraph::model::NamedNode::new("urn:project:local:snapshot:snap-isolation").unwrap(),

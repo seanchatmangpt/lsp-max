@@ -31,13 +31,13 @@ be zero at all times — this is the inviolable rule).
 |---|---|---|
 | Receipt ledger | `app/receipts` (RSC reads real `*.receipt.json`) | ✅ represented (iter 1) |
 | CLI noun-verb surface | `app/cli` (RSC parses real `nouns/*.rs`) | ✅ represented (iter 2) |
-| Example witnesses (live run) | — | ❌ exposed-but-unrepresented |
+| Example witnesses (live run) | `app/witness` (server action runs real `cargo run --example`) | ✅ represented (iter 4) |
 | Coverage gap map | `app/coverage` (RSC parses real DOC_COVERAGE_LOG.md) | ✅ represented (iter 3) |
-| Conformance verdict (live) | — | ❌ exposed-but-unrepresented |
-| OCEL process evidence | — | ❌ exposed-but-unrepresented |
-| Receipt-chain cross-product graph | — | ❌ (cross-product, after per-capability) |
+| Conformance verdict (live) | `app/conformance` (server action runs real `lsp-max-cli conformance vector`) | ✅ represented (iter 6) |
+| OCEL process evidence | `app/ocel` (RSC SVG graph from real *.ocel.json) | ✅ represented (iter 5) |
+| Receipt-chain cross-product graph | — | ⊘ NOT REAL: 0 receipts carry prev_receipt_hash; the real graph is the OCEL (iter 5) |
 
-rendered-but-fabricated: **0** (inviolable). exposed-but-unrepresented: 4.
+rendered-but-fabricated: **0** (inviolable). exposed-but-unrepresented: **0** for the enumerated surface.
 
 ## Iteration log
 
@@ -82,3 +82,59 @@ rendered-but-fabricated: **0** (inviolable). exposed-but-unrepresented: 4.
   receipt_chain_explained.rs), real Iteration 1–6 headers, covered/gap counts.
 - exposed-but-unrepresented now 4: example witnesses (live run), conformance
   (live), OCEL evidence, receipt-chain cross-product graph.
+
+### Iteration 4 — live witness runner (server action)
+- `app/witness/actions.ts` (`"use server"`): `runExample()` spawns
+  `cargo run --quiet --example <name>` in the real repo (whitelisted to the 4
+  witness examples), returns real stdout + real exit code, including real failure.
+- `app/witness/runner.tsx` (`"use client"`, React 19 `useActionState`): buttons
+  invoke the action; pending state waits on actual cargo work; renders real output.
+- `app/witness/page.tsx`: gates the button list on actual `examples/*.rs` files;
+  throws if none present.
+- Witness: the action's command (`cargo run --example admission_pipeline`) emits
+  real WITNESS output, exit 0; the page (HTTP 200) lists the 4 real examples.
+  This is the project *executing*, not a fixture — the frontier feature.
+- exposed-but-unrepresented now 3: conformance (live verdict), OCEL evidence,
+  receipt-chain cross-product graph.
+
+### Iteration 5 — OCEL process graph + a fabrication averted
+- `readOcel()` parses the real `crates/playground/ocel/admitted_evidence.ocel.json`
+  (OCEL 2.0); throws if absent.
+- `app/ocel/page.tsx`: RSC rendering a bipartite SVG graph — events ↔ objects, every
+  edge an actual `relationships` entry from the log.
+- Render witness (HTML): real event types (checkpoint.admitted, diagnostic.published,
+  file.projected), object types (Artifact, Checkpoint), real object ids
+  (dogfood_gc002/003/004).
+- **Fabrication averted (the rule working):** the planned "receipt-chain graph" was
+  checked against data first — `grep prev_receipt_hash` over all receipts = 0. The
+  receipts do NOT chain, so rendering chain edges would be fabrication. Reclassified
+  ⊘ NOT REAL; the genuine process graph is the OCEL, now represented. This is the
+  inviolable rule catching a would-be closed-door attack before it shipped.
+- exposed-but-unrepresented now 1: conformance live verdict (assess next: does the
+  CLI conformance noun produce a verdict standalone, or refuse without server state?).
+
+### Iteration 6 — live conformance verdict (gap map reaches 0/0)
+- `app/conformance/actions.ts` (`"use server"`): `runConformance()` runs the real
+  `lsp-max-cli conformance vector --instance-id <id>` and parses its actual
+  ConformanceVector JSON (admitted/refused/unknown). Instance id validated to a safe
+  charset (passed as an argv arg, never shell-interpolated).
+- `app/conformance/form.tsx` + `page.tsx`: React 19 `useActionState` form rendering
+  the three-valued verdict as axis chips, incl. the real error path on refusal.
+- Witness: the action's command produces a real verdict — for LSP_1, all 11 law axes
+  `unknown` (no evidence yet; the doctrine — unknown never collapses). `/conformance`
+  serves 200 bound to the real command.
+
+## TERMINATION — gap map is 0/0 for the enumerated surface
+rendered-but-fabricated: **0** (held inviolable across all 6 iterations — and the
+rule actively averted one fabrication, the non-existent receipt chain).
+exposed-but-unrepresented: **0** for the enumerated surface (receipts, CLI noun-verb,
+doc↔example coverage, live example witnesses, OCEL process graph, live conformance
+verdict, workspace version).
+
+### Honest enumeration boundary (not a false "complete")
+The map is bijective for the surface enumerated above. A larger enumeration could add:
+protocol *type* surface explorer (ConformanceVector/Receipt/LawAxis from the .rs),
+the gate (`lsp-max-cli gate check`), the diagnostics noun (11 verbs). These are not
+yet on the map — recorded as the next enumeration frontier so "0 gaps" is not
+mistaken for "everything the project could expose." No fabrication exists; the
+deliverable (the map) is at zero against its current, stated enumeration.

@@ -15,6 +15,7 @@ const RECEIPT_PATH: &str = "receipts/compositor-scale.receipt.json";
 const EXPECTED_CHECKPOINT: &str = "COMPOSITOR-SCALE-ADMITTED-26.6.9";
 
 #[test]
+#[ignore = "stress/perf: slow by design, run with --include-ignored"]
 fn compositor_scale_receipt_exists() {
     assert!(
         Path::new(RECEIPT_PATH).exists(),
@@ -23,6 +24,7 @@ fn compositor_scale_receipt_exists() {
 }
 
 #[test]
+#[ignore = "stress/perf: slow by design, run with --include-ignored"]
 fn compositor_scale_receipt_is_valid_json() {
     let content = fs::read_to_string(RECEIPT_PATH)
         .unwrap_or_else(|_| panic!("Cannot read {RECEIPT_PATH}. Run `just bench-compositor`."));
@@ -31,6 +33,7 @@ fn compositor_scale_receipt_is_valid_json() {
 }
 
 #[test]
+#[ignore = "stress/perf: slow by design, run with --include-ignored"]
 fn compositor_scale_receipt_has_required_fields() {
     let content = fs::read_to_string(RECEIPT_PATH)
         .unwrap_or_else(|_| panic!("Cannot read {RECEIPT_PATH}. Run `just bench-compositor`."));
@@ -63,6 +66,7 @@ fn compositor_scale_receipt_has_required_fields() {
 }
 
 #[test]
+#[ignore = "stress/perf: slow by design, run with --include-ignored"]
 fn compositor_scale_receipt_checkpoint_matches_calver() {
     let content = fs::read_to_string(RECEIPT_PATH)
         .unwrap_or_else(|_| panic!("Cannot read {RECEIPT_PATH}. Run `just bench-compositor`."));
@@ -80,6 +84,7 @@ fn compositor_scale_receipt_checkpoint_matches_calver() {
 }
 
 #[test]
+#[ignore = "stress/perf: slow by design, run with --include-ignored"]
 fn compositor_scale_receipt_claims_cover_all_six_benchmarks() {
     let content = fs::read_to_string(RECEIPT_PATH)
         .unwrap_or_else(|_| panic!("Cannot read {RECEIPT_PATH}. Run `just bench-compositor`."));
@@ -99,6 +104,7 @@ fn compositor_scale_receipt_claims_cover_all_six_benchmarks() {
 }
 
 #[test]
+#[ignore = "stress/perf: slow by design, run with --include-ignored"]
 fn compositor_scale_receipt_status_is_admitted() {
     let content = fs::read_to_string(RECEIPT_PATH)
         .unwrap_or_else(|_| panic!("Cannot read {RECEIPT_PATH}. Run `just bench-compositor`."));

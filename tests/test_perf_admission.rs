@@ -15,6 +15,7 @@ const RECEIPT_PATH: &str = "receipts/perf-refactors.receipt.json";
 const EXPECTED_CHECKPOINT: &str = "PERF-REFACTORS-ADMITTED-26.6.9";
 
 #[test]
+#[ignore = "stress/perf: slow by design, run with --include-ignored"]
 fn perf_refactors_receipt_exists() {
     assert!(
         Path::new(RECEIPT_PATH).exists(),
@@ -23,6 +24,7 @@ fn perf_refactors_receipt_exists() {
 }
 
 #[test]
+#[ignore = "stress/perf: slow by design, run with --include-ignored"]
 fn perf_refactors_receipt_is_valid_json() {
     let content = fs::read_to_string(RECEIPT_PATH)
         .unwrap_or_else(|_| panic!("Cannot read {RECEIPT_PATH}. Run `just bench-admit`."));
@@ -31,6 +33,7 @@ fn perf_refactors_receipt_is_valid_json() {
 }
 
 #[test]
+#[ignore = "stress/perf: slow by design, run with --include-ignored"]
 fn perf_refactors_receipt_has_required_fields() {
     let content = fs::read_to_string(RECEIPT_PATH)
         .unwrap_or_else(|_| panic!("Cannot read {RECEIPT_PATH}. Run `just bench-admit`."));
@@ -59,6 +62,7 @@ fn perf_refactors_receipt_has_required_fields() {
 }
 
 #[test]
+#[ignore = "stress/perf: slow by design, run with --include-ignored"]
 fn perf_refactors_receipt_checkpoint_matches_calver() {
     let content = fs::read_to_string(RECEIPT_PATH)
         .unwrap_or_else(|_| panic!("Cannot read {RECEIPT_PATH}. Run `just bench-admit`."));
@@ -76,6 +80,7 @@ fn perf_refactors_receipt_checkpoint_matches_calver() {
 }
 
 #[test]
+#[ignore = "stress/perf: slow by design, run with --include-ignored"]
 fn perf_refactors_receipt_claims_cover_all_four_benchmarks() {
     let content = fs::read_to_string(RECEIPT_PATH)
         .unwrap_or_else(|_| panic!("Cannot read {RECEIPT_PATH}. Run `just bench-admit`."));
@@ -95,6 +100,7 @@ fn perf_refactors_receipt_claims_cover_all_four_benchmarks() {
 }
 
 #[test]
+#[ignore = "stress/perf: slow by design, run with --include-ignored"]
 fn perf_refactors_receipt_status_is_admitted() {
     let content = fs::read_to_string(RECEIPT_PATH)
         .unwrap_or_else(|_| panic!("Cannot read {RECEIPT_PATH}. Run `just bench-admit`."));

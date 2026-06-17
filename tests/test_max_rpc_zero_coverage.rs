@@ -69,7 +69,7 @@ async fn boot_server() -> (TxShared, RxLog, tokio::task::JoinHandle<()>, SerialG
         serde_json::json!({"jsonrpc":"2.0","id":0,"method":"initialize","params":{"capabilities":{}}}),
     )
     .await;
-    wait_for_response(received.clone(), 0, Duration::from_secs(3)).await;
+    wait_for_response(received.clone(), 0, Duration::from_millis(300)).await;
 
     (client_tx_shared, received, server_handle, _guard)
 }
@@ -100,7 +100,7 @@ async fn test_rpc_method(method: &str, params: serde_json::Value) -> serde_json:
         })
     };
     write_msg(&tx, payload).await;
-    let resp = wait_for_response(rx, 1, Duration::from_secs(3)).await;
+    let resp = wait_for_response(rx, 1, Duration::from_millis(300)).await;
     cleanup_receipts();
     resp
 }
@@ -276,7 +276,7 @@ async fn test_max_restore_state_returns_result() {
         serde_json::json!({"jsonrpc":"2.0","id":1,"method":"max/dumpState"}),
     )
     .await;
-    let dump_resp = wait_for_response(rx.clone(), 1, Duration::from_secs(3)).await;
+    let dump_resp = wait_for_response(rx.clone(), 1, Duration::from_millis(300)).await;
     let state = dump_resp
         .get("result")
         .expect("dumpState must return result")
@@ -293,7 +293,7 @@ async fn test_max_restore_state_returns_result() {
         }),
     )
     .await;
-    let resp = wait_for_response(rx, 2, Duration::from_secs(3)).await;
+    let resp = wait_for_response(rx, 2, Duration::from_millis(300)).await;
     assert_has_result(&resp, "max/restoreState");
     cleanup_receipts();
 }
@@ -436,7 +436,7 @@ async fn test_full_lifecycle_diagnostic_repair_conformance_release() {
         serde_json::json!({"jsonrpc":"2.0","id":10,"method":"max/snapshot"}),
     )
     .await;
-    let snap1_resp = wait_for_response(rx.clone(), 10, Duration::from_secs(3)).await;
+    let snap1_resp = wait_for_response(rx.clone(), 10, Duration::from_millis(300)).await;
     assert!(
         snap1_resp.get("result").is_some(),
         "max/snapshot (step 1) must return 'result', got: {}",
@@ -469,7 +469,7 @@ async fn test_full_lifecycle_diagnostic_repair_conformance_release() {
         }),
     )
     .await;
-    let cv1_resp = wait_for_response(rx.clone(), 11, Duration::from_secs(3)).await;
+    let cv1_resp = wait_for_response(rx.clone(), 11, Duration::from_millis(300)).await;
     assert!(
         cv1_resp.get("result").is_some(),
         "max/conformanceVector (initial) must return 'result', got: {}",
@@ -500,7 +500,7 @@ async fn test_full_lifecycle_diagnostic_repair_conformance_release() {
         }),
     )
     .await;
-    let explain_resp = wait_for_response(rx.clone(), 12, Duration::from_secs(3)).await;
+    let explain_resp = wait_for_response(rx.clone(), 12, Duration::from_millis(300)).await;
     assert!(
         explain_resp.get("result").is_some(),
         "max/explainDiagnostic must return 'result', got: {}",
@@ -525,7 +525,7 @@ async fn test_full_lifecycle_diagnostic_repair_conformance_release() {
         }),
     )
     .await;
-    let plan_resp = wait_for_response(rx.clone(), 13, Duration::from_secs(3)).await;
+    let plan_resp = wait_for_response(rx.clone(), 13, Duration::from_millis(300)).await;
     assert!(
         plan_resp.get("result").is_some(),
         "max/repairPlan must return 'result', got: {}",
@@ -551,7 +551,7 @@ async fn test_full_lifecycle_diagnostic_repair_conformance_release() {
         }),
     )
     .await;
-    let repair_resp = wait_for_response(rx.clone(), 14, Duration::from_secs(3)).await;
+    let repair_resp = wait_for_response(rx.clone(), 14, Duration::from_millis(300)).await;
     assert!(
         repair_resp.get("result").is_some(),
         "max/applyRepairTransaction must return 'result', got: {}",
@@ -570,7 +570,7 @@ async fn test_full_lifecycle_diagnostic_repair_conformance_release() {
         serde_json::json!({"jsonrpc":"2.0","id":15,"method":"max/snapshot"}),
     )
     .await;
-    let snap2_resp = wait_for_response(rx.clone(), 15, Duration::from_secs(3)).await;
+    let snap2_resp = wait_for_response(rx.clone(), 15, Duration::from_millis(300)).await;
     assert!(
         snap2_resp.get("result").is_some(),
         "max/snapshot (post-repair) must return 'result', got: {}",
@@ -603,7 +603,7 @@ async fn test_full_lifecycle_diagnostic_repair_conformance_release() {
         }),
     )
     .await;
-    let cv2_resp = wait_for_response(rx.clone(), 16, Duration::from_secs(3)).await;
+    let cv2_resp = wait_for_response(rx.clone(), 16, Duration::from_millis(300)).await;
     assert!(
         cv2_resp.get("result").is_some(),
         "max/conformanceVector (post-repair) must return 'result', got: {}",
@@ -631,7 +631,7 @@ async fn test_full_lifecycle_diagnostic_repair_conformance_release() {
         }),
     )
     .await;
-    let release_resp = wait_for_response(rx.clone(), 17, Duration::from_secs(3)).await;
+    let release_resp = wait_for_response(rx.clone(), 17, Duration::from_millis(300)).await;
     assert!(
         release_resp.get("result").is_some() || release_resp.get("error").is_some(),
         "max/releaseActuation must return a well-formed JSON-RPC response, got: {}",

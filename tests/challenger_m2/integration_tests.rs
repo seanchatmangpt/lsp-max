@@ -46,8 +46,12 @@ async fn test_quick_fix_missing_moniker_notebook_sync() {
         serde_json::json!({"jsonrpc":"2.0","id":1,"method":"initialize","params":{"capabilities":{}}}),
     )
     .await;
-    let _init_resp =
-        wait_for_response(client_received_responses.clone(), 1, Duration::from_secs(2)).await;
+    let _init_resp = wait_for_response(
+        client_received_responses.clone(),
+        1,
+        Duration::from_millis(200),
+    )
+    .await;
 
     write_msg(
         &client_tx_shared,
@@ -87,7 +91,7 @@ impl LanguageServer for Dummy {
     let diag_ntf = wait_for_notification(
         client_received_notifications.clone(),
         "textDocument/publishDiagnostics",
-        Duration::from_secs(2),
+        Duration::from_millis(200),
     )
     .await
     .expect("Expected publishDiagnostics");
@@ -113,10 +117,13 @@ impl LanguageServer for Dummy {
     )
     .await;
 
-    let code_action_resp =
-        wait_for_response(client_received_responses.clone(), 2, Duration::from_secs(2))
-            .await
-            .unwrap();
+    let code_action_resp = wait_for_response(
+        client_received_responses.clone(),
+        2,
+        Duration::from_millis(200),
+    )
+    .await
+    .unwrap();
 
     let result = code_action_resp.get("result");
     if let Some(res_val) = result {
@@ -138,7 +145,12 @@ impl LanguageServer for Dummy {
         serde_json::json!({"jsonrpc":"2.0","id":3,"method":"shutdown","params":null}),
     )
     .await;
-    let _ = wait_for_response(client_received_responses.clone(), 3, Duration::from_secs(2)).await;
+    let _ = wait_for_response(
+        client_received_responses.clone(),
+        3,
+        Duration::from_millis(200),
+    )
+    .await;
 
     write_msg(
         &client_tx_shared,
@@ -183,8 +195,12 @@ async fn test_code_action_out_of_bounds_no_panic_integration() {
         serde_json::json!({"jsonrpc":"2.0","id":1,"method":"initialize","params":{"capabilities":{}}}),
     )
     .await;
-    let _init_resp =
-        wait_for_response(client_received_responses.clone(), 1, Duration::from_secs(2)).await;
+    let _init_resp = wait_for_response(
+        client_received_responses.clone(),
+        1,
+        Duration::from_millis(200),
+    )
+    .await;
 
     let doc_uri = "file:///Users/sac/lsp-max/dummy.rs";
     let code_text = "fn main() {}\n";
@@ -218,8 +234,12 @@ async fn test_code_action_out_of_bounds_no_panic_integration() {
     )
     .await;
 
-    let resp =
-        wait_for_response(client_received_responses.clone(), 2, Duration::from_secs(2)).await;
+    let resp = wait_for_response(
+        client_received_responses.clone(),
+        2,
+        Duration::from_millis(200),
+    )
+    .await;
 
     assert!(
         resp.is_some(),
@@ -276,8 +296,12 @@ async fn test_quick_fix_missing_file_operations() {
         serde_json::json!({"jsonrpc":"2.0","id":1,"method":"initialize","params":{"capabilities":{}}}),
     )
     .await;
-    let _init_resp =
-        wait_for_response(client_received_responses.clone(), 1, Duration::from_secs(2)).await;
+    let _init_resp = wait_for_response(
+        client_received_responses.clone(),
+        1,
+        Duration::from_millis(200),
+    )
+    .await;
 
     write_msg(
         &client_tx_shared,
@@ -317,7 +341,7 @@ impl LanguageServer for Dummy {
     let diag_ntf = wait_for_notification(
         client_received_notifications.clone(),
         "textDocument/publishDiagnostics",
-        Duration::from_secs(2),
+        Duration::from_millis(200),
     )
     .await
     .expect("Expected publishDiagnostics");
@@ -346,10 +370,13 @@ impl LanguageServer for Dummy {
     )
     .await;
 
-    let code_action_resp =
-        wait_for_response(client_received_responses.clone(), 2, Duration::from_secs(2))
-            .await
-            .unwrap();
+    let code_action_resp = wait_for_response(
+        client_received_responses.clone(),
+        2,
+        Duration::from_millis(200),
+    )
+    .await
+    .unwrap();
 
     let result = code_action_resp.get("result");
     if let Some(res_val) = result {
@@ -371,7 +398,12 @@ impl LanguageServer for Dummy {
         serde_json::json!({"jsonrpc":"2.0","id":3,"method":"shutdown","params":null}),
     )
     .await;
-    let _ = wait_for_response(client_received_responses.clone(), 3, Duration::from_secs(2)).await;
+    let _ = wait_for_response(
+        client_received_responses.clone(),
+        3,
+        Duration::from_millis(200),
+    )
+    .await;
 
     write_msg(
         &client_tx_shared,
@@ -416,8 +448,12 @@ async fn test_code_action_adversarial_ranges() {
         serde_json::json!({"jsonrpc":"2.0","id":1,"method":"initialize","params":{"capabilities":{}}}),
     )
     .await;
-    let _init_resp =
-        wait_for_response(client_received_responses.clone(), 1, Duration::from_secs(2)).await;
+    let _init_resp = wait_for_response(
+        client_received_responses.clone(),
+        1,
+        Duration::from_millis(200),
+    )
+    .await;
 
     let doc_uri = "file:///Users/sac/lsp-max/dummy_adv_ranges.rs";
     let code_text = "fn main() {}\n";
@@ -451,8 +487,12 @@ async fn test_code_action_adversarial_ranges() {
         }),
     )
     .await;
-    let resp_invalid =
-        wait_for_response(client_received_responses.clone(), 2, Duration::from_secs(2)).await;
+    let resp_invalid = wait_for_response(
+        client_received_responses.clone(),
+        2,
+        Duration::from_millis(200),
+    )
+    .await;
     assert!(
         resp_invalid.is_some(),
         "Should respond to invalid range start > end gracefully"
@@ -477,8 +517,12 @@ async fn test_code_action_adversarial_ranges() {
         }),
     )
     .await;
-    let resp_oob =
-        wait_for_response(client_received_responses.clone(), 3, Duration::from_secs(2)).await;
+    let resp_oob = wait_for_response(
+        client_received_responses.clone(),
+        3,
+        Duration::from_millis(200),
+    )
+    .await;
     assert!(
         resp_oob.is_some(),
         "Should respond to extreme line index gracefully"

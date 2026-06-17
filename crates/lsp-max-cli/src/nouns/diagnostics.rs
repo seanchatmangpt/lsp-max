@@ -578,7 +578,7 @@ mod tests {
             .unwrap_or_else(|p| p.into_inner());
         // SAFETY: set_var under process-wide ENV_MUTEX
         unsafe {
-            env::set_var("TOWER_LSP_MAX_STATE_PATH", f.path().to_str().unwrap());
+            env::set_var("LSP_MAX_STATE_PATH", f.path().to_str().unwrap());
         }
         (f, guard)
     }

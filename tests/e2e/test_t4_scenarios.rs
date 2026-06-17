@@ -2,6 +2,7 @@ use crate::test_harness::TestHarness;
 use serde_json::json;
 
 #[tokio::test]
+#[ignore = "e2e: requires live server, run with --include-ignored"]
 async fn test_t4_scenario_multi_language_polyglot_workspace() {
     let mut harness = TestHarness::new(2).await;
     let init_params = json!({
@@ -42,6 +43,7 @@ async fn test_t4_scenario_multi_language_polyglot_workspace() {
 }
 
 #[tokio::test]
+#[ignore = "e2e: requires live server, run with --include-ignored"]
 async fn test_t4_scenario_slow_remote_lsp_with_local_fallback() {
     let mut harness = TestHarness::new(2).await;
 
@@ -120,6 +122,7 @@ async fn test_t4_scenario_slow_remote_lsp_with_local_fallback() {
 }
 
 #[tokio::test]
+#[ignore = "e2e: requires live server, run with --include-ignored"]
 async fn test_t4_scenario_collaborative_editing_with_conflict_resolution() {
     let mut harness = TestHarness::new(1).await;
     let init_params = json!({
@@ -181,6 +184,7 @@ async fn test_t4_scenario_collaborative_editing_with_conflict_resolution() {
 }
 
 #[tokio::test]
+#[ignore = "e2e: requires live server, run with --include-ignored"]
 async fn test_t4_scenario_large_monorepo_lsif_navigation() {
     let mut harness = TestHarness::new(1).await;
     let init_params = json!({
@@ -211,6 +215,7 @@ async fn test_t4_scenario_large_monorepo_lsif_navigation() {
 }
 
 #[tokio::test]
+#[ignore = "e2e: requires live server, run with --include-ignored"]
 async fn test_t4_scenario_server_crash_recovery_during_refactoring() {
     let mut harness = TestHarness::new(2).await;
     let init_params = json!({
