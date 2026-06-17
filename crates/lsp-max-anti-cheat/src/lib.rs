@@ -8,5 +8,7 @@ pub mod parsers;
 pub mod rules;
 
 pub use diagnostics::AntiLlmDiagnostic;
-pub use engine::{scan_file, evaluate_diagnostics, evaluate_diagnostics_with_config};
+pub use engine::{
+    scan_file, evaluate_diagnostics, evaluate_diagnostics_with_config, observations_to_ocel,
+};
 pub use observations::Observation;
