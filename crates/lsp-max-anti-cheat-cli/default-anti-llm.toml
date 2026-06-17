@@ -1,0 +1,22 @@
+# anti-llm.toml — Configuration for lsp-max-anti-cheat scanner
+#
+# Default configuration enables all rules. Domain-specific rules can be
+# suppressed via domain_terms (vocabulary), non_blocking_path_prefixes (docs),
+# and structural_check_paths (test code).
+
+[claim]
+# Domain terms that are canonical vocabulary in this repo, not victory language.
+# Case-insensitive exact-phrase matches.
+# Example: ["fully admitted"] suppresses the typestate term in law-state crates.
+domain_terms = []
+
+[surface]
+# Path prefixes where SURFACE-001 (deprecated library reference) is informational
+# rather than blocking. Useful for historical docs/jira/ records.
+non_blocking_path_prefixes = []
+
+[test]
+# Path prefixes where Vec::contains structural checks (comparing types) are expected.
+# The scanner already detects structural vs string checks; this list suppresses
+# false positives in known paths.
+structural_check_paths = []
