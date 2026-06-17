@@ -750,3 +750,103 @@ fn refgraph_negative_independent_never_trips() {
         );
     }
 }
+
+// -------------------------------------------------------------
+// LSP 3.18 + LSIF 0.6 combinatorial coverage extractor
+// -------------------------------------------------------------
+
+#[test]
+fn lsp318_full_surface_is_combinatorial_not_delta() {
+    // The extractor must enumerate the full method surface, not the 15-row
+    // delta changelog. Treating 15 rows as full coverage is the exact
+    // ANTI-LLM-LSP318-COMB-001 laundering this surface exists to refute.
+    let surface = anti_llm_cheat_lsp::rules::lsp318_coverage::full_surface();
+    assert!(
+        surface.len() >= 90,
+        "full LSP 3.18 surface must be combinatorial (>=90 methods), got {}",
+        surface.len()
+    );
+    assert!(
+        surface.len() > get_feature_matrix().len(),
+        "full surface must strictly exceed the 15-row delta changelog"
+    );
+}
+
+#[test]
+fn lsp318_transcript_without_handler_never_collapses_to_supported() {
+    // Unknown must never collapse into Admitted/Refused: a method with a
+    // transcript but no wired handler is UNKNOWN, never SUPPORTED.
+    use anti_llm_cheat_lsp::rules::lsp318_coverage::{compute_coverage, full_surface, HandlerState};
+    let root = ".".to_string();
+    let rows = compute_coverage(&root);
+    let surface = full_surface();
+    for (m, r) in surface.iter().zip(rows.iter()) {
+        if m.handler == HandlerState::Absent && r.transcript_present {
+            assert_eq!(
+                r.status, "UNKNOWN",
+                "transcript-only method {} must be UNKNOWN, never SUPPORTED",
+                r.method
+            );
+        }
+    }
+}
+
+#[test]
+fn lsp318_receipts_axis_is_open_until_artifacts_land() {
+    // No receipt artifacts exist on disk; the receipt axis must stay OPEN and
+    // no method may reach ADMITTED on transcript evidence alone.
+    use anti_llm_cheat_lsp::rules::lsp318_coverage::compute_coverage;
+    let root = ".".to_string();
+    let rows = compute_coverage(&root);
+    for r in &rows {
+        assert!(
+            !r.receipt_present,
+            "no receipt artifact should exist for {}",
+            r.method
+        );
+        assert_ne!(
+            r.status, "ADMITTED",
+            "{} must not be ADMITTED without a receipt",
+            r.method
+        );
+    }
+}
+
+#[test]
+fn lsp318_conformance_summary_preserves_unknown_axis() {
+    use anti_llm_cheat_lsp::rules::lsp318_coverage::{compute_coverage, conformance_summary};
+    let root = ".".to_string();
+    let rows = compute_coverage(&root);
+    let s = conformance_summary(&rows);
+    assert_eq!(s.total, rows.len());
+    assert_eq!(s.admitted + s.refused + s.unknown, s.total);
+    assert!(
+        s.unknown > 0,
+        "unknown axis must be non-empty and distinct from admitted/refused"
+    );
+    assert_eq!(s.receipts_present, 0, "no receipts present on disk");
+}
+
+#[test]
+fn lsif06_surface_is_full_and_example_coverage_is_open() {
+    use anti_llm_cheat_lsp::rules::lsif06::{compute_coverage, lsif_summary};
+    let rows = compute_coverage();
+    let s = lsif_summary(&rows);
+    assert!(
+        s.total >= 36,
+        "LSIF 0.6 surface must enumerate the full vertex+edge graph, got {}",
+        s.total
+    );
+    assert!(s.vertices > 0 && s.edges > 0);
+    assert_eq!(
+        s.covered_by_example, 0,
+        "example carries no LSIF transcripts/receipts; coverage must be 0"
+    );
+    for r in &rows {
+        assert_ne!(
+            r.example_status, "ADMITTED",
+            "{} must not be ADMITTED without LSIF transcript + receipt",
+            r.name
+        );
+    }
+}
