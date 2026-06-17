@@ -23,7 +23,7 @@ mod tests {
         let test_db_path = tmp_file.path().to_str().unwrap().to_string();
         // Remove the temp file so the mesh creates it fresh
         let _ = fs::remove_file(&test_db_path);
-        env::set_var("TOWER_LSP_MAX_STATE_PATH", &test_db_path);
+        env::set_var("LSP_MAX_STATE_PATH", &test_db_path);
 
         // Also clean up refund receipt path if it exists
         let refund_receipt_path = std::env::temp_dir()
@@ -245,7 +245,7 @@ mod tests {
         if Path::new(&refund_receipt_path).exists() {
             let _ = fs::remove_file(&refund_receipt_path);
         }
-        env::remove_var("TOWER_LSP_MAX_STATE_PATH");
+        env::remove_var("LSP_MAX_STATE_PATH");
         drop(tmp_file);
     }
 }

@@ -2,6 +2,7 @@ use crate::test_harness::TestHarness;
 use serde_json::json;
 
 #[tokio::test]
+#[ignore = "e2e: requires live server, run with --include-ignored"]
 async fn test_f5_t1_compose_initialize_capabilities() {
     let mut harness = TestHarness::new(2).await;
 
@@ -54,6 +55,7 @@ async fn test_f5_t1_compose_initialize_capabilities() {
 }
 
 #[tokio::test]
+#[ignore = "e2e: requires live server, run with --include-ignored"]
 async fn test_f5_t1_routing_document_sync_did_open() {
     let mut harness = TestHarness::new(2).await;
     let init_params = json!({
@@ -101,6 +103,7 @@ async fn test_f5_t1_routing_document_sync_did_open() {
 }
 
 #[tokio::test]
+#[ignore = "e2e: requires live server, run with --include-ignored"]
 async fn test_f5_t1_routing_hover_first_success() {
     let mut harness = TestHarness::new(2).await;
     let init_params = json!({
@@ -150,6 +153,7 @@ async fn test_f5_t1_routing_hover_first_success() {
 }
 
 #[tokio::test]
+#[ignore = "e2e: requires live server, run with --include-ignored"]
 async fn test_f5_t1_routing_completion_merge() {
     let mut harness = TestHarness::new(2).await;
     let init_params = json!({
@@ -212,6 +216,7 @@ async fn test_f5_t1_routing_completion_merge() {
 }
 
 #[tokio::test]
+#[ignore = "e2e: requires live server, run with --include-ignored"]
 async fn test_f5_t1_routing_definition_merge() {
     let mut harness = TestHarness::new(2).await;
     let init_params = json!({
@@ -277,6 +282,7 @@ async fn test_f5_t1_routing_definition_merge() {
 }
 
 #[tokio::test]
+#[ignore = "e2e: requires live server, run with --include-ignored"]
 async fn test_f5_t2_routing_slow_upstream_timeout() {
     let mut harness = TestHarness::new(2).await;
     let init_params = json!({
@@ -336,6 +342,7 @@ async fn test_f5_t2_routing_slow_upstream_timeout() {
 }
 
 #[tokio::test]
+#[ignore = "e2e: requires live server, run with --include-ignored"]
 async fn test_f5_t2_routing_crashed_upstream_resilience() {
     let mut harness = TestHarness::new(2).await;
     let init_params = json!({
@@ -375,6 +382,7 @@ async fn test_f5_t2_routing_crashed_upstream_resilience() {
 }
 
 #[tokio::test]
+#[ignore = "e2e: requires live server, run with --include-ignored"]
 async fn test_f5_t2_routing_unsupported_method() {
     let mut harness = TestHarness::new(1).await;
     let init_params = json!({
@@ -396,6 +404,7 @@ async fn test_f5_t2_routing_unsupported_method() {
 }
 
 #[tokio::test]
+#[ignore = "e2e: requires live server, run with --include-ignored"]
 async fn test_f5_t2_routing_concurrent_stress() {
     let mut harness = TestHarness::new(2).await;
     let init_params = json!({
@@ -443,6 +452,7 @@ async fn test_f5_t2_routing_concurrent_stress() {
 }
 
 #[tokio::test]
+#[ignore = "e2e: requires live server, run with --include-ignored"]
 async fn test_f5_t2_routing_empty_upstreams() {
     let mut harness = TestHarness::new(0).await;
 

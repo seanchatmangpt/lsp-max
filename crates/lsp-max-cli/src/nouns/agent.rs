@@ -221,7 +221,7 @@ mod tests {
         let _lock = crate::nouns::TEST_ENV_LOCK
             .lock()
             .unwrap_or_else(|p| p.into_inner());
-        let _g1 = EnvGuard::remove("TOWER_LSP_MAX_API_KEY");
+        let _g1 = EnvGuard::remove("LSP_MAX_API_KEY");
         let _g2 = EnvGuard::remove("OPENAI_API_KEY");
         let svc = AgentService::new();
         let result = svc.invoke("test task".to_string());
@@ -234,7 +234,7 @@ mod tests {
         let _lock = crate::nouns::TEST_ENV_LOCK
             .lock()
             .unwrap_or_else(|p| p.into_inner());
-        let _g1 = EnvGuard::remove("TOWER_LSP_MAX_API_KEY");
+        let _g1 = EnvGuard::remove("LSP_MAX_API_KEY");
         let _g2 = EnvGuard::remove("OPENAI_API_KEY");
         let svc = AgentService::new();
         let result = svc.chat("agent-1".to_string(), "hello".to_string());
