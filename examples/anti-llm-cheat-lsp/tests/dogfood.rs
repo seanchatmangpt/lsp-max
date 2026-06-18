@@ -866,3 +866,150 @@ fn lsif06_surface_is_full_and_example_coverage_is_open() {
         );
     }
 }
+
+// -------------------------------------------------------------
+// OCEL 2.0 live detection projection tests (ocel_012, ocel_013)
+// -------------------------------------------------------------
+
+#[test]
+fn ocel_012_live_detections_produce_ocel_events() {
+    use anti_llm_cheat_lsp::diagnostics::AntiLlmDiagnostic;
+    use anti_llm_cheat_lsp::ocel::detections_to_ocel;
+
+    let diags = vec![AntiLlmDiagnostic {
+        code: "ANTI-LLM-SURFACE-001".to_string(),
+        category: "surface".to_string(),
+        file_path: "test.rs".to_string(),
+        line: 1,
+        column: 1,
+        message: "plain tower-lsp reference".to_string(),
+        forbidden_implication: "tower_lsp => lsp-max".to_string(),
+        blocking: true,
+        required_correction: "rename to lsp-max".to_string(),
+        required_next_proof: "verify no tower-lsp refs".to_string(),
+    }];
+    let log = detections_to_ocel(&diags);
+    assert!(!log.events.is_empty(), "live detections must produce OCEL events");
+    assert!(!log.objects.is_empty(), "live detections must produce OCEL objects");
+    // Every CheatDetected event must have at least one relationship binding
+    for event in &log.events {
+        if event.event_type == "CheatDetected" {
+            assert!(
+                !event.relationships.is_empty(),
+                "event {} must bind to at least one object",
+                event.id
+            );
+        }
+    }
+}
+
+#[test]
+fn ocel_013_object_types_cover_all_cheat_dimensions() {
+    use anti_llm_cheat_lsp::ocel::ocel_object_types;
+    let types: Vec<String> = ocel_object_types().iter().map(|t| t.name.clone()).collect();
+    // All six cheat-evidence dimensions must be declared
+    for required in &["CaseFile", "DetectionCode", "LawAxis"] {
+        assert!(
+            types.iter().any(|t| t == required),
+            "OCEL schema missing required object type: {}",
+            required
+        );
+    }
+}
+
+// Declare law constraint tests
+// -------------------------------------------------------------
+
+#[test]
+fn declare_001_absence_tower_lsp_fires() {
+    use anti_llm_cheat_lsp::rules::declare_laws::{
+        agents_md_laws, check_constraint, ObservationTrace,
+    };
+
+    let law = agents_md_laws()
+        .into_iter()
+        .find(|l| l.diagnostic_code == "ANTI-LLM-DECLARE-001")
+        .unwrap();
+    let trace_violating = ObservationTrace {
+        activities: vec!["tower_lsp_reference".to_string()],
+        file_path: "Cargo.toml".to_string(),
+        line: 1,
+    };
+    let trace_clean = ObservationTrace {
+        activities: vec!["some_other_activity".to_string()],
+        file_path: "Cargo.toml".to_string(),
+        line: 1,
+    };
+    assert!(
+        check_constraint(&law, &trace_violating).is_some(),
+        "Absence(tower_lsp_reference) must fire when tower-lsp detected"
+    );
+    assert!(
+        check_constraint(&law, &trace_clean).is_none(),
+        "Absence(tower_lsp_reference) must not fire on clean trace"
+    );
+}
+
+#[test]
+fn declare_002_response_handler_transcript_missing() {
+    use anti_llm_cheat_lsp::rules::declare_laws::{agents_md_laws, check_constraint, ObservationTrace};
+
+    let law = agents_md_laws()
+        .into_iter()
+        .find(|l| l.diagnostic_code == "ANTI-LLM-DECLARE-007")
+        .unwrap();
+    let trace_missing = ObservationTrace {
+        activities: vec!["handler_wired".to_string()], // wired but no transcript
+        file_path: "server.rs".to_string(),
+        line: 1,
+    };
+    let trace_ok = ObservationTrace {
+        activities: vec!["handler_wired".to_string(), "transcript_created".to_string()],
+        file_path: "server.rs".to_string(),
+        line: 1,
+    };
+    assert!(
+        check_constraint(&law, &trace_missing).is_some(),
+        "Response(handler_wired → transcript) must fire when transcript missing"
+    );
+    assert!(
+        check_constraint(&law, &trace_ok).is_none(),
+        "Response must not fire when transcript follows handler"
+    );
+}
+
+// -------------------------------------------------------------
+// Van der Aalst cheat taxonomy — hollow and placeholder rules
+// -------------------------------------------------------------
+
+#[test]
+fn detects_hollow_unimplemented() {
+    let path = find_file_path("fixtures/negative_controls/hollow_implementation.rs");
+    let obs = engine::scan_file(&path.to_string_lossy());
+    let diags = engine::evaluate_diagnostics(&obs);
+    check_diag_code(&diags, "ANTI-LLM-HOLLOW-001");
+}
+
+#[test]
+fn detects_hollow_todo() {
+    let path = find_file_path("fixtures/negative_controls/hollow_implementation.rs");
+    let obs = engine::scan_file(&path.to_string_lossy());
+    let diags = engine::evaluate_diagnostics(&obs);
+    check_diag_code(&diags, "ANTI-LLM-HOLLOW-002");
+}
+
+#[test]
+fn detects_fake_fitness_score() {
+    let path = find_file_path("fixtures/negative_controls/fake_alignment.rs");
+    let obs = engine::scan_file(&path.to_string_lossy());
+    let diags = engine::evaluate_diagnostics(&obs);
+    check_diag_code(&diags, "ANTI-LLM-PLACEHOLDER-001");
+}
+
+#[test]
+fn detects_unfalsifiable_assert() {
+    let path = find_file_path("fixtures/negative_controls/fake_alignment.rs");
+    let obs = engine::scan_file(&path.to_string_lossy());
+    let diags = engine::evaluate_diagnostics(&obs);
+    check_diag_code(&diags, "ANTI-LLM-PLACEHOLDER-002");
+}
