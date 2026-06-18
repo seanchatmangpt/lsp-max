@@ -59,7 +59,7 @@ impl LsifFixture {
     }
 
     fn teardown(self) {
-        drop(self.fixture);
+        drop(self);
     }
 }
 
