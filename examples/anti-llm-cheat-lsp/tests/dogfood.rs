@@ -776,7 +776,9 @@ fn lsp318_full_surface_is_combinatorial_not_delta() {
 fn lsp318_transcript_without_handler_never_collapses_to_supported() {
     // Unknown must never collapse into Admitted/Refused: a method with a
     // transcript but no wired handler is UNKNOWN, never SUPPORTED.
-    use anti_llm_cheat_lsp::rules::lsp318_coverage::{compute_coverage, full_surface, HandlerState};
+    use anti_llm_cheat_lsp::rules::lsp318_coverage::{
+        compute_coverage, full_surface, HandlerState,
+    };
     let root = ".".to_string();
     let rows = compute_coverage(&root);
     let surface = full_surface();
@@ -807,10 +809,7 @@ fn lsp318_receipts_axis_is_closed_with_admitted_rows() {
     );
 
     // Verify some rows are ADMITTED (Wired + Transcript + Receipt)
-    let admitted: Vec<_> = rows
-        .iter()
-        .filter(|r| r.status == "ADMITTED")
-        .collect();
+    let admitted: Vec<_> = rows.iter().filter(|r| r.status == "ADMITTED").collect();
     assert!(
         !admitted.is_empty(),
         "at least some rows must be ADMITTED with receipts + handler + transcript"

@@ -59,9 +59,9 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
                 required_next_proof:
                     "Verify receipt fields (digest, raw_command, boundary) are complete."
                         .to_string(),
-                            oracle_class: None,
+                oracle_class: None,
                 confidence: None,
-});
+            });
         }
     }
 
