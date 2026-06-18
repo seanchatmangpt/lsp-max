@@ -4,13 +4,13 @@ version.workspace = true
 authors.workspace = true
 edition.workspace = true
 rust-version.workspace = true
-description = "Anti-LLM/telemetry language server example using lsp-max"
+description = "Process-mining LSP server that detects LLM cheating patterns via OCEL 2.0, Declare constraints, and alignment-backed conformance checking"
 license.workspace = true
 homepage.workspace = true
 repository.workspace = true
-categories.workspace = true
-keywords.workspace = true
-publish = false
+categories = ["development-tools", "command-line-utilities"]
+keywords = ["lsp", "process-mining", "anti-cheat", "conformance", "ocel"]
+publish = true
 
 [package.metadata.docs.rs]
 all-features = true
@@ -30,9 +30,9 @@ aho-corasick = "1"
 ignore = "0.4"
 memchr = "2.5"
 rustc-hash = { workspace = true }
-lsp-max = { path = "../../" }
-lsp-max-ast = { path = "../../crates/lsp-max-adapters/lsp-max-ast" }
-lsp-max-ast-core = { path = "../../crates/lsp-max-adapters/lsp-max-ast-core" }
+lsp-max = { path = "../../", version = "26.6.18" }
+lsp-max-ast = { path = "../../crates/lsp-max-adapters/lsp-max-ast", version = "26.6.18" }
+lsp-max-ast-core = { path = "../../crates/lsp-max-adapters/lsp-max-ast-core", version = "26.6.18" }
 parking_lot = { workspace = true }
 lsp-types-max = { path = "../../../lsp-types-max", version = "26.6.5", features = ["proposed"] }
 chrono = { version = "0.4", features = ["serde"] }

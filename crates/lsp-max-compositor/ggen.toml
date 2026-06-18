@@ -4,7 +4,7 @@
 
 [meta]
 name = "lsp-max-compositor"
-version = "26.6.9"
+version = "26.6.18"
 
 [[rule]]
 name = "compositor-registry-init"
