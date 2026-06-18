@@ -792,21 +792,35 @@ fn lsp318_transcript_without_handler_never_collapses_to_supported() {
 }
 
 #[test]
-fn lsp318_receipts_axis_is_open_until_artifacts_land() {
-    // No receipt artifacts exist on disk; the receipt axis must stay OPEN and
-    // no method may reach ADMITTED on transcript evidence alone.
+fn lsp318_receipts_axis_is_closed_with_admitted_rows() {
+    // Receipt axis is now closed: 98 receipt artifacts exist in receipts/ directory.
+    // Wired methods with transcripts + receipts must reach ADMITTED status.
     use anti_llm_cheat_lsp::rules::lsp318_coverage::compute_coverage;
     let root = ".".to_string();
     let rows = compute_coverage(&root);
-    for r in &rows {
+
+    // Verify receipts exist for the primary methods
+    let with_receipts: Vec<_> = rows.iter().filter(|r| r.receipt_present).collect();
+    assert!(
+        !with_receipts.is_empty(),
+        "receipts must be present (axis closed)"
+    );
+
+    // Verify some rows are ADMITTED (Wired + Transcript + Receipt)
+    let admitted: Vec<_> = rows
+        .iter()
+        .filter(|r| r.status == "ADMITTED")
+        .collect();
+    assert!(
+        !admitted.is_empty(),
+        "at least some rows must be ADMITTED with receipts + handler + transcript"
+    );
+
+    // Every ADMITTED row must have a receipt and handler
+    for r in &admitted {
         assert!(
-            !r.receipt_present,
-            "no receipt artifact should exist for {}",
-            r.method
-        );
-        assert_ne!(
-            r.status, "ADMITTED",
-            "{} must not be ADMITTED without a receipt",
+            r.receipt_present,
+            "{} is ADMITTED but receipt_present is false",
             r.method
         );
     }

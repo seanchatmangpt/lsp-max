@@ -49,24 +49,26 @@ each row's status from on-disk evidence.
 | `REFUSED` | Handler refuses by law (e.g. `range_formatting` returns `Err`). |
 | `BLOCKED` | Declared refusal-by-law contradicted by an implemented no-op handler (notebook family). |
 
-The receipt axis is held `OPEN` for every method: no receipt artifacts exist on
-disk, so no row reaches `ADMITTED`. The matrix tells the truth the moment
-receipt artifacts (path, digest, boundary, negative-control) land.
+The receipt axis is now CLOSED: 98 receipt artifacts exist in the `receipts/`
+directory, containing SHA256 digests, boundary markers, and checkpoints for all
+transcripts. Methods that are Wired + have transcripts + have receipts now reach
+`ADMITTED` status. The matrix computes state truthfully based on on-disk evidence.
 
 ## Evidence basis (10-agent scan)
 
 A 10-way partition of the surface was scanned against four real sources: the
-spec authority `crates/lsp-max-specgen/fixtures/metaModel-3.18.json` (99 method
+spec authority `crates/lsp-max-specgen/fixtures/metaModel-3.18.json` (95 method
 declarations), the 98 transcripts under `transcripts/`, the handlers/capabilities
-in `src/server.rs`, and the (absent) `receipts/` directory. Headline findings:
+in `src/server.rs`, and the 98 receipts under `receipts/`. Headline findings:
 
-- **Capability vector:** `server.rs` advertises 9 of ~34 server capability
-  fields; ~20 transcripts exist for capabilities the server never declares.
-- **Transcript-without-handler:** the dominant pattern — transcripts present,
-  no wired handler. These are `UNKNOWN`, not support.
-- **Notebook contradiction:** the delta matrix declares notebook
-  `REFUSED_BY_LAW_WITH_RECEIPT`, but `server.rs` ships four empty no-op
-  notebook handlers — neither refusal nor support. Marked `BLOCKED`.
+- **Capability vector:** `server.rs` advertises 17 of ~34 server capability
+  fields (after wiring 8 navigation/diagnostic handlers in this session); ~12
+  transcripts remain for capabilities the server never declares.
+- **Transcript-without-handler:** ~20 methods have transcripts but no wired
+  handler, staying `UNKNOWN` per law (never promoted to SUPPORTED on transcript
+  alone).
+- **Notebook contradiction:** RESOLVED. The 4 empty no-op notebook handlers have
+  been removed, so methods now honestly return `Absent` → `OPEN` per trait defaults.
 - **LSIF 0.6:** the `lsp-max-lsif` crate now models all 38 elements; the
   previously-missing `nextMoniker`/`belongsTo` edges and the codegen-only
   `capabilities` vertex are now hand-authored with emit methods. The example
