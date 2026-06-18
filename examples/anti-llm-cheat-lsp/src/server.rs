@@ -5,6 +5,7 @@ use std::sync::{Arc, Mutex};
 
 mod recommend;
 
+use crate::capabilities;
 use crate::diagnostics::AntiLlmDiagnostic;
 use crate::engine;
 use crate::virtual_docs::{
@@ -81,37 +82,7 @@ impl LanguageServer for AntiLlmServer {
             }
         }
 
-        let mut caps = ServerCapabilities::default();
-        caps.text_document_sync =
-            Some(TextDocumentSyncCapability::Kind(TextDocumentSyncKind::FULL));
-        caps.inline_completion_provider = Some(OneOf::Left(true));
-        caps.folding_range_provider = Some(FoldingRangeProviderCapability::Simple(true));
-        caps.document_range_formatting_provider = Some(OneOf::Left(true));
-        caps.code_action_provider = Some(CodeActionProviderCapability::Simple(true));
-        caps.completion_provider = Some(CompletionOptions {
-            resolve_provider: Some(true),
-            trigger_characters: Some(vec!["#".to_string()]),
-            all_commit_characters: None,
-            work_done_progress_options: WorkDoneProgressOptions::default(),
-            completion_item: None,
-        });
-        caps.signature_help_provider = Some(SignatureHelpOptions::default());
-        caps.code_lens_provider = Some(CodeLensOptions {
-            resolve_provider: Some(true),
-        });
-        caps.hover_provider = Some(HoverProviderCapability::Simple(true));
-        caps.definition_provider = Some(OneOf::Left(true));
-        caps.declaration_provider = Some(DeclarationCapability::Simple(true));
-        caps.type_definition_provider = Some(TypeDefinitionProviderCapability::Simple(true));
-        caps.implementation_provider = Some(ImplementationProviderCapability::Simple(true));
-        caps.references_provider = Some(OneOf::Left(true));
-        caps.document_symbol_provider = Some(OneOf::Left(true));
-        caps.diagnostic_provider = Some(DiagnosticServerCapabilities::Options(DiagnosticOptions {
-            identifier: None,
-            inter_file_dependencies: true,
-            workspace_diagnostics: false,
-            work_done_progress_options: WorkDoneProgressOptions::default(),
-        }));
+        let caps = capabilities::build_capabilities();
 
         Ok(InitializeResult {
             capabilities: caps,
