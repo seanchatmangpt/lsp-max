@@ -94,9 +94,9 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
                 required_correction: "Compute output_hash from actual algorithm output at runtime."
                     .to_string(),
                 required_next_proof: "Verify output_hash is computed, not copied.".to_string(),
-                            oracle_class: None,
+                oracle_class: None,
                 confidence: None,
-});
+            });
         }
 
         // STRANGE-010: #[allow(...)] suppression cheat (not in test paths)

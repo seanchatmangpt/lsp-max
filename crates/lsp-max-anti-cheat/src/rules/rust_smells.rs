@@ -19,9 +19,9 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
                 required_correction:
                     "Remove temporary/debug diagnostics from production code paths.".to_string(),
                 required_next_proof: "Verify all diagnostics are production-ready.".to_string(),
-                            oracle_class: None,
+                oracle_class: None,
                 confidence: None,
-});
+            });
         }
 
         // Diagnostic leaks raw content
@@ -41,9 +41,9 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
                     "Obfuscate or summarize content in diagnostics instead of printing raw content."
                         .to_string(),
                 required_next_proof: "Check diagnostic message serialization.".to_string(),
-                            oracle_class: None,
+                oracle_class: None,
                 confidence: None,
-});
+            });
         }
 
         // Diagnostic leaks raw path
@@ -62,9 +62,9 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
                     .to_string(),
                 required_next_proof: "Check path scrubbing function in diagnostic emitter."
                     .to_string(),
-                            oracle_class: None,
+                oracle_class: None,
                 confidence: None,
-});
+            });
         }
 
         // Substring check used as law

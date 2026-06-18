@@ -49,13 +49,26 @@ fn byte_to_line(line_index: &[usize], byte_offset: usize) -> usize {
 // ── Raw-smell automaton ────────────────────────────────────────────────────────
 
 const RAW_SMELL_PATTERNS: &[&str] = &[
-    "tower-lsp", "tower_lsp", "CLAP", "Routing to PackPlan", "test result: ok",
-    "v1.0.0", "version = \"1.0.0\"", "CLAP-DEBUG", "CLAP-DEBUG-PATH", "Content was:",
-    "Path was:", "static scan as route proof", "static scan", "route proof",
+    "tower-lsp",
+    "tower_lsp",
+    "CLAP",
+    "Routing to PackPlan",
+    "test result: ok",
+    "v1.0.0",
+    "version = \"1.0.0\"",
+    "CLAP-DEBUG",
+    "CLAP-DEBUG-PATH",
+    "Content was:",
+    "Path was:",
+    "static scan as route proof",
+    "static scan",
+    "route proof",
     "ChangelogCoverage(15 rows) => SpecCoverage(LSP 3.18)",
     "ChangelogCoverage(15 rows) ⇒ SpecCoverage(LSP 3.18)",
     "15-row changelog matrix is being treated as full LSP 3.18 combinatorial coverage",
-    "ANTI-LLM-OCEL-001-TRIGGER", "ANTI-LLM-OCEL-002-TRIGGER", "\"bypassed_compat\": true",
+    "ANTI-LLM-OCEL-001-TRIGGER",
+    "ANTI-LLM-OCEL-002-TRIGGER",
+    "\"bypassed_compat\": true",
     "use wasm4pm::",
 ];
 
@@ -268,13 +281,15 @@ pub fn observations_to_ocel(obs: &[Observation]) -> OCEL {
 
     // Create File objects and FileScanned events
     let mut file_ids = std::collections::HashMap::new();
-    for (file_path, file_obs) in obs.iter().fold(
-        std::collections::HashMap::new(),
-        |mut acc, o| {
-            acc.entry(o.file_path.clone()).or_insert_with(Vec::new).push(o);
+    for (file_path, file_obs) in obs
+        .iter()
+        .fold(std::collections::HashMap::new(), |mut acc, o| {
+            acc.entry(o.file_path.clone())
+                .or_insert_with(Vec::new)
+                .push(o);
             acc
-        },
-    ) {
+        })
+    {
         let file_id = format!("file_{}", blake3::hash(file_path.as_bytes()).to_hex());
         file_ids.insert(file_path.clone(), file_id.clone());
 
@@ -283,16 +298,10 @@ pub fn observations_to_ocel(obs: &[Observation]) -> OCEL {
                 .with_attribute(OCELEventAttribute::string("path", file_path.clone())),
         );
 
-        let mut ev_file_scanned = OCELEvent::new(
-            format!("ev_file_scanned_{}", file_id),
-            "FileScanned",
-        );
+        let mut ev_file_scanned =
+            OCELEvent::new(format!("ev_file_scanned_{}", file_id), "FileScanned");
         ev_file_scanned.relationships.push(
-            OCELRelationship::new(
-                ev_file_scanned.id.clone(),
-                file_id.clone(),
-            )
-            .qualified("file"),
+            OCELRelationship::new(ev_file_scanned.id.clone(), file_id.clone()).qualified("file"),
         );
         events.push(ev_file_scanned);
     }
@@ -300,44 +309,31 @@ pub fn observations_to_ocel(obs: &[Observation]) -> OCEL {
     // Create Observation objects and PatternMatched events
     for obs in obs {
         let obs_hash = blake3::hash(format!("{:?}", obs).as_bytes()).to_hex();
-        let pattern_id = format!(
-            "pattern_{}_{}_{}",
-            obs.construct,
-            obs.line,
-            &obs_hash[..8]
-        );
+        let pattern_id = format!("pattern_{}_{}_{}", obs.construct, obs.line, &obs_hash[..8]);
         objects.push(
             OCELObject::new(pattern_id.clone(), "Pattern")
                 .with_attribute(OCELEventAttribute::string("kind", obs.kind.clone()))
-                .with_attribute(OCELEventAttribute::string("construct", obs.construct.clone()))
+                .with_attribute(OCELEventAttribute::string(
+                    "construct",
+                    obs.construct.clone(),
+                ))
                 .with_attribute(OCELEventAttribute::integer("line", obs.line as i64)),
         );
 
         let file_id = file_ids
             .get(&obs.file_path)
             .cloned()
-            .unwrap_or_else(|| {
-                format!("file_{}", blake3::hash(obs.file_path.as_bytes()).to_hex())
-            });
+            .unwrap_or_else(|| format!("file_{}", blake3::hash(obs.file_path.as_bytes()).to_hex()));
 
-        let mut ev_pattern_matched = OCELEvent::new(
-            format!("ev_pattern_{}", pattern_id),
-            "PatternMatched",
-        );
+        let mut ev_pattern_matched =
+            OCELEvent::new(format!("ev_pattern_{}", pattern_id), "PatternMatched");
         ev_pattern_matched.relationships.push(
-            OCELRelationship::new(
-                ev_pattern_matched.id.clone(),
-                pattern_id.clone(),
-            )
-            .qualified("pattern"),
+            OCELRelationship::new(ev_pattern_matched.id.clone(), pattern_id.clone())
+                .qualified("pattern"),
         );
-        ev_pattern_matched.relationships.push(
-            OCELRelationship::new(
-                ev_pattern_matched.id.clone(),
-                file_id,
-            )
-            .qualified("file"),
-        );
+        ev_pattern_matched
+            .relationships
+            .push(OCELRelationship::new(ev_pattern_matched.id.clone(), file_id).qualified("file"));
         events.push(ev_pattern_matched);
     }
 
