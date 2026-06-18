@@ -1,11 +1,9 @@
 {
-  "digest_algorithm": "SHA256",
-  "digest": "29e8ca8c709c80cb28688fe00c57e994ca2dbca92dacf0fc0053c90bb18158fa",
+  "digest_algorithm": "BLAKE3",
+  "digest": "1c65737dcd7e87307fcdfad3c21f3e24516eb15b3d4ef5b51bd20881b25746d7",
   "boundary": "-----BEGIN RECEIPT-----",
   "checkpoint": "-----END RECEIPT-----",
-  "raw_command": "sha256sum /home/user/lsp-max/examples/anti-llm-cheat-lsp/transcripts/workspace_semanticTokens_refresh_positive.jsonl",
-  "status": "ADMITTED",
-  "timestamp": "2026-06-18T01:31:42Z",
-  "transcript_path": "/home/user/lsp-max/examples/anti-llm-cheat-lsp/transcripts/workspace_semanticTokens_refresh_positive.jsonl",
-  "receipt_path": "/home/user/lsp-max/examples/anti-llm-cheat-lsp/receipts/workspace_semanticTokens_refresh_receipt.json"
+  "raw_command": "blake3 transcripts/workspace_semanticTokens_refresh_positive.jsonl",
+  "negative_control": "fixtures/negative_controls/workspace_semanticTokens_refresh",
+  "status": "ADMITTED"
 }
