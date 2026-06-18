@@ -31,7 +31,7 @@ pub fn get_feature_matrix() -> Vec<Lsp318Feature> {
             positive_transcript_path: "transcripts/inline_completion_positive.jsonl".to_string(),
             negative_control_path: "fixtures/negative_controls/no_victory_language.rs".to_string(),
             receipt_path: "receipts/inline_completion_receipt.json".to_string(),
-            digest: "c0ffeec0ffeec0ffeec0ffeec0ffeec0ffeec0ffeec0ffeec0ffeec0ffeec0ff".to_string(),
+            digest: "5a17d2a04d2eafa43a3eada0d0afb1a4830b6620d8a18182294ec55567d83c67".to_string(),
             forbidden_substitution_prevented: "Victory language overclaim bypass".to_string(),
         },
         Lsp318Feature {
@@ -45,7 +45,7 @@ pub fn get_feature_matrix() -> Vec<Lsp318Feature> {
             positive_transcript_path: "transcripts/text_document_content_positive.jsonl".to_string(),
             negative_control_path: "fixtures/negative_controls/invalid_virtual_uri.txt".to_string(),
             receipt_path: "receipts/text_document_content_receipt.json".to_string(),
-            digest: "deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef".to_string(),
+            digest: "a0d22554ce386f6202abe085091d1e19799f14684992e9c4322682d3be1e66ac".to_string(),
             forbidden_substitution_prevented: "Static mock file substitution".to_string(),
         },
         Lsp318Feature {
@@ -59,7 +59,7 @@ pub fn get_feature_matrix() -> Vec<Lsp318Feature> {
             positive_transcript_path: "transcripts/folding_range_refresh_positive.jsonl".to_string(),
             negative_control_path: "fixtures/negative_controls/no_refresh_trigger.txt".to_string(),
             receipt_path: "receipts/folding_range_refresh_receipt.json".to_string(),
-            digest: "baadf00dbaadf00dbaadf00dbaadf00dbaadf00dbaadf00dbaadf00dbaadf00d".to_string(),
+            digest: "85705ceef65aeb119bd05a4ffd5464560c681cde6401458f43872d697df501ec".to_string(),
             forbidden_substitution_prevented: "Stale folding structure".to_string(),
         },
         Lsp318Feature {
@@ -73,7 +73,7 @@ pub fn get_feature_matrix() -> Vec<Lsp318Feature> {
             positive_transcript_path: "transcripts/ranges_formatting_positive.jsonl".to_string(),
             negative_control_path: "fixtures/negative_controls/single_range_formatting.rs".to_string(),
             receipt_path: "receipts/ranges_formatting_receipt.json".to_string(),
-            digest: "feedfacefeedfacefeedfacefeedfacefeedfacefeedfacefeedfacefeedface".to_string(),
+            digest: "7b29e0860f3c27c7713084be3e07d048a467186c96f0b864b0e737f11017f32e".to_string(),
             forbidden_substitution_prevented: "Single-range formatting substitution".to_string(),
         },
         Lsp318Feature {
@@ -87,7 +87,7 @@ pub fn get_feature_matrix() -> Vec<Lsp318Feature> {
             positive_transcript_path: "transcripts/workspace_edit_snippets_positive.jsonl".to_string(),
             negative_control_path: "fixtures/negative_controls/authority_mutation_snippets.rs".to_string(),
             receipt_path: "receipts/workspace_edit_snippets_receipt.json".to_string(),
-            digest: "1234567812345678123456781234567812345678123456781234567812345678".to_string(),
+            digest: "2ba74abb85a1b1be5012ef63ac3599e19cbaa4dfc9950f85f14ff73b24eec9cf".to_string(),
             forbidden_substitution_prevented: "Direct authority file mutation".to_string(),
         },
         Lsp318Feature {
@@ -101,7 +101,7 @@ pub fn get_feature_matrix() -> Vec<Lsp318Feature> {
             positive_transcript_path: "transcripts/relative_patterns_positive.jsonl".to_string(),
             negative_control_path: "fixtures/negative_controls/global_pattern_scope.rs".to_string(),
             receipt_path: "receipts/relative_patterns_receipt.json".to_string(),
-            digest: "abcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcd".to_string(),
+            digest: "d64a4d10d530fbdf92e9301aa5ee3179b539df7d6b205ba8b75d409553b64175".to_string(),
             forbidden_substitution_prevented: "Global sloppy file scanning".to_string(),
         },
         Lsp318Feature {
@@ -115,7 +115,7 @@ pub fn get_feature_matrix() -> Vec<Lsp318Feature> {
             positive_transcript_path: "none".to_string(),
             negative_control_path: "none".to_string(),
             receipt_path: "receipts/notebook_refusal_receipt.json".to_string(),
-            digest: "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".to_string(),
+            digest: "82e7b0f46108a93673fbd39c391970325529ab87dc2892db287001257a30255f".to_string(),
             forbidden_substitution_prevented: "Notebook document out-of-scope bypass".to_string(),
         },
         Lsp318Feature {
@@ -129,7 +129,7 @@ pub fn get_feature_matrix() -> Vec<Lsp318Feature> {
             positive_transcript_path: "transcripts/code_action_kind_doc_positive.jsonl".to_string(),
             negative_control_path: "fixtures/negative_controls/undocumented_code_action.rs".to_string(),
             receipt_path: "receipts/code_action_kind_doc_receipt.json".to_string(),
-            digest: "7777777777777777777777777777777777777777777777777777777777777777".to_string(),
+            digest: "94355bedf5c10c80445a54f0f839bd84487f99eae3af034d0fa65f6144602cee".to_string(),
             forbidden_substitution_prevented: "Undocumented code actions".to_string(),
         },
         Lsp318Feature {
@@ -143,7 +143,7 @@ pub fn get_feature_matrix() -> Vec<Lsp318Feature> {
             positive_transcript_path: "transcripts/nullable_active_parameter_positive.jsonl".to_string(),
             negative_control_path: "fixtures/negative_controls/invalid_non_null_parameter.rs".to_string(),
             receipt_path: "receipts/nullable_active_parameter_receipt.json".to_string(),
-            digest: "8888888888888888888888888888888888888888888888888888888888888888".to_string(),
+            digest: "87ec9c979c6edb1df600577aee9326caa66402e9620908a638ce7c82c8bd0c6f".to_string(),
             forbidden_substitution_prevented: "Invalid parameter type parser panic".to_string(),
         },
         Lsp318Feature {
@@ -157,7 +157,7 @@ pub fn get_feature_matrix() -> Vec<Lsp318Feature> {
             positive_transcript_path: "transcripts/command_tooltips_positive.jsonl".to_string(),
             negative_control_path: "fixtures/negative_controls/no_tooltip_command.rs".to_string(),
             receipt_path: "receipts/command_tooltips_receipt.json".to_string(),
-            digest: "9999999999999999999999999999999999999999999999999999999999999999".to_string(),
+            digest: "d46cbb4aeb7a67ac8a12b6bad12d37343bf257f0fdc2cdf165b59813cf80f79a".to_string(),
             forbidden_substitution_prevented: "Undocumented command execution".to_string(),
         },
         Lsp318Feature {
@@ -171,7 +171,7 @@ pub fn get_feature_matrix() -> Vec<Lsp318Feature> {
             positive_transcript_path: "transcripts/workspace_edit_metadata_positive.jsonl".to_string(),
             negative_control_path: "fixtures/negative_controls/workspace_edit_no_metadata.rs".to_string(),
             receipt_path: "receipts/workspace_edit_metadata_receipt.json".to_string(),
-            digest: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_string(),
+            digest: "52811befc9d6dd6b306085912acdc2edfe8002739854abe5c4c391dc06438723".to_string(),
             forbidden_substitution_prevented: "Unlabeled workspace mutation".to_string(),
         },
         Lsp318Feature {
@@ -185,7 +185,7 @@ pub fn get_feature_matrix() -> Vec<Lsp318Feature> {
             positive_transcript_path: "transcripts/text_document_edit_snippets_positive.jsonl".to_string(),
             negative_control_path: "fixtures/negative_controls/production_snippet_mutation.rs".to_string(),
             receipt_path: "receipts/text_document_edit_snippets_receipt.json".to_string(),
-            digest: "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".to_string(),
+            digest: "8f6da116660d478e312bb12189cf19c9f5e8018b59eba8ea612964048f2e006d".to_string(),
             forbidden_substitution_prevented: "Production path mutation snippet".to_string(),
         },
         Lsp318Feature {
@@ -199,7 +199,7 @@ pub fn get_feature_matrix() -> Vec<Lsp318Feature> {
             positive_transcript_path: "transcripts/debug_message_kind_positive.jsonl".to_string(),
             negative_control_path: "fixtures/negative_controls/debug_log_as_diagnostic.rs".to_string(),
             receipt_path: "receipts/debug_message_kind_receipt.json".to_string(),
-            digest: "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc".to_string(),
+            digest: "fbae4eff2fe6b2435088ac4dd986bd4082125d6126aa78aa6f99cbfe135def00".to_string(),
             forbidden_substitution_prevented: "Diagnostic leak in debug logs".to_string(),
         },
         Lsp318Feature {
@@ -213,7 +213,7 @@ pub fn get_feature_matrix() -> Vec<Lsp318Feature> {
             positive_transcript_path: "transcripts/code_lens_resolve_positive.jsonl".to_string(),
             negative_control_path: "fixtures/negative_controls/unresolvable_properties.rs".to_string(),
             receipt_path: "receipts/code_lens_resolve_receipt.json".to_string(),
-            digest: "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd".to_string(),
+            digest: "d834ee12588c4156c5723f60b8654e23fda3c3a65e7c0d831b7d8d5e26fb06bb".to_string(),
             forbidden_substitution_prevented: "Undeclared code lens properties resolve".to_string(),
         },
         Lsp318Feature {
@@ -227,7 +227,7 @@ pub fn get_feature_matrix() -> Vec<Lsp318Feature> {
             positive_transcript_path: "transcripts/completion_list_apply_kind_positive.jsonl".to_string(),
             negative_control_path: "fixtures/negative_controls/no_apply_kind_completion.rs".to_string(),
             receipt_path: "receipts/completion_list_apply_kind_receipt.json".to_string(),
-            digest: "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee".to_string(),
+            digest: "a9c7d9c4ea02b49dc60bc3a9c43c96e7025cc423000d7a1bdc2597b136b23f33".to_string(),
             forbidden_substitution_prevented: "Sloppy completion item defaults laundering".to_string(),
         },
     ]

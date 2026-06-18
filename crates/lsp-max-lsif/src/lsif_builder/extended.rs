@@ -229,6 +229,56 @@ impl<W: Write> LsifBuilder<W> {
         Ok(edge_id)
     }
 
+    pub fn next_moniker_edge(&mut self, out_v: Id, in_v: Id) -> io::Result<Id> {
+        let edge_id = self.next_id();
+        self.emit(Element::Edge(Edge::NextMoniker {
+            id: edge_id.clone(),
+            type_: EdgeType::Edge,
+            out_v,
+            in_v,
+        }))?;
+        Ok(edge_id)
+    }
+
+    pub fn belongs_to_edge(&mut self, out_v: Id, in_v: Id) -> io::Result<Id> {
+        let edge_id = self.next_id();
+        self.emit(Element::Edge(Edge::BelongsTo {
+            id: edge_id.clone(),
+            type_: EdgeType::Edge,
+            out_v,
+            in_v,
+        }))?;
+        Ok(edge_id)
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub fn emit_capabilities(
+        &mut self,
+        hover_provider: bool,
+        declaration_provider: bool,
+        definition_provider: bool,
+        type_definition_provider: bool,
+        references_provider: bool,
+        document_symbol_provider: bool,
+        folding_range_provider: bool,
+        diagnostic_provider: bool,
+    ) -> io::Result<Id> {
+        let caps_id = self.next_id();
+        self.emit(Element::Vertex(Vertex::Capabilities {
+            id: caps_id.clone(),
+            type_: VertexType::Vertex,
+            hover_provider,
+            declaration_provider,
+            definition_provider,
+            type_definition_provider,
+            references_provider,
+            document_symbol_provider,
+            folding_range_provider,
+            diagnostic_provider,
+        }))?;
+        Ok(caps_id)
+    }
+
     pub fn emit_source(
         &mut self,
         workspace_root: &str,

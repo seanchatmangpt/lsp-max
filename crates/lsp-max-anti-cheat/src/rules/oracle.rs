@@ -33,7 +33,9 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
                     blocking: true,
                     required_correction: "Remove env-var-driven static initialization from production breed code. All algorithm inputs must flow through the BreedInput contract.".to_string(),
                     required_next_proof: "Verify breed produces correct output with env vars unset. Oracle hidden test with novel inputs must pass.".to_string(),
-                });
+                                    oracle_class: None,
+                    confidence: None,
+});
             }
 
             // ORACLE-002: transmute / raw pointer cast
@@ -52,7 +54,9 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
                     blocking: true,
                     required_correction: "Remove transmute/pointer casts. Use typed transformations. Type erasure can hide oracle injection from static analysis.".to_string(),
                     required_next_proof: "Zero unsafe pointer operations in breed implementation; cargo test passes without transmute.".to_string(),
-                });
+                                    oracle_class: None,
+                    confidence: None,
+});
             }
 
             // ORACLE-003: global HashMap literal (string key → value memo table)
@@ -71,7 +75,9 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
                     blocking: true,
                     required_correction: "Remove HashMap literal lookup table from breed source. Algorithm must compute results, not retrieve them from an embedded key-value map.".to_string(),
                     required_next_proof: "Hidden oracle with keys not present in the removed map must still produce correct output via computation.".to_string(),
-                });
+                                    oracle_class: None,
+                    confidence: None,
+});
             }
 
             // ORACLE-004: std::env::var in production path
@@ -90,7 +96,9 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
                     blocking: true,
                     required_correction: "Move env var access outside breed implementation. Configuration must flow through BreedInput.options, not environment side-channels.".to_string(),
                     required_next_proof: "Breed runs correctly with a clean environment (no vars set). Novel input oracle must pass.".to_string(),
-                });
+                                    oracle_class: None,
+                    confidence: None,
+});
             }
 
             // ORACLE-005: single-expression trait impl (suspicious but not blocking alone)
@@ -109,7 +117,9 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
                     blocking: false,
                     required_correction: "If this is a real trait delegation, document why. If it wraps oracle logic, implement the full algorithm.".to_string(),
                     required_next_proof: "Method body invokes multiple sub-operations; oracle test with novel inputs passes.".to_string(),
-                });
+                                    oracle_class: None,
+                    confidence: None,
+});
             }
 
             // ORACLE-006: float literal in known oracle value range in breed src
@@ -128,7 +138,9 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
                     blocking: true,
                     required_correction: "Remove float literal matching known oracle answer (Pearl 0.284, MYCIN 0.693, POMDP 0.969, etc.). The algorithm must compute this value, not embed it.".to_string(),
                     required_next_proof: "After removal, hidden oracle test with non-round CPTs still converges to the correct value via computation.".to_string(),
-                });
+                                    oracle_class: None,
+                    confidence: None,
+});
             }
 
             _ => {}

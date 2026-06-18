@@ -23,7 +23,9 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
                 blocking: true,
                 required_correction: "Remove direct file write call. Route mutation requests via CodeAction to PackPlan intent instead.".to_string(),
                 required_next_proof: "Verify with read-only permission checks.".to_string(),
-            });
+                            oracle_class: None,
+                confidence: None,
+});
         }
 
         // WorkspaceEdit used as receipt binding
@@ -41,7 +43,9 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
                 blocking: true,
                 required_correction: "WorkspaceEdit must represent a read-only template intent, not the final mutation receipt.".to_string(),
                 required_next_proof: "Enforce MutationGate and sign receipts independently.".to_string(),
-            });
+                            oracle_class: None,
+                confidence: None,
+});
         }
     }
 
