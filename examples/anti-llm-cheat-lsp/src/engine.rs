@@ -6,9 +6,9 @@ use crate::parsers::{
     receipt_json, refgraph, rust_tree_sitter, tera_template, typescript,
 };
 use crate::rules::{
-    authority, claims, complexity, contract as contract_rules, determinism, ggen, lsp318, mutation,
-    ocel_rules, oracle, receipts, refgraph as refgraph_rules, routes, rust_smells, surface, test,
-    trace, typescript as ts_rules, version,
+    authority, claims, complexity, contract as contract_rules, declare_laws, determinism, ggen,
+    lsp318, mutation, ocel_rules, oracle, receipts, refgraph as refgraph_rules, routes, rust_smells,
+    surface, test, trace, typescript as ts_rules, version,
 };
 use aho_corasick::AhoCorasick;
 use std::fs;
@@ -325,6 +325,7 @@ pub fn evaluate_diagnostics_with_config(
     diags.extend(trace::evaluate(obs));
     diags.extend(contract_rules::evaluate(obs));
     diags.extend(refgraph_rules::evaluate(obs));
+    diags.extend(declare_laws::evaluate(obs));
 
     let has_non_victory_errors = diags.iter().any(|d| d.code != "ANTI-LLM-CLAIM-004");
     diags.extend(claims::evaluate(
