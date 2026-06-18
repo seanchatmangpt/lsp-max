@@ -3,8 +3,8 @@
 // lsp-max-client::ClientBuilder, and exposes a ServerHandle for request dispatch.
 
 use lsp_max::lsp_types::{
-    ClientCapabilities, ClientInfo, InitializeParams, InitializeResult, InitializedParams,
-    ServerCapabilities, Url,
+    ClientCapabilities, ClientInfo, DocumentUri, InitializeParams, InitializeResult, InitializedParams,
+    ServerCapabilities,
 };
 use lsp_max_client::{ClientBuilder, ClientError, LanguageClient, ServerHandle};
 use std::process::Stdio;
@@ -83,7 +83,7 @@ impl ChildProcess {
     /// Returns the child's advertised ServerCapabilities on success.
     pub async fn initialize(
         &self,
-        root_uri: Option<Url>,
+        root_uri: Option<DocumentUri>,
     ) -> Result<ServerCapabilities, ClientError> {
         #[allow(deprecated)]
         let params = InitializeParams {

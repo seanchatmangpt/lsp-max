@@ -103,18 +103,19 @@ impl ConfigService {
 // ===== Verb Tier (CLI) =====
 
 #[verb("init")]
-pub fn init_config(#[arg(long, default_value = ".")] path: String) -> Result<ConfigInitResult> {
-    ConfigService::init(&path).map_err(clap_noun_verb::error::NounVerbError::execution_error)
+pub fn init_config(path: Option<String>) -> Result<ConfigInitResult> {
+    let path_str = path.unwrap_or_else(|| ".".to_string());
+    ConfigService::init(&path_str).map_err(clap_noun_verb::error::NounVerbError::execution_error)
 }
 
 #[verb("show")]
-pub fn show_config(#[arg(long, default_value = ".")] path: String) -> Result<ConfigShowResult> {
-    ConfigService::show(&path).map_err(clap_noun_verb::error::NounVerbError::execution_error)
+pub fn show_config(path: Option<String>) -> Result<ConfigShowResult> {
+    let path_str = path.unwrap_or_else(|| ".".to_string());
+    ConfigService::show(&path_str).map_err(clap_noun_verb::error::NounVerbError::execution_error)
 }
 
 #[verb("validate")]
-pub fn validate_config(
-    #[arg(long, default_value = ".")] path: String,
-) -> Result<ConfigValidateResult> {
-    ConfigService::validate(&path).map_err(clap_noun_verb::error::NounVerbError::execution_error)
+pub fn validate_config(path: Option<String>) -> Result<ConfigValidateResult> {
+    let path_str = path.unwrap_or_else(|| ".".to_string());
+    ConfigService::validate(&path_str).map_err(clap_noun_verb::error::NounVerbError::execution_error)
 }
