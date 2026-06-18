@@ -31,6 +31,8 @@ ignore = "0.4"
 memchr = "2.5"
 rustc-hash = { workspace = true }
 lsp-max = { path = "../../" }
+lsp-max-ast = { path = "../../crates/lsp-max-adapters/lsp-max-ast" }
+lsp-max-ast-core = { path = "../../crates/lsp-max-adapters/lsp-max-ast-core" }
 parking_lot = { workspace = true }
 lsp-types-max = { path = "../../../lsp-types-max", version = "26.6.5", features = ["proposed"] }
 chrono = { version = "0.4", features = ["serde"] }

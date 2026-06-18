@@ -5,6 +5,7 @@ use std::sync::{Arc, Mutex};
 
 mod recommend;
 
+use crate::ast_adapter::RustAstAdapter;
 use crate::capabilities;
 use crate::diagnostics::AntiLlmDiagnostic;
 use crate::engine;
@@ -16,6 +17,7 @@ use crate::virtual_docs::{
 pub struct AntiLlmServer {
     pub client: Client,
     pub workspace_root: Arc<Mutex<Option<String>>>,
+    pub ast_adapter: RustAstAdapter,
 }
 
 impl AntiLlmServer {
@@ -23,6 +25,7 @@ impl AntiLlmServer {
         Self {
             client,
             workspace_root: Arc::new(Mutex::new(None)),
+            ast_adapter: RustAstAdapter::new(),
         }
     }
 
@@ -105,15 +108,21 @@ impl LanguageServer for AntiLlmServer {
     }
 
     async fn did_open(&self, params: DidOpenTextDocumentParams) {
+        self.ast_adapter.handle_did_open(params.clone());
         self.run_scan_and_publish(&params.text_document.uri).await;
     }
 
     async fn did_change(&self, params: DidChangeTextDocumentParams) {
+        self.ast_adapter.handle_did_change(params.clone());
         self.run_scan_and_publish(&params.text_document.uri).await;
     }
 
     async fn did_save(&self, params: DidSaveTextDocumentParams) {
         self.run_scan_and_publish(&params.text_document.uri).await;
+    }
+
+    async fn did_close(&self, params: DidCloseTextDocumentParams) {
+        self.ast_adapter.handle_did_close(params);
     }
 
     async fn inline_completion(
@@ -429,11 +438,15 @@ impl LanguageServer for AntiLlmServer {
         // The pull surface is the agent/CI-facing path: return the real
         // detections, not an empty report. An empty pull report while the push
         // path reports cheats would itself be a laundered claim.
-        let items: Vec<Diagnostic> = self
+        let mut items: Vec<Diagnostic> = self
             .file_diagnostics(&params.text_document.uri)
             .iter()
             .map(|d| d.to_lsp())
             .collect();
+
+        // Layer in AST syntax errors for Rust files (Path B).
+        items.extend(self.ast_adapter.pull_ast_diagnostics(&params.text_document.uri));
+
         Ok(DocumentDiagnosticReportResult::Report(
             DocumentDiagnosticReport::Full(RelatedFullDocumentDiagnosticReport {
                 related_documents: None,
