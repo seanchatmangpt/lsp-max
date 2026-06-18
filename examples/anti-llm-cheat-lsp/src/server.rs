@@ -441,13 +441,4 @@ impl LanguageServer for AntiLlmServer {
                 },
             },
         ))
-    }
-
-    async fn did_open_notebook_document(&self, _params: DidOpenNotebookDocumentParams) {}
-
-    async fn did_change_notebook_document(&self, _params: DidChangeNotebookDocumentParams) {}
-
-    async fn did_save_notebook_document(&self, _params: DidSaveNotebookDocumentParams) {}
-
-    async fn did_close_notebook_document(&self, _params: DidCloseNotebookDocumentParams) {}
-}
+    }}
