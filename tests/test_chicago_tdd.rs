@@ -1,8 +1,6 @@
-/// Chicago TDD integration test for the lsp-max indexing pipeline.
-///
-/// Enforce the Arrange-Act-Assert structure and verify state-based outcomes
-/// for the LSIF indexer crates.
-
+// Chicago TDD integration test for the lsp-max indexing pipeline.
+// Enforce the Arrange-Act-Assert structure and verify state-based outcomes
+// for the LSIF indexer crates.
 // ── Fixture ───────────────────────────────────────────────────────────────────
 
 struct LsifFixture;
@@ -58,8 +56,9 @@ impl LsifFixture {
         buf
     }
 
+    #[allow(dead_code)]
     fn teardown(self) {
-        drop(self);
+        // Fixture is consumed here; explicit cleanup not needed as it's not Drop
     }
 }
 
