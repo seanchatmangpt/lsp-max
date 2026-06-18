@@ -59,7 +59,7 @@ fn projection_re() -> &'static regex::Regex {
 struct Backend {
     client: Client,
     /// Read-heavy: written on open/change, read on hover/code-action/diagnostics.
-    files: RwLock<HashMap<Url, String>>,
+    files: RwLock<HashMap<String, String>>,
 }
 
 impl Backend {
@@ -72,20 +72,20 @@ impl Backend {
     }
 
     /// Update a file's content in the internal cache and trigger analysis.
-    async fn update_and_analyze(&self, uri: Url, content: String) {
+    async fn update_and_analyze(&self, uri_str: String, uri: Uri, content: String) {
         {
             let mut files = self.files.write();
-            files.insert(uri.clone(), content.clone());
+            files.insert(uri_str.clone(), content.clone());
         }
 
-        let diagnostics = self.analyze_source(&uri, &content);
+        let diagnostics = self.analyze_source(&uri_str, &content);
         self.client
             .publish_diagnostics(uri, diagnostics, None)
             .await;
     }
 
     /// Perform analysis using syn (AST parsing) or fallback to regex if syntax is incomplete.
-    fn analyze_source(&self, _uri: &Url, content: &str) -> Vec<Diagnostic> {
+    fn analyze_source(&self, _uri: &str, content: &str) -> Vec<Diagnostic> {
         let mut diagnostics = Vec::new();
 
         // 1. Try structural parsing with `syn`
@@ -217,25 +217,30 @@ impl LanguageServer for Backend {
     }
 
     async fn did_open(&self, params: DidOpenTextDocumentParams) {
-        self.update_and_analyze(params.text_document.uri, params.text_document.text)
+        let uri = params.text_document.uri;
+        let uri_str = uri.to_string();
+        self.update_and_analyze(uri_str, uri, params.text_document.text)
             .await;
     }
 
     async fn did_change(&self, params: DidChangeTextDocumentParams) {
+        let uri = params.text_document.uri;
+        let uri_str = uri.to_string();
         if let Some(change) = params.content_changes.first() {
-            self.update_and_analyze(params.text_document.uri, change.text.clone())
+            self.update_and_analyze(uri_str, uri, change.text.clone())
                 .await;
         }
     }
 
     async fn did_save(&self, params: DidSaveTextDocumentParams) {
         let uri = params.text_document.uri;
+        let uri_str = uri.to_string();
         let content = {
             let files = self.files.read();
-            files.get(&uri).cloned()
+            files.get(&uri_str).cloned()
         };
         if let Some(text) = content {
-            self.update_and_analyze(uri, text).await;
+            self.update_and_analyze(uri_str, uri, text).await;
         }
     }
 
