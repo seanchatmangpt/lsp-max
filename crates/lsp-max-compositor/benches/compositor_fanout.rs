@@ -12,7 +12,7 @@
 //!   - N=500 groups use sample_size(10) to cap total subprocess count.
 
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
-use lsp_max::lsp_types::{DidOpenTextDocumentParams, DocumentUri, TextDocumentItem};
+use lsp_max::lsp_types::{DidOpenTextDocumentParams, TextDocumentItem};
 use lsp_max_compositor::child_process::ChildProcess;
 
 const LSP_ECHO_SERVER: &str = env!("CARGO_BIN_EXE_lsp-echo-server");
@@ -20,7 +20,7 @@ const LSP_ECHO_SERVER: &str = env!("CARGO_BIN_EXE_lsp-echo-server");
 fn make_did_open_params() -> DidOpenTextDocumentParams {
     DidOpenTextDocumentParams {
         text_document: TextDocumentItem {
-            uri: DocumentUri::from("file:///bench/test.rs"),
+            uri: "file:///bench/test.rs".parse().unwrap(),
             language_id: "rust".to_string(),
             version: 1,
             text: "fn main() {}".to_string(),
