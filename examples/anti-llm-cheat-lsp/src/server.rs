@@ -457,4 +457,38 @@ impl LanguageServer for AntiLlmServer {
             }),
         ))
     }
+
+    async fn semantic_tokens_full(
+        &self,
+        params: SemanticTokensParams,
+    ) -> Result<Option<SemanticTokensResult>> {
+        // Tokens are projected from the real tree-sitter parse (Path B); a
+        // non-Rust or unopened document yields no tokens rather than a guess.
+        Ok(self
+            .ast_adapter
+            .semantic_tokens(&params.text_document.uri)
+            .map(SemanticTokensResult::Tokens))
+    }
+
+    async fn semantic_tokens_full_delta(
+        &self,
+        params: SemanticTokensDeltaParams,
+    ) -> Result<Option<SemanticTokensFullDeltaResult>> {
+        // A server may always answer a delta request with a full result; the
+        // tokens still come from the parse tree, never a fabricated delta.
+        Ok(self
+            .ast_adapter
+            .semantic_tokens(&params.text_document.uri)
+            .map(SemanticTokensFullDeltaResult::Tokens))
+    }
+
+    async fn semantic_tokens_range(
+        &self,
+        params: SemanticTokensRangeParams,
+    ) -> Result<Option<SemanticTokensRangeResult>> {
+        Ok(self
+            .ast_adapter
+            .semantic_tokens_in_range(&params.text_document.uri, params.range)
+            .map(SemanticTokensRangeResult::Tokens))
+    }
 }
