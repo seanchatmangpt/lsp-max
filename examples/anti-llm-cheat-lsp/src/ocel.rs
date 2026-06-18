@@ -1,10 +1,147 @@
+use crate::diagnostics::AntiLlmDiagnostic;
 use serde_json::{json, Value};
+use std::collections::BTreeMap;
 use std::fs;
 use std::path::Path;
 use wasm4pm_compat::ocel::{
     OCELEvent, OCELEventAttribute, OCELObject, OCELRelationship, OCELType, OCEL,
 };
 
+/// Object type registry for the ANTI-LLM OCEL 2.0 schema.
+/// Six object types — each is a distinct dimension of cheat evidence.
+pub fn ocel_object_types() -> Vec<OCELType> {
+    vec![
+        OCELType {
+            name: "CaseFile".to_string(),
+            attributes: vec![],
+        },
+        OCELType {
+            name: "DetectionCode".to_string(),
+            attributes: vec![],
+        },
+        OCELType {
+            name: "LawAxis".to_string(),
+            attributes: vec![],
+        },
+        OCELType {
+            name: "Receipt".to_string(),
+            attributes: vec![],
+        },
+        OCELType {
+            name: "Gate".to_string(),
+            attributes: vec![],
+        },
+        OCELType {
+            name: "CodeSymbol".to_string(),
+            attributes: vec![],
+        },
+    ]
+}
+
+/// Convert a slice of live detections to a proper OCEL 2.0 log.
+/// Each `AntiLlmDiagnostic` becomes one `CheatDetected` event bound to at least
+/// three object instances (CaseFile, DetectionCode, LawAxis). A summary
+/// `ScanComplete` event is appended bound to every unique CaseFile object.
+pub fn detections_to_ocel(diagnostics: &[AntiLlmDiagnostic]) -> OCEL {
+    // Deduplicate CaseFile objects by file_path
+    let mut case_files: BTreeMap<String, OCELObject> = BTreeMap::new();
+    // Deduplicate DetectionCode objects by code
+    let mut detection_codes: BTreeMap<String, OCELObject> = BTreeMap::new();
+    // Deduplicate LawAxis objects by category
+    let mut law_axes: BTreeMap<String, OCELObject> = BTreeMap::new();
+
+    for d in diagnostics {
+        case_files
+            .entry(d.file_path.clone())
+            .or_insert_with(|| {
+                let id = format!("cf_{}", slug(&d.file_path));
+                OCELObject::new(id, "CaseFile")
+                    .with_attribute(OCELEventAttribute::string("path", d.file_path.clone()))
+            });
+
+        detection_codes
+            .entry(d.code.clone())
+            .or_insert_with(|| {
+                let id = format!("dc_{}", slug(&d.code));
+                OCELObject::new(id, "DetectionCode")
+                    .with_attribute(OCELEventAttribute::string("code", d.code.clone()))
+            });
+
+        law_axes
+            .entry(d.category.clone())
+            .or_insert_with(|| {
+                let id = format!("la_{}", slug(&d.category));
+                OCELObject::new(id, "LawAxis")
+                    .with_attribute(OCELEventAttribute::string("category", d.category.clone()))
+            });
+    }
+
+    // Build CheatDetected events — one per diagnostic
+    let mut events: Vec<OCELEvent> = diagnostics
+        .iter()
+        .enumerate()
+        .map(|(i, d)| {
+            let event_id = format!("ev_cheat_{i}");
+            let cf_id = case_files[&d.file_path].id.clone();
+            let dc_id = detection_codes[&d.code].id.clone();
+            let la_id = law_axes[&d.category].id.clone();
+
+            let mut ev = OCELEvent::new(event_id.clone(), "CheatDetected");
+            ev.relationships.push(
+                OCELRelationship::new(event_id.clone(), cf_id).qualified("case_file"),
+            );
+            ev.relationships.push(
+                OCELRelationship::new(event_id.clone(), dc_id).qualified("detection_code"),
+            );
+            ev.relationships.push(
+                OCELRelationship::new(event_id.clone(), la_id).qualified("law_axis"),
+            );
+            ev
+        })
+        .collect();
+
+    // ScanComplete — bound to every unique CaseFile
+    let scan_id = "ev_scan_complete".to_string();
+    let mut scan_ev = OCELEvent::new(scan_id.clone(), "ScanComplete");
+    for obj in case_files.values() {
+        scan_ev.relationships.push(
+            OCELRelationship::new(scan_id.clone(), obj.id.clone()).qualified("case_file"),
+        );
+    }
+    events.push(scan_ev);
+
+    let mut objects: Vec<OCELObject> = Vec::new();
+    objects.extend(case_files.into_values());
+    objects.extend(detection_codes.into_values());
+    objects.extend(law_axes.into_values());
+
+    let event_types = vec![
+        OCELType {
+            name: "CheatDetected".to_string(),
+            attributes: vec![],
+        },
+        OCELType {
+            name: "ScanComplete".to_string(),
+            attributes: vec![],
+        },
+    ];
+
+    OCEL {
+        event_types,
+        object_types: ocel_object_types(),
+        events,
+        objects,
+    }
+}
+
+/// Slugify a string to a valid identifier fragment (alphanumeric + underscore).
+fn slug(s: &str) -> String {
+    s.chars()
+        .map(|c| if c.is_alphanumeric() { c } else { '_' })
+        .collect()
+}
+
+/// Legacy stub kept for backward compatibility — delegates to `detections_to_ocel(&[])`.
 pub fn generate_anti_llm_ocel_log() -> OCEL {
     // 1. Create Objects
     let objects = vec![
