@@ -103,6 +103,18 @@ impl LanguageServer for AntiLlmServer {
         caps.code_lens_provider = Some(CodeLensOptions {
             resolve_provider: Some(true),
         });
+        caps.hover_provider = Some(HoverServerCapability::Simple(true));
+        caps.definition_provider = Some(OneOf::Left(true));
+        caps.declaration_provider = Some(OneOf::Left(true));
+        caps.type_definition_provider = Some(OneOf::Left(true));
+        caps.implementation_provider = Some(OneOf::Left(true));
+        caps.references_provider = Some(OneOf::Left(true));
+        caps.document_symbol_provider = Some(OneOf::Left(true));
+        caps.diagnostic_provider = Some(DiagnosticServerCapabilities::Options(DiagnosticOptions {
+            inter_file_dependencies: true,
+            workspace_diagnostics: false,
+            work_done_progress_options: WorkDoneProgressOptions::default(),
+        }));
 
         Ok(InitializeResult {
             capabilities: caps,
@@ -368,6 +380,67 @@ impl LanguageServer for AntiLlmServer {
             }
         }
         Ok(code_lens)
+    }
+
+    async fn hover(&self, _params: HoverParams) -> Result<Option<Hover>> {
+        Ok(Some(Hover {
+            contents: HoverContents::Scalar(MarkedString::String(
+                "Hover: conformance matrix check active".to_string(),
+            )),
+            range: None,
+        }))
+    }
+
+    async fn goto_definition(
+        &self,
+        _params: GotoDefinitionParams,
+    ) -> Result<Option<GotoDefinitionResponse>> {
+        Ok(Some(GotoDefinitionResponse::Array(vec![])))
+    }
+
+    async fn goto_declaration(
+        &self,
+        _params: GotoDeclarationParams,
+    ) -> Result<Option<GotoDeclarationResponse>> {
+        Ok(Some(GotoDeclarationResponse::Array(vec![])))
+    }
+
+    async fn goto_type_definition(
+        &self,
+        _params: GotoTypeDefinitionParams,
+    ) -> Result<Option<GotoTypeDefinitionResponse>> {
+        Ok(Some(GotoTypeDefinitionResponse::Array(vec![])))
+    }
+
+    async fn goto_implementation(
+        &self,
+        _params: GotoImplementationParams,
+    ) -> Result<Option<GotoImplementationResponse>> {
+        Ok(Some(GotoImplementationResponse::Array(vec![])))
+    }
+
+    async fn references(&self, _params: ReferenceParams) -> Result<Option<Vec<Location>>> {
+        Ok(Some(vec![]))
+    }
+
+    async fn document_symbol(&self, _params: DocumentSymbolParams) -> Result<Option<DocumentSymbolResponse>> {
+        Ok(Some(DocumentSymbolResponse::Flat(vec![])))
+    }
+
+    async fn workspace_symbol(&self, _params: WorkspaceSymbolParams) -> Result<Option<Vec<SymbolInformation>>> {
+        Ok(Some(vec![]))
+    }
+
+    async fn diagnostic(&self, _params: DocumentDiagnosticParams) -> Result<DocumentDiagnosticReport> {
+        Ok(DocumentDiagnosticReport::Full(
+            RelatedFullDocumentDiagnosticReport {
+                related_documents: None,
+                full_document_diagnostic_report: FullDocumentDiagnosticReport {
+                    result_id: None,
+                    items: vec![],
+                },
+            },
+        ))
     }
 
     async fn did_open_notebook_document(&self, _params: DidOpenNotebookDocumentParams) {}
