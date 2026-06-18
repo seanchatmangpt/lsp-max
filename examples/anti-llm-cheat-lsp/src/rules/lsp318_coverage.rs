@@ -213,7 +213,7 @@ fn surface_table() -> Vec<MethodSurface> {
             "textDocument.synchronization",
             "textDocumentSync.openClose",
             "textDocument_didClose_positive.jsonl",
-            Absent,
+            Wired,
             ClientNotification,
         ),
         (
@@ -512,7 +512,7 @@ fn surface_table() -> Vec<MethodSurface> {
             "textDocument.semanticTokens",
             "semanticTokensProvider.full",
             "textDocument_semanticTokens_full_positive.jsonl",
-            Absent,
+            Wired,
             ClientRequest,
         ),
         (
@@ -520,7 +520,7 @@ fn surface_table() -> Vec<MethodSurface> {
             "textDocument.semanticTokens",
             "semanticTokensProvider.full.delta",
             "textDocument_semanticTokens_full_delta_positive.jsonl",
-            Absent,
+            Wired,
             ClientRequest,
         ),
         (
@@ -528,7 +528,7 @@ fn surface_table() -> Vec<MethodSurface> {
             "textDocument.semanticTokens",
             "semanticTokensProvider.range",
             "textDocument_semanticTokens_range_positive.jsonl",
-            Absent,
+            Wired,
             ClientRequest,
         ),
         (

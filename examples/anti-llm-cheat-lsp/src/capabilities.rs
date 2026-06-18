@@ -86,6 +86,26 @@ pub fn build_capabilities() -> ServerCapabilities {
                 caps.document_symbol_provider = Some(OneOf::Left(true));
             }
 
+            // ── Semantic tokens (AST-derived, Path B) ─────────────────────────
+            // The `full`, `full/delta` and `range` rows collapse onto one
+            // capability block; build it once when the first of them is seen.
+            "textDocument/semanticTokens/full"
+            | "textDocument/semanticTokens/full/delta"
+            | "textDocument/semanticTokens/range" => {
+                if caps.semantic_tokens_provider.is_none() {
+                    caps.semantic_tokens_provider = Some(
+                        SemanticTokensServerCapabilities::SemanticTokensOptions(
+                            SemanticTokensOptions {
+                                legend: crate::semantic::legend(),
+                                full: Some(SemanticTokensFullOptions::Delta { delta: Some(true) }),
+                                range: Some(true),
+                                work_done_progress_options: WorkDoneProgressOptions::default(),
+                            },
+                        ),
+                    );
+                }
+            }
+
             // ── Pull diagnostics ──────────────────────────────────────────────
             "textDocument/diagnostic" => {
                 caps.diagnostic_provider = Some(DiagnosticServerCapabilities::Options(
