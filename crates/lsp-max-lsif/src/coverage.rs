@@ -41,6 +41,7 @@
 pub const SPEC_VERTEX_LABELS: &[&str] = &[
     "metaData",
     "source",
+    "capabilities",
     "project",
     "document",
     "resultSet",
@@ -73,6 +74,8 @@ pub const SPEC_EDGE_LABELS: &[&str] = &[
     "contains",
     "next",
     "moniker",
+    "nextMoniker",
+    "belongsTo",
     "attach",
     "packageInformation",
     "item",
@@ -166,6 +169,7 @@ pub const BUILDER_VERTEX_LABELS: &[(&str, ConsumerStatus)] = &[
     ("source", ConsumerStatus::OpenSubstrate),
     ("resultRange", ConsumerStatus::OpenSubstrate),
     ("packageInformation", ConsumerStatus::OpenSubstrate),
+    ("capabilities", ConsumerStatus::OpenSubstrate),
 ];
 
 /// Edge labels written on the LSIF emission path, paired with status.
@@ -208,6 +212,8 @@ pub const BUILDER_EDGE_LABELS: &[(&str, ConsumerStatus)] = &[
     ),
     ("attach", ConsumerStatus::OpenSubstrate),
     ("packageInformation", ConsumerStatus::OpenSubstrate),
+    ("nextMoniker", ConsumerStatus::OpenSubstrate),
+    ("belongsTo", ConsumerStatus::OpenSubstrate),
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -346,16 +352,21 @@ pub fn lsif_coverage() -> LsifCoverageReport {
 mod tests {
     use super::*;
 
-    /// Vertex coverage watermark — raise when new vertices are added on the
-    /// emission path, never lower.  Floor reflects 12/23 emitted (52.2%; moniker
-    /// vertex now counted from `LsifContext::emit_moniker`).
-    const VERTEX_WATERMARK: f64 = 50.0;
+    /// Vertex coverage watermark — a conservative floor on *emittable* vertex
+    /// coverage (a `Vertex::*` construction site exists), raise when emission is
+    /// added, never lower. Every `SPEC_VERTEX_LABELS` entry currently has an emit
+    /// method — including the `capabilities` vertex now hand-authored in `lsif.rs`
+    /// and emitted via `emit_capabilities` — so the measured value sits well
+    /// above this floor. The floor guards against an emit method being removed.
+    const VERTEX_WATERMARK: f64 = 54.0;
 
-    /// Edge coverage watermark — raise when new edges are added on the
-    /// emission path, never lower.  Floor reflects 9/19 emitted (47.4%; moniker
-    /// edge now counted from `LsifContext::emit_moniker`).  Raised from 40.0;
-    /// Phase B raises it further as the remaining spec edges are emitted.
-    const EDGE_WATERMARK: f64 = 47.0;
+    /// Edge coverage watermark — a conservative floor on *emittable* edge
+    /// coverage, raise when emission is added, never lower. Every
+    /// `SPEC_EDGE_LABELS` entry currently has an emit method — including the
+    /// `nextMoniker` and `belongsTo` edges now modelled in `lsif.rs` and emitted
+    /// via `next_moniker_edge` / `belongs_to_edge`. Emittable is distinct from
+    /// admitted: only `contains`/`next`/`moniker` carry a named consumer test.
+    const EDGE_WATERMARK: f64 = 52.0;
 
     #[test]
     fn vertex_coverage_meets_watermark() {
