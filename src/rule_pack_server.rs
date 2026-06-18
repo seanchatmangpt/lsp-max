@@ -24,21 +24,21 @@
 //!
 //! 1. **`RulePackSnapshot`** — immutable `Arc`-wrapped workspace state cloneable
 //!    into async dispatch without holding any lock.  Mirrors rust-analyzer's
-//!    `GlobalStateSnapshot` pattern.  See [`RulePackSnapshot`].
+//!    `GlobalStateSnapshot` pattern.  See `RulePackSnapshot`.
 //!
 //! 2. **Rule-pack composition** — dependency-resolved ordering of packs with
 //!    version compatibility checks and conflict detection.  See
-//!    [`ComposedPacks`] and [`compose_packs`].
+//!    `ComposedPacks` and `compose_packs`.
 //!
 //! 3. **Latency classification** — every rule carries an `EvalBudget` that
 //!    determines whether it is evaluated synchronously (within the `did_open`
-//!    handler) or dispatched to a background Tokio task.  See [`EvalBudget`].
+//!    handler) or dispatched to a background Tokio task.  See `EvalBudget`.
 //!
 //! 4. **Workspace-wide cross-file diagnostics** — the `WorkspaceIndex` tracks
 //!    every open document's content and per-file conformance vector.  Cross-file
 //!    rules can emit diagnostics on *file A* based on content in *file B*.  The
 //!    workspace conformance vector is the aggregate across all files — something
-//!    no other LSP does.  See [`WorkspaceIndex`] and [`CrossFileRule`].
+//!    no other LSP does.  See `WorkspaceIndex` and `CrossFileRule`.
 //!
 //! # Law compliance
 //!

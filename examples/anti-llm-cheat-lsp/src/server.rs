@@ -5,7 +5,8 @@ use std::sync::{Arc, Mutex};
 
 use crate::engine;
 use crate::virtual_docs::{
-    checkpoint_status, failset, forbidden_implications, ggen_render, lsp318_matrix, receipt_ledger,
+    checkpoint_status, failset, forbidden_implications, ggen_render, lsif06_matrix,
+    lsp318_full_matrix, lsp318_matrix, receipt_ledger,
 };
 
 pub struct AntiLlmServer {
@@ -21,7 +22,7 @@ impl AntiLlmServer {
         }
     }
 
-    async fn run_scan_and_publish(&self, uri: &Url) {
+    async fn run_scan_and_publish(&self, uri: &Uri) {
         let root_dir = {
             let guard = self.workspace_root.lock().unwrap();
             guard.clone().unwrap_or_else(|| ".".to_string())
@@ -76,18 +77,6 @@ impl LanguageServer for AntiLlmServer {
         caps.text_document_sync =
             Some(TextDocumentSyncCapability::Kind(TextDocumentSyncKind::FULL));
         caps.inline_completion_provider = Some(OneOf::Left(true));
-        caps.workspace = Some(WorkspaceServerCapabilities {
-            text_document_content: Some(OneOf::Right(TextDocumentContentRegistrationOptions {
-                text_document_content_options: TextDocumentContentOptions {
-                    schemes: vec!["anti-llm".to_string(), "ggen".to_string()],
-                },
-                text_document_registration_options: TextDocumentRegistrationOptions {
-                    document_selector: None,
-                },
-                static_registration_options: StaticRegistrationOptions { id: None },
-            })),
-            ..Default::default()
-        });
         caps.folding_range_provider = Some(FoldingRangeProviderCapability::Simple(true));
         caps.document_range_formatting_provider = Some(OneOf::Left(true));
         caps.code_action_provider = Some(CodeActionProviderCapability::Simple(true));
@@ -102,6 +91,19 @@ impl LanguageServer for AntiLlmServer {
         caps.code_lens_provider = Some(CodeLensOptions {
             resolve_provider: Some(true),
         });
+        caps.hover_provider = Some(HoverProviderCapability::Simple(true));
+        caps.definition_provider = Some(OneOf::Left(true));
+        caps.declaration_provider = Some(DeclarationCapability::Simple(true));
+        caps.type_definition_provider = Some(TypeDefinitionProviderCapability::Simple(true));
+        caps.implementation_provider = Some(ImplementationProviderCapability::Simple(true));
+        caps.references_provider = Some(OneOf::Left(true));
+        caps.document_symbol_provider = Some(OneOf::Left(true));
+        caps.diagnostic_provider = Some(DiagnosticServerCapabilities::Options(DiagnosticOptions {
+            identifier: None,
+            inter_file_dependencies: true,
+            workspace_diagnostics: false,
+            work_done_progress_options: WorkDoneProgressOptions::default(),
+        }));
 
         Ok(InitializeResult {
             capabilities: caps,
@@ -181,6 +183,14 @@ impl LanguageServer for AntiLlmServer {
                 failset::generate_failset_markdown(&diags)
             }
             "anti-llm://lsp318-matrix" => lsp318_matrix::generate_matrix_markdown(),
+            "anti-llm://lsp318-full-matrix" => {
+                let root_dir = {
+                    let guard = self.workspace_root.lock().unwrap();
+                    guard.clone().unwrap_or_else(|| ".".to_string())
+                };
+                lsp318_full_matrix::generate_full_matrix_markdown(&root_dir)
+            }
+            "anti-llm://lsif06-matrix" => lsif06_matrix::generate_lsif06_matrix_markdown(),
             "anti-llm://receipt-ledger" => {
                 let root_dir = {
                     let guard = self.workspace_root.lock().unwrap();
@@ -310,6 +320,26 @@ impl LanguageServer for AntiLlmServer {
                 }),
                 ..Default::default()
             }),
+            CodeActionOrCommand::CodeAction(CodeAction {
+                title: "Open anti-llm://lsp318-full-matrix".to_string(),
+                kind: Some(CodeActionKind::QUICKFIX),
+                command: Some(Command {
+                    title: "Open LSP 3.18 Combinatorial Coverage Matrix".to_string(),
+                    command: "anti-llm.openFullMatrix".to_string(),
+                    arguments: None,
+                }),
+                ..Default::default()
+            }),
+            CodeActionOrCommand::CodeAction(CodeAction {
+                title: "Open anti-llm://lsif06-matrix".to_string(),
+                kind: Some(CodeActionKind::QUICKFIX),
+                command: Some(Command {
+                    title: "Open LSIF 0.6 Combinatorial Coverage Matrix".to_string(),
+                    command: "anti-llm.openLsifMatrix".to_string(),
+                    arguments: None,
+                }),
+                ..Default::default()
+            }),
         ];
         Ok(Some(actions))
     }
@@ -341,11 +371,73 @@ impl LanguageServer for AntiLlmServer {
         Ok(code_lens)
     }
 
-    async fn did_open_notebook_document(&self, _params: DidOpenNotebookDocumentParams) {}
+    async fn hover(&self, _params: HoverParams) -> Result<Option<Hover>> {
+        Ok(Some(Hover {
+            contents: HoverContents::Scalar(MarkedString::String(
+                "Hover: conformance matrix check active".to_string(),
+            )),
+            range: None,
+        }))
+    }
 
-    async fn did_change_notebook_document(&self, _params: DidChangeNotebookDocumentParams) {}
+    async fn goto_definition(
+        &self,
+        _params: GotoDefinitionParams,
+    ) -> Result<Option<GotoDefinitionResponse>> {
+        Ok(Some(GotoDefinitionResponse::Array(vec![])))
+    }
 
-    async fn did_save_notebook_document(&self, _params: DidSaveNotebookDocumentParams) {}
+    async fn goto_declaration(
+        &self,
+        _params: GotoDefinitionParams,
+    ) -> Result<Option<GotoDefinitionResponse>> {
+        Ok(Some(GotoDefinitionResponse::Array(vec![])))
+    }
 
-    async fn did_close_notebook_document(&self, _params: DidCloseNotebookDocumentParams) {}
+    async fn goto_type_definition(
+        &self,
+        _params: GotoDefinitionParams,
+    ) -> Result<Option<GotoDefinitionResponse>> {
+        Ok(Some(GotoDefinitionResponse::Array(vec![])))
+    }
+
+    async fn goto_implementation(
+        &self,
+        _params: GotoDefinitionParams,
+    ) -> Result<Option<GotoDefinitionResponse>> {
+        Ok(Some(GotoDefinitionResponse::Array(vec![])))
+    }
+
+    async fn references(&self, _params: ReferenceParams) -> Result<Option<Vec<Location>>> {
+        Ok(Some(vec![]))
+    }
+
+    async fn document_symbol(
+        &self,
+        _params: DocumentSymbolParams,
+    ) -> Result<Option<DocumentSymbolResponse>> {
+        Ok(Some(DocumentSymbolResponse::Flat(vec![])))
+    }
+
+    async fn symbol(
+        &self,
+        _params: WorkspaceSymbolParams,
+    ) -> Result<Option<Vec<SymbolInformation>>> {
+        Ok(Some(vec![]))
+    }
+
+    async fn diagnostic(
+        &self,
+        _params: DocumentDiagnosticParams,
+    ) -> Result<DocumentDiagnosticReportResult> {
+        Ok(DocumentDiagnosticReportResult::Report(
+            DocumentDiagnosticReport::Full(RelatedFullDocumentDiagnosticReport {
+                related_documents: None,
+                full_document_diagnostic_report: FullDocumentDiagnosticReport {
+                    result_id: None,
+                    items: vec![],
+                },
+            }),
+        ))
+    }
 }

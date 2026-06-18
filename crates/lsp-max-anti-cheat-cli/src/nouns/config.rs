@@ -56,8 +56,10 @@ impl ConfigService {
         let config_path = Path::new(path).join("anti-llm.toml");
         let exists = config_path.exists();
         let content = if exists {
-            Some(fs::read_to_string(&config_path)
-                .map_err(|e| format!("Failed to read config: {}", e))?)
+            Some(
+                fs::read_to_string(&config_path)
+                    .map_err(|e| format!("Failed to read config: {}", e))?,
+            )
         } else {
             None
         };
@@ -101,25 +103,20 @@ impl ConfigService {
 // ===== Verb Tier (CLI) =====
 
 #[verb("init")]
-pub fn init_config(
-    #[arg(long, default_value = ".")] path: String,
-) -> Result<ConfigInitResult> {
-    ConfigService::init(&path)
-        .map_err(clap_noun_verb::error::NounVerbError::execution_error)
+pub fn init_config(path: Option<String>) -> Result<ConfigInitResult> {
+    let path_str = path.unwrap_or_else(|| ".".to_string());
+    ConfigService::init(&path_str).map_err(clap_noun_verb::error::NounVerbError::execution_error)
 }
 
 #[verb("show")]
-pub fn show_config(
-    #[arg(long, default_value = ".")] path: String,
-) -> Result<ConfigShowResult> {
-    ConfigService::show(&path)
-        .map_err(clap_noun_verb::error::NounVerbError::execution_error)
+pub fn show_config(path: Option<String>) -> Result<ConfigShowResult> {
+    let path_str = path.unwrap_or_else(|| ".".to_string());
+    ConfigService::show(&path_str).map_err(clap_noun_verb::error::NounVerbError::execution_error)
 }
 
 #[verb("validate")]
-pub fn validate_config(
-    #[arg(long, default_value = ".")] path: String,
-) -> Result<ConfigValidateResult> {
-    ConfigService::validate(&path)
+pub fn validate_config(path: Option<String>) -> Result<ConfigValidateResult> {
+    let path_str = path.unwrap_or_else(|| ".".to_string());
+    ConfigService::validate(&path_str)
         .map_err(clap_noun_verb::error::NounVerbError::execution_error)
 }
