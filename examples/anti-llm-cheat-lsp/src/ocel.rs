@@ -51,29 +51,23 @@ pub fn detections_to_ocel(diagnostics: &[AntiLlmDiagnostic]) -> OCEL {
     let mut law_axes: BTreeMap<String, OCELObject> = BTreeMap::new();
 
     for d in diagnostics {
-        case_files
-            .entry(d.file_path.clone())
-            .or_insert_with(|| {
-                let id = format!("cf_{}", slug(&d.file_path));
-                OCELObject::new(id, "CaseFile")
-                    .with_attribute(OCELEventAttribute::string("path", d.file_path.clone()))
-            });
+        case_files.entry(d.file_path.clone()).or_insert_with(|| {
+            let id = format!("cf_{}", slug(&d.file_path));
+            OCELObject::new(id, "CaseFile")
+                .with_attribute(OCELEventAttribute::string("path", d.file_path.clone()))
+        });
 
-        detection_codes
-            .entry(d.code.clone())
-            .or_insert_with(|| {
-                let id = format!("dc_{}", slug(&d.code));
-                OCELObject::new(id, "DetectionCode")
-                    .with_attribute(OCELEventAttribute::string("code", d.code.clone()))
-            });
+        detection_codes.entry(d.code.clone()).or_insert_with(|| {
+            let id = format!("dc_{}", slug(&d.code));
+            OCELObject::new(id, "DetectionCode")
+                .with_attribute(OCELEventAttribute::string("code", d.code.clone()))
+        });
 
-        law_axes
-            .entry(d.category.clone())
-            .or_insert_with(|| {
-                let id = format!("la_{}", slug(&d.category));
-                OCELObject::new(id, "LawAxis")
-                    .with_attribute(OCELEventAttribute::string("category", d.category.clone()))
-            });
+        law_axes.entry(d.category.clone()).or_insert_with(|| {
+            let id = format!("la_{}", slug(&d.category));
+            OCELObject::new(id, "LawAxis")
+                .with_attribute(OCELEventAttribute::string("category", d.category.clone()))
+        });
     }
 
     // Build CheatDetected events — one per diagnostic
@@ -87,15 +81,12 @@ pub fn detections_to_ocel(diagnostics: &[AntiLlmDiagnostic]) -> OCEL {
             let la_id = law_axes[&d.category].id.clone();
 
             let mut ev = OCELEvent::new(event_id.clone(), "CheatDetected");
-            ev.relationships.push(
-                OCELRelationship::new(event_id.clone(), cf_id).qualified("case_file"),
-            );
-            ev.relationships.push(
-                OCELRelationship::new(event_id.clone(), dc_id).qualified("detection_code"),
-            );
-            ev.relationships.push(
-                OCELRelationship::new(event_id.clone(), la_id).qualified("law_axis"),
-            );
+            ev.relationships
+                .push(OCELRelationship::new(event_id.clone(), cf_id).qualified("case_file"));
+            ev.relationships
+                .push(OCELRelationship::new(event_id.clone(), dc_id).qualified("detection_code"));
+            ev.relationships
+                .push(OCELRelationship::new(event_id.clone(), la_id).qualified("law_axis"));
             ev
         })
         .collect();
@@ -104,9 +95,9 @@ pub fn detections_to_ocel(diagnostics: &[AntiLlmDiagnostic]) -> OCEL {
     let scan_id = "ev_scan_complete".to_string();
     let mut scan_ev = OCELEvent::new(scan_id.clone(), "ScanComplete");
     for obj in case_files.values() {
-        scan_ev.relationships.push(
-            OCELRelationship::new(scan_id.clone(), obj.id.clone()).qualified("case_file"),
-        );
+        scan_ev
+            .relationships
+            .push(OCELRelationship::new(scan_id.clone(), obj.id.clone()).qualified("case_file"));
     }
     events.push(scan_ev);
 

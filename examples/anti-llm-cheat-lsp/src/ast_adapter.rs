@@ -5,7 +5,9 @@
 //! The adapter layers on top of the existing multi-format engine without
 //! displacing cross-file law detection.
 
-use lsp_max::lsp_types::{DidChangeTextDocumentParams, DidCloseTextDocumentParams, DidOpenTextDocumentParams, DocumentUri};
+use lsp_max::lsp_types::{
+    DidChangeTextDocumentParams, DidCloseTextDocumentParams, DidOpenTextDocumentParams, DocumentUri,
+};
 use lsp_max_ast::AutoLspAdapter;
 
 /// Wraps AutoLspAdapter with Rust language binding.
@@ -70,10 +72,7 @@ impl RustAstAdapter {
 
     /// AST-derived semantic tokens for a Rust file, or `None` if the document is
     /// not a tracked Rust file.
-    pub fn semantic_tokens(
-        &self,
-        uri: &DocumentUri,
-    ) -> Option<lsp_max::lsp_types::SemanticTokens> {
+    pub fn semantic_tokens(&self, uri: &DocumentUri) -> Option<lsp_max::lsp_types::SemanticTokens> {
         self.get_document(uri, crate::semantic::build_tokens)
     }
 

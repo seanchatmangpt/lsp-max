@@ -22,9 +22,7 @@ fn fake_assert_re() -> &'static Regex {
 
 fn hardcoded_admitted_re() -> &'static Regex {
     static RE: OnceLock<Regex> = OnceLock::new();
-    RE.get_or_init(|| {
-        Regex::new(r#"admitted\s*[:=]\s*true\b|\"admitted\"\s*:\s*true"#).unwrap()
-    })
+    RE.get_or_init(|| Regex::new(r#"admitted\s*[:=]\s*true\b|\"admitted\"\s*:\s*true"#).unwrap())
 }
 
 /// Scan Rust source line-by-line for fake-alignment patterns.
@@ -98,8 +96,8 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
                 forbidden_implication: "HardcodedFitness => FakeConformance".to_string(),
                 blocking: true,
                 required_correction: "Derive fitness from real alignment computation".to_string(),
-                required_next_proof:
-                    "Show fitness produced by token-replay or alignment algorithm".to_string(),
+                required_next_proof: "Show fitness produced by token-replay or alignment algorithm"
+                    .to_string(),
             });
         }
 
@@ -110,8 +108,7 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
                 file_path: o.file_path.clone(),
                 line: o.line,
                 column: o.column,
-                message: "assert!(true) — unfalsifiable test claim"
-                    .to_string(),
+                message: "assert!(true) — unfalsifiable test claim".to_string(),
                 forbidden_implication: "AlwaysPassingAssertion => FakeReceipt".to_string(),
                 blocking: true,
                 required_correction: "Replace with falsifiable assertion on real behavior"

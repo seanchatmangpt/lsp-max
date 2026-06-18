@@ -44,11 +44,11 @@ pub fn build_capabilities() -> ServerCapabilities {
                 caps.definition_provider = Some(OneOf::Left(true));
             }
             "textDocument/typeDefinition" => {
-                caps.type_definition_provider = Some(TypeDefinitionProviderCapability::Simple(true));
+                caps.type_definition_provider =
+                    Some(TypeDefinitionProviderCapability::Simple(true));
             }
             "textDocument/implementation" => {
-                caps.implementation_provider =
-                    Some(ImplementationProviderCapability::Simple(true));
+                caps.implementation_provider = Some(ImplementationProviderCapability::Simple(true));
             }
             "textDocument/references" => {
                 caps.references_provider = Some(OneOf::Left(true));
@@ -59,15 +59,15 @@ pub fn build_capabilities() -> ServerCapabilities {
             "textDocument/hover" => {
                 caps.hover_provider = Some(HoverProviderCapability::Simple(true));
             }
-            "textDocument/prepareRename" | "textDocument/rename" => {
+            "textDocument/prepareRename" | "textDocument/rename"
+                if caps.rename_provider.is_none() =>
+            {
                 // Rename is declared so prepareRename is reachable; both are
                 // refused at the handler level (read-only law).
-                if caps.rename_provider.is_none() {
-                    caps.rename_provider = Some(OneOf::Right(RenameOptions {
-                        prepare_provider: Some(true),
-                        work_done_progress_options: WorkDoneProgressOptions::default(),
-                    }));
-                }
+                caps.rename_provider = Some(OneOf::Right(RenameOptions {
+                    prepare_provider: Some(true),
+                    work_done_progress_options: WorkDoneProgressOptions::default(),
+                }));
             }
             "textDocument/selectionRange" => {
                 caps.selection_range_provider =
@@ -119,16 +119,15 @@ pub fn build_capabilities() -> ServerCapabilities {
             "textDocument/inlineCompletion" => {
                 caps.inline_completion_provider = Some(OneOf::Left(true));
             }
-            "textDocument/inlayHint" | "inlayHint/resolve" => {
-                if caps.inlay_hint_provider.is_none() {
-                    caps.inlay_hint_provider =
-                        Some(OneOf::Right(InlayHintServerCapabilities::Options(
-                            InlayHintOptions {
-                                resolve_provider: Some(true),
-                                work_done_progress_options: WorkDoneProgressOptions::default(),
-                            },
-                        )));
-                }
+            "textDocument/inlayHint" | "inlayHint/resolve"
+                if caps.inlay_hint_provider.is_none() =>
+            {
+                caps.inlay_hint_provider = Some(OneOf::Right(
+                    InlayHintServerCapabilities::Options(InlayHintOptions {
+                        resolve_provider: Some(true),
+                        work_done_progress_options: WorkDoneProgressOptions::default(),
+                    }),
+                ));
             }
             "textDocument/inlineValue" => {
                 caps.inline_value_provider = Some(OneOf::Left(true));
@@ -142,43 +141,40 @@ pub fn build_capabilities() -> ServerCapabilities {
             // capability block; build it once when the first of them is seen.
             "textDocument/semanticTokens/full"
             | "textDocument/semanticTokens/full/delta"
-            | "textDocument/semanticTokens/range" => {
-                if caps.semantic_tokens_provider.is_none() {
-                    caps.semantic_tokens_provider = Some(
-                        SemanticTokensServerCapabilities::SemanticTokensOptions(
-                            SemanticTokensOptions {
-                                legend: crate::semantic::legend(),
-                                full: Some(SemanticTokensFullOptions::Delta { delta: Some(true) }),
-                                range: Some(true),
-                                work_done_progress_options: WorkDoneProgressOptions::default(),
-                            },
-                        ),
-                    );
-                }
+            | "textDocument/semanticTokens/range"
+                if caps.semantic_tokens_provider.is_none() =>
+            {
+                caps.semantic_tokens_provider =
+                    Some(SemanticTokensServerCapabilities::SemanticTokensOptions(
+                        SemanticTokensOptions {
+                            legend: crate::semantic::legend(),
+                            full: Some(SemanticTokensFullOptions::Delta { delta: Some(true) }),
+                            range: Some(true),
+                            work_done_progress_options: WorkDoneProgressOptions::default(),
+                        },
+                    ));
             }
 
             // ── Call hierarchy ────────────────────────────────────────────────
             "textDocument/prepareCallHierarchy"
             | "callHierarchy/incomingCalls"
-            | "callHierarchy/outgoingCalls" => {
-                if caps.call_hierarchy_provider.is_none() {
-                    caps.call_hierarchy_provider =
-                        Some(CallHierarchyServerCapability::Simple(true));
-                }
+            | "callHierarchy/outgoingCalls"
+                if caps.call_hierarchy_provider.is_none() =>
+            {
+                caps.call_hierarchy_provider = Some(CallHierarchyServerCapability::Simple(true));
             }
 
             // ── Pull diagnostics ──────────────────────────────────────────────
-            "textDocument/diagnostic" | "workspace/diagnostic" => {
-                if caps.diagnostic_provider.is_none() {
-                    caps.diagnostic_provider = Some(DiagnosticServerCapabilities::Options(
-                        DiagnosticOptions {
-                            identifier: None,
-                            inter_file_dependencies: true,
-                            workspace_diagnostics: true,
-                            work_done_progress_options: WorkDoneProgressOptions::default(),
-                        },
-                    ));
-                }
+            "textDocument/diagnostic" | "workspace/diagnostic"
+                if caps.diagnostic_provider.is_none() =>
+            {
+                caps.diagnostic_provider =
+                    Some(DiagnosticServerCapabilities::Options(DiagnosticOptions {
+                        identifier: None,
+                        inter_file_dependencies: true,
+                        workspace_diagnostics: true,
+                        work_done_progress_options: WorkDoneProgressOptions::default(),
+                    }));
             }
 
             // ── Workspace features ────────────────────────────────────────────
