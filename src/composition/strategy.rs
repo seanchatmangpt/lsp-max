@@ -192,13 +192,7 @@ pub fn capability_supports_method(caps: &lsp_types_max::ServerCapabilities, meth
                 false
             }
         }
-        "textDocument/completion" => {
-            if let Some(ref _p) = caps.completion_provider {
-                true
-            } else {
-                false
-            }
-        }
+        "textDocument/completion" => caps.completion_provider.is_some(),
         "textDocument/definition" => {
             if let Some(ref p) = caps.definition_provider {
                 match p {
@@ -269,13 +263,7 @@ pub fn capability_supports_method(caps: &lsp_types_max::ServerCapabilities, meth
                 false
             }
         }
-        "textDocument/codeLens" => {
-            if let Some(ref _p) = caps.code_lens_provider {
-                true
-            } else {
-                false
-            }
-        }
+        "textDocument/codeLens" => caps.code_lens_provider.is_some(),
         "textDocument/formatting" => {
             if let Some(ref p) = caps.document_formatting_provider {
                 match p {
@@ -296,13 +284,7 @@ pub fn capability_supports_method(caps: &lsp_types_max::ServerCapabilities, meth
                 false
             }
         }
-        "textDocument/onTypeFormatting" => {
-            if let Some(ref _p) = caps.document_on_type_formatting_provider {
-                true
-            } else {
-                false
-            }
-        }
+        "textDocument/onTypeFormatting" => caps.document_on_type_formatting_provider.is_some(),
         "textDocument/rename" => {
             if let Some(ref p) = caps.rename_provider {
                 match p {
@@ -315,13 +297,7 @@ pub fn capability_supports_method(caps: &lsp_types_max::ServerCapabilities, meth
         }
         "textDocument/semanticTokens/full"
         | "textDocument/semanticTokens/full/delta"
-        | "textDocument/semanticTokens/range" => {
-            if let Some(ref _p) = caps.semantic_tokens_provider {
-                true
-            } else {
-                false
-            }
-        }
+        | "textDocument/semanticTokens/range" => caps.semantic_tokens_provider.is_some(),
         "textDocument/didOpen"
         | "textDocument/didChange"
         | "textDocument/didSave"
