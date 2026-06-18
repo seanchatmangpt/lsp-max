@@ -6,7 +6,7 @@ use std::sync::OnceLock;
 fn hardcoded_score_re() -> &'static Regex {
     static RE: OnceLock<Regex> = OnceLock::new();
     RE.get_or_init(|| {
-        Regex::new(r#"fitness\s*[:=]\s*1\.0|fitness\s*[:=]\s*0\.99[0-9]*|"fitness"\s*:\s*1\.0"#)
+        Regex::new(r#"fitness\s*[:=]\s*1\.0|fitness\s*[:=]\s*0\.99[0-9]*|\"fitness\"\s*:\s*1\.0"#)
             .unwrap()
     })
 }
@@ -15,7 +15,7 @@ fn fake_assert_re() -> &'static Regex {
     static RE: OnceLock<Regex> = OnceLock::new();
     RE.get_or_init(|| {
         // assert!(true) — unfalsifiable assert; Rust regex does not support backreferences,
-        // so assert_eq!(x, x) identity pattern is not detectable here via regex.
+        // so assert_eq!(x, x) identity pattern is detected via a separate string scan instead.
         Regex::new(r"assert!\s*\(\s*true\s*\)").unwrap()
     })
 }
@@ -23,7 +23,7 @@ fn fake_assert_re() -> &'static Regex {
 fn hardcoded_admitted_re() -> &'static Regex {
     static RE: OnceLock<Regex> = OnceLock::new();
     RE.get_or_init(|| {
-        Regex::new(r#"admitted\s*[:=]\s*true\b|"admitted"\s*:\s*true"#).unwrap()
+        Regex::new(r#"admitted\s*[:=]\s*true\b|\"admitted\"\s*:\s*true"#).unwrap()
     })
 }
 
