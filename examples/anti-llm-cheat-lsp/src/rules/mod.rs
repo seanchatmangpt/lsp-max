@@ -2,6 +2,7 @@ pub mod authority;
 pub mod claims;
 pub mod complexity;
 pub mod contract;
+pub mod declare_laws;
 pub mod determinism;
 pub mod ggen;
 pub mod lsif06;

@@ -916,3 +916,64 @@ fn ocel_013_object_types_cover_all_cheat_dimensions() {
         );
     }
 }
+
+// Declare law constraint tests
+// -------------------------------------------------------------
+
+#[test]
+fn declare_001_absence_tower_lsp_fires() {
+    use anti_llm_cheat_lsp::rules::declare_laws::{
+        agents_md_laws, check_constraint, ObservationTrace,
+    };
+
+    let law = agents_md_laws()
+        .into_iter()
+        .find(|l| l.diagnostic_code == "ANTI-LLM-DECLARE-001")
+        .unwrap();
+    let trace_violating = ObservationTrace {
+        activities: vec!["tower_lsp_reference".to_string()],
+        file_path: "Cargo.toml".to_string(),
+        line: 1,
+    };
+    let trace_clean = ObservationTrace {
+        activities: vec!["some_other_activity".to_string()],
+        file_path: "Cargo.toml".to_string(),
+        line: 1,
+    };
+    assert!(
+        check_constraint(&law, &trace_violating).is_some(),
+        "Absence(tower_lsp_reference) must fire when tower-lsp detected"
+    );
+    assert!(
+        check_constraint(&law, &trace_clean).is_none(),
+        "Absence(tower_lsp_reference) must not fire on clean trace"
+    );
+}
+
+#[test]
+fn declare_002_response_handler_transcript_missing() {
+    use anti_llm_cheat_lsp::rules::declare_laws::{agents_md_laws, check_constraint, ObservationTrace};
+
+    let law = agents_md_laws()
+        .into_iter()
+        .find(|l| l.diagnostic_code == "ANTI-LLM-DECLARE-007")
+        .unwrap();
+    let trace_missing = ObservationTrace {
+        activities: vec!["handler_wired".to_string()], // wired but no transcript
+        file_path: "server.rs".to_string(),
+        line: 1,
+    };
+    let trace_ok = ObservationTrace {
+        activities: vec!["handler_wired".to_string(), "transcript_created".to_string()],
+        file_path: "server.rs".to_string(),
+        line: 1,
+    };
+    assert!(
+        check_constraint(&law, &trace_missing).is_some(),
+        "Response(handler_wired → transcript) must fire when transcript missing"
+    );
+    assert!(
+        check_constraint(&law, &trace_ok).is_none(),
+        "Response must not fire when transcript follows handler"
+    );
+}
