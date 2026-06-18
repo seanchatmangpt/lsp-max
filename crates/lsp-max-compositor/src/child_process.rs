@@ -3,8 +3,8 @@
 // lsp-max-client::ClientBuilder, and exposes a ServerHandle for request dispatch.
 
 use lsp_max::lsp_types::{
-    ClientCapabilities, ClientInfo, DocumentUri, InitializeParams, InitializeResult, InitializedParams,
-    ServerCapabilities,
+    ClientCapabilities, ClientInfo, DocumentUri, InitializeParams, InitializeResult,
+    InitializedParams, ServerCapabilities,
 };
 use lsp_max_client::{ClientBuilder, ClientError, LanguageClient, ServerHandle};
 use std::process::Stdio;

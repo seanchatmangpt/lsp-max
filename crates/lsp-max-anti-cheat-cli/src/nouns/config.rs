@@ -117,5 +117,6 @@ pub fn show_config(path: Option<String>) -> Result<ConfigShowResult> {
 #[verb("validate")]
 pub fn validate_config(path: Option<String>) -> Result<ConfigValidateResult> {
     let path_str = path.unwrap_or_else(|| ".".to_string());
-    ConfigService::validate(&path_str).map_err(clap_noun_verb::error::NounVerbError::execution_error)
+    ConfigService::validate(&path_str)
+        .map_err(clap_noun_verb::error::NounVerbError::execution_error)
 }
