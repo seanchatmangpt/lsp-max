@@ -294,7 +294,7 @@ fn surface_table() -> Vec<MethodSurface> {
             "textDocument.documentHighlight",
             "documentHighlightProvider",
             "textDocument_documentHighlight_positive.jsonl",
-            Absent,
+            Wired,
             ClientRequest,
         ),
         (
@@ -310,7 +310,7 @@ fn surface_table() -> Vec<MethodSurface> {
             "textDocument.rename.prepareSupport",
             "renameProvider.prepareProvider",
             "textDocument_prepareRename_positive.jsonl",
-            Absent,
+            Wired,
             ClientRequest,
         ),
         (
@@ -318,7 +318,7 @@ fn surface_table() -> Vec<MethodSurface> {
             "textDocument.rename",
             "renameProvider",
             "textDocument_rename_positive.jsonl",
-            Absent,
+            Refuses,
             ClientRequest,
         ),
         (
@@ -326,7 +326,7 @@ fn surface_table() -> Vec<MethodSurface> {
             "textDocument.selectionRange",
             "selectionRangeProvider",
             "textDocument_selectionRange_positive.jsonl",
-            Absent,
+            Wired,
             ClientRequest,
         ),
         (
@@ -334,7 +334,7 @@ fn surface_table() -> Vec<MethodSurface> {
             "textDocument.linkedEditingRange",
             "linkedEditingRangeProvider",
             "textDocument_linkedEditingRange_positive.jsonl",
-            Absent,
+            Wired,
             ClientRequest,
         ),
         (
@@ -342,7 +342,7 @@ fn surface_table() -> Vec<MethodSurface> {
             "textDocument.moniker",
             "monikerProvider",
             "textDocument_moniker_positive.jsonl",
-            Absent,
+            Wired,
             ClientRequest,
         ),
         // ── Completion / signature / lens / link / color / action ─────────
@@ -440,7 +440,7 @@ fn surface_table() -> Vec<MethodSurface> {
             "textDocument.formatting",
             "documentFormattingProvider",
             "textDocument_formatting_positive.jsonl",
-            Absent,
+            Wired,
             ClientRequest,
         ),
         (
@@ -480,7 +480,7 @@ fn surface_table() -> Vec<MethodSurface> {
             "textDocument.inlayHint",
             "inlayHintProvider",
             "textDocument_inlayHint_positive.jsonl",
-            Absent,
+            Wired,
             ClientRequest,
         ),
         (
@@ -488,7 +488,7 @@ fn surface_table() -> Vec<MethodSurface> {
             "",
             "inlayHintProvider.resolveProvider",
             "inlayHint_resolve_positive.jsonl",
-            Absent,
+            Wired,
             ClientRequest,
         ),
         (
@@ -496,7 +496,7 @@ fn surface_table() -> Vec<MethodSurface> {
             "textDocument.inlineValue",
             "inlineValueProvider",
             "textDocument_inlineValue_positive.jsonl",
-            Absent,
+            Wired,
             ClientRequest,
         ),
         (
@@ -545,7 +545,7 @@ fn surface_table() -> Vec<MethodSurface> {
             "textDocument.callHierarchy",
             "callHierarchyProvider",
             "textDocument_prepareCallHierarchy_positive.jsonl",
-            Absent,
+            Wired,
             ClientRequest,
         ),
         (
@@ -553,7 +553,7 @@ fn surface_table() -> Vec<MethodSurface> {
             "textDocument.callHierarchy",
             "callHierarchyProvider",
             "callHierarchy_incomingCalls_positive.jsonl",
-            Absent,
+            Wired,
             ClientRequest,
         ),
         (
@@ -561,7 +561,7 @@ fn surface_table() -> Vec<MethodSurface> {
             "textDocument.callHierarchy",
             "callHierarchyProvider",
             "callHierarchy_outgoingCalls_positive.jsonl",
-            Absent,
+            Wired,
             ClientRequest,
         ),
         (
@@ -601,7 +601,7 @@ fn surface_table() -> Vec<MethodSurface> {
             "workspace.diagnostics",
             "diagnosticProvider.workspaceDiagnostics",
             "workspace_diagnostic_positive.jsonl",
-            Absent,
+            Wired,
             ClientRequest,
         ),
         // ── Workspace features ────────────────────────────────────────────
@@ -610,7 +610,7 @@ fn surface_table() -> Vec<MethodSurface> {
             "workspace.symbol",
             "workspaceSymbolProvider",
             "workspace_symbol_positive.jsonl",
-            Absent,
+            Wired,
             ClientRequest,
         ),
         (
@@ -626,7 +626,7 @@ fn surface_table() -> Vec<MethodSurface> {
             "workspace.executeCommand",
             "executeCommandProvider",
             "workspace_executeCommand_positive.jsonl",
-            Absent,
+            Wired,
             ClientRequest,
         ),
         (
@@ -748,7 +748,7 @@ fn surface_table() -> Vec<MethodSurface> {
             "workspace.codeLens.refreshSupport",
             "",
             "workspace_codeLens_refresh_positive.jsonl",
-            Absent,
+            Wired,
             ServerRequest,
         ),
         (
@@ -756,7 +756,7 @@ fn surface_table() -> Vec<MethodSurface> {
             "workspace.semanticTokens.refreshSupport",
             "",
             "workspace_semanticTokens_refresh_positive.jsonl",
-            Absent,
+            Wired,
             ServerRequest,
         ),
         (
