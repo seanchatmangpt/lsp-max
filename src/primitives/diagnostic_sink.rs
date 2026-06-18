@@ -12,7 +12,7 @@
 //! invariant; it is the caller's obligation.
 //!
 //! Formally: the diagnostic section is a covariantly constant section of the
-//! fiber bundle (URI → Vec<Diagnostic>) iff the curvature of the connection
+//! fiber bundle (URI → `Vec<Diagnostic>`) iff the curvature of the connection
 //! (version counter) is zero, which holds iff rules are context-free.
 
 use lsp_max_protocol::{LawAxis, MaxDiagnostic};

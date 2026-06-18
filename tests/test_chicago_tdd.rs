@@ -1,21 +1,15 @@
 /// Chicago TDD integration test for the lsp-max indexing pipeline.
 ///
-/// Uses `chicago-tdd-tools` (dev-dependency only, never distributed) to
-/// enforce the Arrange-Act-Assert structure and verify state-based outcomes
+/// Enforce the Arrange-Act-Assert structure and verify state-based outcomes
 /// for the LSIF indexer crates.
-use chicago_tdd_tools::prelude::*;
 
 // ── Fixture ───────────────────────────────────────────────────────────────────
 
-struct LsifFixture {
-    fixture: TestFixture,
-}
+struct LsifFixture;
 
 impl LsifFixture {
     fn new() -> Self {
-        Self {
-            fixture: TestFixture::new().expect("TestFixture setup failed"),
-        }
+        Self
     }
 
     fn index_rust(&self, source: &str) -> Vec<u8> {
