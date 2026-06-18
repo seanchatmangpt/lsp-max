@@ -487,7 +487,10 @@ impl LanguageServer for AntiLlmServer {
             .collect();
 
         // Layer in AST syntax errors for Rust files (Path B).
-        items.extend(self.ast_adapter.pull_ast_diagnostics(&params.text_document.uri));
+        items.extend(
+            self.ast_adapter
+                .pull_ast_diagnostics(&params.text_document.uri),
+        );
 
         Ok(DocumentDiagnosticReportResult::Report(
             DocumentDiagnosticReport::Full(RelatedFullDocumentDiagnosticReport {
@@ -711,10 +714,7 @@ impl LanguageServer for AntiLlmServer {
 
     /// Read-only law: emit no edits; surface formatting-tell diagnostics via
     /// a scan-and-publish so the push path sees the same detections.
-    async fn formatting(
-        &self,
-        params: DocumentFormattingParams,
-    ) -> Result<Option<Vec<TextEdit>>> {
+    async fn formatting(&self, params: DocumentFormattingParams) -> Result<Option<Vec<TextEdit>>> {
         self.run_scan_and_publish(&params.text_document.uri).await;
         Ok(Some(vec![]))
     }
