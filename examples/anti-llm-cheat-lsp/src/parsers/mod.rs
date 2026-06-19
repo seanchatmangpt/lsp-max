@@ -10,3 +10,4 @@ pub mod refgraph;
 pub mod rust_tree_sitter;
 pub mod tera_template;
 pub mod typescript;
+pub mod typescript_ast;

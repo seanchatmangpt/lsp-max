@@ -21,4 +21,5 @@ pub mod surface;
 pub mod test;
 pub mod trace;
 pub mod typescript;
+pub mod typescript_ast;
 pub mod version;

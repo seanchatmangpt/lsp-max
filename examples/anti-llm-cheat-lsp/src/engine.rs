@@ -1,15 +1,16 @@
-use crate::config::AntiLlmConfig;
+use crate::config::{AntiLlmConfig, ForbiddenPattern};
+use regex::Regex;
 use crate::diagnostics::AntiLlmDiagnostic;
 use crate::observations::Observation;
 use crate::parsers::{
     cargo_lock, cargo_toml, contract, fitness_report, ggen_toml, json_rpc, markdown_claims,
-    receipt_json, refgraph, rust_tree_sitter, tera_template, typescript,
+    receipt_json, refgraph, rust_tree_sitter, tera_template, typescript, typescript_ast,
 };
 use crate::rules::{
     authority, claims, complexity, contract as contract_rules, declare_laws, determinism, ggen,
     hollow, lsp318, mutation, ocel_rules, oracle, placeholder, receipts,
     refgraph as refgraph_rules, routes, rust_smells, surface, test, trace, typescript as ts_rules,
-    version,
+    typescript_ast as ts_ast_rules, version,
 };
 use aho_corasick::AhoCorasick;
 use std::fs;
@@ -374,6 +375,7 @@ pub fn scan_file(filepath: &str) -> Vec<Observation> {
         || filename.ends_with(".cjs")
     {
         obs.extend(typescript::parse_typescript(filepath, &content));
+        obs.extend(typescript_ast::parse_typescript_ast(filepath, &content));
     } else if filename == "ggen.toml" {
         obs.extend(ggen_toml::parse_ggen_toml(filepath, &content));
     } else if filename.ends_with(".tera") {
@@ -387,9 +389,68 @@ pub fn scan_file(filepath: &str) -> Vec<Observation> {
     obs
 }
 
+// ── Config-pattern scanner ─────────────────────────────────────────────────────
+
+/// Returns true if `filepath` matches any of the glob patterns in `files`.
+/// Patterns are simple glob suffixes (e.g. "*.ts", "*.tsx"). If `files` is
+/// None the pattern applies to all files.
+fn file_matches_patterns(filepath: &str, files: &Option<Vec<String>>) -> bool {
+    let Some(patterns) = files else { return true };
+    patterns.iter().any(|pat| {
+        // Simple glob: "*.ts" → filepath ends with ".ts"
+        if let Some(suffix) = pat.strip_prefix("*.") {
+            filepath.ends_with(&format!(".{suffix}"))
+        } else {
+            filepath.contains(pat.as_str())
+        }
+    })
+}
+
+/// Apply all `forbidden_string_patterns` from config against `content` and
+/// emit `config_pattern` observations for every match.
+pub fn apply_config_patterns(
+    filepath: &str,
+    content: &str,
+    patterns: &[ForbiddenPattern],
+) -> Vec<Observation> {
+    let mut obs = Vec::new();
+    let line_index = build_line_index(content.as_bytes());
+
+    for fp in patterns {
+        if !file_matches_patterns(filepath, &fp.files) {
+            continue;
+        }
+        let re = match Regex::new(&fp.pattern) {
+            Ok(r) => r,
+            Err(_) => continue, // skip invalid patterns
+        };
+        for mat in re.find_iter(content) {
+            let line = byte_to_line(&line_index, mat.start());
+            obs.push(Observation {
+                file_path: filepath.to_string(),
+                start_byte: mat.start(),
+                end_byte: mat.end(),
+                line,
+                column: 1,
+                kind: "config_pattern".to_string(),
+                construct: fp.name.clone(),
+                context: mat.as_str().chars().take(120).collect(),
+                message: fp.message.clone(),
+            });
+        }
+    }
+
+    obs
+}
+
 // ── Directory scanner — ignore::Walk respects .gitignore ─────────────────────
 
 pub fn scan_directory(dirpath: &str) -> Vec<Observation> {
+    let config = AntiLlmConfig::load_from_dir(dirpath);
+    scan_directory_with_config(dirpath, &config)
+}
+
+pub fn scan_directory_with_config(dirpath: &str, config: &AntiLlmConfig) -> Vec<Observation> {
     let mut obs = Vec::new();
     let path = Path::new(dirpath);
     if !path.is_dir() {
@@ -404,7 +465,18 @@ pub fn scan_directory(dirpath: &str) -> Vec<Observation> {
 
     for entry in walker.flatten() {
         if entry.path().is_file() {
-            obs.extend(scan_file(&entry.path().to_string_lossy()));
+            let fp = entry.path().to_string_lossy();
+            obs.extend(scan_file(&fp));
+            // Apply config forbidden_string_patterns
+            if !config.forbidden_string_patterns.is_empty() {
+                if let Ok(content) = fs::read_to_string(entry.path()) {
+                    obs.extend(apply_config_patterns(
+                        &fp,
+                        &content,
+                        &config.forbidden_string_patterns,
+                    ));
+                }
+            }
         }
     }
 
@@ -445,6 +517,7 @@ pub fn evaluate_diagnostics_with_config(
     diags.extend(lsp318::evaluate(obs));
     diags.extend(ocel_rules::evaluate(obs));
     diags.extend(ts_rules::evaluate(obs));
+    diags.extend(ts_ast_rules::evaluate(obs));
     diags.extend(ggen::evaluate(obs));
     diags.extend(complexity::evaluate(obs));
     diags.extend(oracle::evaluate(obs));
@@ -461,6 +534,40 @@ pub fn evaluate_diagnostics_with_config(
         &config.claim.domain_terms,
         has_non_victory_errors,
     ));
+
+    // Config-driven forbidden_string_patterns → diagnostics
+    for o in obs.iter().filter(|o| o.kind == "config_pattern") {
+        // Look up the pattern definition by construct name to get blocking flag and code/message
+        let fp_def = config
+            .forbidden_string_patterns
+            .iter()
+            .find(|fp| fp.name == o.construct);
+        let (code, message, blocking) = if let Some(fp) = fp_def {
+            (
+                fp.code.clone(),
+                fp.message.clone(),
+                fp.blocking.unwrap_or(true),
+            )
+        } else {
+            (
+                "ANTI-LLM-CONFIG-001".to_string(),
+                o.message.clone(),
+                true,
+            )
+        };
+        diags.push(AntiLlmDiagnostic {
+            code,
+            category: "config-pattern".to_string(),
+            file_path: o.file_path.clone(),
+            line: o.line,
+            column: o.column,
+            message: format!("[CONFIG] {}", message),
+            forbidden_implication: format!("ConfigPattern({}) => Blocked", o.construct),
+            blocking,
+            required_correction: "Remove or replace the forbidden pattern per anti.toml".to_string(),
+            required_next_proof: "Verify pattern no longer appears in matched files".to_string(),
+        });
+    }
 
     // Deduplicate by (file_path, line, code)
     let mut seen = std::collections::HashSet::new();

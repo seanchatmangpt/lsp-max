@@ -39,6 +39,7 @@ chrono = { version = "0.4", features = ["serde"] }
 url = "2.5"
 tree-sitter = { workspace = true }
 tree-sitter-rust = "0.24"
+tree-sitter-typescript = "0.23.2"
 blake3 = "1"
 wasm4pm-compat = { workspace = true }
 
