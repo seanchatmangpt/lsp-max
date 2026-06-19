@@ -309,12 +309,8 @@ pub fn observations_to_ocel(obs: &[Observation]) -> OCEL {
 
     // Create Observation objects and PatternMatched events
     for obs in obs {
-        let pattern_id = format!(
-            "pattern_{}_{}_{}",
-            obs.construct,
-            obs.line,
-            &blake3::hash(format!("{:?}", obs).as_bytes()).to_string()[..8]
-        );
+        let obs_hash = blake3::hash(format!("{:?}", obs).as_bytes()).to_hex();
+        let pattern_id = format!("pattern_{}_{}_{}", obs.construct, obs.line, &obs_hash[..8]);
         objects.push(
             OCELObject::new(pattern_id.clone(), "Pattern")
                 .with_attribute(OCELEventAttribute::string("kind", obs.kind.clone()))
