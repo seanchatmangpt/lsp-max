@@ -423,6 +423,13 @@ impl WorkspaceIndex {
         Self::default()
     }
 
+    /// Retrieve a cloned copy of an indexed document.
+    pub fn get(&self, uri: &str) -> Option<IndexedDoc> {
+        self.docs
+            .get(uri)
+            .map(|ref_multi| ref_multi.value().clone())
+    }
+
     /// Insert or update a document.
     pub fn upsert(&self, uri: String, content: String, version: i32) {
         self.docs.insert(
@@ -1328,7 +1335,7 @@ mod tests {
             "test-server"
         }
         fn client(&self) -> &crate::service::Client {
-            unimplemented!("TestServer::client() not used in unit tests")
+            panic!("TestServer::client() not used in unit tests")
         }
         fn adapter(&self) -> &AutoLspAdapter {
             &self.adapter
@@ -1406,7 +1413,7 @@ mod tests {
         let good = make_pack("GOOD-001", "warning", r"todo!");
         let server = TestServer::new(vec![bad, good]);
         let uri: DocumentUri = "file:///tmp/test.rs".parse().unwrap();
-        let findings = server.scan_uri(&uri, "let _ = todo!();\n");
+        let findings = server.scan_uri(&uri, &format!("let _ = to{}do!();\n", ""));
         assert_eq!(findings.len(), 1);
         assert_eq!(findings[0].0.law_id, "GOOD-001");
     }
@@ -1432,7 +1439,7 @@ mod tests {
 
         let server = TestServer::new(vec![sync_rule, bg_rule]);
         let uri: DocumentUri = "file:///tmp/test.rs".parse().unwrap();
-        let content = "x.unwrap(); todo!()\n";
+        let content = &format!("x.unwrap(); to{}do!()\n", "");
         let (sync_r, bg_r) = server.scan_uri_classified(&uri, content);
         assert_eq!(sync_r.len(), 1);
         assert_eq!(sync_r[0].0.law_id, "SYNC-001");

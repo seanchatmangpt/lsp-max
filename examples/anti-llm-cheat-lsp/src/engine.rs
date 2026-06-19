@@ -89,6 +89,41 @@ fn raw_smell_ac() -> &'static AhoCorasick {
 ///
 /// - `"assert_contains"` — receiver cannot be classified from the line text.
 ///   Flagged conservatively as a potential cheat.
+/// Extract the integer literal from an `assert_eq!(expr.len(), N)` or
+/// `assert_eq!(N, expr.len())` call. Returns `None` when no literal is found
+/// or the literal cannot be parsed as `u64`.
+fn extract_len_literal(line: &str) -> Option<u64> {
+    // Scan every whitespace-delimited token; return the first that parses as u64
+    // and is adjacent to ".len()" in the line (within 30 chars).
+    let len_pos = line.find(".len()")?;
+    // Look in the 60-char window around the .len() call
+    let start = len_pos.saturating_sub(0);
+    let end = (len_pos + 30).min(line.len());
+    let window = &line[start..end];
+    for token in window.split(|c: char| !c.is_ascii_digit()) {
+        if token.is_empty() {
+            continue;
+        }
+        if let Ok(n) = token.parse::<u64>() {
+            if n > 0 {
+                return Some(n);
+            }
+        }
+    }
+    // Also scan the full line for a bare integer after the comma
+    for token in line.split(|c: char| !c.is_ascii_digit()) {
+        if token.is_empty() {
+            continue;
+        }
+        if let Ok(n) = token.parse::<u64>() {
+            if n > 0 && n <= 100 {
+                return Some(n);
+            }
+        }
+    }
+    None
+}
+
 fn classify_contains(line: &str) -> &'static str {
     // Find the `.contains(` token to examine what immediately follows the `(`.
     let Some(pos) = line.find(".contains(") else {
@@ -190,6 +225,9 @@ pub fn scan_file(filepath: &str) -> Vec<Observation> {
     if is_test_file {
         for (line_idx, line) in content.lines().enumerate() {
             let line_num = line_idx + 1;
+            let trimmed = line.trim();
+
+            // TEST-001: .contains("string literal") assertion
             if line.contains("assert") && line.contains(".contains") {
                 let construct = classify_contains(line);
                 obs.push(Observation {
@@ -207,6 +245,84 @@ pub fn scan_file(filepath: &str) -> Vec<Observation> {
                     ),
                 });
             }
+
+            // TEST-002: assert!(expr.is_ok()) with no subsequent value extraction.
+            // Proves absence of panic, not correctness of return value.
+            // Heuristic: the assertion is on its own line and ends with .is_ok())
+            // (single expression — no chained .unwrap(), .map(), etc.).
+            if trimmed.starts_with("assert!(") && trimmed.contains(".is_ok())")
+                && !trimmed.contains(".unwrap()")
+                && !trimmed.contains(".map(")
+                && !trimmed.contains(".and_then(")
+                && !trimmed.contains("unwrap_or")
+            {
+                obs.push(Observation {
+                    file_path: filepath.to_string(),
+                    start_byte: 0,
+                    end_byte: 0,
+                    line: line_num,
+                    column: 1,
+                    kind: "test_smell".to_string(),
+                    construct: "assert_is_ok_only".to_string(),
+                    context: line.to_string(),
+                    message: "assert!(expr.is_ok()) verifies no panic but not the return value \
+                        — couple with a structural check on the Ok payload or engine state"
+                        .to_string(),
+                });
+            }
+
+            // TEST-004: error-swallowing test helper — unwrap_or_default() /
+            // unwrap_or("") on a call expression whose receiver is the
+            // system under test (not a library utility).
+            // Pattern: any .unwrap_or_default() or .unwrap_or( in a test file
+            // where the receiver is a method call (indicates SUT result discarded).
+            if (trimmed.contains(".unwrap_or_default()") || trimmed.contains(".unwrap_or("))
+                && !trimmed.starts_with("//")
+                && !trimmed.starts_with("let _ =")
+            {
+                obs.push(Observation {
+                    file_path: filepath.to_string(),
+                    start_byte: 0,
+                    end_byte: 0,
+                    line: line_num,
+                    column: 1,
+                    kind: "test_smell".to_string(),
+                    construct: "test_unwrap_or_swallow".to_string(),
+                    context: line.to_string(),
+                    message: "unwrap_or_default() / unwrap_or() in test code silently converts \
+                        SUT errors into empty/default values — failures pass undetected"
+                        .to_string(),
+                });
+            }
+
+            // TEST-005: count-match assertion — assert_eq!(X.len(), N) where N
+            // is a small integer literal (≤ 100). Confirms quantity not quality;
+            // especially suspicious when N matches the number in a "write N
+            // tests" prompt. The existing TRACE-002 rule covers trace.len()
+            // specifically; this rule generalises to all .len() in test assertions.
+            if (trimmed.starts_with("assert_eq!(") || trimmed.starts_with("assert_eq! ("))
+                && trimmed.contains(".len()")
+            {
+                if let Some(count) = extract_len_literal(trimmed) {
+                    if count <= 100 {
+                        obs.push(Observation {
+                            file_path: filepath.to_string(),
+                            start_byte: 0,
+                            end_byte: 0,
+                            line: line_num,
+                            column: 1,
+                            kind: "test_smell".to_string(),
+                            construct: format!("assert_len_literal_{}", count),
+                            context: line.to_string(),
+                            message: format!(
+                                "assert_eq!(...len(), {count}) verifies quantity not quality — \
+                                combine with at least one structural element check"
+                            ),
+                        });
+                    }
+                }
+            }
+
             if !filepath.contains("dogfood.rs") && line.contains("negative_controls") {
                 obs.push(Observation {
                     file_path: filepath.to_string(),

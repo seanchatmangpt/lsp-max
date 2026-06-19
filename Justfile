@@ -116,12 +116,12 @@ qol-clean:
     @echo -e "${BLUE}➜ Pruning Cargo cache...${NC}"
     @cargo cache -a || (cargo install cargo-cache && cargo cache -a)
     @echo -e "${BLUE}➜ Cleaning deep targets (retaining incremental)...${NC}"
-    @TARGET_SIZE=$$(du -sm target 2>/dev/null | awk '{print $$1}' || echo "0"); \
-    if [ "$$TARGET_SIZE" -gt 10000 ]; then \
+    @TARGET_SIZE=$(du -sm target 2>/dev/null | awk '{print $1}' || echo "0"); \
+    if [ "$TARGET_SIZE" -gt 10000 ]; then \
         echo -e "${BLUE}➜ Target dir > 10GB. Executing deep clean...${NC}"; \
         cargo clean; \
     else \
-        echo -e "${GREEN}✓ Target dir is within acceptable limits ($${TARGET_SIZE}MB).${NC}"; \
+        echo -e "${GREEN}✓ Target dir is within acceptable limits (${TARGET_SIZE}MB).${NC}"; \
     fi
 
 # Fetches and prunes git state across the entire wasm4pm ecosystem
@@ -130,9 +130,9 @@ qol-sync:
     @echo -e "${CYAN} 🚀 AutoQoL: Cross-Ecosystem Synchronization ${NC}"
     @echo -e "${MAGENTA}============================================================${NC}"
     @for DIR in . ../wasm4pm ../wasm4pm-compat; do \
-        if [ -d "$$DIR" ]; then \
-            echo -e "${YELLOW}Syncing [$$DIR]...${NC}"; \
-            (cd "$$DIR" && git fetch --all --prune && git status -s); \
+        if [ -d "$DIR" ]; then \
+            echo -e "${YELLOW}Syncing [$DIR]...${NC}"; \
+            (cd "$DIR" && git fetch --all --prune && git status -s); \
         fi; \
     done
     @echo -e "${GREEN}✓ Ecosystem sync complete.${NC}"
@@ -310,10 +310,10 @@ release-version-bump NEWVERSION:
 
     git add Cargo.toml */Cargo.toml */*/Cargo.toml
     git commit -m "chore: bump version to {{ NEWVERSION }} for release
-
-CalVer (YY.M.D) convention enforced by ANTI-LLM-VERSION-* diagnostics.
-
-https://claude.ai/code/session_01ESRv2v2dcXUvJj7VpkohkY"
+    
+    CalVer (YY.M.D) convention enforced by ANTI-LLM-VERSION-* diagnostics.
+    
+    https://claude.ai/code/session_01ESRv2v2dcXUvJj7VpkohkY"
 
     echo -e "${GREEN}✓ Version bumped to {{ NEWVERSION }}${NC}"
 

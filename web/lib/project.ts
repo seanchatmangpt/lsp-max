@@ -528,3 +528,95 @@ export async function readDepSummary(): Promise<DepSummary> {
     npmSource: "web/package.json",
   };
 }
+
+export interface AdmissionPipelineState {
+  label: string;
+  receiptState: string;
+  axisState: string;
+  gateVerdict: string;
+}
+
+export interface ReceiptGraphRow {
+  sourceFile: string;
+  status: string | null;
+  axisState: string;
+  gateVerdict: string;
+}
+
+export interface AdmissionGraph {
+  totalAdmitted: number;
+  totalRefused: number;
+  totalUnknown: number;
+  receiptSummary: ReceiptGraphRow[];
+  pipelineStates: AdmissionPipelineState[];
+}
+
+export async function readAdmissionGraph(): Promise<AdmissionGraph> {
+  const receipts = await readReceipts();
+  
+  let totalAdmitted = 0;
+  let totalRefused = 0;
+  let totalUnknown = 0;
+  
+  const receiptSummary: ReceiptGraphRow[] = receipts.map((r) => {
+    let axisState = "unknown";
+    let gateVerdict = "REFUSED";
+    
+    if (r.status === "ADMITTED") {
+      axisState = "admitted";
+      gateVerdict = "ADMITTED";
+      totalAdmitted++;
+    } else if (r.status) {
+      axisState = "refused";
+      gateVerdict = "REFUSED";
+      totalRefused++;
+    } else {
+      axisState = "unknown";
+      gateVerdict = "REFUSED";
+      totalUnknown++;
+    }
+    
+    return {
+      sourceFile: r.sourceFile,
+      status: r.status ?? null,
+      axisState,
+      gateVerdict
+    };
+  });
+  
+  const logSrc = await fs.readFile(path.join(REPO_ROOT, "DOC_COVERAGE_LOG.md"), "utf8");
+  const witnessMatch = logSrc.match(/WITNESS admission_pipeline[^\n]*\n((?:\s+\[[A-Z]\][^\n]+\n)+)/);
+  const pipelineStates: AdmissionPipelineState[] = [];
+  if (witnessMatch) {
+    const stateRe = /\[([A-Z])\]\s+(.+?)\s+(?:→|->)\s+(.+)/g;
+    let sm: RegExpExecArray | null;
+    while ((sm = stateRe.exec(witnessMatch[1])) !== null) {
+      const label = sm[1];
+      const desc = sm[2].trim();
+      const verdictStr = sm[3].trim();
+      
+      let axisState = "unknown";
+      let gateVerdict = verdictStr.includes("true") ? "ADMITTED" : "REFUSED";
+
+      if (desc.includes("unknown")) {
+         axisState = "unknown";
+      } else if (desc.includes("tampered") || desc.includes("refused")) {
+         axisState = "refused";
+      } else if (desc.includes("verified") || desc.includes("intact")) {
+         axisState = "admitted";
+      }
+      
+      pipelineStates.push({ label, receiptState: desc, axisState, gateVerdict });
+    }
+  } else {
+    throw new Error("Missing admission_pipeline WITNESS in DOC_COVERAGE_LOG.md");
+  }
+
+  return {
+    totalAdmitted,
+    totalRefused,
+    totalUnknown,
+    receiptSummary,
+    pipelineStates,
+  };
+}

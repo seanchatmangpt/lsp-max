@@ -10,6 +10,8 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
         // assert_contains_structural: .contains(&EnumVariant) — acceptable, no diagnostic
         if o.construct == "assert_contains_string" || o.construct == "assert_contains" {
             diags.push(AntiLlmDiagnostic {
+                oracle_class: None,
+                confidence: None,
                 code: "ANTI-LLM-TEST-001".to_string(),
                 category: "test".to_string(),
                 file_path: o.file_path.clone(),
@@ -36,6 +38,8 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
 
         if o.construct == "negative_control_reference" {
             diags.push(AntiLlmDiagnostic {
+                oracle_class: None,
+                confidence: None,
                 code: "ANTI-LLM-TEST-003".to_string(),
                 category: "test".to_string(),
                 file_path: o.file_path.clone(),

@@ -40,13 +40,13 @@ echo -e "${MAGENTA}║      Codebase Health Check            ║${NC}"
 echo -e "${MAGENTA}╚════════════════════════════════════════╝${NC}"
 
 # Colors for status badges
-declare -A STATUS_COLORS=(
-  ["ADMITTED"]="${GREEN}"
-  ["CANDIDATE"]="${YELLOW}"
-  ["BLOCKED"]="${RED}"
-)
+# (Using case statements or dynamic vars instead of associative arrays for bash 3 compatibility)
 
-declare -A CHECK_RESULTS
+# Initialize check results
+CHECK_RESULT_law_compliance="UNKNOWN"
+CHECK_RESULT_format_lint="UNKNOWN"
+CHECK_RESULT_benchmarks="UNKNOWN"
+CHECK_RESULT_doc_coverage="UNKNOWN"
 
 # ============================================================================
 # Check 1: Law Compliance
@@ -55,10 +55,10 @@ echo -e "\n${BLUE}[1/4] Law Compliance Check${NC}"
 echo -e "${BLUE}────────────────────────────────────────${NC}"
 
 if bash "$SCRIPTS_DIR/check-law-compliance.sh" 2>&1; then
-  CHECK_RESULTS["law_compliance"]="ADMITTED"
+  CHECK_RESULT_law_compliance="ADMITTED"
   echo -e "${GREEN}✓ ADMITTED${NC}"
 else
-  CHECK_RESULTS["law_compliance"]="BLOCKED"
+  CHECK_RESULT_law_compliance="BLOCKED"
   OVERALL_STATUS="BLOCKED"
   EXIT_CODE=1
   echo -e "${RED}✗ BLOCKED${NC}"
@@ -71,10 +71,10 @@ echo -e "\n${BLUE}[2/4] Format & Lint Check${NC}"
 echo -e "${BLUE}────────────────────────────────────────${NC}"
 
 if bash "$SCRIPTS_DIR/format-and-check.sh" 2>&1; then
-  CHECK_RESULTS["format_lint"]="ADMITTED"
+  CHECK_RESULT_format_lint="ADMITTED"
   echo -e "${GREEN}✓ ADMITTED${NC}"
 else
-  CHECK_RESULTS["format_lint"]="BLOCKED"
+  CHECK_RESULT_format_lint="BLOCKED"
   OVERALL_STATUS="BLOCKED"
   EXIT_CODE=1
   echo -e "${RED}✗ BLOCKED${NC}"
@@ -87,11 +87,11 @@ echo -e "\n${BLUE}[3/4] Benchmark Analysis${NC}"
 echo -e "${BLUE}────────────────────────────────────────${NC}"
 
 if bash "$SCRIPTS_DIR/bench-hot-paths.sh" 2>&1; then
-  CHECK_RESULTS["benchmarks"]="ADMITTED"
+  CHECK_RESULT_benchmarks="ADMITTED"
   echo -e "${GREEN}✓ ADMITTED${NC}"
 else
   # Benchmarks failing is a regression concern but not a blocker for build
-  CHECK_RESULTS["benchmarks"]="CANDIDATE"
+  CHECK_RESULT_benchmarks="CANDIDATE"
   if [ "$OVERALL_STATUS" = "ADMITTED" ]; then
     OVERALL_STATUS="CANDIDATE"
     EXIT_CODE=2
@@ -107,10 +107,10 @@ echo -e "${BLUE}─────────────────────�
 
 if bash "$SCRIPTS_DIR/update-doc-coverage.sh" 2>&1; then
   # Doc coverage is informational; always succeeds
-  CHECK_RESULTS["doc_coverage"]="ADMITTED"
+  CHECK_RESULT_doc_coverage="ADMITTED"
   echo -e "${GREEN}✓ Log updated${NC}"
 else
-  CHECK_RESULTS["doc_coverage"]="CANDIDATE"
+  CHECK_RESULT_doc_coverage="CANDIDATE"
   echo -e "${YELLOW}⚠ Log update encountered issues${NC}"
 fi
 
@@ -121,14 +121,23 @@ echo -e "\n${MAGENTA}╔══════════════════�
 echo -e "${MAGENTA}║      Health Check Summary              ║${NC}"
 echo -e "${MAGENTA}╚════════════════════════════════════════╝${NC}"
 
-echo ""
-echo -e "Law Compliance:        ${STATUS_COLORS[${CHECK_RESULTS[law_compliance]:-UNKNOWN}]}${CHECK_RESULTS[law_compliance]:-UNKNOWN}${NC}"
-echo -e "Format & Lint:         ${STATUS_COLORS[${CHECK_RESULTS[format_lint]:-UNKNOWN}]}${CHECK_RESULTS[format_lint]:-UNKNOWN}${NC}"
-echo -e "Benchmark Analysis:    ${STATUS_COLORS[${CHECK_RESULTS[benchmarks]:-UNKNOWN}]}${CHECK_RESULTS[benchmarks]:-UNKNOWN}${NC}"
-echo -e "Doc Coverage:          ${STATUS_COLORS[${CHECK_RESULTS[doc_coverage]:-UNKNOWN}]}${CHECK_RESULTS[doc_coverage]:-UNKNOWN}${NC}"
+get_color() {
+  case "$1" in
+    "ADMITTED") echo -e "${GREEN}" ;;
+    "CANDIDATE") echo -e "${YELLOW}" ;;
+    "BLOCKED") echo -e "${RED}" ;;
+    *) echo -e "${NC}" ;;
+  esac
+}
 
 echo ""
-echo -e "Overall Status:        ${STATUS_COLORS[$OVERALL_STATUS]}$OVERALL_STATUS${NC}"
+echo -e "Law Compliance:        $(get_color "$CHECK_RESULT_law_compliance")${CHECK_RESULT_law_compliance}${NC}"
+echo -e "Format & Lint:         $(get_color "$CHECK_RESULT_format_lint")${CHECK_RESULT_format_lint}${NC}"
+echo -e "Benchmark Analysis:    $(get_color "$CHECK_RESULT_benchmarks")${CHECK_RESULT_benchmarks}${NC}"
+echo -e "Doc Coverage:          $(get_color "$CHECK_RESULT_doc_coverage")${CHECK_RESULT_doc_coverage}${NC}"
+
+echo ""
+echo -e "Overall Status:        $(get_color "$OVERALL_STATUS")$OVERALL_STATUS${NC}"
 echo ""
 
 if [ "$OVERALL_STATUS" = "ADMITTED" ]; then

@@ -154,13 +154,39 @@ fn apply_incremental(content: &str, change: &TextDocumentContentChangeEvent) -> 
     out
 }
 
+/// Convert a `(line, utf16_col)` LSP position to a UTF-8 byte offset.
+fn lsp_pos_to_byte(content: &str, line: usize, character: usize) -> usize {
+    // Walk to the start of `line`.
+    let mut byte = 0;
+    let mut current_line = 0;
+    for ch in content.chars() {
+        if current_line == line {
+            break;
+        }
+        byte += ch.len_utf8();
+        if ch == '\n' {
+            current_line += 1;
+        }
+    }
+    // Advance `character` UTF-16 code units from the line start.
+    let mut utf16 = 0;
+    for ch in content[byte..].chars() {
+        if utf16 >= character {
+            break;
+        }
+        byte += ch.len_utf8();
+        utf16 += ch.len_utf16();
+    }
+    byte.min(content.len())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use lsp_types_max::Uri as Url;
 
     fn test_url() -> Url {
-        Url::parse("file:///tmp/test.rs").unwrap()
+        std::str::FromStr::from_str("file:///tmp/test.rs").unwrap()
     }
 
     fn whole_change(text: &str) -> TextDocumentContentChangeEvent {
@@ -268,30 +294,4 @@ mod tests {
         store.open(uri.clone(), "shared".to_string(), 1);
         assert_eq!(clone.get_content(&uri).as_deref(), Some("shared"));
     }
-}
-
-/// Convert a `(line, utf16_col)` LSP position to a UTF-8 byte offset.
-fn lsp_pos_to_byte(content: &str, line: usize, character: usize) -> usize {
-    // Walk to the start of `line`.
-    let mut byte = 0;
-    let mut current_line = 0;
-    for ch in content.chars() {
-        if current_line == line {
-            break;
-        }
-        byte += ch.len_utf8();
-        if ch == '\n' {
-            current_line += 1;
-        }
-    }
-    // Advance `character` UTF-16 code units from the line start.
-    let mut utf16 = 0;
-    for ch in content[byte..].chars() {
-        if utf16 >= character {
-            break;
-        }
-        byte += ch.len_utf8();
-        utf16 += ch.len_utf16();
-    }
-    byte.min(content.len())
 }

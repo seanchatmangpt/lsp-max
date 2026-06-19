@@ -20,6 +20,8 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
             // ── TPL-001 ───────────────────────────────────────────────────────
             "ggen_template_var_mismatch" => {
                 diags.push(AntiLlmDiagnostic {
+            oracle_class: None,
+            confidence: None,
                     code: "GGEN-TPL-001".to_string(),
                     category: "ggen_template".to_string(),
                     file_path: o.file_path.clone(),
@@ -36,6 +38,8 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
             // ── YIELD-001 ─────────────────────────────────────────────────────
             "ggen_layer_violation" => {
                 diags.push(AntiLlmDiagnostic {
+            oracle_class: None,
+            confidence: None,
                     code: "GGEN-YIELD-001".to_string(),
                     category: "ggen_yield".to_string(),
                     file_path: o.file_path.clone(),
@@ -52,6 +56,8 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
             // ── YIELD-004 ─────────────────────────────────────────────────────
             "ggen_competing_authority" => {
                 diags.push(AntiLlmDiagnostic {
+            oracle_class: None,
+            confidence: None,
                     code: "GGEN-YIELD-004".to_string(),
                     category: "ggen_yield".to_string(),
                     file_path: o.file_path.clone(),
@@ -68,6 +74,8 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
             // ── YIELD-005 ─────────────────────────────────────────────────────
             "ggen_remote_fetch" => {
                 diags.push(AntiLlmDiagnostic {
+            oracle_class: None,
+            confidence: None,
                     code: "GGEN-YIELD-005".to_string(),
                     category: "ggen_yield".to_string(),
                     file_path: o.file_path.clone(),
@@ -84,6 +92,8 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
             // ── SRC-001 (also covers YIELD-002) ──────────────────────────────
             "ggen_second_class_path" => {
                 diags.push(AntiLlmDiagnostic {
+            oracle_class: None,
+            confidence: None,
                     code: "GGEN-SRC-001".to_string(),
                     category: "ggen_source".to_string(),
                     file_path: o.file_path.clone(),
@@ -100,6 +110,8 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
             // ── SRC-002 ───────────────────────────────────────────────────────
             "ggen_do_not_edit_banner" => {
                 diags.push(AntiLlmDiagnostic {
+            oracle_class: None,
+            confidence: None,
                     code: "GGEN-SRC-002".to_string(),
                     category: "ggen_source".to_string(),
                     file_path: o.file_path.clone(),
@@ -116,6 +128,8 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
             // ── SRC-003 ───────────────────────────────────────────────────────
             "ggen_lesser_source_comment" => {
                 diags.push(AntiLlmDiagnostic {
+            oracle_class: None,
+            confidence: None,
                     code: "GGEN-SRC-003".to_string(),
                     category: "ggen_source".to_string(),
                     file_path: o.file_path.clone(),
