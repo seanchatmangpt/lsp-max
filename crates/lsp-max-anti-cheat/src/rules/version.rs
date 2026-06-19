@@ -16,6 +16,8 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
             || o.context.contains("1.0.0")
         {
             diags.push(AntiLlmDiagnostic {
+            oracle_class: None,
+            confidence: None,
                 code: "ANTI-LLM-VERSION-001".to_string(),
                 category: "version".to_string(),
                 file_path: o.file_path.clone(),
@@ -34,6 +36,8 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
         // PATH-DEP with explicit non-CalVer version
         if o.construct == "path_dep_with_semver_version" {
             diags.push(AntiLlmDiagnostic {
+            oracle_class: None,
+            confidence: None,
                 code: "ANTI-LLM-VERSION-002".to_string(),
                 category: "version".to_string(),
                 file_path: o.file_path.clone(),
@@ -52,6 +56,8 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
         // [workspace.package] with non-CalVer version
         if o.construct == "workspace_semver_version" {
             diags.push(AntiLlmDiagnostic {
+                oracle_class: None,
+                confidence: None,
                 code: "ANTI-LLM-VERSION-003".to_string(),
                 category: "version".to_string(),
                 file_path: o.file_path.clone(),

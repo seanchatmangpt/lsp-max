@@ -1,9 +1,7 @@
 use clap_noun_verb_macros::verb;
 use lsp_max::{Client, LanguageServer, LspService, Server};
 use lsp_types_max::*;
-use parking_lot::RwLock;
 use regex::Regex;
-use std::collections::HashMap;
 use std::sync::OnceLock;
 
 // ── Axum-specific rules (inline — no external TOML files) ─────────────────────
@@ -44,61 +42,84 @@ const AXUM_RULES: &[AxumRule] = &[
 
 struct AxumBackend {
     client: Client,
-    /// uri → document text. Read-heavy.
-    docs: RwLock<HashMap<String, String>>,
+    index: lsp_max::rule_pack_server::WorkspaceIndex,
+    adapter: lsp_max::ast::AutoLspAdapter,
+    packs: lsp_max::rule_pack_server::ValidatedRulePackSet,
 }
 
 impl AxumBackend {
     fn new(client: Client) -> Self {
+        let rules: Vec<lsp_max::rule_pack_server::Rule> = AXUM_RULES
+            .iter()
+            .map(|r| {
+                let severity = match r.severity {
+                    DiagnosticSeverity::ERROR => "error",
+                    DiagnosticSeverity::WARNING => "warning",
+                    DiagnosticSeverity::INFORMATION => "info",
+                    DiagnosticSeverity::HINT => "hint",
+                    _ => "warning",
+                };
+                let pattern = (r.re)().as_str().to_string();
+
+                lsp_max::rule_pack_server::Rule {
+                    id: r.id.to_string(),
+                    name: r.message.to_string(),
+                    severity: severity.to_string(),
+                    pattern,
+                    path_globs: Vec::new(),
+                    exclude_globs: Vec::new(),
+                    rationale: r.message.to_string(),
+                    message: r.message.to_string(),
+                    eval_budget: lsp_max::rule_pack_server::EvalBudget::Sync,
+                }
+            })
+            .collect();
+
+        let rule_pack = lsp_max::rule_pack_server::RulePack {
+            id: "axum-pack".to_string(),
+            version: "1.0.0".to_string(),
+            rules,
+            depends_on: Vec::new(),
+        };
+
+        let packs =
+            lsp_max::rule_pack_server::ValidatedRulePackSet::new(&[rule_pack]).unwrap_or_default();
+
         Self {
             client,
-            docs: RwLock::new(HashMap::new()),
+            index: lsp_max::rule_pack_server::WorkspaceIndex::new(),
+            adapter: lsp_max::ast::AutoLspAdapter::new_default(),
+            packs,
         }
     }
+}
 
-    async fn analyze_and_publish(&self, uri_str: String, uri: Uri, text: String) {
-        let mut diags = Vec::new();
-        for (line_idx, line) in text.lines().enumerate() {
-            for rule in AXUM_RULES {
-                let re = (rule.re)();
-                if let Some(mat) = re.find(line) {
-                    diags.push(Diagnostic {
-                        range: Range {
-                            start: Position {
-                                line: line_idx as u32,
-                                character: mat.start() as u32,
-                            },
-                            end: Position {
-                                line: line_idx as u32,
-                                character: mat.end() as u32,
-                            },
-                        },
-                        severity: Some(rule.severity),
-                        code: Some(NumberOrString::String(rule.id.to_string())),
-                        source: Some("axum-lsp".to_string()),
-                        message: rule.message.to_string(),
-                        ..Default::default()
-                    });
-                }
-            }
-        }
-        self.docs.write().insert(uri_str, text);
-        self.client.publish_diagnostics(uri, diags, None).await;
+impl lsp_max::rule_pack_server::RulePackServer for AxumBackend {
+    fn rule_packs(&self) -> &lsp_max::rule_pack_server::ValidatedRulePackSet {
+        &self.packs
+    }
+    fn grammar(&self) -> tree_sitter::Language {
+        tree_sitter_rust::LANGUAGE.into()
+    }
+    fn server_name(&self) -> &'static str {
+        "axum-lsp"
+    }
+    fn client(&self) -> &Client {
+        &self.client
+    }
+    fn adapter(&self) -> &lsp_max::ast::AutoLspAdapter {
+        &self.adapter
+    }
+    fn workspace_index(&self) -> Option<&lsp_max::rule_pack_server::WorkspaceIndex> {
+        Some(&self.index)
     }
 }
 
 #[lsp_max::async_trait]
 impl LanguageServer for AxumBackend {
     async fn initialize(&self, _: InitializeParams) -> lsp_max::jsonrpc::Result<InitializeResult> {
-        Ok(InitializeResult {
-            capabilities: ServerCapabilities {
-                text_document_sync: Some(TextDocumentSyncCapability::Kind(
-                    TextDocumentSyncKind::FULL,
-                )),
-                ..Default::default()
-            },
-            ..Default::default()
-        })
+        use lsp_max::rule_pack_server::RulePackServer;
+        Ok(self.build_initialize_result())
     }
 
     async fn shutdown(&self) -> lsp_max::jsonrpc::Result<()> {
@@ -106,24 +127,18 @@ impl LanguageServer for AxumBackend {
     }
 
     async fn did_open(&self, params: DidOpenTextDocumentParams) {
-        let uri = params.text_document.uri;
-        let uri_str = uri.to_string();
-        self.analyze_and_publish(uri_str, uri, params.text_document.text)
-            .await;
+        use lsp_max::rule_pack_server::RulePackServer;
+        self.handle_did_open(params).await;
     }
 
     async fn did_change(&self, params: DidChangeTextDocumentParams) {
-        let uri = params.text_document.uri;
-        let uri_str = uri.to_string();
-        if let Some(change) = params.content_changes.into_iter().last() {
-            self.analyze_and_publish(uri_str, uri, change.text).await;
-        }
+        use lsp_max::rule_pack_server::RulePackServer;
+        self.handle_did_change(params).await;
     }
 
     async fn did_close(&self, params: DidCloseTextDocumentParams) {
-        let uri = params.text_document.uri;
-        self.docs.write().remove(&uri.to_string());
-        self.client.publish_diagnostics(uri, vec![], None).await;
+        use lsp_max::rule_pack_server::RulePackServer;
+        self.handle_did_close(params);
     }
 }
 

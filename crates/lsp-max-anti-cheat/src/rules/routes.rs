@@ -10,6 +10,8 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
             || o.context.contains("Routing to PackPlan -> Staging")
         {
             diags.push(AntiLlmDiagnostic {
+            oracle_class: None,
+            confidence: None,
                 code: "ANTI-LLM-ROUTE-001".to_string(),
                 category: "route".to_string(),
                 file_path: o.file_path.clone(),
@@ -30,6 +32,8 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
             || o.construct == "static scan as route proof"
         {
             diags.push(AntiLlmDiagnostic {
+            oracle_class: None,
+            confidence: None,
                 code: "ANTI-LLM-ROUTE-008".to_string(),
                 category: "route".to_string(),
                 file_path: o.file_path.clone(),

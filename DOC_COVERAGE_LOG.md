@@ -794,3 +794,95 @@ documented-but-unexercised (example-reachable surface): **0** active gaps.
 Build requires sibling repos (`../lsp-types-max`, `../wasm4pm-compat`,
 `../wasm4pm`). No live cargo build or example run was executed in this
 session. All items in this iteration are **CANDIDATE**, not ADMITTED.
+
+## Iteration — 2026-06-17 18:10:03 UTC · commit c1515a7 (dirty (      60 changes))
+
+### Coverage Metrics
+
+| Metric | Count | Notes |
+|---|---|---|
+| Public items (src/) |      308 | functions, types, traits, modules |
+| Doc comments |     1650 | /// documentation lines |
+| Test files |       75 | in tests/ |
+| Test functions |       65 | #[test] annotations |
+| Example files |      184 | in examples/ |
+
+### Bijection Analysis
+
+- **Ratio**: 5.36 (doc comments / public items)
+- **Coverage**: 536.0%
+- **Status**: ADMITTED
+
+ADMITTED ratio indicates:
+- **ADMITTED** (≥0.90): comprehensive documentation
+- **CANDIDATE** (0.70–0.89): good coverage, minor gaps
+- **BLOCKED** (<0.70): substantial gaps requiring remediation
+
+## Iteration — 2026-06-17 18:11:07 UTC · commit c1515a7 (dirty (      62 changes))
+
+### Coverage Metrics
+
+| Metric | Count | Notes |
+|---|---|---|
+| Public items (src/) |      308 | functions, types, traits, modules |
+| Doc comments |     1650 | /// documentation lines |
+| Test files |       75 | in tests/ |
+| Test functions |       65 | #[test] annotations |
+| Example files |      184 | in examples/ |
+
+### Bijection Analysis
+
+- **Ratio**: 5.36 (doc comments / public items)
+- **Coverage**: 536.0%
+- **Status**: ADMITTED
+
+ADMITTED ratio indicates:
+- **ADMITTED** (≥0.90): comprehensive documentation
+- **CANDIDATE** (0.70–0.89): good coverage, minor gaps
+- **BLOCKED** (<0.70): substantial gaps requiring remediation
+
+## Iteration — 2026-06-17 18:14:45 UTC · commit c1515a7 (dirty (      62 changes))
+
+### Coverage Metrics
+
+| Metric | Count | Notes |
+|---|---|---|
+| Public items (src/) |      308 | functions, types, traits, modules |
+| Doc comments |     1650 | /// documentation lines |
+| Test files |       75 | in tests/ |
+| Test functions |       65 | #[test] annotations |
+| Example files |      184 | in examples/ |
+
+### Bijection Analysis
+
+- **Ratio**: 5.36 (doc comments / public items)
+- **Coverage**: 536.0%
+- **Status**: ADMITTED
+
+ADMITTED ratio indicates:
+- **ADMITTED** (≥0.90): comprehensive documentation
+- **CANDIDATE** (0.70–0.89): good coverage, minor gaps
+- **BLOCKED** (<0.70): substantial gaps requiring remediation
+
+## Iteration — 2026-06-17 18:20:42 UTC · commit c1515a7 (dirty (      64 changes))
+
+### Coverage Metrics
+
+| Metric | Count | Notes |
+|---|---|---|
+| Public items (src/) |      308 | functions, types, traits, modules |
+| Doc comments |     1650 | /// documentation lines |
+| Test files |       75 | in tests/ |
+| Test functions |       65 | #[test] annotations |
+| Example files |      184 | in examples/ |
+
+### Bijection Analysis
+
+- **Ratio**: 5.36 (doc comments / public items)
+- **Coverage**: 536.0%
+- **Status**: ADMITTED
+
+ADMITTED ratio indicates:
+- **ADMITTED** (≥0.90): comprehensive documentation
+- **CANDIDATE** (0.70–0.89): good coverage, minor gaps
+- **BLOCKED** (<0.70): substantial gaps requiring remediation

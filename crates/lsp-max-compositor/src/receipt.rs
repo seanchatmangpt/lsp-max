@@ -220,4 +220,39 @@ mod tests {
         let r_b = CompositorReceipt::new("file:///x.ts".to_string(), &result, &prefixes_b);
         assert_ne!(r_a.prefixes_fingerprint, r_b.prefixes_fingerprint);
     }
+
+    #[test]
+    fn compositor_receipt_ocel_event_with_child_evidence() {
+        use crate::receipt_chain::ChildEvidence;
+        use lsp_max_runtime::control_plane::receipts::{
+            Blake3Hash, CryptographicReceipt, Keystore,
+        };
+        use uuid::Uuid;
+
+        let ks = Keystore::from_seed(&[7u8; 32]);
+        let mut r = CryptographicReceipt {
+            prev_hash: Blake3Hash([0u8; 32]),
+            discipline_id: Uuid::nil(),
+            law_id: Uuid::nil(),
+            consequence_hash: Blake3Hash([1u8; 32]),
+            sequence: 1,
+            signature: [0u8; 64],
+        };
+        ks.sign_receipt(&mut r);
+
+        let result = make_merge_result(false);
+        let prefixes = vec!["WASM4PM-".to_string()];
+        let evidence = vec![ChildEvidence::new("wasm4pm-lsp", r, false)];
+        let receipt = CompositorReceipt::new("file:///test.rs".to_string(), &result, &prefixes)
+            .with_child_evidence(evidence);
+
+        let event = receipt.to_ocel_event("evt-comp", "2026-06-16T00:00:00Z");
+        assert_eq!(event["id"], "evt-comp");
+        assert_eq!(event["type"], "CompositorFlush");
+        let rels = event["relationships"].as_array().unwrap();
+        assert_eq!(rels.len(), 2);
+        assert_eq!(rels[0]["qualifier"], "merged_verdict");
+        assert_eq!(rels[1]["qualifier"], "speciated_evidence");
+        assert_eq!(rels[1]["objectId"], "child_chain_wasm4pm-lsp");
+    }
 }

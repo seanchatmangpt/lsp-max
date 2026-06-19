@@ -13,6 +13,8 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
             || o.construct == "write_all"
         {
             diags.push(AntiLlmDiagnostic {
+            oracle_class: None,
+            confidence: None,
                 code: "ANTI-LLM-MUT-001".to_string(),
                 category: "mutation".to_string(),
                 file_path: o.file_path.clone(),
@@ -33,6 +35,8 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
             || o.message.contains("WorkspaceEdit used as receipt binding")
         {
             diags.push(AntiLlmDiagnostic {
+            oracle_class: None,
+            confidence: None,
                 code: "ANTI-LLM-MUT-002".to_string(),
                 category: "mutation".to_string(),
                 file_path: o.file_path.clone(),

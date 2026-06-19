@@ -31,9 +31,14 @@ fn make_did_open_params() -> DidOpenTextDocumentParams {
 async fn spawn_n_initialized(n: usize) -> Vec<ChildProcess> {
     let mut procs = Vec::with_capacity(n);
     for i in 0..n {
-        let (proc, _exit) = ChildProcess::spawn(format!("bench-{i}"), LSP_ECHO_SERVER, &[])
-            .await
-            .expect("echo server spawn");
+        let (proc, _exit) = ChildProcess::spawn(
+            format!("bench-{i}"),
+            LSP_ECHO_SERVER,
+            &[],
+            lsp_max_compositor::child_process::NoopClient,
+        )
+        .await
+        .expect("echo server spawn");
         proc.initialize(None).await.expect("initialize");
         procs.push(proc);
     }

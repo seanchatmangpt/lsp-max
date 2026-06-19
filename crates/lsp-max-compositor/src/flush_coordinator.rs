@@ -20,6 +20,7 @@ use crate::diagnostic_buffer::DiagnosticBuffer;
 use crate::gate_file::GateFile;
 use crate::merge::MergeContext;
 use crate::receipt::CompositorReceipt;
+use crate::receipt_chain::ChildEvidence;
 
 const MIN_WAIT: Duration = Duration::from_millis(1);
 const MAX_WAIT: Duration = Duration::from_millis(30);
@@ -148,8 +149,11 @@ impl FlushCoordinator {
                     continue;
                 }
 
+                let mut uri_deposited_servers: HashMap<String, HashSet<String>> = HashMap::new();
                 for uri in &ready {
-                    per_uri.remove(uri);
+                    if let Some(state) = per_uri.remove(uri) {
+                        uri_deposited_servers.insert(uri.clone(), state.deposited);
+                    }
                 }
 
                 let pending: HashSet<String> = ready.into_iter().collect();
@@ -211,8 +215,77 @@ impl FlushCoordinator {
                             .await;
                     }
 
+                    let mut child_evidences = Vec::new();
+                    if let Some(servers) = uri_deposited_servers.get(uri) {
+                        for server_id in servers {
+                            if let Some(proc_ref) = pool.get(server_id) {
+                                let handle = &proc_ref.handle;
+                                if let Ok(Some(snapshot_id)) = handle
+                                    .request::<lsp_max::max_protocol::SnapshotId>(
+                                        "max/snapshot",
+                                        (),
+                                    )
+                                    .await
+                                {
+                                    if let Ok(Some(bundle)) = handle
+                                        .request::<lsp_max::max_protocol::AnalysisBundle>(
+                                            "max/exportAnalysisBundle",
+                                            snapshot_id,
+                                        )
+                                        .await
+                                    {
+                                        let mut has_andon_contribution =
+                                            result.diagnostics.iter().any(|d| {
+                                                d.server_id.as_deref() == Some(server_id)
+                                                    && d.severity == 1
+                                                    && ctx
+                                                        .andon_prefixes()
+                                                        .iter()
+                                                        .any(|p| d.code.starts_with(p))
+                                            });
+                                        if !has_andon_contribution {
+                                            has_andon_contribution = bundle.diagnostics.iter().any(|d| {
+                                                d.lsp.severity == Some(lsp_max::lsp_types::DiagnosticSeverity::ERROR)
+                                                    && ctx.andon_prefixes().iter().any(|p| d.lsp.code.as_ref().map(|c| {
+                                                        match c {
+                                                            lsp_max::lsp_types::NumberOrString::String(s) => s.starts_with(p),
+                                                            lsp_max::lsp_types::NumberOrString::Number(n) => n.to_string().starts_with(p),
+                                                        }
+                                                    }).unwrap_or(false))
+                                            });
+                                        }
+
+                                        for receipt in &bundle.receipts {
+                                            let crypto_receipt = if let Ok(cr) = serde_json::from_str::<lsp_max_runtime::control_plane::receipts::CryptographicReceipt>(&receipt.receipt_id) {
+                                                cr
+                                            } else {
+                                                let consequence_hash = decode_hex(&receipt.hash).unwrap_or([0u8; 32]);
+                                                let prev_hash = receipt.prev_receipt_hash.as_deref().and_then(|h| decode_hex(h).ok()).unwrap_or([0u8; 32]);
+                                                lsp_max_runtime::control_plane::receipts::CryptographicReceipt {
+                                                    prev_hash: lsp_max_runtime::control_plane::receipts::Blake3Hash(prev_hash),
+                                                    discipline_id: uuid::Uuid::nil(),
+                                                    law_id: uuid::Uuid::nil(),
+                                                    consequence_hash: lsp_max_runtime::control_plane::receipts::Blake3Hash(consequence_hash),
+                                                    sequence: 0,
+                                                    signature: [0u8; 64],
+                                                }
+                                            };
+                                            let child_evidence = ChildEvidence::new(
+                                                server_id.clone(),
+                                                crypto_receipt,
+                                                has_andon_contribution,
+                                            );
+                                            child_evidences.push(child_evidence);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
                     let receipt =
-                        CompositorReceipt::new(uri.clone(), &result, ctx.andon_prefixes());
+                        CompositorReceipt::new(uri.clone(), &result, ctx.andon_prefixes())
+                            .with_child_evidence(child_evidences);
                     match receipt.status() {
                         crate::receipt::ReceiptStatus::Blocked => {
                             tracing::error!(
@@ -232,6 +305,38 @@ impl FlushCoordinator {
                                 "compositor-receipt: flush ADMITTED"
                             );
                         }
+                    }
+
+                    let event_id = uuid::Uuid::new_v4().to_string();
+                    let timestamp = chrono::Utc::now().to_rfc3339();
+                    let compositor_event = receipt.to_ocel_event(&event_id, &timestamp);
+                    let mut events_to_log = vec![compositor_event];
+                    for (idx, ev) in receipt.child_evidence.iter().enumerate() {
+                        let child_event_id = format!("{}-child-{}", event_id, idx);
+                        let child_event = ev.to_ocel_event(
+                            &child_event_id,
+                            &timestamp,
+                            &receipt.merge_object_id(),
+                        );
+                        events_to_log.push(child_event);
+                    }
+
+                    let log_path = gate.path().with_extension("ocel.jsonl");
+                    if let Ok(mut file) = std::fs::OpenOptions::new()
+                        .create(true)
+                        .append(true)
+                        .open(&log_path)
+                    {
+                        use std::io::Write;
+                        for event_val in events_to_log {
+                            if let Ok(json_str) = serde_json::to_string(&event_val) {
+                                if let Err(e) = writeln!(file, "{}", json_str) {
+                                    tracing::warn!(error = %e, "flush-coordinator: failed to write OCEL event to log file");
+                                }
+                            }
+                        }
+                    } else {
+                        tracing::warn!(path = %log_path.display(), "flush-coordinator: failed to open OCEL log file");
                     }
 
                     // Compute per-server acks from the merge result and notify child servers.
@@ -317,4 +422,17 @@ impl FlushCoordinator {
     pub fn signal_drop_count(&self) -> u64 {
         self.drop_counter.load(Ordering::Relaxed)
     }
+}
+
+fn decode_hex(s: &str) -> Result<[u8; 32], String> {
+    if s.len() != 64 {
+        return Err(format!("Invalid hex string length: {}", s.len()));
+    }
+    let mut bytes = [0u8; 32];
+    for i in 0..32 {
+        let hex_slice = &s[i * 2..i * 2 + 2];
+        bytes[i] = u8::from_str_radix(hex_slice, 16)
+            .map_err(|e| format!("Failed to parse hex slice {}: {}", hex_slice, e))?;
+    }
+    Ok(bytes)
 }

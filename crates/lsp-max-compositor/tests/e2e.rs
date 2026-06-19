@@ -13,7 +13,13 @@ const LSP_ECHO_SERVER: &str = env!("CARGO_BIN_EXE_lsp-echo-server");
 /// correct server_id and a usable handle.
 #[tokio::test]
 async fn child_process_spawn_echo_server_establishes_connection() {
-    let result = ChildProcess::spawn("echo-server".to_string(), LSP_ECHO_SERVER, &[]).await;
+    let result = ChildProcess::spawn(
+        "echo-server".to_string(),
+        LSP_ECHO_SERVER,
+        &[],
+        lsp_max_compositor::child_process::NoopClient,
+    )
+    .await;
 
     match result {
         Ok((proc, _exit_fut)) => {
@@ -36,7 +42,14 @@ async fn child_process_pool_spawn_and_snapshot() {
     let pool = ChildProcessPool::new();
     assert_eq!(pool.server_ids_snapshot().len(), 0);
 
-    match ChildProcess::spawn("echo-pool-test".to_string(), LSP_ECHO_SERVER, &[]).await {
+    match ChildProcess::spawn(
+        "echo-pool-test".to_string(),
+        LSP_ECHO_SERVER,
+        &[],
+        lsp_max_compositor::child_process::NoopClient,
+    )
+    .await
+    {
         Ok((proc, _exit_fut)) => {
             pool.register("echo-pool-test".to_string(), proc);
             let ids = pool.server_ids_snapshot();

@@ -20,6 +20,8 @@ pub fn evaluate(obs: &[Observation], config: &AntiLlmConfig) -> Vec<AntiLlmDiagn
                 )
             };
             diags.push(AntiLlmDiagnostic {
+                oracle_class: None,
+                confidence: None,
                 code: "ANTI-LLM-SURFACE-001".to_string(),
                 category: "surface".to_string(),
                 file_path: o.file_path.clone(),
@@ -41,6 +43,8 @@ pub fn evaluate(obs: &[Observation], config: &AntiLlmConfig) -> Vec<AntiLlmDiagn
 
         if o.construct == "PackObserver" || o.message.contains("observer dependency") {
             diags.push(AntiLlmDiagnostic {
+                oracle_class: None,
+                confidence: None,
                 code: "ANTI-LLM-SURFACE-003".to_string(),
                 category: "surface".to_string(),
                 file_path: o.file_path.clone(),
@@ -60,6 +64,8 @@ pub fn evaluate(obs: &[Observation], config: &AntiLlmConfig) -> Vec<AntiLlmDiagn
 
         if o.construct == "initialize without 3.18 caps" {
             diags.push(AntiLlmDiagnostic {
+                oracle_class: None,
+                confidence: None,
                 code: "ANTI-LLM-SURFACE-005".to_string(),
                 category: "surface".to_string(),
                 file_path: o.file_path.clone(),

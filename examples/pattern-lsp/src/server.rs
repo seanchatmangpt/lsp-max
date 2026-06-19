@@ -2,99 +2,81 @@ use clap_noun_verb::Result;
 use clap_noun_verb_macros::verb;
 use lsp_max::{Client, LanguageServer, LspService, Server};
 use lsp_types_max::*;
-use parking_lot::RwLock;
 use serde::Serialize;
-use std::collections::HashMap;
-use std::sync::OnceLock;
-
-use crate::scanner::scan_document;
-
-// ── Compiled-once severity map ────────────────────────────────────────────────
-
-fn severity_map() -> &'static HashMap<&'static str, DiagnosticSeverity> {
-    static MAP: OnceLock<HashMap<&'static str, DiagnosticSeverity>> = OnceLock::new();
-    MAP.get_or_init(|| {
-        let mut m = HashMap::new();
-        m.insert("error", DiagnosticSeverity::ERROR);
-        m.insert("warning", DiagnosticSeverity::WARNING);
-        m.insert("info", DiagnosticSeverity::INFORMATION);
-        m.insert("hint", DiagnosticSeverity::HINT);
-        m
-    })
-}
-
-// ── Backend ───────────────────────────────────────────────────────────────────
 
 struct PatternLsp {
     client: Client,
-    /// uri → document text. Read-heavy: written on open/change, read on diagnostics.
-    docs: RwLock<HashMap<String, String>>,
+    index: lsp_max::rule_pack_server::WorkspaceIndex,
+    adapter: lsp_max::ast::AutoLspAdapter,
+    packs: lsp_max::rule_pack_server::ValidatedRulePackSet,
 }
 
 impl PatternLsp {
     fn new(client: Client) -> Self {
+        let mut rules = Vec::new();
+        let rules_dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("rules");
+
+        if rules_dir.exists() {
+            if let Ok(entries) = std::fs::read_dir(rules_dir) {
+                for entry in entries.flatten() {
+                    if entry.path().extension().and_then(|e| e.to_str()) == Some("toml") {
+                        if let Ok(content) = std::fs::read_to_string(entry.path()) {
+                            if let Ok(pack) =
+                                toml::from_str::<lsp_max::rule_pack_server::RulePack>(&content)
+                            {
+                                rules.extend(pack.rules);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        let rule_pack = lsp_max::rule_pack_server::RulePack {
+            id: "pattern-pack".to_string(),
+            version: "1.0.0".to_string(),
+            rules,
+            depends_on: Vec::new(),
+        };
+
+        let packs =
+            lsp_max::rule_pack_server::ValidatedRulePackSet::new(&[rule_pack]).unwrap_or_default();
+
         Self {
             client,
-            docs: RwLock::new(HashMap::new()),
+            index: lsp_max::rule_pack_server::WorkspaceIndex::new(),
+            adapter: lsp_max::ast::AutoLspAdapter::new_default(),
+            packs,
         }
     }
+}
 
-    async fn analyze_and_publish(&self, uri_str: String, uri: Uri, text: String) {
-        let findings = scan_document(&uri_str, &text).unwrap_or_default();
-
-        let diags: Vec<Diagnostic> = findings
-            .into_iter()
-            .map(|f| {
-                let severity = severity_map()
-                    .get(f.severity.to_lowercase().as_str())
-                    .copied()
-                    .unwrap_or(DiagnosticSeverity::WARNING);
-                let line = (f.line.saturating_sub(1)) as u32;
-                let col = (f.column.saturating_sub(1)) as u32;
-                Diagnostic {
-                    range: Range {
-                        start: Position {
-                            line,
-                            character: col,
-                        },
-                        end: Position {
-                            line,
-                            character: col + f.matched_text.len() as u32,
-                        },
-                    },
-                    severity: Some(severity),
-                    code: Some(NumberOrString::String(f.rule_id)),
-                    source: Some("pattern-lsp".to_string()),
-                    message: f.matched_text,
-                    ..Default::default()
-                }
-            })
-            .collect();
-
-        self.docs.write().insert(uri_str, text);
-        self.client.publish_diagnostics(uri, diags, None).await;
+impl lsp_max::rule_pack_server::RulePackServer for PatternLsp {
+    fn rule_packs(&self) -> &lsp_max::rule_pack_server::ValidatedRulePackSet {
+        &self.packs
+    }
+    fn grammar(&self) -> tree_sitter::Language {
+        tree_sitter_rust::LANGUAGE.into()
+    }
+    fn server_name(&self) -> &'static str {
+        "pattern-lsp"
+    }
+    fn client(&self) -> &Client {
+        &self.client
+    }
+    fn adapter(&self) -> &lsp_max::ast::AutoLspAdapter {
+        &self.adapter
+    }
+    fn workspace_index(&self) -> Option<&lsp_max::rule_pack_server::WorkspaceIndex> {
+        Some(&self.index)
     }
 }
 
 #[lsp_max::async_trait]
 impl LanguageServer for PatternLsp {
     async fn initialize(&self, _: InitializeParams) -> lsp_max::jsonrpc::Result<InitializeResult> {
-        Ok(InitializeResult {
-            capabilities: ServerCapabilities {
-                text_document_sync: Some(TextDocumentSyncCapability::Kind(
-                    TextDocumentSyncKind::FULL,
-                )),
-                diagnostic_provider: Some(DiagnosticServerCapabilities::Options(
-                    DiagnosticOptions {
-                        inter_file_dependencies: false,
-                        workspace_diagnostics: false,
-                        ..Default::default()
-                    },
-                )),
-                ..Default::default()
-            },
-            ..Default::default()
-        })
+        use lsp_max::rule_pack_server::RulePackServer;
+        Ok(self.build_initialize_result())
     }
 
     async fn shutdown(&self) -> lsp_max::jsonrpc::Result<()> {
@@ -102,36 +84,33 @@ impl LanguageServer for PatternLsp {
     }
 
     async fn did_open(&self, params: DidOpenTextDocumentParams) {
-        let uri = params.text_document.uri;
-        let uri_str = uri.to_string();
-        let text = params.text_document.text;
-        self.analyze_and_publish(uri_str, uri, text).await;
+        use lsp_max::rule_pack_server::RulePackServer;
+        self.handle_did_open(params).await;
     }
 
     async fn did_change(&self, params: DidChangeTextDocumentParams) {
-        let uri = params.text_document.uri;
-        let uri_str = uri.to_string();
-        if let Some(change) = params.content_changes.into_iter().last() {
-            self.analyze_and_publish(uri_str, uri, change.text).await;
-        }
+        use lsp_max::rule_pack_server::RulePackServer;
+        self.handle_did_change(params).await;
     }
 
     async fn did_close(&self, params: DidCloseTextDocumentParams) {
-        let uri = params.text_document.uri;
-        self.docs.write().remove(&uri.to_string());
-        self.client.publish_diagnostics(uri, vec![], None).await;
+        use lsp_max::rule_pack_server::RulePackServer;
+        self.handle_did_close(params);
     }
 
     async fn did_save(&self, params: DidSaveTextDocumentParams) {
-        let uri = params.text_document.uri;
-        let uri_str = uri.to_string();
-        let text = {
-            let docs = self.docs.read();
-            docs.get(&uri_str).cloned()
+        use lsp_max::rule_pack_server::RulePackServer;
+        let uri = &params.text_document.uri;
+        let content = if let Some(index) = self.workspace_index() {
+            index
+                .get(uri.as_str())
+                .map(|doc| doc.content.clone())
+                .unwrap_or_default()
+        } else {
+            String::new()
         };
-        if let Some(t) = text.or(params.text) {
-            self.analyze_and_publish(uri_str, uri, t).await;
-        }
+        self.publish_findings_classified(uri.clone(), &content)
+            .await;
     }
 }
 

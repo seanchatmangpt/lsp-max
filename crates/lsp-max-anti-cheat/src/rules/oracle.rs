@@ -20,6 +20,8 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
             // ORACLE-001: lazy_static initialized from env
             "lazy_static_env_init" if !is_test_path(&o.file_path) => {
                 diags.push(AntiLlmDiagnostic {
+            oracle_class: None,
+            confidence: None,
                     code: "ANTI-LLM-ORACLE-001".to_string(),
                     category: "oracle".to_string(),
                     file_path: o.file_path.clone(),
@@ -41,6 +43,8 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
             // ORACLE-002: transmute / raw pointer cast
             "transmute_cast" if !is_test_path(&o.file_path) => {
                 diags.push(AntiLlmDiagnostic {
+            oracle_class: None,
+            confidence: None,
                     code: "ANTI-LLM-ORACLE-002".to_string(),
                     category: "oracle".to_string(),
                     file_path: o.file_path.clone(),
@@ -62,6 +66,8 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
             // ORACLE-003: global HashMap literal (string key → value memo table)
             "global_hashmap_literal" if is_breed_src(&o.file_path) => {
                 diags.push(AntiLlmDiagnostic {
+            oracle_class: None,
+            confidence: None,
                     code: "ANTI-LLM-ORACLE-003".to_string(),
                     category: "oracle".to_string(),
                     file_path: o.file_path.clone(),
@@ -83,6 +89,8 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
             // ORACLE-004: std::env::var in production path
             "env_var_in_prod" if !is_test_path(&o.file_path) => {
                 diags.push(AntiLlmDiagnostic {
+            oracle_class: None,
+            confidence: None,
                     code: "ANTI-LLM-ORACLE-004".to_string(),
                     category: "oracle".to_string(),
                     file_path: o.file_path.clone(),
@@ -104,6 +112,8 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
             // ORACLE-005: single-expression trait impl (suspicious but not blocking alone)
             "trait_impl_single_expr" if is_breed_src(&o.file_path) => {
                 diags.push(AntiLlmDiagnostic {
+            oracle_class: None,
+            confidence: None,
                     code: "ANTI-LLM-ORACLE-005".to_string(),
                     category: "oracle".to_string(),
                     file_path: o.file_path.clone(),
@@ -125,6 +135,8 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
             // ORACLE-006: float literal in known oracle value range in breed src
             "const_suspicious_float" if is_breed_src(&o.file_path) => {
                 diags.push(AntiLlmDiagnostic {
+            oracle_class: None,
+            confidence: None,
                     code: "ANTI-LLM-ORACLE-006".to_string(),
                     category: "oracle".to_string(),
                     file_path: o.file_path.clone(),

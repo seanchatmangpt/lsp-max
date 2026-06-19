@@ -8,6 +8,8 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
         // Check for test result treated as receipt
         if o.construct == "test result: ok" {
             diags.push(AntiLlmDiagnostic {
+            oracle_class: None,
+            confidence: None,
                 code: "ANTI-LLM-RECEIPT-001".to_string(),
                 category: "receipt".to_string(),
                 file_path: o.file_path.clone(),
@@ -26,6 +28,8 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
         // Check for log message treated as receipt
         if o.construct == "LogMessage => Receipt" || o.message.contains("LogMessage => Receipt") {
             diags.push(AntiLlmDiagnostic {
+            oracle_class: None,
+            confidence: None,
                 code: "ANTI-LLM-RECEIPT-002".to_string(),
                 category: "receipt".to_string(),
                 file_path: o.file_path.clone(),
@@ -46,6 +50,8 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
             || o.construct == "missing digest"
         {
             diags.push(AntiLlmDiagnostic {
+                oracle_class: None,
+                confidence: None,
                 code: "ANTI-LLM-RECEIPT-003".to_string(),
                 category: "receipt".to_string(),
                 file_path: o.file_path.clone(),

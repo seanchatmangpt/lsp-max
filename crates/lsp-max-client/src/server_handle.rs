@@ -40,7 +40,7 @@ impl ServerHandle {
     }
 
     /// Helper to send a request and await a correlated response.
-    async fn request<R>(
+    pub async fn request<R>(
         &self,
         method: &str,
         params: impl serde::Serialize,

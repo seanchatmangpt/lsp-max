@@ -56,7 +56,19 @@ impl lsp_max::LanguageServer for CompositorServer {
             if let Some(cmd) = &entry.command {
                 let eff_args = entry.effective_args();
                 let args: Vec<&str> = eff_args.iter().map(|s| s.as_str()).collect();
-                match crate::child_process::ChildProcess::spawn(entry.id.clone(), cmd, &args).await
+                let client = crate::compositor_client::CompositorClient::new(
+                    entry.id.clone(),
+                    crate::registry::ChildTier::from_priority(&entry.priority),
+                    Arc::clone(&self.buffer),
+                )
+                .with_flush_coordinator(Arc::clone(&self.flush_coord));
+                match crate::child_process::ChildProcess::spawn(
+                    entry.id.clone(),
+                    cmd,
+                    &args,
+                    client,
+                )
+                .await
                 {
                     Ok((proc, exit_fut)) => {
                         let tier = crate::registry::ChildTier::from_priority(&entry.priority);
