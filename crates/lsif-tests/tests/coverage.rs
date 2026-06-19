@@ -410,6 +410,10 @@ impl S {
         // single-file snippet emits monikers but no nextMoniker edge. Its
         // registry status is `OpenSubstrate`.
         "nextMoniker",
+        // `belongsTo` links a moniker to its packageInformation vertex; the rust
+        // indexer emits neither in a single-file snippet, so this edge does not
+        // appear. Its registry status is `OpenSubstrate`.
+        "belongsTo",
     ];
 
     for (label, _) in BUILDER_EDGE_LABELS {
