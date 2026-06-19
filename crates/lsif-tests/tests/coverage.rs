@@ -342,6 +342,10 @@ pub fn add(a: u32, b: u32) -> u32 {
         "source",
         "resultRange",
         "packageInformation",
+        // The `capabilities` vertex is emittable via `LsifBuilder` but is not
+        // produced by the rust indexer's single-file dump; its registry status
+        // is `OpenSubstrate`.
+        "capabilities",
     ];
 
     for (label, _) in BUILDER_VERTEX_LABELS {
@@ -402,6 +406,10 @@ impl S {
         "textDocument/semanticTokens/full",
         "attach",
         "packageInformation",
+        // `nextMoniker` chains monikers across import/export boundaries; the
+        // single-file snippet emits monikers but no nextMoniker edge. Its
+        // registry status is `OpenSubstrate`.
+        "nextMoniker",
     ];
 
     for (label, _) in BUILDER_EDGE_LABELS {
