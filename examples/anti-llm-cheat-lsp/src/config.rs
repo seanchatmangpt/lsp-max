@@ -22,8 +22,19 @@
 /// # this list suppresses any residual false positives in known paths.
 /// structural_check_paths = ["tests/strict_contracts.rs"]
 /// ```
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::path::Path;
+
+/// A user-defined forbidden string pattern loaded from `anti.toml`.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ForbiddenPattern {
+    pub name: String,
+    pub pattern: String,
+    pub files: Option<Vec<String>>,
+    pub code: String,
+    pub message: String,
+    pub blocking: Option<bool>,
+}
 
 #[derive(Debug, Default, Deserialize)]
 pub struct AntiLlmConfig {
@@ -33,6 +44,8 @@ pub struct AntiLlmConfig {
     pub surface: SurfaceConfig,
     #[serde(default)]
     pub test: TestConfig,
+    #[serde(default)]
+    pub forbidden_string_patterns: Vec<ForbiddenPattern>,
 }
 
 /// Configuration for CLAIM-004 victory language detection.
@@ -71,7 +84,15 @@ impl AntiLlmConfig {
     /// Load config from `anti-llm.toml` in `dirpath`. Returns a default
     /// (all-empty) config if the file is absent or unparseable.
     pub fn load_from_dir(dirpath: &str) -> Self {
-        let config_path = Path::new(dirpath).join("anti-llm.toml");
+        // Prefer anti.toml; fall back to anti-llm.toml for backwards compat.
+        let config_path = {
+            let p = Path::new(dirpath).join("anti.toml");
+            if p.is_file() {
+                p
+            } else {
+                Path::new(dirpath).join("anti-llm.toml")
+            }
+        };
         if !config_path.is_file() {
             return Self::default();
         }
