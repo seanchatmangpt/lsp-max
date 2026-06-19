@@ -382,12 +382,12 @@ fn parse_fitness(msg: &str) -> Option<f32> {
 #[derive(Debug)]
 struct Backend {
     client: Client,
-    documents: Arc<DashMap<Url, DocumentState>>,
+    documents: Arc<DashMap<Uri, DocumentState>>,
 }
 
 impl Backend {
-    async fn store_and_diagnose(&self, uri: Url, text: String) {
-        let issues = if uri.path().as_str().ends_with(".ocel.json") {
+    async fn store_and_diagnose(&self, uri: Uri, text: String) {
+        let issues = if uri.as_str().ends_with(".ocel.json") {
             analyze_ocel(&text)
         } else {
             vec![]
@@ -406,7 +406,7 @@ impl Backend {
 
         // Build push diagnostics
         let mut diags = Vec::new();
-        let path = uri.path().to_string();
+        let path = uri.as_str().to_string();
 
         if path.ends_with(".ocel.json") {
             for issue in &issues {
@@ -567,7 +567,7 @@ impl Backend {
         self.client.publish_diagnostics(uri, diags, None).await;
     }
 
-    fn get_doc(&self, uri: &Url) -> Option<dashmap::mapref::one::Ref<'_, Url, DocumentState>> {
+    fn get_doc(&self, uri: &Uri) -> Option<dashmap::mapref::one::Ref<'_, Uri, DocumentState>> {
         self.documents.get(uri)
     }
 }
@@ -1773,7 +1773,7 @@ async fn main() {
     let stdin = tokio::io::stdin();
     let stdout = tokio::io::stdout();
 
-    let documents: Arc<DashMap<Url, DocumentState>> = Arc::new(DashMap::new());
+    let documents: Arc<DashMap<Uri, DocumentState>> = Arc::new(DashMap::new());
     let (service, socket) = LspService::new(|client| Backend {
         client,
         documents: documents.clone(),

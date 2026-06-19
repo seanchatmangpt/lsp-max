@@ -16,7 +16,7 @@ all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
-lsp-max-macros = { path = "../../lsp-max-macros", version = "26.6.9" }
+lsp-max-macros = { path = "../../lsp-max-macros", version = "26.6.18" }
 lsp-types = { package = "lsp-types-max", path = "../../../lsp-types-max", version = "26.6.5" }
 tower = { version = "0.4", features = ["util"] }
 serde = { version = "1.0", features = ["derive"] }

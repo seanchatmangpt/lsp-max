@@ -207,8 +207,7 @@ pub fn capability_supports_method(caps: &lsp_types_max::ServerCapabilities, meth
             if let Some(ref p) = caps.declaration_provider {
                 match p {
                     lsp_types_max::DeclarationCapability::Simple(b) => *b,
-                    lsp_types_max::DeclarationCapability::RegistrationOptions(_) => true,
-                    lsp_types_max::DeclarationCapability::Options(_) => true,
+                    _ => true,
                 }
             } else {
                 false
@@ -218,7 +217,7 @@ pub fn capability_supports_method(caps: &lsp_types_max::ServerCapabilities, meth
             if let Some(ref p) = caps.implementation_provider {
                 match p {
                     lsp_types_max::ImplementationProviderCapability::Simple(b) => *b,
-                    lsp_types_max::ImplementationProviderCapability::Options(_) => true,
+                    _ => true,
                 }
             } else {
                 false
@@ -226,6 +225,16 @@ pub fn capability_supports_method(caps: &lsp_types_max::ServerCapabilities, meth
         }
         "textDocument/references" => {
             if let Some(ref p) = caps.references_provider {
+                match p {
+                    lsp_types_max::OneOf::Left(b) => *b,
+                    lsp_types_max::OneOf::Right(_) => true,
+                }
+            } else {
+                false
+            }
+        }
+        "textDocument/documentHighlight" => {
+            if let Some(ref p) = caps.document_highlight_provider {
                 match p {
                     lsp_types_max::OneOf::Left(b) => *b,
                     lsp_types_max::OneOf::Right(_) => true,
@@ -244,6 +253,17 @@ pub fn capability_supports_method(caps: &lsp_types_max::ServerCapabilities, meth
                 false
             }
         }
+        "textDocument/codeAction" => {
+            if let Some(ref p) = caps.code_action_provider {
+                match p {
+                    lsp_types_max::CodeActionProviderCapability::Simple(b) => *b,
+                    lsp_types_max::CodeActionProviderCapability::Options(_) => true,
+                }
+            } else {
+                false
+            }
+        }
+        "textDocument/codeLens" => caps.code_lens_provider.is_some(),
         "textDocument/formatting" => {
             if let Some(ref p) = caps.document_formatting_provider {
                 match p {
@@ -264,6 +284,7 @@ pub fn capability_supports_method(caps: &lsp_types_max::ServerCapabilities, meth
                 false
             }
         }
+        "textDocument/onTypeFormatting" => caps.document_on_type_formatting_provider.is_some(),
         "textDocument/rename" => {
             if let Some(ref p) = caps.rename_provider {
                 match p {
@@ -274,16 +295,7 @@ pub fn capability_supports_method(caps: &lsp_types_max::ServerCapabilities, meth
                 false
             }
         }
-        "textDocument/codeAction" => {
-            if let Some(ref p) = caps.code_action_provider {
-                match p {
-                    lsp_types_max::CodeActionProviderCapability::Simple(b) => *b,
-                    lsp_types_max::CodeActionProviderCapability::Options(_) => true,
-                }
-            } else {
-                false
-            }
-        }
+
         "textDocument/semanticTokens/full"
         | "textDocument/semanticTokens/full/delta"
         | "textDocument/semanticTokens/range" => caps.semantic_tokens_provider.is_some(),

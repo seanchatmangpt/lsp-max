@@ -28,6 +28,8 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
                     "Replace fake CLAP concepts with the concrete clap-noun-verb component."
                         .to_string(),
                 required_next_proof: "Verify command admission via clap-noun-verb.".to_string(),
+                oracle_class: None,
+                confidence: None,
             });
         }
 
@@ -46,7 +48,9 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
                 blocking: true,
                 required_correction: "Avoid raw string checking for command execution; route only via noun/verb admission registry.".to_string(),
                 required_next_proof: "Route command through clap-noun-verb registry.".to_string(),
-            });
+                            oracle_class: None,
+                confidence: None,
+});
         }
     }
 

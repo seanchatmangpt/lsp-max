@@ -53,7 +53,7 @@ const MAX_EXIT_OBSERVE_POLLS: usize = 16;
 ///
 /// This socket handles the server-to-client half of the bidirectional communication stream.
 ///
-/// See also: [`examples/transport_utilities_explained.rs`] — a run-to-exit witness that
+/// See also: `examples/transport_utilities_explained.rs` — a run-to-exit witness that
 /// demonstrates `Loopback`, `ExitedError`, and `ClientSocket` with real `assert!`s.
 pub trait Loopback {
     /// Yields a stream of pending server-to-client requests.
