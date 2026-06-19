@@ -16,7 +16,7 @@ Admissibility detection library that identifies patterns incompatible with law-s
 use lsp_max_anti_cheat::{engine::scan_directory, engine::evaluate_diagnostics};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let observations = scan_directory("./")?;
+    let observations = scan_directory("./");
     let diagnostics = evaluate_diagnostics(&observations);
     
     for diag in diagnostics {

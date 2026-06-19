@@ -13,7 +13,7 @@ use tokio::process::Command;
 /// A no-op implementation of `LanguageClient` used when the compositor does not
 /// need to handle server-to-client reverse-requests (diagnostics are collected
 /// via the diagnostic buffer, not via this path).
-struct NoopClient;
+pub struct NoopClient;
 
 #[async_trait::async_trait]
 impl LanguageClient for NoopClient {}
@@ -35,14 +35,18 @@ impl ChildProcess {
     /// `command`: path to the server binary (e.g. "/usr/local/bin/wasm4pm-lsp")
     /// `args`: server arguments (e.g. ["serve", "--stdio"])
     /// `server_id`: logical name for this server (from lsp-max.toml)
-    pub async fn spawn(
+    pub async fn spawn<C>(
         server_id: String,
         command: &str,
         args: &[&str],
+        client: C,
     ) -> std::io::Result<(
         Self,
         impl std::future::Future<Output = std::io::Result<std::process::ExitStatus>>,
-    )> {
+    )>
+    where
+        C: LanguageClient,
+    {
         let mut child = Command::new(command)
             .args(args)
             .stdin(Stdio::piped())
@@ -53,7 +57,7 @@ impl ChildProcess {
         let stdin = child.stdin.take().expect("stdin piped");
         let stdout = child.stdout.take().expect("stdout piped");
 
-        let handle = ClientBuilder::new().build(NoopClient, stdout, stdin);
+        let handle = ClientBuilder::new().build(client, stdout, stdin);
 
         // Background task owns the Child so wait() has exclusive &mut access.
         // The oneshot carries the ExitStatus back to the caller's future.
@@ -120,7 +124,8 @@ impl ChildProcessPool {
         command: &str,
         args: &[&str],
     ) -> std::io::Result<()> {
-        let (proc, exit_fut) = ChildProcess::spawn(server_id.clone(), command, args).await?;
+        let (proc, exit_fut) =
+            ChildProcess::spawn(server_id.clone(), command, args, NoopClient).await?;
         self.processes.insert(server_id, proc);
         // Drop the exit future — callers that need exit detection use spawn() directly.
         drop(exit_fut);
@@ -190,7 +195,7 @@ mod tests {
     // We just verify spawn returns Ok and the handle exists.
     #[tokio::test]
     async fn spawn_process_and_get_handle() {
-        let result = ChildProcess::spawn("test-server".to_string(), "cat", &[]).await;
+        let result = ChildProcess::spawn("test-server".to_string(), "cat", &[], NoopClient).await;
         // cat may not be available in all environments; if spawn fails, skip.
         if let Ok((proc, _exit_fut)) = result {
             assert_eq!(proc.server_id, "test-server");

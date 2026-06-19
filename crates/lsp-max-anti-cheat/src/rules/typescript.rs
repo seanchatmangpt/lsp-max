@@ -7,6 +7,8 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
     for o in obs {
         if o.kind == "ts_smell" {
             diags.push(AntiLlmDiagnostic {
+                oracle_class: None,
+                confidence: None,
                 code: "ANTI-LLM-STRANGE-009".to_string(),
                 category: "typescript-smell".to_string(),
                 file_path: o.file_path.clone(),
@@ -27,6 +29,8 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
 
         if o.kind == "ts_claim" {
             diags.push(AntiLlmDiagnostic {
+            oracle_class: None,
+            confidence: None,
                 code: "ANTI-LLM-CLAIM-005".to_string(),
                 category: "typescript-claim".to_string(),
                 file_path: o.file_path.clone(),
@@ -44,6 +48,8 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
 
         if o.kind == "ts_leak" {
             diags.push(AntiLlmDiagnostic {
+            oracle_class: None,
+            confidence: None,
                 code: "ANTI-LLM-CLAIM-006".to_string(),
                 category: "typescript-leak".to_string(),
                 file_path: o.file_path.clone(),

@@ -16,6 +16,8 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
             // TRACE-001: inference_trace.push with constant string literal
             "trace_constant_push" if !is_test_path(&o.file_path) => {
                 diags.push(AntiLlmDiagnostic {
+            oracle_class: None,
+            confidence: None,
                     code: "ANTI-LLM-TRACE-001".to_string(),
                     category: "trace".to_string(),
                     file_path: o.file_path.clone(),
@@ -37,6 +39,8 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
             // TRACE-002: hardcoded trace length assertion
             "trace_len_magic_assert" if !is_test_path(&o.file_path) => {
                 diags.push(AntiLlmDiagnostic {
+            oracle_class: None,
+            confidence: None,
                     code: "ANTI-LLM-TRACE-002".to_string(),
                     category: "trace".to_string(),
                     file_path: o.file_path.clone(),
@@ -58,6 +62,8 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
             // TRACE-003: format!() with no {} placeholders in trace push
             "trace_static_format" if !is_test_path(&o.file_path) => {
                 diags.push(AntiLlmDiagnostic {
+            oracle_class: None,
+            confidence: None,
                     code: "ANTI-LLM-TRACE-003".to_string(),
                     category: "trace".to_string(),
                     file_path: o.file_path.clone(),
@@ -79,6 +85,8 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
             // TRACE-004: uniform trace push across match arms
             "trace_uniform_arms" if !is_test_path(&o.file_path) => {
                 diags.push(AntiLlmDiagnostic {
+            oracle_class: None,
+            confidence: None,
                     code: "ANTI-LLM-TRACE-004".to_string(),
                     category: "trace".to_string(),
                     file_path: o.file_path.clone(),

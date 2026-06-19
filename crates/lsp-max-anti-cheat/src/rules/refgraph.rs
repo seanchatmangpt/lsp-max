@@ -17,6 +17,8 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
             continue;
         }
         diags.push(AntiLlmDiagnostic {
+            oracle_class: None,
+            confidence: None,
             code: "ANTI-LLM-REFGRAPH-001".to_string(),
             category: "refgraph".to_string(),
             file_path: o.file_path.clone(),

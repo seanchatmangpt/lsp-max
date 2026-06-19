@@ -30,12 +30,7 @@ impl GateService {
     /// Derive the workspace-specific gate file path.
     /// Formula must match lsp-max-compositor/src/gate_file.rs exactly.
     pub fn gate_file_path() -> PathBuf {
-        let workspace = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("/"));
-        let hash = fnv1a(workspace.to_string_lossy().as_bytes());
-        let dir = std::env::var("XDG_RUNTIME_DIR")
-            .map(PathBuf::from)
-            .unwrap_or_else(|_| PathBuf::from("/tmp"));
-        dir.join(format!("lsp-max-gate-{hash:016x}"))
+        lsp_max::primitives::gate_file_path()
     }
 
     /// Read the gate file. One syscall; no IPC; no subprocess.
@@ -54,15 +49,6 @@ impl GateService {
             compositor_active,
         }
     }
-}
-
-fn fnv1a(bytes: &[u8]) -> u64 {
-    let mut hash: u64 = 0xcbf29ce484222325;
-    for &b in bytes {
-        hash ^= b as u64;
-        hash = hash.wrapping_mul(0x100000001b3);
-    }
-    hash
 }
 
 // ==============================================================================
@@ -97,6 +83,16 @@ mod tests {
         let p1 = GateService::gate_file_path();
         let p2 = GateService::gate_file_path();
         assert_eq!(p1, p2);
+    }
+
+    #[test]
+    fn gate_path_checks_agent_id() {
+        std::env::set_var("LSP_MAX_AGENT_ID", "test-agent-123");
+        let p1 = GateService::gate_file_path();
+        std::env::remove_var("LSP_MAX_AGENT_ID");
+        let p2 = GateService::gate_file_path();
+        assert_ne!(p1, p2);
+        assert!(p1.to_string_lossy().contains("-agent-test-agent-123"));
     }
 
     #[test]

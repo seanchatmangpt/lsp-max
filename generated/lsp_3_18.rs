@@ -1,5 +1,6 @@
 // Generated from fixtures/metaModel-3.18.json — do not edit by hand.
-#![allow(clippy::enum_variant_names, non_upper_case_globals)]
+#![allow(clippy::enum_variant_names)]
+#![allow(non_upper_case_globals)]
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 

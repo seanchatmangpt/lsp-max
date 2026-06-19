@@ -8,6 +8,8 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
         // Debug diagnostic names found
         if o.construct == "CLAP-DEBUG" || o.construct == "CLAP-DEBUG-PATH" {
             diags.push(AntiLlmDiagnostic {
+                oracle_class: None,
+                confidence: None,
                 code: "ANTI-LLM-STRANGE-001".to_string(),
                 category: "strange-code".to_string(),
                 file_path: o.file_path.clone(),
@@ -27,6 +29,8 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
         // Diagnostic leaks raw content
         if o.construct == "Content was:" || o.message.contains("leaks raw content") {
             diags.push(AntiLlmDiagnostic {
+                oracle_class: None,
+                confidence: None,
                 code: "ANTI-LLM-STRANGE-002".to_string(),
                 category: "strange-code".to_string(),
                 file_path: o.file_path.clone(),
@@ -49,6 +53,8 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
         // Diagnostic leaks raw path
         if o.construct == "Path was:" || o.message.contains("leaks raw path") {
             diags.push(AntiLlmDiagnostic {
+                oracle_class: None,
+                confidence: None,
                 code: "ANTI-LLM-STRANGE-003".to_string(),
                 category: "strange-code".to_string(),
                 file_path: o.file_path.clone(),
@@ -73,6 +79,8 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
             || o.construct.starts_with("path_str.contains")
         {
             diags.push(AntiLlmDiagnostic {
+            oracle_class: None,
+            confidence: None,
                 code: "ANTI-LLM-STRANGE-007".to_string(),
                 category: "strange-code".to_string(),
                 file_path: o.file_path.clone(),

@@ -3,7 +3,7 @@ use pattern_lsp::scanner::scan_document;
 #[test]
 fn test_lsp_diagnostics_raw_protocol() {
     let content = "let x = serde_json::Value::Null;";
-    let uri = "file:///fake/src/lib.rs";
+    let uri = "file://src/lib.rs";
 
     let findings = scan_document(uri, content).expect("Scan failed");
 
