@@ -11,6 +11,9 @@ use crate::virtual_docs::{
 pub struct AntiLlmServer {
     pub client: Client,
     pub workspace_root: Arc<Mutex<Option<String>>>,
+    pub index: lsp_max::rule_pack_server::WorkspaceIndex,
+    pub adapter: lsp_max::ast::AutoLspAdapter,
+    pub packs: lsp_max::rule_pack_server::ValidatedRulePackSet,
 }
 
 impl AntiLlmServer {
@@ -18,44 +21,73 @@ impl AntiLlmServer {
         Self {
             client,
             workspace_root: Arc::new(Mutex::new(None)),
+            index: lsp_max::rule_pack_server::WorkspaceIndex::new(),
+            adapter: lsp_max::ast::AutoLspAdapter::new_default(),
+            packs: lsp_max::rule_pack_server::ValidatedRulePackSet::empty(),
         }
     }
+}
 
-    async fn run_scan_and_publish(&self, uri: &Url) {
-        let root_dir = {
-            let guard = self.workspace_root.lock().unwrap();
-            guard.clone().unwrap_or_else(|| ".".to_string())
-        };
-
-        // Scan directory (or single file for speed)
-        let obs = engine::scan_directory(&root_dir);
-        let diags = engine::evaluate_diagnostics(&obs);
-
-        let file_diags: Vec<Diagnostic> = diags
-            .iter()
-            .filter(|d| {
-                // filter by current file path to emit relevant diagnostics
-                let norm_path = d.file_path.replace("\\", "/");
-                let norm_uri = uri.to_string().replace("\\", "/");
-                norm_uri.ends_with(&norm_path)
-            })
-            .map(|d| d.to_lsp())
-            .collect();
-
-        self.client
-            .publish_diagnostics(uri.clone(), file_diags, None)
-            .await;
-
-        // LSP 3.18 dynamic refreshes (LSP318-003 and LSP318-002 refresh)
-        let _ = self.client.folding_range_refresh().await;
-        let _ = self
-            .client
-            .text_document_content_refresh(
-                lsp_max::max_protocol::lsp_3_18::TextDocumentContentRefreshParams {
-                    uri: uri.to_string(),
-                },
-            )
-            .await;
+impl lsp_max::rule_pack_server::RulePackServer for AntiLlmServer {
+    fn rule_packs(&self) -> &lsp_max::rule_pack_server::ValidatedRulePackSet {
+        &self.packs
+    }
+    fn grammar(&self) -> tree_sitter::Language {
+        tree_sitter_rust::LANGUAGE.into()
+    }
+    fn server_name(&self) -> &'static str {
+        "anti-llm-cheat-lsp"
+    }
+    fn client(&self) -> &Client {
+        &self.client
+    }
+    fn adapter(&self) -> &lsp_max::ast::AutoLspAdapter {
+        &self.adapter
+    }
+    fn workspace_index(&self) -> Option<&lsp_max::rule_pack_server::WorkspaceIndex> {
+        Some(&self.index)
+    }
+    fn scan_uri_classified(
+        &self,
+        uri: &Url,
+        _content: &str,
+    ) -> lsp_max::rule_pack_server::ClassifiedFindings {
+        if uri.as_str().starts_with("anti-llm://") || uri.as_str().starts_with("ggen://") {
+            (Vec::new(), Vec::new())
+        } else {
+            let root_dir = {
+                let guard = self.workspace_root.lock().unwrap();
+                guard.clone().unwrap_or_else(|| ".".to_string())
+            };
+            let obs = engine::scan_directory(&root_dir);
+            let diags = engine::evaluate_diagnostics(&obs);
+            let sync: Vec<lsp_max::rule_pack_server::Finding> = diags
+                .into_iter()
+                .filter(|d| {
+                    let norm_path = d.file_path.replace("\\", "/");
+                    let norm_uri = uri.to_string().replace("\\", "/");
+                    norm_uri.ends_with(&norm_path)
+                })
+                .map(|d| {
+                    let lsp_diag = d.to_lsp();
+                    let law_axis = lsp_max::rule_pack_server::severity_to_law_axis(if d.blocking {
+                        "error"
+                    } else {
+                        "warning"
+                    });
+                    let max_diag = lsp_max::max_protocol::MaxDiagnostic {
+                        lsp: lsp_diag.clone(),
+                        diagnostic_id: format!("{}-{}:{}", d.code, d.line, d.column),
+                        law_id: d.code.clone(),
+                        law_axis,
+                        violated_invariant: d.forbidden_implication.clone(),
+                        ..Default::default()
+                    };
+                    (max_diag, lsp_diag)
+                })
+                .collect();
+            (sync, Vec::new())
+        }
     }
 }
 
@@ -124,15 +156,33 @@ impl LanguageServer for AntiLlmServer {
     }
 
     async fn did_open(&self, params: DidOpenTextDocumentParams) {
-        self.run_scan_and_publish(&params.text_document.uri).await;
+        use lsp_max::rule_pack_server::RulePackServer;
+        self.handle_did_open(params).await;
     }
 
     async fn did_change(&self, params: DidChangeTextDocumentParams) {
-        self.run_scan_and_publish(&params.text_document.uri).await;
+        use lsp_max::rule_pack_server::RulePackServer;
+        self.handle_did_change(params).await;
+    }
+
+    async fn did_close(&self, params: DidCloseTextDocumentParams) {
+        use lsp_max::rule_pack_server::RulePackServer;
+        self.handle_did_close(params);
     }
 
     async fn did_save(&self, params: DidSaveTextDocumentParams) {
-        self.run_scan_and_publish(&params.text_document.uri).await;
+        use lsp_max::rule_pack_server::RulePackServer;
+        let uri = &params.text_document.uri;
+        let content = if let Some(index) = self.workspace_index() {
+            index
+                .get(uri.as_str())
+                .map(|doc| doc.content.clone())
+                .unwrap_or_default()
+        } else {
+            String::new()
+        };
+        self.publish_findings_classified(uri.clone(), &content)
+            .await;
     }
 
     async fn inline_completion(

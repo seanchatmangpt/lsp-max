@@ -28,6 +28,8 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
             )
         {
             diags.push(AntiLlmDiagnostic {
+            oracle_class: None,
+            confidence: None,
                 code: "ANTI-LLM-CHEAT-001".to_string(),
                 category: "determinism".to_string(),
                 file_path: o.file_path.clone(),
@@ -62,6 +64,8 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
                 ));
         if is_seeded_rng && !is_test_path(&o.file_path) {
             diags.push(AntiLlmDiagnostic {
+            oracle_class: None,
+            confidence: None,
                 code: "ANTI-LLM-CHEAT-002".to_string(),
                 category: "determinism".to_string(),
                 file_path: o.file_path.clone(),
@@ -78,6 +82,8 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
         // CHEAT-003: copied output hash
         if o.kind == "raw_text" && o.construct == "\"output_hash\": \"" {
             diags.push(AntiLlmDiagnostic {
+                oracle_class: None,
+                confidence: None,
                 code: "ANTI-LLM-CHEAT-003".to_string(),
                 category: "determinism".to_string(),
                 file_path: o.file_path.clone(),
@@ -97,6 +103,8 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
         if o.kind == "ast_node" && o.construct == "allow_cheat_attr" && !is_test_path(&o.file_path)
         {
             diags.push(AntiLlmDiagnostic {
+            oracle_class: None,
+            confidence: None,
                 code: "ANTI-LLM-STRANGE-010".to_string(),
                 category: "determinism".to_string(),
                 file_path: o.file_path.clone(),
@@ -116,6 +124,8 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
             && !is_test_path(&o.file_path)
         {
             diags.push(AntiLlmDiagnostic {
+            oracle_class: None,
+            confidence: None,
                 code: "ANTI-LLM-STRANGE-011".to_string(),
                 category: "determinism".to_string(),
                 file_path: o.file_path.clone(),

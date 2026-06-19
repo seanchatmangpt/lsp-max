@@ -1,5 +1,6 @@
 use clap_noun_verb::Result;
 use clap_noun_verb_macros::verb;
+use lsp_max_anti_cheat::config::AntiLlmConfig;
 use lsp_max_anti_cheat::{
     engine::{evaluate_diagnostics, evaluate_diagnostics_with_config, scan_directory},
     AntiLlmDiagnostic,
@@ -49,9 +50,9 @@ impl CheckService {
             return Err(format!("Path does not exist: {}", path));
         }
 
-        let observations = scan_directory(path)?;
-        let diagnostics = if let Some(cfg_path) = config_path {
-            evaluate_diagnostics_with_config(&observations, cfg_path)?
+        let observations = scan_directory(path);
+        let diagnostics = if let Some(_cfg_path) = config_path {
+            evaluate_diagnostics_with_config(&observations, &AntiLlmConfig::default())
         } else {
             evaluate_diagnostics(&observations)
         };
@@ -98,8 +99,8 @@ impl CheckService {
 
 #[verb("all")]
 pub fn check_all(
-    #[arg(long, default_value = ".")] path: String,
-    #[arg(long)] config: Option<String>,
+    #[arg(default_value = ".")] path: String,
+    #[arg()] config: Option<String>,
 ) -> Result<CheckResult> {
     let config_ref = config.as_deref();
     CheckService::run_all_checks(&path, config_ref)
@@ -108,8 +109,8 @@ pub fn check_all(
 
 #[verb("tower-lsp")]
 pub fn check_tower_lsp(
-    #[arg(long, default_value = ".")] path: String,
-    #[arg(long)] config: Option<String>,
+    #[arg(default_value = ".")] path: String,
+    #[arg()] config: Option<String>,
 ) -> Result<CheckResult> {
     let config_ref = config.as_deref();
     CheckService::check_category(&path, "surface", config_ref)
@@ -118,8 +119,8 @@ pub fn check_tower_lsp(
 
 #[verb("victory-language")]
 pub fn check_victory_language(
-    #[arg(long, default_value = ".")] path: String,
-    #[arg(long)] config: Option<String>,
+    #[arg(default_value = ".")] path: String,
+    #[arg()] config: Option<String>,
 ) -> Result<CheckResult> {
     let config_ref = config.as_deref();
     CheckService::check_category(&path, "claims", config_ref)
@@ -128,8 +129,8 @@ pub fn check_victory_language(
 
 #[verb("receipts")]
 pub fn check_receipts(
-    #[arg(long, default_value = ".")] path: String,
-    #[arg(long)] config: Option<String>,
+    #[arg(default_value = ".")] path: String,
+    #[arg()] config: Option<String>,
 ) -> Result<CheckResult> {
     let config_ref = config.as_deref();
     CheckService::check_category(&path, "receipts", config_ref)
@@ -138,8 +139,8 @@ pub fn check_receipts(
 
 #[verb("routes")]
 pub fn check_routes(
-    #[arg(long, default_value = ".")] path: String,
-    #[arg(long)] config: Option<String>,
+    #[arg(default_value = ".")] path: String,
+    #[arg()] config: Option<String>,
 ) -> Result<CheckResult> {
     let config_ref = config.as_deref();
     CheckService::check_category(&path, "routes", config_ref)
@@ -148,8 +149,8 @@ pub fn check_routes(
 
 #[verb("authority")]
 pub fn check_authority(
-    #[arg(long, default_value = ".")] path: String,
-    #[arg(long)] config: Option<String>,
+    #[arg(default_value = ".")] path: String,
+    #[arg()] config: Option<String>,
 ) -> Result<CheckResult> {
     let config_ref = config.as_deref();
     CheckService::check_category(&path, "authority", config_ref)

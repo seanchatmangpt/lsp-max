@@ -260,6 +260,8 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
 
         if is_laundering {
             diags.push(AntiLlmDiagnostic {
+            oracle_class: None,
+            confidence: None,
                 code: "ANTI-LLM-LSP318-COMB-001".to_string(),
                 category: "protocol_surface".to_string(),
                 file_path: o.file_path.clone(),

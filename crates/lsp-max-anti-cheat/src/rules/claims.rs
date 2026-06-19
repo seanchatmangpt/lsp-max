@@ -110,6 +110,8 @@ pub fn evaluate(
     for o in obs {
         if is_victory(&o.construct, &o.context, domain_terms) {
             diags.push(AntiLlmDiagnostic {
+            oracle_class: None,
+            confidence: None,
                 code: "ANTI-LLM-CLAIM-004".to_string(),
                 category: "claim".to_string(),
                 file_path: o.file_path.clone(),

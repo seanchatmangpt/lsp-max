@@ -117,15 +117,11 @@ impl RulesService {
 // ===== Verb Tier (CLI) =====
 
 #[verb("list")]
-pub fn list_rules(
-    #[arg(long)] category: Option<String>,
-) -> Result<RulesListResult> {
+pub fn list_rules(#[arg()] category: Option<String>) -> Result<RulesListResult> {
     Ok(RulesService::list_rules(category.as_deref()))
 }
 
 #[verb("describe")]
-pub fn describe_rule(
-    #[arg(long)] code: String,
-) -> Result<RuleDescribeResult> {
+pub fn describe_rule(#[arg()] code: String) -> Result<RuleDescribeResult> {
     Ok(RulesService::describe_rule(&code))
 }

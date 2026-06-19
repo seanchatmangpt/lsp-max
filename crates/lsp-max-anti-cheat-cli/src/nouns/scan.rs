@@ -32,8 +32,8 @@ impl ScanService {
             return Err(format!("Path does not exist: {}", path));
         }
 
-        let observations = scan_directory(path)?;
-        let patterns = observations
+        let observations = scan_directory(path);
+        let patterns: Vec<_> = observations
             .into_iter()
             .map(|obs| PatternMatch {
                 file_path: obs.file_path,
@@ -56,17 +56,11 @@ impl ScanService {
 // ===== Verb Tier (CLI) =====
 
 #[verb("directory")]
-pub fn scan_directory_verb(
-    #[arg(long, default_value = ".")] path: String,
-) -> Result<ScanResult> {
-    ScanService::scan_path(&path)
-        .map_err(clap_noun_verb::error::NounVerbError::execution_error)
+pub fn scan_directory_verb(#[arg(default_value = ".")] path: String) -> Result<ScanResult> {
+    ScanService::scan_path(&path).map_err(clap_noun_verb::error::NounVerbError::execution_error)
 }
 
 #[verb("file")]
-pub fn scan_file_verb(
-    #[arg(long)] path: String,
-) -> Result<ScanResult> {
-    ScanService::scan_path(&path)
-        .map_err(clap_noun_verb::error::NounVerbError::execution_error)
+pub fn scan_file_verb(#[arg()] path: String) -> Result<ScanResult> {
+    ScanService::scan_path(&path).map_err(clap_noun_verb::error::NounVerbError::execution_error)
 }

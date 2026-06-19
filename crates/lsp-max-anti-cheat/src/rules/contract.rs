@@ -13,6 +13,8 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
             // CONTRACT-001: zero vocabulary overlap between impl and oracle test
             "contract_vocab_divergence" => {
                 diags.push(AntiLlmDiagnostic {
+            oracle_class: None,
+            confidence: None,
                     code: "ANTI-LLM-CONTRACT-001".to_string(),
                     category: "contract".to_string(),
                     file_path: o.file_path.clone(),
@@ -29,6 +31,8 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
             // CONTRACT-002: function shadow override
             "contract_fn_shadow" => {
                 diags.push(AntiLlmDiagnostic {
+            oracle_class: None,
+            confidence: None,
                     code: "ANTI-LLM-CONTRACT-002".to_string(),
                     category: "contract".to_string(),
                     file_path: o.file_path.clone(),

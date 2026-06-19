@@ -17,6 +17,8 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
             // METRIC-001: fat function
             "fn_too_long" => {
                 diags.push(AntiLlmDiagnostic {
+            oracle_class: None,
+            confidence: None,
                     code: "ANTI-LLM-METRIC-001".to_string(),
                     category: "complexity".to_string(),
                     file_path: o.file_path.clone(),
@@ -33,6 +35,8 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
             // METRIC-002: high cyclomatic
             "fn_high_cyclomatic" => {
                 diags.push(AntiLlmDiagnostic {
+            oracle_class: None,
+            confidence: None,
                     code: "ANTI-LLM-METRIC-002".to_string(),
                     category: "complexity".to_string(),
                     file_path: o.file_path.clone(),
@@ -49,6 +53,8 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
             // METRIC-003: deep nesting
             "fn_deep_nesting" => {
                 diags.push(AntiLlmDiagnostic {
+            oracle_class: None,
+            confidence: None,
                     code: "ANTI-LLM-METRIC-003".to_string(),
                     category: "complexity".to_string(),
                     file_path: o.file_path.clone(),
@@ -65,6 +71,8 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
             // METRIC-004: literal-dense function (BLOCKING — oracle lookup table)
             "fn_literal_dense" if is_breed_src(&o.file_path) => {
                 diags.push(AntiLlmDiagnostic {
+            oracle_class: None,
+            confidence: None,
                     code: "ANTI-LLM-METRIC-004".to_string(),
                     category: "complexity".to_string(),
                     file_path: o.file_path.clone(),
@@ -81,6 +89,8 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
             // METRIC-005: large match dispatch (BLOCKING — array dispatch oracle)
             "fn_large_match" if is_breed_src(&o.file_path) => {
                 diags.push(AntiLlmDiagnostic {
+            oracle_class: None,
+            confidence: None,
                     code: "ANTI-LLM-METRIC-005".to_string(),
                     category: "complexity".to_string(),
                     file_path: o.file_path.clone(),
@@ -97,6 +107,8 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
             // METRIC-006: deep closure chain
             "fn_deep_closures" => {
                 diags.push(AntiLlmDiagnostic {
+            oracle_class: None,
+            confidence: None,
                     code: "ANTI-LLM-METRIC-006".to_string(),
                     category: "complexity".to_string(),
                     file_path: o.file_path.clone(),
@@ -113,6 +125,8 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
             // HALSTEAD-001: low volume in core fn
             "halstead_low_volume" if is_breed_src(&o.file_path) => {
                 diags.push(AntiLlmDiagnostic {
+            oracle_class: None,
+            confidence: None,
                     code: "ANTI-LLM-HALSTEAD-001".to_string(),
                     category: "complexity".to_string(),
                     file_path: o.file_path.clone(),
@@ -129,6 +143,8 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
             // HALSTEAD-002: low operand vocabulary
             "halstead_low_vocabulary" if is_breed_src(&o.file_path) => {
                 diags.push(AntiLlmDiagnostic {
+            oracle_class: None,
+            confidence: None,
                     code: "ANTI-LLM-HALSTEAD-002".to_string(),
                     category: "complexity".to_string(),
                     file_path: o.file_path.clone(),
@@ -145,6 +161,8 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
             // HALSTEAD-003: operator dominated
             "halstead_operator_dominance" if is_breed_src(&o.file_path) => {
                 diags.push(AntiLlmDiagnostic {
+            oracle_class: None,
+            confidence: None,
                     code: "ANTI-LLM-HALSTEAD-003".to_string(),
                     category: "complexity".to_string(),
                     file_path: o.file_path.clone(),

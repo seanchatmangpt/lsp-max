@@ -12,6 +12,8 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
             || o.context.contains("CLAP command")
         {
             diags.push(AntiLlmDiagnostic {
+                oracle_class: None,
+                confidence: None,
                 code: "ANTI-LLM-AUTH-002".to_string(),
                 category: "authority".to_string(),
                 file_path: o.file_path.clone(),
@@ -32,6 +34,8 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
         // Check for string-shaped command treated as admitted command
         if o.construct == "string_command" || o.message.contains("String-shaped command") {
             diags.push(AntiLlmDiagnostic {
+            oracle_class: None,
+            confidence: None,
                 code: "ANTI-LLM-AUTH-004".to_string(),
                 category: "authority".to_string(),
                 file_path: o.file_path.clone(),
