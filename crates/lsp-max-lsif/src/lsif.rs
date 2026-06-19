@@ -28,6 +28,28 @@ pub enum Vertex {
         #[serde(skip_serializing_if = "Option::is_none")]
         repository: Option<Repository>,
     },
+    #[serde(rename = "capabilities")]
+    Capabilities {
+        id: Id,
+        #[serde(rename = "type")]
+        type_: VertexType,
+        #[serde(rename = "hoverProvider")]
+        hover_provider: bool,
+        #[serde(rename = "declarationProvider")]
+        declaration_provider: bool,
+        #[serde(rename = "definitionProvider")]
+        definition_provider: bool,
+        #[serde(rename = "typeDefinitionProvider")]
+        type_definition_provider: bool,
+        #[serde(rename = "referencesProvider")]
+        references_provider: bool,
+        #[serde(rename = "documentSymbolProvider")]
+        document_symbol_provider: bool,
+        #[serde(rename = "foldingRangeProvider")]
+        folding_range_provider: bool,
+        #[serde(rename = "diagnosticProvider")]
+        diagnostic_provider: bool,
+    },
     #[serde(rename = "project")]
     Project {
         id: Id,
@@ -238,6 +260,26 @@ pub enum Edge {
         #[serde(rename = "inV")]
         in_v: Id,
     },
+    #[serde(rename = "nextMoniker")]
+    NextMoniker {
+        id: Id,
+        #[serde(rename = "type")]
+        type_: EdgeType,
+        #[serde(rename = "outV")]
+        out_v: Id,
+        #[serde(rename = "inV")]
+        in_v: Id,
+    },
+    #[serde(rename = "belongsTo")]
+    BelongsTo {
+        id: Id,
+        #[serde(rename = "type")]
+        type_: EdgeType,
+        #[serde(rename = "outV")]
+        out_v: Id,
+        #[serde(rename = "inV")]
+        in_v: Id,
+    },
     #[serde(rename = "attach")]
     Attach {
         id: Id,
@@ -412,44 +454,4 @@ pub enum Element {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-    use lsp_types_max::NumberOrString;
-
-    #[test]
-    fn test_serialize_metadata() {
-        let meta = Element::Vertex(Vertex::MetaData {
-            id: NumberOrString::Number(1),
-            type_: VertexType::Vertex,
-            version: "0.6.0".to_string(),
-            project_root: "file:///".to_string(),
-            position_encoding: PositionEncoding::Utf16,
-            tool_info: Some(ToolInfo {
-                name: "lsp-max".to_string(),
-                version: Some("1.0.0".to_string()),
-                args: None,
-            }),
-        });
-
-        let json = serde_json::to_string(&meta).unwrap();
-        assert!(json.contains(r#""label":"metaData""#));
-        assert!(json.contains(r#""type":"vertex""#));
-        assert!(json.contains(r#""version":"0.6.0""#));
-        assert!(json.contains(r#""projectRoot":"file:///""#));
-    }
-
-    #[test]
-    fn test_serialize_contains_edge() {
-        let edge = Element::Edge(Edge::Contains {
-            id: NumberOrString::Number(2),
-            type_: EdgeType::Edge,
-            out_v: NumberOrString::Number(1),
-            in_vs: vec![NumberOrString::Number(3), NumberOrString::Number(4)],
-        });
-
-        let json = serde_json::to_string(&edge).unwrap();
-        assert!(json.contains(r#""label":"contains""#));
-        assert!(json.contains(r#""type":"edge""#));
-        assert!(json.contains(r#""inVs":[3,4]"#));
-    }
-}
+mod tests;

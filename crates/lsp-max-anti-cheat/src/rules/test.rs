@@ -29,6 +29,8 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
                         .to_string(),
                 required_next_proof: "Run cargo test to verify structural assertions hold."
                     .to_string(),
+                oracle_class: None,
+                confidence: None,
             });
         }
 
@@ -56,6 +58,8 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
                 required_next_proof:
                     "Run test suite to verify tests use mocked or isolated test fixtures."
                         .to_string(),
+                oracle_class: None,
+                confidence: None,
             });
         }
     }

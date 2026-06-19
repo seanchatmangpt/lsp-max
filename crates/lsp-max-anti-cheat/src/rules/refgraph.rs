@@ -27,7 +27,9 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
             blocking: true,
             required_correction: "This symbol is reverse-reachable, within the bounded reference closure, from a symbol declared unwitnessed (`// @unwitnessed:`). A dependent of an unwitnessed symbol inherits its UNKNOWN status; it must not be treated as ADMITTED. Either discharge the seed symbol's witness or sever the reference dependency.".to_string(),
             required_next_proof: "Seed symbol carries an admitted witness (receipt with path/digest/boundary/negative-control), OR the reference edge to the seed is removed and re-scan shows the site absent from the failset.".to_string(),
-        });
+                    oracle_class: None,
+            confidence: None,
+});
     }
 
     diags

@@ -45,7 +45,7 @@ const AXUM_RULES: &[AxumRule] = &[
 struct AxumBackend {
     client: Client,
     /// uri → document text. Read-heavy.
-    docs: RwLock<HashMap<Url, String>>,
+    docs: RwLock<HashMap<String, String>>,
 }
 
 impl AxumBackend {
@@ -56,7 +56,7 @@ impl AxumBackend {
         }
     }
 
-    async fn analyze_and_publish(&self, uri: Url, text: String) {
+    async fn analyze_and_publish(&self, uri_str: String, uri: Uri, text: String) {
         let mut diags = Vec::new();
         for (line_idx, line) in text.lines().enumerate() {
             for rule in AXUM_RULES {
@@ -82,7 +82,7 @@ impl AxumBackend {
                 }
             }
         }
-        self.docs.write().insert(uri.clone(), text);
+        self.docs.write().insert(uri_str, text);
         self.client.publish_diagnostics(uri, diags, None).await;
     }
 }
@@ -106,20 +106,23 @@ impl LanguageServer for AxumBackend {
     }
 
     async fn did_open(&self, params: DidOpenTextDocumentParams) {
-        self.analyze_and_publish(params.text_document.uri, params.text_document.text)
+        let uri = params.text_document.uri;
+        let uri_str = uri.to_string();
+        self.analyze_and_publish(uri_str, uri, params.text_document.text)
             .await;
     }
 
     async fn did_change(&self, params: DidChangeTextDocumentParams) {
         let uri = params.text_document.uri;
+        let uri_str = uri.to_string();
         if let Some(change) = params.content_changes.into_iter().last() {
-            self.analyze_and_publish(uri, change.text).await;
+            self.analyze_and_publish(uri_str, uri, change.text).await;
         }
     }
 
     async fn did_close(&self, params: DidCloseTextDocumentParams) {
         let uri = params.text_document.uri;
-        self.docs.write().remove(&uri);
+        self.docs.write().remove(&uri.to_string());
         self.client.publish_diagnostics(uri, vec![], None).await;
     }
 }

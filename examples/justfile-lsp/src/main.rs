@@ -34,7 +34,7 @@ impl JustfileLsp {
         }
     }
 
-    async fn analyze_and_publish(&self, uri: Url) {
+    async fn analyze_and_publish(&self, uri: Uri) {
         let Some(text) = self.docs.get_content(&uri) else {
             return;
         };
@@ -141,7 +141,7 @@ async fn main() {
 // Show that `debounce` compiles — an integration point for editors that send
 // rapid `didChange` bursts.
 #[allow(dead_code)]
-fn _debounce_compiles_check(docs: DocumentStore, sink: DiagnosticSink, uri: Url) -> DebounceHandle {
+fn _debounce_compiles_check(docs: DocumentStore, sink: DiagnosticSink, uri: Uri) -> DebounceHandle {
     debounce(Duration::from_millis(150), move || {
         let docs = docs.clone();
         let sink = sink.clone();

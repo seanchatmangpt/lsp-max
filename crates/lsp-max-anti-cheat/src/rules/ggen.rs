@@ -32,7 +32,9 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
                     blocking: true,
                     required_correction: "Add the missing ?variable to the paired SPARQL SELECT projection, or remove its reference from the template.".to_string(),
                     required_next_proof: "Run `ggen sync` — it must complete without template rendering errors.".to_string(),
-                });
+                                    oracle_class: None,
+                    confidence: None,
+});
             }
 
             // ── YIELD-001 ─────────────────────────────────────────────────────
@@ -50,7 +52,9 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
                     blocking: true,
                     required_correction: "Set output_file to a path inside a consumer package root (e.g. packages/foo/src/ or crates/bar/src/).".to_string(),
                     required_next_proof: "Run `ggen sync` — rendered file must land in a consumer package.".to_string(),
-                });
+                                    oracle_class: None,
+                    confidence: None,
+});
             }
 
             // ── YIELD-004 ─────────────────────────────────────────────────────
@@ -68,7 +72,9 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
                     blocking: true,
                     required_correction: "Remove the duplicate output_file declaration from one manifest. Only one ggen.toml may own a given output path.".to_string(),
                     required_next_proof: "Run `ggen sync` — it must complete without competing-authority errors.".to_string(),
-                });
+                                    oracle_class: None,
+                    confidence: None,
+});
             }
 
             // ── YIELD-005 ─────────────────────────────────────────────────────
@@ -86,7 +92,9 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
                     blocking: true,
                     required_correction: "Replace the remote ontology URL with a local relative path. Remote fetches are non-deterministic across replay runs.".to_string(),
                     required_next_proof: "Verify ggen.toml contains only local ontology file paths.".to_string(),
-                });
+                                    oracle_class: None,
+                    confidence: None,
+});
             }
 
             // ── SRC-001 (also covers YIELD-002) ──────────────────────────────
@@ -104,7 +112,9 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
                     blocking: true,
                     required_correction: "Move output_file to a first-class source path — not under generated/, output/, or gen/.".to_string(),
                     required_next_proof: "Run `ggen sync` — rendered source must land at a first-class path.".to_string(),
-                });
+                                    oracle_class: None,
+                    confidence: None,
+});
             }
 
             // ── SRC-002 ───────────────────────────────────────────────────────
@@ -122,7 +132,9 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
                     blocking: true,
                     required_correction: "Remove the DO NOT EDIT / auto-generated banner. Inspect and repair the template if it emits the banner.".to_string(),
                     required_next_proof: "Verify no auto-generated banners remain in the file after re-running ggen sync.".to_string(),
-                });
+                                    oracle_class: None,
+                    confidence: None,
+});
             }
 
             // ── SRC-003 ───────────────────────────────────────────────────────
@@ -140,7 +152,9 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
                     blocking: true,
                     required_correction: "Remove the comment. All ggen-rendered source is first-class and may be inspected, reasoned over, and repaired.".to_string(),
                     required_next_proof: "Verify the comment is removed. If it was emitted by the template, fix the .tera seed.".to_string(),
-                });
+                                    oracle_class: None,
+                    confidence: None,
+});
             }
 
             _ => {}

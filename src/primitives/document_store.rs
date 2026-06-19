@@ -186,7 +186,7 @@ mod tests {
     use lsp_types_max::Uri as Url;
 
     fn test_url() -> Url {
-        std::str::FromStr::from_str("file:///tmp/test.rs").unwrap()
+        "file:///tmp/test.rs".parse().unwrap()
     }
 
     fn whole_change(text: &str) -> TextDocumentContentChangeEvent {

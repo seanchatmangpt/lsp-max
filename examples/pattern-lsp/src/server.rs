@@ -28,7 +28,7 @@ fn severity_map() -> &'static HashMap<&'static str, DiagnosticSeverity> {
 struct PatternLsp {
     client: Client,
     /// uri → document text. Read-heavy: written on open/change, read on diagnostics.
-    docs: RwLock<HashMap<Url, String>>,
+    docs: RwLock<HashMap<String, String>>,
 }
 
 impl PatternLsp {
@@ -39,11 +39,8 @@ impl PatternLsp {
         }
     }
 
-    async fn analyze_and_publish(&self, uri: Url, text: String) {
-        let findings = {
-            let uri_str = uri.to_string();
-            scan_document(&uri_str, &text).unwrap_or_default()
-        };
+    async fn analyze_and_publish(&self, uri_str: String, uri: Uri, text: String) {
+        let findings = scan_document(&uri_str, &text).unwrap_or_default();
 
         let diags: Vec<Diagnostic> = findings
             .into_iter()
@@ -74,7 +71,7 @@ impl PatternLsp {
             })
             .collect();
 
-        self.docs.write().insert(uri.clone(), text);
+        self.docs.write().insert(uri_str, text);
         self.client.publish_diagnostics(uri, diags, None).await;
     }
 }
@@ -106,31 +103,34 @@ impl LanguageServer for PatternLsp {
 
     async fn did_open(&self, params: DidOpenTextDocumentParams) {
         let uri = params.text_document.uri;
+        let uri_str = uri.to_string();
         let text = params.text_document.text;
-        self.analyze_and_publish(uri, text).await;
+        self.analyze_and_publish(uri_str, uri, text).await;
     }
 
     async fn did_change(&self, params: DidChangeTextDocumentParams) {
         let uri = params.text_document.uri;
+        let uri_str = uri.to_string();
         if let Some(change) = params.content_changes.into_iter().last() {
-            self.analyze_and_publish(uri, change.text).await;
+            self.analyze_and_publish(uri_str, uri, change.text).await;
         }
     }
 
     async fn did_close(&self, params: DidCloseTextDocumentParams) {
         let uri = params.text_document.uri;
-        self.docs.write().remove(&uri);
+        self.docs.write().remove(&uri.to_string());
         self.client.publish_diagnostics(uri, vec![], None).await;
     }
 
     async fn did_save(&self, params: DidSaveTextDocumentParams) {
         let uri = params.text_document.uri;
+        let uri_str = uri.to_string();
         let text = {
             let docs = self.docs.read();
-            docs.get(&uri).cloned()
+            docs.get(&uri_str).cloned()
         };
         if let Some(t) = text.or(params.text) {
-            self.analyze_and_publish(uri, t).await;
+            self.analyze_and_publish(uri_str, uri, t).await;
         }
     }
 }
