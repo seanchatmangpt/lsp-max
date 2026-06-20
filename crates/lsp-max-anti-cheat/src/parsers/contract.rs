@@ -23,7 +23,7 @@ fn is_test_path(path: &str) -> bool {
 /// Cross-file contract schism detection (A9).
 ///
 /// Groups fn_definition observations by breed_id and compares the set of
-/// function names in src/breeds/<b>.rs vs oracle test files for that breed.
+/// function names in `src/breeds/{breed_id}.rs` vs oracle test files for that breed.
 pub fn detect_contract_schism(all_obs: &[Observation]) -> Vec<Observation> {
     let mut obs = Vec::new();
 
