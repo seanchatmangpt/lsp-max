@@ -159,9 +159,7 @@ pub fn extract_traces(obs: &[Observation]) -> Vec<ObservationTrace> {
             }
             "victory_language" => activities.push("victory_language".to_string()),
             "test_stdout_claim" => activities.push("test_stdout_claim".to_string()),
-            "receipt_json" | "receipt_artifact" => {
-                activities.push("receipt_artifact".to_string())
-            }
+            "receipt_json" | "receipt_artifact" => activities.push("receipt_artifact".to_string()),
             "diagnostic_emitted" => activities.push("diagnostic_emitted".to_string()),
             "ocel_event" => activities.push("ocel_event_created".to_string()),
             _ => {}

@@ -151,7 +151,11 @@ fn derive_expected_activities(model: &DeclaredPowlModel) -> Vec<&'static str> {
             vec!["ReceiptCreated", "ReceiptValidated", "ReceiptAdmitted"]
         }
         n if n.contains("diagnostic") => {
-            vec!["ObservationCreated", "DiagnosticEmitted", "DiagnosticPublished"]
+            vec![
+                "ObservationCreated",
+                "DiagnosticEmitted",
+                "DiagnosticPublished",
+            ]
         }
         _ => vec![], // UNKNOWN model structure — fitness is 0.0, not faked as 1.0
     }
