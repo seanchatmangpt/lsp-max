@@ -82,3 +82,14 @@ code { font-family: ui-monospace, monospace; color: var(--accent); font-size: 0.
 .st-covered { color: var(--accent); }
 .st-server-class { color: var(--unknown); }
 .st-gap { color: var(--refused); }
+
+.runbar { display: flex; flex-wrap: wrap; gap: 10px; margin: 16px 0; }
+.runbtn { background: var(--panel); color: var(--accent); border: 1px solid var(--line); border-radius: 8px; padding: 8px 14px; font-family: ui-monospace, monospace; font-size: 13px; cursor: pointer; }
+.runbtn:hover:not(:disabled) { border-color: var(--accent); }
+.runbtn:disabled { opacity: 0.5; cursor: progress; }
+.running { color: var(--unknown); font-size: 13px; }
+.runout { background: #06080d; border: 1px solid var(--line); border-radius: 10px; padding: 14px; margin-top: 12px; }
+.runout.ok { border-left: 3px solid var(--accent); }
+.runout.fail { border-left: 3px solid var(--refused); }
+.runout-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.runout pre { margin: 0; white-space: pre-wrap; font-size: 12px; color: var(--ink); font-family: ui-monospace, monospace; }

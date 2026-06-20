@@ -31,13 +31,13 @@ be zero at all times — this is the inviolable rule).
 |---|---|---|
 | Receipt ledger | `app/receipts` (RSC reads real `*.receipt.json`) | ✅ represented (iter 1) |
 | CLI noun-verb surface | `app/cli` (RSC parses real `nouns/*.rs`) | ✅ represented (iter 2) |
-| Example witnesses (live run) | — | ❌ exposed-but-unrepresented |
+| Example witnesses (live run) | `app/witness` (server action runs real `cargo run --example`) | ✅ represented (iter 4) |
 | Coverage gap map | `app/coverage` (RSC parses real DOC_COVERAGE_LOG.md) | ✅ represented (iter 3) |
 | Conformance verdict (live) | — | ❌ exposed-but-unrepresented |
 | OCEL process evidence | — | ❌ exposed-but-unrepresented |
 | Receipt-chain cross-product graph | — | ❌ (cross-product, after per-capability) |
 
-rendered-but-fabricated: **0** (inviolable). exposed-but-unrepresented: 4.
+rendered-but-fabricated: **0** (inviolable). exposed-but-unrepresented: 3.
 
 ## Iteration log
 
@@ -82,3 +82,17 @@ rendered-but-fabricated: **0** (inviolable). exposed-but-unrepresented: 4.
   receipt_chain_explained.rs), real Iteration 1–6 headers, covered/gap counts.
 - exposed-but-unrepresented now 4: example witnesses (live run), conformance
   (live), OCEL evidence, receipt-chain cross-product graph.
+
+### Iteration 4 — live witness runner (server action)
+- `app/witness/actions.ts` (`"use server"`): `runExample()` spawns
+  `cargo run --quiet --example <name>` in the real repo (whitelisted to the 4
+  witness examples), returns real stdout + real exit code, including real failure.
+- `app/witness/runner.tsx` (`"use client"`, React 19 `useActionState`): buttons
+  invoke the action; pending state waits on actual cargo work; renders real output.
+- `app/witness/page.tsx`: gates the button list on actual `examples/*.rs` files;
+  throws if none present.
+- Witness: the action's command (`cargo run --example admission_pipeline`) emits
+  real WITNESS output, exit 0; the page (HTTP 200) lists the 4 real examples.
+  This is the project *executing*, not a fixture — the frontier feature.
+- exposed-but-unrepresented now 3: conformance (live verdict), OCEL evidence,
+  receipt-chain cross-product graph.
