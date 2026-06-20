@@ -6,10 +6,12 @@ pub mod config;
 pub mod conformance;
 pub mod diagnostics;
 pub mod event;
+pub mod explain;
 pub mod gate;
 pub mod generate;
 pub mod ggen;
 pub mod hook;
+pub mod intent;
 pub mod mesh;
 pub mod metamodel;
 pub mod ontology;
@@ -23,6 +25,7 @@ pub mod state;
 pub mod stream;
 pub mod telemetry;
 pub mod template;
+pub mod testmatrix;
 pub mod workspace;
 
 pub fn get_state_path() -> String {
