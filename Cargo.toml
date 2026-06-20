@@ -106,6 +106,7 @@ members = [
     "examples/justfile-lsp",
     "examples/ggen-lsp",
     "examples/wasm-lsp",
+    "examples/lsp-max-scaffold",
     "crates/lsp-max-adapters/lsp-max-ast-core",
     "crates/lsp-max-adapters/lsp-max-ast-codegen",
     "crates/lsif-rust",

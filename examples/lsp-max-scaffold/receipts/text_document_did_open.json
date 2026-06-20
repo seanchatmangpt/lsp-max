@@ -1,0 +1,11 @@
+{
+  "method": "textDocument/didOpen",
+  "digest_algorithm": "BLAKE3",
+  "digest": "0000000000000000000000000000000000000000000000000000000000000000",
+  "boundary": "-----BEGIN RECEIPT-----",
+  "checkpoint": "-----END RECEIPT-----",
+  "status": "CANDIDATE",
+  "note": "digest placeholder — compute blake3 of transcript before promoting to ADMITTED",
+  "negative_control": "fixtures/negative_controls/unknown_collapse.rs",
+  "transcript": "transcripts/text_document_did_open.jsonl"
+}
