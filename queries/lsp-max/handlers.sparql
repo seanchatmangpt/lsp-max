@@ -1,0 +1,17 @@
+PREFIX lsp: <https://lsp-max.rs/ontology/>
+PREFIX law: <https://lsp-max.rs/law/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+SELECT ?method_name ?snake_method ?param_type ?return_type ?law_status
+WHERE {
+    { ?method a lsp:Request } UNION { ?method a lsp:MaxExtension }
+    ?method lsp:methodName ?method_name ;
+            lsp:snakeName  ?snake_method ;
+            lsp:paramType  ?param_type ;
+            lsp:returnType ?return_type ;
+            law:status     ?status_iri .
+    BIND(STRAFTER(STR(?status_iri), "https://lsp-max.rs/law/") AS ?law_status)
+    FILTER(?law_status IN ("CANDIDATE", "ADMITTED", "UNKNOWN", "PARTIAL"))
+}
+ORDER BY ?method_name
