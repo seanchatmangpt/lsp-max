@@ -76,3 +76,25 @@ new or old — would run.
 - Two receipt schemas coexist (marker-style file receipts vs runtime `CryptographicReceipt`); unifying them is CANDIDATE, not assumed. `scripts/validate-receipt-chain.sh` validates only the marker-style shape and reports UNKNOWN for others.
 - `just check` uses per-crate feature resolution, which differs from `--all-features --workspace`; the full gate (`dx-polish` / CI) must remain whole-workspace — `check` is a pre-filter, never the authority.
 - Loop-time reduction is qualitative until measured.
+
+## TPOT2 breed-pipeline optimizer
+
+A TPOT2-style (Tree-based Pipeline Optimization Tool 2) optimizer that searches
+combinations of wasm4pm cognitive breeds via genetic programming and scores each
+candidate with a bounded fitness function. Full reference:
+[`docs/tpot2-pipeline.md`](tpot2-pipeline.md). The surface is read-only and the
+agent/editor is a client; admission of any pipeline *result* still requires a
+receipt artifact, not stdout. The rows below bound the *delivered code*, not the
+optimizer's results.
+
+| Piece | Recipe / artifact | Status | Notes |
+|---|---|---|---|
+| Library | `lsp_max::pipeline` (`src/pipeline/{catalog,types,search,fitness}.rs`) | ADMITTED | 57-breed catalog + 7 categories; re-exported from `src/lib.rs`; in-crate unit tests present. |
+| CLI noun | `lsp-max-cli pipeline` (`list-breeds`/`evaluate`/`search`/`schema`) | ADMITTED | `crates/lsp-max-cli/src/nouns/pipeline.rs`; `just pipeline-*` recipes (`-search`/`-evaluate`/`-breeds`/`-schema`/`-quick`/`-check`). |
+| Search engine | tournament + single-point crossover + point mutation + elitism + early-stop; xorshift64 PRNG | ADMITTED | `PipelineSearch::run`; deterministic per seed; early-stops at `admission_threshold` (default 0.7). |
+| Fitness (heuristic) | diversity ×0.5 + length ×0.4 + temporal 0.1, bounded [0.0,1.0] | ADMITTED | Same formula in library `HeuristicFitnessEvaluator` and CLI `heuristic_fitness()`; unit-tested. |
+| Fitness (engine) | wasm4pm-cli subprocess via CLI verbs | CANDIDATE | `SubprocessFitnessEvaluator`/`auto_evaluator` exist in the library; CLI `evaluate`/`search` call heuristic only and ignore `--ocel-path` on this branch. |
+| CLI↔library unify | CLI consuming `lsp_max::pipeline` instead of a duplicate | OPEN | CLI carries its own catalog/heuristic/GA copy. |
+| Receipt script | `scripts/pipeline-receipt.sh` + `scripts/validate-receipt-chain.sh` | PARTIAL | Marker receipt (boundary/checkpoint/digest/raw_command/status) + validator; binds the claim, not a re-executed engine run. Engine-output-digest receipt is CANDIDATE. |
+| Integration tests | `tests/test_pipeline_receipt.sh` (`just test-pipeline-receipt`) | PARTIAL | Shell test: receipt emit + validate + bad-status refusal. No Rust integration test for the `evaluate`/`search` verbs yet. |
+| OCEL end-to-end | process-specific fitness over a real OCEL log | UNKNOWN | Needs `../wasm4pm` + an OCEL log (absent here); end-to-end behavior untraced — not collapsed to ADMITTED or REFUSED. |
