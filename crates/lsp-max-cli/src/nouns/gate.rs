@@ -16,6 +16,26 @@ pub struct GateCheckResult {
     pub compositor_active: bool,
 }
 
+#[derive(Debug, Serialize)]
+pub struct GateListResult {
+    pub active: bool,
+    pub violations: Vec<String>,
+    pub gate_file: String,
+}
+
+#[derive(Debug, Serialize)]
+pub struct GateClearResult {
+    pub was_active: bool,
+    pub gate_file: String,
+    pub status: String,
+}
+
+#[derive(Debug, Serialize)]
+pub struct GateWatchResult {
+    pub polls: usize,
+    pub final_status: String,
+}
+
 // ==============================================================================
 // 2. Service Tier
 // ==============================================================================
@@ -82,6 +102,102 @@ pub fn check() -> Result<GateCheckResult> {
         )));
     }
     Ok(status)
+}
+
+/// List all active gate signals and violation codes recorded in the gate file.
+/// Byte 0 of the gate file is '1' when BLOCKED; remaining bytes are
+/// newline-separated violation codes (e.g. WASM4PM-001, GGEN-003).
+#[verb("list")]
+pub fn list() -> Result<GateListResult> {
+    let path = GateService::gate_file_path();
+    let gate_file = path.display().to_string();
+    if !path.exists() {
+        return Ok(GateListResult {
+            active: false,
+            violations: vec![],
+            gate_file,
+        });
+    }
+    let bytes = std::fs::read(&path).map_err(|e| NounVerbError::execution_error(e.to_string()))?;
+    if bytes.first().copied() != Some(b'1') {
+        return Ok(GateListResult {
+            active: false,
+            violations: vec![],
+            gate_file,
+        });
+    }
+    // Byte 0 is the status flag; remaining bytes are newline-separated violation codes.
+    let tail = &bytes[1..];
+    let violations: Vec<String> = String::from_utf8_lossy(tail)
+        .split('\n')
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .map(String::from)
+        .collect();
+    Ok(GateListResult {
+        active: true,
+        violations,
+        gate_file,
+    })
+}
+
+/// Clear the ANDON gate signal by writing '0' to the gate file.
+/// Does NOT resolve the underlying diagnostic — only clears the signal.
+#[verb("clear")]
+pub fn clear() -> Result<GateClearResult> {
+    let path = GateService::gate_file_path();
+    let gate_file = path.display().to_string();
+    if !path.exists() {
+        return Ok(GateClearResult {
+            was_active: false,
+            gate_file,
+            status: "OPEN".to_string(),
+        });
+    }
+    let was_active = std::fs::read(&path)
+        .ok()
+        .and_then(|b| b.first().copied())
+        .map(|b| b == b'1')
+        .unwrap_or(false);
+    std::fs::write(&path, b"0").map_err(|e| NounVerbError::execution_error(e.to_string()))?;
+    Ok(GateClearResult {
+        was_active,
+        gate_file,
+        status: "OPEN".to_string(),
+    })
+}
+
+/// Poll the gate file on an interval until it clears or max_polls is reached.
+/// Each poll result is emitted to stderr as JSON; the final summary is returned.
+#[verb("watch")]
+pub fn watch(
+    /// Polling interval in seconds (default: 2)
+    #[arg(long, default_value_t = 2)]
+    interval_secs: u64,
+    /// Maximum number of polls before stopping (default: 30)
+    #[arg(long, default_value_t = 30)]
+    max_polls: u64,
+) -> Result<GateWatchResult> {
+    let svc = GateService::new();
+    let mut polls: usize = 0;
+    let mut final_status = "BLOCKED".to_string();
+    for _ in 0..max_polls {
+        let poll_result = svc.check();
+        polls += 1;
+        eprintln!(
+            "{}",
+            serde_json::to_string(&poll_result).unwrap_or_default()
+        );
+        if !poll_result.andon_blocked {
+            final_status = "OPEN".to_string();
+            break;
+        }
+        std::thread::sleep(std::time::Duration::from_secs(interval_secs));
+    }
+    Ok(GateWatchResult {
+        polls,
+        final_status,
+    })
 }
 
 // ==============================================================================
