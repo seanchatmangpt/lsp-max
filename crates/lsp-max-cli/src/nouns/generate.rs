@@ -6,7 +6,7 @@ use lsp_max_gen::{
         capability::CapabilityGenerator, handler::HandlerGenerator, protocol::ProtocolGenerator,
         scaffold::ScaffoldGenerator, server::ServerGenerator, sync::SyncGenerator,
     },
-    GeneratorContext, GeneratorEngine, GeneratorRegistry,
+    GeneratorContext, GeneratorEngine, GeneratorRegistry, TestMatrixGenerator,
 };
 use serde::Serialize;
 
@@ -52,6 +52,7 @@ impl GenerateService {
             Box::new(ScaffoldGenerator),
             Box::new(ServerGenerator),
             Box::new(SyncGenerator),
+            Box::new(TestMatrixGenerator),
         ]
     }
 
