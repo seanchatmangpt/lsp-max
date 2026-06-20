@@ -49,9 +49,50 @@ The structural integrity of this ideal state is guarded by an unyielding accepta
 5.  **Architectural Clarity:** No public architecture language describes `wasm4pm-compat` as backward compatibility.
 6.  **Documented Baseline:** `wasm4pm-compat` is strictly documented as the baseline admissibility/type crate.
 
-## 5. Conclusion
+## 5. The Oracle Class Witness Hierarchy
+
+The baseline type authority extends beyond mere data shapes to include formal **named laws** that the engine must respect. The `witnesses_anti_cheat` module exemplifies this principle: it registers five Oracle classes (A8–A12) as structure-only witness markers that travel through the admission pipeline.
+
+### 5.1 Witness Markers as Canonical Law Registry
+
+Each witness marker is a zero-cost uninhabited enum tagged with a KEY string:
+
+```rust
+witness_marker!(
+    OracleA8AuditLogTampering,
+    "anti-cheat/oracle-a8-audit-log-tampering",
+    WitnessFamily::Paper,
+    "A8 Oracle — Audit Log Tampering (lsp-max threat model)",
+    None
+);
+```
+
+The KEY string ("anti-cheat/oracle-a8-*") is the canonical naming authority. When `wasm4pm` detects a violation conforming to A8's pattern (receipt without causal ancestor), it reports:
+```json
+{
+  "oracle_class": "anti-cheat/oracle-a8-audit-log-tampering",
+  "confidence": 0.95
+}
+```
+
+This report is not empirical guesswork. It flows from:
+1. A formal definition in `witnesses_anti_cheat` (structure-only).
+2. A named law in `CompatDiagnostic::OracleA8AuditLogTampering` (what satisfaction looks like).
+3. An algorithm in `wasm4pm` that proves conformance to that law (detection logic).
+
+The **baseline type authority** is the keeper of steps 1 and 2. The engine owns step 3.
+
+### 5.2 No Intermediary Witness Crates
+
+Just as `wasm4pm-types` was eradicated to enforce a single type authority, no intermediary witness registry was created. All Oracle class witnesses live in `wasm4pm-compat::witnesses_anti_cheat`. This prevents:
+
+- Different analytical modules from registering incompatible Oracle class definitions.
+- The engine from drifting into using witness KEYs that do not exist in the baseline.
+- Users from "rolling their own" adversary classes outside the canonical registry.
+
+## 6. Conclusion
 The architecture detailed in this thesis represents the terminal, perfected state of the process mining ecosystem. By violently rejecting the comfort of transitional shims and deprecation narratives, the ecosystem forced a structural reckoning. 
 
-What remains is an architecture that perfectly mirrors the formal mathematics of process mining: a pristine data model (`wasm4pm-compat`) cleanly decoupled from, yet directly consumed by, a high-performance execution engine (`wasm4pm`). 
+What remains is an architecture that perfectly mirrors the formal mathematics of process mining: a pristine data model (`wasm4pm-compat`) cleanly decoupled from, yet directly consumed by, a high-performance execution engine (`wasm4pm`). The addition of Oracle class witness markers demonstrates that this baseline type authority extends to *formal laws* — named, queryable, mathematically grounded adversary detection classes.
 
-This is not a migration bridge. This is a source-of-truth correction.
+This is not a migration bridge. This is a source-of-truth correction. This is how architecture becomes theory and theory becomes code.
