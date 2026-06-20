@@ -29,7 +29,10 @@ each row's status from on-disk evidence.
   and notebook). Status is **computed** from evidence, never declared.
 - `src/rules/lsif06.rs` — the full LSIF 0.6 element graph (20 vertices + 18
   edges) with each element's `modeled in crate` flag and an honest
-  example-coverage status.
+  example-coverage status. The `lsp-max-lsif` crate now models all 38 elements:
+  the `nextMoniker` and `belongsTo` edges and the `capabilities` vertex are
+  hand-authored in `crates/lsp-max-lsif/src/lsif.rs` with emit methods on
+  `LsifBuilder`, so no element's `modeled in crate` axis is `false`.
 - `src/virtual_docs/lsp318_full_matrix.rs` — rendered at
   `anti-llm://lsp318-full-matrix` (the live extractor output).
 - `src/virtual_docs/lsif06_matrix.rs` — rendered at `anti-llm://lsif06-matrix`.
@@ -64,10 +67,12 @@ in `src/server.rs`, and the (absent) `receipts/` directory. Headline findings:
 - **Notebook contradiction:** the delta matrix declares notebook
   `REFUSED_BY_LAW_WITH_RECEIPT`, but `server.rs` ships four empty no-op
   notebook handlers — neither refusal nor support. Marked `BLOCKED`.
-- **LSIF 0.6:** the `lsp-max-lsif` crate models 36 of 38 elements (missing
-  edges `nextMoniker`, `belongsTo`; the `capabilities` vertex exists only via
-  codegen). The example carries zero LSIF transcripts/receipts, so every
-  element's example-coverage status is `OPEN`/`PARTIAL`/`UNKNOWN`.
+- **LSIF 0.6:** the `lsp-max-lsif` crate now models all 38 elements; the
+  previously-missing `nextMoniker`/`belongsTo` edges and the codegen-only
+  `capabilities` vertex are now hand-authored with emit methods. The example
+  carries zero LSIF transcripts/receipts, so every element's example-coverage
+  status remains `OPEN` (modelled substrate, not yet evidenced) — never
+  `ADMITTED` without a transcript + receipt.
 
 ## Verification status
 
