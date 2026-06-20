@@ -1,0 +1,112 @@
+name: lsp-max Conformance Gate
+
+on:
+  push:
+    branches: [master, "claude/**"]
+  pull_request:
+    branches: [master]
+
+jobs:
+  conformance:
+    name: Conformance Score
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: false
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo registry
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-cargo-
+
+      - name: Check sibling stubs exist
+        run: |
+          # lsp-max requires sibling repos; create minimal stubs for CI
+          mkdir -p ../lsp-types-max/src ../wasm4pm-compat/src ../wasm4pm/wasm4pm/src
+          if [ ! -f ../lsp-types-max/Cargo.toml ]; then
+            cat > ../lsp-types-max/Cargo.toml <<'TOML'
+          [package]
+          name = "lsp-types-max"
+          version = "26.6.5"
+          edition = "2021"
+          [lib]
+          path = "src/lib.rs"
+          TOML
+            echo "pub use lsp_types::*;" > ../lsp-types-max/src/lib.rs
+          fi
+          if [ ! -f ../wasm4pm-compat/Cargo.toml ]; then
+            cat > ../wasm4pm-compat/Cargo.toml <<'TOML'
+          [package]
+          name = "wasm4pm-compat"
+          version = "0.1.0"
+          edition = "2021"
+          [lib]
+          path = "src/lib.rs"
+          TOML
+            echo "" > ../wasm4pm-compat/src/lib.rs
+          fi
+
+      - name: Build lsp-max-gen
+        run: cargo build -p lsp-max-gen 2>&1
+
+      - name: Scan ontology law-axis status
+        id: ontology
+        run: |
+          echo "## lsp-max Conformance Status" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Axis | Count |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|-------|" >> $GITHUB_STEP_SUMMARY
+
+          ADMITTED=$(grep -r "law:ADMITTED" ontology/ 2>/dev/null | wc -l || echo 0)
+          CANDIDATE=$(grep -r "law:CANDIDATE" ontology/ 2>/dev/null | wc -l || echo 0)
+          REFUSED=$(grep -r "law:REFUSED" ontology/ 2>/dev/null | wc -l || echo 0)
+          UNKNOWN=$(grep -r "law:UNKNOWN" ontology/ 2>/dev/null | wc -l || echo 0)
+          METHODS=$(grep -r "lsp:methodName" ontology/ 2>/dev/null | wc -l || echo 0)
+
+          echo "| ADMITTED | $ADMITTED |" >> $GITHUB_STEP_SUMMARY
+          echo "| CANDIDATE | $CANDIDATE |" >> $GITHUB_STEP_SUMMARY
+          echo "| REFUSED | $REFUSED |" >> $GITHUB_STEP_SUMMARY
+          echo "| UNKNOWN | $UNKNOWN |" >> $GITHUB_STEP_SUMMARY
+          echo "| Total methods declared | $METHODS |" >> $GITHUB_STEP_SUMMARY
+
+          echo "admitted=$ADMITTED" >> $GITHUB_OUTPUT
+          echo "candidate=$CANDIDATE" >> $GITHUB_OUTPUT
+          echo "methods=$METHODS" >> $GITHUB_OUTPUT
+
+      - name: Check tower-lsp law violations
+        run: |
+          echo "## Law Compliance Scan" >> $GITHUB_STEP_SUMMARY
+          VIOLATIONS=$(grep -r "tower-lsp\|tower_lsp" src/ crates/ lsp-max-protocol/ lsp-max-runtime/ lsp-max-agent/ lsp-max-macros/ 2>/dev/null \
+            | grep -v "target/" \
+            | grep -v "anti-llm-cheat-lsp" \
+            | grep -v "\.toml:.*#" \
+            | wc -l || echo 0)
+          echo "tower-lsp references (forbidden): $VIOLATIONS" >> $GITHUB_STEP_SUMMARY
+          if [ "$VIOLATIONS" -gt "0" ]; then
+            echo "### Violations" >> $GITHUB_STEP_SUMMARY
+            grep -rn "tower-lsp\|tower_lsp" src/ crates/ lsp-max-protocol/ 2>/dev/null | grep -v target/ | head -20 >> $GITHUB_STEP_SUMMARY
+            echo "::error::LawViolation: $VIOLATIONS forbidden tower-lsp reference(s) found"
+            exit 1
+          fi
+          echo "Status: CANDIDATE — no forbidden references detected" >> $GITHUB_STEP_SUMMARY
+
+      - name: Check victory language
+        run: |
+          VICTORY=$(grep -rn '"done"\|"complete"\|"solved"\|"guaranteed"\|"all clean"\|"fully admitted"' \
+            src/ crates/ lsp-max-protocol/ \
+            --include="*.rs" 2>/dev/null \
+            | grep -v target/ \
+            | grep -v "test\|spec\|fixture" \
+            | wc -l || echo 0)
+          if [ "$VICTORY" -gt "0" ]; then
+            echo "::warning::VictoryLanguage: $VICTORY victory-language occurrence(s) found — use bounded statuses"
+          fi

@@ -1,0 +1,45 @@
+name: ggen Integration Artifacts
+
+on:
+  push:
+    branches: [master, "claude/**"]
+  pull_request:
+    branches: [master]
+
+jobs:
+  ggen-artifacts:
+    name: Validate ggen Artifacts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check gen.toml exists
+        run: |
+          if [ -f gen.toml ]; then
+            echo "gen.toml: CANDIDATE" >> $GITHUB_STEP_SUMMARY
+            cat gen.toml | head -20 >> $GITHUB_STEP_SUMMARY
+          else
+            echo "gen.toml: OPEN" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Validate template files
+        run: |
+          echo "## Template Pack Validation" >> $GITHUB_STEP_SUMMARY
+          for f in templates/lsp-max/*.tera; do
+            if grep -q "tower-lsp\|tower_lsp" "$f" 2>/dev/null; then
+              echo "::error file=$f::LawViolation: tower-lsp reference in template"
+              exit 1
+            fi
+            echo "- $f: CANDIDATE" >> $GITHUB_STEP_SUMMARY
+          done
+
+      - name: Validate SPARQL syntax (basic)
+        run: |
+          echo "## SPARQL File Validation" >> $GITHUB_STEP_SUMMARY
+          for f in queries/lsp-max/*.sparql; do
+            if grep -q "SELECT\|CONSTRUCT\|ASK" "$f" 2>/dev/null; then
+              echo "- $f: CANDIDATE (SELECT/CONSTRUCT present)" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "::warning file=$f::SPARQL file missing SELECT/CONSTRUCT — OPEN"
+            fi
+          done

@@ -14,7 +14,7 @@ App lives in `web/` (App Router, RSC). Data paths resolve to the repo root
 | Real source | Path / command | Renderable as |
 |---|---|---|
 | Receipt artifacts (8) | `receipts/*.receipt.json`, `crates/playground/receipts/GALL-CHECKPOINT-*.receipt.json` | receipt ledger: digest, status, claims, replay_pointer |
-| OCEL evidence | `crates/playground/ocel/*.ocel.json`, `examples/anti-llm-cheat-lsp/ocel/*` | process-evidence view |
+| OCEL evidence | `crates/playground/ocel/*.ocel.json`, `crates/anti-llm-cheat-lsp/ocel/*` | process-evidence view |
 | CLI noun-verb surface (19 nouns) | `crates/lsp-max-cli/src/nouns/*.rs` | command-surface map |
 | Example witnesses (run-to-exit) | `cargo run --example {conformance_vector,receipt_chain,calver_law,admission_pipeline}_explained` | live witness output (server action) |
 | Doc↔example coverage | `DOC_COVERAGE_LOG.md` | coverage gap map |

@@ -11,8 +11,11 @@ pub mod conformance;
 pub mod core;
 pub mod custom_methods;
 pub mod diagnostics;
+pub mod explain;
 pub mod hooks;
+pub mod intent;
 pub mod policy;
+pub mod stream;
 
 // Re-export all types so they are visible at the crate root level exactly as before.
 
@@ -21,6 +24,12 @@ pub use conformance::{ConformanceGrade, ConformanceVector, LawAxis};
 pub use diagnostics::{
     DocRoute, MaxCodeAction, MaxDiagnostic, Precondition, ReceiptPlan, RepairAction, Repairability,
     RollbackPlan, SnapshotId, Terminality, TransitionAttempt, ValidationPlan,
+};
+
+pub use explain::{
+    explain_code, explain_method_status, ExplainDiagnosticParams, ExplainDiagnosticResult,
+    ExplainPosition, ExplainReceiptParams, ExplainReceiptResult, ExplainStatusParams,
+    ExplainStatusResult, LawAxisTrace, EXPLAIN_DIAGNOSTIC, EXPLAIN_RECEIPT, EXPLAIN_STATUS,
 };
 
 pub use hooks::{
@@ -58,19 +67,24 @@ pub use custom_methods::{
 
 pub use policy::PolicyState;
 
+pub use intent::{
+    IntentDeclareParams, IntentDeclareResult, IntentKind, IntentListParams, IntentListResult,
+    IntentOutcome, IntentRegistry, IntentRevokeParams, IntentRevokeResult, IntentSummary,
+    IntentValidateParams, IntentValidateResult, INTENT_DECLARE, INTENT_LIST, INTENT_REVOKE,
+    INTENT_VALIDATE,
+};
+
 pub use core::{
     AnalysisBundle, CapabilityGap, GateId, InstanceId, LspStateModel, MaxCapabilityVector, Receipt,
     ReceiptObligation,
 };
 
-impl lsp_types_max::request::Request for lsp_3_18::FoldingRangeRefreshRequest {
-    type Params = ();
-    type Result = ();
-    const METHOD: &'static str = "workspace/foldingRange/refresh";
-}
+pub use stream::{
+    StreamBus, StreamEvent, StreamEventKind, StreamSubscribeParams, StreamSubscribeResult,
+    StreamUnsubscribeParams, StreamUnsubscribeResult, STREAM_EVENT, STREAM_SUBSCRIBE,
+    STREAM_UNSUBSCRIBE,
+};
 
-impl lsp_types_max::request::Request for lsp_3_18::TextDocumentContentRefreshRequest {
-    type Params = lsp_3_18::TextDocumentContentRefreshParams;
-    type Result = ();
-    const METHOD: &'static str = "workspace/textDocumentContent/refresh";
-}
+// LspRequest is implemented for FoldingRangeRefreshRequest and
+// TextDocumentContentRefreshRequest directly in lsp_3_18.rs.
+// The impls are available via `lsp_3_18::LspRequest`.

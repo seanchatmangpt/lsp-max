@@ -1,0 +1,39 @@
+[package]
+name = "wasm-lsp"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+description = "WebAssembly/WebWorker transport example for lsp-max — law-status: CANDIDATE"
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+categories.workspace = true
+keywords.workspace = true
+publish = false
+
+# wasm32 target notes:
+#   cargo build --target wasm32-unknown-unknown
+#   The "io-std" feature on tokio is required when tokio is declared in crates
+#   that depend on lsp-max and also use tokio::io::stdin / tokio::io::stdout.
+#   For a pure WASM target those symbols are not available; the binary entry
+#   point (main.rs) is intentionally compiled only for non-WASM hosts.
+#   The in-process WasmTransport (transport.rs) is target-agnostic.
+
+[[bin]]
+name = "wasm-lsp"
+path = "src/main.rs"
+
+[lib]
+name = "wasm_lsp"
+path = "src/lib.rs"
+
+[dependencies]
+lsp-max = { path = "../.." }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+# "io-std" required per CLAUDE.md: tokio::io::stdin / tokio::io::stdout are
+# behind this feature gate and are not inherited transitively from lsp-max.
+tokio = { version = "1", features = ["io-std", "io-util", "macros", "rt-multi-thread", "sync"] }
+tracing = "0.1"
+tracing-subscriber = "0.3"
