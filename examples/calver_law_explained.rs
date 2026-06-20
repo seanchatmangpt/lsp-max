@@ -92,7 +92,7 @@
 // CalVer. Run it:  cargo run --example calver_law_explained
 //
 // Version source:        Cargo.toml (workspace.package.version)
-// Law enforcement (prod): examples/anti-llm-cheat-lsp/src/rules/version.rs
+// Law enforcement (prod): crates/anti-llm-cheat-lsp/src/rules/version.rs
 //   (the ANTI-LLM-VERSION-* diagnostic family enforces this on Cargo.toml)
 
 /// Is `s` a lawful CalVer `YY.M.D`? Three numeric components, a plausible
@@ -149,5 +149,5 @@ fn main() {
     println!("  [3] SemVer/malformed rejected (1.2.3, 26.13.1, 26.6.32, 26.6, v.., -rc1)");
     println!();
     println!("This example panics if the workspace version stops being lawful CalVer —");
-    println!("the same law examples/anti-llm-cheat-lsp/src/rules/version.rs enforces.");
+    println!("the same law crates/anti-llm-cheat-lsp/src/rules/version.rs enforces.");
 }
