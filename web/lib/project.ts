@@ -34,7 +34,7 @@ export interface Receipt {
   export_reason?: string;
 }
 
-const RECEIPT_DIRS = ["receipts", "crates/playground/receipts"];
+const RECEIPT_DIRS = ["receipts", "crates/playground/receipts", "crates/anti-llm-cheat-lsp/receipts"];
 
 async function readJsonFile(abs: string): Promise<unknown> {
   const text = await fs.readFile(abs, "utf8");
