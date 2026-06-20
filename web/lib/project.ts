@@ -167,6 +167,54 @@ export async function readCoverage(): Promise<CoverageReport> {
   };
 }
 
+/** Object-centric event log (OCEL 2.0) as actually emitted by the project. */
+export interface OcelRelationship {
+  objectId: string;
+  qualifier: string;
+}
+export interface OcelEvent {
+  id: string;
+  type: string;
+  time: string;
+  relationships: OcelRelationship[];
+}
+export interface OcelObject {
+  id: string;
+  type: string;
+}
+export interface Ocel {
+  sourceFile: string;
+  eventTypes: string[];
+  objectTypes: string[];
+  events: OcelEvent[];
+  objects: OcelObject[];
+}
+
+const OCEL_CANDIDATES = [
+  "crates/playground/ocel/admitted_evidence.ocel.json",
+];
+
+/** Read the real OCEL artifact (object-centric event log). Throws if no OCEL
+ *  file is present — the process graph must come from a real log. */
+export async function readOcel(): Promise<Ocel> {
+  let lastErr: unknown;
+  for (const rel of OCEL_CANDIDATES) {
+    try {
+      const raw = (await readJsonFile(path.join(REPO_ROOT, rel))) as Record<string, unknown>;
+      return {
+        sourceFile: rel,
+        eventTypes: ((raw.eventTypes as { name: string }[]) ?? []).map((t) => t.name),
+        objectTypes: ((raw.objectTypes as { name: string }[]) ?? []).map((t) => t.name),
+        events: (raw.events as OcelEvent[]) ?? [],
+        objects: (raw.objects as OcelObject[]) ?? [],
+      };
+    } catch (e) {
+      lastErr = e;
+    }
+  }
+  throw new Error(`No OCEL artifact found (${OCEL_CANDIDATES.join(", ")}): ${String(lastErr)}`);
+}
+
 /** Workspace version, read from the real Cargo.toml (CalVer YY.M.D). */
 export async function readWorkspaceVersion(): Promise<string> {
   const cargo = await fs.readFile(path.join(REPO_ROOT, "Cargo.toml"), "utf8");
