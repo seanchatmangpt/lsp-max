@@ -1,4 +1,5 @@
 use lsp_max_protocol::custom_methods::*;
+use lsp_max_protocol::lsp_3_18::LspRequest as _;
 use lsp_max_protocol::{
     ChainDescriptor, ConformanceVector, HookDescriptor, HookGraphNode, LawAxis, ManifoldSnapshot,
     MaxDiagnostic, Receipt, SnapshotId,
