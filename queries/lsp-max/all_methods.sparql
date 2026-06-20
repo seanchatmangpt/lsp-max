@@ -1,0 +1,15 @@
+PREFIX lsp: <https://lsp-max.rs/ontology/>
+PREFIX law: <https://lsp-max.rs/law/>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+
+SELECT ?kind ?method_name ?law_status
+WHERE {
+    ?method lsp:methodName ?method_name ;
+            law:status     ?status_iri .
+    BIND(STRAFTER(STR(?status_iri), "https://lsp-max.rs/law/") AS ?law_status)
+    OPTIONAL {
+        ?method rdf:type ?type_iri .
+        BIND(STRAFTER(STR(?type_iri), "https://lsp-max.rs/ontology/") AS ?kind)
+    }
+}
+ORDER BY ?law_status ?kind ?method_name

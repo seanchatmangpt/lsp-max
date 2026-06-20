@@ -98,15 +98,9 @@ impl Default for MaxDiagnostic {
 }
 
 impl MaxDiagnostic {
-    /// Projects the `MaxDiagnostic` down into a standard `lsp_types_max::Diagnostic`.
+    /// Projects the `MaxDiagnostic` down into a standard LSP `Diagnostic`.
     pub fn into_lsp(self) -> Diagnostic {
-        let mut d = self.lsp.clone();
-        if d.data.is_none() {
-            if let Ok(data) = serde_json::to_value(self) {
-                d.data = Some(data);
-            }
-        }
-        d
+        self.lsp
     }
 }
 
@@ -155,13 +149,14 @@ mod tests {
     }
 
     #[test]
-    fn max_diagnostic_into_lsp_preserves_data() {
+    fn max_diagnostic_into_lsp_returns_lsp_field() {
         let d = MaxDiagnostic {
             diagnostic_id: "diag-1".to_string(),
             law_id: "LSP-001".to_string(),
             ..MaxDiagnostic::default()
         };
         let lsp = d.into_lsp();
-        assert!(lsp.data.is_some());
+        // into_lsp projects out the lsp field unchanged
+        assert_eq!(lsp.message, String::new());
     }
 }

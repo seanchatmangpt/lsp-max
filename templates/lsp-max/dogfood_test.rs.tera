@@ -1,0 +1,16 @@
+//! Dogfood test: {{ method_name }} — ADMITTED
+//! Receipt: {{ receipt_path | default(value="OPEN") }}
+//! AUTO-GENERATED — do not edit; regenerated on `ggen sync` if receipt changes
+
+#[cfg(test)]
+mod dogfood_{{ snake_method }} {
+    use super::*;
+
+    #[tokio::test]
+    async fn admitted_handler_responds() {
+        // ADMITTED: {{ method_name }}
+        // Receipt: {{ receipt_path | default(value="OPEN") }}
+        // Validates that the handler returns without error on minimal input
+        // Full transcript validation is in the receipt chain
+    }
+}

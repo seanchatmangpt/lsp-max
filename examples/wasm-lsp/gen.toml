@@ -1,0 +1,27 @@
+[project]
+name = "wasm-lsp"
+language_id = "wasm"
+version = "26.6.18"
+
+[ontology]
+source = "schema/domain.ttl"
+packs = ["lsp-max"]
+
+[generation]
+output_dir = "src"
+
+# Rule 1: generate the WasmTransport backend stub from ontology-declared methods
+[[generation.rules]]
+name = "wasm-backend"
+query   = { inline = "SELECT ?method ?law_status WHERE { ?method a <https://lsp-max.rs/ontology/LspMethod> ; <https://lsp-max.rs/law/status> ?law_status . }" }
+template = { file = "../../templates/lsp-max/backend.rs.tera" }
+output_file = "src/backend.rs"
+mode = "Skip"
+
+# Rule 2: regenerate ConformanceVector from wasm-transport law-axis states
+[[generation.rules]]
+name = "wasm-conformance"
+query   = { file = "../../queries/lsp-max/conformance.sparql" }
+template = { file = "../../templates/lsp-max/conformance_vector.rs.tera" }
+output_file = "src/conformance.rs"
+mode = "Overwrite"
