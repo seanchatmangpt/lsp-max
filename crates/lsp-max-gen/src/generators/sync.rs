@@ -160,7 +160,9 @@ name = "test"
         let dir = TempDir::new().unwrap();
         let gen = SyncGenerator;
         let result = gen.generate(&ctx(&dir));
-        assert!(result.is_err());
-        assert!(matches!(result.unwrap_err(), GeneratorError::Io { .. }));
+        match result {
+            Err(GeneratorError::Io { .. }) => {}
+            other => panic!("expected Io error, got: {:?}", other.is_ok()),
+        }
     }
 }
