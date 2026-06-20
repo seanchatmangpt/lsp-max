@@ -12,7 +12,7 @@ Early detection reduces the cost of law violations from post-deployment (very ex
 
 ## Decision
 
-Implement a dedicated example LSP server (`examples/anti-llm-cheat-lsp`) that performs the following checks at compile time (via AST analysis and diagnostics emission):
+Implement a dedicated example LSP server (`crates/anti-llm-cheat-lsp`) that performs the following checks at compile time (via AST analysis and diagnostics emission):
 
 1. **Tower-lsp re-introduction**: Detects any use of `tower_lsp::` or `tower-lsp` imports outside of explicit negative-control test fixtures.
 2. **Victory language**: Scans code and comments for words like "done", "all clean", "fully solved", "guaranteed", etc. Maps to the `ANTI-LLM-VICTORY-*` diagnostic family.
@@ -54,7 +54,7 @@ The diagnostic canary was chosen because it:
 
 ## Reference
 
-- **Example crate**: `examples/anti-llm-cheat-lsp`
+- **Example crate**: `crates/anti-llm-cheat-lsp`
 - **Diagnostic families**:
   - `ANTI-LLM-CHEAT-*`: illegal tower-lsp re-introduction
   - `ANTI-LLM-VICTORY-*`: victory language in code
