@@ -248,4 +248,48 @@ mod tests {
         env::remove_var("LSP_MAX_STATE_PATH");
         drop(tmp_file);
     }
+
+    #[test]
+    fn test_generate_noun_list() {
+        let registry = clap_noun_verb::cli::CommandRegistry::get().lock().unwrap();
+        let args = vec![
+            "lsp-max-cli".to_string(),
+            "generate".to_string(),
+            "list".to_string(),
+        ];
+        let output = registry.execute_single_step(args).unwrap();
+        assert!(
+            output.data["generators"]
+                .as_array()
+                .map(|a| !a.is_empty())
+                .unwrap_or(false),
+            "generator list must be non-empty"
+        );
+    }
+
+    #[test]
+    fn test_generate_server_in_tempdir() {
+        let tmp = tempfile::TempDir::new().expect("tempdir OPEN");
+        let tmp_path = tmp.path().to_str().unwrap().to_string();
+
+        let registry = clap_noun_verb::cli::CommandRegistry::get().lock().unwrap();
+        let args = vec![
+            "lsp-max-cli".to_string(),
+            "generate".to_string(),
+            "server".to_string(),
+            "--name".to_string(),
+            "TestServer".to_string(),
+            "--output-dir".to_string(),
+            tmp_path.clone(),
+        ];
+        let output = registry.execute_single_step(args).unwrap();
+        assert_eq!(output.data["status"], "CANDIDATE");
+        assert!(
+            output.data["files_written"]
+                .as_array()
+                .map(|a| !a.is_empty())
+                .unwrap_or(false),
+            "files_written must be non-empty after server generation"
+        );
+    }
 }
