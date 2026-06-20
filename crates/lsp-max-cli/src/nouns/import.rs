@@ -87,7 +87,7 @@ impl ImportService {
         let inst = mesh
             .instances
             .get_mut(instance_id)
-            .ok_or_else(|| format!("Instance not found: {}", instance_id))?;
+            .expect("instance was just inserted");
 
         let mut imported = 0usize;
         for v in values {

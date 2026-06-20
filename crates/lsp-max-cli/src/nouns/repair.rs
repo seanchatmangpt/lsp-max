@@ -204,8 +204,7 @@ impl RepairService {
         })
     }
 
-    /// Seed a repair plan into the mesh (used in tests and tooling).
-    #[allow(dead_code)]
+    #[cfg(test)]
     pub fn seed_plan(
         &self,
         instance_id: &str,

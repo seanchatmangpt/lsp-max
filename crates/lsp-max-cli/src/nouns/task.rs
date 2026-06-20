@@ -371,13 +371,17 @@ mod tests {
         let tmp = tempfile::NamedTempFile::new().expect("tempfile");
         let path = tmp.path().to_str().unwrap().to_string();
         let prev = env::var("LSP_MAX_STATE_PATH").ok();
-        env::set_var("LSP_MAX_STATE_PATH", &path);
+        // SAFETY: test-only, guarded by TEST_ENV_LOCK
+        unsafe { env::set_var("LSP_MAX_STATE_PATH", &path); }
         let _ = std::fs::remove_file(&path);
         f(path.clone());
         let _ = std::fs::remove_file(&path);
-        match prev {
-            Some(v) => env::set_var("LSP_MAX_STATE_PATH", v),
-            None => env::remove_var("LSP_MAX_STATE_PATH"),
+        // SAFETY: test-only, guarded by TEST_ENV_LOCK
+        unsafe {
+            match prev {
+                Some(v) => env::set_var("LSP_MAX_STATE_PATH", v),
+                None => env::remove_var("LSP_MAX_STATE_PATH"),
+            }
         }
     }
 

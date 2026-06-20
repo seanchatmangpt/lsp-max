@@ -1,8 +1,8 @@
 use clap_noun_verb::Result;
 use clap_noun_verb_macros::verb;
 use lsp_max_runtime::AutonomicMesh;
-use lsp_types_max;
 use serde::{Deserialize, Serialize};
+use std::collections::HashSet;
 use std::fs;
 use std::path::PathBuf;
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -151,13 +151,14 @@ impl WorkspaceService {
                 nodes.sort_by(|a, b| a.0.cmp(&b.0));
 
                 let instance_ids: Vec<String> = mesh.instances.keys().cloned().collect();
+                let mut seen_edges: HashSet<(String, String, String)> = HashSet::new();
                 let mut edges: Vec<(String, String, String)> = Vec::new();
                 for (from_id, inst) in &mesh.instances {
                     for diag in &inst.diagnostics {
                         for to_id in &instance_ids {
                             if to_id != from_id && diag.lsp.message.contains(to_id.as_str()) {
                                 let edge = (from_id.clone(), to_id.clone(), "DIAGNOSTIC_REF".to_string());
-                                if !edges.contains(&edge) {
+                                if seen_edges.insert(edge.clone()) {
                                     edges.push(edge);
                                 }
                             }
@@ -387,8 +388,7 @@ pub struct WorkspaceDiffBaselineResult {
 }
 
 #[verb("diff-baseline")]
-pub fn diff_baseline(path: Option<String>) -> Result<WorkspaceDiffBaselineResult> {
-    let _resolved = path.unwrap_or_else(|| ".".to_string());
+pub fn diff_baseline() -> Result<WorkspaceDiffBaselineResult> {
     let service = WorkspaceService::new();
     let (raw_regressions, raw_improvements, unchanged) = service
         .diff_baseline()

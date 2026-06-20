@@ -1,6 +1,7 @@
+use clap_noun_verb::error::NounVerbError;
 use clap_noun_verb::Result;
 use clap_noun_verb_macros::verb;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
@@ -263,7 +264,7 @@ pub fn set(key: String, value: String) -> Result<SetResult> {
     let service = ConfigService::new();
     let config = service
         .set(&key, &value)
-        .map_err(clap_noun_verb::error::NounVerbError::execution_error)?;
+        .map_err(NounVerbError::execution_error)?;
     Ok(SetResult { config })
 }
 
@@ -277,7 +278,7 @@ pub fn reset(key: String) -> Result<ResetResult> {
     let service = ConfigService::new();
     let config = service
         .reset(&key)
-        .map_err(clap_noun_verb::error::NounVerbError::execution_error)?;
+        .map_err(NounVerbError::execution_error)?;
     Ok(ResetResult { config })
 }
 
@@ -326,7 +327,7 @@ pub fn profile_save(name: String) -> Result<ProfileSaveResult> {
     let service = ConfigService::new();
     let (name, key_count) = service
         .profile_save(&name)
-        .map_err(clap_noun_verb::error::NounVerbError::execution_error)?;
+        .map_err(NounVerbError::execution_error)?;
     Ok(ProfileSaveResult {
         name,
         key_count,
@@ -350,7 +351,7 @@ pub fn profile_load(name: String) -> Result<ProfileLoadResult> {
     let service = ConfigService::new();
     let (name, keys_applied) = service
         .profile_load(&name)
-        .map_err(clap_noun_verb::error::NounVerbError::execution_error)?;
+        .map_err(NounVerbError::execution_error)?;
     Ok(ProfileLoadResult {
         name,
         keys_applied,
@@ -362,7 +363,7 @@ pub fn profile_load(name: String) -> Result<ProfileLoadResult> {
 // diff
 // ------------------------------------------------------------------
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize)]
 pub struct ConfigKeyChange {
     pub key: String,
     pub current_value: String,
@@ -382,7 +383,7 @@ pub fn diff(profile_name: String) -> Result<ConfigDiffResult> {
     let service = ConfigService::new();
     let (added, removed, changed_raw) = service
         .diff(&profile_name)
-        .map_err(clap_noun_verb::error::NounVerbError::execution_error)?;
+        .map_err(NounVerbError::execution_error)?;
     let changed: Vec<ConfigKeyChange> = changed_raw
         .into_iter()
         .map(|(key, current_value, profile_value)| ConfigKeyChange {

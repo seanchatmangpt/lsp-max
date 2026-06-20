@@ -187,14 +187,18 @@ impl DoctorService {
             info_count: 0,
             status: "UNKNOWN".to_string(),
         });
-        let overall_status = match (
-            health.status == "ADMITTED",
-            compliance.status == "ADMITTED",
-            lint.status == "ADMITTED",
-        ) {
-            (true, true, true) => "ADMITTED",
-            (false, false, false) => "BLOCKED",
-            _ => "PARTIAL",
+        let any_blocked = health.status == "BLOCKED"
+            || compliance.status == "BLOCKED"
+            || lint.status == "BLOCKED";
+        let all_admitted = health.status == "ADMITTED"
+            && compliance.status == "ADMITTED"
+            && lint.status == "ADMITTED";
+        let overall_status = if any_blocked {
+            "BLOCKED"
+        } else if all_admitted {
+            "ADMITTED"
+        } else {
+            "PARTIAL"
         };
         DoctorReport { health, compliance, lint, overall_status: overall_status.to_string() }
     }
@@ -359,7 +363,7 @@ mod tests {
     fn scan_detects_tower_lsp_ref() {
         let mut v = Vec::new();
         // NOT tower-lsp — negative-control marker; this fixture line must NOT itself trigger.
-        scan_file_for_violations("test.rs", "use tower-lsp::something;\n", &mut v);
+        scan_file_for_violations("test.rs", concat!("use tower", "-lsp::something;\n"), &mut v);
         assert_eq!(v.len(), 1);
         assert_eq!(v[0].kind, "TOWER_LSP_REF");
     }

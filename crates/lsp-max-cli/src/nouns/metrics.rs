@@ -391,7 +391,7 @@ mod tests {
         let path = tmp.path().to_str().unwrap().to_string();
         // SAFETY: test-only, guarded by TEST_ENV_LOCK
         unsafe {
-            env::set_var("TOWER_LSP_MAX_STATE_PATH", &path);
+            env::set_var("LSP_MAX_STATE_PATH", &path);
         }
         let _ = std::fs::remove_file(&path);
         f();
