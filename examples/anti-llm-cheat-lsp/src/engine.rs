@@ -7,8 +7,9 @@ use crate::parsers::{
 };
 use crate::rules::{
     authority, claims, complexity, contract as contract_rules, declare_laws, determinism, ggen,
-    lsp318, mutation, ocel_rules, oracle, receipts, refgraph as refgraph_rules, routes, rust_smells,
-    surface, test, trace, typescript as ts_rules, version,
+    hollow, lsp318, mutation, ocel_rules, oracle, placeholder, receipts,
+    refgraph as refgraph_rules, routes, rust_smells, surface, test, trace, typescript as ts_rules,
+    version,
 };
 use aho_corasick::AhoCorasick;
 use std::fs;
@@ -136,6 +137,11 @@ pub fn scan_file(filepath: &str) -> Vec<Observation> {
         || filepath.ends_with("rules/lsp318.rs")
         || filepath.ends_with("engine.rs");
 
+    // Rule and parser source files define cheat-pattern strings as data — exclude them
+    // from the hollow/placeholder line scans to prevent self-detection.
+    let is_rule_or_parser_src =
+        filepath.contains("src/rules/") || filepath.contains("src/parsers/");
+
     // 1. Raw text scan — single AhoCorasick pass over entire file
     if !is_self_excluded {
         let line_index = build_line_index(content.as_bytes());
@@ -230,6 +236,10 @@ pub fn scan_file(filepath: &str) -> Vec<Observation> {
         obs.extend(cargo_lock::parse_cargo_lock(filepath, &content));
     } else if filename.ends_with(".rs") {
         obs.extend(rust_tree_sitter::parse_rust_ast(filepath, &content));
+        if !is_rule_or_parser_src {
+            obs.extend(hollow::scan_for_hollow(filepath, &content));
+            obs.extend(placeholder::scan_for_fake_alignment(filepath, &content));
+        }
     } else if filename.ends_with(".md") {
         obs.extend(markdown_claims::parse_markdown_claims(filepath, &content));
     } else if filename.ends_with(".json") || filename.ends_with(".jsonl") {
@@ -326,6 +336,8 @@ pub fn evaluate_diagnostics_with_config(
     diags.extend(contract_rules::evaluate(obs));
     diags.extend(refgraph_rules::evaluate(obs));
     diags.extend(declare_laws::evaluate(obs));
+    diags.extend(hollow::evaluate(obs));
+    diags.extend(placeholder::evaluate(obs));
 
     let has_non_victory_errors = diags.iter().any(|d| d.code != "ANTI-LLM-CLAIM-004");
     diags.extend(claims::evaluate(
