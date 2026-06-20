@@ -142,7 +142,7 @@ qol-sync:
 # Regenerate LSP 3.18 spec-graph artifacts from the canonical metaModel.json
 spec-graph:
     cargo run -p lsp-max-specgen -- \
-        --emit-spec-graph examples/anti-llm-lsp/generated \
+        --emit-spec-graph crates/anti-llm-cheat-lsp/generated \
         --input vendors/vscode-languageserver-node/protocol/metaModel.json
 
 # --- AutoEtc (Operational & Context) ---
