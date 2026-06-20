@@ -85,14 +85,6 @@ pub use stream::{
     STREAM_UNSUBSCRIBE,
 };
 
-impl lsp_3_18::LspRequest for lsp_3_18::FoldingRangeRefreshRequest {
-    type Params = ();
-    type Result = ();
-    const METHOD: &'static str = "workspace/foldingRange/refresh";
-}
-
-impl lsp_3_18::LspRequest for lsp_3_18::TextDocumentContentRefreshRequest {
-    type Params = lsp_3_18::TextDocumentContentRefreshParams;
-    type Result = ();
-    const METHOD: &'static str = "workspace/textDocumentContent/refresh";
-}
+// LspRequest is implemented for FoldingRangeRefreshRequest and
+// TextDocumentContentRefreshRequest directly in lsp_3_18.rs.
+// The impls are available via `lsp_3_18::LspRequest`.
