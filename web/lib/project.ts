@@ -275,7 +275,7 @@ export interface OcelFile {
 
 const OCEL_DIRS = [
   "crates/playground/ocel",
-  "examples/anti-llm-cheat-lsp/ocel",
+  "crates/anti-llm-cheat-lsp/ocel",
 ];
 
 /** Read every real *.ocel.json under the known OCEL directories. Parses OCEL2
