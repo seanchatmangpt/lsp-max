@@ -9,6 +9,7 @@ pub mod event;
 pub mod gate;
 pub mod hook;
 pub mod metamodel;
+pub mod pipeline;
 pub mod plugin;
 pub mod receipt;
 pub mod rpc;
