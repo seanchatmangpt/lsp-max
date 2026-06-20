@@ -91,7 +91,7 @@ impl LanguageServer for AntiLlmServer {
             capabilities: caps,
             server_info: Some(ServerInfo {
                 name: "anti-llm-cheat-lsp".to_string(),
-                version: Some("26.6.5".to_string()),
+                version: Some("26.6.18".to_string()),
             }),
             offset_encoding: None,
         })
