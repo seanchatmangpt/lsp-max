@@ -77,6 +77,13 @@ for k in api_base model; do
   fi
 done
 
+# Pipeline CLI availability
+if command -v lsp-max-cli >/dev/null 2>&1 && lsp-max-cli pipeline schema >/dev/null 2>&1; then
+  add pipeline ADMITTED "pipeline search available ($(lsp-max-cli pipeline list-breeds 2>/dev/null | jq '.total // 0' 2>/dev/null || echo '?') breeds)" ""
+else
+  add pipeline UNKNOWN "lsp-max-cli pipeline not available" "cargo build -p lsp-max-cli"
+fi
+
 # target/ disk footprint (informational)
 sz="$(du -sm "$ROOT/target" 2>/dev/null | awk '{print $1}')"
 add disk OPEN "${sz:-0}MB in target/" "just qol-clean"
@@ -100,7 +107,7 @@ if [ "$JSON" -eq 1 ]; then
     first=0
     printf '{"id":"%s","status":"%s","detail":"%s","fix":"%s"}' "$id" "$st" "$de" "$fx"
   done
-  printf ']}\n'
+  printf ']\}\n'
 else
   printf '  %-18s %-9s %s\n' "CHECK" "STATUS" "DETAIL"
   for r in "${ROWS[@]}"; do
