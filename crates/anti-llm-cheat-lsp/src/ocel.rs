@@ -148,13 +148,13 @@ pub fn generate_anti_llm_ocel_log() -> OCEL {
         OCELObject::new("file_server_rs".to_string(), "File").with_attribute(
             OCELEventAttribute::string(
                 "path",
-                "examples/anti-llm-cheat-lsp/src/server.rs".to_string(),
+                "crates/anti-llm-cheat-lsp/src/server.rs".to_string(),
             ),
         ),
         OCELObject::new("range_server_rs_1".to_string(), "FileRange")
             .with_attribute(OCELEventAttribute::string(
                 "file",
-                "examples/anti-llm-cheat-lsp/src/server.rs".to_string(),
+                "crates/anti-llm-cheat-lsp/src/server.rs".to_string(),
             ))
             .with_attribute(OCELEventAttribute::integer("line", 42)),
         OCELObject::new("cp_ocel_compat_001".to_string(), "Checkpoint")
@@ -186,7 +186,7 @@ pub fn generate_anti_llm_ocel_log() -> OCEL {
         OCELObject::new("receipt_ocel_json".to_string(), "Receipt").with_attribute(
             OCELEventAttribute::string(
                 "path",
-                "examples/anti-llm-cheat-lsp/ocel/anti_llm_cheat_lsp_ocel.receipt.json".to_string(),
+                "crates/anti-llm-cheat-lsp/ocel/anti_llm_cheat_lsp_ocel.receipt.json".to_string(),
             ),
         ),
         OCELObject::new("digest_ocel_json".to_string(), "Digest")
@@ -404,7 +404,7 @@ pub fn write_ocel_outputs(dir: &str) -> Result<(), Box<dyn std::error::Error>> {
     let receipt_json = json!({
         "digest": hash_val,
         "digest_algorithm": "BLAKE3",
-        "boundary": "examples/anti-llm-cheat-lsp/ocel",
+        "boundary": "crates/anti-llm-cheat-lsp/ocel",
         "checkpoint": "OCEL-COMPAT-001"
     });
     fs::write(&receipt_path, serde_json::to_string_pretty(&receipt_json)?)?;
