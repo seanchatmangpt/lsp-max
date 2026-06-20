@@ -1,0 +1,40 @@
+[project]
+name = "lsp-max"
+language_id = "lsp"
+version = "26.6.9"
+description = "lsp-max workspace generator manifest — drives ggen for the whole workspace"
+
+[ontology]
+source = "ontology/lsp318.ttl"
+packs = ["lsp-max"]
+
+[generation]
+output_dir = "."
+
+# Rule: generate the compositor ExtensionRegistry from lsp-max.toml server declarations
+[[generation.rules]]
+name = "compositor-registry"
+description = "Generate ExtensionRouter::new_from_manifest() from lsp-max.toml"
+input = "lsp-max.toml"
+query = { inline = "SELECT ?name ?path WHERE { BIND(\"compositor\" AS ?name) BIND(\"crates/lsp-max-compositor/src/registry_init.rs\" AS ?path) }" }
+template = { file = "crates/lsp-max-compositor/registry_init.tera" }
+output_file = "crates/lsp-max-compositor/src/registry_init.rs"
+mode = "Overwrite"
+
+# Rule: generate conformance vector across all workspace crates
+[[generation.rules]]
+name = "workspace-conformance"
+description = "Generate workspace-level ConformanceVector summary"
+query = { file = "queries/lsp-max/conformance.sparql" }
+template = { file = "templates/lsp-max/conformance_vector.rs.tera" }
+output_file = "src/generated_conformance.rs"
+mode = "Overwrite"
+
+# Rule: generate handler stubs for all CANDIDATE LSP methods
+[[generation.rules]]
+name = "all-handlers"
+description = "Generate handler stubs for all CANDIDATE + ADMITTED methods in lsp318.ttl"
+query = { file = "queries/lsp-max/handlers.sparql" }
+template = { file = "templates/lsp-max/handler.rs.tera" }
+output_file = "src/generated_handlers/{{ snake_method }}.rs"
+mode = "Skip"
