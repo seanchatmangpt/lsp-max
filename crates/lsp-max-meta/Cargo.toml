@@ -1,0 +1,22 @@
+[package]
+name = "lsp-max-meta"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+description = "Meta-LSP: LSP server that diagnoses law-axis violations in lsp-max ontology files"
+license.workspace = true
+publish = false
+
+[[bin]]
+name = "lsp-max-meta"
+path = "src/main.rs"
+
+[dependencies]
+lsp-max = { path = "../..", version = "26.6.18" }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+tokio = { version = "1", features = ["io-std", "io-util", "macros", "rt-multi-thread", "sync"] }
+tracing = "0.1"
+tracing-subscriber = "0.3"
+dashmap = { workspace = true }

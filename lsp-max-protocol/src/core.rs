@@ -1,5 +1,5 @@
 use crate::{ConformanceVector, MaxCodeAction, MaxDiagnostic, PolicyState, SnapshotId};
-use lsp_types_max::{ClientCapabilities, ServerCapabilities};
+use crate::lsp_3_18::{ClientCapabilities, ServerCapabilities};
 use serde::{Deserialize, Serialize};
 
 // ---------------------------------------------------------------------------
@@ -128,8 +128,8 @@ impl Default for AnalysisBundle {
         Self {
             snapshot_id: SnapshotId(String::new()),
             capability_vector: MaxCapabilityVector {
-                client: lsp_types_max::ClientCapabilities::default(),
-                server: lsp_types_max::ServerCapabilities::default(),
+                client: crate::lsp_3_18::ClientCapabilities::default(),
+                server: crate::lsp_3_18::ServerCapabilities::default(),
                 negotiated: serde_json::Value::Null,
                 experimental: serde_json::Value::Null,
                 gaps: Vec::new(),
