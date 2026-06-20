@@ -62,17 +62,30 @@ pub static KNOWN_BREEDS: &[&str] = &[
 ];
 
 /// Breed category for structured search space partitioning.
+///
+/// Used to partition the TPOT2 search space so mutations prefer semantically
+/// compatible breeds (e.g. swapping one logic-based breed for another).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum BreedCategory {
+    /// Formal logic breeds: ASP, Prolog, description logic, SAT, tableaux, etc.
     LogicBased,
+    /// Rule-learning and rule-application breeds: production rules, CBR, ILP, etc.
     RuleBased,
+    /// Planning and action-selection breeds: STRIPS, HTN, MDP, POMDP, etc.
     PlanningBased,
+    /// Probabilistic and uncertainty-handling breeds: Bayesian networks, Dempster-Shafer, etc.
     Probabilistic,
+    /// Temporal and event-model breeds: LTL monitor, CTL check, Allen temporal, etc.
     Temporal,
+    /// Memory and schema-based breeds: frames, SOAR, ACT-R, episodic memory, etc.
     MemoryBased,
+    /// Meta-cognitive and constraint-solving breeds: meta-reasoning, belief merging, TRIZ, etc.
     MetaBased,
 }
 
+/// Returns the [`BreedCategory`] for a known breed name.
+///
+/// Unknown breed names default to [`BreedCategory::MetaBased`].
 pub fn breed_category(breed: &str) -> BreedCategory {
     match breed {
         "asp" | "prolog" | "description_logic" | "circumscription" | "default_logic" |
