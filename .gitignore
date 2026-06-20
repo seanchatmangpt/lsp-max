@@ -17,3 +17,4 @@ vendors/
 !/crates/anti-llm-cheat-lsp/receipts/
 scratch/
 /doc/
+libstdin.rlib
