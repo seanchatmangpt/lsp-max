@@ -405,3 +405,12 @@ release-version-bump NEWVERSION:
 release-notes-extract DATE VERSION:
     #!/usr/bin/env bash
     bash scripts/extract-release-notes.sh "{{ DATE }}" "{{ VERSION }}"
+
+# Emit a bounded receipt for a breed pipeline evaluation.
+# Usage: just pipeline-receipt <breeds-csv> <fitness> <status>
+pipeline-receipt breeds fitness status:
+    @bash scripts/pipeline-receipt.sh "{{breeds}}" "{{fitness}}" "{{status}}"
+
+# Run pipeline receipt integration test.
+test-pipeline-receipt:
+    @bash tests/test_pipeline_receipt.sh
