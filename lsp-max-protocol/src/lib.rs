@@ -12,6 +12,7 @@ pub mod core;
 pub mod custom_methods;
 pub mod diagnostics;
 pub mod hooks;
+pub mod pipeline;
 pub mod policy;
 
 // Re-export all types so they are visible at the crate root level exactly as before.
