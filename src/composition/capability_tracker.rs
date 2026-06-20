@@ -302,6 +302,31 @@ impl CapabilityTracker {
     }
 }
 
+pub fn client_supports(client_caps: &lsp_types_max::ClientCapabilities, method: &str) -> bool {
+    let is_empty = client_caps.text_document.is_none()
+        && client_caps.workspace.is_none()
+        && client_caps.window.is_none()
+        && client_caps.general.is_none();
+    if is_empty {
+        return true;
+    }
+    let td = client_caps.text_document.as_ref();
+    match method {
+        "textDocument/hover" => td.and_then(|t| t.hover.as_ref()).is_some(),
+        "textDocument/completion" => td.and_then(|t| t.completion.as_ref()).is_some(),
+        "textDocument/definition" => td.and_then(|t| t.definition.as_ref()).is_some(),
+        "textDocument/declaration" => td.and_then(|t| t.declaration.as_ref()).is_some(),
+        "textDocument/implementation" => td.and_then(|t| t.implementation.as_ref()).is_some(),
+        "textDocument/references" => td.and_then(|t| t.references.as_ref()).is_some(),
+        "textDocument/rename" => td.and_then(|t| t.rename.as_ref()).is_some(),
+        "textDocument/formatting" => td.and_then(|t| t.formatting.as_ref()).is_some(),
+        "textDocument/rangeFormatting" => td.and_then(|t| t.range_formatting.as_ref()).is_some(),
+        "textDocument/codeAction" => td.and_then(|t| t.code_action.as_ref()).is_some(),
+        "textDocument/documentSymbol" => td.and_then(|t| t.document_symbol.as_ref()).is_some(),
+        _ => true,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -405,30 +430,5 @@ mod tests {
         tracker.register_dynamic("reg-del", "textDocument/hover", "src-d", json!({}));
         assert!(tracker.unregister_dynamic("reg-del"));
         assert!(!tracker.dynamic_registrations.contains_key("reg-del"));
-    }
-}
-
-pub fn client_supports(client_caps: &lsp_types_max::ClientCapabilities, method: &str) -> bool {
-    let is_empty = client_caps.text_document.is_none()
-        && client_caps.workspace.is_none()
-        && client_caps.window.is_none()
-        && client_caps.general.is_none();
-    if is_empty {
-        return true;
-    }
-    let td = client_caps.text_document.as_ref();
-    match method {
-        "textDocument/hover" => td.and_then(|t| t.hover.as_ref()).is_some(),
-        "textDocument/completion" => td.and_then(|t| t.completion.as_ref()).is_some(),
-        "textDocument/definition" => td.and_then(|t| t.definition.as_ref()).is_some(),
-        "textDocument/declaration" => td.and_then(|t| t.declaration.as_ref()).is_some(),
-        "textDocument/implementation" => td.and_then(|t| t.implementation.as_ref()).is_some(),
-        "textDocument/references" => td.and_then(|t| t.references.as_ref()).is_some(),
-        "textDocument/rename" => td.and_then(|t| t.rename.as_ref()).is_some(),
-        "textDocument/formatting" => td.and_then(|t| t.formatting.as_ref()).is_some(),
-        "textDocument/rangeFormatting" => td.and_then(|t| t.range_formatting.as_ref()).is_some(),
-        "textDocument/codeAction" => td.and_then(|t| t.code_action.as_ref()).is_some(),
-        "textDocument/documentSymbol" => td.and_then(|t| t.document_symbol.as_ref()).is_some(),
-        _ => true,
     }
 }
