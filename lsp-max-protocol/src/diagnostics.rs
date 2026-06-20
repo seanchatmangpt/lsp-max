@@ -1,5 +1,5 @@
 use crate::{GateId, LawAxis, ReceiptObligation};
-use lsp_types_max::{CodeAction, Diagnostic};
+use crate::lsp_3_18::{CodeAction, Diagnostic};
 use serde::{Deserialize, Serialize};
 
 // ---------------------------------------------------------------------------

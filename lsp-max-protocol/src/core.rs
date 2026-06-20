@@ -2,6 +2,26 @@ use crate::{ConformanceVector, MaxCodeAction, MaxDiagnostic, PolicyState, Snapsh
 use crate::lsp_3_18::{ClientCapabilities, ServerCapabilities};
 use serde::{Deserialize, Serialize};
 
+// All fields in ClientCapabilities / ServerCapabilities are Option<_>, so
+// Default is safe to derive here without modifying the auto-generated lsp_3_18.
+impl Default for ClientCapabilities {
+    fn default() -> Self {
+        serde_json::from_str("{}").unwrap_or_else(|_| {
+            // SAFETY: every field in ClientCapabilities is Option<_> and
+            // serde's #[serde(default)] will fill Nones from "{}".
+            panic!("ClientCapabilities::default() JSON round-trip failed")
+        })
+    }
+}
+
+impl Default for ServerCapabilities {
+    fn default() -> Self {
+        serde_json::from_str("{}").unwrap_or_else(|_| {
+            panic!("ServerCapabilities::default() JSON round-trip failed")
+        })
+    }
+}
+
 // ---------------------------------------------------------------------------
 // InstanceId — newtype for LSP instance identifiers
 // ---------------------------------------------------------------------------
@@ -128,8 +148,8 @@ impl Default for AnalysisBundle {
         Self {
             snapshot_id: SnapshotId(String::new()),
             capability_vector: MaxCapabilityVector {
-                client: crate::lsp_3_18::ClientCapabilities::default(),
-                server: crate::lsp_3_18::ServerCapabilities::default(),
+                client: ClientCapabilities::default(),
+                server: ServerCapabilities::default(),
                 negotiated: serde_json::Value::Null,
                 experimental: serde_json::Value::Null,
                 gaps: Vec::new(),
