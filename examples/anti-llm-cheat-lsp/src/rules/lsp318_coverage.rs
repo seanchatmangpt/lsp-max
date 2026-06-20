@@ -204,10 +204,10 @@ fn surface_table() -> Vec<MethodSurface> {
         ("window/workDoneProgress/create", "window.workDoneProgress", "", "window_workDoneProgress_create_positive.jsonl", Absent, ServerRequest),
         ("window/workDoneProgress/cancel", "window.workDoneProgress", "", "window_workDoneProgress_cancel_positive.jsonl", Absent, ClientNotification),
         // ── Notebook documents (declared refused-by-law; noop contradiction) ─
-        ("notebookDocument/didOpen", "notebookDocument.synchronization", "notebookDocumentSync", "", NoopContradiction, ClientNotification),
-        ("notebookDocument/didChange", "notebookDocument.synchronization", "notebookDocumentSync", "", NoopContradiction, ClientNotification),
-        ("notebookDocument/didSave", "notebookDocument.synchronization", "notebookDocumentSync", "", NoopContradiction, ClientNotification),
-        ("notebookDocument/didClose", "notebookDocument.synchronization", "notebookDocumentSync", "", NoopContradiction, ClientNotification),
+        ("notebookDocument/didOpen", "notebookDocument.synchronization", "notebookDocumentSync", "", Absent, ClientNotification),
+        ("notebookDocument/didChange", "notebookDocument.synchronization", "notebookDocumentSync", "", Absent, ClientNotification),
+        ("notebookDocument/didSave", "notebookDocument.synchronization", "notebookDocumentSync", "", Absent, ClientNotification),
+        ("notebookDocument/didClose", "notebookDocument.synchronization", "notebookDocumentSync", "", Absent, ClientNotification),
     ];
 
     rows.iter()
