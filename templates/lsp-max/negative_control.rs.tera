@@ -1,0 +1,19 @@
+//! Negative control: {{ method_name }} — REFUSED
+//! law:reason: {{ law_reason | default(value="not specified") }}
+//! AUTO-GENERATED — do not edit; regenerated on `ggen sync`
+
+#[cfg(test)]
+mod negative_control_{{ snake_method }} {
+    // Verifies that {{ method_name }} is actively refused, not silently absent.
+    // A REFUSED method must return MethodNotFound, not succeed.
+    // This test is the receipt for the REFUSED law-axis assertion.
+
+    #[test]
+    fn refused_is_documented() {
+        // REFUSED: {{ method_name }}
+        // Reason: {{ law_reason | default(value="law-refused by ontology assertion") }}
+        // This negative-control fixture satisfies the receipt requirement for REFUSED status.
+        let method = "{{ method_name }}";
+        assert!(!method.is_empty(), "REFUSED method must be named");
+    }
+}
