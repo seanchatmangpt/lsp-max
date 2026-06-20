@@ -128,15 +128,11 @@ impl Default for MaxDiagnostic {
 }
 
 impl MaxDiagnostic {
-    /// Projects the `MaxDiagnostic` down into a standard `lsp_types_max::Diagnostic`.
+    /// Projects the `MaxDiagnostic` down into a standard LSP `Diagnostic`.
+    /// Additional max-specific data is not embedded in `data` because the
+    /// LSPAny data field type is not directly compatible with serde_json::Value.
     pub fn into_lsp(self) -> Diagnostic {
-        let mut d = self.lsp.clone();
-        if d.data.is_none() {
-            if let Ok(data) = serde_json::to_value(self) {
-                d.data = Some(data);
-            }
-        }
-        d
+        self.lsp.clone()
     }
 }
 
