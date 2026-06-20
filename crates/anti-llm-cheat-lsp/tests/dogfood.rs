@@ -8,7 +8,7 @@ fn find_file_path(suffix: &str) -> PathBuf {
     if p1.exists() {
         return p1;
     }
-    let p2 = PathBuf::from("examples/anti-llm-cheat-lsp").join(suffix);
+    let p2 = PathBuf::from("crates/anti-llm-cheat-lsp").join(suffix);
     if p2.exists() {
         return p2;
     }
@@ -559,7 +559,7 @@ fn ocel_010_receipts_ocel_export_digest() {
     );
     assert_eq!(
         val.get("boundary").unwrap().as_str().unwrap(),
-        "examples/anti-llm-cheat-lsp/ocel"
+        "crates/anti-llm-cheat-lsp/ocel"
     );
     assert_eq!(
         val.get("checkpoint").unwrap().as_str().unwrap(),
