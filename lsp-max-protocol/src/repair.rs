@@ -1,4 +1,4 @@
-//! Read-only `max/repairPlan` and `max/whatIf` protocol surface.
+//! Read-only `max/repairPlanSynth` and `max/whatIf` protocol surface.
 //!
 //! A diagnostic tells an agent *that* a law axis is unsatisfied. This module
 //! projects each known diagnostic family onto a structured, bounded **repair
@@ -26,9 +26,9 @@ use serde::{Deserialize, Serialize};
 // Method name constants (read-only surface — the LSP never mutates files)
 // ---------------------------------------------------------------------------
 
-/// max/repairPlan — Synthesize a bounded, ordered repair plan for a diagnostic
+/// max/repairPlanSynth — Synthesize a bounded, ordered repair plan for a diagnostic
 /// id. Read-only: returns a [`RepairPlanResult`]; never applies the repair.
-pub const METHOD_REPAIR_PLAN: &str = "max/repairPlan";
+pub const METHOD_REPAIR_PLAN: &str = "max/repairPlanSynth";
 
 /// max/whatIf — Simulate the admission verdict for a hypothetical world-state.
 /// Read-only: returns a [`WhatIfResult`]; observes nothing on disk and changes
@@ -51,7 +51,7 @@ pub const STATUS_REFUSED: &str = "REFUSED";
 pub const STATUS_BLOCKED: &str = "BLOCKED";
 
 // ---------------------------------------------------------------------------
-// max/repairPlan params / result
+// max/repairPlanSynth params / result
 // ---------------------------------------------------------------------------
 
 /// One ordered step in a repair plan. A step describes an intent, never an
@@ -69,14 +69,14 @@ pub struct RepairStep {
     pub verb: Option<String>,
 }
 
-/// Parameters for `max/repairPlan`.
+/// Parameters for `max/repairPlanSynth`.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RepairPlanParams {
     /// The diagnostic id (or law id) to synthesize a plan for.
     pub diagnostic_id: String,
 }
 
-/// Result of `max/repairPlan`.
+/// Result of `max/repairPlanSynth`.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RepairPlanResult {
     /// Echo of the requested diagnostic id.
