@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 A fork of `tower-lsp` (Tower-based LSP framework) upgraded into **lsp-max**: a "law-state runtime projected through LSP." It maximizes LSP 3.18 capability coverage and adds a custom `max/*` protocol surface (snapshots, conformance vectors, receipts, repair plans, gates). Primary clients are agents, CI, and release gates — the editor is just one client.
 
-**Read `AGENTS.md` before substantive work. It is the project constitution and its laws are enforced by tooling** (the `examples/anti-llm-cheat-lsp` server detects violations). The most load-bearing laws:
+**Read `AGENTS.md` before substantive work. It is the project constitution and its laws are enforced by tooling** (the `crates/anti-llm-cheat-lsp` server detects violations). The most load-bearing laws:
 
 - **Never reference plain `tower-lsp`/`tower_lsp`** in code, manifests, tests, or docs — outside explicit negative-control fixtures. Everything is `lsp-max`.
 - **No victory language** in code, comments, reports, or commit messages ("done", "all clean", "fully admitted", "solved", "guaranteed"). Use bounded statuses only: `ADMITTED`, `CANDIDATE`, `BLOCKED`, `REFUSED`, `UNKNOWN`, `PARTIAL`, `OPEN`, etc.
@@ -66,7 +66,7 @@ The five-layer model: (1) actuation grammar → (2) local LSP state surface → 
 - **`crates/lsp-max-adapters/`** — ported `auto-lsp` stack (`lsp-max-ast-core`, `lsp-max-ast-codegen`, `lsp-max-ast`): tree-sitter-driven AST/codegen layer. Tree-sitter observes; it never admits.
 - **`crates/wasm4pm-lsp`**, **`crates/gc005-wasm4pm-adapter`** — process-mining LSP surfaces over the wasm4pm engine; dogfood tests (`dogfood_gc00*.rs`) validate gate conformance.
 - **`crates/playground`** — dev-dependency harness with demo binaries (`dogfood_harness`, `lsif_demo`).
-- **`examples/anti-llm-cheat-lsp`** — the diagnostic canary: an LSP that detects reintroduction of plain `tower-lsp`, fake receipts, fake routes, and victory language. Other examples (`pattern-lsp`, `clap-noun-verb-lsp`, `axum-lsp`, `bevy-lsp`, `tex-lsp`, `wasm4pm-compat-lsp`) are workspace members and must keep compiling.
+- **`crates/anti-llm-cheat-lsp`** — the diagnostic canary: an LSP that detects reintroduction of plain `tower-lsp`, fake receipts, fake routes, and victory language. Other examples (`pattern-lsp`, `clap-noun-verb-lsp`, `axum-lsp`, `bevy-lsp`, `tex-lsp`, `wasm4pm-compat-lsp`) are workspace members and must keep compiling.
 
 ## Code layout conventions
 

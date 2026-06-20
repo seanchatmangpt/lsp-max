@@ -52,8 +52,8 @@
 **Remaining:** `anti-llm-cheat-lsp` uses `AhoCorasick` + `engine::scan_directory()` + `virtual_docs` module — a fundamentally different architecture. Needs its own approach (replace `AntiLlmEngine` scanner with `RulePackServer::scan_uri()`).
 
 **Files to change:**
-- `examples/anti-llm-cheat-lsp/src/engine.rs` — replace `AntiLlmEngine` scanner with `RulePackServer::scan_uri()`
-- `examples/anti-llm-cheat-lsp/src/main.rs` — add `index: WorkspaceIndex` field; override `workspace_index()`
+- `crates/anti-llm-cheat-lsp/src/engine.rs` — replace `AntiLlmEngine` scanner with `RulePackServer::scan_uri()`
+- `crates/anti-llm-cheat-lsp/src/main.rs` — add `index: WorkspaceIndex` field; override `workspace_index()`
 
 **Definition of done:** `anti-llm-cheat-lsp` implements only `rule_packs()`, `grammar()`, `server_name()`, `client()`, `adapter()`. Zero hand-rolled AhoCorasick loops remain in the server path.
 
