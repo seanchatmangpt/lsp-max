@@ -67,6 +67,26 @@ impl RustAstAdapter {
             None
         }
     }
+
+    /// AST-derived semantic tokens for a Rust file, or `None` if the document is
+    /// not a tracked Rust file.
+    pub fn semantic_tokens(
+        &self,
+        uri: &DocumentUri,
+    ) -> Option<lsp_max::lsp_types::SemanticTokens> {
+        self.get_document(uri, crate::semantic::build_tokens)
+    }
+
+    /// AST-derived semantic tokens restricted to `range`.
+    pub fn semantic_tokens_in_range(
+        &self,
+        uri: &DocumentUri,
+        range: lsp_max::lsp_types::Range,
+    ) -> Option<lsp_max::lsp_types::SemanticTokens> {
+        self.get_document(uri, |doc| {
+            crate::semantic::build_tokens_in_range(doc, range)
+        })
+    }
 }
 
 impl Default for RustAstAdapter {

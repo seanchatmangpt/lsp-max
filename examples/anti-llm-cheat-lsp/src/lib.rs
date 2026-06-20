@@ -7,5 +7,6 @@ pub mod observations;
 pub mod ocel;
 pub mod parsers;
 pub mod rules;
+pub mod semantic;
 pub mod server;
 pub mod virtual_docs;
