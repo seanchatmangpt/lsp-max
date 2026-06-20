@@ -20,7 +20,9 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
                         .to_string(),
                 required_next_proof: "Ensure typescript compiles strictly and uses explicit types."
                     .to_string(),
-            });
+                            oracle_class: None,
+                confidence: None,
+});
         }
 
         if o.kind == "ts_claim" {
@@ -35,7 +37,9 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
                 blocking: true,
                 required_correction: "Remove forbidden done/complete/victory words and replace with bounded status vocabulary.".to_string(),
                 required_next_proof: "Admissibility audit checks TS surfaces.".to_string(),
-            });
+                            oracle_class: None,
+                confidence: None,
+});
         }
 
         if o.kind == "ts_leak" {
@@ -50,7 +54,9 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
                 blocking: true,
                 required_correction: "Sanitize internal vocabulary terms (GALL, checkpoint, failset, etc.) or unauthorized naming (Nitro LSP) from TypeScript files.".to_string(),
                 required_next_proof: "Verify all file paths and contents comply with the public-facing language boundary.".to_string(),
-            });
+                            oracle_class: None,
+                confidence: None,
+});
         }
     }
 
