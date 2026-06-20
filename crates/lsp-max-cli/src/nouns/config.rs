@@ -264,77 +264,56 @@ fn mask_if_sensitive(key: &str, value: &str) -> String {
     }
 }
 
+impl ConfigService {
+    pub fn doctor(&self) -> ConfigDoctorResult {
+        let file_config = self.load_config();
+        let catalog = known_keys();
+        let mut any_unknown = false;
+        let mut any_partial = false;
+
+        let keys: Vec<ConfigKeyStatus> = catalog
+            .iter()
+            .map(|s| self.resolve_key_status(s, &file_config, &mut any_unknown, &mut any_partial))
+            .collect();
+
+        let overall = if any_unknown { "UNKNOWN" } else if any_partial { "PARTIAL" } else { "ADMITTED" };
+        ConfigDoctorResult { overall: overall.to_string(), keys }
+    }
+
+    fn resolve_key_status(
+        &self,
+        schema: &ConfigKeySchema,
+        file_config: &std::collections::HashMap<String, String>,
+        any_unknown: &mut bool,
+        any_partial: &mut bool,
+    ) -> ConfigKeyStatus {
+        if let Ok(env_val) = std::env::var(&schema.env_var) {
+            return ConfigKeyStatus {
+                key: schema.key.clone(),
+                status: "ADMITTED".to_string(),
+                effective_value: mask_if_sensitive(&schema.key, &env_val),
+                source: "env".to_string(),
+            };
+        }
+        if let Some(file_val) = file_config.get(&schema.key) {
+            let (status, effective) = if file_val.is_empty() && schema.required {
+                *any_unknown = true;
+                ("UNKNOWN", String::new())
+            } else {
+                ("ADMITTED", mask_if_sensitive(&schema.key, file_val))
+            };
+            return ConfigKeyStatus { key: schema.key.clone(), status: status.to_string(), effective_value: effective, source: "file".to_string() };
+        }
+        if !schema.default_value.is_empty() {
+            *any_partial = true;
+            return ConfigKeyStatus { key: schema.key.clone(), status: "PARTIAL".to_string(), effective_value: mask_if_sensitive(&schema.key, &schema.default_value), source: "default".to_string() };
+        }
+        if schema.required { *any_unknown = true; } else { *any_partial = true; }
+        ConfigKeyStatus { key: schema.key.clone(), status: if schema.required { "UNKNOWN" } else { "PARTIAL" }.to_string(), effective_value: String::new(), source: "default".to_string() }
+    }
+}
+
 #[verb("doctor")]
 pub fn doctor() -> Result<ConfigDoctorResult> {
-    let service = ConfigService::new();
-    let file_config = service.load_config();
-    let catalog = known_keys();
-
-    let mut any_unknown = false;
-    let mut any_partial = false;
-
-    let keys: Vec<ConfigKeyStatus> = catalog
-        .iter()
-        .map(|schema| {
-            // Env var takes precedence over file, which takes precedence over built-in default.
-            if let Ok(env_val) = std::env::var(&schema.env_var) {
-                let effective = mask_if_sensitive(&schema.key, &env_val);
-                ConfigKeyStatus {
-                    key: schema.key.clone(),
-                    status: "ADMITTED".to_string(),
-                    effective_value: effective,
-                    source: "env".to_string(),
-                }
-            } else if let Some(file_val) = file_config.get(&schema.key) {
-                let (status, effective) = if file_val.is_empty() && schema.required {
-                    any_unknown = true;
-                    ("UNKNOWN", "".to_string())
-                } else {
-                    ("ADMITTED", mask_if_sensitive(&schema.key, file_val))
-                };
-                ConfigKeyStatus {
-                    key: schema.key.clone(),
-                    status: status.to_string(),
-                    effective_value: effective,
-                    source: "file".to_string(),
-                }
-            } else if !schema.default_value.is_empty() {
-                any_partial = true;
-                let effective = mask_if_sensitive(&schema.key, &schema.default_value);
-                ConfigKeyStatus {
-                    key: schema.key.clone(),
-                    status: "PARTIAL".to_string(),
-                    effective_value: effective,
-                    source: "default".to_string(),
-                }
-            } else if schema.required {
-                any_unknown = true;
-                ConfigKeyStatus {
-                    key: schema.key.clone(),
-                    status: "UNKNOWN".to_string(),
-                    effective_value: "".to_string(),
-                    source: "default".to_string(),
-                }
-            } else {
-                any_partial = true;
-                ConfigKeyStatus {
-                    key: schema.key.clone(),
-                    status: "PARTIAL".to_string(),
-                    effective_value: "".to_string(),
-                    source: "default".to_string(),
-                }
-            }
-        })
-        .collect();
-
-    let overall = if any_unknown {
-        "UNKNOWN"
-    } else if any_partial {
-        "PARTIAL"
-    } else {
-        "ADMITTED"
-    }
-    .to_string();
-
-    Ok(ConfigDoctorResult { overall, keys })
+    Ok(ConfigService::new().doctor())
 }
