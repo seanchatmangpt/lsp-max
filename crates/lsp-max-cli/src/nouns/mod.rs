@@ -19,6 +19,7 @@ pub mod server;
 pub mod snapshot;
 pub mod state;
 pub mod telemetry;
+pub mod template;
 pub mod workspace;
 
 pub fn get_state_path() -> String {
