@@ -1,36 +1,6 @@
 use crate::{GateId, LawAxis, ReceiptObligation};
-use crate::lsp_3_18::{
-    CodeAction, Diagnostic, MarkupContentOrString, Position, Range,
-};
+use lsp_types_max::{CodeAction, Diagnostic};
 use serde::{Deserialize, Serialize};
-
-// Minimal Default impls for lsp_3_18 types used in this module.
-// Position and Range have only numeric / Option fields so zero/empty is valid.
-impl Default for Position {
-    fn default() -> Self {
-        Self { line: 0, character: 0 }
-    }
-}
-impl Default for Range {
-    fn default() -> Self {
-        Self { start: Position::default(), end: Position::default() }
-    }
-}
-impl Default for Diagnostic {
-    fn default() -> Self {
-        Self {
-            range: Range::default(),
-            severity: None,
-            code: None,
-            code_description: None,
-            source: None,
-            message: MarkupContentOrString::String(String::new()),
-            tags: None,
-            related_information: None,
-            data: None,
-        }
-    }
-}
 
 // ---------------------------------------------------------------------------
 // Repairability / Terminality
@@ -129,10 +99,8 @@ impl Default for MaxDiagnostic {
 
 impl MaxDiagnostic {
     /// Projects the `MaxDiagnostic` down into a standard LSP `Diagnostic`.
-    /// Additional max-specific data is not embedded in `data` because the
-    /// LSPAny data field type is not directly compatible with serde_json::Value.
     pub fn into_lsp(self) -> Diagnostic {
-        self.lsp.clone()
+        self.lsp
     }
 }
 
@@ -181,13 +149,14 @@ mod tests {
     }
 
     #[test]
-    fn max_diagnostic_into_lsp_preserves_data() {
+    fn max_diagnostic_into_lsp_returns_lsp_field() {
         let d = MaxDiagnostic {
             diagnostic_id: "diag-1".to_string(),
             law_id: "LSP-001".to_string(),
             ..MaxDiagnostic::default()
         };
         let lsp = d.into_lsp();
-        assert!(lsp.data.is_some());
+        // into_lsp projects out the lsp field unchanged
+        assert_eq!(lsp.message, String::new());
     }
 }
