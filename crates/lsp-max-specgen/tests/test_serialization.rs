@@ -288,7 +288,7 @@ fn test_3_18_position_and_range() {
         },
     };
 
-    let serialized = serde_json::to_value(&range).expect("Failed to serialize Range");
+    let serialized = serde_json::to_value(range).expect("Failed to serialize Range");
     let expected = json!({
         "start": {
             "line": 10,
