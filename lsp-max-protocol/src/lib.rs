@@ -85,13 +85,13 @@ pub use stream::{
     STREAM_UNSUBSCRIBE,
 };
 
-impl lsp_types_max::request::Request for lsp_3_18::FoldingRangeRefreshRequest {
+impl lsp_3_18::LspRequest for lsp_3_18::FoldingRangeRefreshRequest {
     type Params = ();
     type Result = ();
     const METHOD: &'static str = "workspace/foldingRange/refresh";
 }
 
-impl lsp_types_max::request::Request for lsp_3_18::TextDocumentContentRefreshRequest {
+impl lsp_3_18::LspRequest for lsp_3_18::TextDocumentContentRefreshRequest {
     type Params = lsp_3_18::TextDocumentContentRefreshParams;
     type Result = ();
     const METHOD: &'static str = "workspace/textDocumentContent/refresh";

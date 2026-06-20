@@ -1,0 +1,35 @@
+@prefix owl:  <http://www.w3.org/2002/07/owl#> .
+@prefix rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix lsp:  <https://lsp-max.rs/ontology/> .
+@prefix law:  <https://lsp-max.rs/law/> .
+@prefix max:  <https://lsp-max.rs/max/> .
+
+<https://wasm-lsp.example/domain> a owl:Ontology ;
+    rdfs:label "wasm-lsp Domain Ontology" ;
+    rdfs:comment "Law-axis declarations for the WebAssembly/WebWorker transport surface of lsp-max." .
+
+# ── Law-axis declarations ─────────────────────────────────────────────────────
+
+# Hover is CANDIDATE: the wasm-transport channel layer has not yet produced a
+# receipt-chain admission. Edit to law:ADMITTED once transcript + negative
+# control + receipt artifact are attached.
+lsp:TextDocumentHover a lsp:LspMethod ;
+    lsp:methodName "textDocument/hover" ;
+    law:status law:CANDIDATE ;
+    law:reason "WASM transport not yet ADMITTED; receipt chain OPEN" .
+
+# Rename is REFUSED — this LSP surface is read-only; file mutation is out of scope.
+lsp:textDocument_rename
+    law:status law:REFUSED ;
+    law:reason "wasm-lsp LSP surface is read-only; mutation outside law boundary" .
+
+# max/wasm-transport is a custom extension declared CANDIDATE pending
+# WebWorker conformance receipt.
+max:WasmTransport a lsp:MaxExtension ;
+    lsp:methodName "max/wasm-transport" ;
+    lsp:snakeName  "max_wasm_transport" ;
+    lsp:paramType  "WasmTransportParams" ;
+    lsp:returnType "WasmTransportResult" ;
+    law:status law:CANDIDATE ;
+    law:reason "In-process channel transport; WebWorker bridge receipt OPEN" .
