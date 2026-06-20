@@ -7,6 +7,7 @@ pub mod diagnostics;
 pub mod event;
 pub mod gate;
 pub mod generate;
+pub mod ggen;
 pub mod hook;
 pub mod metamodel;
 pub mod plugin;
