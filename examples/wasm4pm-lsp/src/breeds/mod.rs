@@ -1,3 +1,4 @@
+pub mod breed;
 pub mod asp;
 pub mod bayesian_network;
 pub mod cbr;
