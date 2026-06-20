@@ -15,7 +15,7 @@ fn fake_assert_re() -> &'static Regex {
     static RE: OnceLock<Regex> = OnceLock::new();
     RE.get_or_init(|| {
         // assert!(true) — unfalsifiable assert; Rust regex does not support backreferences,
-        // so assert_eq!(x, x) identity pattern is detected via a separate string scan instead.
+        // so assert_eq!(x, x) identity pattern is not detectable here via regex.
         Regex::new(r"assert!\s*\(\s*true\s*\)").unwrap()
     })
 }
