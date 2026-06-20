@@ -24,8 +24,11 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
                 message: "Diagnostic emitted without corresponding OCEL process event.".to_string(),
                 forbidden_implication: "DiagnosticEmitted => ProcessEvidenceRecorded".to_string(),
                 blocking: true,
-                required_correction: "Emit an OCEL event whenever a diagnostic is raised.".to_string(),
-                required_next_proof: "Verify that OCEL contains DiagnosticEmitted linked to the diagnostic.".to_string(),
+                required_correction: "Emit an OCEL event whenever a diagnostic is raised."
+                    .to_string(),
+                required_next_proof:
+                    "Verify that OCEL contains DiagnosticEmitted linked to the diagnostic."
+                        .to_string(),
                 oracle_class: Some(ORACLE_A10.to_string()),
                 confidence: Some(0.90),
             });
@@ -129,11 +132,14 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
                 file_path: o.file_path.clone(),
                 line: o.line,
                 column: o.column,
-                message: "Full wasm4pm authority used where wasm4pm-compat boundary was required.".to_string(),
+                message: "Full wasm4pm authority used where wasm4pm-compat boundary was required."
+                    .to_string(),
                 forbidden_implication: "CompatEvidenceBoundary => FullMiningAuthority".to_string(),
                 blocking: true,
-                required_correction: "Use only wasm4pm-compat typed boundaries in this checkpoint.".to_string(),
-                required_next_proof: "Check dependencies to ensure full wasm4pm is excluded.".to_string(),
+                required_correction: "Use only wasm4pm-compat typed boundaries in this checkpoint."
+                    .to_string(),
+                required_next_proof: "Check dependencies to ensure full wasm4pm is excluded."
+                    .to_string(),
                 oracle_class: Some(ORACLE_A8.to_string()),
                 confidence: Some(0.85),
             });
@@ -185,11 +191,16 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
                 file_path: o.file_path.clone(),
                 line: o.line,
                 column: o.column,
-                message: "Cycle detected in OCEL event causality graph — the DAG invariant is violated.".to_string(),
+                message:
+                    "Cycle detected in OCEL event causality graph — the DAG invariant is violated."
+                        .to_string(),
                 forbidden_implication: "OcelCausalityGraph => AcyclicDAG".to_string(),
                 blocking: true,
-                required_correction: "Remove the circular dependency from the event or object reference graph.".to_string(),
-                required_next_proof: "OCEL graph passes cycle detection with zero cycles found.".to_string(),
+                required_correction:
+                    "Remove the circular dependency from the event or object reference graph."
+                        .to_string(),
+                required_next_proof: "OCEL graph passes cycle detection with zero cycles found."
+                    .to_string(),
                 oracle_class: Some(ORACLE_A12.to_string()),
                 confidence: Some(0.99),
             });

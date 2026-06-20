@@ -26,9 +26,9 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
                     "Replace fake CLAP concepts with the concrete clap-noun-verb component."
                         .to_string(),
                 required_next_proof: "Verify command admission via clap-noun-verb.".to_string(),
-                            oracle_class: None,
+                oracle_class: None,
                 confidence: None,
-});
+            });
         }
 
         // Check for string-shaped command treated as admitted command
