@@ -46,8 +46,9 @@ jobs:
           repository: seanchatmangpt/wasm4pm
           path: wasm4pm
 
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@master
         with:
+          toolchain: nightly-2026-04-15  # keep in sync with rust-toolchain.toml
           components: rustfmt
 
       - run: cargo fmt -- --check
@@ -78,8 +79,9 @@ jobs:
           repository: seanchatmangpt/wasm4pm
           path: wasm4pm
 
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@master
         with:
+          toolchain: nightly-2026-04-15  # keep in sync with rust-toolchain.toml
           components: clippy
 
       - uses: Swatinem/rust-cache@v2
@@ -115,7 +117,9 @@ jobs:
           repository: seanchatmangpt/wasm4pm
           path: wasm4pm
 
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: nightly-2026-04-15  # keep in sync with rust-toolchain.toml
 
       - uses: Swatinem/rust-cache@v2
         with:
@@ -149,7 +153,9 @@ jobs:
           repository: seanchatmangpt/wasm4pm
           path: wasm4pm
 
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: nightly-2026-04-15  # keep in sync with rust-toolchain.toml
 
       - uses: Swatinem/rust-cache@v2
         with:

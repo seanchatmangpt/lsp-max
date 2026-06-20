@@ -106,10 +106,7 @@ pub fn scan_for_hollow(filepath: &str, content: &str) -> Vec<Observation> {
                     kind: "hollow_smell".to_string(),
                     construct: pattern.to_string(),
                     context: line.to_string(),
-                    message: format!(
-                        "Hollow pattern '{}' detected on line {}",
-                        pattern, line_num
-                    ),
+                    message: format!("Hollow pattern '{}' detected on line {}", pattern, line_num),
                 });
             }
         }

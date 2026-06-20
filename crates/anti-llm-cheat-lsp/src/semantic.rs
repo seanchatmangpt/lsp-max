@@ -199,7 +199,10 @@ mod witness {
         let d = doc("const N: u32 = 7;\n");
         let toks = build_tokens(&d);
         let types: Vec<u32> = toks.data.iter().map(|t| t.token_type).collect();
-        assert!(types.contains(&T_KEYWORD), "`const` must classify as keyword");
+        assert!(
+            types.contains(&T_KEYWORD),
+            "`const` must classify as keyword"
+        );
         assert!(types.contains(&T_NUMBER), "`7` must classify as number");
         assert!(types.contains(&T_TYPE), "`u32` must classify as type");
     }

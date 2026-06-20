@@ -889,8 +889,14 @@ fn ocel_012_live_detections_produce_ocel_events() {
         required_next_proof: "verify no tower-lsp refs".to_string(),
     }];
     let log = detections_to_ocel(&diags);
-    assert!(!log.events.is_empty(), "live detections must produce OCEL events");
-    assert!(!log.objects.is_empty(), "live detections must produce OCEL objects");
+    assert!(
+        !log.events.is_empty(),
+        "live detections must produce OCEL events"
+    );
+    assert!(
+        !log.objects.is_empty(),
+        "live detections must produce OCEL objects"
+    );
     // Every CheatDetected event must have at least one relationship binding
     for event in &log.events {
         if event.event_type == "CheatDetected" {
@@ -952,7 +958,9 @@ fn declare_001_absence_tower_lsp_fires() {
 
 #[test]
 fn declare_002_response_handler_transcript_missing() {
-    use anti_llm_cheat_lsp::rules::declare_laws::{agents_md_laws, check_constraint, ObservationTrace};
+    use anti_llm_cheat_lsp::rules::declare_laws::{
+        agents_md_laws, check_constraint, ObservationTrace,
+    };
 
     let law = agents_md_laws()
         .into_iter()
@@ -964,7 +972,10 @@ fn declare_002_response_handler_transcript_missing() {
         line: 1,
     };
     let trace_ok = ObservationTrace {
-        activities: vec!["handler_wired".to_string(), "transcript_created".to_string()],
+        activities: vec![
+            "handler_wired".to_string(),
+            "transcript_created".to_string(),
+        ],
         file_path: "server.rs".to_string(),
         line: 1,
     };
