@@ -1,0 +1,16 @@
+{
+  "breed_id": "meta_reasoning",
+  "label": "Meta Reasoner",
+  "paper_ref": "cox2005metacognition",
+  "family": "MetaCognition",
+  "platform": "typescript",
+  "inputs": {
+    "note": "Replace with real BreedInput fields from cox2005metacognition"
+  },
+  "expected": {
+    "value": "PENDING",
+    "note": "Replace with oracle_value=0.0 from cox2005metacognition. COG-005 requires this field."
+  },
+  "expected_value": "PENDING",
+  "paper_value": 0.0
+}

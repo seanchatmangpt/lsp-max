@@ -1,0 +1,16 @@
+{
+  "breed_id": "mycin",
+  "label": "MYCIN Production Rules",
+  "paper_ref": "shortliffe1976mycin",
+  "family": "SymbolicAI",
+  "platform": "typescript",
+  "inputs": {
+    "note": "Replace with real BreedInput fields from shortliffe1976mycin"
+  },
+  "expected": {
+    "value": "PENDING",
+    "note": "Replace with oracle_value=0.693 from shortliffe1976mycin. COG-005 requires this field."
+  },
+  "expected_value": "PENDING",
+  "paper_value": 0.693
+}

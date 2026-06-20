@@ -1,0 +1,16 @@
+{
+  "breed_id": "frames_inheritance",
+  "label": "Frame Inheritance System",
+  "paper_ref": "minsky1975frames",
+  "family": "SymbolicAI",
+  "platform": "typescript",
+  "inputs": {
+    "note": "Replace with real BreedInput fields from minsky1975frames"
+  },
+  "expected": {
+    "value": "PENDING",
+    "note": "Replace with oracle_value=0.0 from minsky1975frames. COG-005 requires this field."
+  },
+  "expected_value": "PENDING",
+  "paper_value": 0.0
+}

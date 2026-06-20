@@ -1,0 +1,16 @@
+{
+  "breed_id": "asp",
+  "label": "Answer Set Programmer",
+  "paper_ref": "gelfond1991stable",
+  "family": "FormalMethods",
+  "platform": "typescript",
+  "inputs": {
+    "note": "Replace with real BreedInput fields from gelfond1991stable"
+  },
+  "expected": {
+    "value": "PENDING",
+    "note": "Replace with oracle_value=0.0 from gelfond1991stable. COG-005 requires this field."
+  },
+  "expected_value": "PENDING",
+  "paper_value": 0.0
+}

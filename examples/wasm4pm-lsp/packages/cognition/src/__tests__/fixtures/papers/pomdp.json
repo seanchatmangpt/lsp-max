@@ -1,0 +1,16 @@
+{
+  "breed_id": "pomdp",
+  "label": "POMDP Solver",
+  "paper_ref": "kaelbling1998planning",
+  "family": "ReinforcementLearning",
+  "platform": "typescript",
+  "inputs": {
+    "note": "Replace with real BreedInput fields from kaelbling1998planning"
+  },
+  "expected": {
+    "value": "PENDING",
+    "note": "Replace with oracle_value=0.969 from kaelbling1998planning. COG-005 requires this field."
+  },
+  "expected_value": "PENDING",
+  "paper_value": 0.969
+}
