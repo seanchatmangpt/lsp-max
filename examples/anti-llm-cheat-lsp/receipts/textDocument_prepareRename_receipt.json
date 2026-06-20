@@ -1,11 +1,9 @@
 {
-  "digest_algorithm": "SHA256",
-  "digest": "9da8e5e9eb505b54dbe9a9e57fc2b48d8bf5319eee22005d4eff291387361094",
+  "digest_algorithm": "BLAKE3",
+  "digest": "77ef8a7b03f46e1f2d8893d81aa20477d9e7d7a4d52fb71d027980e934c06fd6",
   "boundary": "-----BEGIN RECEIPT-----",
   "checkpoint": "-----END RECEIPT-----",
-  "raw_command": "sha256sum /home/user/lsp-max/examples/anti-llm-cheat-lsp/transcripts/textDocument_prepareRename_positive.jsonl",
-  "status": "ADMITTED",
-  "timestamp": "2026-06-18T01:31:42Z",
-  "transcript_path": "/home/user/lsp-max/examples/anti-llm-cheat-lsp/transcripts/textDocument_prepareRename_positive.jsonl",
-  "receipt_path": "/home/user/lsp-max/examples/anti-llm-cheat-lsp/receipts/textDocument_prepareRename_receipt.json"
+  "raw_command": "blake3 transcripts/textDocument_prepareRename_positive.jsonl",
+  "negative_control": "fixtures/negative_controls/textDocument_prepareRename",
+  "status": "ADMITTED"
 }

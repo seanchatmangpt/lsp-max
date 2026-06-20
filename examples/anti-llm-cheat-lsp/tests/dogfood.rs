@@ -838,7 +838,10 @@ fn lsp318_conformance_summary_preserves_unknown_axis() {
         s.unknown > 0,
         "unknown axis must be non-empty and distinct from admitted/refused"
     );
-    assert_eq!(s.receipts_present, 0, "no receipts present on disk");
+    assert!(
+        s.receipts_present > 0,
+        "receipt axis is closed: receipts must be present on disk"
+    );
 }
 
 #[test]
