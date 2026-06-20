@@ -13,6 +13,7 @@ pub mod hook;
 pub mod metamodel;
 pub mod plugin;
 pub mod receipt;
+pub mod repair;
 pub mod rpc;
 pub mod server;
 pub mod snapshot;
