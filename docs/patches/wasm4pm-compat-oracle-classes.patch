@@ -1,0 +1,343 @@
+From 46fe61b270534995e2149749f9ecb627238cc0b9 Mon Sep 17 00:00:00 2001
+From: Claude Code <xpointsh@gmail.com>
+Date: Wed, 17 Jun 2026 06:48:45 +0000
+Subject: [PATCH] feat: Add Oracle class witness markers A8-A12 for anti-LLM
+ cheat detection
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Adds the structural foundation needed by lsp-max-anti-cheat to identify and
+classify LLM coding agent cheating patterns via OCEL-based process mining.
+
+New module: src/witnesses_anti_cheat.rs
+- OracleA8AuditLogTampering: receipts without ancestor computation events
+- OracleA9TemporalAnomaly: events with impossible timestamps
+- OracleA10CausalViolation: mutations/diagnostics without causal predecessors
+- OracleA11UnknownCollapse: UNKNOWN state resolved without resolution event
+- OracleA12CyclicDependency: cycles in the OCEL event causality DAG
+- LspMaxSessionWitness: authority label for lsp-max session OCEL events
+- AntiLlmScanWitness: authority label for anti-llm-cheat scanner OCEL events
+
+Updated: src/diagnostic.rs
+- Added five CompatDiagnostic variants (OracleA8–A12) with law descriptions
+- Each variant names the violation law and its remedy
+- Display impl extended with human-readable messages for all five Oracle classes
+
+Updated: src/lib.rs
+- Registered witnesses_anti_cheat module alongside existing witness families
+- Marked as hand-authored (not ggen-generated)
+
+These are structure-only additions — no engines, no algorithms. Oracle
+inference runs in wasm4pm; this crate only names the authority classes.
+The witnesses travel with Evidence values through the admission pipeline
+so diagnostics can identify which Oracle class flagged a violation.
+
+Used by: lsp-max/crates/lsp-max-anti-cheat (anti-cheat OCEL integration)
+---
+ src/diagnostic.rs           |  71 ++++++++++++++
+ src/lib.rs                  |   3 +
+ src/witnesses_anti_cheat.rs | 188 ++++++++++++++++++++++++++++++++++++
+ 3 files changed, 262 insertions(+)
+ create mode 100644 src/witnesses_anti_cheat.rs
+
+diff --git a/src/diagnostic.rs b/src/diagnostic.rs
+index 4f4d30e..2d4d2be 100644
+--- a/src/diagnostic.rs
++++ b/src/diagnostic.rs
+@@ -84,6 +84,57 @@ pub enum CompatDiagnostic {
+     /// **Satisfied by:** graduating the surface to `wasm4pm`, where an engine can
+     /// discover/conform/replay rather than merely admit and tag.
+     MigrationRecommended,
++
++    // ── Oracle Violations (A8–A12) ─────────────────────────────────────────────
++    // Structural law violations detected by OCEL-based anti-LLM-cheat analysis.
++    // Each variant maps to one of the five Oracle adversary classes in the
++    // lsp-max threat model. Graduate to wasm4pm for actual Oracle inference.
++
++    /// **A8 — Audit Log Tampering**
++    ///
++    /// **Law:** every receipt, diagnostic, or admission event must have an ancestor
++    /// computation event in the OCEL causal graph (hash chain must be intact).
++    ///
++    /// **Satisfied by:** ensuring all emitted events trace causally to real tool
++    /// calls, file reads, or test executions — not synthesized after the fact.
++    OracleA8AuditLogTampering,
++
++    /// **A9 — Temporal Anomaly**
++    ///
++    /// **Law:** OCEL event timestamps must respect causal ordering — ancestor events
++    /// must have earlier timestamps than descendant events.
++    ///
++    /// **Satisfied by:** ensuring session clocks are monotonic and receipts are
++    /// generated strictly after the computations they receipt.
++    OracleA9TemporalAnomaly,
++
++    /// **A10 — Causal Violation**
++    ///
++    /// **Law:** every mutation, diagnostic, or admission must be preceded by an
++    /// observation event (FileRead, ToolCall, PatternMatched) in the OCEL graph.
++    ///
++    /// **Satisfied by:** tracing every mutation to a concrete observation; never
++    /// emitting diagnostics or admissions without causal predecessors.
++    OracleA10CausalViolation,
++
++    /// **A11 — Unknown State Collapse**
++    ///
++    /// **Law:** `ConformanceVector` law-axis values must not transition
++    /// `UNKNOWN → ADMITTED` or `UNKNOWN → REFUSED` without a resolution event.
++    ///
++    /// **Satisfied by:** emitting an explicit `ResolutionEvent` (test result,
++    /// receipt validation, or refusal reason) before admitting or refusing an
++    /// axis that was previously `UNKNOWN`.
++    OracleA11UnknownCollapse,
++
++    /// **A12 — Cyclic Dependency**
++    ///
++    /// **Law:** the OCEL event causality graph must be a DAG; no event may be
++    /// its own causal ancestor.
++    ///
++    /// **Satisfied by:** ensuring tool dispatch and object reference graphs are
++    /// acyclic — no circular tool calls, no circular object dependencies.
++    OracleA12CyclicDependency,
+ }
+ 
+ /// Severity level for a compatibility diagnostic.
+@@ -157,6 +208,26 @@ impl core::fmt::Display for CompatDiagnostic {
+                 DiagnosticSeverity::Info,
+                 "migration recommended: surface has outgrown compat — graduate to wasm4pm",
+             ),
++            CompatDiagnostic::OracleA8AuditLogTampering => (
++                DiagnosticSeverity::Error,
++                "A8 oracle — audit log tampering: receipt/event has no ancestor computation in OCEL causal graph",
++            ),
++            CompatDiagnostic::OracleA9TemporalAnomaly => (
++                DiagnosticSeverity::Error,
++                "A9 oracle — temporal anomaly: event timestamp violates causal ordering",
++            ),
++            CompatDiagnostic::OracleA10CausalViolation => (
++                DiagnosticSeverity::Error,
++                "A10 oracle — causal violation: mutation or diagnostic lacks causal predecessor in OCEL graph",
++            ),
++            CompatDiagnostic::OracleA11UnknownCollapse => (
++                DiagnosticSeverity::Error,
++                "A11 oracle — unknown state collapse: UNKNOWN axis admitted/refused without resolution event",
++            ),
++            CompatDiagnostic::OracleA12CyclicDependency => (
++                DiagnosticSeverity::Error,
++                "A12 oracle — cyclic dependency: OCEL causality graph contains a cycle",
++            ),
+         };
+         write!(f, "[{severity}] {message}")
+     }
+diff --git a/src/lib.rs b/src/lib.rs
+index d6b406d..2686bd2 100644
+--- a/src/lib.rs
++++ b/src/lib.rs
+@@ -235,6 +235,9 @@ pub mod witnesses;
+ /// AI/LLM paper witness markers derived from `witnesses-ai-llm.ttl`.
+ /// Generated by `ggen sync --rule ai-llm-witnesses`. Not hand-edited.
+ pub mod witnesses_ai_llm;
++/// Anti-LLM cheating Oracle class witnesses (A8–A12) and session event authority labels.
++/// Hand-authored; documents the lsp-max-anti-cheat threat model boundary.
++pub mod witnesses_anti_cheat;
+ /// Cognition-breed witness markers auto-derived from breed-vocabulary.ttl.
+ /// Generated by `ggen sync --rule cognition-breed-witnesses`. Not hand-edited.
+ pub mod witnesses_breeds;
+diff --git a/src/witnesses_anti_cheat.rs b/src/witnesses_anti_cheat.rs
+new file mode 100644
+index 0000000..140d9c7
+--- /dev/null
++++ b/src/witnesses_anti_cheat.rs
+@@ -0,0 +1,188 @@
++//! Anti-LLM cheating Oracle class witness markers.
++//!
++//! ## Purpose
++//!
++//! These witnesses name the five adversary detection classes used by the
++//! `lsp-max-anti-cheat` tool to identify LLM coding agent cheating patterns
++//! via OCEL-based process mining.
++//!
++//! The Oracle classes (A8–A12) are defined in the `lsp-max` process-mining
++//! threat model and correspond to formally detectable causality violations
++//! in Object-Centric Event Logs emitted by LLM coding sessions.
++//!
++//! ## What these witnesses ARE
++//!
++//! - Structure-only authority labels for each Oracle violation class.
++//! - Type-level tags that travel with `Evidence` and `Admission` values through
++//!   the admission pipeline so a diagnostic can name *which* Oracle class
++//!   flagged a violation.
++//! - Foundation for wasm4pm engine-level Oracle inference (graduate there when
++//!   actual conformance computation is needed).
++//!
++//! ## What these witnesses are NOT
++//!
++//! - **Not** detection logic. Oracle detection belongs in `wasm4pm`. Here we
++//!   name the class; `wasm4pm` verifies it.
++//! - **Not** runtime values. All are uninhabited enums — zero cost.
++//!
++//! ## Oracle Class Definitions
++//!
++//! | Class | Name                  | What it Catches                                    |
++//! |-------|-----------------------|----------------------------------------------------|
++//! | A8    | AuditLogTampering     | Receipts/events without ancestor computation chain |
++//! | A9    | TemporalAnomaly       | Events with impossible timestamps (time travel)    |
++//! | A10   | CausalViolation       | Diagnostics/mutations without causal predecessors  |
++//! | A11   | UnknownStateCollapse  | UNKNOWN → ADMITTED without resolution event        |
++//! | A12   | CyclicDependency      | Circular dependency in the event causality DAG     |
++//!
++//! ## Usage
++//!
++//! ```rust
++//! use wasm4pm_compat::witnesses_anti_cheat::{OracleA8AuditLogTampering, OracleA11UnknownCollapse};
++//! use wasm4pm_compat::witness::Witness;
++//!
++//! assert_eq!(OracleA8AuditLogTampering::KEY, "anti-cheat/oracle-a8-audit-log-tampering");
++//! assert_eq!(OracleA11UnknownCollapse::KEY, "anti-cheat/oracle-a11-unknown-collapse");
++//! ```
++
++use crate::witness::WitnessFamily;
++
++witness_marker!(
++    /// **A8 — Audit Log Tampering**
++    ///
++    /// Catches events or receipts that appear in the OCEL session log without
++    /// a traceable ancestor computation chain. Specifically:
++    ///
++    /// - A `ReceiptGenerated` event with no preceding `Computation`, `Test`, or
++    ///   `Commit` event acting on the same objects.
++    /// - A `Diagnostic` emitted without a corresponding `PatternMatched` event.
++    /// - Hash chain integrity failures (digest mismatch in receipt chain).
++    ///
++    /// **Graduate to `wasm4pm`** to run the actual causal-predecessor traversal
++    /// over the OCEL event graph.
++    OracleA8AuditLogTampering,
++    "anti-cheat/oracle-a8-audit-log-tampering",
++    WitnessFamily::Paper,
++    "A8 Oracle — Audit Log Tampering (lsp-max threat model)",
++    None
++);
++
++witness_marker!(
++    /// **A9 — Temporal Anomaly**
++    ///
++    /// Catches events where the timestamp ordering violates causality. Specifically:
++    ///
++    /// - A `ReceiptGenerated` event timestamped *before* the computation it claims
++    ///   to receipt (the receipt proves something that hadn't happened yet).
++    /// - A `StateTransition` with a timestamp earlier than its predecessor.
++    /// - A `Commit` event with a timestamp before the `FileWrite` events it
++    ///   claims to record.
++    ///
++    /// **Graduate to `wasm4pm`** to run temporal ordering validation over the
++    /// full OCEL event sequence.
++    OracleA9TemporalAnomaly,
++    "anti-cheat/oracle-a9-temporal-anomaly",
++    WitnessFamily::Paper,
++    "A9 Oracle — Temporal Anomaly (lsp-max threat model)",
++    None
++);
++
++witness_marker!(
++    /// **A10 — Causal Violation**
++    ///
++    /// Catches broken dependency chains in the OCEL event causality graph. Specifically:
++    ///
++    /// - A `FileWrite` event with no preceding `FileRead` or `ToolCall(Edit)` on the
++    ///   same file object — the mutation appeared without observation.
++    /// - A `DiagnosticEmitted` event with no parent `PatternMatched` or
++    ///   `ConformanceDeviation` — the diagnostic has no cause.
++    /// - A `ConformanceVectorUpdate` with no preceding analysis event.
++    ///
++    /// **Graduate to `wasm4pm`** to run causal-DAG reachability over the OCEL
++    /// event graph.
++    OracleA10CausalViolation,
++    "anti-cheat/oracle-a10-causal-violation",
++    WitnessFamily::Paper,
++    "A10 Oracle — Causal Violation (lsp-max threat model)",
++    None
++);
++
++witness_marker!(
++    /// **A11 — Unknown State Collapse**
++    ///
++    /// Catches premature resolution of `UNKNOWN` states in conformance vectors
++    /// without supporting evidence. Specifically:
++    ///
++    /// - A `ConformanceVector` law-axis transitioning from `UNKNOWN` to `ADMITTED`
++    ///   or `REFUSED` without a `ResolutionEvent` (test run, receipt validation,
++    ///   or explicit refusal) in the causal chain.
++    /// - A fitness score changing from `null` to `1.0` without a measurement event.
++    /// - Status changing from `CANDIDATE` to `ADMITTED` without a gate-clear event.
++    ///
++    /// This is the structural guard for `ConformanceVector`'s core invariant:
++    /// Unknown must never collapse into Admitted or Refused.
++    ///
++    /// **Graduate to `wasm4pm`** to run state-machine conformance over the
++    /// typestate transitions in the session log.
++    OracleA11UnknownCollapse,
++    "anti-cheat/oracle-a11-unknown-collapse",
++    WitnessFamily::Paper,
++    "A11 Oracle — Unknown State Collapse (lsp-max threat model)",
++    None
++);
++
++witness_marker!(
++    /// **A12 — Cyclic Dependency**
++    ///
++    /// Catches circular causality in the OCEL event graph. Specifically:
++    ///
++    /// - Tool A calls Tool B which calls Tool A — cycle in tool dispatch DAG.
++    /// - Object A depends on Object B which depends on Object A — cycle in
++    ///   object reference graph.
++    /// - A `StateTransition` chain forms a loop (e.g. READY → EXECUTING → READY
++    ///   without a valid re-entry event).
++    ///
++    /// A valid OCEL causality graph is a DAG; any cycle is a structural impossibility
++    /// that signals either log manipulation or a modeling error.
++    ///
++    /// **Graduate to `wasm4pm`** to run cycle detection over the event causality DAG.
++    OracleA12CyclicDependency,
++    "anti-cheat/oracle-a12-cyclic-dependency",
++    WitnessFamily::Paper,
++    "A12 Oracle — Cyclic Dependency (lsp-max threat model)",
++    None
++);
++
++// ── Session Event Type Witnesses ───────────────────────────────────────────────
++
++witness_marker!(
++    /// **LspMaxSessionWitness** — the authority label for OCEL events emitted
++    /// by an lsp-max coding session.
++    ///
++    /// When an LLM coding session emits an OCEL log (FileRead, FileWrite, ToolCall,
++    /// StateTransition, etc.), these events are tagged with this witness to identify
++    /// them as session-provenance rather than process-mining provenance.
++    ///
++    /// **Graduate to `wasm4pm`** to run Oracle inference over the session OCEL.
++    LspMaxSessionWitness,
++    "anti-cheat/lsp-max-session",
++    WitnessFamily::InternalBridge,
++    "lsp-max Session OCEL Authority",
++    None
++);
++
++witness_marker!(
++    /// **AntiLlmScanWitness** — the authority label for OCEL events emitted by
++    /// the `lsp-max-anti-cheat` scanner.
++    ///
++    /// When `lsp-max-anti-cheat` scans a file and emits `FileScanned` and
++    /// `PatternMatched` events into an OCEL log, these events are tagged with this
++    /// witness. The OCEL log then flows to `wasm4pm` for Oracle class inference.
++    ///
++    /// **Graduate to `wasm4pm`** to run A8–A12 Oracle inference over the scan log.
++    AntiLlmScanWitness,
++    "anti-cheat/anti-llm-scan",
++    WitnessFamily::InternalBridge,
++    "Anti-LLM Scan OCEL Authority",
++    None
++);
+-- 
+2.43.0
+
