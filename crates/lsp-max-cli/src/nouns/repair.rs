@@ -8,7 +8,6 @@ use std::collections::HashMap;
 // ==============================================================================
 // 1. Domain Tier
 // ==============================================================================
-
 /// A repair plan stored in the mesh's extra state, keyed per instance.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RepairPlan {
@@ -31,7 +30,6 @@ pub struct RepairPlanSummary {
 // ==============================================================================
 // 2. Service Tier
 // ==============================================================================
-
 /// Extra-state key under which per-instance repair plan maps are stored.
 const REPAIR_PLANS_KEY: &str = "repair_plans";
 
@@ -232,7 +230,6 @@ impl Default for RepairService {
 // ==============================================================================
 // 3. Verb Tier
 // ==============================================================================
-
 #[derive(Debug, Clone, Serialize)]
 pub struct RepairListResult {
     pub plans: Vec<RepairPlanSummary>,
@@ -323,7 +320,6 @@ pub fn dry_run(plan_id: String) -> Result<RepairDryRunResult> {
 // ==============================================================================
 // 4. Tests
 // ==============================================================================
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -368,7 +364,7 @@ mod tests {
         mesh.save_to_file(f.path().to_str().unwrap()).unwrap();
 
         // SAFETY: protected by TEST_ENV_LOCK
-        unsafe { env::set_var("TOWER_LSP_MAX_STATE_PATH", f.path().to_str().unwrap()) };
+        unsafe { env::set_var("LSP_MAX_STATE_PATH", f.path().to_str().unwrap()) };
         let svc = RepairService::new();
         let result = svc.list(None).unwrap();
         assert_eq!(result.total, 0);
@@ -380,7 +376,7 @@ mod tests {
         let _guard = lock_env();
         let (f, svc, _plan) = make_temp_service_with_plan();
         // SAFETY: protected by TEST_ENV_LOCK
-        unsafe { env::set_var("TOWER_LSP_MAX_STATE_PATH", f.path().to_str().unwrap()) };
+        unsafe { env::set_var("LSP_MAX_STATE_PATH", f.path().to_str().unwrap()) };
         let result = svc.list(None).unwrap();
         assert_eq!(result.total, 1);
         assert_eq!(result.plans[0].plan_id, "plan-alpha");
@@ -393,7 +389,7 @@ mod tests {
         let _guard = lock_env();
         let (f, svc, _plan) = make_temp_service_with_plan();
         // SAFETY: protected by TEST_ENV_LOCK
-        unsafe { env::set_var("TOWER_LSP_MAX_STATE_PATH", f.path().to_str().unwrap()) };
+        unsafe { env::set_var("LSP_MAX_STATE_PATH", f.path().to_str().unwrap()) };
         let filtered = svc.list(Some("inst-1")).unwrap();
         assert_eq!(filtered.total, 1);
 
@@ -406,7 +402,7 @@ mod tests {
         let _guard = lock_env();
         let (f, svc, _plan) = make_temp_service_with_plan();
         // SAFETY: protected by TEST_ENV_LOCK
-        unsafe { env::set_var("TOWER_LSP_MAX_STATE_PATH", f.path().to_str().unwrap()) };
+        unsafe { env::set_var("LSP_MAX_STATE_PATH", f.path().to_str().unwrap()) };
         let (iid, found) = svc.find_plan("plan-alpha").unwrap();
         assert_eq!(iid, "inst-1");
         assert_eq!(found.plan_id, "plan-alpha");
@@ -418,7 +414,7 @@ mod tests {
         let _guard = lock_env();
         let (f, svc, _plan) = make_temp_service_with_plan();
         // SAFETY: protected by TEST_ENV_LOCK
-        unsafe { env::set_var("TOWER_LSP_MAX_STATE_PATH", f.path().to_str().unwrap()) };
+        unsafe { env::set_var("LSP_MAX_STATE_PATH", f.path().to_str().unwrap()) };
         let result = svc.find_plan("no-such-plan");
         assert!(result.is_err());
         assert!(result.unwrap_err().contains("PLAN_NOT_FOUND"));
@@ -429,7 +425,7 @@ mod tests {
         let _guard = lock_env();
         let (f, svc, _plan) = make_temp_service_with_plan();
         // SAFETY: protected by TEST_ENV_LOCK
-        unsafe { env::set_var("TOWER_LSP_MAX_STATE_PATH", f.path().to_str().unwrap()) };
+        unsafe { env::set_var("LSP_MAX_STATE_PATH", f.path().to_str().unwrap()) };
         let result = svc.apply("plan-alpha").unwrap();
         assert_eq!(result.previous_status, "OPEN");
         assert_eq!(result.new_status, "ADMITTED");
@@ -445,7 +441,7 @@ mod tests {
         let _guard = lock_env();
         let (f, svc, _plan) = make_temp_service_with_plan();
         // SAFETY: protected by TEST_ENV_LOCK
-        unsafe { env::set_var("TOWER_LSP_MAX_STATE_PATH", f.path().to_str().unwrap()) };
+        unsafe { env::set_var("LSP_MAX_STATE_PATH", f.path().to_str().unwrap()) };
         assert!(svc.apply("ghost-plan").is_err());
     }
 
@@ -454,7 +450,7 @@ mod tests {
         let _guard = lock_env();
         let (f, svc, _plan) = make_temp_service_with_plan();
         // SAFETY: protected by TEST_ENV_LOCK
-        unsafe { env::set_var("TOWER_LSP_MAX_STATE_PATH", f.path().to_str().unwrap()) };
+        unsafe { env::set_var("LSP_MAX_STATE_PATH", f.path().to_str().unwrap()) };
         svc.apply("plan-alpha").unwrap();
         let result = svc.rollback("plan-alpha").unwrap();
         assert_eq!(result.previous_status, "ADMITTED");
@@ -466,7 +462,7 @@ mod tests {
         let _guard = lock_env();
         let (f, svc, _plan) = make_temp_service_with_plan();
         // SAFETY: protected by TEST_ENV_LOCK
-        unsafe { env::set_var("TOWER_LSP_MAX_STATE_PATH", f.path().to_str().unwrap()) };
+        unsafe { env::set_var("LSP_MAX_STATE_PATH", f.path().to_str().unwrap()) };
         let result = svc.rollback("plan-alpha");
         assert!(result.is_err());
         assert!(result.unwrap_err().contains("PLAN_NOT_ADMITTED"));
@@ -477,7 +473,7 @@ mod tests {
         let _guard = lock_env();
         let (f, svc, _plan) = make_temp_service_with_plan();
         // SAFETY: protected by TEST_ENV_LOCK
-        unsafe { env::set_var("TOWER_LSP_MAX_STATE_PATH", f.path().to_str().unwrap()) };
+        unsafe { env::set_var("LSP_MAX_STATE_PATH", f.path().to_str().unwrap()) };
         let result = svc.dry_run("plan-alpha").unwrap();
         assert_eq!(result.current_status, "OPEN");
         assert_eq!(result.projected_status, "ADMITTED");
@@ -493,7 +489,7 @@ mod tests {
         let _guard = lock_env();
         let (f, svc, _plan) = make_temp_service_with_plan();
         // SAFETY: protected by TEST_ENV_LOCK
-        unsafe { env::set_var("TOWER_LSP_MAX_STATE_PATH", f.path().to_str().unwrap()) };
+        unsafe { env::set_var("LSP_MAX_STATE_PATH", f.path().to_str().unwrap()) };
         svc.apply("plan-alpha").unwrap();
         let result = svc.dry_run("plan-alpha").unwrap();
         assert!(
