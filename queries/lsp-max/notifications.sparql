@@ -1,0 +1,13 @@
+PREFIX lsp: <https://lsp-max.rs/ontology/>
+PREFIX law: <https://lsp-max.rs/law/>
+
+SELECT ?method_name ?snake_method ?param_type ?law_status
+WHERE {
+    ?method a lsp:Notification ;
+            lsp:methodName ?method_name ;
+            lsp:snakeName  ?snake_method ;
+            lsp:paramType  ?param_type ;
+            law:status     ?status_iri .
+    BIND(STRAFTER(STR(?status_iri), "https://lsp-max.rs/law/") AS ?law_status)
+}
+ORDER BY ?method_name

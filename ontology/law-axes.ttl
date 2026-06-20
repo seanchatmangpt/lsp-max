@@ -1,0 +1,95 @@
+@prefix owl:  <http://www.w3.org/2002/07/owl#> .
+@prefix rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+@prefix law:  <https://lsp-max.rs/law/> .
+
+# ── Ontology declaration ──────────────────────────────────────────────────────
+
+<https://lsp-max.rs/law/> a owl:Ontology ;
+    rdfs:label   "lsp-max Law-Axis Ontology" ;
+    rdfs:comment "Defines admission law states for LSP method conformance." .
+
+# ── Core classes ─────────────────────────────────────────────────────────────
+
+law:LawAxis a owl:Class ;
+    rdfs:label   "LawAxis" ;
+    rdfs:comment "A named axis along which conformance is traced for a given LSP feature." .
+
+law:Status a owl:Class ;
+    rdfs:label   "LawAxisStatus" ;
+    rdfs:comment "Enumeration of bounded admission states.  Unknown must not collapse." .
+
+# ── Status individuals ────────────────────────────────────────────────────────
+
+law:ADMITTED a law:Status ;
+    rdfs:label   "ADMITTED" ;
+    rdfs:comment "Feature has transcript + negative-control + receipt. Generates real implementation." .
+
+law:CANDIDATE a law:Status ;
+    rdfs:label   "CANDIDATE" ;
+    rdfs:comment "Feature stub generated. Receipt chain OPEN. Pending transcript." .
+
+law:REFUSED a law:Status ;
+    rdfs:label   "REFUSED" ;
+    rdfs:comment "Feature actively refused by law. Generates negative-control test only." .
+
+law:UNKNOWN a law:Status ;
+    rdfs:label   "UNKNOWN" ;
+    rdfs:comment "Status not yet traced. May not collapse to ADMITTED or REFUSED." .
+
+law:BLOCKED a law:Status ;
+    rdfs:label   "BLOCKED" ;
+    rdfs:comment "Precondition not met. Generation suspended." .
+
+law:PARTIAL a law:Status ;
+    rdfs:label   "PARTIAL" ;
+    rdfs:comment "Some law axes admitted; others OPEN." .
+
+law:OPEN a law:Status ;
+    rdfs:label   "OPEN" ;
+    rdfs:comment "Tracing has started but is not yet closed in any direction." .
+
+# ── Properties on LawAxis ─────────────────────────────────────────────────────
+
+law:status a owl:ObjectProperty ;
+    rdfs:label   "status" ;
+    rdfs:domain  law:LawAxis ;
+    rdfs:range   law:Status ;
+    rdfs:comment "The current admission status of this law axis." .
+
+law:receipt a owl:ObjectProperty ;
+    rdfs:label   "receipt" ;
+    rdfs:domain  law:LawAxis ;
+    rdfs:comment "Points to a receipt artifact JSON file that closes this axis." .
+
+law:reason a owl:DatatypeProperty ;
+    rdfs:label   "reason" ;
+    rdfs:domain  law:LawAxis ;
+    rdfs:range   xsd:string ;
+    rdfs:comment "Human-readable explanation for REFUSED or BLOCKED status." .
+
+law:transcriptRef a owl:DatatypeProperty ;
+    rdfs:label   "transcriptRef" ;
+    rdfs:domain  law:LawAxis ;
+    rdfs:range   xsd:anyURI ;
+    rdfs:comment "Path or URI to the transcript artifact required for ADMITTED." .
+
+law:negativeControl a owl:DatatypeProperty ;
+    rdfs:label   "negativeControl" ;
+    rdfs:domain  law:LawAxis ;
+    rdfs:range   xsd:string ;
+    rdfs:comment "Test name or path that constitutes the negative-control for this axis." .
+
+# ── Admission constraint (OWL annotation, not enforcement) ────────────────────
+# ggen reads this to decide code-generation output shape.
+
+law:generatesImplementation a owl:DatatypeProperty ;
+    rdfs:label   "generatesImplementation" ;
+    rdfs:range   xsd:boolean ;
+    rdfs:comment "True when status=ADMITTED; false otherwise.  Set by ggen at generation time." .
+
+law:generatesNegativeControlTest a owl:DatatypeProperty ;
+    rdfs:label   "generatesNegativeControlTest" ;
+    rdfs:range   xsd:boolean ;
+    rdfs:comment "True when status=REFUSED; controls stub-only generation path." .

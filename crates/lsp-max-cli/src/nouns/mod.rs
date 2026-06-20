@@ -1,4 +1,5 @@
 pub mod admission;
+pub mod admit;
 pub mod agent;
 pub mod client;
 pub mod config;
@@ -6,18 +7,28 @@ pub mod conformance;
 pub mod diagnostics;
 pub mod doctor;
 pub mod event;
+pub mod explain;
 pub mod gate;
+pub mod generate;
+pub mod ggen;
 pub mod hook;
 pub mod insight;
 pub mod metamodel;
 pub mod pipeline;
+pub mod intent;
+pub mod mesh;
+pub mod ontology;
+pub mod pack;
 pub mod plugin;
 pub mod receipt;
 pub mod rpc;
 pub mod server;
 pub mod snapshot;
 pub mod state;
+pub mod stream;
 pub mod telemetry;
+pub mod template;
+pub mod testmatrix;
 pub mod workspace;
 
 pub fn get_state_path() -> String {

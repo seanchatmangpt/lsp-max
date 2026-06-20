@@ -1,0 +1,107 @@
+@prefix owl:  <http://www.w3.org/2002/07/owl#> .
+@prefix rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+@prefix lsp:  <https://lsp-max.rs/ontology/> .
+@prefix law:  <https://lsp-max.rs/law/> .
+
+# ── Ontology declaration ──────────────────────────────────────────────────────
+
+<https://lsp-max.rs/ontology/max/> a owl:Ontology ;
+    rdfs:label   "lsp-max max/* Protocol Extension Ontology" ;
+    rdfs:comment "Declares the custom max/* method surface for snapshots, conformance vectors, receipts, repair plans, and gates." ;
+    owl:imports  <https://lsp-max.rs/ontology/> ,
+                 <https://lsp-max.rs/law/> .
+
+# ─────────────────────────────────────────────────────────────────────────────
+# max/* EXTENSIONS — all status CANDIDATE at declaration time
+# ─────────────────────────────────────────────────────────────────────────────
+
+lsp:max_snapshot a lsp:MaxExtension ;
+    lsp:methodName "max/snapshot" ;
+    lsp:snakeName  "max_snapshot" ;
+    lsp:paramType  "SnapshotParams" ;
+    lsp:returnType "SnapshotResult" ;
+    rdfs:comment   "Captures a point-in-time snapshot of the law-state runtime.  Read-only; never mutates files." ;
+    law:status     law:CANDIDATE .
+
+lsp:max_conformance a lsp:MaxExtension ;
+    lsp:methodName "max/conformance" ;
+    lsp:snakeName  "max_conformance" ;
+    lsp:paramType  "ConformanceParams" ;
+    lsp:returnType "ConformanceVector" ;
+    rdfs:comment   "Returns the ConformanceVector for the requested law axis set.  Unknown must not collapse." ;
+    law:status     law:CANDIDATE .
+
+lsp:max_receipt a lsp:MaxExtension ;
+    lsp:methodName "max/receipt" ;
+    lsp:snakeName  "max_receipt" ;
+    lsp:paramType  "ReceiptParams" ;
+    lsp:returnType "ReceiptResult" ;
+    rdfs:comment   "Retrieves or validates a receipt artifact.  Receipt chain integrity is enforced by the runtime." ;
+    law:status     law:CANDIDATE .
+
+lsp:max_gate a lsp:MaxExtension ;
+    lsp:methodName "max/gate" ;
+    lsp:snakeName  "max_gate" ;
+    lsp:paramType  "GateParams" ;
+    lsp:returnType "GateResult" ;
+    rdfs:comment   "Queries or updates the ANDON gate state.  Gate set means Lambda_CD^runtime blocks shell actions." ;
+    law:status     law:CANDIDATE .
+
+lsp:max_admission a lsp:MaxExtension ;
+    lsp:methodName "max/admission" ;
+    lsp:snakeName  "max_admission" ;
+    lsp:paramType  "AdmissionParams" ;
+    lsp:returnType "AdmissionBundle" ;
+    rdfs:comment   "Returns an AdmissionBundle: the full set of law-axis traces for a feature or method." ;
+    law:status     law:CANDIDATE .
+
+lsp:max_repairPlan a lsp:MaxExtension ;
+    lsp:methodName "max/repairPlan" ;
+    lsp:snakeName  "max_repair_plan" ;
+    lsp:paramType  "RepairPlanParams" ;
+    lsp:returnType "RepairPlanResult" ;
+    rdfs:comment   "Emits a structured repair plan for BLOCKED or REFUSED law axes.  Read-only; proposes edits, never applies them." ;
+    law:status     law:CANDIDATE .
+
+lsp:max_diagnostics a lsp:MaxExtension ;
+    lsp:methodName "max/diagnostics" ;
+    lsp:snakeName  "max_diagnostics" ;
+    lsp:paramType  "MaxDiagnosticsParams" ;
+    lsp:returnType "Vec<MaxDiagnostic>" ;
+    rdfs:comment   "Pulls the current WASM4PM-* and GGEN-* diagnostic set from the runtime.  Gate-aware." ;
+    law:status     law:CANDIDATE .
+
+lsp:max_vector a lsp:MaxExtension ;
+    lsp:methodName "max/vector" ;
+    lsp:snakeName  "max_vector" ;
+    lsp:paramType  "VectorParams" ;
+    lsp:returnType "ConformanceVector" ;
+    rdfs:comment   "Lightweight alias focused on the admitted/refused/unknown triple for a single method.  Distinct from max/conformance in scope." ;
+    law:status     law:CANDIDATE .
+
+# ─────────────────────────────────────────────────────────────────────────────
+# NOTIFICATION — max/* push events
+# ─────────────────────────────────────────────────────────────────────────────
+
+lsp:max_gateChanged a lsp:Notification ;
+    lsp:methodName "max/gateChanged" ;
+    lsp:snakeName  "max_gate_changed" ;
+    lsp:paramType  "GateChangedParams" ;
+    rdfs:comment   "Server-to-client push: ANDON gate state transitioned.  Clients must re-query max/gate to confirm." ;
+    law:status     law:CANDIDATE .
+
+lsp:max_admissionChanged a lsp:Notification ;
+    lsp:methodName "max/admissionChanged" ;
+    lsp:snakeName  "max_admission_changed" ;
+    lsp:paramType  "AdmissionChangedParams" ;
+    rdfs:comment   "Server-to-client push: a law axis changed status (e.g. CANDIDATE -> ADMITTED or BLOCKED)." ;
+    law:status     law:CANDIDATE .
+
+lsp:max_receiptArrived a lsp:Notification ;
+    lsp:methodName "max/receiptArrived" ;
+    lsp:snakeName  "max_receipt_arrived" ;
+    lsp:paramType  "ReceiptArrivedParams" ;
+    rdfs:comment   "Server-to-client push: a new receipt artifact has been committed and is queryable via max/receipt." ;
+    law:status     law:CANDIDATE .
