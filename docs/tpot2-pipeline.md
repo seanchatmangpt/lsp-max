@@ -51,11 +51,16 @@ The library lives in `src/pipeline/` and is re-exported as `lsp_max::pipeline`
 | `search` | `src/pipeline/search.rs` | The genetic engine: `PipelineSearch`, the `FitnessEvaluator` trait, the xorshift64 `Prng`, and `DiversityFitnessEvaluator`. |
 | `fitness` | `src/pipeline/fitness.rs` | OCEL-oriented evaluators: `BreedFitnessEvaluator` trait, `SubprocessFitnessEvaluator` (wasm4pm-cli), `HeuristicFitnessEvaluator`, and `auto_evaluator()`. |
 
-The CLI noun is `crates/lsp-max-cli/src/nouns/pipeline.rs`. On this branch it
-carries its own self-contained `KNOWN_BREEDS`, `category_for()`,
-`heuristic_fitness()`, and a self-contained genetic loop in
-`PipelineService::search` (no cross-crate call into `lsp_max::pipeline` today —
-that consolidation is OPEN).
+The CLI noun is `crates/lsp-max-cli/src/nouns/pipeline.rs`. It consumes the
+`lsp_max::pipeline` library directly rather than duplicating it:
+`list-breeds`/`schema` read `catalog::{KNOWN_BREEDS, breed_category}`, `evaluate`
+calls `fitness::auto_evaluator(ocel_path).evaluate(..)`, and `search` drives
+`search::PipelineSearch::run` over `KNOWN_BREEDS`. Because `PipelineSearch` takes
+the `search::FitnessEvaluator` trait while `auto_evaluator()` returns the
+`fitness::BreedFitnessEvaluator` trait (same signature, distinct traits), a
+one-method newtype `CliFitnessAdapter` bridges the two so the search engine runs
+on the auto-selected (subprocess-or-heuristic) evaluator with no duplicated
+scoring logic.
 
 ### Search flow
 
@@ -99,10 +104,9 @@ reset by mutation/crossover, and early-stops as soon as `best_fitness` reaches
 `KNOWN_BREEDS` (`src/pipeline/catalog.rs` and the mirror in the CLI noun) lists
 **57** breed string IDs that match wasm4pm-cognition's dispatch IDs. Breeds are
 partitioned into **7** categories. `breed_category()` in the library maps known
-names to a `BreedCategory`; unknown names default to `MetaBased`. (The CLI noun's
-`category_for()` uses substring heuristics and falls through to `meta`, so a few
-edge cases can differ from the library's exact-match table — that minor
-divergence is OPEN.)
+names to a `BreedCategory`; unknown names default to `MetaBased`. The CLI noun
+calls this same `breed_category()`, so the CLI and library agree on every breed's
+category by construction.
 
 | `BreedCategory` | Example breeds |
 |---|---|
@@ -124,8 +128,9 @@ catalog with each breed's category.
 
 ## 4. Fitness function
 
-Both the library `HeuristicFitnessEvaluator` (`src/pipeline/fitness.rs`) and the
-CLI noun's `heuristic_fitness()` compute the same bounded score in **[0.0, 1.0]**:
+The library `HeuristicFitnessEvaluator` (`src/pipeline/fitness.rs`) computes the
+bounded score in **[0.0, 1.0]**; the CLI noun delegates to it (via
+`auto_evaluator`'s heuristic fallback), so there is one scoring implementation:
 
 ```text
 fitness = min(1.0,
@@ -164,13 +169,13 @@ is absent *or* when no breed produced a parseable score — so a single number f
 this evaluator does not, on its own, prove the engine ran. Engine participation
 must be witnessed by a receipt, not inferred from the score.
 
-**Honest limitation (CANDIDATE).** On this branch the **CLI verbs** `evaluate`
-and `search` in `crates/lsp-max-cli/src/nouns/pipeline.rs` call only
-`heuristic_fitness()` and accept but ignore `ocel_path`; they do **not** spawn
-wasm4pm-cli. The subprocess path lives in the library
-(`SubprocessFitnessEvaluator` / `auto_evaluator`) and is not yet routed through
-the CLI here. Treat CLI fitness as heuristic until that wiring is ADMITTED with a
-transcript + receipt.
+**Honest limitation (CANDIDATE).** The **CLI verbs** `evaluate` and `search` in
+`crates/lsp-max-cli/src/nouns/pipeline.rs` route through `auto_evaluator(ocel_path)`,
+which spawns `wasm4pm-cli` **only when it answers `--version`** and otherwise
+falls back to the heuristic. So when `wasm4pm-cli` is absent (as in CI here),
+`ocel_path` is bound into the command/receipt but the score is still heuristic.
+Engine-backed fitness over an OCEL log stays CANDIDATE until it is witnessed with
+a transcript + receipt from a run where `wasm4pm-cli` was present.
 
 ---
 
@@ -352,21 +357,25 @@ engine actually produced the fitness (output digest of a real
 
 ## Feature status of the optimizer itself
 
-Per AGENTS.md §8 / CLAUDE.md, each row carries a bounded status. No row is
-`SUPPORTED_WITH_TRANSCRIPT`, because no transcript + negative-control + receipt
-artifact has been bound for this surface in-tree.
+Per AGENTS.md §8 / CLAUDE.md, each row carries a bounded status. `tests/test_tpot2_e2e.sh`
+produces a transcript + negative controls + a validated marker receipt, but the
+receipt artifact is a per-run temp file (not committed in-tree) and binds the
+claim rather than a re-executed engine run — so no row claims
+`SUPPORTED_WITH_TRANSCRIPT`.
 
 | Row | Piece | Status | Note |
 |---|---|---|---|
 | TPOT2-LIB | `lsp_max::pipeline` library (`catalog`/`types`/`search`/`fitness`) | ADMITTED | Modules present, re-exported from `src/lib.rs`, covered by in-crate unit tests. |
 | TPOT2-CLI | `pipeline` noun + 4 verbs (`list-breeds`/`evaluate`/`search`/`schema`) | ADMITTED | Present in `crates/lsp-max-cli/src/nouns/pipeline.rs`. |
-| TPOT2-GA | Genetic engine: tournament + single-point crossover + point mutation + elitism + early-stop | ADMITTED | `PipelineSearch::run` (library) and `PipelineService::search` (CLI); deterministic PRNG. |
-| TPOT2-FIT-HEUR | Heuristic fitness (diversity ×0.5 + length ×0.4 + temporal 0.1, bounded [0.0,1.0]) | ADMITTED | Identical formula in library and CLI; unit-tested. |
-| TPOT2-FIT-ENGINE | wasm4pm-cli subprocess fitness through the CLI verbs | CANDIDATE | `SubprocessFitnessEvaluator` / `auto_evaluator` exist in the library but are not routed through CLI `evaluate`/`search` on this branch; `--ocel-path` ignored by the CLI here. |
-| TPOT2-CLI-LIB-UNIFY | CLI noun consuming the `lsp_max::pipeline` library instead of its own copy | OPEN | CLI carries a duplicate catalog/heuristic/GA loop. |
+| TPOT2-GA | Genetic engine: tournament + single-point crossover + point mutation + elitism + early-stop | ADMITTED | `PipelineSearch::run` (library); the CLI drives the same engine; deterministic PRNG. |
+| TPOT2-FIT-HEUR | Heuristic fitness (diversity ×0.5 + length ×0.4 + temporal 0.1, bounded [0.0,1.0]) | ADMITTED | One formula in the library `HeuristicFitnessEvaluator`; the CLI delegates to it; unit-tested. |
+| TPOT2-FIT-ENGINE | wasm4pm-cli subprocess fitness through the CLI verbs | CANDIDATE | CLI `evaluate`/`search` route through `auto_evaluator(ocel_path)`, which uses `SubprocessFitnessEvaluator` only when `wasm4pm-cli` answers `--version` and the heuristic otherwise; engine-backed score stays CANDIDATE until witnessed where the CLI is present. |
+| TPOT2-CLI-LIB-UNIFY | CLI noun consuming the `lsp_max::pipeline` library instead of its own copy | ADMITTED | CLI consumes `catalog`/`search`/`fitness`; duplicate catalog/heuristic/GA removed (−215 LOC); bridged by `CliFitnessAdapter`. |
+| TPOT2-LSP | Read-only `max/pipeline*` methods + `TPOT2-*` diagnostic family | ADMITTED | `lsp-max-protocol/src/pipeline.rs`: method constants, serde param/result types, `diagnostics_for_search()`; `TPOT2-OCEL-MISSING` holds UNKNOWN distinct from REFUSED/ADMITTED; unit-tested. |
 | TPOT2-RECEIPT | Marker-receipt emitter + validator path | PARTIAL | Emitter + validator + integration test present; receipt binds the claim, not a re-executed engine run. |
 | TPOT2-RECEIPT-ENGINE | Receipt binding a real `wasm4pm breed run` output digest | CANDIDATE | Not implemented; current digest covers `breeds\|fitness\|ocel_path`. |
-| TPOT2-TESTS | Integration test for receipt emission/validation | PARTIAL | `tests/test_pipeline_receipt.sh` (shell) exercises emit + validate + bad-status refusal; no Rust integration test for `evaluate`/`search` verbs yet. |
+| TPOT2-TESTS-RUST | Rust integration test over the library API | ADMITTED | `tests/test_tpot2_pipeline.rs`: 7 cases incl. seed-reproducibility and the empty-pool REFUSED negative control. |
+| TPOT2-TESTS-E2E | Shell e2e: CLI verbs + receipt emit/validate + negative controls | PARTIAL | `tests/test_tpot2_e2e.sh` over `tests/fixtures/tpot2/sample.ocel.json`; rejects tampered status, flipped digest, out-of-band emitter status; transcript binds the claim, not an engine run. |
 | TPOT2-TREE | Tree-shaped (non-linear) pipelines | CANDIDATE | `BreedPipeline` is a linear chain; tree pipelines noted as a future iteration in `types.rs`. |
 | TPOT2-OCEL | OCEL-log-specific fitness end to end | UNKNOWN | Requires `../wasm4pm` engine + an OCEL log; absent here, so end-to-end behavior is untraced (not ADMITTED, not REFUSED). |
 
