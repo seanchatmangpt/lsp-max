@@ -7,6 +7,10 @@
 use crate::rules::lsp318_coverage::{full_surface, HandlerState};
 use lsp_max::lsp_types::*;
 
+// Capabilities are built from the coverage matrix; the `Refuses` variant is
+// included when a capability must be advertised for the refusal path to be
+// reachable by the client (e.g. rename must be declared so prepareRename fires).
+
 /// Build ServerCapabilities by scanning the coverage matrix.
 /// Only methods with Wired handlers get advertised capabilities.
 pub fn build_capabilities() -> ServerCapabilities {
@@ -14,14 +18,20 @@ pub fn build_capabilities() -> ServerCapabilities {
     let surface = full_surface();
 
     for method in surface {
-        // Only wire capabilities for Wired handlers
-        if method.handler != HandlerState::Wired {
+        // Wired handlers get full capabilities; Refuses handlers get minimal
+        // declarations so the refusal path is reachable by the client.
+        let is_wired = method.handler == HandlerState::Wired;
+        let is_refuses = method.handler == HandlerState::Refuses;
+        if !is_wired && !is_refuses {
             continue;
         }
 
         match method.method {
             // ── Text document synchronization ─────────────────────────────────
-            "textDocument/didOpen" | "textDocument/didChange" | "textDocument/didSave" => {
+            "textDocument/didOpen"
+            | "textDocument/didChange"
+            | "textDocument/didSave"
+            | "textDocument/didClose" => {
                 caps.text_document_sync =
                     Some(TextDocumentSyncCapability::Kind(TextDocumentSyncKind::FULL));
             }
@@ -43,8 +53,32 @@ pub fn build_capabilities() -> ServerCapabilities {
             "textDocument/references" => {
                 caps.references_provider = Some(OneOf::Left(true));
             }
+            "textDocument/documentHighlight" => {
+                caps.document_highlight_provider = Some(OneOf::Left(true));
+            }
             "textDocument/hover" => {
                 caps.hover_provider = Some(HoverProviderCapability::Simple(true));
+            }
+            "textDocument/prepareRename" | "textDocument/rename" => {
+                // Rename is declared so prepareRename is reachable; both are
+                // refused at the handler level (read-only law).
+                if caps.rename_provider.is_none() {
+                    caps.rename_provider = Some(OneOf::Right(RenameOptions {
+                        prepare_provider: Some(true),
+                        work_done_progress_options: WorkDoneProgressOptions::default(),
+                    }));
+                }
+            }
+            "textDocument/selectionRange" => {
+                caps.selection_range_provider =
+                    Some(SelectionRangeProviderCapability::Simple(true));
+            }
+            "textDocument/linkedEditingRange" => {
+                caps.linked_editing_range_provider =
+                    Some(LinkedEditingRangeServerCapabilities::Simple(true));
+            }
+            "textDocument/moniker" => {
+                caps.moniker_provider = Some(OneOf::Left(true));
             }
 
             // ── Completion / signature / lens / link / color / action ─────────
@@ -73,6 +107,9 @@ pub fn build_capabilities() -> ServerCapabilities {
             }
 
             // ── Formatting / folding / hints / inline / semantic / symbol ─────
+            "textDocument/formatting" => {
+                caps.document_formatting_provider = Some(OneOf::Left(true));
+            }
             "textDocument/rangesFormatting" => {
                 caps.document_range_formatting_provider = Some(OneOf::Left(true));
             }
@@ -81,6 +118,20 @@ pub fn build_capabilities() -> ServerCapabilities {
             }
             "textDocument/inlineCompletion" => {
                 caps.inline_completion_provider = Some(OneOf::Left(true));
+            }
+            "textDocument/inlayHint" | "inlayHint/resolve" => {
+                if caps.inlay_hint_provider.is_none() {
+                    caps.inlay_hint_provider =
+                        Some(OneOf::Right(InlayHintServerCapabilities::Options(
+                            InlayHintOptions {
+                                resolve_provider: Some(true),
+                                work_done_progress_options: WorkDoneProgressOptions::default(),
+                            },
+                        )));
+                }
+            }
+            "textDocument/inlineValue" => {
+                caps.inline_value_provider = Some(OneOf::Left(true));
             }
             "textDocument/documentSymbol" => {
                 caps.document_symbol_provider = Some(OneOf::Left(true));
@@ -106,26 +157,52 @@ pub fn build_capabilities() -> ServerCapabilities {
                 }
             }
 
+            // ── Call hierarchy ────────────────────────────────────────────────
+            "textDocument/prepareCallHierarchy"
+            | "callHierarchy/incomingCalls"
+            | "callHierarchy/outgoingCalls" => {
+                if caps.call_hierarchy_provider.is_none() {
+                    caps.call_hierarchy_provider =
+                        Some(CallHierarchyServerCapability::Simple(true));
+                }
+            }
+
             // ── Pull diagnostics ──────────────────────────────────────────────
-            "textDocument/diagnostic" => {
-                caps.diagnostic_provider = Some(DiagnosticServerCapabilities::Options(
-                    DiagnosticOptions {
-                        identifier: None,
-                        inter_file_dependencies: true,
-                        workspace_diagnostics: false,
-                        work_done_progress_options: WorkDoneProgressOptions::default(),
-                    },
-                ));
+            "textDocument/diagnostic" | "workspace/diagnostic" => {
+                if caps.diagnostic_provider.is_none() {
+                    caps.diagnostic_provider = Some(DiagnosticServerCapabilities::Options(
+                        DiagnosticOptions {
+                            identifier: None,
+                            inter_file_dependencies: true,
+                            workspace_diagnostics: true,
+                            work_done_progress_options: WorkDoneProgressOptions::default(),
+                        },
+                    ));
+                }
             }
 
             // ── Workspace features ────────────────────────────────────────────
+            "workspace/symbol" => {
+                caps.workspace_symbol_provider = Some(OneOf::Left(true));
+            }
+            "workspace/executeCommand" => {
+                caps.execute_command_provider = Some(ExecuteCommandOptions {
+                    commands: vec![
+                        "anti-llm.validateReceiptChain".to_string(),
+                        "anti-llm.exportOcel".to_string(),
+                    ],
+                    work_done_progress_options: WorkDoneProgressOptions::default(),
+                });
+            }
             "workspace/textDocumentContent" => {
                 // No explicit capability field; handled by method availability
             }
 
             // ── Server-to-client refreshes ────────────────────────────────────
-            "workspace/foldingRange/refresh" => {
-                // Server-side refresh; no client capability needed
+            "workspace/codeLens/refresh"
+            | "workspace/semanticTokens/refresh"
+            | "workspace/foldingRange/refresh" => {
+                // Server-side refreshes; no client capability field needed
             }
 
             // ── Window features ───────────────────────────────────────────────

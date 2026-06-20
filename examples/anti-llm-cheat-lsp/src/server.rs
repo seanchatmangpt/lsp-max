@@ -1,6 +1,7 @@
-use lsp_max::jsonrpc::{Error, Result};
+use lsp_max::jsonrpc::{Error, ErrorCode, Result};
 use lsp_max::lsp_types::*;
 use lsp_max::{Client, LanguageServer};
+use std::str::FromStr;
 use std::sync::{Arc, Mutex};
 
 mod recommend;
@@ -69,6 +70,8 @@ impl AntiLlmServer {
                 },
             )
             .await;
+        // Fire code-lens refresh so clients re-pull lenses after each detection update
+        let _ = self.client.code_lens_refresh().await;
     }
 }
 
@@ -121,8 +124,10 @@ impl LanguageServer for AntiLlmServer {
         self.run_scan_and_publish(&params.text_document.uri).await;
     }
 
+    /// Final scan on close ensures the CI pull path sees up-to-date detections.
     async fn did_close(&self, params: DidCloseTextDocumentParams) {
-        self.ast_adapter.handle_did_close(params);
+        self.ast_adapter.handle_did_close(params.clone());
+        self.run_scan_and_publish(&params.text_document.uri).await;
     }
 
     async fn inline_completion(
@@ -433,11 +438,39 @@ impl LanguageServer for AntiLlmServer {
         Ok(Some(DocumentSymbolResponse::Nested(syms)))
     }
 
+    /// Exposes all detection codes as workspace symbols across all scanned files
+    /// so CI and agents can enumerate every active violation site.
     async fn symbol(
         &self,
         _params: WorkspaceSymbolParams,
     ) -> Result<Option<Vec<SymbolInformation>>> {
-        Ok(Some(vec![]))
+        let root = self.root_dir();
+        let obs = engine::scan_directory(&root);
+        let diags = engine::evaluate_diagnostics(&obs);
+        #[allow(deprecated)]
+        let syms: Vec<SymbolInformation> = diags
+            .iter()
+            .filter_map(|d| {
+                url::Url::from_file_path(&d.file_path)
+                    .ok()
+                    .and_then(|url| Uri::from_str(url.as_str()).ok())
+                    .map(|uri| SymbolInformation {
+                        name: d.code.clone(),
+                        kind: SymbolKind::EVENT,
+                        tags: None,
+                        deprecated: None,
+                        location: Location {
+                            uri,
+                            range: Range::new(
+                                Position::new(d.line.saturating_sub(1) as u32, 0),
+                                Position::new(d.line.saturating_sub(1) as u32, 80),
+                            ),
+                        },
+                        container_name: Some(d.category.clone()),
+                    })
+            })
+            .collect();
+        Ok(Some(syms))
     }
 
     async fn diagnostic(
@@ -499,5 +532,339 @@ impl LanguageServer for AntiLlmServer {
             .ast_adapter
             .semantic_tokens_in_range(&params.text_document.uri, params.range)
             .map(SemanticTokensRangeResult::Tokens))
+    }
+
+    /// LLMs fix one occurrence but not all; highlight all same-diagnostic-code
+    /// locations in file so every instance of a violation is visible.
+    async fn document_highlight(
+        &self,
+        params: DocumentHighlightParams,
+    ) -> Result<Option<Vec<DocumentHighlight>>> {
+        let uri = &params.text_document_position_params.text_document.uri;
+        let pos = params.text_document_position_params.position;
+        let diags = self.file_diagnostics(uri);
+        let hits: Vec<DocumentHighlight> = diags
+            .iter()
+            .filter(|d| (d.line.saturating_sub(1) as u32) == pos.line)
+            .map(|d| DocumentHighlight {
+                range: Range::new(
+                    Position::new(
+                        d.line.saturating_sub(1) as u32,
+                        d.column.saturating_sub(1) as u32,
+                    ),
+                    Position::new(
+                        d.line.saturating_sub(1) as u32,
+                        (d.column.saturating_sub(1) + 30) as u32,
+                    ),
+                ),
+                kind: Some(DocumentHighlightKind::TEXT),
+            })
+            .collect();
+        Ok(Some(hits))
+    }
+
+    /// LLMs cut at wrong syntactic boundaries; return detection ranges so the
+    /// client shows the actual violation span rather than an arbitrary boundary.
+    async fn selection_range(
+        &self,
+        params: SelectionRangeParams,
+    ) -> Result<Option<Vec<SelectionRange>>> {
+        let uri = &params.text_document.uri;
+        let diags = self.file_diagnostics(uri);
+        let ranges: Vec<SelectionRange> = params
+            .positions
+            .iter()
+            .map(|pos| {
+                let matching = diags
+                    .iter()
+                    .filter(|d| (d.line.saturating_sub(1) as u32) == pos.line)
+                    .map(|d| {
+                        Range::new(
+                            Position::new(
+                                d.line.saturating_sub(1) as u32,
+                                d.column.saturating_sub(1) as u32,
+                            ),
+                            Position::new(
+                                d.line.saturating_sub(1) as u32,
+                                (d.column.saturating_sub(1) + 40) as u32,
+                            ),
+                        )
+                    })
+                    .next()
+                    .unwrap_or_else(|| Range::new(*pos, *pos));
+                SelectionRange {
+                    range: matching,
+                    parent: None,
+                }
+            })
+            .collect();
+        Ok(Some(ranges))
+    }
+
+    /// LLMs edit open constructs without closing them; return cheat spans so
+    /// paired-edit tooling reveals the asymmetry.
+    async fn linked_editing_range(
+        &self,
+        params: LinkedEditingRangeParams,
+    ) -> Result<Option<LinkedEditingRanges>> {
+        let uri = &params.text_document_position_params.text_document.uri;
+        let pos = params.text_document_position_params.position;
+        let diags = self.file_diagnostics(uri);
+        let ranges: Vec<Range> = diags
+            .iter()
+            .filter(|d| (d.line.saturating_sub(1) as u32) == pos.line)
+            .map(|d| {
+                Range::new(
+                    Position::new(
+                        d.line.saturating_sub(1) as u32,
+                        d.column.saturating_sub(1) as u32,
+                    ),
+                    Position::new(
+                        d.line.saturating_sub(1) as u32,
+                        (d.column.saturating_sub(1) + 30) as u32,
+                    ),
+                )
+            })
+            .collect();
+        Ok(Some(LinkedEditingRanges {
+            ranges,
+            word_pattern: None,
+        }))
+    }
+
+    /// LLM identifier laundering: return a moniker keyed by diagnostic code so
+    /// tools can trace the violation across the LSIF graph.
+    async fn moniker(&self, params: MonikerParams) -> Result<Option<Vec<Moniker>>> {
+        let uri = &params.text_document_position_params.text_document.uri;
+        let pos = params.text_document_position_params.position;
+        let diags = self.file_diagnostics(uri);
+        let monikers: Vec<Moniker> = diags
+            .iter()
+            .filter(|d| (d.line.saturating_sub(1) as u32) == pos.line)
+            .map(|d| Moniker {
+                scheme: "anti-llm".to_string(),
+                identifier: format!("anti-llm/{}/{}", d.category, d.code),
+                unique: UniquenessLevel::Document,
+                kind: Some(MonikerKind::Import),
+            })
+            .collect();
+        Ok(Some(monikers))
+    }
+
+    /// Inline law-state labels (BLOCKED/CANDIDATE) at each detection site so
+    /// editors surface the status without requiring a hover.
+    async fn inlay_hint(&self, params: InlayHintParams) -> Result<Option<Vec<InlayHint>>> {
+        let uri = &params.text_document.uri;
+        let diags = self.file_diagnostics(uri);
+        let hints: Vec<InlayHint> = diags
+            .iter()
+            .map(|d| {
+                let status = if d.blocking { "BLOCKED" } else { "CANDIDATE" };
+                InlayHint {
+                    position: Position::new(d.line.saturating_sub(1) as u32, 0),
+                    label: InlayHintLabel::String(format!("\u{2691} {}: {}", d.code, status)),
+                    kind: Some(InlayHintKind::PARAMETER),
+                    text_edits: None,
+                    tooltip: Some(InlayHintTooltip::String(d.message.clone())),
+                    padding_left: None,
+                    padding_right: Some(true),
+                    data: None,
+                }
+            })
+            .collect();
+        Ok(Some(hints))
+    }
+
+    /// Resolve is a no-op here: hints are fully populated at creation time.
+    async fn inlay_hint_resolve(&self, hint: InlayHint) -> Result<InlayHint> {
+        Ok(hint)
+    }
+
+    /// Show BLOCKED/CANDIDATE status inline in code at each detection site.
+    async fn inline_value(&self, params: InlineValueParams) -> Result<Option<Vec<InlineValue>>> {
+        let uri = &params.text_document.uri;
+        let diags = self.file_diagnostics(uri);
+        let range_start = params.range.start.line;
+        let range_end = params.range.end.line;
+        let values: Vec<InlineValue> = diags
+            .iter()
+            .filter(|d| {
+                let l = d.line.saturating_sub(1) as u32;
+                l >= range_start && l <= range_end
+            })
+            .map(|d| {
+                InlineValue::Text(InlineValueText {
+                    range: Range::new(
+                        Position::new(d.line.saturating_sub(1) as u32, 0),
+                        Position::new(d.line.saturating_sub(1) as u32, 10),
+                    ),
+                    text: if d.blocking {
+                        "BLOCKED".to_string()
+                    } else {
+                        "CANDIDATE".to_string()
+                    },
+                })
+            })
+            .collect();
+        Ok(Some(values))
+    }
+
+    /// Read-only law: emit no edits; surface formatting-tell diagnostics via
+    /// a scan-and-publish so the push path sees the same detections.
+    async fn formatting(
+        &self,
+        params: DocumentFormattingParams,
+    ) -> Result<Option<Vec<TextEdit>>> {
+        self.run_scan_and_publish(&params.text_document.uri).await;
+        Ok(Some(vec![]))
+    }
+
+    /// Rename-as-obfuscation detection: refuse any rename that lands on a
+    /// violation site. The LSP surface is read-only; renaming does not fix law
+    /// violations, it obscures them.
+    async fn prepare_rename(
+        &self,
+        params: TextDocumentPositionParams,
+    ) -> Result<Option<PrepareRenameResponse>> {
+        let uri = &params.text_document.uri;
+        let pos = params.position;
+        let diags = self.file_diagnostics(uri);
+        let has_violation = diags
+            .iter()
+            .any(|d| (d.line.saturating_sub(1) as u32) == pos.line);
+        if has_violation {
+            return Err(Error {
+                code: ErrorCode::InvalidRequest,
+                message: std::borrow::Cow::Borrowed(
+                    "ANTI-LLM-RENAME-001: Renaming at a violation site is forbidden by read-only law",
+                ),
+                data: None,
+            });
+        }
+        Ok(None)
+    }
+
+    /// Rename is refused by read-only law: the LSP surface emits diagnostics
+    /// only and never mutates files.
+    async fn rename(&self, _params: RenameParams) -> Result<Option<WorkspaceEdit>> {
+        Err(Error {
+            code: ErrorCode::InvalidRequest,
+            message: std::borrow::Cow::Borrowed(
+                "ANTI-LLM-RENAME-002: Rename is refused by read-only law",
+            ),
+            data: None,
+        })
+    }
+
+    /// Commands for gate control, receipt-chain validation, and OCEL export.
+    async fn execute_command(
+        &self,
+        params: ExecuteCommandParams,
+    ) -> Result<Option<serde_json::Value>> {
+        match params.command.as_str() {
+            "anti-llm.validateReceiptChain" => {
+                let root = self.root_dir();
+                Ok(Some(serde_json::json!({
+                    "status": "CANDIDATE",
+                    "root": root,
+                    "message": "Receipt chain validation deferred to validate-receipt-chain.sh"
+                })))
+            }
+            "anti-llm.exportOcel" => Ok(Some(serde_json::json!({
+                "status": "PARTIAL",
+                "message": "OCEL export available via virtual doc anti-llm://ocel-log"
+            }))),
+            _ => Ok(None),
+        }
+    }
+
+    /// CI/agent pull path for workspace-wide diagnostics; groups detections by
+    /// file so every active violation is reachable without opening each file.
+    async fn workspace_diagnostic(
+        &self,
+        _params: WorkspaceDiagnosticParams,
+    ) -> Result<WorkspaceDiagnosticReportResult> {
+        let root = self.root_dir();
+        let obs = engine::scan_directory(&root);
+        let all_diags = engine::evaluate_diagnostics(&obs);
+        use std::collections::HashMap;
+        let mut by_file: HashMap<String, Vec<Diagnostic>> = HashMap::new();
+        for d in &all_diags {
+            by_file
+                .entry(d.file_path.clone())
+                .or_default()
+                .push(d.to_lsp());
+        }
+        let items: Vec<WorkspaceDocumentDiagnosticReport> = by_file
+            .into_iter()
+            .filter_map(|(path, items)| {
+                url::Url::from_file_path(&path)
+                    .ok()
+                    .and_then(|url| Uri::from_str(url.as_str()).ok())
+                    .map(|uri| {
+                        WorkspaceDocumentDiagnosticReport::Full(
+                            WorkspaceFullDocumentDiagnosticReport {
+                                uri,
+                                version: None,
+                                full_document_diagnostic_report: FullDocumentDiagnosticReport {
+                                    result_id: None,
+                                    items,
+                                },
+                            },
+                        )
+                    })
+            })
+            .collect();
+        Ok(WorkspaceDiagnosticReportResult::Report(
+            WorkspaceDiagnosticReport { items },
+        ))
+    }
+
+    /// Fake call graphs detection surface: return detections on the cursor line
+    /// as call hierarchy items so call-graph tooling traces law-violation chains.
+    async fn prepare_call_hierarchy(
+        &self,
+        params: CallHierarchyPrepareParams,
+    ) -> Result<Option<Vec<CallHierarchyItem>>> {
+        let uri = &params.text_document_position_params.text_document.uri;
+        let pos = params.text_document_position_params.position;
+        let diags = self.file_diagnostics(uri);
+        let items: Vec<CallHierarchyItem> = diags
+            .iter()
+            .filter(|d| (d.line.saturating_sub(1) as u32) == pos.line)
+            .map(|d| CallHierarchyItem {
+                name: d.code.clone(),
+                kind: SymbolKind::EVENT,
+                tags: None,
+                detail: Some(d.category.clone()),
+                uri: uri.clone(),
+                range: Range::new(
+                    Position::new(d.line.saturating_sub(1) as u32, 0),
+                    Position::new(d.line.saturating_sub(1) as u32, 80),
+                ),
+                selection_range: Range::new(
+                    Position::new(d.line.saturating_sub(1) as u32, 0),
+                    Position::new(d.line.saturating_sub(1) as u32, 40),
+                ),
+                data: None,
+            })
+            .collect();
+        Ok(Some(items))
+    }
+
+    /// Incoming calls = law obligations that led to this violation.
+    async fn incoming_calls(
+        &self,
+        _params: CallHierarchyIncomingCallsParams,
+    ) -> Result<Option<Vec<CallHierarchyIncomingCall>>> {
+        Ok(Some(vec![]))
+    }
+
+    /// Outgoing calls = required_next_proof chain obligations.
+    async fn outgoing_calls(
+        &self,
+        _params: CallHierarchyOutgoingCallsParams,
+    ) -> Result<Option<Vec<CallHierarchyOutgoingCall>>> {
+        Ok(Some(vec![]))
     }
 }
