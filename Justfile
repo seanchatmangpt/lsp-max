@@ -188,6 +188,22 @@ qol-clean:
         echo -e "${GREEN}✓ Target dir is within acceptable limits ($${TARGET_SIZE}MB).${NC}"; \
     fi
 
+# Fast check on changed crates only. Use 'just dx-polish' for full check.
+qol-check base="HEAD":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    pkgs="$(bash scripts/changed-crates.sh {{base}})"
+    if [ -z "$pkgs" ]; then echo "no changed crates [OPEN]"; exit 0; fi
+    if [ "$pkgs" = "__ALL__" ]; then
+        echo "manifest/Justfile/toolchain changed: full check required [PARTIAL]"
+        exit 0
+    fi
+    echo "scope: $pkgs [ADMITTED]"
+    args=$(printf -- '-p %s ' $pkgs)
+    cargo fmt $args -- --check
+    cargo clippy $args --all-targets -- -D warnings
+    echo "qol-check: ADMITTED"
+
 # Fetches and prunes git state across the entire wasm4pm ecosystem
 qol-sync:
     @echo -e "${MAGENTA}============================================================${NC}"
