@@ -1,0 +1,11 @@
+{
+  "digest_algorithm": "SHA256",
+  "digest": "a1ebaec8183ff2880c6a0e561e1075007fc33af4657ecf5849631cfceeb72265",
+  "boundary": "-----BEGIN RECEIPT-----",
+  "checkpoint": "-----END RECEIPT-----",
+  "raw_command": "sha256sum /home/user/lsp-max/examples/anti-llm-cheat-lsp/transcripts/workspace_foldingRange_refresh_positive.jsonl",
+  "status": "ADMITTED",
+  "timestamp": "2026-06-18T01:31:42Z",
+  "transcript_path": "/home/user/lsp-max/examples/anti-llm-cheat-lsp/transcripts/workspace_foldingRange_refresh_positive.jsonl",
+  "receipt_path": "/home/user/lsp-max/examples/anti-llm-cheat-lsp/receipts/workspace_foldingRange_refresh_receipt.json"
+}

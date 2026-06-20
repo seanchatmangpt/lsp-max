@@ -1,0 +1,11 @@
+{
+  "digest_algorithm": "SHA256",
+  "digest": "15b260f552936678e17c8a19f603f9bcf16bc83d5acd532ee626811eb1d4ec92",
+  "boundary": "-----BEGIN RECEIPT-----",
+  "checkpoint": "-----END RECEIPT-----",
+  "raw_command": "sha256sum /home/user/lsp-max/examples/anti-llm-cheat-lsp/transcripts/typeHierarchy_supertypes_positive.jsonl",
+  "status": "ADMITTED",
+  "timestamp": "2026-06-18T01:31:42Z",
+  "transcript_path": "/home/user/lsp-max/examples/anti-llm-cheat-lsp/transcripts/typeHierarchy_supertypes_positive.jsonl",
+  "receipt_path": "/home/user/lsp-max/examples/anti-llm-cheat-lsp/receipts/typeHierarchy_supertypes_receipt.json"
+}

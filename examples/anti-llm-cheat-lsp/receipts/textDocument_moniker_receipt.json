@@ -1,0 +1,11 @@
+{
+  "digest_algorithm": "SHA256",
+  "digest": "32716a1fc06e20ede61b4c201b92d6ea74abdcb8da9fc954d1c0603d489f7b2a",
+  "boundary": "-----BEGIN RECEIPT-----",
+  "checkpoint": "-----END RECEIPT-----",
+  "raw_command": "sha256sum /home/user/lsp-max/examples/anti-llm-cheat-lsp/transcripts/textDocument_moniker_positive.jsonl",
+  "status": "ADMITTED",
+  "timestamp": "2026-06-18T01:31:42Z",
+  "transcript_path": "/home/user/lsp-max/examples/anti-llm-cheat-lsp/transcripts/textDocument_moniker_positive.jsonl",
+  "receipt_path": "/home/user/lsp-max/examples/anti-llm-cheat-lsp/receipts/textDocument_moniker_receipt.json"
+}

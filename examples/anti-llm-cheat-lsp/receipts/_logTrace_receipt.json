@@ -1,0 +1,11 @@
+{
+  "digest_algorithm": "SHA256",
+  "digest": "4e5b19290a920188db7f55d292118594681f80aa0d86402fa453c8729324bd30",
+  "boundary": "-----BEGIN RECEIPT-----",
+  "checkpoint": "-----END RECEIPT-----",
+  "raw_command": "sha256sum /home/user/lsp-max/examples/anti-llm-cheat-lsp/transcripts/_logTrace_positive.jsonl",
+  "status": "ADMITTED",
+  "timestamp": "2026-06-18T01:31:41Z",
+  "transcript_path": "/home/user/lsp-max/examples/anti-llm-cheat-lsp/transcripts/_logTrace_positive.jsonl",
+  "receipt_path": "/home/user/lsp-max/examples/anti-llm-cheat-lsp/receipts/_logTrace_receipt.json"
+}
