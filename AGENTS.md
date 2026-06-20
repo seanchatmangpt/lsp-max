@@ -433,7 +433,7 @@ workspace-wide union.
 Build here:
 
 ```text
-examples/anti-llm-cheat-lsp
+crates/anti-llm-cheat-lsp
 ```
 
 Purpose:

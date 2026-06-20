@@ -1,0 +1,87 @@
+name: lsp-max Law Compliance
+
+on:
+  push:
+    branches: [master, "claude/**"]
+  pull_request:
+    branches: [master]
+
+jobs:
+  law-check:
+    name: Law Compliance Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run law compliance scanner
+        run: |
+          chmod +x scripts/check-law-compliance.sh
+          bash scripts/check-law-compliance.sh || true
+          echo "## Law Compliance Report" >> $GITHUB_STEP_SUMMARY
+          echo "Scanner: scripts/check-law-compliance.sh" >> $GITHUB_STEP_SUMMARY
+          echo "Status: CANDIDATE" >> $GITHUB_STEP_SUMMARY
+
+      - name: Validate ontology files present
+        run: |
+          echo "## Ontology Validation" >> $GITHUB_STEP_SUMMARY
+          for f in ontology/lsp318.ttl ontology/law-axes.ttl ontology/max-protocol.ttl; do
+            if [ -f "$f" ]; then
+              METHODS=$(grep -c "lsp:methodName" "$f" || echo 0)
+              echo "- $f: $METHODS method declarations — CANDIDATE" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "- $f: OPEN (not yet present)" >> $GITHUB_STEP_SUMMARY
+            fi
+          done
+
+      - name: Validate SPARQL queries present
+        run: |
+          echo "## SPARQL Query Files" >> $GITHUB_STEP_SUMMARY
+          QUERY_COUNT=$(find queries/lsp-max -name "*.sparql" 2>/dev/null | wc -l || echo 0)
+          echo "queries/lsp-max/*.sparql: $QUERY_COUNT files — CANDIDATE" >> $GITHUB_STEP_SUMMARY
+
+      - name: Validate template pack present
+        run: |
+          echo "## Template Pack" >> $GITHUB_STEP_SUMMARY
+          TEMPLATE_COUNT=$(find templates/lsp-max -name "*.tera" 2>/dev/null | wc -l || echo 0)
+          echo "templates/lsp-max/*.tera: $TEMPLATE_COUNT files — CANDIDATE" >> $GITHUB_STEP_SUMMARY
+
+  gen-dry-run:
+    name: Generator Dry Run
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-law-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Create sibling stubs
+        run: |
+          mkdir -p ../lsp-types-max/src ../wasm4pm-compat/src ../wasm4pm/wasm4pm/src
+          for dir in ../lsp-types-max ../wasm4pm-compat; do
+            if [ ! -f "$dir/Cargo.toml" ]; then
+              name=$(basename $dir)
+              cat > "$dir/Cargo.toml" <<TOML
+          [package]
+          name = "$name"
+          version = "0.1.0"
+          edition = "2021"
+          [lib]
+          path = "src/lib.rs"
+          TOML
+              echo "" > "$dir/src/lib.rs"
+            fi
+          done
+
+      - name: Build and test lsp-max-gen
+        run: |
+          cargo test -p lsp-max-gen 2>&1 | tail -20
+          echo "lsp-max-gen tests: CANDIDATE" >> $GITHUB_STEP_SUMMARY

@@ -65,12 +65,16 @@ dx-verify:
     echo " AutoDX: Architectural Boundary Verification"
     echo "============================================================"
     echo "➜ Scanning for forbidden legacy residue..."
+    # witness*.rs (academic reference corpus) and *.ttl (RDF ontology data) carry
+    # paper titles / technique keys that legitimately contain "legacy"/"facade";
+    # they are data, not architectural code — excluded like docs/receipts below.
     FORBIDDEN="legacy|Legacy|LEGACY|deprecated|deprecation|facade|shim|backward compatibility|compatibility layer"
     RESIDUE=$(rg -n "$FORBIDDEN" ../wasm4pm-compat ../wasm4pm \
         --glob '!target/**' --glob '!target_lsp/**' --glob '!.git/**' \
         --glob '!Cargo.lock' --glob '!package-lock.json' --glob '!pnpm-lock.yaml' \
         --glob '!**/node_modules/**' --glob '!paper/**' --glob '!**/docs/**' \
         --glob '!**/receipts/**' --glob '!**/*.md' --glob '!**/*.tex' --glob '!**/*.log' \
+        --glob '!**/witness*.rs' --glob '!**/*.ttl' \
         || true)
     if [ -n "$RESIDUE" ]; then
         echo "✗ Forbidden residue found! Architecture compromised."
@@ -84,6 +88,7 @@ dx-verify:
         --glob '!Cargo.lock' --glob '!package-lock.json' --glob '!pnpm-lock.yaml' \
         --glob '!**/node_modules/**' --glob '!paper/**' --glob '!**/docs/**' \
         --glob '!**/receipts/**' --glob '!**/*.md' --glob '!**/*.tex' --glob '!**/*.log' \
+        --glob '!**/witness*.rs' --glob '!**/*.ttl' \
         || true)
     if [ -n "$AUTHORITIES" ]; then
         echo "✗ Forbidden type authorities found! wasm4pm-compat is the sole baseline."
@@ -142,7 +147,7 @@ qol-sync:
 # Regenerate LSP 3.18 spec-graph artifacts from the canonical metaModel.json
 spec-graph:
     cargo run -p lsp-max-specgen -- \
-        --emit-spec-graph examples/anti-llm-lsp/generated \
+        --emit-spec-graph crates/anti-llm-cheat-lsp/generated \
         --input vendors/vscode-languageserver-node/protocol/metaModel.json
 
 # --- DX Scripts (Developer Experience Tooling) ---
