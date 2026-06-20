@@ -138,7 +138,7 @@ None.
 
 ### Triple closed: CalVer version law (`ANTI-LLM-VERSION-*`)
 
-- **doc** — `examples/anti-llm-cheat-lsp/src/rules/version.rs` (the production
+- **doc** — `crates/anti-llm-cheat-lsp/src/rules/version.rs` (the production
   enforcement) now has a module doc citing the example; the example keeps its
   Diataxis explanation of why CalVer, not SemVer.
 - **example** — `examples/calver_law_explained.rs`: was prose-only, now validates

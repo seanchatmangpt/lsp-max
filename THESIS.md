@@ -380,7 +380,7 @@ All figures in this thesis are derived from code in this repository or from comm
 
 | Claim | Evidence |
 |---|---|
-| anti-llm-cheat-lsp: 994 LOC, 714 protocol overhead | `wc -l examples/anti-llm-cheat-lsp/src/*.rs` |
+| anti-llm-cheat-lsp: 994 LOC, 714 protocol overhead | `wc -l crates/anti-llm-cheat-lsp/src/*.rs` |
 | pattern-lsp after adoption: 161 LOC | `wc -l examples/pattern-lsp/src/server.rs` |
 | axum-lsp after adoption: 142 LOC | `wc -l examples/axum-lsp/src/main.rs` |
 | ggen sync: 25ms wall clock, 9,931 bytes, 5 files | Terminal output captured during this session |
