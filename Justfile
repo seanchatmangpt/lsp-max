@@ -414,3 +414,31 @@ pipeline-receipt breeds fitness status:
 # Run pipeline receipt integration test.
 test-pipeline-receipt:
     @bash tests/test_pipeline_receipt.sh
+
+# --- Pipeline (TPOT2) ---
+
+# Search for optimal breed pipeline using TPOT2-style genetic algorithm.
+# Override with: just pipeline-search generations=20 pop=30
+pipeline-search generations="10" pop="20":
+    lsp-max-cli pipeline search --generations {{generations}} --population-size {{pop}}
+
+# Evaluate a specific breed sequence as a pipeline.
+# Example: just pipeline-evaluate breeds="cbr,ltl_monitor,asp"
+pipeline-evaluate breeds:
+    lsp-max-cli pipeline evaluate --breeds {{breeds}}
+
+# List all available wasm4pm cognitive breeds.
+pipeline-breeds:
+    lsp-max-cli pipeline list-breeds
+
+# Show pipeline optimizer schema and defaults.
+pipeline-schema:
+    lsp-max-cli pipeline schema
+
+# Quick pipeline search: 5 generations, population 10 (fast feedback).
+pipeline-quick:
+    lsp-max-cli pipeline search --generations 5 --population-size 10
+
+# Check pipeline search readiness.
+pipeline-check:
+    @bash scripts/pipeline-setup.sh

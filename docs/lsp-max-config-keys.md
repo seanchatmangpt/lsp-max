@@ -54,3 +54,14 @@ from env only (not yet from the JSON config), noted below. Source of truth:
 Note: `state_path` and `LSP_MAX_TIMEOUT` are **not** read from JSON today (env-only);
 seeding them is aspirational until a loader reads them. The `openai_*` aliases remain
 read-only for compatibility — keep them out of new documentation as canonical.
+
+## Pipeline (TPOT2) Configuration
+
+| Key | Env Var | Default | Description |
+|-----|---------|---------|-------------|
+| `pipeline_generations` | `LSP_MAX_PIPELINE_GENERATIONS` | `10` | Generations for genetic search |
+| `pipeline_population_size` | `LSP_MAX_PIPELINE_POP_SIZE` | `20` | Population size per generation |
+| `pipeline_mutation_rate` | `LSP_MAX_PIPELINE_MUTATION_RATE` | `0.15` | Mutation rate (0.0–1.0) |
+| `pipeline_admission_threshold` | `LSP_MAX_PIPELINE_ADMISSION_THRESHOLD` | `0.7` | Minimum fitness for ADMITTED |
+| `pipeline_ocel_path` | `LSP_MAX_PIPELINE_OCEL` | `` | OCEL event log path for fitness |
+| `pipeline_max_length` | `LSP_MAX_PIPELINE_MAX_LENGTH` | `5` | Max pipeline length (breed count) |
