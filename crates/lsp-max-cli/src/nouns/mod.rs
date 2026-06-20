@@ -8,6 +8,7 @@ pub mod diagnostics;
 pub mod doctor;
 pub mod event;
 pub mod gate;
+pub mod history;
 pub mod hook;
 pub mod metamodel;
 pub mod plugin;
