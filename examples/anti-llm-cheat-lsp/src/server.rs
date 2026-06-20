@@ -3,6 +3,9 @@ use lsp_max::lsp_types::*;
 use lsp_max::{Client, LanguageServer};
 use std::sync::{Arc, Mutex};
 
+mod recommend;
+
+use crate::diagnostics::AntiLlmDiagnostic;
 use crate::engine;
 use crate::virtual_docs::{
     checkpoint_status, failset, forbidden_implications, ggen_render, lsif06_matrix,
@@ -22,24 +25,29 @@ impl AntiLlmServer {
         }
     }
 
-    async fn run_scan_and_publish(&self, uri: &Uri) {
-        let root_dir = {
-            let guard = self.workspace_root.lock().unwrap();
-            guard.clone().unwrap_or_else(|| ".".to_string())
-        };
+    fn root_dir(&self) -> String {
+        let guard = self.workspace_root.lock().unwrap();
+        guard.clone().unwrap_or_else(|| ".".to_string())
+    }
 
-        // Scan directory (or single file for speed)
-        let obs = engine::scan_directory(&root_dir);
+    /// Scan the workspace and return the detections that belong to `uri`. This
+    /// is the single source of cheat intelligence shared by every language
+    /// feature so hover, lenses, symbols, actions and pull diagnostics all
+    /// report the same detections.
+    fn file_diagnostics(&self, uri: &Uri) -> Vec<AntiLlmDiagnostic> {
+        let obs = engine::scan_directory(&self.root_dir());
         let diags = engine::evaluate_diagnostics(&obs);
+        let norm_uri = uri.to_string().replace("\\", "/");
+        diags
+            .into_iter()
+            .filter(|d| norm_uri.ends_with(&d.file_path.replace("\\", "/")))
+            .collect()
+    }
 
-        let file_diags: Vec<Diagnostic> = diags
+    async fn run_scan_and_publish(&self, uri: &Uri) {
+        let file_diags: Vec<Diagnostic> = self
+            .file_diagnostics(uri)
             .iter()
-            .filter(|d| {
-                // filter by current file path to emit relevant diagnostics
-                let norm_path = d.file_path.replace("\\", "/");
-                let norm_uri = uri.to_string().replace("\\", "/");
-                norm_uri.ends_with(&norm_path)
-            })
             .map(|d| d.to_lsp())
             .collect();
 
@@ -298,8 +306,12 @@ impl LanguageServer for AntiLlmServer {
     }
 
     async fn code_action(&self, params: CodeActionParams) -> Result<Option<CodeActionResponse>> {
-        let _uri = params.text_document.uri;
-        let actions = vec![
+        // Repair-plan intents first: each detection that carries a recommended
+        // correction becomes a read-only quickfix. The virtual-doc openers
+        // follow so a developer can always reach the matrices and ledger.
+        let mut actions =
+            recommend::repair_actions(&self.file_diagnostics(&params.text_document.uri));
+        actions.extend(vec![
             CodeActionOrCommand::CodeAction(CodeAction {
                 title: "Open anti-llm://failset".to_string(),
                 kind: Some(CodeActionKind::QUICKFIX),
@@ -340,13 +352,15 @@ impl LanguageServer for AntiLlmServer {
                 }),
                 ..Default::default()
             }),
-        ];
+        ]);
         Ok(Some(actions))
     }
 
     async fn code_lens(&self, params: CodeLensParams) -> Result<Option<Vec<CodeLens>>> {
         let uri = params.text_document.uri;
-        let lens = vec![CodeLens {
+        // Keep the resolvable admissibility lens (exercised by code_lens/resolve),
+        // then append one lens per real detection plus a file-level summary.
+        let mut lenses = vec![CodeLens {
             range: Range::new(Position::new(0, 0), Position::new(0, 5)),
             command: Some(Command {
                 title: "Admissibility Check Active".to_string(),
@@ -355,7 +369,8 @@ impl LanguageServer for AntiLlmServer {
             }),
             data: Some(serde_json::json!({ "uri": uri.as_str() })),
         }];
-        Ok(Some(lens))
+        lenses.extend(recommend::code_lenses(&self.file_diagnostics(&uri)));
+        Ok(Some(lenses))
     }
 
     async fn code_lens_resolve(&self, mut code_lens: CodeLens) -> Result<CodeLens> {
@@ -371,27 +386,30 @@ impl LanguageServer for AntiLlmServer {
         Ok(code_lens)
     }
 
-    async fn hover(&self, _params: HoverParams) -> Result<Option<Hover>> {
-        Ok(Some(Hover {
-            contents: HoverContents::Scalar(MarkedString::String(
-                "Hover: conformance matrix check active".to_string(),
-            )),
-            range: None,
-        }))
+    async fn hover(&self, params: HoverParams) -> Result<Option<Hover>> {
+        let uri = &params.text_document_position_params.text_document.uri;
+        let pos = params.text_document_position_params.position;
+        Ok(recommend::hover(&self.file_diagnostics(uri), pos))
     }
 
     async fn goto_definition(
         &self,
-        _params: GotoDefinitionParams,
+        params: GotoDefinitionParams,
     ) -> Result<Option<GotoDefinitionResponse>> {
-        Ok(Some(GotoDefinitionResponse::Array(vec![])))
+        let uri = &params.text_document_position_params.text_document.uri;
+        let pos = params.text_document_position_params.position;
+        let locs = recommend::same_file_locations(&self.file_diagnostics(uri), uri, pos);
+        Ok(Some(GotoDefinitionResponse::Array(locs)))
     }
 
     async fn goto_declaration(
         &self,
-        _params: GotoDefinitionParams,
+        params: GotoDefinitionParams,
     ) -> Result<Option<GotoDefinitionResponse>> {
-        Ok(Some(GotoDefinitionResponse::Array(vec![])))
+        let uri = &params.text_document_position_params.text_document.uri;
+        let pos = params.text_document_position_params.position;
+        let locs = recommend::same_file_locations(&self.file_diagnostics(uri), uri, pos);
+        Ok(Some(GotoDefinitionResponse::Array(locs)))
     }
 
     async fn goto_type_definition(
@@ -408,15 +426,22 @@ impl LanguageServer for AntiLlmServer {
         Ok(Some(GotoDefinitionResponse::Array(vec![])))
     }
 
-    async fn references(&self, _params: ReferenceParams) -> Result<Option<Vec<Location>>> {
-        Ok(Some(vec![]))
+    async fn references(&self, params: ReferenceParams) -> Result<Option<Vec<Location>>> {
+        let uri = &params.text_document_position.text_document.uri;
+        let pos = params.text_document_position.position;
+        Ok(Some(recommend::same_file_locations(
+            &self.file_diagnostics(uri),
+            uri,
+            pos,
+        )))
     }
 
     async fn document_symbol(
         &self,
-        _params: DocumentSymbolParams,
+        params: DocumentSymbolParams,
     ) -> Result<Option<DocumentSymbolResponse>> {
-        Ok(Some(DocumentSymbolResponse::Flat(vec![])))
+        let syms = recommend::document_symbols(&self.file_diagnostics(&params.text_document.uri));
+        Ok(Some(DocumentSymbolResponse::Nested(syms)))
     }
 
     async fn symbol(
@@ -428,14 +453,22 @@ impl LanguageServer for AntiLlmServer {
 
     async fn diagnostic(
         &self,
-        _params: DocumentDiagnosticParams,
+        params: DocumentDiagnosticParams,
     ) -> Result<DocumentDiagnosticReportResult> {
+        // The pull surface is the agent/CI-facing path: return the real
+        // detections, not an empty report. An empty pull report while the push
+        // path reports cheats would itself be a laundered claim.
+        let items: Vec<Diagnostic> = self
+            .file_diagnostics(&params.text_document.uri)
+            .iter()
+            .map(|d| d.to_lsp())
+            .collect();
         Ok(DocumentDiagnosticReportResult::Report(
             DocumentDiagnosticReport::Full(RelatedFullDocumentDiagnosticReport {
                 related_documents: None,
                 full_document_diagnostic_report: FullDocumentDiagnosticReport {
                     result_id: None,
-                    items: vec![],
+                    items,
                 },
             }),
         ))
