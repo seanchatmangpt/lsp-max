@@ -20,6 +20,7 @@ pub mod rpc;
 pub mod server;
 pub mod snapshot;
 pub mod state;
+pub mod task;
 pub mod telemetry;
 pub mod workspace;
 
