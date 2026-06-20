@@ -1,3 +1,5 @@
+pub mod breeds;
+
 use dashmap::DashMap;
 use gc005_wasm4pm_adapter::analyze_ocel;
 use lsp_max::jsonrpc::Result;
