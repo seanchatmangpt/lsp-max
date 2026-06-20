@@ -1,6 +1,36 @@
 use crate::{GateId, LawAxis, ReceiptObligation};
-use crate::lsp_3_18::{CodeAction, Diagnostic};
+use crate::lsp_3_18::{
+    CodeAction, Diagnostic, MarkupContentOrString, Position, Range,
+};
 use serde::{Deserialize, Serialize};
+
+// Minimal Default impls for lsp_3_18 types used in this module.
+// Position and Range have only numeric / Option fields so zero/empty is valid.
+impl Default for Position {
+    fn default() -> Self {
+        Self { line: 0, character: 0 }
+    }
+}
+impl Default for Range {
+    fn default() -> Self {
+        Self { start: Position::default(), end: Position::default() }
+    }
+}
+impl Default for Diagnostic {
+    fn default() -> Self {
+        Self {
+            range: Range::default(),
+            severity: None,
+            code: None,
+            code_description: None,
+            source: None,
+            message: MarkupContentOrString::String(String::new()),
+            tags: None,
+            related_information: None,
+            data: None,
+        }
+    }
+}
 
 // ---------------------------------------------------------------------------
 // Repairability / Terminality
