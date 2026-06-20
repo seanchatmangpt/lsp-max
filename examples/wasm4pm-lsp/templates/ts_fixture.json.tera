@@ -1,0 +1,12 @@
+{
+  "breed_id": "{{ breed_id }}",
+  "breed_label": "{{ breed_label }}",
+  "breed_family": "{{ breed_family }}",
+  "paper_ref": "{{ paper_ref }}",
+  "oracle_value": {{ oracle_value }},
+  "platform": "typescript",
+  "expected": {
+    "value": "PENDING"
+  },
+  "paper_value": {{ oracle_value }}
+}

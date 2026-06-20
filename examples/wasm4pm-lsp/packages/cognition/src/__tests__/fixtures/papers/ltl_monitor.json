@@ -1,0 +1,16 @@
+{
+  "breed_id": "ltl_monitor",
+  "label": "LTL Runtime Monitor",
+  "paper_ref": "bauer2011ltl",
+  "family": "FormalMethods",
+  "platform": "typescript",
+  "inputs": {
+    "note": "Replace with real BreedInput fields from bauer2011ltl"
+  },
+  "expected": {
+    "value": "PENDING",
+    "note": "Replace with oracle_value=1.0 from bauer2011ltl. COG-005 requires this field."
+  },
+  "expected_value": "PENDING",
+  "paper_value": 1.0
+}

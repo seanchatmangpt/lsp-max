@@ -1,0 +1,16 @@
+{
+  "breed_id": "cbr",
+  "label": "Case-Based Reasoner",
+  "paper_ref": "kolodner1993cbr",
+  "family": "SymbolicAI",
+  "platform": "typescript",
+  "inputs": {
+    "note": "Replace with real BreedInput fields from kolodner1993cbr"
+  },
+  "expected": {
+    "value": "PENDING",
+    "note": "Replace with oracle_value=0.85 from kolodner1993cbr. COG-005 requires this field."
+  },
+  "expected_value": "PENDING",
+  "paper_value": 0.85
+}

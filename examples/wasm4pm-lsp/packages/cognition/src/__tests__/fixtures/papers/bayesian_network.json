@@ -1,0 +1,16 @@
+{
+  "breed_id": "bayesian_network",
+  "label": "Bayesian Network",
+  "paper_ref": "pearl1988probabilistic",
+  "family": "ProbabilisticAI",
+  "platform": "typescript",
+  "inputs": {
+    "note": "Replace with real BreedInput fields from pearl1988probabilistic"
+  },
+  "expected": {
+    "value": "PENDING",
+    "note": "Replace with oracle_value=0.284 from pearl1988probabilistic. COG-005 requires this field."
+  },
+  "expected_value": "PENDING",
+  "paper_value": 0.284
+}
