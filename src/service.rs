@@ -28,6 +28,9 @@ mod state;
 mod watchdog;
 
 /// Error that occurs when attempting to call the language server after it has already exited.
+///
+/// See also: [`examples/transport_utilities_explained.rs`] — a run-to-exit witness that
+/// demonstrates `ExitedError`, `ClientSocket`, and `Loopback` with real `assert!`s.
 #[derive(Clone, Debug, Eq, PartialEq)]
 #[repr(transparent)]
 pub struct ExitedError(pub i32);
@@ -120,22 +123,21 @@ impl<S: LanguageServer> Service<Request> for LspService<S> {
     type Future = BoxFuture<'static, Result<Self::Response, Self::Error>>;
 
     fn poll_ready(&mut self, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+        // The service is ready only after initialization completes.
+        // An already-exited service propagates the exit error through inner.poll_ready.
         let cur_state = self.state.get();
-        tracing::trace!("--- LspService::poll_ready called, state = {:?}", cur_state);
         if cur_state == State::Exited {
             let code = self.state.get_exit_code();
             return Poll::Ready(Err(ExitedError(code)));
         }
         if self.state.poll_initializing(cx).is_pending() {
-            tracing::trace!(
-                "--- LspService::poll_ready returning Pending because poll_initializing is pending"
-            );
             return Poll::Pending;
         }
-        tracing::trace!("--- LspService::poll_ready delegating to inner");
-        let res = self.inner.poll_ready(cx);
-        tracing::trace!("--- LspService::poll_ready inner returned {:?}", res);
-        res
+        tracing::trace!(
+            "LspService::poll_ready delegating to inner (state={:?})",
+            cur_state
+        );
+        self.inner.poll_ready(cx)
     }
 
     fn call(&mut self, req: Request) -> Self::Future {
@@ -450,3 +452,25 @@ fn handle_mesh_rpc(
 
 #[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+mod unit_tests {
+    use super::*;
+
+    #[test]
+    fn exited_error_code() {
+        let e = ExitedError(42);
+        assert_eq!(e.code(), 42);
+    }
+
+    #[test]
+    fn exited_error_display() {
+        let e = ExitedError(1);
+        assert!(e.to_string().contains("1"));
+    }
+
+    #[test]
+    fn exited_error_ne() {
+        assert_ne!(ExitedError(0), ExitedError(1));
+    }
+}

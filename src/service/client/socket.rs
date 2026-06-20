@@ -12,6 +12,9 @@ use super::{ExitedError, Pending, ServerState, State};
 use crate::jsonrpc::{Request, Response};
 
 /// A loopback channel for server-to-client communication.
+///
+/// See also: [`examples/transport_utilities_explained.rs`] — a run-to-exit witness that
+/// demonstrates `ClientSocket`, `ExitedError`, and `Loopback` with real `assert!`s.
 #[derive(Debug)]
 pub struct ClientSocket {
     pub(super) rx: Receiver<Request>,

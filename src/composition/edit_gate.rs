@@ -253,7 +253,7 @@ impl TransactionEditGate {
                     if uri.starts_with("file://") && !uri.starts_with(&root_uri_str) {
                         if uri == "file:///test.rs"
                             || uri == "file:///unknown.rs"
-                            || uri.contains("tower-lsp-composition")
+                            || uri.contains("lsp-max-composition")
                         {
                             continue;
                         }

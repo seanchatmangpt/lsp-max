@@ -13,7 +13,7 @@ async fn test_max_snapshot_returns_snap_id() {
         serde_json::json!({"jsonrpc":"2.0","id":1,"method":"max/snapshot"}),
     )
     .await;
-    let resp = wait_for_response(rx, 1, Duration::from_secs(3)).await;
+    let resp = wait_for_response(rx, 1, Duration::from_millis(300)).await;
 
     let snap_id: SnapshotId = serde_json::from_value(expect_result(&resp).clone()).unwrap();
     assert!(
@@ -33,7 +33,7 @@ async fn test_max_export_analysis_bundle() {
         serde_json::json!({"jsonrpc":"2.0","id":1,"method":"max/snapshot"}),
     )
     .await;
-    let resp = wait_for_response(rx.clone(), 1, Duration::from_secs(3)).await;
+    let resp = wait_for_response(rx.clone(), 1, Duration::from_millis(300)).await;
     let snap_id: SnapshotId = serde_json::from_value(expect_result(&resp).clone()).unwrap();
 
     write_msg(
@@ -45,7 +45,7 @@ async fn test_max_export_analysis_bundle() {
         }),
     )
     .await;
-    let resp = wait_for_response(rx, 2, Duration::from_secs(3)).await;
+    let resp = wait_for_response(rx, 2, Duration::from_millis(300)).await;
     let bundle: AnalysisBundle = serde_json::from_value(expect_result(&resp).clone()).unwrap();
     assert_eq!(
         bundle.snapshot_id.0, snap_id.0,
@@ -87,7 +87,7 @@ async fn test_max_export_analysis_bundle_gap_paths_non_empty() {
         serde_json::json!({"jsonrpc":"2.0","id":1,"method":"max/snapshot"}),
     )
     .await;
-    let resp = wait_for_response(rx.clone(), 1, Duration::from_secs(3)).await;
+    let resp = wait_for_response(rx.clone(), 1, Duration::from_millis(300)).await;
     let snap_id: SnapshotId = serde_json::from_value(expect_result(&resp).clone()).unwrap();
 
     write_msg(
@@ -99,7 +99,7 @@ async fn test_max_export_analysis_bundle_gap_paths_non_empty() {
         }),
     )
     .await;
-    let resp = wait_for_response(rx.clone(), 2, Duration::from_secs(3)).await;
+    let resp = wait_for_response(rx.clone(), 2, Duration::from_millis(300)).await;
     let bundle: AnalysisBundle = serde_json::from_value(expect_result(&resp).clone()).unwrap();
 
     for gap in &bundle.capability_vector.gaps {
@@ -141,7 +141,7 @@ async fn test_max_export_analysis_bundle_actions_match_repair_actions() {
         serde_json::json!({"jsonrpc":"2.0","id":1,"method":"max/snapshot"}),
     )
     .await;
-    let resp = wait_for_response(rx.clone(), 1, Duration::from_secs(3)).await;
+    let resp = wait_for_response(rx.clone(), 1, Duration::from_millis(300)).await;
     let snap_id: SnapshotId = serde_json::from_value(expect_result(&resp).clone()).unwrap();
 
     write_msg(
@@ -153,7 +153,7 @@ async fn test_max_export_analysis_bundle_actions_match_repair_actions() {
         }),
     )
     .await;
-    let resp = wait_for_response(rx.clone(), 2, Duration::from_secs(3)).await;
+    let resp = wait_for_response(rx.clone(), 2, Duration::from_millis(300)).await;
     let bundle: AnalysisBundle = serde_json::from_value(expect_result(&resp).clone()).unwrap();
 
     let expected: usize = bundle

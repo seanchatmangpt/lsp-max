@@ -1,7 +1,10 @@
 **/target
 **/*.rs.bk
 Cargo.lock
-generated/
+generated/*
+!/generated/lsp_minimal.rs
+!/generated/lsp_3_18.rs
+!/generated/metaModel.json
 *.log
 .agents/
 vendors/

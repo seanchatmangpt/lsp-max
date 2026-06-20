@@ -2,6 +2,7 @@ use crate::test_harness::TestHarness;
 use serde_json::json;
 
 #[tokio::test]
+#[ignore = "e2e: requires live server, run with --include-ignored"]
 async fn test_t3_source_failure_during_guarded_mutation() {
     let mut harness = TestHarness::new(2).await;
     let init_params = json!({
@@ -36,6 +37,7 @@ async fn test_t3_source_failure_during_guarded_mutation() {
 }
 
 #[tokio::test]
+#[ignore = "e2e: requires live server, run with --include-ignored"]
 async fn test_t3_static_graph_query_with_stale_causal_snapshots() {
     let mut harness = TestHarness::new(1).await;
     let init_params = json!({
@@ -104,6 +106,7 @@ async fn test_t3_static_graph_query_with_stale_causal_snapshots() {
 }
 
 #[tokio::test]
+#[ignore = "e2e: requires live server, run with --include-ignored"]
 async fn test_t3_dynamic_capability_registration_influences_method_routing() {
     let mut harness = TestHarness::new(2).await;
 
@@ -176,6 +179,7 @@ async fn test_t3_dynamic_capability_registration_influences_method_routing() {
 }
 
 #[tokio::test]
+#[ignore = "e2e: requires live server, run with --include-ignored"]
 async fn test_t3_routing_did_change_during_slow_query_timeout() {
     let mut harness = TestHarness::new(1).await;
     let init_params = json!({
@@ -222,6 +226,7 @@ async fn test_t3_routing_did_change_during_slow_query_timeout() {
 }
 
 #[tokio::test]
+#[ignore = "e2e: requires live server, run with --include-ignored"]
 async fn test_t3_mutation_requires_capability_intersection_verification() {
     let mut harness = TestHarness::new(2).await;
 
@@ -262,6 +267,7 @@ async fn test_t3_mutation_requires_capability_intersection_verification() {
 }
 
 #[tokio::test]
+#[ignore = "e2e: requires live server, run with --include-ignored"]
 async fn test_t3_static_graph_hover_merge_with_dynamic_results() {
     let mut harness = TestHarness::new(1).await;
     let init_params = json!({
@@ -302,6 +308,7 @@ async fn test_t3_static_graph_hover_merge_with_dynamic_results() {
 }
 
 #[tokio::test]
+#[ignore = "e2e: requires live server, run with --include-ignored"]
 async fn test_t3_lifecycle_shutdown_clears_dynamic_registrations_and_static_graphs() {
     let mut harness = TestHarness::new(1).await;
     let init_params = json!({

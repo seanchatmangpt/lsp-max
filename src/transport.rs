@@ -17,6 +17,27 @@ use futures::{future, join, stream, FutureExt, Sink, SinkExt, Stream, StreamExt,
 use tower::Service;
 use tracing::error;
 
+/// Drives `poll_ready` to completion; returns `Err` if the service has exited.
+async fn await_ready<S>(service: &mut S) -> Result<(), S::Error>
+where
+    S: Service<Request>,
+{
+    future::poll_fn(|cx| service.poll_ready(cx)).await
+}
+
+/// Probes `poll_ready` once without blocking; returns `Some(err)` if the service
+/// has exited, `None` if it is still pending or ready without error.
+async fn probe_exited<S>(service: &mut S) -> Option<S::Error>
+where
+    S: Service<Request>,
+{
+    future::poll_fn(|cx| match service.poll_ready(cx) {
+        Poll::Ready(Err(err)) => Poll::Ready(Some(err)),
+        _ => Poll::Ready(None),
+    })
+    .await
+}
+
 use crate::codec::{LanguageServerCodec, ParseError};
 use crate::jsonrpc::{Error, Id, Message, Request, Response};
 use crate::service::{ClientSocket, ExitedError, RequestStream, ResponseSink};
@@ -31,6 +52,9 @@ const MAX_EXIT_OBSERVE_POLLS: usize = 16;
 /// Trait implemented by client loopback sockets.
 ///
 /// This socket handles the server-to-client half of the bidirectional communication stream.
+///
+/// See also: [`examples/transport_utilities_explained.rs`] — a run-to-exit witness that
+/// demonstrates `Loopback`, `ExitedError`, and `ClientSocket` with real `assert!`s.
 pub trait Loopback {
     /// Yields a stream of pending server-to-client requests.
     type RequestStream: Stream<Item = Request>;
@@ -148,18 +172,10 @@ where
                 }
                 match msg {
                     Ok(Message::Request(req)) => {
-                        tracing::trace!(
-                            "--- Server::serve read_input poll_ready start for {}",
-                            req.method()
-                        );
-                        if let Err(err) = future::poll_fn(|cx| service.poll_ready(cx)).await {
+                        if let Err(err) = await_ready(&mut service).await {
                             error!("{}", display_sources(&err));
                             return Err(err);
                         }
-                        tracing::trace!(
-                            "--- Server::serve read_input poll_ready end for {}",
-                            req.method()
-                        );
 
                         let fut = service.call(req).unwrap_or_else(|err| {
                             error!("{}", display_sources(&err));
@@ -204,13 +220,7 @@ where
             // re-poll a bounded number of times so the stored code is propagated
             // rather than a fixed fallback.
             for _ in 0..MAX_EXIT_OBSERVE_POLLS {
-                let exited_err = future::poll_fn(|cx| match service.poll_ready(cx) {
-                    Poll::Ready(Err(err)) => Poll::Ready(Some(err)),
-                    _ => Poll::Ready(None),
-                })
-                .await;
-
-                if let Some(err) = exited_err {
+                if let Some(err) = probe_exited(&mut service).await {
                     return Err(err);
                 }
 

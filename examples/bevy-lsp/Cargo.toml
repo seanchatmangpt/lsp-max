@@ -21,7 +21,7 @@ clap-noun-verb = "26.6.2"
 clap-noun-verb-macros = "26.6.2"
 linkme = "0.3"
 lsp-max = { path = "../../" }
-tokio = { version = "1.17", features = ["full"] }
+tokio = { version = "1", features = ["full"] }
 tree-sitter-rust = "0.24"
 
 [build-dependencies]

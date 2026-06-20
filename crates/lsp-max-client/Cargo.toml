@@ -17,14 +17,14 @@ rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
 lsp-max-macros = { path = "../../lsp-max-macros", version = "26.6.9" }
-lsp-types = { package = "lsp-types-max", path = "../../../lsp-types-max", version = "26.6.8" }
+lsp-types = { package = "lsp-types-max", path = "../../../lsp-types-max", version = "26.6.5" }
 tower = { version = "0.4", features = ["util"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 async-trait = "0.1"
-tokio = { version = "1.0", features = ["sync", "io-util", "rt", "time"] }
+tokio = { version = "1", features = ["sync", "io-util", "rt", "time"] }
 tracing = "0.1"
 futures = "0.3"
 
 [dev-dependencies]
-tokio = { version = "1.0", features = ["sync", "io-util", "rt", "rt-multi-thread", "time", "macros"] }
+tokio = { version = "1", features = ["sync", "io-util", "rt", "rt-multi-thread", "time", "macros"] }
