@@ -1,0 +1,18 @@
+{
+  "$schema": "https://wasm4pm.dev/cognition/registry.schema.json",
+  "generated_by": "ggen sync --rule breed-registry",
+  "source_ontology": "schema/cognition-breeds.ttl",
+  "breeds": [
+    {% for row in rows %}{
+      "breed_id": "{{ row.breed_id }}",
+      "label": "{{ row.breed_label }}",
+      "family": "{{ row.breed_family }}",
+      "module_stem": "{{ row.module_stem }}",
+      "struct_name": "{{ row.struct_name }}",
+      "paper_ref": "{{ row.paper_ref }}",
+      "oracle_value": {{ row.oracle_value }},
+      "status": "{{ row.status }}"
+    }{% if not loop.last %},{% endif %}
+    {% endfor %}
+  ]
+}

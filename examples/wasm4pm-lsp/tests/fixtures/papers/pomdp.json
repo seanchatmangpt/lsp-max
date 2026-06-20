@@ -1,0 +1,17 @@
+{
+  "breed_id": "pomdp",
+  "label": "POMDP Solver",
+  "paper_ref": "kaelbling1998planning",
+  "family": "ReinforcementLearning",
+  "description": "Paper example problem instance for POMDP Solver. Replace inputs and expected_value with the exact values from kaelbling1998planning.",
+  "inputs": {
+    "note": "Replace with real BreedInput fields from kaelbling1998planning"
+  },
+  "expected": {
+    "value": "PENDING",
+    "note": "Replace with oracle_value=0.969 from kaelbling1998planning. COG-005 requires this field."
+  },
+  "expected_value": "PENDING",
+  "asserted_value": "PENDING",
+  "paper_value": 0.969
+}

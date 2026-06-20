@@ -1,0 +1,17 @@
+{
+  "breed_id": "eliza",
+  "label": "ELIZA Frame Reasoner",
+  "paper_ref": "weizenbaum1966eliza",
+  "family": "SymbolicAI",
+  "description": "Paper example problem instance for ELIZA Frame Reasoner. Replace inputs and expected_value with the exact values from weizenbaum1966eliza.",
+  "inputs": {
+    "note": "Replace with real BreedInput fields from weizenbaum1966eliza"
+  },
+  "expected": {
+    "value": "PENDING",
+    "note": "Replace with oracle_value=0.0 from weizenbaum1966eliza. COG-005 requires this field."
+  },
+  "expected_value": "PENDING",
+  "asserted_value": "PENDING",
+  "paper_value": 0.0
+}
