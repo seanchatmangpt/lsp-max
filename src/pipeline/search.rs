@@ -77,10 +77,9 @@ impl<'a> std::fmt::Debug for PipelineSearch<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("PipelineSearch")
             .field("config", &self.config)
-            .field("breed_pool", &self.breed_pool)
             .field("tournament_size", &self.tournament_size)
             .field("crossover_rate", &self.crossover_rate)
-            .finish_non_exhaustive()
+            .finish()
     }
 }
 
@@ -128,12 +127,10 @@ impl<'a> PipelineSearch<'a> {
 
     /// Initialize a random population.
     fn init_population(&mut self) -> Vec<(BreedPipeline, f64)> {
-        let range =
-            self.config.max_pipeline_length - self.config.min_pipeline_length + 1;
+        let range = self.config.max_pipeline_length - self.config.min_pipeline_length + 1;
         (0..self.config.population_size)
             .map(|_| {
-                let len =
-                    self.rng.next_usize(range) + self.config.min_pipeline_length;
+                let len = self.rng.next_usize(range) + self.config.min_pipeline_length;
                 let pipe = self.random_pipeline(len);
                 (pipe, 0.0)
             })
@@ -144,8 +141,7 @@ impl<'a> PipelineSearch<'a> {
     fn evaluate_all(&self, population: &mut [(BreedPipeline, f64)]) -> usize {
         let mut count = 0;
         for (pipe, fitness) in population.iter_mut() {
-            let breeds: Vec<BreedName> =
-                pipe.nodes.iter().map(|n| n.breed.clone()).collect();
+            let breeds: Vec<BreedName> = pipe.nodes.iter().map(|n| n.breed.clone()).collect();
             *fitness = self.evaluator.evaluate(&breeds);
             count += 1;
         }
@@ -173,10 +169,7 @@ impl<'a> PipelineSearch<'a> {
             .duration_since(UNIX_EPOCH)
             .unwrap_or_default()
             .subsec_nanos();
-        if self.rng.next_f64() > self.crossover_rate
-            || a.nodes.is_empty()
-            || b.nodes.is_empty()
-        {
+        if self.rng.next_f64() > self.crossover_rate || a.nodes.is_empty() || b.nodes.is_empty() {
             return a.clone();
         }
         let split_a = self.rng.next_usize(a.nodes.len());
@@ -200,9 +193,7 @@ impl<'a> PipelineSearch<'a> {
     /// Point mutation: replace a random node with a breed from the pool.
     /// Resets the pipeline id so stale fitness is not reused.
     fn mutate(&mut self, pipeline: &mut BreedPipeline) {
-        if pipeline.nodes.is_empty()
-            || self.rng.next_f64() > self.config.mutation_rate
-        {
+        if pipeline.nodes.is_empty() || self.rng.next_f64() > self.config.mutation_rate {
             return;
         }
         let node_idx = self.rng.next_usize(pipeline.nodes.len());
@@ -231,9 +222,7 @@ impl<'a> PipelineSearch<'a> {
         let mut population = self.init_population();
         let mut total_evals = self.evaluate_all(&mut population);
 
-        population.sort_by(|a, b| {
-            b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal)
-        });
+        population.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
 
         let mut best_fitness = population.first().map_or(0.0, |(_, f)| *f);
         let mut best_pipeline = population.first().map(|(p, _)| p.clone());
@@ -257,8 +246,7 @@ impl<'a> PipelineSearch<'a> {
             while next_gen.len() < self.config.population_size {
                 let a_idx = self.tournament_select(&population);
                 let b_idx = self.tournament_select(&population);
-                let mut child =
-                    self.crossover(&population[a_idx].0, &population[b_idx].0);
+                let mut child = self.crossover(&population[a_idx].0, &population[b_idx].0);
                 self.mutate(&mut child);
                 next_gen.push((child, 0.0));
             }
@@ -275,9 +263,7 @@ impl<'a> PipelineSearch<'a> {
             }
             total_evals += new_evals;
 
-            next_gen.sort_by(|a, b| {
-                b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal)
-            });
+            next_gen.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
 
             if let Some((candidate, f)) = next_gen.first() {
                 if *f > best_fitness {
@@ -323,7 +309,7 @@ impl FitnessEvaluator for DiversityFitnessEvaluator {
         let unique: std::collections::HashSet<&BreedName> = breeds.iter().collect();
         let diversity = unique.len() as f64 / breeds.len() as f64;
         let length_score = match breeds.len() {
-            2 | 3 | 4 => 1.0,
+            2..=4 => 1.0,
             1 => 0.5,
             n if n > 4 => 4.0 / n as f64,
             _ => 0.0,
@@ -363,8 +349,14 @@ mod tests {
             result.best_pipeline.is_some(),
             "search must produce a best pipeline"
         );
-        assert!(result.evaluations > 0, "must have evaluated at least one pipeline");
-        assert!(result.generations_run > 0, "must have run at least one generation");
+        assert!(
+            result.evaluations > 0,
+            "must have evaluated at least one pipeline"
+        );
+        assert!(
+            result.generations_run > 0,
+            "must have run at least one generation"
+        );
     }
 
     #[test]
