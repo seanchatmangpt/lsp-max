@@ -34,7 +34,7 @@ lsp-max = { path = "../../", version = "26.6.18" }
 lsp-max-ast = { path = "../../crates/lsp-max-adapters/lsp-max-ast", version = "26.6.18" }
 lsp-max-ast-core = { path = "../../crates/lsp-max-adapters/lsp-max-ast-core", version = "26.6.18" }
 parking_lot = { workspace = true }
-lsp-types-max = { path = "../../lsp-types-max", version = "26.6.8", features = ["proposed"] }
+lsp-types-max = { path = "../../../lsp-types-max", version = "26.6.5", features = ["proposed"] }
 chrono = { version = "0.4", features = ["serde"] }
 url = "2.5"
 tree-sitter = { workspace = true }
