@@ -169,6 +169,81 @@ jobs:
             echo "cargo-deadlinks not installed, skipping dead link check"
           fi
 
+  # Fast pre-filter: fmt+clippy on changed crates only (PR-only, no narrowing admission)
+  fast-check:
+    name: fast-check (changed crates)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: lsp-max
+          fetch-depth: 0
+
+      - uses: actions/checkout@v4
+        with:
+          repository: seanchatmangpt/lsp-types-max
+          path: lsp-types-max
+          token: ${{ secrets.SIBLING_REPO_TOKEN || github.token }}
+
+      - uses: actions/checkout@v4
+        with:
+          repository: seanchatmangpt/wasm4pm-compat
+          path: wasm4pm-compat
+
+      - uses: actions/checkout@v4
+        with:
+          repository: seanchatmangpt/wasm4pm
+          path: wasm4pm
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: lsp-max
+
+      - name: determine changed crates
+        id: scope
+        working-directory: lsp-max
+        run: |
+          pkgs="$(bash scripts/changed-crates.sh ${{ github.event.pull_request.base.sha }})"
+          echo "pkgs=$pkgs" >> "$GITHUB_OUTPUT"
+          if [ -z "$pkgs" ]; then
+            echo "status=OPEN" >> "$GITHUB_OUTPUT"
+          elif [ "$pkgs" = "__ALL__" ]; then
+            echo "status=PARTIAL" >> "$GITHUB_OUTPUT"
+          else
+            echo "status=CANDIDATE" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: report scope [OPEN — no changed crates]
+        if: steps.scope.outputs.status == 'OPEN'
+        run: echo "no changed crates attributed [OPEN]"
+
+      - name: report scope [PARTIAL — manifest/toolchain changed, full check required]
+        if: steps.scope.outputs.status == 'PARTIAL'
+        run: echo "manifest/Justfile/toolchain changed: no narrowing possible [PARTIAL]"
+
+      - name: fmt check on changed crates [CANDIDATE]
+        if: steps.scope.outputs.status == 'CANDIDATE'
+        working-directory: lsp-max
+        run: |
+          args=$(printf -- '-p %s ' ${{ steps.scope.outputs.pkgs }})
+          echo "scope: ${{ steps.scope.outputs.pkgs }} [CANDIDATE]"
+          cargo fmt $args -- --check
+
+      - name: clippy on changed crates [CANDIDATE]
+        if: steps.scope.outputs.status == 'CANDIDATE'
+        working-directory: lsp-max
+        run: |
+          args=$(printf -- '-p %s ' ${{ steps.scope.outputs.pkgs }})
+          cargo clippy $args --all-targets -- -D warnings
+
+      - name: fast-check status
+        run: echo "fast-check status: ${{ steps.scope.outputs.status }}"
+
   # Summary job that gates merges
   result:
     name: CI Result
