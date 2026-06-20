@@ -2,72 +2,20 @@ use clap_noun_verb::Result;
 use clap_noun_verb_macros::verb;
 use serde::Serialize;
 
-// ── 1. Domain types ──────────────────────────────────────────────────────────
+use lsp_max::pipeline::catalog::{breed_category, BreedCategory, KNOWN_BREEDS};
+use lsp_max::pipeline::fitness::{auto_evaluator, BreedFitnessEvaluator};
+use lsp_max::pipeline::search::{FitnessEvaluator, PipelineSearch};
+use lsp_max::pipeline::types::{
+    BreedName, BreedPipeline, PipelineBoundedStatus, PipelineSearchConfig, PipelineSearchResult,
+};
 
-/// Known wasm4pm-cognition breed names (static catalog).
-/// These are the string IDs accepted by wasm4pm's dispatch_breed().
-/// Source: wasm4pm-cognition/src/breeds/ directory listing.
-pub static KNOWN_BREEDS: &[&str] = &[
-    "abductive_ibe",
-    "abductive_lp",
-    "act_r",
-    "allen_temporal",
-    "analogy_sme",
-    "asp",
-    "autoinstinct_learning",
-    "autoinstinct_neurosis",
-    "autoinstinct_semantics",
-    "autoinstinct_vision",
-    "bayesian_network",
-    "belief_merging",
-    "cbr",
-    "circumscription",
-    "clp",
-    "construction_grammar",
-    "contingent_plan",
-    "csp_ac3",
-    "ctl_check",
-    "default_logic",
-    "dempster_shafer",
-    "dendral",
-    "description_logic",
-    "ebl",
-    "episodic_memory",
-    "event_calculus",
-    "frame",
-    "frames_inheritance",
-    "fuzzy_logic",
-    "gps",
-    "hearsay",
-    "htn_planning",
-    "ilp",
-    "ltl_monitor",
-    "markov_logic",
-    "mdp",
-    "meta_reasoning",
-    "morphological",
-    "naive_physics",
-    "ocpm_route_discoverer",
-    "oracle_chain",
-    "partial_order_plan",
-    "pomdp",
-    "problog",
-    "production_rules",
-    "prolog",
-    "qualitative_reason",
-    "rl_symbolic",
-    "sat_cdcl",
-    "script_sam",
-    "situation_calculus",
-    "soar",
-    "standing",
-    "strips",
-    "tableaux",
-    "triz",
-    "version_space",
-];
+// ── 1. CLI-local view types ───────────────────────────────────────────────────
+//
+// The breed catalog, fitness scoring, and genetic search all live in
+// `lsp_max::pipeline`. This noun owns only the actuation grammar (verbs) and the
+// JSON view shapes the CLI emits; all domain logic delegates to the library.
 
-/// A pipeline: ordered sequence of breed names to apply.
+/// A pipeline view for CLI output: ordered breed names plus a fitness score.
 #[derive(Debug, Clone, Serialize)]
 pub struct Pipeline {
     pub id: String,
@@ -75,100 +23,61 @@ pub struct Pipeline {
     pub fitness: f64,
 }
 
+/// One breed entry for the `list-breeds` view: name plus its catalog category.
 #[derive(Debug, Clone, Serialize)]
 pub struct BreedInfo {
     pub name: String,
     pub category: String,
 }
 
-fn category_for(breed: &str) -> &'static str {
-    match breed {
-        b if b.contains("asp")
-            || b.contains("prolog")
-            || b.contains("logic")
-            || b.contains("sat")
-            || b.contains("tableau")
-            || b.contains("abductive")
-            || b.contains("clp")
-            || b.contains("circumscription") =>
-        {
-            "logic"
-        }
-        b if b.contains("rule")
-            || b.contains("cbr")
-            || b.contains("dendral")
-            || b.contains("ebl")
-            || b.contains("ilp")
-            || b.contains("version") =>
-        {
-            "rule"
-        }
-        b if b.contains("plan")
-            || b.contains("strips")
-            || b.contains("gps")
-            || b.contains("htn")
-            || b.contains("contingent")
-            || b.contains("mdp")
-            || b.contains("pomdp")
-            || b.contains("rl_")
-            || b.contains("situation")
-            || b.contains("event_calc") =>
-        {
-            "planning"
-        }
-        b if b.contains("bayes")
-            || b.contains("dempster")
-            || b.contains("fuzzy")
-            || b.contains("qualitative")
-            || b.contains("problog")
-            || b.contains("markov") =>
-        {
-            "probabilistic"
-        }
-        b if b.contains("ltl")
-            || b.contains("ctl")
-            || b.contains("allen")
-            || b.contains("naive_physics") =>
-        {
-            "temporal"
-        }
-        b if b.contains("frame")
-            || b.contains("hearsay")
-            || b.contains("soar")
-            || b.contains("act_r")
-            || b.contains("episodic")
-            || b.contains("script")
-            || b.contains("analogy") =>
-        {
-            "memory"
-        }
-        _ => "meta",
+/// Lowercase category tag for a [`BreedCategory`], for the CLI `list-breeds` view.
+fn category_label(category: &BreedCategory) -> &'static str {
+    match category {
+        BreedCategory::LogicBased => "logic",
+        BreedCategory::RuleBased => "rule",
+        BreedCategory::PlanningBased => "planning",
+        BreedCategory::Probabilistic => "probabilistic",
+        BreedCategory::Temporal => "temporal",
+        BreedCategory::MemoryBased => "memory",
+        BreedCategory::MetaBased => "meta",
     }
 }
 
-// Heuristic fitness (no subprocess): category diversity + temporal bonus + length
-fn heuristic_fitness(breeds: &[String]) -> f64 {
-    if breeds.is_empty() {
-        return 0.0;
-    }
-    let cats: std::collections::HashSet<&str> =
-        breeds.iter().map(|b| category_for(b)).collect();
-    let diversity = (cats.len() as f64 / 7.0).min(1.0);
-    let length_score = match breeds.len() {
-        0 => 0.0,
-        1 => 0.3,
-        2 | 3 | 4 => 1.0,
-        n => (4.0 / n as f64).min(1.0),
-    };
-    let temporal = if breeds.iter().any(|b| category_for(b) == "temporal") {
-        0.1
+/// Map a fitness score in [0.0, 1.0] to a bounded status for a single evaluation.
+///
+/// An empty pipeline is REFUSED. Otherwise the score is bucketed against the
+/// library admission threshold (ADMITTED), a partial-convergence band (PARTIAL),
+/// or UNKNOWN when below both bands. UNKNOWN is never collapsed into either
+/// polarity — it signals an inconclusive score, not a refusal.
+fn eval_status(fitness: f64, breeds_empty: bool) -> PipelineBoundedStatus {
+    if breeds_empty {
+        PipelineBoundedStatus::Refused
+    } else if fitness >= PipelineSearchConfig::default().admission_threshold {
+        PipelineBoundedStatus::Admitted
+    } else if fitness >= 0.3 {
+        PipelineBoundedStatus::Partial
     } else {
-        0.0
-    };
-    (diversity * 0.5 + length_score * 0.4 + temporal).min(1.0)
+        PipelineBoundedStatus::Unknown
+    }
+}
+
+/// Bridges a [`BreedFitnessEvaluator`] (the `auto_evaluator` output: subprocess or
+/// heuristic) into the [`FitnessEvaluator`] trait that drives [`PipelineSearch`].
+///
+/// Both traits share the `evaluate(&[String]) -> f64` signature but are distinct
+/// types; this adapter forwards the call so the search engine is driven by the
+/// auto-selected library evaluator without duplicating any scoring logic.
+struct CliFitnessAdapter(Box<dyn BreedFitnessEvaluator>);
+
+impl FitnessEvaluator for CliFitnessAdapter {
+    fn evaluate(&self, breeds: &[BreedName]) -> f64 {
+        self.0.evaluate(breeds)
+    }
 }
 
 // ── 2. Service tier ──────────────────────────────────────────────────────────
+//
+// Poka-Yoke FM-1.1: all real logic lives here; `#[verb]` bodies stay thin.
 
 pub struct PipelineService;
 
@@ -178,28 +87,16 @@ impl PipelineService {
             .iter()
             .map(|&name| BreedInfo {
                 name: name.to_string(),
-                category: category_for(name).to_string(),
+                category: category_label(&breed_category(name)).to_string(),
             })
             .collect()
     }
 
-    pub fn evaluate(
-        &self,
-        breeds: Vec<String>,
-        _ocel_path: Option<String>,
-    ) -> (Pipeline, String) {
-        // Uses heuristic when wasm4pm-cli is absent; subprocess when available
-        let fitness = heuristic_fitness(&breeds);
-        let status = if fitness >= 0.7 {
-            "ADMITTED"
-        } else if fitness >= 0.3 {
-            "PARTIAL"
-        } else if breeds.is_empty() {
-            "REFUSED"
-        } else {
-            "UNKNOWN"
-        }
-        .to_string();
+    /// Evaluate a breed list by delegating to the library auto-selected evaluator
+    /// (wasm4pm-cli subprocess when present, heuristic otherwise).
+    pub fn evaluate(&self, breeds: Vec<String>, ocel_path: Option<String>) -> (Pipeline, String) {
+        let fitness = auto_evaluator(ocel_path).evaluate(&breeds);
+        let status = eval_status(fitness, breeds.is_empty()).as_str().to_string();
         let pipe = Pipeline {
             id: format!("pipe-eval-{}", breeds.join("-")),
             breeds,
@@ -208,163 +105,28 @@ impl PipelineService {
         (pipe, status)
     }
 
-    /// Simple genetic search (self-contained, no external deps)
+    /// Run a TPOT2-style genetic search over [`KNOWN_BREEDS`], delegating to
+    /// [`PipelineSearch`] from the library and driving it with the auto-selected
+    /// evaluator via [`CliFitnessAdapter`].
     pub fn search(
         &self,
         generations: usize,
         population_size: usize,
         ocel_path: Option<String>,
     ) -> SearchOutput {
-        let _ = ocel_path;
-        if KNOWN_BREEDS.is_empty() {
-            return SearchOutput {
-                status: "REFUSED".to_string(),
-                best_pipeline: None,
-                best_fitness: 0.0,
-                generations_run: 0,
-                evaluations: 0,
-                summary: "breed catalog empty: REFUSED".to_string(),
-            };
-        }
-
-        let mut rng_state: u64 = 0xcafe_f00d_dead_beef;
-        let next_rand = |s: &mut u64| -> u64 {
-            *s ^= *s << 13;
-            *s ^= *s >> 7;
-            *s ^= *s << 17;
-            *s
+        let config = PipelineSearchConfig {
+            population_size,
+            generations,
+            ..Default::default()
         };
-        let rand_usize = |s: &mut u64, n: usize| -> usize {
-            (next_rand(s) % n as u64) as usize
-        };
-        let rand_f64 = |s: &mut u64| -> f64 {
-            (next_rand(s) >> 11) as f64 / (1u64 << 53) as f64
-        };
-
-        // Init population: random pipelines of length 2–4
-        let mut population: Vec<(Vec<String>, f64)> = (0..population_size)
-            .map(|_| {
-                let len = rand_usize(&mut rng_state, 3) + 2; // 2..=4
-                let breeds: Vec<String> = (0..len)
-                    .map(|_| {
-                        KNOWN_BREEDS
-                            [rand_usize(&mut rng_state, KNOWN_BREEDS.len())]
-                        .to_string()
-                    })
-                    .collect();
-                let fit = heuristic_fitness(&breeds);
-                (breeds, fit)
-            })
-            .collect();
-
-        let mut total_evals = population_size;
-        let mut gens_run = 0;
-
-        population.sort_by(|a, b| {
-            b.1.partial_cmp(&a.1)
-                .unwrap_or(std::cmp::Ordering::Equal)
-        });
-
-        for _ in 0..generations {
-            gens_run += 1;
-            if population
-                .first()
-                .map(|(_, f)| *f >= 0.7)
-                .unwrap_or(false)
-            {
-                break;
-            }
-
-            let mut next_gen: Vec<(Vec<String>, f64)> =
-                population.iter().take(2).cloned().collect();
-            while next_gen.len() < population_size {
-                // Tournament select parent a
-                let ia = {
-                    let i1 = rand_usize(&mut rng_state, population.len());
-                    let i2 = rand_usize(&mut rng_state, population.len());
-                    if population[i1].1 >= population[i2].1 {
-                        i1
-                    } else {
-                        i2
-                    }
-                };
-                // Tournament select parent b
-                let ib = {
-                    let i1 = rand_usize(&mut rng_state, population.len());
-                    let i2 = rand_usize(&mut rng_state, population.len());
-                    if population[i1].1 >= population[i2].1 {
-                        i1
-                    } else {
-                        i2
-                    }
-                };
-                let (a, _) = &population[ia];
-                let (b, _) = &population[ib];
-
-                // Single-point crossover
-                let split = rand_usize(&mut rng_state, a.len().max(1));
-                let mut child: Vec<String> =
-                    a[..split.min(a.len())].to_vec();
-                if !b.is_empty() {
-                    let bsplit =
-                        rand_usize(&mut rng_state, b.len().max(1));
-                    child.extend_from_slice(&b[bsplit.min(b.len())..]);
-                }
-                child.truncate(5);
-                if child.is_empty() {
-                    child.push(
-                        KNOWN_BREEDS
-                            [rand_usize(&mut rng_state, KNOWN_BREEDS.len())]
-                        .to_string(),
-                    );
-                }
-
-                // Mutation
-                if rand_f64(&mut rng_state) < 0.15 {
-                    let idx = rand_usize(&mut rng_state, child.len());
-                    child[idx] = KNOWN_BREEDS
-                        [rand_usize(&mut rng_state, KNOWN_BREEDS.len())]
-                    .to_string();
-                }
-
-                let fit = heuristic_fitness(&child);
-                total_evals += 1;
-                next_gen.push((child, fit));
-            }
-            next_gen.sort_by(|a, b| {
-                b.1.partial_cmp(&a.1)
-                    .unwrap_or(std::cmp::Ordering::Equal)
-            });
-            population = next_gen;
-        }
-
-        let best = population.into_iter().next();
-        let (best_breeds, best_fitness) = best.unzip();
-        let best_fitness = best_fitness.unwrap_or(0.0);
-        let status = if best_fitness >= 0.7 {
-            "ADMITTED"
-        } else if best_fitness > 0.0 {
-            "PARTIAL"
-        } else {
-            "UNKNOWN"
-        }
-        .to_string();
-
-        SearchOutput {
-            status: status.clone(),
-            best_pipeline: best_breeds.map(|b| Pipeline {
-                id: "pipe-best".to_string(),
-                breeds: b,
-                fitness: best_fitness,
-            }),
-            best_fitness,
-            generations_run: gens_run,
-            evaluations: total_evals,
-            summary: format!(
-                "search: {} after {} gens, {} evals",
-                status, gens_run, total_evals
-            ),
-        }
+        let evaluator = CliFitnessAdapter(auto_evaluator(ocel_path));
+        let mut search = PipelineSearch::new(
+            config,
+            KNOWN_BREEDS,
+            Box::new(evaluator),
+            0xcafe_f00d_dead_beef,
+        );
+        SearchOutput::from(search.run())
     }
 }
 
@@ -392,7 +154,11 @@ pub struct EvaluateResult {
 
 #[verb("evaluate")]
 pub fn evaluate(breeds: String, ocel_path: Option<String>) -> Result<EvaluateResult> {
-    let breed_list: Vec<String> = breeds.split(',').map(|s| s.trim().to_string()).filter(|s| !s.is_empty()).collect();
+    let breed_list: Vec<String> = breeds
+        .split(',')
+        .map(|s| s.trim().to_string())
+        .filter(|s| !s.is_empty())
+        .collect();
     let svc = PipelineService;
     let (pipeline, status) = svc.evaluate(breed_list, ocel_path);
     Ok(EvaluateResult { pipeline, status })
@@ -406,6 +172,25 @@ pub struct SearchOutput {
     pub generations_run: usize,
     pub evaluations: usize,
     pub summary: String,
+}
+
+impl From<PipelineSearchResult> for SearchOutput {
+    fn from(result: PipelineSearchResult) -> Self {
+        let best_fitness = result.best_fitness;
+        let best_pipeline = result.best_pipeline.map(|p: BreedPipeline| Pipeline {
+            id: p.id,
+            breeds: p.nodes.into_iter().map(|n| n.breed).collect(),
+            fitness: best_fitness,
+        });
+        SearchOutput {
+            status: result.status.as_str().to_string(),
+            best_pipeline,
+            best_fitness,
+            generations_run: result.generations_run,
+            evaluations: result.evaluations,
+            summary: result.summary,
+        }
+    }
 }
 
 #[verb("search")]
@@ -434,13 +219,13 @@ pub struct PipelineSchemaResult {
 
 #[verb("schema")]
 pub fn schema() -> Result<PipelineSchemaResult> {
+    let defaults = PipelineSearchConfig::default();
     Ok(PipelineSchemaResult {
         version: env!("CARGO_PKG_VERSION").to_string(),
         breed_count: KNOWN_BREEDS.len(),
-        default_generations: 10,
-        default_population_size: 20,
-        admission_threshold: 0.7,
-        fitness_strategy: "heuristic (wasm4pm-cli subprocess when available)"
-            .to_string(),
+        default_generations: defaults.generations,
+        default_population_size: defaults.population_size,
+        admission_threshold: defaults.admission_threshold,
+        fitness_strategy: "heuristic (wasm4pm-cli subprocess when available)".to_string(),
     })
 }
