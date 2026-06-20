@@ -514,7 +514,7 @@ pub fn merge_workspace_edits(
 
 ## Layer 5: Autonomic LSP Mesh — Conformance and Gates
 
-**Crates**: `crates/lsp-max-compositor`, `examples/anti-llm-cheat-lsp`
+**Crates**: `crates/lsp-max-compositor`, `crates/anti-llm-cheat-lsp`
 
 **Key types**: `CompositorClient`, `MergeContext`, `GateFile`, `CompositorReceipt`, `Λ_CD` predicate
 
@@ -637,7 +637,7 @@ Where:
 ### Anti-LLM-Cheat Canary
 
 ```rust
-// examples/anti-llm-cheat-lsp/src/main.rs
+// crates/anti-llm-cheat-lsp/src/main.rs
 pub struct AntiLlmCheatLsp {
     // Runs on lsp-max (does NOT depend on plain tower-lsp)
     // Detects and emits diagnostics for:
@@ -979,7 +979,7 @@ src/ [root]
   ↓
   lsp-max-protocol, lsp-max-runtime, lsp_types_max, lsp-max-macros
 
-examples/anti-llm-cheat-lsp
+crates/anti-llm-cheat-lsp
   ↓
   lsp-max (root crate)
   lsp-max-protocol, lsp-max-runtime
