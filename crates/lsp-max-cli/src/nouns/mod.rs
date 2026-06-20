@@ -10,6 +10,7 @@ pub mod generate;
 pub mod ggen;
 pub mod hook;
 pub mod metamodel;
+pub mod ontology;
 pub mod plugin;
 pub mod receipt;
 pub mod rpc;
