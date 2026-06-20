@@ -866,3 +866,53 @@ fn lsif06_surface_is_full_and_example_coverage_is_open() {
         );
     }
 }
+
+// -------------------------------------------------------------
+// OCEL 2.0 live detection projection tests (ocel_012, ocel_013)
+// -------------------------------------------------------------
+
+#[test]
+fn ocel_012_live_detections_produce_ocel_events() {
+    use anti_llm_cheat_lsp::diagnostics::AntiLlmDiagnostic;
+    use anti_llm_cheat_lsp::ocel::detections_to_ocel;
+
+    let diags = vec![AntiLlmDiagnostic {
+        code: "ANTI-LLM-SURFACE-001".to_string(),
+        category: "surface".to_string(),
+        file_path: "test.rs".to_string(),
+        line: 1,
+        column: 1,
+        message: "plain tower-lsp reference".to_string(),
+        forbidden_implication: "tower_lsp => lsp-max".to_string(),
+        blocking: true,
+        required_correction: "rename to lsp-max".to_string(),
+        required_next_proof: "verify no tower-lsp refs".to_string(),
+    }];
+    let log = detections_to_ocel(&diags);
+    assert!(!log.events.is_empty(), "live detections must produce OCEL events");
+    assert!(!log.objects.is_empty(), "live detections must produce OCEL objects");
+    // Every CheatDetected event must have at least one relationship binding
+    for event in &log.events {
+        if event.event_type == "CheatDetected" {
+            assert!(
+                !event.relationships.is_empty(),
+                "event {} must bind to at least one object",
+                event.id
+            );
+        }
+    }
+}
+
+#[test]
+fn ocel_013_object_types_cover_all_cheat_dimensions() {
+    use anti_llm_cheat_lsp::ocel::ocel_object_types;
+    let types: Vec<String> = ocel_object_types().iter().map(|t| t.name.clone()).collect();
+    // All six cheat-evidence dimensions must be declared
+    for required in &["CaseFile", "DetectionCode", "LawAxis"] {
+        assert!(
+            types.iter().any(|t| t == required),
+            "OCEL schema missing required object type: {}",
+            required
+        );
+    }
+}
