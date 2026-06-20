@@ -148,7 +148,7 @@ fn surface_table() -> Vec<MethodSurface> {
             "window.workDoneProgress",
             "",
             "_progress_positive.jsonl",
-            Absent,
+            Wired,
             General,
         ),
         (
@@ -156,7 +156,7 @@ fn surface_table() -> Vec<MethodSurface> {
             "",
             "",
             "_setTrace_positive.jsonl",
-            Absent,
+            Wired,
             General,
         ),
         (
@@ -164,7 +164,7 @@ fn surface_table() -> Vec<MethodSurface> {
             "",
             "",
             "_logTrace_positive.jsonl",
-            Absent,
+            Wired,
             General,
         ),
         (
@@ -172,7 +172,7 @@ fn surface_table() -> Vec<MethodSurface> {
             "*.dynamicRegistration",
             "",
             "",
-            Absent,
+            Wired,
             ServerRequest,
         ),
         (
@@ -180,7 +180,7 @@ fn surface_table() -> Vec<MethodSurface> {
             "*.dynamicRegistration",
             "",
             "client_unregisterCapability_positive.jsonl",
-            Absent,
+            Wired,
             ServerRequest,
         ),
         (
@@ -188,7 +188,7 @@ fn surface_table() -> Vec<MethodSurface> {
             "",
             "",
             "telemetry_event_positive.jsonl",
-            Absent,
+            Wired,
             ServerNotification,
         ),
         // ── Text document synchronization ─────────────────────────────────
@@ -229,7 +229,7 @@ fn surface_table() -> Vec<MethodSurface> {
             "textDocument.synchronization.willSave",
             "textDocumentSync.willSave",
             "textDocument_willSave_positive.jsonl",
-            Absent,
+            Wired,
             ClientNotification,
         ),
         (
@@ -237,7 +237,7 @@ fn surface_table() -> Vec<MethodSurface> {
             "textDocument.synchronization.willSaveWaitUntil",
             "textDocumentSync.willSaveWaitUntil",
             "textDocument_willSaveWaitUntil_positive.jsonl",
-            Absent,
+            Wired,
             ClientRequest,
         ),
         (
@@ -359,7 +359,7 @@ fn surface_table() -> Vec<MethodSurface> {
             "",
             "completionProvider.resolveProvider",
             "completionItem_resolve_positive.jsonl",
-            Absent,
+            Wired,
             ClientRequest,
         ),
         (
@@ -391,7 +391,7 @@ fn surface_table() -> Vec<MethodSurface> {
             "textDocument.documentLink",
             "documentLinkProvider",
             "textDocument_documentLink_positive.jsonl",
-            Absent,
+            Wired,
             ClientRequest,
         ),
         (
@@ -399,7 +399,7 @@ fn surface_table() -> Vec<MethodSurface> {
             "",
             "documentLinkProvider.resolveProvider",
             "documentLink_resolve_positive.jsonl",
-            Absent,
+            Wired,
             ClientRequest,
         ),
         (
@@ -407,7 +407,7 @@ fn surface_table() -> Vec<MethodSurface> {
             "textDocument.colorProvider",
             "colorProvider",
             "textDocument_documentColor_positive.jsonl",
-            Absent,
+            Wired,
             ClientRequest,
         ),
         (
@@ -415,7 +415,7 @@ fn surface_table() -> Vec<MethodSurface> {
             "",
             "colorProvider",
             "textDocument_colorPresentation_positive.jsonl",
-            Absent,
+            Wired,
             ClientRequest,
         ),
         (
@@ -431,7 +431,7 @@ fn surface_table() -> Vec<MethodSurface> {
             "",
             "codeActionProvider.resolveProvider",
             "codeAction_resolve_positive.jsonl",
-            Absent,
+            Wired,
             ClientRequest,
         ),
         // ── Formatting / folding / hints / inline / semantic / symbol ─────
@@ -464,7 +464,7 @@ fn surface_table() -> Vec<MethodSurface> {
             "textDocument.onTypeFormatting",
             "documentOnTypeFormattingProvider",
             "textDocument_onTypeFormatting_positive.jsonl",
-            Absent,
+            Wired,
             ClientRequest,
         ),
         (
@@ -569,7 +569,7 @@ fn surface_table() -> Vec<MethodSurface> {
             "textDocument.typeHierarchy",
             "typeHierarchyProvider",
             "textDocument_prepareTypeHierarchy_positive.jsonl",
-            Absent,
+            Wired,
             ClientRequest,
         ),
         (
@@ -577,7 +577,7 @@ fn surface_table() -> Vec<MethodSurface> {
             "textDocument.typeHierarchy",
             "typeHierarchyProvider",
             "typeHierarchy_supertypes_positive.jsonl",
-            Absent,
+            Wired,
             ClientRequest,
         ),
         (
@@ -585,7 +585,7 @@ fn surface_table() -> Vec<MethodSurface> {
             "textDocument.typeHierarchy",
             "typeHierarchyProvider",
             "typeHierarchy_subtypes_positive.jsonl",
-            Absent,
+            Wired,
             ClientRequest,
         ),
         (
@@ -618,7 +618,7 @@ fn surface_table() -> Vec<MethodSurface> {
             "workspace.symbol.resolveSupport",
             "workspaceSymbolProvider.resolveProvider",
             "workspaceSymbol_resolve_positive.jsonl",
-            Absent,
+            Wired,
             ClientRequest,
         ),
         (
@@ -634,7 +634,7 @@ fn surface_table() -> Vec<MethodSurface> {
             "workspace.applyEdit",
             "",
             "workspace_applyEdit_positive.jsonl",
-            Absent,
+            Refuses,
             ServerRequest,
         ),
         (
@@ -642,7 +642,7 @@ fn surface_table() -> Vec<MethodSurface> {
             "workspace.configuration",
             "",
             "workspace_configuration_positive.jsonl",
-            Absent,
+            Wired,
             ServerRequest,
         ),
         (
@@ -650,7 +650,7 @@ fn surface_table() -> Vec<MethodSurface> {
             "workspace.didChangeConfiguration",
             "",
             "workspace_didChangeConfiguration_positive.jsonl",
-            Absent,
+            Wired,
             ClientNotification,
         ),
         (
@@ -658,7 +658,7 @@ fn surface_table() -> Vec<MethodSurface> {
             "workspace.didChangeWatchedFiles",
             "",
             "workspace_didChangeWatchedFiles_positive.jsonl",
-            Absent,
+            Wired,
             ClientNotification,
         ),
         (
@@ -666,7 +666,7 @@ fn surface_table() -> Vec<MethodSurface> {
             "workspace.workspaceFolders",
             "workspace.workspaceFolders",
             "workspace_didChangeWorkspaceFolders_positive.jsonl",
-            Absent,
+            Wired,
             ClientNotification,
         ),
         (
@@ -674,7 +674,7 @@ fn surface_table() -> Vec<MethodSurface> {
             "",
             "workspace.workspaceFolders.supported",
             "workspace_workspaceFolders_positive.jsonl",
-            Absent,
+            Wired,
             ServerRequest,
         ),
         (
@@ -699,7 +699,7 @@ fn surface_table() -> Vec<MethodSurface> {
             "workspace.fileOperations.willCreate",
             "workspace.fileOperations.willCreate",
             "workspace_willCreateFiles_positive.jsonl",
-            Absent,
+            Wired,
             ClientRequest,
         ),
         (
@@ -707,7 +707,7 @@ fn surface_table() -> Vec<MethodSurface> {
             "workspace.fileOperations.willRename",
             "workspace.fileOperations.willRename",
             "workspace_willRenameFiles_positive.jsonl",
-            Absent,
+            Wired,
             ClientRequest,
         ),
         (
@@ -715,7 +715,7 @@ fn surface_table() -> Vec<MethodSurface> {
             "workspace.fileOperations.willDelete",
             "workspace.fileOperations.willDelete",
             "workspace_willDeleteFiles_positive.jsonl",
-            Absent,
+            Wired,
             ClientRequest,
         ),
         (
@@ -723,7 +723,7 @@ fn surface_table() -> Vec<MethodSurface> {
             "workspace.fileOperations.didCreate",
             "workspace.fileOperations.didCreate",
             "workspace_didCreateFiles_positive.jsonl",
-            Absent,
+            Wired,
             ClientNotification,
         ),
         (
@@ -731,7 +731,7 @@ fn surface_table() -> Vec<MethodSurface> {
             "workspace.fileOperations.didRename",
             "workspace.fileOperations.didRename",
             "workspace_didRenameFiles_positive.jsonl",
-            Absent,
+            Wired,
             ClientNotification,
         ),
         (
@@ -739,7 +739,7 @@ fn surface_table() -> Vec<MethodSurface> {
             "workspace.fileOperations.didDelete",
             "workspace.fileOperations.didDelete",
             "workspace_didDeleteFiles_positive.jsonl",
-            Absent,
+            Wired,
             ClientNotification,
         ),
         // ── Server-to-client refreshes ────────────────────────────────────
@@ -764,7 +764,7 @@ fn surface_table() -> Vec<MethodSurface> {
             "workspace.inlayHint.refreshSupport",
             "",
             "workspace_inlayHint_refresh_positive.jsonl",
-            Absent,
+            Wired,
             ServerRequest,
         ),
         (
@@ -772,7 +772,7 @@ fn surface_table() -> Vec<MethodSurface> {
             "workspace.inlineValue.refreshSupport",
             "",
             "workspace_inlineValue_refresh_positive.jsonl",
-            Absent,
+            Wired,
             ServerRequest,
         ),
         (
@@ -780,7 +780,7 @@ fn surface_table() -> Vec<MethodSurface> {
             "workspace.diagnostics.refreshSupport",
             "",
             "workspace_diagnostic_refresh_positive.jsonl",
-            Absent,
+            Wired,
             ServerRequest,
         ),
         (
@@ -797,7 +797,7 @@ fn surface_table() -> Vec<MethodSurface> {
             "",
             "",
             "window_showMessage_positive.jsonl",
-            Absent,
+            Wired,
             ServerNotification,
         ),
         (
@@ -805,7 +805,7 @@ fn surface_table() -> Vec<MethodSurface> {
             "window.showMessage",
             "",
             "window_showMessageRequest_positive.jsonl",
-            Absent,
+            Wired,
             ServerRequest,
         ),
         (
@@ -821,7 +821,7 @@ fn surface_table() -> Vec<MethodSurface> {
             "window.showDocument",
             "",
             "window_showDocument_positive.jsonl",
-            Absent,
+            Wired,
             ServerRequest,
         ),
         (
@@ -829,7 +829,7 @@ fn surface_table() -> Vec<MethodSurface> {
             "window.workDoneProgress",
             "",
             "window_workDoneProgress_create_positive.jsonl",
-            Absent,
+            Wired,
             ServerRequest,
         ),
         (
@@ -837,16 +837,16 @@ fn surface_table() -> Vec<MethodSurface> {
             "window.workDoneProgress",
             "",
             "window_workDoneProgress_cancel_positive.jsonl",
-            Absent,
+            Wired,
             ClientNotification,
         ),
-        // ── Notebook documents (declared refused-by-law; noop contradiction) ─
+        // ── Notebook documents ────────────────────────────────────────────────
         (
             "notebookDocument/didOpen",
             "notebookDocument.synchronization",
             "notebookDocumentSync",
             "",
-            Absent,
+            Wired,
             ClientNotification,
         ),
         (
@@ -854,7 +854,7 @@ fn surface_table() -> Vec<MethodSurface> {
             "notebookDocument.synchronization",
             "notebookDocumentSync",
             "",
-            Absent,
+            Wired,
             ClientNotification,
         ),
         (
@@ -862,7 +862,7 @@ fn surface_table() -> Vec<MethodSurface> {
             "notebookDocument.synchronization",
             "notebookDocumentSync",
             "",
-            Absent,
+            Wired,
             ClientNotification,
         ),
         (
@@ -870,7 +870,7 @@ fn surface_table() -> Vec<MethodSurface> {
             "notebookDocument.synchronization",
             "notebookDocumentSync",
             "",
-            Absent,
+            Wired,
             ClientNotification,
         ),
     ];
