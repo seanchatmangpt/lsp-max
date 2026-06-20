@@ -1,5 +1,4 @@
 use serde::{Deserialize, Serialize};
-use wasm4pm_compat::conformance::ConformanceResult;
 
 // ---------------------------------------------------------------------------
 // LawAxis — replaces ad-hoc string law_ids
@@ -213,7 +212,8 @@ pub struct ConformanceVector {
     /// Whether unknown axes block release actuation
     pub strict_mode: bool,
     /// Process quality from POWL conformance check. None until wasm4pm graduation.
-    pub process_quality: Option<ConformanceResult>,
+    /// Stored as opaque JSON to decouple from the wasm4pm-compat stub type boundary.
+    pub process_quality: Option<serde_json::Value>,
     /// Bitmask for admitted axes (bits 0–10 = Protocol..Domain). Not serialized.
     #[serde(skip)]
     pub admitted_bits: u64,
