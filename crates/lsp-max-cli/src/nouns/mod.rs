@@ -1,3 +1,4 @@
+pub mod alias;
 pub mod admission;
 pub mod agent;
 pub mod client;
