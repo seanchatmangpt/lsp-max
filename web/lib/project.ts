@@ -34,7 +34,7 @@ export interface Receipt {
   export_reason?: string;
 }
 
-const RECEIPT_DIRS = ["receipts", "crates/playground/receipts"];
+const RECEIPT_DIRS = ["receipts", "crates/playground/receipts", "crates/anti-llm-cheat-lsp/receipts"];
 
 async function readJsonFile(abs: string): Promise<unknown> {
   const text = await fs.readFile(abs, "utf8");
@@ -275,7 +275,7 @@ export interface OcelFile {
 
 const OCEL_DIRS = [
   "crates/playground/ocel",
-  "examples/anti-llm-cheat-lsp/ocel",
+  "crates/anti-llm-cheat-lsp/ocel",
 ];
 
 /** Read every real *.ocel.json under the known OCEL directories. Parses OCEL2
