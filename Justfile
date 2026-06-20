@@ -13,6 +13,16 @@ export NC := '\033[0m'
 default:
     @just --list
 
+# --- Setup ---
+
+# Bootstrap the workspace: clone the sibling repos required to build, then report readiness
+setup:
+    @bash scripts/bootstrap.sh
+
+# Diagnose environment readiness without changing anything (read-only doctor)
+doctor:
+    @bash scripts/bootstrap.sh --check
+
 # --- Admission ---
 
 # Run perf_refactors benchmarks and write BLAKE3-signed admission receipt
