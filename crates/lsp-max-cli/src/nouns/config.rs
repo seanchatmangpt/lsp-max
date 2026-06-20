@@ -155,3 +155,186 @@ pub fn list() -> Result<ListResult> {
     let configs = service.list();
     Ok(ListResult { configs })
 }
+
+// ==========================================
+// Static catalog of known config keys
+// ==========================================
+
+#[derive(Debug, Serialize, Clone)]
+pub struct ConfigKeySchema {
+    pub key: String,
+    pub env_var: String,
+    pub default_value: String,
+    pub description: String,
+    pub required: bool,
+}
+
+fn known_keys() -> Vec<ConfigKeySchema> {
+    vec![
+        ConfigKeySchema {
+            key: "api_base".to_string(),
+            env_var: "LSP_MAX_API_BASE".to_string(),
+            default_value: "https://api.openai.com/v1".to_string(),
+            description: "API base URL (also read from OPENAI_API_BASE)".to_string(),
+            required: false,
+        },
+        ConfigKeySchema {
+            key: "model".to_string(),
+            env_var: "LSP_MAX_MODEL".to_string(),
+            default_value: "gpt-4o".to_string(),
+            description: "Model name (also read from OPENAI_MODEL)".to_string(),
+            required: false,
+        },
+        ConfigKeySchema {
+            key: "api_key".to_string(),
+            env_var: "LSP_MAX_API_KEY".to_string(),
+            default_value: "".to_string(),
+            description: "LLM API key — required; no sensible default (also read from OPENAI_API_KEY)".to_string(),
+            required: true,
+        },
+        ConfigKeySchema {
+            key: "state_path".to_string(),
+            env_var: "LSP_MAX_STATE_PATH".to_string(),
+            default_value: ".mesh_state.json".to_string(),
+            description: "Mesh state file path (env-only; not yet read from JSON config)".to_string(),
+            required: false,
+        },
+        ConfigKeySchema {
+            key: "database_path".to_string(),
+            env_var: "LSP_MAX_DB_PATH".to_string(),
+            default_value: "".to_string(),
+            description: "Graph DB directory path".to_string(),
+            required: false,
+        },
+        ConfigKeySchema {
+            key: "timeout".to_string(),
+            env_var: "LSP_MAX_TIMEOUT".to_string(),
+            default_value: "150".to_string(),
+            description: "Upstream timeout in milliseconds (env-only; not yet read from JSON config)".to_string(),
+            required: false,
+        },
+    ]
+}
+
+// ==========================================
+// Schema verb
+// ==========================================
+
+#[derive(Serialize)]
+pub struct SchemaResult {
+    pub keys: Vec<ConfigKeySchema>,
+    pub config_path: String,
+}
+
+#[verb("schema")]
+pub fn schema() -> Result<SchemaResult> {
+    let service = ConfigService::new();
+    let config_path = service.config_path().to_string_lossy().into_owned();
+    Ok(SchemaResult {
+        keys: known_keys(),
+        config_path,
+    })
+}
+
+// ==========================================
+// Doctor verb
+// ==========================================
+
+#[derive(Debug, Serialize, Clone)]
+pub struct ConfigKeyStatus {
+    pub key: String,
+    pub status: String,
+    pub effective_value: String,
+    pub source: String,
+}
+
+#[derive(Serialize)]
+pub struct ConfigDoctorResult {
+    pub overall: String,
+    pub keys: Vec<ConfigKeyStatus>,
+}
+
+fn mask_if_sensitive(key: &str, value: &str) -> String {
+    if !value.is_empty()
+        && (key.contains("key") || key.contains("secret") || key.contains("token"))
+    {
+        "***".to_string()
+    } else {
+        value.to_string()
+    }
+}
+
+#[verb("doctor")]
+pub fn doctor() -> Result<ConfigDoctorResult> {
+    let service = ConfigService::new();
+    let file_config = service.load_config();
+    let catalog = known_keys();
+
+    let mut any_unknown = false;
+    let mut any_partial = false;
+
+    let keys: Vec<ConfigKeyStatus> = catalog
+        .iter()
+        .map(|schema| {
+            // Env var takes precedence over file, which takes precedence over built-in default.
+            if let Ok(env_val) = std::env::var(&schema.env_var) {
+                let effective = mask_if_sensitive(&schema.key, &env_val);
+                ConfigKeyStatus {
+                    key: schema.key.clone(),
+                    status: "ADMITTED".to_string(),
+                    effective_value: effective,
+                    source: "env".to_string(),
+                }
+            } else if let Some(file_val) = file_config.get(&schema.key) {
+                let (status, effective) = if file_val.is_empty() && schema.required {
+                    any_unknown = true;
+                    ("UNKNOWN", "".to_string())
+                } else {
+                    ("ADMITTED", mask_if_sensitive(&schema.key, file_val))
+                };
+                ConfigKeyStatus {
+                    key: schema.key.clone(),
+                    status: status.to_string(),
+                    effective_value: effective,
+                    source: "file".to_string(),
+                }
+            } else if !schema.default_value.is_empty() {
+                any_partial = true;
+                let effective = mask_if_sensitive(&schema.key, &schema.default_value);
+                ConfigKeyStatus {
+                    key: schema.key.clone(),
+                    status: "PARTIAL".to_string(),
+                    effective_value: effective,
+                    source: "default".to_string(),
+                }
+            } else if schema.required {
+                any_unknown = true;
+                ConfigKeyStatus {
+                    key: schema.key.clone(),
+                    status: "UNKNOWN".to_string(),
+                    effective_value: "".to_string(),
+                    source: "default".to_string(),
+                }
+            } else {
+                any_partial = true;
+                ConfigKeyStatus {
+                    key: schema.key.clone(),
+                    status: "PARTIAL".to_string(),
+                    effective_value: "".to_string(),
+                    source: "default".to_string(),
+                }
+            }
+        })
+        .collect();
+
+    let overall = if any_unknown {
+        "UNKNOWN"
+    } else if any_partial {
+        "PARTIAL"
+    } else {
+        "ADMITTED"
+    }
+    .to_string();
+
+    Ok(ConfigDoctorResult { overall, keys })
+}
