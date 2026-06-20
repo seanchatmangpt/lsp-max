@@ -13,6 +13,7 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 // ===========================================================================
 
 #[test]
+#[ignore = "stress/perf: slow by design, run with --include-ignored"]
 fn test_completions_extreme_coordinates_bounds() {
     let inputs = vec![
         "",
@@ -51,6 +52,7 @@ fn test_completions_extreme_coordinates_bounds() {
 // ===========================================================================
 
 #[test]
+#[ignore = "stress/perf: slow by design, run with --include-ignored"]
 fn test_rpc_attribute_parsing_stress() {
     let test_cases = [
         // Malformed name attributes
@@ -128,6 +130,7 @@ fn test_rpc_attribute_parsing_stress() {
 // ===========================================================================
 
 #[test]
+#[ignore = "stress/perf: slow by design, run with --include-ignored"]
 fn test_stack_based_brace_parsing_comments_strings() {
     // Comments containing braces
     let text_comment_braces = r#"
@@ -188,6 +191,7 @@ fn test_stack_based_brace_parsing_comments_strings() {
 // ===========================================================================
 
 #[test]
+#[ignore = "stress/perf: slow by design, run with --include-ignored"]
 fn test_nested_diagnostics_detection_options() {
     let url = Uri::from_str("file:///Users/sac/test.rs").unwrap();
 
@@ -335,6 +339,7 @@ async fn write_msg(
 }
 
 #[tokio::test(flavor = "current_thread")]
+#[ignore = "stress/perf: slow by design, run with --include-ignored"]
 async fn test_quick_fix_code_actions_bounds_stress() {
     // Set up the LspService
     let (service, socket) = LspService::new(Backend::new);

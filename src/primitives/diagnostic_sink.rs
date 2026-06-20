@@ -16,7 +16,7 @@
 //! (version counter) is zero, which holds iff rules are context-free.
 
 use lsp_max_protocol::{LawAxis, MaxDiagnostic};
-use lsp_types_max::{Diagnostic, Url};
+use lsp_types_max::{Diagnostic, Uri as Url};
 use parking_lot::RwLock;
 use rustc_hash::FxHashMap;
 use std::sync::Arc;

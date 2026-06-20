@@ -24,8 +24,7 @@ use std::collections::HashSet;
 // The authoritative LSP 3.18 spec, embedded at compile time.
 // ─────────────────────────────────────────────────────────────────────────────
 
-const META_MODEL_JSON: &str =
-    include_str!("../../vendors/vscode-languageserver-node/protocol/metaModel.json");
+const META_MODEL_JSON: &str = include_str!("../../generated/metaModel.json");
 
 // ─────────────────────────────────────────────────────────────────────────────
 // The set of methods implemented in the LanguageServer trait.

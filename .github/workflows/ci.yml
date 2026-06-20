@@ -1,74 +1,188 @@
-name: ci
+name: CI
 
 on:
   push:
     branches:
-    - master
-    - release/*
+      - master
+      - main
+      - develop
   pull_request:
     branches:
-    - master
-    - release/*
+      - master
+      - main
+      - develop
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
-  cargo-test:
-    name: cargo test (${{ matrix.os }} / ${{ matrix.rust-version }} / ${{ matrix.runtime }})
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: true
-      matrix:
-        os: [ubuntu-latest, windows-latest, macOS-latest]
-        rust-version: [1.64.0, beta, nightly]
-        runtime: [runtime-tokio, runtime-agnostic]
-        include:
-        - rust-version: nightly
-          continue-on-error: true
-    steps:
-    - uses: actions/checkout@v3
-    - name: Install Rust toolchain
-      uses: dtolnay/rust-toolchain@master
-      with:
-        toolchain: ${{ matrix.rust-version }}
-    - name: Run cargo test
-      continue-on-error: ${{ matrix.continue-on-error || false }}
-      run: |
-        cargo +${{ matrix.rust-version }} test --workspace --no-default-features --features ${{ matrix.runtime }}
-
-  cargo-audit:
-    name: cargo audit
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v1
-    - uses: actions-rs/audit-check@v1
-      with:
-        token: ${{ secrets.GITHUB_TOKEN }}
-
-  cargo-clippy:
-    name: cargo clippy
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v3
-    - id: install-rust
-      name: Install Rust toolchain
-      uses: dtolnay/rust-toolchain@1.64.0
-      with:
-        components: clippy
-    - name: Run cargo clippy
-      uses: actions-rs/clippy-check@v1
-      with:
-        token: ${{ secrets.GITHUB_TOKEN }}
-        toolchain: ${{ steps.install-rust.outputs.name }}
-        args: --all-targets --features proposed -- -D warnings
-
-  cargo-fmt:
+  # Format check
+  fmt:
     name: cargo fmt
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
-    - id: install-rust
-      name: Install Rust toolchain
-      uses: dtolnay/rust-toolchain@1.64.0
-      with:
-        components: rustfmt
-    - name: Run cargo fmt
-      run: cargo +${{ steps.install-rust.outputs.name }} fmt --all -- --check
+      - uses: actions/checkout@v4
+        with:
+          path: lsp-max
+
+      # Sibling repos required by Cargo.toml path deps and [patch.crates-io].
+      # If any sibling repo is private, add a SIBLING_REPO_TOKEN secret (PAT
+      # with repo read access). Public repos work without a token.
+      - uses: actions/checkout@v4
+        with:
+          repository: seanchatmangpt/lsp-types-max
+          path: lsp-types-max
+          token: ${{ secrets.SIBLING_REPO_TOKEN || github.token }}
+
+      - uses: actions/checkout@v4
+        with:
+          repository: seanchatmangpt/wasm4pm-compat
+          path: wasm4pm-compat
+
+      - uses: actions/checkout@v4
+        with:
+          repository: seanchatmangpt/wasm4pm
+          path: wasm4pm
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+
+      - run: cargo fmt -- --check
+        working-directory: lsp-max
+
+  # Lint check with all features
+  clippy:
+    name: cargo clippy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: lsp-max
+
+      - uses: actions/checkout@v4
+        with:
+          repository: seanchatmangpt/lsp-types-max
+          path: lsp-types-max
+          token: ${{ secrets.SIBLING_REPO_TOKEN || github.token }}
+
+      - uses: actions/checkout@v4
+        with:
+          repository: seanchatmangpt/wasm4pm-compat
+          path: wasm4pm-compat
+
+      - uses: actions/checkout@v4
+        with:
+          repository: seanchatmangpt/wasm4pm
+          path: wasm4pm
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: lsp-max
+
+      - run: cargo clippy --workspace --all-targets --all-features -- -D warnings
+        working-directory: lsp-max
+
+  # Test suite with 10m timeout
+  test:
+    name: cargo test
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: lsp-max
+
+      - uses: actions/checkout@v4
+        with:
+          repository: seanchatmangpt/lsp-types-max
+          path: lsp-types-max
+          token: ${{ secrets.SIBLING_REPO_TOKEN || github.token }}
+
+      - uses: actions/checkout@v4
+        with:
+          repository: seanchatmangpt/wasm4pm-compat
+          path: wasm4pm-compat
+
+      - uses: actions/checkout@v4
+        with:
+          repository: seanchatmangpt/wasm4pm
+          path: wasm4pm
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: lsp-max
+
+      - run: cargo test --workspace
+        working-directory: lsp-max
+
+  # Documentation build and dead link check
+  docs:
+    name: cargo doc
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: lsp-max
+
+      - uses: actions/checkout@v4
+        with:
+          repository: seanchatmangpt/lsp-types-max
+          path: lsp-types-max
+          token: ${{ secrets.SIBLING_REPO_TOKEN || github.token }}
+
+      - uses: actions/checkout@v4
+        with:
+          repository: seanchatmangpt/wasm4pm-compat
+          path: wasm4pm-compat
+
+      - uses: actions/checkout@v4
+        with:
+          repository: seanchatmangpt/wasm4pm
+          path: wasm4pm
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: lsp-max
+
+      - run: cargo doc --workspace --no-deps --all-features
+        working-directory: lsp-max
+        env:
+          RUSTDOCFLAGS: "-D warnings"
+
+      - name: Check for dead links (if cargo-deadlinks available)
+        working-directory: lsp-max
+        run: |
+          if cargo install --list | grep -q cargo-deadlinks; then
+            cargo deadlinks --check html 2>/dev/null || true
+          else
+            echo "cargo-deadlinks not installed, skipping dead link check"
+          fi
+
+  # Summary job that gates merges
+  result:
+    name: CI Result
+    runs-on: ubuntu-latest
+    needs: [fmt, clippy, test, docs]
+    if: always()
+    steps:
+      - name: Check CI results
+        run: |
+          if [[ "${{ needs.fmt.result }}" == "failure" ||
+                "${{ needs.clippy.result }}" == "failure" ||
+                "${{ needs.test.result }}" == "failure" ||
+                "${{ needs.docs.result }}" == "failure" ]]; then
+            echo "CI checks failed"
+            exit 1
+          fi
+          echo "All CI checks passed"

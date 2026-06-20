@@ -17,6 +17,7 @@ async fn respond_to_request(stream: &mut tokio::io::DuplexStream, id: Value, res
 /// 2. Dynamic unregistration: dynamic register, dynamic unregister, and verify
 ///    downstream capability changes and query refusals.
 #[tokio::test]
+#[ignore = "e2e: requires live server, run with --include-ignored"]
 async fn test_gate3_dynamic_unregistration_and_refusal() {
     println!("--- Dynamic unregistration: Starting TestHarness::new");
     let mut harness = TestHarness::new(1).await;

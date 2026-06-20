@@ -204,14 +204,14 @@ mod tests {
             .unwrap_or_else(|e| e.into_inner());
         let tmp = tempfile::NamedTempFile::new().expect("tempfile");
         let path = tmp.path().to_str().unwrap().to_string();
-        let prev = env::var("TOWER_LSP_MAX_STATE_PATH").ok();
-        env::set_var("TOWER_LSP_MAX_STATE_PATH", &path);
+        let prev = env::var("LSP_MAX_STATE_PATH").ok();
+        env::set_var("LSP_MAX_STATE_PATH", &path);
         let _ = std::fs::remove_file(&path);
         f();
         let _ = std::fs::remove_file(&path);
         match prev {
-            Some(v) => env::set_var("TOWER_LSP_MAX_STATE_PATH", v),
-            None => env::remove_var("TOWER_LSP_MAX_STATE_PATH"),
+            Some(v) => env::set_var("LSP_MAX_STATE_PATH", v),
+            None => env::remove_var("LSP_MAX_STATE_PATH"),
         }
     }
 

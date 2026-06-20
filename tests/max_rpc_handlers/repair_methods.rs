@@ -15,7 +15,7 @@ async fn test_max_explain_diagnostic_known_id() {
         serde_json::json!({"jsonrpc":"2.0","id":1,"method":"max/explainDiagnostic","params":"diag-missing-receipt"}),
     )
     .await;
-    let resp = wait_for_response(rx, 1, Duration::from_secs(3)).await;
+    let resp = wait_for_response(rx, 1, Duration::from_millis(300)).await;
 
     if resp.get("result").is_some() {
         let diag: MaxDiagnostic = serde_json::from_value(expect_result(&resp).clone()).unwrap();
@@ -40,7 +40,7 @@ async fn test_max_explain_diagnostic_unknown_id_returns_error() {
         serde_json::json!({"jsonrpc":"2.0","id":1,"method":"max/explainDiagnostic","params":"diag-does-not-exist-xyz"}),
     )
     .await;
-    let resp = wait_for_response(rx, 1, Duration::from_secs(3)).await;
+    let resp = wait_for_response(rx, 1, Duration::from_millis(300)).await;
 
     let err = expect_error(&resp);
     let msg = err["message"].as_str().unwrap_or("");
@@ -61,7 +61,7 @@ async fn test_max_repair_plan_known_diagnostic() {
         serde_json::json!({"jsonrpc":"2.0","id":1,"method":"max/repairPlan","params":"diag-missing-receipt"}),
     )
     .await;
-    let resp = wait_for_response(rx, 1, Duration::from_secs(3)).await;
+    let resp = wait_for_response(rx, 1, Duration::from_millis(300)).await;
 
     if resp.get("result").is_some() {
         let plans: Vec<MaxCodeAction> =
@@ -89,7 +89,7 @@ async fn test_max_repair_plan_unknown_diagnostic_returns_empty_or_error() {
         serde_json::json!({"jsonrpc":"2.0","id":1,"method":"max/repairPlan","params":"diag-does-not-exist-xyz"}),
     )
     .await;
-    let resp = wait_for_response(rx, 1, Duration::from_secs(3)).await;
+    let resp = wait_for_response(rx, 1, Duration::from_millis(300)).await;
 
     if resp.get("result").is_some() {
         let plans: Vec<MaxCodeAction> =
@@ -114,7 +114,7 @@ async fn test_max_apply_repair_transaction_returns_receipt() {
         serde_json::json!({"jsonrpc":"2.0","id":1,"method":"max/repairPlan","params":"diag-auth-generator"}),
     )
     .await;
-    let resp = wait_for_response(rx.clone(), 1, Duration::from_secs(3)).await;
+    let resp = wait_for_response(rx.clone(), 1, Duration::from_millis(300)).await;
     let plans: Vec<MaxCodeAction> = serde_json::from_value(expect_result(&resp).clone()).unwrap();
     assert!(!plans.is_empty(), "auth-generator must have a repair plan");
     let action = plans[0].clone();
@@ -128,7 +128,7 @@ async fn test_max_apply_repair_transaction_returns_receipt() {
         }),
     )
     .await;
-    let resp = wait_for_response(rx, 2, Duration::from_secs(3)).await;
+    let resp = wait_for_response(rx, 2, Duration::from_millis(300)).await;
 
     let receipt: Receipt = serde_json::from_value(expect_result(&resp).clone()).unwrap();
     assert!(
@@ -149,7 +149,7 @@ async fn test_max_apply_repair_transaction_blocks_without_prerequisite_receipt()
         serde_json::json!({"jsonrpc":"2.0","id":1,"method":"max/repairPlan","params":"diag-missing-receipt"}),
     )
     .await;
-    let resp = wait_for_response(rx.clone(), 1, Duration::from_secs(3)).await;
+    let resp = wait_for_response(rx.clone(), 1, Duration::from_millis(300)).await;
     let plans: Vec<MaxCodeAction> = serde_json::from_value(expect_result(&resp).clone()).unwrap();
     assert!(!plans.is_empty());
     let action_with_dep = plans[0].clone();
@@ -163,7 +163,7 @@ async fn test_max_apply_repair_transaction_blocks_without_prerequisite_receipt()
         }),
     )
     .await;
-    let resp = wait_for_response(rx, 2, Duration::from_secs(3)).await;
+    let resp = wait_for_response(rx, 2, Duration::from_millis(300)).await;
 
     let err = expect_error(&resp);
     let msg = err["message"].as_str().unwrap_or("");
