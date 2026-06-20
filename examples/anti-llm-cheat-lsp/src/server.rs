@@ -5,7 +5,8 @@ use std::sync::{Arc, Mutex};
 
 use crate::engine;
 use crate::virtual_docs::{
-    checkpoint_status, failset, forbidden_implications, ggen_render, lsp318_matrix, receipt_ledger,
+    checkpoint_status, failset, forbidden_implications, ggen_render, lsif06_matrix,
+    lsp318_full_matrix, lsp318_matrix, receipt_ledger,
 };
 
 pub struct AntiLlmServer {
@@ -181,6 +182,14 @@ impl LanguageServer for AntiLlmServer {
                 failset::generate_failset_markdown(&diags)
             }
             "anti-llm://lsp318-matrix" => lsp318_matrix::generate_matrix_markdown(),
+            "anti-llm://lsp318-full-matrix" => {
+                let root_dir = {
+                    let guard = self.workspace_root.lock().unwrap();
+                    guard.clone().unwrap_or_else(|| ".".to_string())
+                };
+                lsp318_full_matrix::generate_full_matrix_markdown(&root_dir)
+            }
+            "anti-llm://lsif06-matrix" => lsif06_matrix::generate_lsif06_matrix_markdown(),
             "anti-llm://receipt-ledger" => {
                 let root_dir = {
                     let guard = self.workspace_root.lock().unwrap();
@@ -306,6 +315,26 @@ impl LanguageServer for AntiLlmServer {
                 command: Some(Command {
                     title: "Open LSP 3.18 Matrix".to_string(),
                     command: "anti-llm.openMatrix".to_string(),
+                    arguments: None,
+                }),
+                ..Default::default()
+            }),
+            CodeActionOrCommand::CodeAction(CodeAction {
+                title: "Open anti-llm://lsp318-full-matrix".to_string(),
+                kind: Some(CodeActionKind::QUICKFIX),
+                command: Some(Command {
+                    title: "Open LSP 3.18 Combinatorial Coverage Matrix".to_string(),
+                    command: "anti-llm.openFullMatrix".to_string(),
+                    arguments: None,
+                }),
+                ..Default::default()
+            }),
+            CodeActionOrCommand::CodeAction(CodeAction {
+                title: "Open anti-llm://lsif06-matrix".to_string(),
+                kind: Some(CodeActionKind::QUICKFIX),
+                command: Some(Command {
+                    title: "Open LSIF 0.6 Combinatorial Coverage Matrix".to_string(),
+                    command: "anti-llm.openLsifMatrix".to_string(),
                     arguments: None,
                 }),
                 ..Default::default()
