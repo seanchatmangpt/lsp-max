@@ -1,6 +1,7 @@
 use clap_noun_verb::Result;
 use clap_noun_verb_macros::verb;
 use lsp_max_anti_cheat::{
+    config::AntiLlmConfig,
     engine::{evaluate_diagnostics, evaluate_diagnostics_with_config, scan_directory},
     AntiLlmDiagnostic,
 };
@@ -49,9 +50,10 @@ impl CheckService {
             return Err(format!("Path does not exist: {}", path));
         }
 
-        let observations = scan_directory(path)?;
+        let observations = scan_directory(path);
         let diagnostics = if let Some(cfg_path) = config_path {
-            evaluate_diagnostics_with_config(&observations, cfg_path)?
+            let cfg = AntiLlmConfig::load_from_dir(cfg_path);
+            evaluate_diagnostics_with_config(&observations, &cfg)
         } else {
             evaluate_diagnostics(&observations)
         };
@@ -97,61 +99,49 @@ impl CheckService {
 // ===== Verb Tier (CLI) =====
 
 #[verb("all")]
-pub fn check_all(
-    #[arg(long, default_value = ".")] path: String,
-    #[arg(long)] config: Option<String>,
-) -> Result<CheckResult> {
+pub fn check_all(path: Option<String>, config: Option<String>) -> Result<CheckResult> {
+    let path_str = path.unwrap_or_else(|| ".".to_string());
     let config_ref = config.as_deref();
-    CheckService::run_all_checks(&path, config_ref)
+    CheckService::run_all_checks(&path_str, config_ref)
         .map_err(clap_noun_verb::error::NounVerbError::execution_error)
 }
 
 #[verb("tower-lsp")]
-pub fn check_tower_lsp(
-    #[arg(long, default_value = ".")] path: String,
-    #[arg(long)] config: Option<String>,
-) -> Result<CheckResult> {
+pub fn check_tower_lsp(path: Option<String>, config: Option<String>) -> Result<CheckResult> {
+    let path_str = path.unwrap_or_else(|| ".".to_string());
     let config_ref = config.as_deref();
-    CheckService::check_category(&path, "surface", config_ref)
+    CheckService::check_category(&path_str, "surface", config_ref)
         .map_err(clap_noun_verb::error::NounVerbError::execution_error)
 }
 
 #[verb("victory-language")]
-pub fn check_victory_language(
-    #[arg(long, default_value = ".")] path: String,
-    #[arg(long)] config: Option<String>,
-) -> Result<CheckResult> {
+pub fn check_victory_language(path: Option<String>, config: Option<String>) -> Result<CheckResult> {
+    let path_str = path.unwrap_or_else(|| ".".to_string());
     let config_ref = config.as_deref();
-    CheckService::check_category(&path, "claims", config_ref)
+    CheckService::check_category(&path_str, "claims", config_ref)
         .map_err(clap_noun_verb::error::NounVerbError::execution_error)
 }
 
 #[verb("receipts")]
-pub fn check_receipts(
-    #[arg(long, default_value = ".")] path: String,
-    #[arg(long)] config: Option<String>,
-) -> Result<CheckResult> {
+pub fn check_receipts(path: Option<String>, config: Option<String>) -> Result<CheckResult> {
+    let path_str = path.unwrap_or_else(|| ".".to_string());
     let config_ref = config.as_deref();
-    CheckService::check_category(&path, "receipts", config_ref)
+    CheckService::check_category(&path_str, "receipts", config_ref)
         .map_err(clap_noun_verb::error::NounVerbError::execution_error)
 }
 
 #[verb("routes")]
-pub fn check_routes(
-    #[arg(long, default_value = ".")] path: String,
-    #[arg(long)] config: Option<String>,
-) -> Result<CheckResult> {
+pub fn check_routes(path: Option<String>, config: Option<String>) -> Result<CheckResult> {
+    let path_str = path.unwrap_or_else(|| ".".to_string());
     let config_ref = config.as_deref();
-    CheckService::check_category(&path, "routes", config_ref)
+    CheckService::check_category(&path_str, "routes", config_ref)
         .map_err(clap_noun_verb::error::NounVerbError::execution_error)
 }
 
 #[verb("authority")]
-pub fn check_authority(
-    #[arg(long, default_value = ".")] path: String,
-    #[arg(long)] config: Option<String>,
-) -> Result<CheckResult> {
+pub fn check_authority(path: Option<String>, config: Option<String>) -> Result<CheckResult> {
+    let path_str = path.unwrap_or_else(|| ".".to_string());
     let config_ref = config.as_deref();
-    CheckService::check_category(&path, "authority", config_ref)
+    CheckService::check_category(&path_str, "authority", config_ref)
         .map_err(clap_noun_verb::error::NounVerbError::execution_error)
 }
