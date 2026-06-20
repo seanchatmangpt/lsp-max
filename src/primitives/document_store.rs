@@ -160,7 +160,7 @@ mod tests {
     use lsp_types_max::Uri as Url;
 
     fn test_url() -> Url {
-        Url::parse("file:///tmp/test.rs").unwrap()
+        Url::from("file:///tmp/test.rs")
     }
 
     fn whole_change(text: &str) -> TextDocumentContentChangeEvent {
