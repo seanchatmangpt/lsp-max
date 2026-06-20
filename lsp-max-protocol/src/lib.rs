@@ -14,6 +14,7 @@ pub mod diagnostics;
 pub mod hooks;
 pub mod pipeline;
 pub mod policy;
+pub mod repair;
 
 // Re-export all types so they are visible at the crate root level exactly as before.
 
