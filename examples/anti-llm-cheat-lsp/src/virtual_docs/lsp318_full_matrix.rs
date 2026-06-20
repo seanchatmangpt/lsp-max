@@ -43,7 +43,11 @@ handler is `UNKNOWN`; a wired handler with a transcript reaches \
             } else {
                 &r.server_capability_path
             },
-            if r.transcript_present { "present" } else { "NONE" },
+            if r.transcript_present {
+                "present"
+            } else {
+                "NONE"
+            },
             if r.receipt_present { "present" } else { "OPEN" },
             r.status,
         ));

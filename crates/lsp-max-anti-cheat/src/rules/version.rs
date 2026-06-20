@@ -66,9 +66,9 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
                     .to_string(),
                 required_next_proof: "Check [workspace.package] version in root Cargo.toml."
                     .to_string(),
-                            oracle_class: None,
+                oracle_class: None,
                 confidence: None,
-});
+            });
         }
     }
 

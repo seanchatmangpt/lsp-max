@@ -439,4 +439,5 @@ impl LanguageServer for AntiLlmServer {
                 },
             }),
         ))
-    }}
+    }
+}

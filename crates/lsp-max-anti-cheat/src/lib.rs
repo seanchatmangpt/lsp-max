@@ -9,6 +9,6 @@ pub mod rules;
 
 pub use diagnostics::AntiLlmDiagnostic;
 pub use engine::{
-    scan_file, evaluate_diagnostics, evaluate_diagnostics_with_config, observations_to_ocel,
+    evaluate_diagnostics, evaluate_diagnostics_with_config, observations_to_ocel, scan_file,
 };
 pub use observations::Observation;
