@@ -1,0 +1,34 @@
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix lsp: <https://lsp-max.rs/ontology/> .
+@prefix law: <https://lsp-max.rs/law/> .
+
+<https://ggen-lsp.example/domain> a owl:Ontology ;
+    rdfs:label "ggen-lsp Domain Ontology" ;
+    rdfs:comment "Defines law-axis overrides for ggen-lsp. Base LSP 3.18 declarations are in ../../ontology/lsp318.ttl" .
+
+# ── Law-axis overrides for ggen-lsp ──────────────────────────────────────────
+
+# Hover is the first method to target for ADMITTED status
+# CANDIDATE: transcript required — edit to law:ADMITTED once receipt is attached
+lsp:textDocument_hover
+    law:status law:CANDIDATE .
+
+# Rename is refused — ggen-lsp is a read-only language server
+lsp:textDocument_rename
+    law:status law:REFUSED ;
+    law:reason "ggen-lsp LSP surface is read-only; file mutation is outside scope" .
+
+# Document formatting is refused — ggen handles its own formatting
+lsp:textDocument_formatting
+    law:status law:REFUSED ;
+    law:reason "formatting delegated to ggen CLI; not a server-side concern" .
+
+# ggen-specific max/* extension — a server that generates also introspects
+lsp:max_ggen_sync a lsp:MaxExtension ;
+    lsp:methodName "max/ggen-sync" ;
+    lsp:snakeName  "max_ggen_sync" ;
+    lsp:paramType  "GgenSyncParams" ;
+    lsp:returnType "GgenSyncResult" ;
+    law:status law:CANDIDATE .
