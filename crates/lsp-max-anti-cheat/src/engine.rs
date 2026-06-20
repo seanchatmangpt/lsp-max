@@ -281,7 +281,7 @@ pub fn observations_to_ocel(obs: &[Observation]) -> OCEL {
 
     // Create File objects and FileScanned events
     let mut file_ids = std::collections::HashMap::new();
-    for (file_path, file_obs) in obs
+    for (file_path, _file_obs) in obs
         .iter()
         .fold(std::collections::HashMap::new(), |mut acc, o| {
             acc.entry(o.file_path.clone())
