@@ -721,7 +721,7 @@ A: Run `just qol-sync` to fetch latest from `../wasm4pm` and `../wasm4pm-compat`
 | `scripts/extract-release-notes.sh` | Extracts DOC_COVERAGE_LOG iteration by date for GitHub notes |
 | `scripts/write_bench_receipt.sh` | Generates perf-refactor admission receipts |
 | `scripts/write_compositor_bench_receipt.sh` | Generates compositor scale admission receipts |
-| `crates/anti-llm-cheat-lsp` | Diagnostic canary that enforces version laws and gates |
+| `examples/anti-llm-cheat-lsp` | Diagnostic canary that enforces version laws and gates |
 | `.claude/settings.json` | ANDON gate hook (PreToolUse) blocks unsafe shell actions |
 
 ---

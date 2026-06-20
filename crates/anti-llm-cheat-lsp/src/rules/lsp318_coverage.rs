@@ -901,7 +901,7 @@ fn artifact_exists(workspace_root: &str, subdir: &str, basename: &str) -> bool {
     let candidates = [
         format!("{}/{}/{}", workspace_root, subdir, basename),
         format!(
-            "{}/crates/anti-llm-cheat-lsp/{}/{}",
+            "{}/examples/anti-llm-cheat-lsp/{}/{}",
             workspace_root, subdir, basename
         ),
     ];

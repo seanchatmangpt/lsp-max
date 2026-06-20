@@ -8,7 +8,7 @@ Admissibility detection library that identifies patterns incompatible with law-s
 - **Route cheating** (ROUTE-*) — Static analysis or logging confused with route proof
 - **Authority violations** (AUTH-*) — String-shaped commands, fake CLAP abstraction
 - **Contract violations** (CONTRACT-*) — Vocabulary schism across codebase
-- **And 15+ more rule categories** — See [crates/anti-llm-cheat-lsp](../../crates/anti-llm-cheat-lsp) for details
+- **And 15+ more rule categories** — See [examples/anti-llm-cheat-lsp](../../examples/anti-llm-cheat-lsp) for details
 
 ## Quick Start
 

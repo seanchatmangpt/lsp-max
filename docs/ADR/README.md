@@ -19,7 +19,7 @@ All ADRs in this directory have status **ACCEPTED** and reflect decisions that h
   - Five-layer isolation model and law-state architecture
 
 - **[ADR-0004: Anti-LLM-Cheat Diagnostic Canary](ADR-0004_anti_llm_cheat_diagnostic_canary.md)**
-  - Why `crates/anti-llm-cheat-lsp` detects law violations at compile time
+  - Why `examples/anti-llm-cheat-lsp` detects law violations at compile time
   - Early detection, automation, and audit trails
 
 - **[ADR-0005: CalVer Versioning Over SemVer](ADR-0005_calver_versioning_over_semver.md)**
@@ -47,6 +47,6 @@ Each ADR follows the MADR template with sections:
 
 ADRs are enforced via:
 
-- **Compile-time checks**: `crates/anti-llm-cheat-lsp` detects violations (tower-lsp re-introduction, victory language, version scheme violations)
+- **Compile-time checks**: `examples/anti-llm-cheat-lsp` detects violations (tower-lsp re-introduction, victory language, version scheme violations)
 - **CI gates**: `just test-pre-publish` and `just dx-verify` block merges if violations are detected
 - **ANDON gate**: `.claude/settings.json` PreToolUse hook runs `lsp-max-cli gate check` before shell commands
