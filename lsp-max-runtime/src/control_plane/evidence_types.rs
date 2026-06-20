@@ -1,12 +1,10 @@
 //! Evidence payload types and From/TryFrom converters for wasm4pm compatibility.
-//!
-//! The Evidence/Admitted/Raw/Ocel20 types from wasm4pm_compat are unavailable
-//! in this stub build. Functions that depend on them panic at runtime with a
-//! clear BLOCKED message; the public payload types and From/TryFrom impls remain
-//! fully usable.
 
 use crate::control_plane::receipts::CryptographicReceipt;
 use lsp_max_protocol::MaxDiagnostic;
+use wasm4pm_compat::evidence::Evidence;
+use wasm4pm_compat::state::{Admitted, Raw};
+use wasm4pm_compat::witness::Ocel20;
 
 /// Payload representing a Workspace node.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq, Eq)]
@@ -101,33 +99,15 @@ impl TryFrom<&lsp_max_lsif::lsif::Vertex> for WorkspaceEvidencePayload {
 
 impl From<&MaxDiagnostic> for DiagnosticEvidencePayload {
     fn from(d: &MaxDiagnostic) -> Self {
-        // lsp_max_protocol::lsp_3_18::Diagnostic.message is MarkupContentOrString;
-        // extract the string content from either variant.
-        use lsp_max_protocol::lsp_3_18::MarkupContentOrString;
-        let message = match &d.lsp.message {
-            MarkupContentOrString::String(s) => s.clone(),
-            MarkupContentOrString::MarkupContent(mc) => mc.value.clone(),
-        };
-        // lsp_max_protocol::lsp_3_18::Diagnostic.code is Option<IntegerOrString>;
-        // extract as string from either variant.
-        use lsp_max_protocol::lsp_3_18::IntegerOrString;
-        let code = d.lsp.code.as_ref().map(|c| match c {
-            IntegerOrString::Integer(n) => n.to_string(),
-            IntegerOrString::String(s) => s.clone(),
-        });
-        // lsp_max_protocol::lsp_3_18::Range.start/end each have .line/.character u32 fields.
-        let range = Some(RangeEvidencePayload {
-            start_line: d.lsp.range.start.line,
-            start_character: d.lsp.range.start.character,
-            end_line: d.lsp.range.end.line,
-            end_character: d.lsp.range.end.character,
-        });
         Self {
-            message,
+            message: d.lsp.message.clone(),
             severity: d.lsp.severity.map(|s| format!("{:?}", s)),
-            code,
+            code: d.lsp.code.as_ref().map(|c| match c {
+                lsp_types_max::NumberOrString::Number(n) => n.to_string(),
+                lsp_types_max::NumberOrString::String(s) => s.clone(),
+            }),
             source: d.lsp.source.clone(),
-            range,
+            range: Some(RangeEvidencePayload::from(&d.lsp.range)),
         }
     }
 }
@@ -161,49 +141,41 @@ impl From<&lsp_max_protocol::Receipt> for CryptographicReceiptEvidencePayload {
 // ==========================================
 // Evidence Construction Helpers
 // ==========================================
-//
-// These functions bridge into wasm4pm_compat types that are absent from the
-// current stub build.  They panic at call-time with a BLOCKED status so that
-// callers can see the gap clearly rather than hitting a cryptic linker error.
 
 /// Converts a payload into Raw Evidence.
-///
-/// BLOCKED: wasm4pm_compat::evidence not available in stub mode.
-pub fn to_raw_evidence<T, W>(_value: T) -> ! {
-    panic!("BLOCKED: wasm4pm_compat::evidence unavailable in stub build — to_raw_evidence not reachable");
+pub fn to_raw_evidence<T, W>(value: T) -> Evidence<T, Raw, W> {
+    Evidence::raw(value)
 }
 
 /// Converts a payload into Admitted Evidence.
-///
-/// BLOCKED: wasm4pm_compat::admission not available in stub mode.
-pub fn to_admitted_evidence<T, W>(_value: T) -> ! {
-    panic!("BLOCKED: wasm4pm_compat::admission unavailable in stub build — to_admitted_evidence not reachable");
+pub fn to_admitted_evidence<T, W>(value: T) -> Evidence<T, Admitted, W> {
+    wasm4pm_compat::admission::Admission::new(value).into_evidence()
 }
 
 /// Helper to convert a Workspace payload to Admitted evidence with Ocel20 witness.
-///
-/// BLOCKED: wasm4pm_compat not available in stub mode.
-pub fn workspace_to_admitted_evidence(_payload: WorkspaceEvidencePayload) -> ! {
-    panic!("BLOCKED: wasm4pm_compat unavailable in stub build — workspace_to_admitted_evidence not reachable");
+pub fn workspace_to_admitted_evidence(
+    payload: WorkspaceEvidencePayload,
+) -> Evidence<WorkspaceEvidencePayload, Admitted, Ocel20> {
+    to_admitted_evidence(payload)
 }
 
 /// Helper to convert a Range payload to Admitted evidence with Ocel20 witness.
-///
-/// BLOCKED: wasm4pm_compat not available in stub mode.
-pub fn range_to_admitted_evidence(_payload: RangeEvidencePayload) -> ! {
-    panic!("BLOCKED: wasm4pm_compat unavailable in stub build — range_to_admitted_evidence not reachable");
+pub fn range_to_admitted_evidence(
+    payload: RangeEvidencePayload,
+) -> Evidence<RangeEvidencePayload, Admitted, Ocel20> {
+    to_admitted_evidence(payload)
 }
 
 /// Helper to convert a Diagnostic payload to Admitted evidence with Ocel20 witness.
-///
-/// BLOCKED: wasm4pm_compat not available in stub mode.
-pub fn diagnostic_to_admitted_evidence(_payload: DiagnosticEvidencePayload) -> ! {
-    panic!("BLOCKED: wasm4pm_compat unavailable in stub build — diagnostic_to_admitted_evidence not reachable");
+pub fn diagnostic_to_admitted_evidence(
+    payload: DiagnosticEvidencePayload,
+) -> Evidence<DiagnosticEvidencePayload, Admitted, Ocel20> {
+    to_admitted_evidence(payload)
 }
 
 /// Helper to convert a CryptographicReceipt payload to Admitted evidence with Ocel20 witness.
-///
-/// BLOCKED: wasm4pm_compat not available in stub mode.
-pub fn receipt_to_admitted_evidence(_payload: CryptographicReceiptEvidencePayload) -> ! {
-    panic!("BLOCKED: wasm4pm_compat unavailable in stub build — receipt_to_admitted_evidence not reachable");
+pub fn receipt_to_admitted_evidence(
+    payload: CryptographicReceiptEvidencePayload,
+) -> Evidence<CryptographicReceiptEvidencePayload, Admitted, Ocel20> {
+    to_admitted_evidence(payload)
 }

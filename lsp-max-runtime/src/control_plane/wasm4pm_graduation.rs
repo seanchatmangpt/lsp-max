@@ -1,10 +1,3 @@
-//! GraduateToWasm4pm impls for all Machine law-state variants and standalone types.
-//!
-//! `wasm4pm_compat::engine_bridge` is absent from the current stub build.
-//! The trait and supporting types are re-declared locally here so the impls
-//! compile; when wasm4pm_compat is available the local declarations must be
-//! replaced with the upstream imports.
-
 use crate::control_plane::admission::{
     AdmittedData, CandidateData, GraphAdmissionLaw, QuarantinedData, RawData, RefusedData,
     ReplayedData, SupersededData, ADMITTED, CANDIDATE, QUARANTINED, RAW, REFUSED, REPLAYED,
@@ -13,55 +6,7 @@ use crate::control_plane::admission::{
 use crate::control_plane::invariants::VerificationReport;
 use crate::control_plane::receipts::{to_hex, CryptographicReceipt};
 use crate::Machine;
-
-// ---------------------------------------------------------------------------
-// Local stand-ins for wasm4pm_compat::engine_bridge
-// ---------------------------------------------------------------------------
-
-/// BLOCKED local copy of `GraduationReason` — mirrors the upstream enum.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum GraduationReason {
-    NeedsDiscovery,
-    NeedsConformanceExecution,
-    NeedsReceipts,
-    NeedsReplay,
-    RebuildingProcessMiningLocally,
-}
-
-/// BLOCKED local copy of `GraduationCandidate` — mirrors the upstream struct.
-pub struct GraduationCandidate {
-    pub reason: GraduationReason,
-    pub subject: String,
-    pub evidence_ref: String,
-}
-
-impl GraduationCandidate {
-    pub fn new(
-        reason: GraduationReason,
-        subject: impl Into<String>,
-        evidence_ref: impl Into<String>,
-    ) -> Self {
-        Self {
-            reason,
-            subject: subject.into(),
-            evidence_ref: evidence_ref.into(),
-        }
-    }
-
-    /// Returns true when `evidence_ref` is non-empty — the upstream contract.
-    pub fn is_grounded(&self) -> bool {
-        !self.evidence_ref.is_empty()
-    }
-}
-
-/// BLOCKED local copy of `GraduateToWasm4pm` — mirrors the upstream trait.
-pub trait GraduateToWasm4pm {
-    fn candidate(&self) -> GraduationCandidate;
-}
-
-// ---------------------------------------------------------------------------
-// Impls
-// ---------------------------------------------------------------------------
+use wasm4pm_compat::engine_bridge::{GraduateToWasm4pm, GraduationCandidate, GraduationReason};
 
 impl GraduateToWasm4pm for Machine<GraphAdmissionLaw, RAW, RawData> {
     fn candidate(&self) -> GraduationCandidate {

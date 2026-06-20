@@ -1,26 +1,6 @@
 use crate::{ConformanceVector, MaxCodeAction, MaxDiagnostic, PolicyState, SnapshotId};
-use crate::lsp_3_18::{ClientCapabilities, ServerCapabilities};
+use lsp_types_max::{ClientCapabilities, ServerCapabilities};
 use serde::{Deserialize, Serialize};
-
-// All fields in ClientCapabilities / ServerCapabilities are Option<_>, so
-// Default is safe to derive here without modifying the auto-generated lsp_3_18.
-impl Default for ClientCapabilities {
-    fn default() -> Self {
-        serde_json::from_str("{}").unwrap_or_else(|_| {
-            // SAFETY: every field in ClientCapabilities is Option<_> and
-            // serde's #[serde(default)] will fill Nones from "{}".
-            panic!("ClientCapabilities::default() JSON round-trip failed")
-        })
-    }
-}
-
-impl Default for ServerCapabilities {
-    fn default() -> Self {
-        serde_json::from_str("{}").unwrap_or_else(|_| {
-            panic!("ServerCapabilities::default() JSON round-trip failed")
-        })
-    }
-}
 
 // ---------------------------------------------------------------------------
 // InstanceId — newtype for LSP instance identifiers
