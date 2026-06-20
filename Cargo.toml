@@ -105,6 +105,7 @@ members = [
     "examples/gc005-wasm4pm-adapter",
     "examples/justfile-lsp",
     "examples/ggen-lsp",
+    "examples/wasm-lsp",
     "crates/lsp-max-adapters/lsp-max-ast-core",
     "crates/lsp-max-adapters/lsp-max-ast-codegen",
     "crates/lsif-rust",
