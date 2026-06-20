@@ -5,6 +5,7 @@ pub mod client;
 pub mod config;
 pub mod conformance;
 pub mod diagnostics;
+pub mod doctor;
 pub mod event;
 pub mod gate;
 pub mod hook;
