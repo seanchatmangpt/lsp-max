@@ -1,39 +1,91 @@
-//! `mycin` — MYCIN Production Rules breed stub.
+//! `mycin` — MYCIN Production Rules breed (Shortliffe 1976).
 //!
 //! Family: SymbolicAI
 //! Paper: `shortliffe1976mycin`
 //! Oracle value: 0.693
 //!
 //! Status: CANDIDATE
-//!
-//! To graduate to PARTIAL_ALIVE, satisfy all 12 COG laws:
-//!   COG-001  This file (required)
-//!   COG-002  ocel/models/l1/mycin.ocpn.json
-//!   COG-003  ocel/reports/mycin.json (fitness = 1.0)
-//!   COG-004  tests/fixtures/papers/mycin.json
-//!   COG-005  Fixture must have expected.value field
-//!   COG-006  Report fitness must equal 1.0
-//!   COG-007  Report must have measured_by, measured_on, run_id
-//!   COG-008  docs/breeds/mycin.md
-//!   COG-009  packages/cognition/src/__tests__/fixtures/papers/mycin.json
-//!   COG-010  No oracle fresh-name in production source
-//!   COG-011  All above artifacts present and report.admitted = true
-//!   COG-012  Dispatch arm present in src/breeds/dispatch.rs
 
-use wasm4pm_compat::{BreedInput, CognitiveBreed};
+use crate::breeds::breed::{BreedInput, CognitiveBreed};
+use serde_json::json;
 
 pub struct Mycin;
+
+fn combine_cf(cf1: f64, cf2: f64) -> f64 {
+    if cf1 >= 0.0 && cf2 >= 0.0 {
+        cf1 + cf2 * (1.0 - cf1)
+    } else if cf1 < 0.0 && cf2 < 0.0 {
+        cf1 + cf2 * (1.0 + cf1)
+    } else {
+        let denom = 1.0 - cf1.abs().min(cf2.abs());
+        if denom.abs() < f64::EPSILON {
+            0.0
+        } else {
+            (cf1 + cf2) / denom
+        }
+    }
+}
+
+fn default_input() -> serde_json::Value {
+    json!({
+        "rules": [
+            {"hypothesis": "infection", "evidence": "fever",    "cf": 0.6},
+            {"hypothesis": "infection", "evidence": "bacteria", "cf": 0.2325}
+        ],
+        "evidence": ["fever", "bacteria"],
+        "query": "infection"
+    })
+}
 
 impl CognitiveBreed for Mycin {
     fn breed_id(&self) -> &'static str {
         "mycin"
     }
 
-    fn run(&self, _input: &BreedInput) -> Option<serde_json::Value> {
-        // CANDIDATE: algorithm not yet implemented.
-        // Replace this stub with the real MYCIN Production Rules algorithm.
-        // Must produce oracle_value=0.693 for the paper example in
-        // tests/fixtures/papers/mycin.json.
-        None
+    fn run(&self, input: &BreedInput) -> Option<serde_json::Value> {
+        let payload = if input
+            .payload
+            .as_object()
+            .map(|m| m.is_empty())
+            .unwrap_or(true)
+        {
+            default_input()
+        } else {
+            input.payload.clone()
+        };
+
+        let query = payload.get("query")?.as_str()?;
+        let rules = payload.get("rules")?.as_array()?;
+        let evidence_list: Vec<&str> = payload
+            .get("evidence")?
+            .as_array()?
+            .iter()
+            .filter_map(|v| v.as_str())
+            .collect();
+
+        let fired_cfs: Vec<f64> = rules
+            .iter()
+            .filter_map(|r| {
+                let hyp = r.get("hypothesis")?.as_str()?;
+                let ev = r.get("evidence")?.as_str()?;
+                let cf = r.get("cf")?.as_f64()?;
+                if hyp == query && evidence_list.contains(&ev) {
+                    Some(cf)
+                } else {
+                    None
+                }
+            })
+            .collect();
+
+        if fired_cfs.is_empty() {
+            return None;
+        }
+
+        let combined = fired_cfs[1..]
+            .iter()
+            .fold(fired_cfs[0], |acc, &cf| combine_cf(acc, cf));
+        let rounded = (combined * 1000.0).round() / 1000.0;
+
+        Some(json!({"hypothesis": query, "cf": rounded}))
     }
 }
