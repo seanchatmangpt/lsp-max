@@ -41,7 +41,7 @@ PLAIN_TOWER=$(rg -n "tower_lsp\b|tower-lsp\b|tower_lsp_\w+" \
 if [ -n "$PLAIN_TOWER" ]; then
   # Filter out known negative-control fixtures and documentation
   FILTERED=$(echo "$PLAIN_TOWER" | grep -v \
-    -e "crates/anti-llm-cheat-lsp" \
+    -e "examples/anti-llm-cheat-lsp" \
     -e "test.*tower_lsp\|test_tower\|tests/" \
     -e "\.md:" \
     -e "AGENTS\.md" \

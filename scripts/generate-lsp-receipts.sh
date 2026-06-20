@@ -9,13 +9,13 @@
 # - raw_command: the verifiable command that produced the receipt
 # - status: "ADMITTED" (row is admitted once receipt + transcript + handler all present)
 #
-# Receipts are written to crates/anti-llm-cheat-lsp/receipts/ with the same
+# Receipts are written to examples/anti-llm-cheat-lsp/receipts/ with the same
 # basename as the transcript, replacing _positive.jsonl → _receipt.json.
 
 set -e
 
 REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || echo ".")"
-EXAMPLE_DIR="${REPO_ROOT}/crates/anti-llm-cheat-lsp"
+EXAMPLE_DIR="${REPO_ROOT}/examples/anti-llm-cheat-lsp"
 TRANSCRIPTS_DIR="${EXAMPLE_DIR}/transcripts"
 RECEIPTS_DIR="${EXAMPLE_DIR}/receipts"
 

@@ -66,6 +66,6 @@ Forking was chosen because it:
 ## Reference
 
 - **Root crate**: `src/` (contains LanguageServer trait, LspService, gate.rs, diagnostics.rs)
-- **Anti-tower-lsp checks**: `crates/anti-llm-cheat-lsp` (detects re-introduction of plain tower-lsp)
+- **Anti-tower-lsp checks**: `examples/anti-llm-cheat-lsp` (detects re-introduction of plain tower-lsp)
 - **Related law**: AGENTS.md Section 2 ("Never reference plain tower-lsp/tower_lsp")
 - **Five-layer model**: CLAUDE.md Section "Workspace architecture"
