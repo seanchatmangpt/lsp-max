@@ -177,7 +177,7 @@ lsp-max follows a **five-layer model**:
 All examples must compile. Key ones:
 
 - **`examples/pattern-lsp`** — Regex pattern language server; demonstrates state tracking
-- **`examples/anti-llm-cheat-lsp`** — Diagnostic canary that enforces lsp-max laws:
+- **`crates/anti-llm-cheat-lsp`** — Diagnostic canary that enforces lsp-max laws:
   - Detects plain `tower-lsp` references
   - Flags fake receipts
   - Catches "victory language" (forbidden words)
@@ -233,7 +233,7 @@ cargo run --example anti-llm-cheat-lsp
 
 The server scans open files and emits diagnostics; they are **not** auto-fixable. Use them to catch anti-patterns in CI.
 
-See `examples/anti-llm-cheat-lsp/admissibility_report.md` for full negative-control inventory.
+See `crates/anti-llm-cheat-lsp/admissibility_report.md` for full negative-control inventory.
 
 ### Run clap-noun-verb-lsp
 
