@@ -1,8 +1,19 @@
 //! Declared POWL process model for lsp-max server instances.
 //! The declared model is the ΔP — what the server claims it does.
 //! wasm4pm checks actual execution against this declaration.
+//!
+//! `wasm4pm_compat::powl::Powl` is absent from the current stub build.
+//! A local opaque stand-in is used so the rest of the type system compiles.
 
-use wasm4pm_compat::powl::Powl;
+/// Opaque stand-in for `wasm4pm_compat::powl::Powl`.
+///
+/// BLOCKED: the real Powl type is not available in this stub build.
+/// Instances cannot be constructed outside this module; callers that need
+/// a real Powl must wait for a full wasm4pm_compat build.
+#[derive(Debug, Clone)]
+pub struct Powl {
+    _private: (),
+}
 
 /// The declared POWL process model for an lsp-max server instance.
 /// Holds the structural description of lawful operations the server performs.
