@@ -2,21 +2,10 @@ use clap_noun_verb::error::NounVerbError;
 use clap_noun_verb::Result;
 use clap_noun_verb_macros::verb;
 use lsp_max_runtime::AutonomicMesh;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 
 // ==============================================================================
-// 1. Domain Tier
-// ==============================================================================
-
-/// Destination specifier for export operations — file path or inline stdout.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum ExportDest {
-    File(String),
-    Inline,
-}
-
-// ==============================================================================
-// 2. Service Tier
+// 1. Service Tier
 // ==============================================================================
 
 pub struct ExportService {
@@ -212,7 +201,7 @@ pub fn state(dest: Option<String>, format: Option<String>) -> Result<ExportState
         }
         None => Ok(ExportStateResult {
             dest: "<inline>".to_string(),
-            bytes_written: 0,
+            bytes_written: json.len(),
             instance_count,
             status: "ADMITTED".to_string(),
             output: json,

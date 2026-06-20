@@ -258,15 +258,19 @@ mod tests {
     use super::*;
     use std::env;
 
-    fn temp_history_service() -> (tempfile::TempDir, HistoryService) {
+    fn temp_history_service() -> (std::sync::MutexGuard<'static, ()>, tempfile::TempDir, HistoryService) {
+        let guard = crate::nouns::TEST_ENV_LOCK
+            .lock()
+            .unwrap_or_else(|e| e.into_inner());
         let dir = tempfile::TempDir::new().unwrap();
-        env::set_var("HOME", dir.path());
-        (dir, HistoryService::new())
+        // SAFETY: test-only, guarded by TEST_ENV_LOCK
+        unsafe { env::set_var("HOME", dir.path()); }
+        (guard, dir, HistoryService::new())
     }
 
     #[test]
     fn list_returns_empty_when_no_history_file() {
-        let (_dir, svc) = temp_history_service();
+        let (_guard, _dir, svc) = temp_history_service();
         let (entries, total) = svc.list(None, None);
         assert!(entries.is_empty());
         assert_eq!(total, 0);
@@ -274,7 +278,7 @@ mod tests {
 
     #[test]
     fn record_then_list_returns_entry() {
-        let (_dir, svc) = temp_history_service();
+        let (_guard, _dir, svc) = temp_history_service();
         svc.record(
             "gate".to_string(),
             "check".to_string(),
@@ -291,7 +295,7 @@ mod tests {
 
     #[test]
     fn ids_increment_as_h_prefix() {
-        let (_dir, svc) = temp_history_service();
+        let (_guard, _dir, svc) = temp_history_service();
         let e1 = svc
             .record("a".into(), "b".into(), vec![], "UNKNOWN".into())
             .unwrap();
@@ -304,13 +308,13 @@ mod tests {
 
     #[test]
     fn find_returns_none_for_missing_id() {
-        let (_dir, svc) = temp_history_service();
+        let (_guard, _dir, svc) = temp_history_service();
         assert!(svc.find("H99").is_none());
     }
 
     #[test]
     fn find_returns_entry_after_record() {
-        let (_dir, svc) = temp_history_service();
+        let (_guard, _dir, svc) = temp_history_service();
         svc.record("gate".into(), "check".into(), vec![], "ADMITTED".into())
             .unwrap();
         let found = svc.find("H1");
@@ -320,7 +324,7 @@ mod tests {
 
     #[test]
     fn list_limit_caps_results() {
-        let (_dir, svc) = temp_history_service();
+        let (_guard, _dir, svc) = temp_history_service();
         for i in 0..5u64 {
             svc.record(
                 "gate".into(),
@@ -337,7 +341,7 @@ mod tests {
 
     #[test]
     fn list_noun_filter_works() {
-        let (_dir, svc) = temp_history_service();
+        let (_guard, _dir, svc) = temp_history_service();
         svc.record("gate".into(), "check".into(), vec![], "ADMITTED".into())
             .unwrap();
         svc.record("config".into(), "view".into(), vec![], "ADMITTED".into())
@@ -349,7 +353,7 @@ mod tests {
 
     #[test]
     fn export_json_default_format() {
-        let (_dir, svc) = temp_history_service();
+        let (_guard, _dir, svc) = temp_history_service();
         svc.record("gate".into(), "check".into(), vec![], "ADMITTED".into())
             .unwrap();
         let entries = svc.export_all();
@@ -359,7 +363,7 @@ mod tests {
 
     #[test]
     fn export_csv_includes_header_and_pipe_separated_args() {
-        let (_dir, svc) = temp_history_service();
+        let (_guard, _dir, svc) = temp_history_service();
         svc.record(
             "gate".into(),
             "check".into(),
@@ -387,7 +391,7 @@ mod tests {
 
     #[test]
     fn replay_command_formatted_correctly() {
-        let (_dir, svc) = temp_history_service();
+        let (_guard, _dir, svc) = temp_history_service();
         svc.record(
             "gate".into(),
             "check".into(),
