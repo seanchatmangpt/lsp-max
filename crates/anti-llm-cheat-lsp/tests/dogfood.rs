@@ -4,22 +4,15 @@ use std::fs;
 use std::path::PathBuf;
 
 fn find_file_path(suffix: &str) -> PathBuf {
-    let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    let p1 = manifest_dir.join(suffix);
+    let p1 = PathBuf::from(suffix);
     if p1.exists() {
         return p1;
     }
-    // Fallback: try from workspace root (for tests run with `cargo test --workspace`)
-    let workspace_root = manifest_dir
-        .parent()  // crates/
-        .and_then(|p| p.parent());  // workspace root
-    if let Some(root) = workspace_root {
-        let p2 = root.join("crates/anti-llm-cheat-lsp").join(suffix);
-        if p2.exists() {
-            return p2;
-        }
+    let p2 = PathBuf::from("crates/anti-llm-cheat-lsp").join(suffix);
+    if p2.exists() {
+        return p2;
     }
-    panic!("Could not locate test fixture: {}", suffix);
+    panic!("Could not locate file path: {}", suffix);
 }
 
 fn check_diag_code(diags: &[anti_llm_cheat_lsp::diagnostics::AntiLlmDiagnostic], expected: &str) {
