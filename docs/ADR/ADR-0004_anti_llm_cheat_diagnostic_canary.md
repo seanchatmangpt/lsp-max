@@ -1,12 +1,12 @@
 # ADR-0004: Anti-LLM-Cheat Diagnostic Canary
 
-**Status:** ACCEPTED
+**Status:** CANDIDATE (promotion from `examples/` to `crates/` is OPEN)
 
 ## Context
 
 Law enforcement in lsp-max relies on receipt chains and ConformanceVector invariants. However, if a developer (or an LLM in autonomous mode) accidentally reintroduces plain `tower-lsp`, uses fake receipt claims, writes victory language ("done", "solved", "guaranteed") in code comments, or violates other lsp-max laws, these violations may not surface until post-deployment.
 
-The anti-llm-cheat-lsp example is an LSP server that runs during CI (via `just test-pre-publish` and the ANDON gate) and detects violations by examining the compiled codebase. It is a **compile-time canary** — a negative control that proves the system can detect and refuse illegal changes.
+The anti-llm-cheat-lsp crate is an LSP server that runs during CI (via `just test-pre-publish` and the ANDON gate) and detects violations by examining the compiled codebase. It is a **compile-time canary** — a negative control that proves the system can detect and refuse illegal changes.
 
 Early detection reduces the cost of law violations from post-deployment (very expensive) to compile time (cheap and immediate).
 
@@ -36,7 +36,7 @@ The canary runs as part of `just dx-verify` and blocks the gate (ANDON) if viola
 - Complexity: developers must understand the canary's rules to avoid violations.
 
 **Neutral:**
-- The canary is a workspace example, not part of the shipped lsp-max library.
+- The canary lives under `crates/anti-llm-cheat-lsp`, not part of the shipped lsp-max library.
 - External projects that depend on lsp-max are not subject to the canary's checks; they enforce their own laws.
 
 ## Alternatives Considered
