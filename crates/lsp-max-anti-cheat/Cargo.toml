@@ -27,6 +27,7 @@ ignore = "0.4"
 memchr = "2.5"
 rustc-hash = { workspace = true }
 parking_lot = { workspace = true }
+lsp-max = { path = "../.." }
 chrono = { version = "0.4", features = ["serde"] }
 blake3 = "1"
 url = "2.5"

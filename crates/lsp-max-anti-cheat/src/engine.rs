@@ -287,7 +287,6 @@ pub fn observations_to_ocel(obs: &[Observation]) -> OCEL {
             format!("ev_file_scanned_{}", file_id),
             "FileScanned",
         );
-        ev_file_scanned.timestamp = Some(chrono::Utc::now().to_rfc3339());
         ev_file_scanned.relationships.push(
             OCELRelationship::new(
                 ev_file_scanned.id.clone(),
@@ -300,11 +299,12 @@ pub fn observations_to_ocel(obs: &[Observation]) -> OCEL {
 
     // Create Observation objects and PatternMatched events
     for obs in obs {
+        let obs_hash = blake3::hash(format!("{:?}", obs).as_bytes()).to_hex();
         let pattern_id = format!(
             "pattern_{}_{}_{}",
             obs.construct,
             obs.line,
-            blake3::hash(format!("{:?}", obs).as_bytes()).to_hex()[..8]
+            &obs_hash[..8]
         );
         objects.push(
             OCELObject::new(pattern_id.clone(), "Pattern")
@@ -324,7 +324,6 @@ pub fn observations_to_ocel(obs: &[Observation]) -> OCEL {
             format!("ev_pattern_{}", pattern_id),
             "PatternMatched",
         );
-        ev_pattern_matched.timestamp = Some(chrono::Utc::now().to_rfc3339());
         ev_pattern_matched.relationships.push(
             OCELRelationship::new(
                 ev_pattern_matched.id.clone(),

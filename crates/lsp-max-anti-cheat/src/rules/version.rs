@@ -26,7 +26,9 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
                 blocking: true,
                 required_correction: "Specify CalVer version (e.g. v26.6.5) instead of standard v1.0.0 template version.".to_string(),
                 required_next_proof: "Check project Cargo.toml metadata.".to_string(),
-            });
+                            oracle_class: None,
+                confidence: None,
+});
         }
 
         // PATH-DEP with explicit non-CalVer version
@@ -42,7 +44,9 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
                 blocking: false,
                 required_correction: "Remove the version field from the path dependency or replace with a CalVer string (YY.M.D).".to_string(),
                 required_next_proof: "Check path dependency declarations in Cargo.toml.".to_string(),
-            });
+                            oracle_class: None,
+                confidence: None,
+});
         }
 
         // [workspace.package] with non-CalVer version
@@ -62,7 +66,9 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
                     .to_string(),
                 required_next_proof: "Check [workspace.package] version in root Cargo.toml."
                     .to_string(),
-            });
+                            oracle_class: None,
+                confidence: None,
+});
         }
     }
 

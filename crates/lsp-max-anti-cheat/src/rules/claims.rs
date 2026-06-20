@@ -127,7 +127,9 @@ pub fn evaluate(
                     .to_string(),
                 required_next_proof: "Run admissibility scan; confirm zero CLAIM-004 diagnostics."
                     .to_string(),
-            });
+                            oracle_class: None,
+                confidence: None,
+});
         }
     }
 
