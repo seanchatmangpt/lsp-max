@@ -1,3 +1,4 @@
+pub mod ast_adapter;
 pub mod capabilities;
 pub mod config;
 pub mod diagnostics;
