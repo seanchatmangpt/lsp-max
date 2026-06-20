@@ -192,13 +192,7 @@ pub fn capability_supports_method(caps: &lsp_types_max::ServerCapabilities, meth
                 false
             }
         }
-        "textDocument/completion" => {
-            if let Some(ref p) = caps.completion_provider {
-                p.is_some()
-            } else {
-                false
-            }
-        }
+        "textDocument/completion" => caps.completion_provider.is_some(),
         "textDocument/definition" => caps.definition_provider.is_some(),
         "textDocument/declaration" => caps.declaration_provider.is_some(),
         "textDocument/implementation" => caps.implementation_provider.is_some(),
@@ -224,16 +218,6 @@ pub fn capability_supports_method(caps: &lsp_types_max::ServerCapabilities, meth
                 match p {
                     lsp_types_max::OneOf::Left(b) => *b,
                     lsp_types_max::OneOf::Right(_) => true,
-                }
-            } else {
-                false
-            }
-        }
-        "textDocument/codeAction" => {
-            if let Some(ref p) = caps.code_action_provider {
-                match p {
-                    lsp_types_max::CodeActionProviderCapability::Simple(b) => *b,
-                    lsp_types_max::CodeActionProviderCapability::Options(_) => true,
                 }
             } else {
                 false
