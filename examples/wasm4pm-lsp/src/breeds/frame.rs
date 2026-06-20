@@ -1,0 +1,39 @@
+//! `eliza` — ELIZA Frame Reasoner breed stub.
+//!
+//! Family: SymbolicAI
+//! Paper: `weizenbaum1966eliza`
+//! Oracle value: 0.0
+//!
+//! Status: CANDIDATE
+//!
+//! To graduate to PARTIAL_ALIVE, satisfy all 12 COG laws:
+//!   COG-001  This file (required)
+//!   COG-002  ocel/models/l1/eliza.ocpn.json
+//!   COG-003  ocel/reports/eliza.json (fitness = 1.0)
+//!   COG-004  tests/fixtures/papers/eliza.json
+//!   COG-005  Fixture must have expected.value field
+//!   COG-006  Report fitness must equal 1.0
+//!   COG-007  Report must have measured_by, measured_on, run_id
+//!   COG-008  docs/breeds/eliza.md
+//!   COG-009  packages/cognition/src/__tests__/fixtures/papers/eliza.json
+//!   COG-010  No oracle fresh-name in production source
+//!   COG-011  All above artifacts present and report.admitted = true
+//!   COG-012  Dispatch arm present in src/breeds/dispatch.rs
+
+use wasm4pm_compat::{BreedInput, CognitiveBreed};
+
+pub struct Eliza;
+
+impl CognitiveBreed for Eliza {
+    fn breed_id(&self) -> &'static str {
+        "eliza"
+    }
+
+    fn run(&self, _input: &BreedInput) -> Option<serde_json::Value> {
+        // CANDIDATE: algorithm not yet implemented.
+        // Replace this stub with the real ELIZA Frame Reasoner algorithm.
+        // Must produce oracle_value=0.0 for the paper example in
+        // tests/fixtures/papers/eliza.json.
+        None
+    }
+}

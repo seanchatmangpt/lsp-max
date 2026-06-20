@@ -1,0 +1,530 @@
+# ggen.toml — wasm4pm-lsp cognitive breed configuration generator
+# Reads schema/cognition-breeds.ttl and generates breed registry, dispatch,
+# module stubs, OCPN models, fitness reports, and paper fixtures.
+# Run: ggen sync (from lsp-max workspace root)
+# Generated files satisfy COG-001 through COG-012 scaffold requirements.
+
+[meta]
+name = "wasm4pm-lsp-breeds"
+version = "26.6.20"
+
+[ontology]
+source = "../../schema/cognition-breeds.ttl"
+standard_only = false
+
+[generation]
+output_dir = "examples/wasm4pm-lsp"
+
+[sync]
+enabled = true
+on_change = "manual"
+validate_after = true
+conflict_mode = "fail"
+
+[rdf]
+formats = ["turtle"]
+default_format = "turtle"
+strict_validation = false
+
+[templates]
+enable_caching = true
+auto_reload = false
+
+# ── Rule 1: Breed Registry JSON ───────────────────────────────────────────────
+# Satisfies: breeds/registry.json (COG-011 prerequisite)
+
+[[generation.rules]]
+name = "breed-registry"
+description = "Generate breeds/registry.json from breed vocabulary"
+query = { file = "sparql/breeds.rq" }
+template = { file = "templates/registry.json.tera" }
+output_file = "examples/wasm4pm-lsp/breeds/registry.json"
+mode = "Overwrite"
+
+# ── Rule 2: Dispatch Table ────────────────────────────────────────────────────
+# Satisfies: src/breeds/dispatch.rs (COG-012 prerequisite)
+
+[[generation.rules]]
+name = "breed-dispatch"
+description = "Generate src/breeds/dispatch.rs match table from breed vocabulary"
+query = { file = "sparql/breeds.rq" }
+template = { file = "templates/dispatch.rs.tera" }
+output_file = "examples/wasm4pm-lsp/src/breeds/dispatch.rs"
+mode = "Overwrite"
+
+# ── Rules 3–11: Per-breed module stubs (COG-001) ─────────────────────────────
+# One rule per breed — generates src/breeds/<module_stem>.rs
+
+[[generation.rules]]
+name = "breed-stub-eliza"
+description = "Generate eliza breed module stub (frame.rs)"
+query = { inline = """
+PREFIX compat: <https://wasm4pm.dev/cognition/compat#>
+SELECT ?breed_id ?breed_label ?breed_family ?module_stem ?struct_name ?paper_ref ?oracle_value ?status
+WHERE {
+    <https://wasm4pm.dev/cognition/breeds#eliza> compat:breedId ?breed_id ;
+        compat:breedLabel ?breed_label ; compat:breedFamily ?breed_family ;
+        compat:moduleStem ?module_stem ; compat:structName ?struct_name ;
+        compat:paperRef ?paper_ref ; compat:oracleValue ?oracle_value ;
+        compat:status ?status_node . ?status_node <http://www.w3.org/2000/01/rdf-schema#label> ?status .
+}""" }
+template = { file = "templates/breed_stub.rs.tera" }
+output_file = "examples/wasm4pm-lsp/src/breeds/frame.rs"
+mode = "CreateIfMissing"
+
+[[generation.rules]]
+name = "breed-stub-mycin"
+description = "Generate mycin breed module stub (production_rules.rs)"
+query = { inline = """
+PREFIX compat: <https://wasm4pm.dev/cognition/compat#>
+SELECT ?breed_id ?breed_label ?breed_family ?module_stem ?struct_name ?paper_ref ?oracle_value ?status
+WHERE {
+    <https://wasm4pm.dev/cognition/breeds#mycin> compat:breedId ?breed_id ;
+        compat:breedLabel ?breed_label ; compat:breedFamily ?breed_family ;
+        compat:moduleStem ?module_stem ; compat:structName ?struct_name ;
+        compat:paperRef ?paper_ref ; compat:oracleValue ?oracle_value ;
+        compat:status ?status_node . ?status_node <http://www.w3.org/2000/01/rdf-schema#label> ?status .
+}""" }
+template = { file = "templates/breed_stub.rs.tera" }
+output_file = "examples/wasm4pm-lsp/src/breeds/production_rules.rs"
+mode = "CreateIfMissing"
+
+[[generation.rules]]
+name = "breed-stub-cbr"
+description = "Generate cbr breed module stub"
+query = { inline = """
+PREFIX compat: <https://wasm4pm.dev/cognition/compat#>
+SELECT ?breed_id ?breed_label ?breed_family ?module_stem ?struct_name ?paper_ref ?oracle_value ?status
+WHERE {
+    <https://wasm4pm.dev/cognition/breeds#cbr> compat:breedId ?breed_id ;
+        compat:breedLabel ?breed_label ; compat:breedFamily ?breed_family ;
+        compat:moduleStem ?module_stem ; compat:structName ?struct_name ;
+        compat:paperRef ?paper_ref ; compat:oracleValue ?oracle_value ;
+        compat:status ?status_node . ?status_node <http://www.w3.org/2000/01/rdf-schema#label> ?status .
+}""" }
+template = { file = "templates/breed_stub.rs.tera" }
+output_file = "examples/wasm4pm-lsp/src/breeds/cbr.rs"
+mode = "CreateIfMissing"
+
+[[generation.rules]]
+name = "breed-stub-frames-inheritance"
+description = "Generate frames_inheritance breed module stub"
+query = { inline = """
+PREFIX compat: <https://wasm4pm.dev/cognition/compat#>
+SELECT ?breed_id ?breed_label ?breed_family ?module_stem ?struct_name ?paper_ref ?oracle_value ?status
+WHERE {
+    <https://wasm4pm.dev/cognition/breeds#frames_inheritance> compat:breedId ?breed_id ;
+        compat:breedLabel ?breed_label ; compat:breedFamily ?breed_family ;
+        compat:moduleStem ?module_stem ; compat:structName ?struct_name ;
+        compat:paperRef ?paper_ref ; compat:oracleValue ?oracle_value ;
+        compat:status ?status_node . ?status_node <http://www.w3.org/2000/01/rdf-schema#label> ?status .
+}""" }
+template = { file = "templates/breed_stub.rs.tera" }
+output_file = "examples/wasm4pm-lsp/src/breeds/frames_inheritance.rs"
+mode = "CreateIfMissing"
+
+[[generation.rules]]
+name = "breed-stub-bayesian-network"
+description = "Generate bayesian_network breed module stub"
+query = { inline = """
+PREFIX compat: <https://wasm4pm.dev/cognition/compat#>
+SELECT ?breed_id ?breed_label ?breed_family ?module_stem ?struct_name ?paper_ref ?oracle_value ?status
+WHERE {
+    <https://wasm4pm.dev/cognition/breeds#bayesian_network> compat:breedId ?breed_id ;
+        compat:breedLabel ?breed_label ; compat:breedFamily ?breed_family ;
+        compat:moduleStem ?module_stem ; compat:structName ?struct_name ;
+        compat:paperRef ?paper_ref ; compat:oracleValue ?oracle_value ;
+        compat:status ?status_node . ?status_node <http://www.w3.org/2000/01/rdf-schema#label> ?status .
+}""" }
+template = { file = "templates/breed_stub.rs.tera" }
+output_file = "examples/wasm4pm-lsp/src/breeds/bayesian_network.rs"
+mode = "CreateIfMissing"
+
+[[generation.rules]]
+name = "breed-stub-pomdp"
+description = "Generate pomdp breed module stub"
+query = { inline = """
+PREFIX compat: <https://wasm4pm.dev/cognition/compat#>
+SELECT ?breed_id ?breed_label ?breed_family ?module_stem ?struct_name ?paper_ref ?oracle_value ?status
+WHERE {
+    <https://wasm4pm.dev/cognition/breeds#pomdp> compat:breedId ?breed_id ;
+        compat:breedLabel ?breed_label ; compat:breedFamily ?breed_family ;
+        compat:moduleStem ?module_stem ; compat:structName ?struct_name ;
+        compat:paperRef ?paper_ref ; compat:oracleValue ?oracle_value ;
+        compat:status ?status_node . ?status_node <http://www.w3.org/2000/01/rdf-schema#label> ?status .
+}""" }
+template = { file = "templates/breed_stub.rs.tera" }
+output_file = "examples/wasm4pm-lsp/src/breeds/pomdp.rs"
+mode = "CreateIfMissing"
+
+[[generation.rules]]
+name = "breed-stub-ltl-monitor"
+description = "Generate ltl_monitor breed module stub"
+query = { inline = """
+PREFIX compat: <https://wasm4pm.dev/cognition/compat#>
+SELECT ?breed_id ?breed_label ?breed_family ?module_stem ?struct_name ?paper_ref ?oracle_value ?status
+WHERE {
+    <https://wasm4pm.dev/cognition/breeds#ltl_monitor> compat:breedId ?breed_id ;
+        compat:breedLabel ?breed_label ; compat:breedFamily ?breed_family ;
+        compat:moduleStem ?module_stem ; compat:structName ?struct_name ;
+        compat:paperRef ?paper_ref ; compat:oracleValue ?oracle_value ;
+        compat:status ?status_node . ?status_node <http://www.w3.org/2000/01/rdf-schema#label> ?status .
+}""" }
+template = { file = "templates/breed_stub.rs.tera" }
+output_file = "examples/wasm4pm-lsp/src/breeds/ltl_monitor.rs"
+mode = "CreateIfMissing"
+
+[[generation.rules]]
+name = "breed-stub-asp"
+description = "Generate asp breed module stub"
+query = { inline = """
+PREFIX compat: <https://wasm4pm.dev/cognition/compat#>
+SELECT ?breed_id ?breed_label ?breed_family ?module_stem ?struct_name ?paper_ref ?oracle_value ?status
+WHERE {
+    <https://wasm4pm.dev/cognition/breeds#asp> compat:breedId ?breed_id ;
+        compat:breedLabel ?breed_label ; compat:breedFamily ?breed_family ;
+        compat:moduleStem ?module_stem ; compat:structName ?struct_name ;
+        compat:paperRef ?paper_ref ; compat:oracleValue ?oracle_value ;
+        compat:status ?status_node . ?status_node <http://www.w3.org/2000/01/rdf-schema#label> ?status .
+}""" }
+template = { file = "templates/breed_stub.rs.tera" }
+output_file = "examples/wasm4pm-lsp/src/breeds/asp.rs"
+mode = "CreateIfMissing"
+
+[[generation.rules]]
+name = "breed-stub-meta-reasoning"
+description = "Generate meta_reasoning breed module stub"
+query = { inline = """
+PREFIX compat: <https://wasm4pm.dev/cognition/compat#>
+SELECT ?breed_id ?breed_label ?breed_family ?module_stem ?struct_name ?paper_ref ?oracle_value ?status
+WHERE {
+    <https://wasm4pm.dev/cognition/breeds#meta_reasoning> compat:breedId ?breed_id ;
+        compat:breedLabel ?breed_label ; compat:breedFamily ?breed_family ;
+        compat:moduleStem ?module_stem ; compat:structName ?struct_name ;
+        compat:paperRef ?paper_ref ; compat:oracleValue ?oracle_value ;
+        compat:status ?status_node . ?status_node <http://www.w3.org/2000/01/rdf-schema#label> ?status .
+}""" }
+template = { file = "templates/breed_stub.rs.tera" }
+output_file = "examples/wasm4pm-lsp/src/breeds/meta_reasoning.rs"
+mode = "CreateIfMissing"
+
+# ── Rules 12–20: Per-breed OCPN stubs (COG-002) ──────────────────────────────
+
+[[generation.rules]]
+name = "ocpn-eliza"
+description = "Generate eliza OCPN model stub"
+query = { inline = """
+PREFIX compat: <https://wasm4pm.dev/cognition/compat#>
+SELECT ?breed_id ?breed_label ?breed_family ?oracle_value WHERE {
+    <https://wasm4pm.dev/cognition/breeds#eliza> compat:breedId ?breed_id ;
+    compat:breedLabel ?breed_label ; compat:breedFamily ?breed_family ; compat:oracleValue ?oracle_value .
+}""" }
+template = { file = "templates/ocpn_stub.json.tera" }
+output_file = "examples/wasm4pm-lsp/ocel/models/l1/eliza.ocpn.json"
+mode = "CreateIfMissing"
+
+[[generation.rules]]
+name = "ocpn-mycin"
+description = "Generate mycin OCPN model stub"
+query = { inline = """
+PREFIX compat: <https://wasm4pm.dev/cognition/compat#>
+SELECT ?breed_id ?breed_label ?breed_family ?oracle_value WHERE {
+    <https://wasm4pm.dev/cognition/breeds#mycin> compat:breedId ?breed_id ;
+    compat:breedLabel ?breed_label ; compat:breedFamily ?breed_family ; compat:oracleValue ?oracle_value .
+}""" }
+template = { file = "templates/ocpn_stub.json.tera" }
+output_file = "examples/wasm4pm-lsp/ocel/models/l1/mycin.ocpn.json"
+mode = "CreateIfMissing"
+
+[[generation.rules]]
+name = "ocpn-cbr"
+description = "Generate cbr OCPN model stub"
+query = { inline = """
+PREFIX compat: <https://wasm4pm.dev/cognition/compat#>
+SELECT ?breed_id ?breed_label ?breed_family ?oracle_value WHERE {
+    <https://wasm4pm.dev/cognition/breeds#cbr> compat:breedId ?breed_id ;
+    compat:breedLabel ?breed_label ; compat:breedFamily ?breed_family ; compat:oracleValue ?oracle_value .
+}""" }
+template = { file = "templates/ocpn_stub.json.tera" }
+output_file = "examples/wasm4pm-lsp/ocel/models/l1/cbr.ocpn.json"
+mode = "CreateIfMissing"
+
+[[generation.rules]]
+name = "ocpn-frames-inheritance"
+description = "Generate frames_inheritance OCPN model stub"
+query = { inline = """
+PREFIX compat: <https://wasm4pm.dev/cognition/compat#>
+SELECT ?breed_id ?breed_label ?breed_family ?oracle_value WHERE {
+    <https://wasm4pm.dev/cognition/breeds#frames_inheritance> compat:breedId ?breed_id ;
+    compat:breedLabel ?breed_label ; compat:breedFamily ?breed_family ; compat:oracleValue ?oracle_value .
+}""" }
+template = { file = "templates/ocpn_stub.json.tera" }
+output_file = "examples/wasm4pm-lsp/ocel/models/l1/frames_inheritance.ocpn.json"
+mode = "CreateIfMissing"
+
+[[generation.rules]]
+name = "ocpn-bayesian-network"
+description = "Generate bayesian_network OCPN model stub"
+query = { inline = """
+PREFIX compat: <https://wasm4pm.dev/cognition/compat#>
+SELECT ?breed_id ?breed_label ?breed_family ?oracle_value WHERE {
+    <https://wasm4pm.dev/cognition/breeds#bayesian_network> compat:breedId ?breed_id ;
+    compat:breedLabel ?breed_label ; compat:breedFamily ?breed_family ; compat:oracleValue ?oracle_value .
+}""" }
+template = { file = "templates/ocpn_stub.json.tera" }
+output_file = "examples/wasm4pm-lsp/ocel/models/l1/bayesian_network.ocpn.json"
+mode = "CreateIfMissing"
+
+[[generation.rules]]
+name = "ocpn-pomdp"
+description = "Generate pomdp OCPN model stub"
+query = { inline = """
+PREFIX compat: <https://wasm4pm.dev/cognition/compat#>
+SELECT ?breed_id ?breed_label ?breed_family ?oracle_value WHERE {
+    <https://wasm4pm.dev/cognition/breeds#pomdp> compat:breedId ?breed_id ;
+    compat:breedLabel ?breed_label ; compat:breedFamily ?breed_family ; compat:oracleValue ?oracle_value .
+}""" }
+template = { file = "templates/ocpn_stub.json.tera" }
+output_file = "examples/wasm4pm-lsp/ocel/models/l1/pomdp.ocpn.json"
+mode = "CreateIfMissing"
+
+[[generation.rules]]
+name = "ocpn-ltl-monitor"
+description = "Generate ltl_monitor OCPN model stub"
+query = { inline = """
+PREFIX compat: <https://wasm4pm.dev/cognition/compat#>
+SELECT ?breed_id ?breed_label ?breed_family ?oracle_value WHERE {
+    <https://wasm4pm.dev/cognition/breeds#ltl_monitor> compat:breedId ?breed_id ;
+    compat:breedLabel ?breed_label ; compat:breedFamily ?breed_family ; compat:oracleValue ?oracle_value .
+}""" }
+template = { file = "templates/ocpn_stub.json.tera" }
+output_file = "examples/wasm4pm-lsp/ocel/models/l1/ltl_monitor.ocpn.json"
+mode = "CreateIfMissing"
+
+[[generation.rules]]
+name = "ocpn-asp"
+description = "Generate asp OCPN model stub"
+query = { inline = """
+PREFIX compat: <https://wasm4pm.dev/cognition/compat#>
+SELECT ?breed_id ?breed_label ?breed_family ?oracle_value WHERE {
+    <https://wasm4pm.dev/cognition/breeds#asp> compat:breedId ?breed_id ;
+    compat:breedLabel ?breed_label ; compat:breedFamily ?breed_family ; compat:oracleValue ?oracle_value .
+}""" }
+template = { file = "templates/ocpn_stub.json.tera" }
+output_file = "examples/wasm4pm-lsp/ocel/models/l1/asp.ocpn.json"
+mode = "CreateIfMissing"
+
+[[generation.rules]]
+name = "ocpn-meta-reasoning"
+description = "Generate meta_reasoning OCPN model stub"
+query = { inline = """
+PREFIX compat: <https://wasm4pm.dev/cognition/compat#>
+SELECT ?breed_id ?breed_label ?breed_family ?oracle_value WHERE {
+    <https://wasm4pm.dev/cognition/breeds#meta_reasoning> compat:breedId ?breed_id ;
+    compat:breedLabel ?breed_label ; compat:breedFamily ?breed_family ; compat:oracleValue ?oracle_value .
+}""" }
+template = { file = "templates/ocpn_stub.json.tera" }
+output_file = "examples/wasm4pm-lsp/ocel/models/l1/meta_reasoning.ocpn.json"
+mode = "CreateIfMissing"
+
+# ── Rules 21–29: Per-breed fitness report stubs (COG-003/COG-006/COG-007) ────
+
+[[generation.rules]]
+name = "fitness-eliza"
+query = { inline = """PREFIX compat: <https://wasm4pm.dev/cognition/compat#>
+SELECT ?breed_id ?breed_label WHERE {
+    <https://wasm4pm.dev/cognition/breeds#eliza> compat:breedId ?breed_id ; compat:breedLabel ?breed_label .
+}""" }
+template = { file = "templates/fitness_stub.json.tera" }
+output_file = "examples/wasm4pm-lsp/ocel/reports/eliza.json"
+mode = "CreateIfMissing"
+
+[[generation.rules]]
+name = "fitness-mycin"
+query = { inline = """PREFIX compat: <https://wasm4pm.dev/cognition/compat#>
+SELECT ?breed_id ?breed_label WHERE {
+    <https://wasm4pm.dev/cognition/breeds#mycin> compat:breedId ?breed_id ; compat:breedLabel ?breed_label .
+}""" }
+template = { file = "templates/fitness_stub.json.tera" }
+output_file = "examples/wasm4pm-lsp/ocel/reports/mycin.json"
+mode = "CreateIfMissing"
+
+[[generation.rules]]
+name = "fitness-cbr"
+query = { inline = """PREFIX compat: <https://wasm4pm.dev/cognition/compat#>
+SELECT ?breed_id ?breed_label WHERE {
+    <https://wasm4pm.dev/cognition/breeds#cbr> compat:breedId ?breed_id ; compat:breedLabel ?breed_label .
+}""" }
+template = { file = "templates/fitness_stub.json.tera" }
+output_file = "examples/wasm4pm-lsp/ocel/reports/cbr.json"
+mode = "CreateIfMissing"
+
+[[generation.rules]]
+name = "fitness-frames-inheritance"
+query = { inline = """PREFIX compat: <https://wasm4pm.dev/cognition/compat#>
+SELECT ?breed_id ?breed_label WHERE {
+    <https://wasm4pm.dev/cognition/breeds#frames_inheritance> compat:breedId ?breed_id ; compat:breedLabel ?breed_label .
+}""" }
+template = { file = "templates/fitness_stub.json.tera" }
+output_file = "examples/wasm4pm-lsp/ocel/reports/frames_inheritance.json"
+mode = "CreateIfMissing"
+
+[[generation.rules]]
+name = "fitness-bayesian-network"
+query = { inline = """PREFIX compat: <https://wasm4pm.dev/cognition/compat#>
+SELECT ?breed_id ?breed_label WHERE {
+    <https://wasm4pm.dev/cognition/breeds#bayesian_network> compat:breedId ?breed_id ; compat:breedLabel ?breed_label .
+}""" }
+template = { file = "templates/fitness_stub.json.tera" }
+output_file = "examples/wasm4pm-lsp/ocel/reports/bayesian_network.json"
+mode = "CreateIfMissing"
+
+[[generation.rules]]
+name = "fitness-pomdp"
+query = { inline = """PREFIX compat: <https://wasm4pm.dev/cognition/compat#>
+SELECT ?breed_id ?breed_label WHERE {
+    <https://wasm4pm.dev/cognition/breeds#pomdp> compat:breedId ?breed_id ; compat:breedLabel ?breed_label .
+}""" }
+template = { file = "templates/fitness_stub.json.tera" }
+output_file = "examples/wasm4pm-lsp/ocel/reports/pomdp.json"
+mode = "CreateIfMissing"
+
+[[generation.rules]]
+name = "fitness-ltl-monitor"
+query = { inline = """PREFIX compat: <https://wasm4pm.dev/cognition/compat#>
+SELECT ?breed_id ?breed_label WHERE {
+    <https://wasm4pm.dev/cognition/breeds#ltl_monitor> compat:breedId ?breed_id ; compat:breedLabel ?breed_label .
+}""" }
+template = { file = "templates/fitness_stub.json.tera" }
+output_file = "examples/wasm4pm-lsp/ocel/reports/ltl_monitor.json"
+mode = "CreateIfMissing"
+
+[[generation.rules]]
+name = "fitness-asp"
+query = { inline = """PREFIX compat: <https://wasm4pm.dev/cognition/compat#>
+SELECT ?breed_id ?breed_label WHERE {
+    <https://wasm4pm.dev/cognition/breeds#asp> compat:breedId ?breed_id ; compat:breedLabel ?breed_label .
+}""" }
+template = { file = "templates/fitness_stub.json.tera" }
+output_file = "examples/wasm4pm-lsp/ocel/reports/asp.json"
+mode = "CreateIfMissing"
+
+[[generation.rules]]
+name = "fitness-meta-reasoning"
+query = { inline = """PREFIX compat: <https://wasm4pm.dev/cognition/compat#>
+SELECT ?breed_id ?breed_label WHERE {
+    <https://wasm4pm.dev/cognition/breeds#meta_reasoning> compat:breedId ?breed_id ; compat:breedLabel ?breed_label .
+}""" }
+template = { file = "templates/fitness_stub.json.tera" }
+output_file = "examples/wasm4pm-lsp/ocel/reports/meta_reasoning.json"
+mode = "CreateIfMissing"
+
+# ── Rules 30–38: Per-breed paper fixtures (COG-004/COG-005) ──────────────────
+
+[[generation.rules]]
+name = "fixture-eliza"
+query = { inline = """PREFIX compat: <https://wasm4pm.dev/cognition/compat#>
+SELECT ?breed_id ?breed_label ?breed_family ?paper_ref ?oracle_value WHERE {
+    <https://wasm4pm.dev/cognition/breeds#eliza> compat:breedId ?breed_id ;
+    compat:breedLabel ?breed_label ; compat:breedFamily ?breed_family ;
+    compat:paperRef ?paper_ref ; compat:oracleValue ?oracle_value .
+}""" }
+template = { file = "templates/fixture_stub.json.tera" }
+output_file = "examples/wasm4pm-lsp/tests/fixtures/papers/eliza.json"
+mode = "CreateIfMissing"
+
+[[generation.rules]]
+name = "fixture-mycin"
+query = { inline = """PREFIX compat: <https://wasm4pm.dev/cognition/compat#>
+SELECT ?breed_id ?breed_label ?breed_family ?paper_ref ?oracle_value WHERE {
+    <https://wasm4pm.dev/cognition/breeds#mycin> compat:breedId ?breed_id ;
+    compat:breedLabel ?breed_label ; compat:breedFamily ?breed_family ;
+    compat:paperRef ?paper_ref ; compat:oracleValue ?oracle_value .
+}""" }
+template = { file = "templates/fixture_stub.json.tera" }
+output_file = "examples/wasm4pm-lsp/tests/fixtures/papers/mycin.json"
+mode = "CreateIfMissing"
+
+[[generation.rules]]
+name = "fixture-cbr"
+query = { inline = """PREFIX compat: <https://wasm4pm.dev/cognition/compat#>
+SELECT ?breed_id ?breed_label ?breed_family ?paper_ref ?oracle_value WHERE {
+    <https://wasm4pm.dev/cognition/breeds#cbr> compat:breedId ?breed_id ;
+    compat:breedLabel ?breed_label ; compat:breedFamily ?breed_family ;
+    compat:paperRef ?paper_ref ; compat:oracleValue ?oracle_value .
+}""" }
+template = { file = "templates/fixture_stub.json.tera" }
+output_file = "examples/wasm4pm-lsp/tests/fixtures/papers/cbr.json"
+mode = "CreateIfMissing"
+
+[[generation.rules]]
+name = "fixture-frames-inheritance"
+query = { inline = """PREFIX compat: <https://wasm4pm.dev/cognition/compat#>
+SELECT ?breed_id ?breed_label ?breed_family ?paper_ref ?oracle_value WHERE {
+    <https://wasm4pm.dev/cognition/breeds#frames_inheritance> compat:breedId ?breed_id ;
+    compat:breedLabel ?breed_label ; compat:breedFamily ?breed_family ;
+    compat:paperRef ?paper_ref ; compat:oracleValue ?oracle_value .
+}""" }
+template = { file = "templates/fixture_stub.json.tera" }
+output_file = "examples/wasm4pm-lsp/tests/fixtures/papers/frames_inheritance.json"
+mode = "CreateIfMissing"
+
+[[generation.rules]]
+name = "fixture-bayesian-network"
+query = { inline = """PREFIX compat: <https://wasm4pm.dev/cognition/compat#>
+SELECT ?breed_id ?breed_label ?breed_family ?paper_ref ?oracle_value WHERE {
+    <https://wasm4pm.dev/cognition/breeds#bayesian_network> compat:breedId ?breed_id ;
+    compat:breedLabel ?breed_label ; compat:breedFamily ?breed_family ;
+    compat:paperRef ?paper_ref ; compat:oracleValue ?oracle_value .
+}""" }
+template = { file = "templates/fixture_stub.json.tera" }
+output_file = "examples/wasm4pm-lsp/tests/fixtures/papers/bayesian_network.json"
+mode = "CreateIfMissing"
+
+[[generation.rules]]
+name = "fixture-pomdp"
+query = { inline = """PREFIX compat: <https://wasm4pm.dev/cognition/compat#>
+SELECT ?breed_id ?breed_label ?breed_family ?paper_ref ?oracle_value WHERE {
+    <https://wasm4pm.dev/cognition/breeds#pomdp> compat:breedId ?breed_id ;
+    compat:breedLabel ?breed_label ; compat:breedFamily ?breed_family ;
+    compat:paperRef ?paper_ref ; compat:oracleValue ?oracle_value .
+}""" }
+template = { file = "templates/fixture_stub.json.tera" }
+output_file = "examples/wasm4pm-lsp/tests/fixtures/papers/pomdp.json"
+mode = "CreateIfMissing"
+
+[[generation.rules]]
+name = "fixture-ltl-monitor"
+query = { inline = """PREFIX compat: <https://wasm4pm.dev/cognition/compat#>
+SELECT ?breed_id ?breed_label ?breed_family ?paper_ref ?oracle_value WHERE {
+    <https://wasm4pm.dev/cognition/breeds#ltl_monitor> compat:breedId ?breed_id ;
+    compat:breedLabel ?breed_label ; compat:breedFamily ?breed_family ;
+    compat:paperRef ?paper_ref ; compat:oracleValue ?oracle_value .
+}""" }
+template = { file = "templates/fixture_stub.json.tera" }
+output_file = "examples/wasm4pm-lsp/tests/fixtures/papers/ltl_monitor.json"
+mode = "CreateIfMissing"
+
+[[generation.rules]]
+name = "fixture-asp"
+query = { inline = """PREFIX compat: <https://wasm4pm.dev/cognition/compat#>
+SELECT ?breed_id ?breed_label ?breed_family ?paper_ref ?oracle_value WHERE {
+    <https://wasm4pm.dev/cognition/breeds#asp> compat:breedId ?breed_id ;
+    compat:breedLabel ?breed_label ; compat:breedFamily ?breed_family ;
+    compat:paperRef ?paper_ref ; compat:oracleValue ?oracle_value .
+}""" }
+template = { file = "templates/fixture_stub.json.tera" }
+output_file = "examples/wasm4pm-lsp/tests/fixtures/papers/asp.json"
+mode = "CreateIfMissing"
+
+[[generation.rules]]
+name = "fixture-meta-reasoning"
+query = { inline = """PREFIX compat: <https://wasm4pm.dev/cognition/compat#>
+SELECT ?breed_id ?breed_label ?breed_family ?paper_ref ?oracle_value WHERE {
+    <https://wasm4pm.dev/cognition/breeds#meta_reasoning> compat:breedId ?breed_id ;
+    compat:breedLabel ?breed_label ; compat:breedFamily ?breed_family ;
+    compat:paperRef ?paper_ref ; compat:oracleValue ?oracle_value .
+}""" }
+template = { file = "templates/fixture_stub.json.tera" }
+output_file = "examples/wasm4pm-lsp/tests/fixtures/papers/meta_reasoning.json"
+mode = "CreateIfMissing"

@@ -1,0 +1,17 @@
+{
+  "breed_id": "{{ breed_id }}",
+  "label": "{{ breed_label }}",
+  "paper_ref": "{{ paper_ref }}",
+  "family": "{{ breed_family }}",
+  "description": "Paper example problem instance for {{ breed_label }}. Replace inputs and expected_value with the exact values from {{ paper_ref }}.",
+  "inputs": {
+    "note": "Replace with real BreedInput fields from {{ paper_ref }}"
+  },
+  "expected": {
+    "value": "PENDING",
+    "note": "Replace with oracle_value={{ oracle_value }} from {{ paper_ref }}. COG-005 requires this field."
+  },
+  "expected_value": "PENDING",
+  "asserted_value": "PENDING",
+  "paper_value": {{ oracle_value }}
+}
