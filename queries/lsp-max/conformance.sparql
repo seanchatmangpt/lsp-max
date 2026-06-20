@@ -1,0 +1,11 @@
+PREFIX lsp: <https://lsp-max.rs/ontology/>
+PREFIX law: <https://lsp-max.rs/law/>
+
+SELECT ?method_name ?law_status
+WHERE {
+    { ?method a lsp:Request } UNION { ?method a lsp:MaxExtension }
+    ?method lsp:methodName ?method_name ;
+            law:status     ?status_iri .
+    BIND(STRAFTER(STR(?status_iri), "https://lsp-max.rs/law/") AS ?law_status)
+}
+ORDER BY ?law_status ?method_name
