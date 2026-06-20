@@ -143,11 +143,11 @@ impl DoctorService {
                         status: "PARTIAL".to_string(),
                         detail: format!(
                             "active={active} pin={}",
-                            pin_str.is_empty().then_some("(unreadable)").unwrap_or(pin_str)
+                            if pin_str.is_empty() { "(unreadable)" } else { pin_str }
                         ),
                         fix: format!(
                             "rustup toolchain install {}",
-                            pin_str.is_empty().then_some("<channel>").unwrap_or(pin_str)
+                            if pin_str.is_empty() { "<channel>" } else { pin_str }
                         ),
                     }
                 }

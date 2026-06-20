@@ -27,10 +27,13 @@ impl std::fmt::Debug for Prng {
 }
 
 impl Prng {
-    /// Seed the generator. Mixed with a constant to avoid degenerate zero state.
+    /// Seed the generator. Mixed with a constant, then guarded so no input seed
+    /// can leave the xorshift state at 0 (which would freeze the stream): a seed
+    /// equal to the mixing constant would otherwise cancel to zero.
     pub fn new(seed: u64) -> Self {
+        let mixed = seed ^ 0xcafef00d_deadbeef;
         Self {
-            state: seed ^ 0xcafef00d_deadbeef,
+            state: if mixed == 0 { 0x9e3779b97f4a7c15 } else { mixed },
         }
     }
 
@@ -406,6 +409,21 @@ mod tests {
         for _ in 0..20 {
             assert_eq!(r1.next_u64(), r2.next_u64());
         }
+    }
+
+    #[test]
+    fn prng_seed_colliding_with_mix_constant_does_not_freeze() {
+        // A seed equal to the internal mixing constant cancels to a zero state;
+        // xorshift64 from zero would emit only zeros and collapse any search to
+        // the first breed. The guard must keep the stream live and varied.
+        let mut r = Prng::new(0xcafef00d_deadbeef);
+        let first = r.next_u64();
+        assert_ne!(first, 0, "stream must not be frozen at zero");
+        let mut distinct = std::collections::HashSet::new();
+        for _ in 0..16 {
+            distinct.insert(r.next_u64());
+        }
+        assert!(distinct.len() > 1, "stream must vary, not repeat one value");
     }
 
     #[test]

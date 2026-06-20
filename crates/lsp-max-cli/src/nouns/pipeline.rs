@@ -120,12 +120,8 @@ impl PipelineService {
             ..Default::default()
         };
         let evaluator = CliFitnessAdapter(auto_evaluator(ocel_path));
-        let mut search = PipelineSearch::new(
-            config,
-            KNOWN_BREEDS,
-            Box::new(evaluator),
-            0xcafe_f00d_dead_beef,
-        );
+        let mut search =
+            PipelineSearch::new(config, KNOWN_BREEDS, Box::new(evaluator), 0x9e37_79b9_7f4a_7c15);
         SearchOutput::from(search.run())
     }
 }
