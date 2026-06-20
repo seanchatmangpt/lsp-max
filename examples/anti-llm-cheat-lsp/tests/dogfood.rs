@@ -977,3 +977,39 @@ fn declare_002_response_handler_transcript_missing() {
         "Response must not fire when transcript follows handler"
     );
 }
+
+// -------------------------------------------------------------
+// Van der Aalst cheat taxonomy — hollow and placeholder rules
+// -------------------------------------------------------------
+
+#[test]
+fn detects_hollow_unimplemented() {
+    let path = find_file_path("fixtures/negative_controls/hollow_implementation.rs");
+    let obs = engine::scan_file(&path.to_string_lossy());
+    let diags = engine::evaluate_diagnostics(&obs);
+    check_diag_code(&diags, "ANTI-LLM-HOLLOW-001");
+}
+
+#[test]
+fn detects_hollow_todo() {
+    let path = find_file_path("fixtures/negative_controls/hollow_implementation.rs");
+    let obs = engine::scan_file(&path.to_string_lossy());
+    let diags = engine::evaluate_diagnostics(&obs);
+    check_diag_code(&diags, "ANTI-LLM-HOLLOW-002");
+}
+
+#[test]
+fn detects_fake_fitness_score() {
+    let path = find_file_path("fixtures/negative_controls/fake_alignment.rs");
+    let obs = engine::scan_file(&path.to_string_lossy());
+    let diags = engine::evaluate_diagnostics(&obs);
+    check_diag_code(&diags, "ANTI-LLM-PLACEHOLDER-001");
+}
+
+#[test]
+fn detects_unfalsifiable_assert() {
+    let path = find_file_path("fixtures/negative_controls/fake_alignment.rs");
+    let obs = engine::scan_file(&path.to_string_lossy());
+    let diags = engine::evaluate_diagnostics(&obs);
+    check_diag_code(&diags, "ANTI-LLM-PLACEHOLDER-002");
+}
