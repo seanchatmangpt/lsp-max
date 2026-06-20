@@ -1,11 +1,9 @@
 {
-  "digest_algorithm": "SHA256",
-  "digest": "d599efc838f74b01e6f3ef563c88127179a73146a58e5843d6317d3e84a78d4f",
+  "digest_algorithm": "BLAKE3",
+  "digest": "9937207d6c5113695ac60079127b94a05467f746f7f160eab99a1121beeaa062",
   "boundary": "-----BEGIN RECEIPT-----",
   "checkpoint": "-----END RECEIPT-----",
-  "raw_command": "sha256sum /home/user/lsp-max/examples/anti-llm-cheat-lsp/transcripts/textDocument_semanticTokens_full_delta_positive.jsonl",
-  "status": "ADMITTED",
-  "timestamp": "2026-06-18T01:31:42Z",
-  "transcript_path": "/home/user/lsp-max/examples/anti-llm-cheat-lsp/transcripts/textDocument_semanticTokens_full_delta_positive.jsonl",
-  "receipt_path": "/home/user/lsp-max/examples/anti-llm-cheat-lsp/receipts/textDocument_semanticTokens_full_delta_receipt.json"
+  "raw_command": "blake3 transcripts/textDocument_semanticTokens_full_delta_positive.jsonl",
+  "negative_control": "fixtures/negative_controls/textDocument_semanticTokens_full_delta",
+  "status": "ADMITTED"
 }

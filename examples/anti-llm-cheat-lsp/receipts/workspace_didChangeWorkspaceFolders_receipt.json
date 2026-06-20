@@ -1,11 +1,9 @@
 {
-  "digest_algorithm": "SHA256",
-  "digest": "e9efd6b5fab834ba4045a4d7ab34046e72153ab64612053f9081dc3e85931e03",
+  "digest_algorithm": "BLAKE3",
+  "digest": "338a892757577e3c501b22dd351c2b4987ad016678bc1e90323477550c732324",
   "boundary": "-----BEGIN RECEIPT-----",
   "checkpoint": "-----END RECEIPT-----",
-  "raw_command": "sha256sum /home/user/lsp-max/examples/anti-llm-cheat-lsp/transcripts/workspace_didChangeWorkspaceFolders_positive.jsonl",
-  "status": "ADMITTED",
-  "timestamp": "2026-06-18T01:31:42Z",
-  "transcript_path": "/home/user/lsp-max/examples/anti-llm-cheat-lsp/transcripts/workspace_didChangeWorkspaceFolders_positive.jsonl",
-  "receipt_path": "/home/user/lsp-max/examples/anti-llm-cheat-lsp/receipts/workspace_didChangeWorkspaceFolders_receipt.json"
+  "raw_command": "blake3 transcripts/workspace_didChangeWorkspaceFolders_positive.jsonl",
+  "negative_control": "fixtures/negative_controls/workspace_didChangeWorkspaceFolders",
+  "status": "ADMITTED"
 }

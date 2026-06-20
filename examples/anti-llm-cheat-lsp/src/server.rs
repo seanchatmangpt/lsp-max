@@ -22,7 +22,7 @@ impl AntiLlmServer {
         }
     }
 
-    async fn run_scan_and_publish(&self, uri: &Url) {
+    async fn run_scan_and_publish(&self, uri: &Uri) {
         let root_dir = {
             let guard = self.workspace_root.lock().unwrap();
             guard.clone().unwrap_or_else(|| ".".to_string())
@@ -77,18 +77,6 @@ impl LanguageServer for AntiLlmServer {
         caps.text_document_sync =
             Some(TextDocumentSyncCapability::Kind(TextDocumentSyncKind::FULL));
         caps.inline_completion_provider = Some(OneOf::Left(true));
-        caps.workspace = Some(WorkspaceServerCapabilities {
-            text_document_content: Some(OneOf::Right(TextDocumentContentRegistrationOptions {
-                text_document_content_options: TextDocumentContentOptions {
-                    schemes: vec!["anti-llm".to_string(), "ggen".to_string()],
-                },
-                text_document_registration_options: TextDocumentRegistrationOptions {
-                    document_selector: None,
-                },
-                static_registration_options: StaticRegistrationOptions { id: None },
-            })),
-            ..Default::default()
-        });
         caps.folding_range_provider = Some(FoldingRangeProviderCapability::Simple(true));
         caps.document_range_formatting_provider = Some(OneOf::Left(true));
         caps.code_action_provider = Some(CodeActionProviderCapability::Simple(true));
@@ -103,14 +91,15 @@ impl LanguageServer for AntiLlmServer {
         caps.code_lens_provider = Some(CodeLensOptions {
             resolve_provider: Some(true),
         });
-        caps.hover_provider = Some(HoverServerCapability::Simple(true));
+        caps.hover_provider = Some(HoverProviderCapability::Simple(true));
         caps.definition_provider = Some(OneOf::Left(true));
-        caps.declaration_provider = Some(OneOf::Left(true));
-        caps.type_definition_provider = Some(OneOf::Left(true));
-        caps.implementation_provider = Some(OneOf::Left(true));
+        caps.declaration_provider = Some(DeclarationCapability::Simple(true));
+        caps.type_definition_provider = Some(TypeDefinitionProviderCapability::Simple(true));
+        caps.implementation_provider = Some(ImplementationProviderCapability::Simple(true));
         caps.references_provider = Some(OneOf::Left(true));
         caps.document_symbol_provider = Some(OneOf::Left(true));
         caps.diagnostic_provider = Some(DiagnosticServerCapabilities::Options(DiagnosticOptions {
+            identifier: None,
             inter_file_dependencies: true,
             workspace_diagnostics: false,
             work_done_progress_options: WorkDoneProgressOptions::default(),
@@ -400,45 +389,54 @@ impl LanguageServer for AntiLlmServer {
 
     async fn goto_declaration(
         &self,
-        _params: GotoDeclarationParams,
-    ) -> Result<Option<GotoDeclarationResponse>> {
-        Ok(Some(GotoDeclarationResponse::Array(vec![])))
+        _params: GotoDefinitionParams,
+    ) -> Result<Option<GotoDefinitionResponse>> {
+        Ok(Some(GotoDefinitionResponse::Array(vec![])))
     }
 
     async fn goto_type_definition(
         &self,
-        _params: GotoTypeDefinitionParams,
-    ) -> Result<Option<GotoTypeDefinitionResponse>> {
-        Ok(Some(GotoTypeDefinitionResponse::Array(vec![])))
+        _params: GotoDefinitionParams,
+    ) -> Result<Option<GotoDefinitionResponse>> {
+        Ok(Some(GotoDefinitionResponse::Array(vec![])))
     }
 
     async fn goto_implementation(
         &self,
-        _params: GotoImplementationParams,
-    ) -> Result<Option<GotoImplementationResponse>> {
-        Ok(Some(GotoImplementationResponse::Array(vec![])))
+        _params: GotoDefinitionParams,
+    ) -> Result<Option<GotoDefinitionResponse>> {
+        Ok(Some(GotoDefinitionResponse::Array(vec![])))
     }
 
     async fn references(&self, _params: ReferenceParams) -> Result<Option<Vec<Location>>> {
         Ok(Some(vec![]))
     }
 
-    async fn document_symbol(&self, _params: DocumentSymbolParams) -> Result<Option<DocumentSymbolResponse>> {
+    async fn document_symbol(
+        &self,
+        _params: DocumentSymbolParams,
+    ) -> Result<Option<DocumentSymbolResponse>> {
         Ok(Some(DocumentSymbolResponse::Flat(vec![])))
     }
 
-    async fn workspace_symbol(&self, _params: WorkspaceSymbolParams) -> Result<Option<Vec<SymbolInformation>>> {
+    async fn symbol(
+        &self,
+        _params: WorkspaceSymbolParams,
+    ) -> Result<Option<Vec<SymbolInformation>>> {
         Ok(Some(vec![]))
     }
 
-    async fn diagnostic(&self, _params: DocumentDiagnosticParams) -> Result<DocumentDiagnosticReport> {
-        Ok(DocumentDiagnosticReport::Full(
-            RelatedFullDocumentDiagnosticReport {
+    async fn diagnostic(
+        &self,
+        _params: DocumentDiagnosticParams,
+    ) -> Result<DocumentDiagnosticReportResult> {
+        Ok(DocumentDiagnosticReportResult::Report(
+            DocumentDiagnosticReport::Full(RelatedFullDocumentDiagnosticReport {
                 related_documents: None,
                 full_document_diagnostic_report: FullDocumentDiagnosticReport {
                     result_id: None,
                     items: vec![],
                 },
-            },
+            }),
         ))
     }}
