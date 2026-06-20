@@ -1,4 +1,6 @@
 /// Static breed catalog from wasm4pm-cognition.
 pub mod catalog;
+/// TPOT2-style genetic programming search engine for breed pipeline optimization.
+pub mod search;
 /// Core TPOT2-style breed pipeline types.
 pub mod types;
