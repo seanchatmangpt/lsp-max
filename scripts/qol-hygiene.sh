@@ -94,7 +94,7 @@ echo -e "\n${BLUE}[A] Tracked files that match a .gitignore rule...${NC}"
 # tracked set yields exactly the tracked-but-ignored intersection.
 TRACKED_IGNORED="$(
   git ls-files -z \
-    | git check-ignore --stdin -z 2>/dev/null \
+    | git check-ignore --no-index --stdin -z 2>/dev/null \
     | tr '\0' '\n' || true
 )"
 

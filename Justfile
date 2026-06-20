@@ -326,3 +326,54 @@ https://claude.ai/code/session_01ESRv2v2dcXUvJj7VpkohkY"
 release-notes-extract DATE VERSION:
     #!/usr/bin/env bash
     bash scripts/extract-release-notes.sh "{{ DATE }}" "{{ VERSION }}"
+
+# --- Doctor (environment & workspace health) ---
+
+# Read-only health check: siblings, toolchain, disk, path-deps, conflict markers, gate
+doctor:
+    @bash scripts/doctor.sh
+
+# --- Repair (auditable self-healing) ---
+
+# Print the bounded-status self-heal REPAIR PLAN (read-only; no mutation)
+repair-plan:
+    @bash scripts/doctor-repair.sh
+
+# Apply ONLY safe fs/git-index repairs and write a signed receipt to receipts/
+repair-apply:
+    @mkdir -p receipts
+    @bash scripts/doctor-repair.sh --apply
+
+# --- Report (project-health surface) ---
+
+# Render the law-state runtime status surface (human table)
+status:
+    @bash scripts/status-report.sh
+
+# Render the status surface as a machine-readable JSON block
+status-json:
+    @bash scripts/status-report.sh --json
+
+# --- AutoDX (fast loop) ---
+
+# CI parity oracle: run the four ci.yml gates on the pinned nightly
+preflight:
+    @bash scripts/preflight.sh
+
+# Scoped fmt + clippy for crates changed vs a base ref (default origin/master)
+dx-changed BASE="origin/master":
+    @bash scripts/dx-changed.sh "{{ BASE }}"
+
+# Sub-minute pre-push smoke: fmt + changed-crate clippy + law compliance
+dx-fast BASE="origin/master":
+    @bash scripts/dx-fast.sh "{{ BASE }}"
+
+# --- AutoQoL (build budget) ---
+
+# Guard the target-dir budget; dry-run plan unless ARGS include --apply
+qol-budget *ARGS:
+    @bash scripts/qol-budget.sh {{ ARGS }}
+
+# Audit workspace hygiene (tracked-but-ignored + test residue); read-only unless --apply
+qol-hygiene *ARGS:
+    @bash scripts/qol-hygiene.sh {{ ARGS }}

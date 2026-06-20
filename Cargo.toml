@@ -155,3 +155,20 @@ lsp-max-ast = { path = "crates/lsp-max-adapters/lsp-max-ast", version = "26.6.18
 [patch.crates-io]
 wasm4pm = { path = "../wasm4pm/wasm4pm" }
 wasm4pm-compat = { path = "../wasm4pm-compat" }
+
+# --- AutoQoL (build budget): trim debuginfo weight across the workspace ---
+# line-tables-only keeps file:line for panics/backtraces but drops full DWARF
+# variable/type debuginfo — the dominant contributor to target-dir size on a
+# large workspace plus three sibling path/patch repos. Backtraces stay usable;
+# interactive step-debugging (variable inspection) is reduced.
+[profile.dev]
+debug = "line-tables-only"
+
+# Dedicated low-weight profile for CI / disk-constrained sandboxes: no debuginfo
+# and no incremental cache growth. Panic backtraces resolve to symbol names;
+# line numbers are absent. Invoke with: cargo <cmd> --profile ci
+[profile.ci]
+inherits = "dev"
+debug = false
+incremental = false
+strip = "debuginfo"
