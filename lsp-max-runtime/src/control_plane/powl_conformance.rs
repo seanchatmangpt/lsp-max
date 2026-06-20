@@ -1,8 +1,10 @@
 //! POWL conformance bridge — checks actual OCEL execution against declared POWL model.
 
+// wasm4pm_compat::conformance::TokenReplayResult is absent from the current stub.
+// The fitness formula is inlined here (standard token-replay: symmetric alignment).
+
 use super::powl_model::DeclaredPowlModel;
 use serde::{Deserialize, Serialize};
-use wasm4pm_compat::conformance::TokenReplayResult;
 
 /// Result of checking actual execution against a declared POWL model.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -104,12 +106,15 @@ pub fn check_conformance(
     // Standard fitness formula: (consumed - missing) / (produced + remaining)
     // consumed = matched (tokens we could consume), missing = log_moves_count,
     // produced = log size, remaining = model_moves_count
-    let fitness = TokenReplayResult::calculate_fitness(
-        produced,
-        matched,           // consumed = events that fit model transitions
-        log_moves_count,   // missing = events the model couldn't fire (log-moves)
-        model_moves_count, // remaining = model transitions not reached (model-moves)
-    );
+    //
+    // Inlined from the wasm4pm_compat::conformance::TokenReplayResult::calculate_fitness
+    // static method — unavailable in the current stub build.
+    let denom = produced + model_moves_count;
+    let fitness: f64 = if denom == 0 {
+        1.0
+    } else {
+        ((matched.saturating_sub(log_moves_count)) as f64 / denom as f64).clamp(0.0, 1.0)
+    };
 
     // Precision: fraction of model activities exercised by the log.
     let precision = if expected_activities.is_empty() {
