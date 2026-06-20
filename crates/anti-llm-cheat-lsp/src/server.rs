@@ -1,24 +1,16 @@
-use lsp_max::jsonrpc::{Error, ErrorCode, Result};
+use lsp_max::jsonrpc::{Error, Result};
 use lsp_max::lsp_types::*;
 use lsp_max::{Client, LanguageServer};
-use std::str::FromStr;
 use std::sync::{Arc, Mutex};
 
-mod recommend;
-
-use crate::ast_adapter::RustAstAdapter;
-use crate::capabilities;
-use crate::diagnostics::AntiLlmDiagnostic;
 use crate::engine;
 use crate::virtual_docs::{
-    checkpoint_status, failset, forbidden_implications, ggen_render, lsif06_matrix,
-    lsp318_full_matrix, lsp318_matrix, ocel_export, receipt_ledger,
+    checkpoint_status, failset, forbidden_implications, ggen_render, lsp318_matrix, receipt_ledger,
 };
 
 pub struct AntiLlmServer {
     pub client: Client,
     pub workspace_root: Arc<Mutex<Option<String>>>,
-    pub ast_adapter: RustAstAdapter,
 }
 
 impl AntiLlmServer {
@@ -26,33 +18,27 @@ impl AntiLlmServer {
         Self {
             client,
             workspace_root: Arc::new(Mutex::new(None)),
-            ast_adapter: RustAstAdapter::new(),
         }
     }
 
-    fn root_dir(&self) -> String {
-        let guard = self.workspace_root.lock().unwrap();
-        guard.clone().unwrap_or_else(|| ".".to_string())
-    }
+    async fn run_scan_and_publish(&self, uri: &Url) {
+        let root_dir = {
+            let guard = self.workspace_root.lock().unwrap();
+            guard.clone().unwrap_or_else(|| ".".to_string())
+        };
 
-    /// Scan the workspace and return the detections that belong to `uri`. This
-    /// is the single source of cheat intelligence shared by every language
-    /// feature so hover, lenses, symbols, actions and pull diagnostics all
-    /// report the same detections.
-    fn file_diagnostics(&self, uri: &Uri) -> Vec<AntiLlmDiagnostic> {
-        let obs = engine::scan_directory(&self.root_dir());
+        // Scan directory (or single file for speed)
+        let obs = engine::scan_directory(&root_dir);
         let diags = engine::evaluate_diagnostics(&obs);
-        let norm_uri = uri.to_string().replace("\\", "/");
-        diags
-            .into_iter()
-            .filter(|d| norm_uri.ends_with(&d.file_path.replace("\\", "/")))
-            .collect()
-    }
 
-    async fn run_scan_and_publish(&self, uri: &Uri) {
-        let file_diags: Vec<Diagnostic> = self
-            .file_diagnostics(uri)
+        let file_diags: Vec<Diagnostic> = diags
             .iter()
+            .filter(|d| {
+                // filter by current file path to emit relevant diagnostics
+                let norm_path = d.file_path.replace("\\", "/");
+                let norm_uri = uri.to_string().replace("\\", "/");
+                norm_uri.ends_with(&norm_path)
+            })
             .map(|d| d.to_lsp())
             .collect();
 
@@ -70,8 +56,6 @@ impl AntiLlmServer {
                 },
             )
             .await;
-        // Fire code-lens refresh so clients re-pull lenses after each detection update
-        let _ = self.client.code_lens_refresh().await;
     }
 }
 
@@ -88,13 +72,42 @@ impl LanguageServer for AntiLlmServer {
             }
         }
 
-        let caps = capabilities::build_capabilities();
+        let mut caps = ServerCapabilities::default();
+        caps.text_document_sync =
+            Some(TextDocumentSyncCapability::Kind(TextDocumentSyncKind::FULL));
+        caps.inline_completion_provider = Some(OneOf::Left(true));
+        caps.workspace = Some(WorkspaceServerCapabilities {
+            text_document_content: Some(OneOf::Right(TextDocumentContentRegistrationOptions {
+                text_document_content_options: TextDocumentContentOptions {
+                    schemes: vec!["anti-llm".to_string(), "ggen".to_string()],
+                },
+                text_document_registration_options: TextDocumentRegistrationOptions {
+                    document_selector: None,
+                },
+                static_registration_options: StaticRegistrationOptions { id: None },
+            })),
+            ..Default::default()
+        });
+        caps.folding_range_provider = Some(FoldingRangeProviderCapability::Simple(true));
+        caps.document_range_formatting_provider = Some(OneOf::Left(true));
+        caps.code_action_provider = Some(CodeActionProviderCapability::Simple(true));
+        caps.completion_provider = Some(CompletionOptions {
+            resolve_provider: Some(true),
+            trigger_characters: Some(vec!["#".to_string()]),
+            all_commit_characters: None,
+            work_done_progress_options: WorkDoneProgressOptions::default(),
+            completion_item: None,
+        });
+        caps.signature_help_provider = Some(SignatureHelpOptions::default());
+        caps.code_lens_provider = Some(CodeLensOptions {
+            resolve_provider: Some(true),
+        });
 
         Ok(InitializeResult {
             capabilities: caps,
             server_info: Some(ServerInfo {
                 name: "anti-llm-cheat-lsp".to_string(),
-                version: Some("26.6.18".to_string()),
+                version: Some("26.6.5".to_string()),
             }),
             offset_encoding: None,
         })
@@ -111,22 +124,14 @@ impl LanguageServer for AntiLlmServer {
     }
 
     async fn did_open(&self, params: DidOpenTextDocumentParams) {
-        self.ast_adapter.handle_did_open(params.clone());
         self.run_scan_and_publish(&params.text_document.uri).await;
     }
 
     async fn did_change(&self, params: DidChangeTextDocumentParams) {
-        self.ast_adapter.handle_did_change(params.clone());
         self.run_scan_and_publish(&params.text_document.uri).await;
     }
 
     async fn did_save(&self, params: DidSaveTextDocumentParams) {
-        self.run_scan_and_publish(&params.text_document.uri).await;
-    }
-
-    /// Final scan on close ensures the CI pull path sees up-to-date detections.
-    async fn did_close(&self, params: DidCloseTextDocumentParams) {
-        self.ast_adapter.handle_did_close(params.clone());
         self.run_scan_and_publish(&params.text_document.uri).await;
     }
 
@@ -176,14 +181,6 @@ impl LanguageServer for AntiLlmServer {
                 failset::generate_failset_markdown(&diags)
             }
             "anti-llm://lsp318-matrix" => lsp318_matrix::generate_matrix_markdown(),
-            "anti-llm://lsp318-full-matrix" => {
-                let root_dir = {
-                    let guard = self.workspace_root.lock().unwrap();
-                    guard.clone().unwrap_or_else(|| ".".to_string())
-                };
-                lsp318_full_matrix::generate_full_matrix_markdown(&root_dir)
-            }
-            "anti-llm://lsif06-matrix" => lsif06_matrix::generate_lsif06_matrix_markdown(),
             "anti-llm://receipt-ledger" => {
                 let root_dir = {
                     let guard = self.workspace_root.lock().unwrap();
@@ -195,15 +192,6 @@ impl LanguageServer for AntiLlmServer {
                 forbidden_implications::generate_implications_markdown()
             }
             "anti-llm://checkpoint-status" => checkpoint_status::generate_checkpoint_markdown(),
-            "anti-llm://ocel-log" => {
-                let root_dir = {
-                    let guard = self.workspace_root.lock().unwrap();
-                    guard.clone().unwrap_or_else(|| ".".to_string())
-                };
-                let obs = engine::scan_directory(&root_dir);
-                let diags = engine::evaluate_diagnostics(&obs);
-                ocel_export::render(&diags)
-            }
             // ggen:// virtual document — render a ggen artifact for the ontology
             // URI embedded in the `ggen://` path; never written to disk. The
             // ontology symbol is whatever follows `ggen://`.
@@ -300,12 +288,8 @@ impl LanguageServer for AntiLlmServer {
     }
 
     async fn code_action(&self, params: CodeActionParams) -> Result<Option<CodeActionResponse>> {
-        // Repair-plan intents first: each detection that carries a recommended
-        // correction becomes a read-only quickfix. The virtual-doc openers
-        // follow so a developer can always reach the matrices and ledger.
-        let mut actions =
-            recommend::repair_actions(&self.file_diagnostics(&params.text_document.uri));
-        actions.extend(vec![
+        let _uri = params.text_document.uri;
+        let actions = vec![
             CodeActionOrCommand::CodeAction(CodeAction {
                 title: "Open anti-llm://failset".to_string(),
                 kind: Some(CodeActionKind::QUICKFIX),
@@ -326,35 +310,13 @@ impl LanguageServer for AntiLlmServer {
                 }),
                 ..Default::default()
             }),
-            CodeActionOrCommand::CodeAction(CodeAction {
-                title: "Open anti-llm://lsp318-full-matrix".to_string(),
-                kind: Some(CodeActionKind::QUICKFIX),
-                command: Some(Command {
-                    title: "Open LSP 3.18 Combinatorial Coverage Matrix".to_string(),
-                    command: "anti-llm.openFullMatrix".to_string(),
-                    arguments: None,
-                }),
-                ..Default::default()
-            }),
-            CodeActionOrCommand::CodeAction(CodeAction {
-                title: "Open anti-llm://lsif06-matrix".to_string(),
-                kind: Some(CodeActionKind::QUICKFIX),
-                command: Some(Command {
-                    title: "Open LSIF 0.6 Combinatorial Coverage Matrix".to_string(),
-                    command: "anti-llm.openLsifMatrix".to_string(),
-                    arguments: None,
-                }),
-                ..Default::default()
-            }),
-        ]);
+        ];
         Ok(Some(actions))
     }
 
     async fn code_lens(&self, params: CodeLensParams) -> Result<Option<Vec<CodeLens>>> {
         let uri = params.text_document.uri;
-        // Keep the resolvable admissibility lens (exercised by code_lens/resolve),
-        // then append one lens per real detection plus a file-level summary.
-        let mut lenses = vec![CodeLens {
+        let lens = vec![CodeLens {
             range: Range::new(Position::new(0, 0), Position::new(0, 5)),
             command: Some(Command {
                 title: "Admissibility Check Active".to_string(),
@@ -363,8 +325,7 @@ impl LanguageServer for AntiLlmServer {
             }),
             data: Some(serde_json::json!({ "uri": uri.as_str() })),
         }];
-        lenses.extend(recommend::code_lenses(&self.file_diagnostics(&uri)));
-        Ok(Some(lenses))
+        Ok(Some(lens))
     }
 
     async fn code_lens_resolve(&self, mut code_lens: CodeLens) -> Result<CodeLens> {
@@ -380,491 +341,11 @@ impl LanguageServer for AntiLlmServer {
         Ok(code_lens)
     }
 
-    async fn hover(&self, params: HoverParams) -> Result<Option<Hover>> {
-        let uri = &params.text_document_position_params.text_document.uri;
-        let pos = params.text_document_position_params.position;
-        Ok(recommend::hover(&self.file_diagnostics(uri), pos))
-    }
+    async fn did_open_notebook_document(&self, _params: DidOpenNotebookDocumentParams) {}
 
-    async fn goto_definition(
-        &self,
-        params: GotoDefinitionParams,
-    ) -> Result<Option<GotoDefinitionResponse>> {
-        let uri = &params.text_document_position_params.text_document.uri;
-        let pos = params.text_document_position_params.position;
-        let locs = recommend::same_file_locations(&self.file_diagnostics(uri), uri, pos);
-        Ok(Some(GotoDefinitionResponse::Array(locs)))
-    }
+    async fn did_change_notebook_document(&self, _params: DidChangeNotebookDocumentParams) {}
 
-    async fn goto_declaration(
-        &self,
-        params: GotoDefinitionParams,
-    ) -> Result<Option<GotoDefinitionResponse>> {
-        let uri = &params.text_document_position_params.text_document.uri;
-        let pos = params.text_document_position_params.position;
-        let locs = recommend::same_file_locations(&self.file_diagnostics(uri), uri, pos);
-        Ok(Some(GotoDefinitionResponse::Array(locs)))
-    }
+    async fn did_save_notebook_document(&self, _params: DidSaveNotebookDocumentParams) {}
 
-    async fn goto_type_definition(
-        &self,
-        _params: GotoDefinitionParams,
-    ) -> Result<Option<GotoDefinitionResponse>> {
-        Ok(Some(GotoDefinitionResponse::Array(vec![])))
-    }
-
-    async fn goto_implementation(
-        &self,
-        _params: GotoDefinitionParams,
-    ) -> Result<Option<GotoDefinitionResponse>> {
-        Ok(Some(GotoDefinitionResponse::Array(vec![])))
-    }
-
-    async fn references(&self, params: ReferenceParams) -> Result<Option<Vec<Location>>> {
-        let uri = &params.text_document_position.text_document.uri;
-        let pos = params.text_document_position.position;
-        Ok(Some(recommend::same_file_locations(
-            &self.file_diagnostics(uri),
-            uri,
-            pos,
-        )))
-    }
-
-    async fn document_symbol(
-        &self,
-        params: DocumentSymbolParams,
-    ) -> Result<Option<DocumentSymbolResponse>> {
-        let syms = recommend::document_symbols(&self.file_diagnostics(&params.text_document.uri));
-        Ok(Some(DocumentSymbolResponse::Nested(syms)))
-    }
-
-    /// Exposes all detection codes as workspace symbols across all scanned files
-    /// so CI and agents can enumerate every active violation site.
-    async fn symbol(
-        &self,
-        _params: WorkspaceSymbolParams,
-    ) -> Result<Option<Vec<SymbolInformation>>> {
-        let root = self.root_dir();
-        let obs = engine::scan_directory(&root);
-        let diags = engine::evaluate_diagnostics(&obs);
-        #[allow(deprecated)]
-        let syms: Vec<SymbolInformation> = diags
-            .iter()
-            .filter_map(|d| {
-                url::Url::from_file_path(&d.file_path)
-                    .ok()
-                    .and_then(|url| Uri::from_str(url.as_str()).ok())
-                    .map(|uri| SymbolInformation {
-                        name: d.code.clone(),
-                        kind: SymbolKind::EVENT,
-                        tags: None,
-                        deprecated: None,
-                        location: Location {
-                            uri,
-                            range: Range::new(
-                                Position::new(d.line.saturating_sub(1) as u32, 0),
-                                Position::new(d.line.saturating_sub(1) as u32, 80),
-                            ),
-                        },
-                        container_name: Some(d.category.clone()),
-                    })
-            })
-            .collect();
-        Ok(Some(syms))
-    }
-
-    async fn diagnostic(
-        &self,
-        params: DocumentDiagnosticParams,
-    ) -> Result<DocumentDiagnosticReportResult> {
-        // The pull surface is the agent/CI-facing path: return the real
-        // detections, not an empty report. An empty pull report while the push
-        // path reports cheats would itself be a laundered claim.
-        let mut items: Vec<Diagnostic> = self
-            .file_diagnostics(&params.text_document.uri)
-            .iter()
-            .map(|d| d.to_lsp())
-            .collect();
-
-        // Layer in AST syntax errors for Rust files (Path B).
-        items.extend(self.ast_adapter.pull_ast_diagnostics(&params.text_document.uri));
-
-        Ok(DocumentDiagnosticReportResult::Report(
-            DocumentDiagnosticReport::Full(RelatedFullDocumentDiagnosticReport {
-                related_documents: None,
-                full_document_diagnostic_report: FullDocumentDiagnosticReport {
-                    result_id: None,
-                    items,
-                },
-            }),
-        ))
-    }
-
-    async fn semantic_tokens_full(
-        &self,
-        params: SemanticTokensParams,
-    ) -> Result<Option<SemanticTokensResult>> {
-        // Tokens are projected from the real tree-sitter parse (Path B); a
-        // non-Rust or unopened document yields no tokens rather than a guess.
-        Ok(self
-            .ast_adapter
-            .semantic_tokens(&params.text_document.uri)
-            .map(SemanticTokensResult::Tokens))
-    }
-
-    async fn semantic_tokens_full_delta(
-        &self,
-        params: SemanticTokensDeltaParams,
-    ) -> Result<Option<SemanticTokensFullDeltaResult>> {
-        // A server may always answer a delta request with a full result; the
-        // tokens still come from the parse tree, never a fabricated delta.
-        Ok(self
-            .ast_adapter
-            .semantic_tokens(&params.text_document.uri)
-            .map(SemanticTokensFullDeltaResult::Tokens))
-    }
-
-    async fn semantic_tokens_range(
-        &self,
-        params: SemanticTokensRangeParams,
-    ) -> Result<Option<SemanticTokensRangeResult>> {
-        Ok(self
-            .ast_adapter
-            .semantic_tokens_in_range(&params.text_document.uri, params.range)
-            .map(SemanticTokensRangeResult::Tokens))
-    }
-
-    /// LLMs fix one occurrence but not all; highlight all same-diagnostic-code
-    /// locations in file so every instance of a violation is visible.
-    async fn document_highlight(
-        &self,
-        params: DocumentHighlightParams,
-    ) -> Result<Option<Vec<DocumentHighlight>>> {
-        let uri = &params.text_document_position_params.text_document.uri;
-        let pos = params.text_document_position_params.position;
-        let diags = self.file_diagnostics(uri);
-        let hits: Vec<DocumentHighlight> = diags
-            .iter()
-            .filter(|d| (d.line.saturating_sub(1) as u32) == pos.line)
-            .map(|d| DocumentHighlight {
-                range: Range::new(
-                    Position::new(
-                        d.line.saturating_sub(1) as u32,
-                        d.column.saturating_sub(1) as u32,
-                    ),
-                    Position::new(
-                        d.line.saturating_sub(1) as u32,
-                        (d.column.saturating_sub(1) + 30) as u32,
-                    ),
-                ),
-                kind: Some(DocumentHighlightKind::TEXT),
-            })
-            .collect();
-        Ok(Some(hits))
-    }
-
-    /// LLMs cut at wrong syntactic boundaries; return detection ranges so the
-    /// client shows the actual violation span rather than an arbitrary boundary.
-    async fn selection_range(
-        &self,
-        params: SelectionRangeParams,
-    ) -> Result<Option<Vec<SelectionRange>>> {
-        let uri = &params.text_document.uri;
-        let diags = self.file_diagnostics(uri);
-        let ranges: Vec<SelectionRange> = params
-            .positions
-            .iter()
-            .map(|pos| {
-                let matching = diags
-                    .iter()
-                    .filter(|d| (d.line.saturating_sub(1) as u32) == pos.line)
-                    .map(|d| {
-                        Range::new(
-                            Position::new(
-                                d.line.saturating_sub(1) as u32,
-                                d.column.saturating_sub(1) as u32,
-                            ),
-                            Position::new(
-                                d.line.saturating_sub(1) as u32,
-                                (d.column.saturating_sub(1) + 40) as u32,
-                            ),
-                        )
-                    })
-                    .next()
-                    .unwrap_or_else(|| Range::new(*pos, *pos));
-                SelectionRange {
-                    range: matching,
-                    parent: None,
-                }
-            })
-            .collect();
-        Ok(Some(ranges))
-    }
-
-    /// LLMs edit open constructs without closing them; return cheat spans so
-    /// paired-edit tooling reveals the asymmetry.
-    async fn linked_editing_range(
-        &self,
-        params: LinkedEditingRangeParams,
-    ) -> Result<Option<LinkedEditingRanges>> {
-        let uri = &params.text_document_position_params.text_document.uri;
-        let pos = params.text_document_position_params.position;
-        let diags = self.file_diagnostics(uri);
-        let ranges: Vec<Range> = diags
-            .iter()
-            .filter(|d| (d.line.saturating_sub(1) as u32) == pos.line)
-            .map(|d| {
-                Range::new(
-                    Position::new(
-                        d.line.saturating_sub(1) as u32,
-                        d.column.saturating_sub(1) as u32,
-                    ),
-                    Position::new(
-                        d.line.saturating_sub(1) as u32,
-                        (d.column.saturating_sub(1) + 30) as u32,
-                    ),
-                )
-            })
-            .collect();
-        Ok(Some(LinkedEditingRanges {
-            ranges,
-            word_pattern: None,
-        }))
-    }
-
-    /// LLM identifier laundering: return a moniker keyed by diagnostic code so
-    /// tools can trace the violation across the LSIF graph.
-    async fn moniker(&self, params: MonikerParams) -> Result<Option<Vec<Moniker>>> {
-        let uri = &params.text_document_position_params.text_document.uri;
-        let pos = params.text_document_position_params.position;
-        let diags = self.file_diagnostics(uri);
-        let monikers: Vec<Moniker> = diags
-            .iter()
-            .filter(|d| (d.line.saturating_sub(1) as u32) == pos.line)
-            .map(|d| Moniker {
-                scheme: "anti-llm".to_string(),
-                identifier: format!("anti-llm/{}/{}", d.category, d.code),
-                unique: UniquenessLevel::Document,
-                kind: Some(MonikerKind::Import),
-            })
-            .collect();
-        Ok(Some(monikers))
-    }
-
-    /// Inline law-state labels (BLOCKED/CANDIDATE) at each detection site so
-    /// editors surface the status without requiring a hover.
-    async fn inlay_hint(&self, params: InlayHintParams) -> Result<Option<Vec<InlayHint>>> {
-        let uri = &params.text_document.uri;
-        let diags = self.file_diagnostics(uri);
-        let hints: Vec<InlayHint> = diags
-            .iter()
-            .map(|d| {
-                let status = if d.blocking { "BLOCKED" } else { "CANDIDATE" };
-                InlayHint {
-                    position: Position::new(d.line.saturating_sub(1) as u32, 0),
-                    label: InlayHintLabel::String(format!("\u{2691} {}: {}", d.code, status)),
-                    kind: Some(InlayHintKind::PARAMETER),
-                    text_edits: None,
-                    tooltip: Some(InlayHintTooltip::String(d.message.clone())),
-                    padding_left: None,
-                    padding_right: Some(true),
-                    data: None,
-                }
-            })
-            .collect();
-        Ok(Some(hints))
-    }
-
-    /// Resolve is a no-op here: hints are fully populated at creation time.
-    async fn inlay_hint_resolve(&self, hint: InlayHint) -> Result<InlayHint> {
-        Ok(hint)
-    }
-
-    /// Show BLOCKED/CANDIDATE status inline in code at each detection site.
-    async fn inline_value(&self, params: InlineValueParams) -> Result<Option<Vec<InlineValue>>> {
-        let uri = &params.text_document.uri;
-        let diags = self.file_diagnostics(uri);
-        let range_start = params.range.start.line;
-        let range_end = params.range.end.line;
-        let values: Vec<InlineValue> = diags
-            .iter()
-            .filter(|d| {
-                let l = d.line.saturating_sub(1) as u32;
-                l >= range_start && l <= range_end
-            })
-            .map(|d| {
-                InlineValue::Text(InlineValueText {
-                    range: Range::new(
-                        Position::new(d.line.saturating_sub(1) as u32, 0),
-                        Position::new(d.line.saturating_sub(1) as u32, 10),
-                    ),
-                    text: if d.blocking {
-                        "BLOCKED".to_string()
-                    } else {
-                        "CANDIDATE".to_string()
-                    },
-                })
-            })
-            .collect();
-        Ok(Some(values))
-    }
-
-    /// Read-only law: emit no edits; surface formatting-tell diagnostics via
-    /// a scan-and-publish so the push path sees the same detections.
-    async fn formatting(
-        &self,
-        params: DocumentFormattingParams,
-    ) -> Result<Option<Vec<TextEdit>>> {
-        self.run_scan_and_publish(&params.text_document.uri).await;
-        Ok(Some(vec![]))
-    }
-
-    /// Rename-as-obfuscation detection: refuse any rename that lands on a
-    /// violation site. The LSP surface is read-only; renaming does not fix law
-    /// violations, it obscures them.
-    async fn prepare_rename(
-        &self,
-        params: TextDocumentPositionParams,
-    ) -> Result<Option<PrepareRenameResponse>> {
-        let uri = &params.text_document.uri;
-        let pos = params.position;
-        let diags = self.file_diagnostics(uri);
-        let has_violation = diags
-            .iter()
-            .any(|d| (d.line.saturating_sub(1) as u32) == pos.line);
-        if has_violation {
-            return Err(Error {
-                code: ErrorCode::InvalidRequest,
-                message: std::borrow::Cow::Borrowed(
-                    "ANTI-LLM-RENAME-001: Renaming at a violation site is forbidden by read-only law",
-                ),
-                data: None,
-            });
-        }
-        Ok(None)
-    }
-
-    /// Rename is refused by read-only law: the LSP surface emits diagnostics
-    /// only and never mutates files.
-    async fn rename(&self, _params: RenameParams) -> Result<Option<WorkspaceEdit>> {
-        Err(Error {
-            code: ErrorCode::InvalidRequest,
-            message: std::borrow::Cow::Borrowed(
-                "ANTI-LLM-RENAME-002: Rename is refused by read-only law",
-            ),
-            data: None,
-        })
-    }
-
-    /// Commands for gate control, receipt-chain validation, and OCEL export.
-    async fn execute_command(
-        &self,
-        params: ExecuteCommandParams,
-    ) -> Result<Option<serde_json::Value>> {
-        match params.command.as_str() {
-            "anti-llm.validateReceiptChain" => {
-                let root = self.root_dir();
-                Ok(Some(serde_json::json!({
-                    "status": "CANDIDATE",
-                    "root": root,
-                    "message": "Receipt chain validation deferred to validate-receipt-chain.sh"
-                })))
-            }
-            "anti-llm.exportOcel" => Ok(Some(serde_json::json!({
-                "status": "PARTIAL",
-                "message": "OCEL export available via virtual doc anti-llm://ocel-log"
-            }))),
-            _ => Ok(None),
-        }
-    }
-
-    /// CI/agent pull path for workspace-wide diagnostics; groups detections by
-    /// file so every active violation is reachable without opening each file.
-    async fn workspace_diagnostic(
-        &self,
-        _params: WorkspaceDiagnosticParams,
-    ) -> Result<WorkspaceDiagnosticReportResult> {
-        let root = self.root_dir();
-        let obs = engine::scan_directory(&root);
-        let all_diags = engine::evaluate_diagnostics(&obs);
-        use std::collections::HashMap;
-        let mut by_file: HashMap<String, Vec<Diagnostic>> = HashMap::new();
-        for d in &all_diags {
-            by_file
-                .entry(d.file_path.clone())
-                .or_default()
-                .push(d.to_lsp());
-        }
-        let items: Vec<WorkspaceDocumentDiagnosticReport> = by_file
-            .into_iter()
-            .filter_map(|(path, items)| {
-                url::Url::from_file_path(&path)
-                    .ok()
-                    .and_then(|url| Uri::from_str(url.as_str()).ok())
-                    .map(|uri| {
-                        WorkspaceDocumentDiagnosticReport::Full(
-                            WorkspaceFullDocumentDiagnosticReport {
-                                uri,
-                                version: None,
-                                full_document_diagnostic_report: FullDocumentDiagnosticReport {
-                                    result_id: None,
-                                    items,
-                                },
-                            },
-                        )
-                    })
-            })
-            .collect();
-        Ok(WorkspaceDiagnosticReportResult::Report(
-            WorkspaceDiagnosticReport { items },
-        ))
-    }
-
-    /// Fake call graphs detection surface: return detections on the cursor line
-    /// as call hierarchy items so call-graph tooling traces law-violation chains.
-    async fn prepare_call_hierarchy(
-        &self,
-        params: CallHierarchyPrepareParams,
-    ) -> Result<Option<Vec<CallHierarchyItem>>> {
-        let uri = &params.text_document_position_params.text_document.uri;
-        let pos = params.text_document_position_params.position;
-        let diags = self.file_diagnostics(uri);
-        let items: Vec<CallHierarchyItem> = diags
-            .iter()
-            .filter(|d| (d.line.saturating_sub(1) as u32) == pos.line)
-            .map(|d| CallHierarchyItem {
-                name: d.code.clone(),
-                kind: SymbolKind::EVENT,
-                tags: None,
-                detail: Some(d.category.clone()),
-                uri: uri.clone(),
-                range: Range::new(
-                    Position::new(d.line.saturating_sub(1) as u32, 0),
-                    Position::new(d.line.saturating_sub(1) as u32, 80),
-                ),
-                selection_range: Range::new(
-                    Position::new(d.line.saturating_sub(1) as u32, 0),
-                    Position::new(d.line.saturating_sub(1) as u32, 40),
-                ),
-                data: None,
-            })
-            .collect();
-        Ok(Some(items))
-    }
-
-    /// Incoming calls = law obligations that led to this violation.
-    async fn incoming_calls(
-        &self,
-        _params: CallHierarchyIncomingCallsParams,
-    ) -> Result<Option<Vec<CallHierarchyIncomingCall>>> {
-        Ok(Some(vec![]))
-    }
-
-    /// Outgoing calls = required_next_proof chain obligations.
-    async fn outgoing_calls(
-        &self,
-        _params: CallHierarchyOutgoingCallsParams,
-    ) -> Result<Option<Vec<CallHierarchyOutgoingCall>>> {
-        Ok(Some(vec![]))
-    }
+    async fn did_close_notebook_document(&self, _params: DidCloseNotebookDocumentParams) {}
 }
