@@ -1,62 +1,83 @@
-//! Directly-Follows Graph (DFG) — Van der Aalst's core process discovery primitive.
+//! Directly-Follows Graph — thin wrapper over wasm4pm's `DFG` type.
 //!
-//! A DFG records, for each pair of consecutive activities (A → B) in the same case,
-//! how often that transition was observed.  It is the foundation for the α-Miner,
-//! Heuristics Miner, and Inductive Miner algorithms described in:
+//! DFG construction delegates to wasm4pm's data model (`wasm4pm::models::DFG`).
+//! No custom DFG algorithm is implemented here; this module provides the
+//! compositor-specific adapter surface: trace-based construction, fitness/precision
+//! scoring against normative arcs, and Mermaid/DOT rendering.
 //!
-//!   W.M.P. van der Aalst, "Process Mining: Data Science in Action" (2nd ed., 2016)
-//!   Chapter 5: From Event Logs to Process Models.
-//!
-//! This module operates on per-case activity traces produced by `declare::extract_traces`.
+//! Theory: W.M.P. van der Aalst, "Process Mining: Data Science in Action" (2016) ch. 5.
 
-use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 
 use crate::declare::extract_traces;
+use wasm4pm::models::{DFGNode, DirectlyFollowsRelation, DFG};
 
 // ─────────────────────────────────────────────────────────────────────────────
 // DirectlyFollowsGraph
 // ─────────────────────────────────────────────────────────────────────────────
 
-/// A Directly-Follows Graph derived from an OCEL event log.
+/// A Directly-Follows Graph backed by wasm4pm's `DFG` data model.
 ///
-/// The DFG captures process flow frequency without prescribing a full control-flow
-/// language.  It is the simplest model the Inductive Miner can extract and is used
-/// as the foundation for fitness / precision computation.
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
-pub struct DirectlyFollowsGraph {
-    /// Activity name → occurrence count across all cases.
-    pub nodes: HashMap<String, usize>,
-    /// Directed edge `(from, to)` → frequency count.
-    pub edges: HashMap<(String, String), usize>,
-    /// Start activities (first event per case) → frequency.
-    pub start_activities: HashMap<String, usize>,
-    /// End activities (last event per case) → frequency.
-    pub end_activities: HashMap<String, usize>,
-}
+/// The inner `DFG` owns all node, edge, and frequency data.  Construction from
+/// per-case traces and from raw OCEL events is provided here as compositor-
+/// specific adapters; the data model itself is wasm4pm's authoritative type.
+#[derive(Debug, Clone)]
+pub struct DirectlyFollowsGraph(pub DFG);
 
 impl DirectlyFollowsGraph {
     /// Build a DFG from per-case activity traces.
+    ///
+    /// Counts are accumulated via HashMap then projected into the wasm4pm `DFG`
+    /// Vec/BTreeMap types so the result is immediately usable by wasm4pm consumers.
     pub fn from_traces(traces: &HashMap<String, Vec<String>>) -> Self {
-        let mut dfg = Self::default();
+        let mut node_freq: HashMap<String, usize> = HashMap::new();
+        let mut edge_freq: HashMap<(String, String), usize> = HashMap::new();
+        let mut start_freq: BTreeMap<String, usize> = BTreeMap::new();
+        let mut end_freq: BTreeMap<String, usize> = BTreeMap::new();
+
         for trace in traces.values() {
             if trace.is_empty() {
                 continue;
             }
-            *dfg.start_activities.entry(trace[0].clone()).or_insert(0) += 1;
-            *dfg.end_activities
-                .entry(trace[trace.len() - 1].clone())
-                .or_insert(0) += 1;
+            *start_freq.entry(trace[0].clone()).or_insert(0) += 1;
+            *end_freq.entry(trace[trace.len() - 1].clone()).or_insert(0) += 1;
             for act in trace {
-                *dfg.nodes.entry(act.clone()).or_insert(0) += 1;
+                *node_freq.entry(act.clone()).or_insert(0) += 1;
             }
             for pair in trace.windows(2) {
-                let key = (pair[0].clone(), pair[1].clone());
-                *dfg.edges.entry(key).or_insert(0) += 1;
+                *edge_freq
+                    .entry((pair[0].clone(), pair[1].clone()))
+                    .or_insert(0) += 1;
             }
         }
-        dfg
+
+        let mut nodes: Vec<DFGNode> = node_freq
+            .into_iter()
+            .map(|(id, frequency)| DFGNode {
+                label: id.clone(),
+                id,
+                frequency,
+            })
+            .collect();
+        nodes.sort_by(|a, b| a.id.cmp(&b.id));
+
+        let mut edges: Vec<DirectlyFollowsRelation> = edge_freq
+            .into_iter()
+            .map(|((from, to), frequency)| DirectlyFollowsRelation {
+                from,
+                to,
+                frequency,
+            })
+            .collect();
+        edges.sort_by(|a, b| a.from.cmp(&b.from).then(a.to.cmp(&b.to)));
+
+        Self(DFG {
+            nodes,
+            edges,
+            start_activities: start_freq,
+            end_activities: end_freq,
+        })
     }
 
     /// Build a DFG directly from raw OCEL event JSON values.
@@ -65,35 +86,32 @@ impl DirectlyFollowsGraph {
         Self::from_traces(&traces)
     }
 
-    /// Fitness against a declared set of normative arcs.
+    /// Fitness: fraction of *observed* arcs that appear in the normative model.
     ///
-    /// Returns the fraction of *observed* arcs that appear in the normative model.
-    /// A score of `1.0` means every transition in the log is model-sanctioned.
     /// Returns `None` when the log has no observed arcs.
     pub fn fitness_against_model(&self, model_arcs: &[(String, String)]) -> Option<f64> {
-        if self.edges.is_empty() {
+        if self.0.edges.is_empty() {
             return None;
         }
         let matching = self
+            .0
             .edges
-            .keys()
-            .filter(|e| model_arcs.contains(e))
+            .iter()
+            .filter(|e| model_arcs.iter().any(|(a, b)| a == &e.from && b == &e.to))
             .count();
-        Some(matching as f64 / self.edges.len() as f64)
+        Some(matching as f64 / self.0.edges.len() as f64)
     }
 
-    /// Precision against a declared set of normative arcs.
+    /// Precision: fraction of *normative* arcs that appear in the observed log.
     ///
-    /// Returns the fraction of *normative* arcs that appear in the log.
-    /// A score of `1.0` means all model arcs were observed (no dead paths).
+    /// Returns `None` when the normative model has no arcs.
     pub fn precision_against_model(&self, model_arcs: &[(String, String)]) -> Option<f64> {
         if model_arcs.is_empty() {
             return None;
         }
-        let observed: std::collections::HashSet<_> = self.edges.keys().collect();
         let matching = model_arcs
             .iter()
-            .filter(|a| observed.contains(a))
+            .filter(|(a, b)| self.0.edges.iter().any(|e| e.from == *a && e.to == *b))
             .count();
         Some(matching as f64 / model_arcs.len() as f64)
     }
@@ -103,35 +121,33 @@ impl DirectlyFollowsGraph {
     pub fn to_mermaid(&self) -> String {
         let mut md = String::from("```mermaid\nflowchart LR\n");
 
-        let mut nodes: Vec<(&String, &usize)> = self.nodes.iter().collect();
-        nodes.sort_by_key(|(n, _)| n.as_str());
-        for (name, count) in &nodes {
+        for node in &self.0.nodes {
             md.push_str(&format!(
-                "  {}[\"{}\\n(n={count})\"]\n",
-                mermaid_id(name),
-                name
+                "  {}[\"{}\\n(n={})\"]\n",
+                mermaid_id(&node.id),
+                node.label,
+                node.frequency
             ));
         }
 
-        let mut starts: Vec<(&String, &usize)> = self.start_activities.iter().collect();
+        let mut starts: Vec<(&String, &usize)> = self.0.start_activities.iter().collect();
         starts.sort_by_key(|(n, _)| n.as_str());
         for (act, freq) in &starts {
             md.push_str(&format!("  START((▶)) -->|{freq}| {}\n", mermaid_id(act)));
         }
 
-        let mut ends: Vec<(&String, &usize)> = self.end_activities.iter().collect();
+        let mut ends: Vec<(&String, &usize)> = self.0.end_activities.iter().collect();
         ends.sort_by_key(|(n, _)| n.as_str());
         for (act, freq) in &ends {
             md.push_str(&format!("  {} -->|{freq}| END(((◼)))\n", mermaid_id(act)));
         }
 
-        let mut edges: Vec<(&(String, String), &usize)> = self.edges.iter().collect();
-        edges.sort_by_key(|((a, b), _)| (a.as_str(), b.as_str()));
-        for ((from, to), freq) in &edges {
+        for edge in &self.0.edges {
             md.push_str(&format!(
-                "  {} -->|{freq}| {}\n",
-                mermaid_id(from),
-                mermaid_id(to)
+                "  {} -->|{}| {}\n",
+                mermaid_id(&edge.from),
+                edge.frequency,
+                mermaid_id(&edge.to)
             ));
         }
 
@@ -141,14 +157,13 @@ impl DirectlyFollowsGraph {
 
     /// Render the DFG as GraphViz DOT notation.
     pub fn to_dot(&self) -> String {
-        let mut dot = String::from("digraph DFG {\n  rankdir=LR;\n  node [shape=rectangle];\n");
+        let mut dot =
+            String::from("digraph DFG {\n  rankdir=LR;\n  node [shape=rectangle];\n");
 
-        let mut nodes: Vec<(&String, &usize)> = self.nodes.iter().collect();
-        nodes.sort_by_key(|(n, _)| n.as_str());
-        for (name, count) in &nodes {
+        for node in &self.0.nodes {
             dot.push_str(&format!(
-                "  \"{}\" [label=\"{}\\n(n={count})\"];\n",
-                name, name
+                "  \"{}\" [label=\"{}\\n(n={})\"];\n",
+                node.id, node.label, node.frequency
             ));
         }
 
@@ -157,7 +172,7 @@ impl DirectlyFollowsGraph {
         );
         dot.push_str("  \"[END]\" [shape=doublecircle];\n");
 
-        let mut starts: Vec<(&String, &usize)> = self.start_activities.iter().collect();
+        let mut starts: Vec<(&String, &usize)> = self.0.start_activities.iter().collect();
         starts.sort_by_key(|(n, _)| n.as_str());
         for (act, freq) in &starts {
             dot.push_str(&format!(
@@ -166,7 +181,7 @@ impl DirectlyFollowsGraph {
             ));
         }
 
-        let mut ends: Vec<(&String, &usize)> = self.end_activities.iter().collect();
+        let mut ends: Vec<(&String, &usize)> = self.0.end_activities.iter().collect();
         ends.sort_by_key(|(n, _)| n.as_str());
         for (act, freq) in &ends {
             dot.push_str(&format!(
@@ -175,12 +190,10 @@ impl DirectlyFollowsGraph {
             ));
         }
 
-        let mut edges: Vec<(&(String, String), &usize)> = self.edges.iter().collect();
-        edges.sort_by_key(|((a, b), _)| (a.as_str(), b.as_str()));
-        for ((from, to), freq) in &edges {
+        for edge in &self.0.edges {
             dot.push_str(&format!(
-                "  \"{}\" -> \"{}\" [label=\"{freq}\"];\n",
-                from, to
+                "  \"{}\" -> \"{}\" [label=\"{}\"];\n",
+                edge.from, edge.to, edge.frequency
             ));
         }
 
@@ -190,17 +203,17 @@ impl DirectlyFollowsGraph {
 
     /// Total number of unique activities (nodes).
     pub fn node_count(&self) -> usize {
-        self.nodes.len()
+        self.0.nodes.len()
     }
 
     /// Total number of unique directly-follows arcs.
     pub fn edge_count(&self) -> usize {
-        self.edges.len()
+        self.0.edges.len()
     }
 
     /// Sum of all edge frequencies — total transition count across all traces.
     pub fn total_transitions(&self) -> usize {
-        self.edges.values().sum()
+        self.0.edges.iter().map(|e| e.frequency).sum()
     }
 }
 
@@ -231,45 +244,48 @@ mod tests {
         t
     }
 
+    fn node_freq(dfg: &DirectlyFollowsGraph, name: &str) -> usize {
+        dfg.0
+            .nodes
+            .iter()
+            .find(|n| n.id == name)
+            .map(|n| n.frequency)
+            .unwrap_or(0)
+    }
+
+    fn edge_freq(dfg: &DirectlyFollowsGraph, from: &str, to: &str) -> usize {
+        dfg.0
+            .edges
+            .iter()
+            .find(|e| e.from == from && e.to == to)
+            .map(|e| e.frequency)
+            .unwrap_or(0)
+    }
+
     #[test]
     fn dfg_counts_nodes_correctly() {
         let traces = simple_traces();
         let dfg = DirectlyFollowsGraph::from_traces(&traces);
-        assert_eq!(*dfg.nodes.get("A").unwrap(), 2);
-        assert_eq!(*dfg.nodes.get("B").unwrap(), 1);
-        assert_eq!(*dfg.nodes.get("C").unwrap(), 2);
+        assert_eq!(node_freq(&dfg, "A"), 2);
+        assert_eq!(node_freq(&dfg, "B"), 1);
+        assert_eq!(node_freq(&dfg, "C"), 2);
     }
 
     #[test]
     fn dfg_counts_edges_correctly() {
         let traces = simple_traces();
         let dfg = DirectlyFollowsGraph::from_traces(&traces);
-        assert_eq!(
-            *dfg.edges
-                .get(&("A".to_string(), "B".to_string()))
-                .unwrap(),
-            1
-        );
-        assert_eq!(
-            *dfg.edges
-                .get(&("A".to_string(), "C".to_string()))
-                .unwrap(),
-            1
-        );
-        assert_eq!(
-            *dfg.edges
-                .get(&("B".to_string(), "C".to_string()))
-                .unwrap(),
-            1
-        );
+        assert_eq!(edge_freq(&dfg, "A", "B"), 1);
+        assert_eq!(edge_freq(&dfg, "A", "C"), 1);
+        assert_eq!(edge_freq(&dfg, "B", "C"), 1);
     }
 
     #[test]
     fn start_end_activities_recorded() {
         let traces = simple_traces();
         let dfg = DirectlyFollowsGraph::from_traces(&traces);
-        assert_eq!(*dfg.start_activities.get("A").unwrap(), 2);
-        assert_eq!(*dfg.end_activities.get("C").unwrap(), 2);
+        assert_eq!(*dfg.0.start_activities.get("A").unwrap(), 2);
+        assert_eq!(*dfg.0.end_activities.get("C").unwrap(), 2);
     }
 
     #[test]
@@ -298,7 +314,7 @@ mod tests {
         let dfg = DirectlyFollowsGraph::from_traces(&traces);
         let mermaid = dfg.to_mermaid();
         assert!(mermaid.contains("flowchart LR"));
-        assert!(mermaid.contains("\"A\\n(n=2)\"") || mermaid.contains("A"));
+        assert!(mermaid.contains('A'));
     }
 
     #[test]
