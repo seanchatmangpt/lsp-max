@@ -17,7 +17,7 @@ A fork of `tower-lsp` (Tower-based LSP framework) upgraded into **lsp-max**: a "
 
 ## Versioning
 
-Workspace version `26.6.9` is **CalVer (YY.M.D)**, not SemVer. Version-law violations are a diagnostic family (`ANTI-LLM-VERSION-*`).
+Workspace version `26.6.18` is **CalVer (YY.M.D)**, not SemVer. Version-law violations are a diagnostic family (`ANTI-LLM-VERSION-*`).
 
 ## Sibling repo dependencies (build prerequisite)
 
@@ -55,18 +55,92 @@ Clippy with `-D warnings` is the bar; run `just dx-polish` before considering a 
 
 The five-layer model: (1) actuation grammar → (2) local LSP state surface → (3) law-state runtime → (4) knowledge hooks → (5) autonomic LSP mesh. Crates map onto it:
 
-- **Root crate (`src/`)** — the LSP server framework: `LanguageServer` trait, `LspService`, `Server` over stdio/TCP, plus `gate.rs`, `diagnostics.rs`, `composition.rs` for the law-state surface.
+- **Root crate (`src/`)** — the LSP server framework: `LanguageServer` trait, `LspService`, `Server` over stdio/TCP, plus `gate.rs`, `diagnostics.rs`, `composition.rs` for the law-state surface. Re-exports the `RulePackServer` bridge trait and associated types: `ClassifiedFindings`, `Finding`, `ValidatedRulePackSet`, `WorkspaceIndex`.
 - **`lsp-max-protocol`** — the `max/*` method declarations, capability vectors, `MaxDiagnostic`, `ConformanceVector`, receipts, analysis bundles. This is where protocol types live; change them here, not in consumers.
 - **`lsp-max-runtime`** — typestate machine, phases, transitions, runtime snapshotting.
 - **`lsp-max-agent`** — agent integration and analysis bundles.
 - **`lsp-max-macros`** — internal proc macros (e.g. `#[tower_lsp::async_trait]` equivalent surface).
-- **`crates/lsp-max-cli`** — actuation grammar: noun/verb CLI built on `clap-noun-verb` (filename = noun, `#[verb]` = action).
+- **`crates/lsp-max-cli`** — actuation grammar: noun/verb CLI built on `clap-noun-verb` (filename = noun, `#[verb]` = action). `gate check` and `gate list` verbs are wired here.
 - **`crates/lsp-max-client`** — LSP *client* framework (drives servers in tests).
 - **`crates/lsp-max-base`**, **`-live`**, **`-lsif`**, **`-specgen`** — base protocol types, live surfaces, LSIF export/conformance, and codegen from the official LSP 3.18 `metaModel.json`.
 - **`crates/lsp-max-adapters/`** — ported `auto-lsp` stack (`lsp-max-ast-core`, `lsp-max-ast-codegen`, `lsp-max-ast`): tree-sitter-driven AST/codegen layer. Tree-sitter observes; it never admits.
+- **`crates/lsp-max-compositor/`** — multi-server fan-out and merge. Contains `declare.rs` (Van der Aalst Declare constraint model, 9 constraint types) and `dfg.rs` (Directly-Follows Graph with fitness/precision metrics). `FlushCoordinator` uses adaptive quorum debounce and accumulates OCEL 2.0 events via `take_ocel_events()`.
 - **`crates/wasm4pm-lsp`**, **`crates/gc005-wasm4pm-adapter`** — process-mining LSP surfaces over the wasm4pm engine; dogfood tests (`dogfood_gc00*.rs`) validate gate conformance.
 - **`crates/playground`** — dev-dependency harness with demo binaries (`dogfood_harness`, `lsif_demo`).
-- **`crates/anti-llm-cheat-lsp`** — the diagnostic canary: an LSP that detects reintroduction of plain `tower-lsp`, fake receipts, fake routes, and victory language. Other examples (`pattern-lsp`, `clap-noun-verb-lsp`, `axum-lsp`, `bevy-lsp`, `tex-lsp`, `wasm4pm-compat-lsp`) are workspace members and must keep compiling.
+- **`crates/anti-llm-cheat-lsp`** — the diagnostic canary: an LSP that detects reintroduction of plain `tower-lsp`, fake receipts, fake routes, and victory language. Implements `RulePackServer` via a `scan_uri_classified` override that bridges the internal AhoCorasick engine into `ClassifiedFindings`. Virtual document `anti-llm://process-model` surfaces a live DFG + Declare conformance report from active diagnostics. Other examples (`pattern-lsp`, `clap-noun-verb-lsp`, `axum-lsp`, `bevy-lsp`, `tex-lsp`, `wasm4pm-compat-lsp`) are workspace members and must keep compiling.
+
+## RulePackServer — implementing an LSP server
+
+`RulePackServer` (`src/rule_pack_server.rs`) is the bridge trait for building diagnostic LSP servers. Five abstract methods; everything else is defaulted:
+
+```rust
+impl RulePackServer for MyServer {
+    fn rule_packs(&self) -> &ValidatedRulePackSet { &self.rule_packs }
+    fn grammar(&self) -> tree_sitter::Language { tree_sitter_rust::LANGUAGE.into() }
+    fn server_name(&self) -> &'static str { "my-server" }
+    fn client(&self) -> &Client { &self.client }
+    fn adapter(&self) -> &AutoLspAdapter { self.ast_adapter.inner() }
+}
+```
+
+Default implementations handle `did_open/change/close`, `WorkspaceIndex` upsert, AST parsing, and the `publish_findings_classified` → `scan_uri_classified` pipeline.
+
+Override `scan_uri_classified` when the server has its own engine (e.g., AhoCorasick) that must be bridged:
+
+```rust
+fn scan_uri_classified(&self, uri: &DocumentUri, _content: &str) -> ClassifiedFindings {
+    let findings: Vec<Finding> = self.engine_scan(uri)
+        .into_iter()
+        .map(|d| {
+            let lsp_diag = d.to_lsp();
+            let max_diag = MaxDiagnostic {
+                lsp: lsp_diag.clone(),
+                law_axis: LawAxis::Custom(d.category.clone()),
+                ..MaxDiagnostic::default()
+            };
+            (max_diag, lsp_diag)
+        })
+        .collect();
+    (findings, vec![]) // (sync, background)
+}
+```
+
+`WorkspaceIndex` is re-exported from `lsp_max::WorkspaceIndex`. Wire it in the server struct and return `Some(&self.workspace_index)` from `workspace_index()`. The default `handle_did_*` methods call `upsert`/`remove` automatically.
+
+Key types re-exported from `lsp_max`:
+- `ClassifiedFindings = (Vec<Finding>, Vec<Finding>)` — sync and background findings
+- `Finding = (MaxDiagnostic, Diagnostic)` — one finding as a (max, lsp) pair
+- `ValidatedRulePackSet` — monoid newtype; use `::empty()` for engine-bridge servers with no TOML packs
+- `WorkspaceIndex = Arc<DashMap<String, IndexedDoc>>`
+
+`LawAxis` variants (from `lsp_max::max_protocol`): `Protocol`, `Type`, `Fixture`, `Documentation`, `Release`, `Hook`, `Repair`, `Receipt`, `Security`, `Autopoiesis`, `Domain`, `Custom(String)`. Use `Custom` for domain-specific categories.
+
+## Van der Aalst Process Mining — compositor and virtual docs
+
+`crates/lsp-max-compositor/` contains inline Van der Aalst process mining primitives:
+
+**`declare.rs`** — Declare constraint model (LTL-based declarative specification):
+- 9 constraint types: `Init`, `End`, `Response`, `Precedence`, `ExactlyOne`, `NotCoExistence`, `RespondedExistence`, `Absence`, `ChainResponse`
+- `DeclareModel::compositor()` — normative model for the compositor flush pipeline
+- `DeclareModel::anti_llm_detection()` — normative model for the detection pipeline
+- `extract_traces(events: &[Value]) -> HashMap<String, Vec<String>>` — builds per-case traces from OCEL events
+- `model.check(&traces)` → `Vec<ConstraintViolation>` — conformance checking
+
+**`dfg.rs`** — Directly-Follows Graph (Van der Aalst core discovery primitive):
+- `DirectlyFollowsGraph::from_traces()` / `from_events()` — build DFG from traces or OCEL events
+- `fitness_against_model(&normative_arcs)` → `Option<f64>` — fraction of normative arcs present
+- `precision_against_model(&normative_arcs)` → `Option<f64>` — fraction of DFG arcs in normative model
+- `to_mermaid()`, `to_dot()` — Mermaid flowchart and Graphviz DOT renderers
+
+`FlushCoordinator` runs both after every flush: Declare violation warnings are emitted via `tracing::warn!`; DFG fitness is logged via `tracing::debug!`. Accumulated OCEL 2.0 events are accessible via `take_ocel_events()` (drains) or `ocel_event_count()` (snapshot).
+
+**`anti-llm://process-model`** virtual document: served by `anti-llm-cheat-lsp` on request. Renders a live markdown document containing:
+- DFG summary (node count, edge count, transitions) derived from current `AntiLlmDiagnostic` observations
+- Mermaid flowchart of the DFG
+- Declare conformance report with violation table
+- Fitness score and activity legend (maps diagnostic code prefixes to DFG activity names)
+
+Activities: `VictoryLanguageDetected`, `FakeReceiptDetected`, `FakeRouteDetected`, `VersionViolationDetected`, `ForbiddenRefDetected`, `ProcessViolationDetected`, `GgenViolationDetected`, `CheatDetected`, `ScanComplete` (synthetic terminal).
 
 ## Code layout conventions
 
@@ -178,7 +252,7 @@ Symptom: ANDON gate is set, blocking Bash commands; unclear what diagnostics are
 **Check**: Query gate state:
 ```sh
 lsp-max-cli gate check  # Exit 0 = gate clear; exit 1 = gate set
-lsp-max-cli gate list   # (if available) List active WASM4PM-* / GGEN-* diagnostics
+lsp-max-cli gate list   # List active WASM4PM-* / GGEN-* code families + agent_scope
 ```
 
 Or inspect the `.claude/settings.json` `PreToolUse` hook directly to see which gates are wired. Resolve all listed diagnostics to clear the ANDON signal.
