@@ -334,6 +334,96 @@ mod tests {
             assert_eq!(axis.unknown, 1);
         }
     }
+
+    // --- breakdown counterfactual ---
+
+    #[test]
+    fn breakdown_unknown_instance_returns_err() {
+        let (_f, svc) = make_temp_mesh();
+        assert!(svc.breakdown("no-such").is_err());
+    }
+
+    // --- vector (service layer) ---
+
+    #[test]
+    fn vector_known_instance_returns_ok() {
+        let (_f, svc) = make_temp_mesh();
+        assert!(svc.vector("test-inst").is_ok());
+    }
+
+    #[test]
+    fn vector_unknown_instance_returns_err() {
+        let (_f, svc) = make_temp_mesh();
+        assert!(svc.vector("no-such").is_err());
+    }
+
+    #[test]
+    fn vector_empty_instance_has_no_admitted_or_refused() {
+        let (_f, svc) = make_temp_mesh();
+        let cv = svc.vector("test-inst").unwrap();
+        assert!(cv.admitted.is_empty(), "no diagnostics → no admitted axes");
+        assert!(cv.refused.is_empty(), "no diagnostics → no refused axes");
+        assert!(!cv.unknown.is_empty(), "all named axes must start as unknown");
+    }
+
+    // --- RPC verbs ---
+
+    fn with_mesh_state<F: FnOnce()>(f: F) {
+        let _lock = crate::nouns::TEST_ENV_LOCK
+            .lock()
+            .unwrap_or_else(|p| p.into_inner());
+        let mut mesh = AutonomicMesh::new();
+        mesh.add_instance(LspInstance::new("test-inst"));
+        let tmpf = tempfile::NamedTempFile::new().unwrap();
+        let path = tmpf.path().to_str().unwrap().to_string();
+        mesh.save_to_file(&path).unwrap();
+        let prev = std::env::var("LSP_MAX_STATE_PATH").ok();
+        // SAFETY: under TEST_ENV_LOCK.
+        unsafe { std::env::set_var("LSP_MAX_STATE_PATH", &path) };
+        f();
+        // SAFETY: restoring env under TEST_ENV_LOCK.
+        unsafe {
+            match prev {
+                Some(v) => std::env::set_var("LSP_MAX_STATE_PATH", v),
+                None => std::env::remove_var("LSP_MAX_STATE_PATH"),
+            }
+        }
+    }
+
+    #[test]
+    fn vector_rpc_returns_ok_for_known_instance() {
+        with_mesh_state(|| {
+            assert!(vector_rpc("test-inst".to_string()).is_ok());
+        });
+    }
+
+    #[test]
+    fn vector_rpc_result_has_non_negative_counts() {
+        with_mesh_state(|| {
+            let res = vector_rpc("test-inst".to_string()).unwrap();
+            // Counts must be ≥ 0 (usize, so this is a type-level guarantee, but
+            // we also verify admitted + refused + unknown covers the named axis set).
+            assert_eq!(
+                res.admitted + res.refused + res.unknown,
+                LawAxis::all_named().len(),
+                "admitted + refused + unknown must equal the number of named axes"
+            );
+        });
+    }
+
+    #[test]
+    fn run_gate_returns_ok_for_known_instance() {
+        with_mesh_state(|| {
+            assert!(run_gate("test-inst".to_string(), "default".to_string()).is_ok());
+        });
+    }
+
+    #[test]
+    fn delta_returns_ok_for_known_instance() {
+        with_mesh_state(|| {
+            assert!(delta("test-inst".to_string()).is_ok());
+        });
+    }
 }
 
 #[derive(Serialize)]

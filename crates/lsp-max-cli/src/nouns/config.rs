@@ -432,3 +432,201 @@ pub fn validate() -> Result<ConfigValidateResult> {
         status,
     })
 }
+
+// ==============================================================================
+// 5. Tests
+// ==============================================================================
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// RAII guard — redirects LSP_MAX_CONFIG to an isolated temp file.
+    struct ConfigGuard {
+        _tmp: tempfile::NamedTempFile,
+        prev: Option<String>,
+    }
+
+    impl ConfigGuard {
+        fn new() -> Self {
+            let tmp = tempfile::NamedTempFile::new().unwrap();
+            let path = tmp.path().to_str().unwrap().to_string();
+            let prev = std::env::var("LSP_MAX_CONFIG").ok();
+            // SAFETY: under TEST_ENV_LOCK.
+            unsafe { std::env::set_var("LSP_MAX_CONFIG", &path) };
+            Self { _tmp: tmp, prev }
+        }
+    }
+
+    impl Drop for ConfigGuard {
+        fn drop(&mut self) {
+            // SAFETY: restoring env state under TEST_ENV_LOCK.
+            unsafe {
+                match &self.prev {
+                    Some(v) => std::env::set_var("LSP_MAX_CONFIG", v),
+                    None => std::env::remove_var("LSP_MAX_CONFIG"),
+                }
+            }
+        }
+    }
+
+    // --- view / set ---
+
+    #[test]
+    fn set_then_view_returns_same_value() {
+        let _lock = crate::nouns::TEST_ENV_LOCK
+            .lock()
+            .unwrap_or_else(|p| p.into_inner());
+        let _g = ConfigGuard::new();
+        let svc = ConfigService::new();
+        svc.set("log_level", "debug").unwrap();
+        let entity = svc.view("log_level").expect("view must return the set key");
+        assert_eq!(entity.key, "log_level");
+        assert_eq!(entity.value, "debug");
+    }
+
+    #[test]
+    fn view_missing_key_returns_none() {
+        let _lock = crate::nouns::TEST_ENV_LOCK
+            .lock()
+            .unwrap_or_else(|p| p.into_inner());
+        let _g = ConfigGuard::new();
+        let svc = ConfigService::new();
+        assert!(svc.view("nonexistent_key").is_none());
+    }
+
+    // --- reset ---
+
+    #[test]
+    fn reset_removes_key_from_config() {
+        let _lock = crate::nouns::TEST_ENV_LOCK
+            .lock()
+            .unwrap_or_else(|p| p.into_inner());
+        let _g = ConfigGuard::new();
+        let svc = ConfigService::new();
+        svc.set("gate_timeout", "30").unwrap();
+        svc.reset("gate_timeout").unwrap();
+        assert!(svc.view("gate_timeout").is_none(), "reset must delete the key");
+    }
+
+    // --- list ---
+
+    #[test]
+    fn list_includes_all_set_keys() {
+        let _lock = crate::nouns::TEST_ENV_LOCK
+            .lock()
+            .unwrap_or_else(|p| p.into_inner());
+        let _g = ConfigGuard::new();
+        let svc = ConfigService::new();
+        svc.set("max_instances", "10").unwrap();
+        svc.set("receipt_dir", "/tmp/receipts").unwrap();
+        let configs = svc.list();
+        let keys: Vec<&str> = configs.iter().map(|c| c.key.as_str()).collect();
+        assert!(keys.contains(&"max_instances"));
+        assert!(keys.contains(&"receipt_dir"));
+    }
+
+    // --- profile_list / profile_save / profile_load ---
+
+    #[test]
+    fn profile_save_and_list_shows_profile() {
+        let _lock = crate::nouns::TEST_ENV_LOCK
+            .lock()
+            .unwrap_or_else(|p| p.into_inner());
+        let _g = ConfigGuard::new();
+        // Use a temp profiles file via HOME redirection.
+        let home_tmp = tempfile::tempdir().unwrap();
+        let prev_home = std::env::var("HOME").ok();
+        // SAFETY: under TEST_ENV_LOCK.
+        unsafe { std::env::set_var("HOME", home_tmp.path()) };
+        let svc = ConfigService::new();
+        svc.set("log_level", "info").unwrap();
+        svc.profile_save("test-profile").unwrap();
+        let (names, count) = svc.profile_list();
+        // SAFETY: restoring HOME.
+        unsafe {
+            match prev_home {
+                Some(v) => std::env::set_var("HOME", v),
+                None => std::env::remove_var("HOME"),
+            }
+        }
+        assert_eq!(count, 1);
+        assert!(names.contains(&"test-profile".to_string()));
+    }
+
+    #[test]
+    fn profile_load_missing_profile_returns_err() {
+        let _lock = crate::nouns::TEST_ENV_LOCK
+            .lock()
+            .unwrap_or_else(|p| p.into_inner());
+        let _g = ConfigGuard::new();
+        let home_tmp = tempfile::tempdir().unwrap();
+        let prev_home = std::env::var("HOME").ok();
+        // SAFETY: under TEST_ENV_LOCK.
+        unsafe { std::env::set_var("HOME", home_tmp.path()) };
+        let svc = ConfigService::new();
+        let result = svc.profile_load("no-such-profile");
+        // SAFETY: restoring HOME.
+        unsafe {
+            match prev_home {
+                Some(v) => std::env::set_var("HOME", v),
+                None => std::env::remove_var("HOME"),
+            }
+        }
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("PROFILE_NOT_FOUND"));
+    }
+
+    // --- validate ---
+
+    #[test]
+    fn validate_known_keys_appear_in_valid_list() {
+        let _lock = crate::nouns::TEST_ENV_LOCK
+            .lock()
+            .unwrap_or_else(|p| p.into_inner());
+        let _g = ConfigGuard::new();
+        let svc = ConfigService::new();
+        svc.set("log_level", "warn").unwrap();
+        let (valid, unknown) = svc.validate();
+        assert!(valid.contains(&"log_level".to_string()));
+        assert!(!unknown.contains(&"log_level".to_string()));
+    }
+
+    #[test]
+    fn validate_unknown_key_appears_in_unknown_list() {
+        let _lock = crate::nouns::TEST_ENV_LOCK
+            .lock()
+            .unwrap_or_else(|p| p.into_inner());
+        let _g = ConfigGuard::new();
+        let svc = ConfigService::new();
+        svc.set("totally_unknown_key", "val").unwrap();
+        let (valid, unknown) = svc.validate();
+        assert!(unknown.contains(&"totally_unknown_key".to_string()));
+        assert!(!valid.contains(&"totally_unknown_key".to_string()));
+    }
+
+    // --- diff ---
+
+    #[test]
+    fn diff_missing_profile_returns_err() {
+        let _lock = crate::nouns::TEST_ENV_LOCK
+            .lock()
+            .unwrap_or_else(|p| p.into_inner());
+        let _g = ConfigGuard::new();
+        let home_tmp = tempfile::tempdir().unwrap();
+        let prev_home = std::env::var("HOME").ok();
+        // SAFETY: under TEST_ENV_LOCK.
+        unsafe { std::env::set_var("HOME", home_tmp.path()) };
+        let svc = ConfigService::new();
+        let result = svc.diff("no-such-profile");
+        // SAFETY: restoring HOME.
+        unsafe {
+            match prev_home {
+                Some(v) => std::env::set_var("HOME", v),
+                None => std::env::remove_var("HOME"),
+            }
+        }
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("PROFILE_NOT_FOUND"));
+    }
+}

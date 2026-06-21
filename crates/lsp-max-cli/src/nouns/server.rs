@@ -262,3 +262,102 @@ pub fn reload() -> Result<ReloadResult> {
     let details = service.reload()?;
     Ok(ReloadResult { details })
 }
+
+// ==============================================================================
+// 4. Tests
+// ==============================================================================
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// RAII guard — redirects LSP_MAX_STATE_PATH to an isolated temp file.
+    struct StateGuard {
+        _tmp: tempfile::NamedTempFile,
+        prev: Option<String>,
+    }
+
+    impl StateGuard {
+        fn new() -> Self {
+            let tmp = tempfile::NamedTempFile::new().unwrap();
+            let path = tmp.path().to_str().unwrap().to_string();
+            let prev = std::env::var("LSP_MAX_STATE_PATH").ok();
+            // SAFETY: under TEST_ENV_LOCK.
+            unsafe { std::env::set_var("LSP_MAX_STATE_PATH", &path) };
+            Self { _tmp: tmp, prev }
+        }
+    }
+
+    impl Drop for StateGuard {
+        fn drop(&mut self) {
+            // SAFETY: restoring env state under TEST_ENV_LOCK.
+            unsafe {
+                match &self.prev {
+                    Some(v) => std::env::set_var("LSP_MAX_STATE_PATH", v),
+                    None => std::env::remove_var("LSP_MAX_STATE_PATH"),
+                }
+            }
+        }
+    }
+
+    // --- status ---
+
+    #[test]
+    fn status_with_no_prior_state_returns_stopped() {
+        let _lock = crate::nouns::TEST_ENV_LOCK
+            .lock()
+            .unwrap_or_else(|p| p.into_inner());
+        let _g = StateGuard::new();
+        let svc = ServerService::new();
+        let details = svc.status().unwrap();
+        assert!(matches!(details.state, ServerState::Stopped));
+        assert!(details.pid.is_none());
+        assert_eq!(details.uptime_seconds, 0);
+    }
+
+    // --- stop ---
+
+    #[test]
+    fn stop_with_no_running_server_returns_stopped() {
+        let _lock = crate::nouns::TEST_ENV_LOCK
+            .lock()
+            .unwrap_or_else(|p| p.into_inner());
+        let _g = StateGuard::new();
+        let svc = ServerService::new();
+        let details = svc.stop(false).unwrap();
+        assert!(matches!(details.state, ServerState::Stopped));
+        assert!(details.pid.is_none());
+    }
+
+    // --- start / stop round-trip ---
+
+    #[test]
+    fn start_returns_pid_and_stop_cleans_up() {
+        let _lock = crate::nouns::TEST_ENV_LOCK
+            .lock()
+            .unwrap_or_else(|p| p.into_inner());
+        let _g = StateGuard::new();
+        let svc = ServerService::new();
+        let started = svc.start("127.0.0.1".to_string(), 9999).unwrap();
+        // The service spawns a real `sleep` process; stop it immediately.
+        assert!(started.pid.is_some(), "start must allocate a pid");
+        let stopped = svc.stop(true).unwrap();
+        assert!(matches!(stopped.state, ServerState::Stopped));
+        assert!(stopped.pid.is_none());
+    }
+
+    #[test]
+    fn second_start_while_running_returns_running_state() {
+        let _lock = crate::nouns::TEST_ENV_LOCK
+            .lock()
+            .unwrap_or_else(|p| p.into_inner());
+        let _g = StateGuard::new();
+        let svc = ServerService::new();
+        let _ = svc.start("127.0.0.1".to_string(), 9998).unwrap();
+        // A second start while the pid is still alive must return Running (no new spawn).
+        let second = svc.start("127.0.0.1".to_string(), 9998).unwrap();
+        // Cleanup regardless of assertion outcome.
+        let _ = svc.stop(true);
+        assert!(matches!(second.state, ServerState::Running));
+    }
+}

@@ -187,3 +187,138 @@ pub fn chain(instance_id: String, chain_id: Option<String>) -> clap_noun_verb::R
         raw,
     })
 }
+
+// ==============================================================================
+// 4. Tests
+// ==============================================================================
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use lsp_max_runtime::{AutonomicMesh, LspInstance};
+
+    fn make_temp_mesh() -> (tempfile::NamedTempFile, HookService) {
+        let mut mesh = AutonomicMesh::new();
+        mesh.add_instance(LspInstance::new("inst-1"));
+        let f = tempfile::NamedTempFile::new().unwrap();
+        mesh.save_to_file(f.path().to_str().unwrap()).unwrap();
+        let svc = HookService {
+            state_path: f.path().to_str().unwrap().to_string(),
+        };
+        (f, svc)
+    }
+
+    // --- list ---
+
+    #[test]
+    fn list_returns_ok_for_valid_mesh() {
+        let (_f, svc) = make_temp_mesh();
+        assert!(svc.list().is_ok());
+    }
+
+    #[test]
+    fn list_returns_vec_of_strings() {
+        let (_f, svc) = make_temp_mesh();
+        // All hook names must be non-empty strings.
+        for name in svc.list().unwrap() {
+            assert!(!name.is_empty(), "hook name must not be empty");
+        }
+    }
+
+    #[test]
+    fn list_fails_on_missing_state_file() {
+        let svc = HookService {
+            state_path: "/tmp/nonexistent-hook-test-file.json".to_string(),
+        };
+        assert!(svc.list().is_err());
+    }
+
+    // --- RPC verbs (integration path via isolated env) ---
+
+    fn with_mesh_state<F: FnOnce()>(f: F) {
+        let _lock = crate::nouns::TEST_ENV_LOCK
+            .lock()
+            .unwrap_or_else(|p| p.into_inner());
+        let mut mesh = AutonomicMesh::new();
+        mesh.add_instance(LspInstance::new("inst-1"));
+        let tmpf = tempfile::NamedTempFile::new().unwrap();
+        let path = tmpf.path().to_str().unwrap().to_string();
+        mesh.save_to_file(&path).unwrap();
+        let prev = std::env::var("LSP_MAX_STATE_PATH").ok();
+        // SAFETY: under TEST_ENV_LOCK, single-threaded env mutation.
+        unsafe { std::env::set_var("LSP_MAX_STATE_PATH", &path) };
+        f();
+        // SAFETY: restoring env under TEST_ENV_LOCK.
+        unsafe {
+            match prev {
+                Some(v) => std::env::set_var("LSP_MAX_STATE_PATH", v),
+                None => std::env::remove_var("LSP_MAX_STATE_PATH"),
+            }
+        }
+    }
+
+    #[test]
+    fn hook_rpc_returns_ok_for_known_instance() {
+        with_mesh_state(|| {
+            let result = hook_rpc("inst-1".to_string(), None);
+            assert!(result.is_ok(), "hook_rpc for known instance must return Ok");
+        });
+    }
+
+    #[test]
+    fn hook_rpc_result_echoes_instance_id() {
+        with_mesh_state(|| {
+            let res = hook_rpc("inst-1".to_string(), Some("my-hook".to_string())).unwrap();
+            assert_eq!(res.instance_id, "inst-1");
+            assert_eq!(res.hook_id.as_deref(), Some("my-hook"));
+        });
+    }
+
+    #[test]
+    fn hook_graph_returns_ok_for_known_instance() {
+        with_mesh_state(|| {
+            let result = hook_graph("inst-1".to_string(), None);
+            assert!(result.is_ok(), "hook_graph for known instance must return Ok");
+        });
+    }
+
+    #[test]
+    fn propagate_returns_ok_for_known_instance() {
+        with_mesh_state(|| {
+            let result = propagate("inst-1".to_string(), "chain-a".to_string());
+            assert!(result.is_ok(), "propagate for known instance must return Ok");
+        });
+    }
+
+    #[test]
+    fn chain_returns_ok_for_known_instance() {
+        with_mesh_state(|| {
+            let result = chain("inst-1".to_string(), None);
+            assert!(result.is_ok(), "chain for known instance must return Ok");
+        });
+    }
+
+    #[test]
+    fn hook_rpc_fails_on_missing_state_file() {
+        let _lock = crate::nouns::TEST_ENV_LOCK
+            .lock()
+            .unwrap_or_else(|p| p.into_inner());
+        let prev = std::env::var("LSP_MAX_STATE_PATH").ok();
+        // SAFETY: under TEST_ENV_LOCK.
+        unsafe {
+            std::env::set_var(
+                "LSP_MAX_STATE_PATH",
+                "/tmp/nonexistent-hook-rpc-test.json",
+            )
+        };
+        let result = hook_rpc("inst-1".to_string(), None);
+        // SAFETY: restoring env under TEST_ENV_LOCK.
+        unsafe {
+            match prev {
+                Some(v) => std::env::set_var("LSP_MAX_STATE_PATH", v),
+                None => std::env::remove_var("LSP_MAX_STATE_PATH"),
+            }
+        }
+        assert!(result.is_err(), "missing state file must produce Err");
+    }
+}

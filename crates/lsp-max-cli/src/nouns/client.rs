@@ -215,3 +215,128 @@ pub fn receive(id: String) -> Result<ReceiveResult> {
         .map_err(NounVerbError::execution_error)?;
     Ok(ReceiveResult { message })
 }
+
+// ==============================================================================
+// 4. Tests
+// ==============================================================================
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// RAII guard — sets LSP_MAX_STATE_PATH to a fresh temp file, restores on drop.
+    struct StateGuard {
+        _tmp: tempfile::NamedTempFile,
+        prev: Option<String>,
+    }
+
+    impl StateGuard {
+        fn new() -> Self {
+            let tmp = tempfile::NamedTempFile::new().unwrap();
+            let path = tmp.path().to_str().unwrap().to_string();
+            let prev = std::env::var("LSP_MAX_STATE_PATH").ok();
+            // SAFETY: under TEST_ENV_LOCK held by the caller.
+            unsafe { std::env::set_var("LSP_MAX_STATE_PATH", &path) };
+            Self { _tmp: tmp, prev }
+        }
+    }
+
+    impl Drop for StateGuard {
+        fn drop(&mut self) {
+            // SAFETY: restoring env state under TEST_ENV_LOCK.
+            unsafe {
+                match &self.prev {
+                    Some(v) => std::env::set_var("LSP_MAX_STATE_PATH", v),
+                    None => std::env::remove_var("LSP_MAX_STATE_PATH"),
+                }
+            }
+        }
+    }
+
+    // --- connect ---
+
+    #[test]
+    fn connect_returns_connected_state() {
+        let _lock = crate::nouns::TEST_ENV_LOCK
+            .lock()
+            .unwrap_or_else(|p| p.into_inner());
+        let _g = StateGuard::new();
+        let client = ClientService::connect("client-1".to_string()).unwrap();
+        assert_eq!(client.id, "client-1");
+        assert!(matches!(client.state, ClientState::Connected));
+    }
+
+    // --- disconnect ---
+
+    #[test]
+    fn disconnect_returns_disconnected_state() {
+        let _lock = crate::nouns::TEST_ENV_LOCK
+            .lock()
+            .unwrap_or_else(|p| p.into_inner());
+        let _g = StateGuard::new();
+        let _ = ClientService::connect("client-2".to_string()).unwrap();
+        let client = ClientService::disconnect("client-2".to_string()).unwrap();
+        assert_eq!(client.id, "client-2");
+        assert!(matches!(client.state, ClientState::Disconnected));
+    }
+
+    #[test]
+    fn disconnect_unknown_client_creates_disconnected_record() {
+        let _lock = crate::nouns::TEST_ENV_LOCK
+            .lock()
+            .unwrap_or_else(|p| p.into_inner());
+        let _g = StateGuard::new();
+        // Disconnect without prior connect must succeed — creates a Disconnected entry.
+        let client = ClientService::disconnect("never-connected".to_string()).unwrap();
+        assert!(matches!(client.state, ClientState::Disconnected));
+    }
+
+    // --- send ---
+
+    #[test]
+    fn send_returns_true() {
+        let _lock = crate::nouns::TEST_ENV_LOCK
+            .lock()
+            .unwrap_or_else(|p| p.into_inner());
+        let _g = StateGuard::new();
+        let result = ClientService::send("client-3".to_string(), "hello".to_string()).unwrap();
+        assert!(result);
+    }
+
+    // --- receive ---
+
+    #[test]
+    fn receive_empty_queue_returns_default_message() {
+        let _lock = crate::nouns::TEST_ENV_LOCK
+            .lock()
+            .unwrap_or_else(|p| p.into_inner());
+        let _g = StateGuard::new();
+        let msg = ClientService::receive("client-4".to_string()).unwrap();
+        assert_eq!(msg.body, "No messages available");
+    }
+
+    #[test]
+    fn send_then_receive_pops_the_message() {
+        let _lock = crate::nouns::TEST_ENV_LOCK
+            .lock()
+            .unwrap_or_else(|p| p.into_inner());
+        let _g = StateGuard::new();
+        let _ = ClientService::connect("client-5".to_string()).unwrap();
+        ClientService::send("client-5".to_string(), "ping".to_string()).unwrap();
+        let msg = ClientService::receive("client-5".to_string()).unwrap();
+        assert_eq!(msg.body, "ping", "receive must pop and return the sent message");
+    }
+
+    #[test]
+    fn second_receive_returns_default_after_queue_drained() {
+        let _lock = crate::nouns::TEST_ENV_LOCK
+            .lock()
+            .unwrap_or_else(|p| p.into_inner());
+        let _g = StateGuard::new();
+        let _ = ClientService::connect("client-6".to_string()).unwrap();
+        ClientService::send("client-6".to_string(), "once".to_string()).unwrap();
+        let _ = ClientService::receive("client-6".to_string()).unwrap();
+        let msg = ClientService::receive("client-6".to_string()).unwrap();
+        assert_eq!(msg.body, "No messages available");
+    }
+}

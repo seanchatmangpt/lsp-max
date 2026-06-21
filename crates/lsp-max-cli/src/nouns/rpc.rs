@@ -81,3 +81,90 @@ pub fn dispatch(
         response,
     })
 }
+
+// ==============================================================================
+// 4. Tests
+// ==============================================================================
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use lsp_max_runtime::{AutonomicMesh, LspInstance};
+
+    fn make_temp_mesh() -> (tempfile::NamedTempFile, RpcService) {
+        let mut mesh = AutonomicMesh::new();
+        mesh.add_instance(LspInstance::new("inst-1"));
+        let f = tempfile::NamedTempFile::new().unwrap();
+        mesh.save_to_file(f.path().to_str().unwrap()).unwrap();
+        let svc = RpcService {
+            state_path: f.path().to_str().unwrap().to_string(),
+        };
+        (f, svc)
+    }
+
+    // --- dispatch ---
+
+    #[test]
+    fn dispatch_known_method_returns_ok() {
+        let (_f, svc) = make_temp_mesh();
+        assert!(svc.dispatch("inst-1", "max/dumpState", "null").is_ok());
+    }
+
+    #[test]
+    fn dispatch_result_is_serialisable_json_value() {
+        let (_f, svc) = make_temp_mesh();
+        let val = svc.dispatch("inst-1", "max/dumpState", "null").unwrap();
+        let s = serde_json::to_string(&val).expect("response must serialize");
+        assert!(!s.is_empty());
+    }
+
+    #[test]
+    fn dispatch_invalid_json_params_returns_err() {
+        let (_f, svc) = make_temp_mesh();
+        let result = svc.dispatch("inst-1", "max/dumpState", "{ not valid json }");
+        assert!(result.is_err(), "malformed params JSON must return Err");
+        let msg = result.unwrap_err();
+        assert!(
+            msg.contains("Invalid params JSON"),
+            "error should identify the params problem: {msg}"
+        );
+    }
+
+    #[test]
+    fn dispatch_fails_on_missing_state_file() {
+        let svc = RpcService {
+            state_path: "/tmp/nonexistent-rpc-test-state.json".to_string(),
+        };
+        assert!(svc.dispatch("inst-1", "max/dumpState", "null").is_err());
+    }
+
+    #[test]
+    fn dispatch_preserves_instance_and_method_in_result() {
+        let _lock = crate::nouns::TEST_ENV_LOCK
+            .lock()
+            .unwrap_or_else(|p| p.into_inner());
+        let mut mesh = AutonomicMesh::new();
+        mesh.add_instance(LspInstance::new("inst-2"));
+        let tmpf = tempfile::NamedTempFile::new().unwrap();
+        let path = tmpf.path().to_str().unwrap().to_string();
+        mesh.save_to_file(&path).unwrap();
+        let prev = std::env::var("LSP_MAX_STATE_PATH").ok();
+        // SAFETY: under TEST_ENV_LOCK.
+        unsafe { std::env::set_var("LSP_MAX_STATE_PATH", &path) };
+        let result = dispatch(
+            "inst-2".to_string(),
+            "max/dumpState".to_string(),
+            Some("null".to_string()),
+        );
+        // SAFETY: restoring env under TEST_ENV_LOCK.
+        unsafe {
+            match prev {
+                Some(v) => std::env::set_var("LSP_MAX_STATE_PATH", v),
+                None => std::env::remove_var("LSP_MAX_STATE_PATH"),
+            }
+        }
+        let rpc_result = result.unwrap();
+        assert_eq!(rpc_result.instance_id, "inst-2");
+        assert_eq!(rpc_result.method, "max/dumpState");
+    }
+}
