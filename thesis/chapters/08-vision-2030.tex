@@ -1,0 +1,136 @@
+\chapter{Vision 2030: The Phase Transition Realised}
+\label{ch:vision}
+
+\epigraph{Prediction is very difficult, especially about the future.}{attributed
+to Niels Bohr}
+
+This chapter discharges contribution~C6: a 2030 outlook. It is the most
+speculative chapter, and it is marked accordingly. Forecasts from analysts and
+market researchers are reproduced as \forecast; the thesis's own extrapolations
+are derived from the model of \cref{ch:framework,ch:math} and are likewise bounded.
+\Cref{sec:vis-forecasts} reviews external forecasts; \cref{sec:vis-expansion}
+applies the phase-transition model; \cref{sec:vis-roadmap} gives a staged roadmap;
+and \cref{sec:vis-governance} treats governance and risk.
+
+\section{External Forecasts}
+\label{sec:vis-forecasts}
+
+The analyst consensus for the late 2020s is one of rapid agentic adoption paired
+with high failure rates. Gartner projects that by 2028 one-third of enterprise
+software applications will include agentic AI, up from less than one per cent in
+2024, and that at least fifteen per cent of day-to-day work decisions will be made
+autonomously \citep{gartner-agentic-2025}~[\forecast]; that forty per cent of
+enterprise applications will feature task-specific agents by 2026
+\citep{gartner-taskagents-2025}~[\forecast]; and, in the same breath, that over
+forty per cent of agentic-AI projects will be cancelled by the end of 2027, citing
+``inadequate risk controls'' among the causes
+\citep{gartner-agentic-2025}~[\forecast]. Most consequentially for this thesis,
+Gartner forecasts that ``guardian agent'' technologies will capture ten to fifteen
+per cent of the agentic-AI market by 2030 \citep{gartner-guardian-2025}~[\forecast].
+Market sizings vary widely by definition: one estimate puts the AI-agents market at
+USD~7.84\,billion in 2025 rising to USD~52.62\,billion by 2030 (CAGR ${\approx}46\%$)
+\citep{marketsandmarkets-aiagents}~[\forecast], another the enterprise segment at
+USD~2.58\,billion rising to USD~24.5\,billion \citep{grandview-agentic}~[\forecast].
+The spread (a factor of two at the 2030 horizon) is itself the finding: these are
+indicative ranges, not measurements.
+
+Two of these forecasts bear directly on the argument. The ``inadequate risk
+controls'' cancellation driver is precisely the deficiency P2 of
+\cref{sec:problem}; and the ``guardian agent'' category is, in this thesis's
+vocabulary, the market's name for a law-state runtime. The external forecast that a
+distinct stratum of oversight agents will command a tenth of the market by 2030 is
+independent, if speculative, support for \cref{hyp:substrate}'s claim that
+conformance is a stratum in its own right.
+
+\section{The Expansion Argument}
+\label{sec:vis-expansion}
+
+What does the phase-transition model predict, taken seriously and stated honestly?
+The Decoupling Theorem (\cref{thm:decoupling}) and its corollary
+(\cref{cor:superlinear}) establish that, once domains, capabilities, and agents are
+each integrated once against the fused substrate, the reachable surface scales as
+the product $\Theta(n^3)$ against linear integration cost $\Theta(n)$. The Landau
+analysis (\cref{prop:landau-jump}) establishes that, with a network-effect term,
+the adoption order parameter jumps discontinuously as standardisation crosses a
+threshold. Composing the two: \emph{if} adoption crosses its threshold in the late
+2020s---of which the institutional consolidation under the Linux Foundation and the
+Agentic AI Foundation (\cref{sec:vis-governance}) is a leading indicator---then the
+addressable surface of machine-mediated language expands not incrementally but by
+orders of magnitude, the digital counterpart of the ${\sim}1{,}600$--$1{,}700\times$
+expansion that names this thesis.
+
+This is the steam claim, and three honesty constraints bound it. First, it is a
+\forecast: the model explains a mechanism, it does not measure $\Phi$. Second, by
+\cref{prin:plateau}, the present period of intense standardisation effort with
+modest visible capability is consistent with an \emph{approaching} transition and
+with one that never arrives; the same plateau precedes both. Third, the
+order-of-magnitude figure is borrowed from physics as an emblem of \emph{character}
+(discontinuous, large), not as a measured digital quantity. With those constraints,
+the prediction is: the convergence of LSP, MCP, and A2A under a conformance stratum
+is of the order type of a first-order phase transition, and the late 2020s are
+when the threshold is most plausibly crossed.
+
+\section{A Roadmap to 2030}
+\label{sec:vis-roadmap}
+
+\Cref{tab:roadmap} stages the transition with bounded entry criteria, so that the
+roadmap is falsifiable rather than aspirational: each stage names what would count
+as having entered it.
+
+\begin{table}[t]
+\centering
+\caption[A staged roadmap to 2030]{A staged roadmap. Each stage's status is the
+bounded status of its entry criterion as of submission; later stages are
+\openstat\ by construction.}
+\label{tab:roadmap}
+\small
+\begin{tabularx}{\textwidth}{@{}l Y l@{}}
+\toprule
+\textbf{Stage} & \textbf{Entry criterion} & \textbf{Status} \\
+\midrule
+S1 (now) & Generalised LSP servers exist for non-code languages; agent traces emitted as OCEL & \candidate \\
+S2 & Read-only conformance exposed as MCP tools/resources; receipts cross tool boundaries & \candidate \\
+S3 & Conformance authorities discoverable over A2A; verdicts portable across agents & \openstat \\
+S4 & Cross-domain law axes standardised under a neutral foundation & \openstat \\
+S5 (2030) & Conformance-for-all-language is a default stratum of the substrate & \openstat \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+Stage~S1 is already underway: language servers for natural language and data
+formats exist \citep{ltex,yamlls}, and the artifact of \cref{ch:artifact} emits its
+own agent conduct as OCEL. Stage~S2 is foreshadowed by the workflow-engine and
+capability-binding preprints of \cref{sec:recent} \citep{parmar26,zhou26gov}.
+Stage~S3 awaits A2A-advertised conformance capabilities, of which the
+identity-and-delegation work across MCP and A2A is a precursor
+\citep{prakash26aip}. Stages~S4 and~S5 are \openstat: they require cross-domain law
+standardisation that does not yet exist, and the thesis does not claim it will.
+
+\section{Governance, Standardisation, and Risk}
+\label{sec:vis-governance}
+
+The latent heat of standardisation (\cref{def:latent}) is being paid through
+institutions. A2A entered the Linux Foundation in June 2025
+\citep{a2a-lf-donation,lf-a2a-press}; MCP entered the Agentic AI Foundation under
+the same umbrella in December 2025 \citep{mcp-aaif-2025,lf-aaif-press}. Neutral
+governance is the social mechanism by which a protocol's adoption threshold is
+crossed, and its arrival for two of the three strata within six months is the
+clearest leading indicator that the transition's precondition is being met.
+
+The risks are equally concrete, and conformance speaks to several. The cancellation
+forecast attributes failure partly to weak risk controls
+\citep{gartner-agentic-2025}; the security literature documents prompt injection
+and tool poisoning against MCP \citep{gaire25,huang26threat,maloyan26}; the
+reliability literature finds that accuracy masks unreliability \citep{rabanser26};
+and the oversight literature shows that human oversight has finite capacity, so
+that adding escalation can \emph{reduce} safety past a point \citep{turan26}. A
+law-state runtime is a partial answer to the first three---a standing, three-valued,
+receipt-bound risk control---and the ``guardian agent'' market
+\citep{gartner-guardian-2025} is where it would live. But it is no answer to the
+fourth: an oversight stratum that itself demands human attention inherits the
+capacity limit, and ``proof-of-guardrail'' can be trusted only as far as its own
+analysis allows \citep{jin26guardrail}. The honest 2030 vision is therefore
+double-edged: the same fusion that expands reach also concentrates a new dependency
+on the conformance stratum, whose own trustworthiness, scalability, and capture
+resistance are \openstat. Whether the guardian guards itself is the question the
+next chapter's threats-to-validity must hold open.

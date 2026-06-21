@@ -1,0 +1,226 @@
+\chapter{Conceptual Framework: Language as Process}
+\label{ch:framework}
+
+\epigraph{All models are wrong, but some are useful.}{George E. P. Box}
+
+This chapter supplies the theory the empirical and design chapters depend on. It
+makes one move and follows its consequences. The move is to treat \emph{any} use
+of \emph{any} language as behaviour that leaves a trace; the consequences are an
+event-log abstraction for language (\cref{sec:fw-eventlog}), a phase-transition
+model of protocol convergence (\cref{sec:fw-phase}), a latent-heat account of
+standardisation (\cref{sec:fw-latent}), a definition of the law-state runtime
+(\cref{sec:fw-lawstate}), and the unified-substrate hypothesis that ties them
+together (\cref{sec:fw-substrate}).
+
+\section{From Text to Event Log: Language as Behaviour}
+\label{sec:fw-eventlog}
+
+Process mining begins where there is an event log; this thesis begins by
+observing that language use \emph{is} an event log waiting to be read.
+
+\begin{definition}[Machine-mediated language]
+\label{def:mml}
+A \emph{machine-mediated language} is any symbolic system---programming language,
+natural language, legal or regulatory text, mathematical notation, biological
+sequence, musical score, or business-process notation---whose production,
+interpretation, or transformation is carried out with, or observed by, a
+computational agent.
+\end{definition}
+
+The conventional view treats a text as a static object that a model
+\emph{reads}. The process view treats the same text as the residue of
+behaviour: a document was drafted, clauses were inserted and revised, a proof was
+constructed step by step, a melody was stated and then varied, a sequence was
+transcribed and edited. Each such act is an \emph{event}, with a timestamp, an
+actor, and a set of objects it touches.
+
+\begin{definition}[Event-log abstraction of a language]
+\label{def:eventlog}
+A language $L$ \emph{admits an event-log abstraction} when its use can be
+recorded as a set of events, each carrying (i)~an activity, (ii)~a time order,
+and (iii)~a reference to one or more typed objects, such that the record is an
+object-centric event log in the sense of OCEL~2.0 \citep{ocel2-2024}.
+\end{definition}
+
+\Cref{def:eventlog} is the hinge of the thesis. It converts the open-ended
+question ``can a language server serve domain $X$?'' into the tractable question
+``does $X$ admit an event-log abstraction?''. Where the conventional language
+server answers queries \emph{about a snapshot of text}, the process view lets a
+server reason about \emph{the behaviour that produced and will act on that text}.
+
+\begin{definition}[Conformance surface]
+\label{def:conformance-surface}
+Given a language $L$ with an event-log abstraction and a model $M_L$ of intended
+behaviour, the \emph{conformance surface} of $L$ is the function that maps an
+observed log to a verdict locating where the log fits $M_L$, where it deviates,
+and where the relationship is undetermined---reported with the four quality
+dimensions of \cref{sec:bg-conformance}.
+\end{definition}
+
+\begin{principle}[Three-valued verdicts]
+\label{prin:three-valued}
+A conformance surface returns one of three verdicts per law axis---\admitted,
+\refused, or \unknownstat---and never collapses \unknownstat\ into either
+polarity. Absence of a refutation is not admission.
+\end{principle}
+
+\Cref{prin:three-valued} is inherited directly from the artifact
+(\cref{ch:artifact}) and is the epistemic backbone of the whole construction. A
+binary conformance verdict (fit / not-fit) is a category error when applied to
+open-world language: most of what an agent could check, it has not yet checked.
+The third value records that gap honestly.
+
+\section{The Phase-Transition Model}
+\label{sec:fw-phase}
+
+We now make \cref{hyp:central} precise enough to be argued with. Let the
+\emph{addressable surface} of machine-mediated language be, informally, the
+product of three quantities: the number of \emph{domains} treated as servable
+languages, the number of \emph{capabilities} (completion, diagnosis, conformance,
+repair, coordination) exposed over each, and the number of \emph{agents} able to
+invoke them. Write this order parameter $\Phi$. Let the control parameter be
+$\sigma$, the degree of protocol standardisation and adoption across the LSP,
+MCP, and A2A strata.
+
+\begin{proposition}[Discontinuous expansion]
+\label{prop:discontinuous}
+$\Phi$ is not a smooth function of $\sigma$. Below a critical adoption threshold
+$\sigma_c$, additions to $\sigma$ yield roughly proportional additions to
+$\Phi$ (linear integration). At $\sigma_c$, the decoupling that each protocol
+performs---$M \times N \to M + N$---begins to \emph{compose across layers}, so
+that a new domain, a new capability, and a new agent each multiply rather than
+add to reach. In the neighbourhood of $\sigma_c$, $\Phi$ expands by orders of
+magnitude for a bounded change in $\sigma$: a phase transition.
+\end{proposition}
+
+The mechanism behind \cref{prop:discontinuous} is compositional, not mystical.
+Under pre-protocol conditions, connecting $D$ domains, $C$ capabilities, and $A$
+agents costs on the order of $D \cdot C \cdot A$ bespoke integrations. Under the
+fused protocols, each domain is integrated once (an LSP-style server), each
+capability once (an MCP-style primitive), and each agent once (an A2A-style
+card), so the cost falls toward $D + C + A$ while the \emph{reachable
+combinations} remain $D \cdot C \cdot A$. The ratio of reachable surface to
+integration cost---roughly $\tfrac{D\,C\,A}{D+C+A}$---is the quantity that
+explodes. This is the same inversion LSP achieved for editors and languages,
+now compounded over three strata.
+
+\begin{remark}
+The metaphor's numerical anchor is deliberately physical. Water at the boiling
+point expands by ${\sim}1{,}600$--$1{,}700\times$
+\citep{phys-illinois-steam,nationalboard-steam}; the claim of
+\cref{prop:discontinuous} is not that the digital expansion equals this figure,
+but that it is of the \emph{same character}---discontinuous and large---rather
+than incremental. We use the figure as an order-of-magnitude emblem, and we mark
+any literal projection of $\Phi$ as a \forecast\ (\cref{ch:vision}).
+\end{remark}
+
+\section{Latent Heat and the Energetics of Standardisation}
+\label{sec:fw-latent}
+
+Phase transitions are paid for. The distinctive thermodynamic fact is that, at
+the transition, energy enters the system \emph{without raising its
+temperature}: the latent heat of vaporisation is absorbed at constant
+$100\,^{\circ}\mathrm{C}$ to break intermolecular bonds and reorganise liquid
+into vapour \citep{latentheat-openstax}. We propose an analogue.
+
+\begin{definition}[Latent heat of standardisation]
+\label{def:latent}
+The \emph{latent heat of standardisation} is the cumulative effort invested in
+specifying, ratifying, and adopting a protocol that produces \emph{no visible
+capability gain while it is being invested}, and that conditions the subsequent
+discontinuous expansion of the addressable surface.
+\end{definition}
+
+In the model of \cref{fig:latent-heat}, ``temperature'' is visible capability and
+``energy'' is cumulative standardisation effort. During the plateau,
+$\mathrm{d}(\text{capability})/\mathrm{d}(\text{effort}) \approx 0$: years of
+specification work register as apparent stagnation. The plateau is not waste; it
+is the precondition. The history of \cref{ch:background} is legible this way---LSP
+(2016), MCP (2024), A2A (2025), and their arrival under a shared foundation
+(2025)---as the staged absorption of latent heat \citep{lf-a2a-press,lf-aaif-press}.
+
+\begin{principle}[Plateaus are not failures]
+\label{prin:plateau}
+A period in which standardisation effort yields no visible capability is
+evidence consistent with an approaching transition, not evidence against it.
+Evaluations conducted mid-plateau systematically understate eventual $\Phi$.
+\end{principle}
+
+\Cref{prin:plateau} has a sober corollary for \cref{ch:vision}: it also licenses
+over-optimism. A plateau is consistent with an \emph{approaching} transition and
+with one that never arrives. The principle therefore constrains how forecasts are
+stated, not whether they are believed.
+
+\section{Law-State Runtime: Conformance as a First-Class Surface}
+\label{sec:fw-lawstate}
+
+The protocols move messages; conformance judges behaviour. To judge behaviour
+during operation, conformance must be a runtime surface, not an after-the-fact
+report.
+
+\begin{definition}[Law-state runtime]
+\label{def:lawstate}
+A \emph{law-state runtime} is a system that (i)~observes the behaviour of agents
+over machine-mediated language as an object-centric event log, (ii)~maintains a
+conformance surface over that log against declared law axes, (iii)~exposes the
+resulting \admitted/\refused/\unknownstat\ state through a protocol so that
+agents, CI systems, and release gates can read it live, and (iv)~admits claims
+of conformance only when bound to a verifiable \emph{receipt}.
+\end{definition}
+
+A law-state runtime is to conformance what a language server is to language
+intelligence: a decoupled, networked surface that any client may consult. Its
+read-only posture toward the artifacts it judges (\cref{ch:artifact}) is what
+keeps it trustworthy: an observer that can silently rewrite what it observes is
+not an oracle but a participant.
+
+\section{The Unified-Substrate Hypothesis}
+\label{sec:fw-substrate}
+
+The strands now combine.
+
+\begin{hypothesis}[Unified substrate]
+\label{hyp:substrate}
+LSP (generalised per \cref{def:mml,def:eventlog}), MCP, and A2A are not three
+protocols but three strata of one substrate for machine-mediated language: LSP
+the \emph{semantic} stratum (what an utterance means), MCP the \emph{contextual}
+stratum (what an agent may consult to interpret or act), and A2A the
+\emph{coordinative} stratum (how agents combine). A law-state runtime
+(\cref{def:lawstate}) is the cross-cutting \emph{conformance} stratum that makes
+the substrate trustworthy. The fusion of all four is the phase change of
+\cref{hyp:central}.
+\end{hypothesis}
+
+\Cref{hyp:substrate} is evaluated, not asserted: \cref{ch:fusion} composes the
+strata in the artifact, \cref{ch:all-language} tests the semantic-plus-conformance
+strata across six domains, and \cref{ch:discussion} grades the hypothesis with
+bounded status. \Cref{fig:pipeline} summarises the pipeline the hypothesis
+implies: an utterance in any language becomes an object-centric log, which a
+conformance surface maps to a three-valued verdict, which the protocols carry to
+whichever client needs it.
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}[
+  node distance=6mm and 12mm,
+  box/.style={draw,rounded corners,align=center,minimum height=9mm,inner sep=4pt,font=\footnotesize},
+  >=Latex]
+  \node[box] (lang) {utterance in\\language $L$};
+  \node[box,right=of lang] (log) {object-centric\\event log (OCEL)};
+  \node[box,right=of log] (surf) {conformance\\surface};
+  \node[box,right=of surf] (verd) {verdict\\\admitted{}\,/\,\refused{}\,/\,\unknownstat};
+  \node[box,below=of surf] (proto) {LSP $\cdot$ MCP $\cdot$ A2A\\(transport \& reach)};
+  \draw[->] (lang) -- (log);
+  \draw[->] (log) -- (surf);
+  \draw[->] (surf) -- (verd);
+  \draw[->] (proto) -- (surf);
+  \draw[->] (verd) to[out=-30,in=0] ($(proto.east)+(0.2,0)$);
+\end{tikzpicture}
+\caption[The language-as-process pipeline]{The pipeline implied by the
+unified-substrate hypothesis. Any language admitting an event-log abstraction
+(\cref{def:eventlog}) is mapped by a conformance surface
+(\cref{def:conformance-surface}) to a three-valued verdict
+(\cref{prin:three-valued}); the three protocols carry both the inputs and the
+verdict to any client.}
+\label{fig:pipeline}
+\end{figure}

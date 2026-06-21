@@ -1,0 +1,182 @@
+\section{Pillar III --- The Analysis of Phase Transitions}
+\label{sec:analysis}
+
+\Cref{ch:introduction} stakes the thesis on a metaphor: convergence is a phase
+transition, like water becoming steam. A metaphor earns its keep only if the
+mathematics it points to is real. This pillar supplies that mathematics from first
+principles: the calculus of continuity and discontinuity, the thermodynamic
+classification of transitions, a derivation of the Clausius--Clapeyron relation
+that shows the steam expansion ratio and the latent heat are \emph{one equation},
+and a Landau model in which an order parameter jumps discontinuously as a control
+parameter crosses a threshold.
+
+\subsection{Limits, continuity, and discontinuity}
+\label{sec:an-limits}
+
+\begin{definition}[Limit and continuity]
+A function $f\colon\mathbb R\to\mathbb R$ has \emph{limit} $\ell$ at $x_0$, written
+$\lim_{x\to x_0}f(x)=\ell$, if for every $\varepsilon>0$ there is $\delta>0$ with
+$0<|x-x_0|<\delta\Rightarrow|f(x)-\ell|<\varepsilon$. It is \emph{continuous} at
+$x_0$ if $\lim_{x\to x_0}f(x)=f(x_0)$, and \emph{differentiable} there with
+derivative $f'(x_0)=\lim_{h\to0}\frac{f(x_0+h)-f(x_0)}{h}$ when that limit exists.
+\end{definition}
+
+\begin{definition}[Jump discontinuity]
+$f$ has a \emph{jump discontinuity} at $x_0$ if the one-sided limits
+$f(x_0^-)=\lim_{x\uparrow x_0}f(x)$ and $f(x_0^+)=\lim_{x\downarrow x_0}f(x)$ exist
+but differ; the \emph{jump} is $f(x_0^+)-f(x_0^-)\ne 0$.
+\end{definition}
+
+A jump discontinuity is the exact sense in which the thesis claims the order
+parameter $\Phi$ of \cref{sec:fw-phase} is ``discontinuous'' in the control
+$\sigma$: not that it changes quickly, but that its one-sided limits at $\sigma_c$
+differ. This is what distinguishes a phase transition from rapid but smooth growth.
+
+\subsection{Thermodynamic potentials and the Ehrenfest classification}
+\label{sec:an-thermo}
+
+\begin{definition}[Gibbs free energy]
+For a substance at temperature $T$ and pressure $P$, the molar \emph{Gibbs free
+energy} is $g=u-Ts+Pv$, with $u$ internal energy, $s$ molar entropy, $v$ molar
+volume. Its differential is $\mathrm dg=-s\,\mathrm dT+v\,\mathrm dP$, so that
+$s=-\bigl(\partial g/\partial T\bigr)_P$ and
+$v=\bigl(\partial g/\partial P\bigr)_T$.
+\end{definition}
+
+\begin{definition}[Ehrenfest classification]
+A phase transition is \emph{first-order} if the first derivatives of $g$
+(equivalently $s$ and $v$) are discontinuous across it, and \emph{continuous}
+(``second-order'') if the first derivatives are continuous but some second
+derivative is not. A first-order transition therefore involves a jump $\Delta s$
+in entropy and $\Delta v$ in volume.
+\end{definition}
+
+Water-to-steam is the prototypical first-order transition: at the boiling point
+the molar volume jumps by the factor of ${\sim}1{,}600$--$1{,}700$ recorded in
+\cref{sec:metaphor-intro} \citep{engtoolbox-steam,nationalboard-steam}, and the
+entropy jumps by $\Delta s=L/T$ where $L$ is the latent heat
+\citep{latentheat-openstax}. The thesis's claim is precisely that the
+standardisation transition is \emph{first-order} in this sense---a jump in the
+addressable surface, not a kink.
+
+\subsection{The Clausius--Clapeyron relation, from first principles}
+\label{sec:an-clausius}
+
+\begin{theorem}[Clausius--Clapeyron]
+\label{thm:clausius}
+Along a coexistence curve $P(T)$ where two phases are in equilibrium, the slope
+satisfies
+\[
+\frac{\mathrm dP}{\mathrm dT}=\frac{\Delta s}{\Delta v}=\frac{L}{T\,\Delta v},
+\]
+where $\Delta s=s_2-s_1$, $\Delta v=v_2-v_1$, and $L=T\,\Delta s$ is the latent
+heat absorbed at constant $T$.
+\end{theorem}
+\begin{proof}
+At coexistence the two phases have equal molar Gibbs free energy,
+$g_1(T,P)=g_2(T,P)$. Moving along the coexistence curve preserves this equality,
+so $\mathrm dg_1=\mathrm dg_2$. Substituting
+$\mathrm dg_i=-s_i\,\mathrm dT+v_i\,\mathrm dP$ gives
+$-s_1\,\mathrm dT+v_1\,\mathrm dP=-s_2\,\mathrm dT+v_2\,\mathrm dP$, hence
+$(v_2-v_1)\,\mathrm dP=(s_2-s_1)\,\mathrm dT$ and
+$\mathrm dP/\mathrm dT=\Delta s/\Delta v$. For a reversible change at constant
+temperature the absorbed heat is $L=T\,\Delta s$, so $\Delta s=L/T$ and the second
+equality follows.
+\end{proof}
+
+\begin{corollary}[Expansion and latent heat are one equation]
+\label{cor:onesfact}
+Rearranging \cref{thm:clausius}, $L=T\,\Delta v\,(\mathrm dP/\mathrm dT)$. For
+vaporisation $v_{\text{vapour}}\gg v_{\text{liquid}}$, so $\Delta v\approx
+v_{\text{vapour}}$ and the latent heat is, to leading order, proportional to the
+volume expansion. The two numbers the thesis cites for water---an expansion of
+${\sim}1{,}600$--$1{,}700\times$ and a latent heat of ${\sim}2{,}256\
+\mathrm{kJ/kg}$---are not independent facts but two readings of
+\cref{thm:clausius}.
+\end{corollary}
+
+\Cref{cor:onesfact} is the rigorous core of the metaphor. The ``latent heat of
+standardisation'' (\cref{def:latent}) is not a loose analogy bolted onto a volume
+figure: in the physical system the large expansion \emph{is} the large latent
+heat, related by \cref{thm:clausius}. The thesis's two claims---that
+standardisation costs a great deal (latent heat) and that it yields a great
+expansion (volume)---are, under the metaphor, the same claim.
+
+\subsection{Landau theory: a discontinuous jump from a smooth potential}
+\label{sec:an-landau}
+
+The Ehrenfest picture describes a transition; Landau theory \emph{generates} one
+from a free energy that is itself smooth in an order parameter $\varphi\ge 0$.
+
+\begin{construction}[Landau free energy with a cubic term]
+\label{con:landau}
+Let the (coarse-grained) free energy be
+\[
+F(\varphi)=a\,\varphi^{2}-b\,\varphi^{3}+c\,\varphi^{4},\qquad b,c>0,\ a\ge 0,
+\]
+where the control parameter (here, inverse standardisation, decreasing as
+$\sigma$ rises) is encoded in $a$. The equilibrium order parameter is
+$\varphi^{*}(a)=\arg\min_{\varphi\ge0}F(\varphi)$.
+\end{construction}
+
+\begin{proposition}[First-order jump]
+\label{prop:landau-jump}
+For \cref{con:landau}, the global minimiser $\varphi^{*}(a)$ is discontinuous at
+$a_c=\dfrac{b^{2}}{4c}$: for $a>a_c$ the minimiser is $\varphi^{*}=0$, and as $a$
+decreases through $a_c$ it jumps to $\varphi^{*}=\dfrac{b}{2c}>0$.
+\end{proposition}
+\begin{proof}
+Stationarity: $F'(\varphi)=\varphi\,(2a-3b\varphi+4c\varphi^{2})=0$, so
+$\varphi=0$ is always stationary, with other roots solving
+$4c\varphi^{2}-3b\varphi+2a=0$. A nonzero minimiser becomes \emph{global} when its
+free energy equals that at the origin, $F(\varphi)=F(0)=0$, i.e.\ (dividing the
+quartic by $\varphi^{2}$) $a-b\varphi+c\varphi^{2}=0$. Solve the two conditions
+simultaneously: from $a-b\varphi+c\varphi^{2}=0$ we get $a=b\varphi-c\varphi^{2}$;
+substituting into $4c\varphi^{2}-3b\varphi+2a=0$ yields
+$4c\varphi^{2}-3b\varphi+2b\varphi-2c\varphi^{2}=2c\varphi^{2}-b\varphi
+=\varphi(2c\varphi-b)=0$, so $\varphi=b/(2c)$. Back-substituting,
+$a_c=b\cdot\frac{b}{2c}-c\cdot\frac{b^{2}}{4c^{2}}
+=\frac{b^{2}}{2c}-\frac{b^{2}}{4c}=\frac{b^{2}}{4c}$. For $a>a_c$ the origin is the
+unique global minimum; for $a<a_c$ the branch $\varphi=b/(2c)+O(a_c-a)$ has strictly
+lower free energy. Hence the global minimiser jumps from $0$ to $b/(2c)$ as $a$
+crosses $a_c$ from above.
+\end{proof}
+
+\Cref{prop:landau-jump} is a complete, from-scratch instance of the phenomenon the
+thesis needs: a free energy that depends \emph{smoothly} on its parameters
+nonetheless yields an order parameter that is a \emph{discontinuous} function of
+the control. The cubic term $-b\varphi^{3}$---the analogue of a network effect, in
+which partial adoption is disproportionately rewarded---is what makes the
+transition first-order rather than continuous.
+
+\subsection{The standardisation transition}
+\label{sec:an-standardisation}
+
+Assembling the pillars: let $\varphi$ be the fraction of the language ecosystem
+operating on the fused substrate, and let $a$ decrease as standardisation
+$\sigma$ and adoption incentives rise. \Cref{prop:landau-jump} gives a critical
+$\sigma_c$ (where $a=a_c$) at which $\varphi$ jumps from $0$ to a finite value:
+the discontinuity asserted in \cref{prop:discontinuous}. The size of the resulting
+addressable surface is governed not by $\varphi$ alone but by the algebraic gearing
+of Pillar~I: by \cref{cor:superlinear}, once a fraction $\varphi$ of $n{\approx}$
+domains, capabilities, and agents is interconnected, the reachable surface scales
+as $\Theta((\varphi n)^{3})$ against $\Theta(\varphi n)$ integration cost. A
+discontinuous jump in $\varphi$ (Pillar~III) multiplied by a cubic gearing in
+reach (Pillar~I) is the formal content of the water-to-steam image: a threshold
+crossed, and an order-of-magnitude expansion released.
+
+\begin{remark}[On honest application]
+Three cautions, consistent with \cref{prin:plateau} and \cref{sec:m-epistemics}.
+First, $\Phi$ for a sociotechnical ecosystem is not measured with the precision of
+a steam table; the model is explanatory, and any numeric projection of $\Phi$ is a
+\forecast\ (\cref{ch:vision}). Second, \cref{prop:landau-jump} also admits the
+case $a_c$ never being reached---a plateau that does not end in a transition.
+Third, the analogy is structural, not literal: we claim the convergence shares the
+\emph{order type} of a first-order transition (a jump), established by a
+mechanism (threshold $\times$ gearing) that is itself rigorous, not that
+information obeys thermodynamics. With those cautions, the metaphor of
+\cref{ch:introduction} is now a model with stated mechanism, derived from first
+principles. Contemporary work reading learning itself through phase transitions
+and renormalisation (surveyed in \cref{sec:recent}) is the empirical company this
+model keeps.
+\end{remark}
