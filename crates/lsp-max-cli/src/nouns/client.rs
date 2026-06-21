@@ -1,3 +1,4 @@
+use clap_noun_verb::error::NounVerbError;
 use clap_noun_verb::Result;
 use clap_noun_verb_macros::verb;
 use serde::{Deserialize, Serialize};
@@ -168,10 +169,11 @@ pub struct ConnectResult {
     pub client: Client,
 }
 
+/// Register a client as Connected and persist its state.
 #[verb("connect")]
 pub fn connect(id: String) -> Result<ConnectResult> {
     let client = ClientService::connect(id)
-        .map_err(clap_noun_verb::error::NounVerbError::execution_error)?;
+        .map_err(NounVerbError::execution_error)?;
     Ok(ConnectResult { client })
 }
 
@@ -180,10 +182,11 @@ pub struct DisconnectResult {
     pub client: Client,
 }
 
+/// Set a client to Disconnected, creating the record if absent.
 #[verb("disconnect")]
 pub fn disconnect(id: String) -> Result<DisconnectResult> {
     let client = ClientService::disconnect(id)
-        .map_err(clap_noun_verb::error::NounVerbError::execution_error)?;
+        .map_err(NounVerbError::execution_error)?;
     Ok(DisconnectResult { client })
 }
 
@@ -192,10 +195,11 @@ pub struct SendResult {
     pub success: bool,
 }
 
+/// Append a message to a client's inbound queue.
 #[verb("send")]
 pub fn send(id: String, message: String) -> Result<SendResult> {
     let success = ClientService::send(id, message)
-        .map_err(clap_noun_verb::error::NounVerbError::execution_error)?;
+        .map_err(NounVerbError::execution_error)?;
     Ok(SendResult { success })
 }
 
@@ -204,9 +208,10 @@ pub struct ReceiveResult {
     pub message: Message,
 }
 
+/// Pop and return the first message from a client's queue.
 #[verb("receive")]
 pub fn receive(id: String) -> Result<ReceiveResult> {
     let message = ClientService::receive(id)
-        .map_err(clap_noun_verb::error::NounVerbError::execution_error)?;
+        .map_err(NounVerbError::execution_error)?;
     Ok(ReceiveResult { message })
 }

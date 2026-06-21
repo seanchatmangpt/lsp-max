@@ -1,3 +1,4 @@
+use clap_noun_verb::error::NounVerbError;
 use clap_noun_verb::Result;
 use clap_noun_verb_macros::verb;
 use lsp_max_runtime::AutonomicMesh;
@@ -78,12 +79,13 @@ pub struct EventListResult {
     pub count: usize,
 }
 
+/// List events from the mesh event log, optionally filtered by instance id.
 #[verb("list")]
 pub fn list(instance: Option<String>) -> Result<EventListResult> {
     let service = EventService::new();
     let events = service
         .list(instance.as_deref())
-        .map_err(clap_noun_verb::error::NounVerbError::execution_error)?;
+        .map_err(NounVerbError::execution_error)?;
     let count = events.len();
     Ok(EventListResult { events, count })
 }

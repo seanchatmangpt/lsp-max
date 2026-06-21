@@ -1,3 +1,4 @@
+use clap_noun_verb::error::NounVerbError;
 use clap_noun_verb::Result;
 use clap_noun_verb_macros::verb;
 use lsp_max_runtime::{AutonomicMesh, Receipt};
@@ -61,12 +62,13 @@ pub struct ReceiptListResult {
     pub count: usize,
 }
 
+/// List all receipts for the given instance.
 #[verb("list")]
 pub fn list(instance_id: String) -> Result<ReceiptListResult> {
     let service = ReceiptService::new();
     let receipts = service
         .list(&instance_id)
-        .map_err(clap_noun_verb::error::NounVerbError::execution_error)?;
+        .map_err(NounVerbError::execution_error)?;
     let count = receipts.len();
     Ok(ReceiptListResult { receipts, count })
 }
@@ -77,12 +79,13 @@ pub struct ReceiptVerifyResult {
     pub chain_valid: bool,
 }
 
+/// Verify the receipt chain for an instance (all receipts have non-empty ids and hashes).
 #[verb("verify")]
 pub fn verify(instance_id: String) -> Result<ReceiptVerifyResult> {
     let service = ReceiptService::new();
     let (count, chain_valid) = service
         .verify(&instance_id)
-        .map_err(clap_noun_verb::error::NounVerbError::execution_error)?;
+        .map_err(NounVerbError::execution_error)?;
     Ok(ReceiptVerifyResult { count, chain_valid })
 }
 
@@ -92,16 +95,17 @@ pub struct VerifyLedgerResult {
     pub raw: serde_json::Value,
 }
 
+/// Verify the receipt ledger for an instance via the `max/verifyLedger` RPC.
 #[verb("verify-ledger")]
 pub fn verify_ledger(instance_id: String) -> Result<VerifyLedgerResult> {
     let state_path = crate::nouns::get_state_path();
     let mut mesh = AutonomicMesh::load_from_file(&state_path)
-        .map_err(|e| clap_noun_verb::error::NounVerbError::execution_error(e.to_string()))?;
+        .map_err(|e| NounVerbError::execution_error(e.to_string()))?;
     let raw = mesh
         .dispatch_rpc(&instance_id, "max/verifyLedger", serde_json::Value::Null)
-        .map_err(clap_noun_verb::error::NounVerbError::execution_error)?;
+        .map_err(NounVerbError::execution_error)?;
     mesh.save_to_file(&state_path)
-        .map_err(|e| clap_noun_verb::error::NounVerbError::execution_error(e.to_string()))?;
+        .map_err(|e| NounVerbError::execution_error(e.to_string()))?;
     Ok(VerifyLedgerResult { instance_id, raw })
 }
 
@@ -111,15 +115,16 @@ pub struct LedgerReportResult {
     pub raw: serde_json::Value,
 }
 
+/// Generate a ledger report for an instance via the `max/ledgerReport` RPC.
 #[verb("ledger-report")]
 pub fn ledger_report(instance_id: String) -> Result<LedgerReportResult> {
     let state_path = crate::nouns::get_state_path();
     let mut mesh = AutonomicMesh::load_from_file(&state_path)
-        .map_err(|e| clap_noun_verb::error::NounVerbError::execution_error(e.to_string()))?;
+        .map_err(|e| NounVerbError::execution_error(e.to_string()))?;
     let raw = mesh
         .dispatch_rpc(&instance_id, "max/ledgerReport", serde_json::Value::Null)
-        .map_err(clap_noun_verb::error::NounVerbError::execution_error)?;
+        .map_err(NounVerbError::execution_error)?;
     mesh.save_to_file(&state_path)
-        .map_err(|e| clap_noun_verb::error::NounVerbError::execution_error(e.to_string()))?;
+        .map_err(|e| NounVerbError::execution_error(e.to_string()))?;
     Ok(LedgerReportResult { instance_id, raw })
 }

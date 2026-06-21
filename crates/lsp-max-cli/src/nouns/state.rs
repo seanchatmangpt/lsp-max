@@ -1,3 +1,4 @@
+use clap_noun_verb::error::NounVerbError;
 use clap_noun_verb::Result;
 use clap_noun_verb_macros::verb;
 use lsp_max_protocol::InstanceId;
@@ -98,12 +99,13 @@ pub struct DumpResult {
     pub state: String,
 }
 
+/// Dump the serialized state of an instance (or all instances when state_id is "all").
 #[verb("dump")]
 pub fn dump(state_id: String) -> Result<DumpResult> {
     let service = StateService::new();
     let state = service
         .dump(&state_id)
-        .map_err(clap_noun_verb::error::NounVerbError::execution_error)?;
+        .map_err(NounVerbError::execution_error)?;
     Ok(DumpResult { state })
 }
 
@@ -112,6 +114,7 @@ pub struct RestoreResult {
     pub success: bool,
 }
 
+/// Reset an instance to a clean Operational policy state, clearing diagnostics and receipts.
 #[verb("restore")]
 pub fn restore(state_id: String, revision: u64) -> Result<RestoreResult> {
     let service = StateService::new();
@@ -125,6 +128,7 @@ pub struct VerifyResult {
     pub is_valid: bool,
 }
 
+/// Return whether an instance's conformance score exceeds 50.
 #[verb("verify")]
 pub fn verify(state_id: String) -> Result<VerifyResult> {
     let service = StateService::new();
@@ -137,6 +141,7 @@ pub struct PatchResult {
     pub success: bool,
 }
 
+/// Apply a status override command to an instance via the run_command interface.
 #[verb("patch")]
 pub fn patch(state_id: String, status_override: Option<String>) -> Result<PatchResult> {
     let service = StateService::new();
@@ -147,7 +152,7 @@ pub fn patch(state_id: String, status_override: Option<String>) -> Result<PatchR
 
     let success = service
         .patch(&state_id, state_patch)
-        .map_err(clap_noun_verb::error::NounVerbError::execution_error)?;
+        .map_err(NounVerbError::execution_error)?;
     Ok(PatchResult { success })
 }
 
@@ -161,13 +166,14 @@ pub struct StateResult {
     pub receipts_count: usize,
 }
 
+/// Return phase, conformance score, policy state, and diagnostic/receipt counts for an instance.
 #[verb("state")]
 pub fn state(instance_id: String) -> Result<StateResult> {
     let mesh = AutonomicMesh::load_from_file(&crate::nouns::get_state_path())
-        .map_err(|e| clap_noun_verb::error::NounVerbError::execution_error(e.to_string()))?;
+        .map_err(|e| NounVerbError::execution_error(e.to_string()))?;
 
     let inst = mesh.instances.get(&instance_id).ok_or_else(|| {
-        clap_noun_verb::error::NounVerbError::execution_error(format!(
+        NounVerbError::execution_error(format!(
             "Instance not found: {}",
             instance_id
         ))
@@ -192,14 +198,15 @@ pub struct TransitionResult {
     pub success: bool,
 }
 
+/// Transition an instance to the given PolicyState via the TransitionPolicyState mesh action.
 #[verb("transition")]
 pub fn transition(instance_id: String, new_state: String) -> Result<TransitionResult> {
     let policy_state: PolicyState = new_state
         .parse()
-        .map_err(|e: String| clap_noun_verb::error::NounVerbError::execution_error(e))?;
+        .map_err(|e: String| NounVerbError::execution_error(e))?;
 
     let mut mesh = AutonomicMesh::load_from_file(&crate::nouns::get_state_path())
-        .map_err(|e| clap_noun_verb::error::NounVerbError::execution_error(e.to_string()))?;
+        .map_err(|e| NounVerbError::execution_error(e.to_string()))?;
 
     mesh.execute_action(MeshAction::TransitionPolicyState {
         instance_id: InstanceId::from(instance_id.clone()),
@@ -207,7 +214,7 @@ pub fn transition(instance_id: String, new_state: String) -> Result<TransitionRe
     });
 
     mesh.save_to_file(&crate::nouns::get_state_path())
-        .map_err(|e| clap_noun_verb::error::NounVerbError::execution_error(e.to_string()))?;
+        .map_err(|e| NounVerbError::execution_error(e.to_string()))?;
 
     Ok(TransitionResult {
         instance_id,
@@ -223,10 +230,11 @@ pub struct ActionResult {
     pub success: bool,
 }
 
+/// Execute a bounded action on an instance and persist it to the mesh.
 #[verb("action")]
 pub fn action(instance_id: String, action_id: String, description: String) -> Result<ActionResult> {
     let mut mesh = AutonomicMesh::load_from_file(&crate::nouns::get_state_path())
-        .map_err(|e| clap_noun_verb::error::NounVerbError::execution_error(e.to_string()))?;
+        .map_err(|e| NounVerbError::execution_error(e.to_string()))?;
 
     mesh.execute_action(MeshAction::ExecuteBoundedAction {
         instance_id: InstanceId::from(instance_id.clone()),
@@ -235,7 +243,7 @@ pub fn action(instance_id: String, action_id: String, description: String) -> Re
     });
 
     mesh.save_to_file(&crate::nouns::get_state_path())
-        .map_err(|e| clap_noun_verb::error::NounVerbError::execution_error(e.to_string()))?;
+        .map_err(|e| NounVerbError::execution_error(e.to_string()))?;
 
     Ok(ActionResult {
         instance_id,
@@ -253,6 +261,7 @@ pub struct LawfulTransitionResult {
     pub response: serde_json::Value,
 }
 
+/// Check whether a state transition is lawful via the `max/lawfulTransition` RPC.
 #[verb("lawful-transition")]
 pub fn lawful_transition(
     instance_id: String,
@@ -260,7 +269,7 @@ pub fn lawful_transition(
     to_state: String,
 ) -> Result<LawfulTransitionResult> {
     let mut mesh = AutonomicMesh::load_from_file(&crate::nouns::get_state_path())
-        .map_err(|e| clap_noun_verb::error::NounVerbError::execution_error(e.to_string()))?;
+        .map_err(|e| NounVerbError::execution_error(e.to_string()))?;
 
     let params = serde_json::json!({
         "from_state": from_state,
@@ -269,10 +278,10 @@ pub fn lawful_transition(
 
     let response = mesh
         .dispatch_rpc(&instance_id, "max/lawfulTransition", params)
-        .map_err(clap_noun_verb::error::NounVerbError::execution_error)?;
+        .map_err(NounVerbError::execution_error)?;
 
     mesh.save_to_file(&crate::nouns::get_state_path())
-        .map_err(|e| clap_noun_verb::error::NounVerbError::execution_error(e.to_string()))?;
+        .map_err(|e| NounVerbError::execution_error(e.to_string()))?;
 
     let lawful = response
         .get("lawful")
@@ -295,17 +304,18 @@ pub struct DumpRpcResult {
     pub raw: serde_json::Value,
 }
 
+/// Dump instance state via the `max/dumpState` RPC.
 #[verb("dump-rpc")]
 pub fn dump_rpc(instance_id: String) -> Result<DumpRpcResult> {
     let state_path = crate::nouns::get_state_path();
     let mut mesh = AutonomicMesh::load_from_file(&state_path)
-        .map_err(|e| clap_noun_verb::error::NounVerbError::execution_error(e.to_string()))?;
+        .map_err(|e| NounVerbError::execution_error(e.to_string()))?;
     let params = serde_json::json!({ "instance_id": instance_id });
     let raw = mesh
         .dispatch_rpc(&instance_id, "max/dumpState", params)
-        .map_err(clap_noun_verb::error::NounVerbError::execution_error)?;
+        .map_err(NounVerbError::execution_error)?;
     mesh.save_to_file(&state_path)
-        .map_err(|e| clap_noun_verb::error::NounVerbError::execution_error(e.to_string()))?;
+        .map_err(|e| NounVerbError::execution_error(e.to_string()))?;
     Ok(DumpRpcResult { instance_id, raw })
 }
 
@@ -317,17 +327,18 @@ pub struct RestoreRpcResult {
     pub raw: serde_json::Value,
 }
 
+/// Restore an instance to a given revision via the `max/restoreState` RPC.
 #[verb("restore-rpc")]
 pub fn restore_rpc(instance_id: String, revision: u64) -> Result<RestoreRpcResult> {
     let state_path = crate::nouns::get_state_path();
     let mut mesh = AutonomicMesh::load_from_file(&state_path)
-        .map_err(|e| clap_noun_verb::error::NounVerbError::execution_error(e.to_string()))?;
+        .map_err(|e| NounVerbError::execution_error(e.to_string()))?;
     let params = serde_json::json!({ "instance_id": instance_id, "revision": revision });
     let raw = mesh
         .dispatch_rpc(&instance_id, "max/restoreState", params)
-        .map_err(clap_noun_verb::error::NounVerbError::execution_error)?;
+        .map_err(NounVerbError::execution_error)?;
     mesh.save_to_file(&state_path)
-        .map_err(|e| clap_noun_verb::error::NounVerbError::execution_error(e.to_string()))?;
+        .map_err(|e| NounVerbError::execution_error(e.to_string()))?;
     Ok(RestoreRpcResult {
         instance_id,
         revision,

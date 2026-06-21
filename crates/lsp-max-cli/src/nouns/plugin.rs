@@ -1,3 +1,4 @@
+use clap_noun_verb::error::NounVerbError;
 use clap_noun_verb::Result;
 use clap_noun_verb_macros::verb;
 use serde::{Deserialize, Serialize};
@@ -165,6 +166,7 @@ pub struct ListResult {
     pub plugins: Vec<Plugin>,
 }
 
+/// List all plugins registered in the mesh state.
 #[verb("list")]
 pub fn list() -> Result<ListResult> {
     let service = PluginService::new();
@@ -177,12 +179,13 @@ pub struct LoadResult {
     pub plugin: Plugin,
 }
 
+/// Load a plugin from the given filesystem path and register it in the mesh state.
 #[verb("load")]
 pub fn load(path: String) -> Result<LoadResult> {
     let service = PluginService::new();
     let plugin = service
         .load(&path)
-        .map_err(clap_noun_verb::error::NounVerbError::execution_error)?;
+        .map_err(NounVerbError::execution_error)?;
     Ok(LoadResult { plugin })
 }
 
@@ -191,12 +194,13 @@ pub struct UnloadResult {
     pub plugin: Plugin,
 }
 
+/// Set a plugin's status to Unloaded by id.
 #[verb("unload")]
 pub fn unload(id: String) -> Result<UnloadResult> {
     let service = PluginService::new();
     let plugin = service
         .unload(&id)
-        .map_err(clap_noun_verb::error::NounVerbError::execution_error)?;
+        .map_err(NounVerbError::execution_error)?;
     Ok(UnloadResult { plugin })
 }
 
@@ -205,11 +209,12 @@ pub struct UpdateResult {
     pub plugin: Plugin,
 }
 
+/// Update a plugin's version by id and set its status to Loaded.
 #[verb("update")]
 pub fn update(id: String, new_version: String) -> Result<UpdateResult> {
     let service = PluginService::new();
     let plugin = service
         .update(&id, &new_version)
-        .map_err(clap_noun_verb::error::NounVerbError::execution_error)?;
+        .map_err(NounVerbError::execution_error)?;
     Ok(UpdateResult { plugin })
 }
