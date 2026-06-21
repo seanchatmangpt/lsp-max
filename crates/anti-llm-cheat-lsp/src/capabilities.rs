@@ -31,9 +31,19 @@ pub fn build_capabilities() -> ServerCapabilities {
             "textDocument/didOpen"
             | "textDocument/didChange"
             | "textDocument/didSave"
-            | "textDocument/didClose" => {
+            | "textDocument/didClose"
+            | "textDocument/willSave"
+            | "textDocument/willSaveWaitUntil"
+                if caps.text_document_sync.is_none() =>
+            {
                 caps.text_document_sync =
-                    Some(TextDocumentSyncCapability::Kind(TextDocumentSyncKind::FULL));
+                    Some(TextDocumentSyncCapability::Options(TextDocumentSyncOptions {
+                        open_close: Some(true),
+                        change: Some(TextDocumentSyncKind::FULL),
+                        will_save: Some(true),
+                        will_save_wait_until: Some(true),
+                        save: Some(TextDocumentSyncSaveOptions::Supported(true)),
+                    }));
             }
 
             // ── Navigation language features ──────────────────────────────────
@@ -102,8 +112,41 @@ pub fn build_capabilities() -> ServerCapabilities {
             "codeLens/resolve" => {
                 // Already handled by textDocument/codeLens
             }
-            "textDocument/codeAction" => {
+            "textDocument/codeAction" if caps.code_action_provider.is_none() => {
                 caps.code_action_provider = Some(CodeActionProviderCapability::Simple(true));
+            }
+            "codeAction/resolve" => {
+                caps.code_action_provider = Some(CodeActionProviderCapability::Options(
+                    CodeActionOptions {
+                        code_action_kinds: None,
+                        resolve_provider: Some(true),
+                        work_done_progress_options: WorkDoneProgressOptions::default(),
+                    },
+                ));
+            }
+
+            // ── Document link / color / on-type formatting ────────────────────
+            "textDocument/documentLink" | "documentLink/resolve"
+                if caps.document_link_provider.is_none() =>
+            {
+                caps.document_link_provider = Some(DocumentLinkOptions {
+                    resolve_provider: Some(true),
+                    work_done_progress_options: WorkDoneProgressOptions::default(),
+                });
+            }
+            "textDocument/documentColor" | "textDocument/colorPresentation"
+                if caps.color_provider.is_none() =>
+            {
+                caps.color_provider = Some(ColorProviderCapability::Simple(true));
+            }
+            "textDocument/onTypeFormatting"
+                if caps.document_on_type_formatting_provider.is_none() =>
+            {
+                caps.document_on_type_formatting_provider =
+                    Some(DocumentOnTypeFormattingOptions {
+                        first_trigger_character: ".".to_string(),
+                        more_trigger_character: Some(vec!["(".to_string()]),
+                    });
             }
 
             // ── Formatting / folding / hints / inline / semantic / symbol ─────
@@ -155,6 +198,17 @@ pub fn build_capabilities() -> ServerCapabilities {
                     ));
             }
 
+            // ── Type hierarchy ────────────────────────────────────────────────
+            "textDocument/prepareTypeHierarchy"
+            | "typeHierarchy/supertypes"
+            | "typeHierarchy/subtypes"
+                if caps.type_hierarchy_provider.is_none() =>
+            {
+                // Use the simple boolean form; the full TypeHierarchyServerCapability
+                // enum variant may vary across lsp_types_max versions.
+                caps.type_hierarchy_provider = Some(OneOf::Left(true));
+            }
+
             // ── Call hierarchy ────────────────────────────────────────────────
             "textDocument/prepareCallHierarchy"
             | "callHierarchy/incomingCalls"
@@ -178,8 +232,37 @@ pub fn build_capabilities() -> ServerCapabilities {
             }
 
             // ── Workspace features ────────────────────────────────────────────
-            "workspace/symbol" => {
+            "workspace/symbol" if caps.workspace_symbol_provider.is_none() => {
                 caps.workspace_symbol_provider = Some(OneOf::Left(true));
+            }
+            "workspaceSymbol/resolve" => {
+                // Handler wired; capability already set by workspace/symbol arm.
+                // Resolve support is declared via the handler being present.
+            }
+            "workspace/willCreateFiles"
+            | "workspace/willRenameFiles"
+            | "workspace/willDeleteFiles"
+            | "workspace/didCreateFiles"
+            | "workspace/didRenameFiles"
+            | "workspace/didDeleteFiles"
+            | "workspace/didChangeWorkspaceFolders"
+            | "workspace/workspaceFolders"
+                if caps.workspace.is_none() =>
+            {
+                caps.workspace = Some(WorkspaceServerCapabilities {
+                    workspace_folders: Some(WorkspaceFoldersServerCapabilities {
+                        supported: Some(true),
+                        change_notifications: Some(OneOf::Left(true)),
+                    }),
+                    file_operations: Some(WorkspaceFileOperationsServerCapabilities {
+                        did_create: Some(FileOperationRegistrationOptions { filters: vec![] }),
+                        will_create: Some(FileOperationRegistrationOptions { filters: vec![] }),
+                        did_rename: Some(FileOperationRegistrationOptions { filters: vec![] }),
+                        will_rename: Some(FileOperationRegistrationOptions { filters: vec![] }),
+                        did_delete: Some(FileOperationRegistrationOptions { filters: vec![] }),
+                        will_delete: Some(FileOperationRegistrationOptions { filters: vec![] }),
+                    }),
+                });
             }
             "workspace/executeCommand" => {
                 caps.execute_command_provider = Some(ExecuteCommandOptions {
@@ -194,16 +277,54 @@ pub fn build_capabilities() -> ServerCapabilities {
                 // No explicit capability field; handled by method availability
             }
 
+            // ── Notebook documents ────────────────────────────────────────────
+            "notebookDocument/didOpen"
+            | "notebookDocument/didChange"
+            | "notebookDocument/didSave"
+            | "notebookDocument/didClose"
+                if caps.notebook_document_sync.is_none() =>
+            {
+                caps.notebook_document_sync = Some(OneOf::Left(NotebookDocumentSyncOptions {
+                    notebook_selector: vec![NotebookSelector::ByNotebook {
+                        notebook: Notebook::String("*".to_string()),
+                        cells: None,
+                    }],
+                    save: Some(true),
+                }));
+            }
+
             // ── Server-to-client refreshes ────────────────────────────────────
             "workspace/codeLens/refresh"
             | "workspace/semanticTokens/refresh"
-            | "workspace/foldingRange/refresh" => {
+            | "workspace/foldingRange/refresh"
+            | "workspace/inlayHint/refresh"
+            | "workspace/inlineValue/refresh"
+            | "workspace/diagnostic/refresh" => {
                 // Server-side refreshes; no client capability field needed
             }
 
             // ── Window features ───────────────────────────────────────────────
-            "window/logMessage" => {
-                // Server-side notification; no explicit capability
+            "window/logMessage"
+            | "window/showMessage"
+            | "window/showMessageRequest"
+            | "window/showDocument"
+            | "window/workDoneProgress/create"
+            | "window/workDoneProgress/cancel" => {
+                // Server-side notifications/requests; no explicit server capability field
+            }
+
+            // ── Base protocol / general ───────────────────────────────────────
+            "$/progress"
+            | "$/setTrace"
+            | "$/logTrace"
+            | "client/registerCapability"
+            | "client/unregisterCapability"
+            | "telemetry/event"
+            | "workspace/configuration"
+            | "workspace/workspaceFolders"
+            | "workspace/didChangeConfiguration"
+            | "workspace/didChangeWatchedFiles" => {
+                // No server capability field; handled at the protocol level
             }
 
             _ => {}
