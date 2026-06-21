@@ -3,14 +3,13 @@
   "label": "Bayesian Network",
   "paper_ref": "pearl1988probabilistic",
   "family": "ProbabilisticAI",
-  "platform": "typescript",
-  "inputs": {
-    "note": "Replace with real BreedInput fields from pearl1988probabilistic"
-  },
+  "description": "Pearl (1988) alarm/burglary network: P(Burglary=T | JohnCalls=T, MaryCalls=T) via variable elimination over Earthquake and Alarm.",
+  "inputs": {},
   "expected": {
-    "value": "PENDING",
-    "note": "Replace with oracle_value=0.284 from pearl1988probabilistic. COG-005 requires this field."
+    "value": {"query": "Burglary", "true": 0.284, "false": 0.716, "network": "alarm"},
+    "note": "P(B=T|J=T,M=T) ≈ 0.2842 — exact from summing E×A combinations; rounded to 0.284 per Pearl Table 4.4."
   },
-  "expected_value": "PENDING",
+  "expected_value": 0.284,
+  "asserted_value": 0.284,
   "paper_value": 0.284
 }
