@@ -413,3 +413,174 @@ pub fn diff_baseline() -> Result<WorkspaceDiffBaselineResult> {
 
     Ok(WorkspaceDiffBaselineResult { regressions, improvements, unchanged, status })
 }
+
+// ==============================================================================
+// 4. Tests
+// ==============================================================================
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use lsp_max_runtime::{AutonomicMesh, LspInstance};
+
+    fn make_temp_svc() -> (tempfile::NamedTempFile, WorkspaceService) {
+        let mut mesh = AutonomicMesh::new();
+        mesh.add_instance(LspInstance::new("ws-inst"));
+        let f = tempfile::NamedTempFile::new().unwrap();
+        mesh.save_to_file(f.path().to_str().unwrap()).unwrap();
+        let svc = WorkspaceService {
+            state_path: f.path().to_str().unwrap().to_string(),
+        };
+        (f, svc)
+    }
+
+    // --- init ---
+
+    #[test]
+    fn init_returns_workspace_with_given_path() {
+        let (_f, svc) = make_temp_svc();
+        let ws = svc.init("/tmp/my-workspace".to_string());
+        assert_eq!(ws.root_path, "/tmp/my-workspace");
+    }
+
+    // --- analyze ---
+
+    #[test]
+    fn analyze_reports_correct_instance_count() {
+        let (_f, svc) = make_temp_svc();
+        let ws = svc.init(".".to_string());
+        let analysis = svc.analyze(&ws);
+        assert_eq!(analysis.instance_count, 1);
+    }
+
+    #[test]
+    fn analyze_instance_with_no_errors_is_healthy() {
+        let (_f, svc) = make_temp_svc();
+        let ws = svc.init(".".to_string());
+        let analysis = svc.analyze(&ws);
+        assert!(analysis.is_healthy, "instance with no error diagnostics must be healthy");
+    }
+
+    #[test]
+    fn analyze_missing_state_file_returns_healthy_zero_count() {
+        let svc = WorkspaceService {
+            state_path: "/tmp/nonexistent-ws-state.json".to_string(),
+        };
+        let ws = svc.init(".".to_string());
+        let analysis = svc.analyze(&ws);
+        assert!(analysis.is_healthy);
+        assert_eq!(analysis.instance_count, 0);
+        assert_eq!(analysis.conformance_score, 100.0);
+    }
+
+    // --- format (read-only stub) ---
+
+    #[test]
+    fn format_always_returns_zero_formatted_files() {
+        let (_f, svc) = make_temp_svc();
+        let ws = svc.init(".".to_string());
+        assert_eq!(svc.format(&ws).formatted_files, 0);
+    }
+
+    // --- lint ---
+
+    #[test]
+    fn lint_clean_instance_returns_zero_errors_and_warnings() {
+        let (_f, svc) = make_temp_svc();
+        let ws = svc.init(".".to_string());
+        let result = svc.lint(&ws);
+        assert_eq!(result.errors, 0);
+        assert_eq!(result.warnings, 0);
+    }
+
+    // --- files ---
+
+    #[test]
+    fn files_returns_instance_ids_sorted() {
+        let (_f, svc) = make_temp_svc();
+        let (ids, count) = svc.files();
+        assert_eq!(count, 1);
+        assert_eq!(ids, vec!["ws-inst"]);
+    }
+
+    #[test]
+    fn files_missing_state_returns_empty() {
+        let svc = WorkspaceService {
+            state_path: "/tmp/nonexistent-ws-files.json".to_string(),
+        };
+        let (ids, count) = svc.files();
+        assert_eq!(count, 0);
+        assert!(ids.is_empty());
+    }
+
+    // --- graph ---
+
+    #[test]
+    fn graph_returns_one_node_per_instance() {
+        let (_f, svc) = make_temp_svc();
+        let (nodes, _edges) = svc.graph();
+        assert_eq!(nodes.len(), 1);
+        assert_eq!(nodes[0].0, "ws-inst");
+        assert_eq!(nodes[0].1, "LspInstance");
+    }
+
+    #[test]
+    fn graph_missing_state_returns_empty() {
+        let svc = WorkspaceService {
+            state_path: "/tmp/nonexistent-ws-graph.json".to_string(),
+        };
+        let (nodes, edges) = svc.graph();
+        assert!(nodes.is_empty());
+        assert!(edges.is_empty());
+    }
+
+    // --- baseline / diff_baseline ---
+
+    #[test]
+    fn diff_baseline_fails_when_no_baseline_file_exists() {
+        let _lock = crate::nouns::TEST_ENV_LOCK
+            .lock()
+            .unwrap_or_else(|p| p.into_inner());
+        let home_tmp = tempfile::tempdir().unwrap();
+        let prev_home = std::env::var("HOME").ok();
+        // SAFETY: under TEST_ENV_LOCK — redirect HOME so baseline_path points to temp dir.
+        unsafe { std::env::set_var("HOME", home_tmp.path()) };
+        let svc = WorkspaceService {
+            state_path: "/tmp/nonexistent-ws-state.json".to_string(),
+        };
+        let result = svc.diff_baseline();
+        // SAFETY: restoring HOME under TEST_ENV_LOCK.
+        unsafe {
+            match prev_home {
+                Some(v) => std::env::set_var("HOME", v),
+                None => std::env::remove_var("HOME"),
+            }
+        }
+        assert!(result.is_err());
+        let msg = result.unwrap_err();
+        assert!(msg.contains("BASELINE_NOT_FOUND"), "error must name the cause: {msg}");
+    }
+
+    #[test]
+    fn baseline_creates_one_record_per_instance() {
+        let _lock = crate::nouns::TEST_ENV_LOCK
+            .lock()
+            .unwrap_or_else(|p| p.into_inner());
+        let home_tmp = tempfile::tempdir().unwrap();
+        let prev_home = std::env::var("HOME").ok();
+        // SAFETY: under TEST_ENV_LOCK.
+        unsafe { std::env::set_var("HOME", home_tmp.path()) };
+        let (_f, svc) = make_temp_svc();
+        let result = svc.baseline();
+        // SAFETY: restoring HOME.
+        unsafe {
+            match prev_home {
+                Some(v) => std::env::set_var("HOME", v),
+                None => std::env::remove_var("HOME"),
+            }
+        }
+        let (records, _path) = result.unwrap();
+        assert_eq!(records.len(), 1);
+        assert_eq!(records[0].instance_id, "ws-inst");
+    }
+}

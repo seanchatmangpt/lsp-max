@@ -338,3 +338,150 @@ pub fn conformance(
         }),
     }
 }
+
+// ==============================================================================
+// 4. Tests
+// ==============================================================================
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use lsp_max_runtime::{AutonomicMesh, LspInstance};
+
+    fn make_temp_mesh_with_instance() -> (tempfile::NamedTempFile, ExportService) {
+        let mut mesh = AutonomicMesh::new();
+        mesh.add_instance(LspInstance::new("inst-a"));
+        let f = tempfile::NamedTempFile::new().unwrap();
+        mesh.save_to_file(f.path().to_str().unwrap()).unwrap();
+        let svc = ExportService {
+            state_path: f.path().to_str().unwrap().to_string(),
+        };
+        (f, svc)
+    }
+
+    fn make_empty_mesh() -> (tempfile::NamedTempFile, ExportService) {
+        let mesh = AutonomicMesh::new();
+        let f = tempfile::NamedTempFile::new().unwrap();
+        mesh.save_to_file(f.path().to_str().unwrap()).unwrap();
+        let svc = ExportService {
+            state_path: f.path().to_str().unwrap().to_string(),
+        };
+        (f, svc)
+    }
+
+    // --- state_json ---
+
+    #[test]
+    fn state_json_returns_ok_for_valid_mesh() {
+        let (_f, svc) = make_temp_mesh_with_instance();
+        assert!(svc.state_json(false).is_ok());
+        assert!(svc.state_json(true).is_ok());
+    }
+
+    #[test]
+    fn state_json_output_contains_instances_key() {
+        let (_f, svc) = make_temp_mesh_with_instance();
+        let (json, count) = svc.state_json(true).unwrap();
+        assert_eq!(count, 1, "one instance must be reported");
+        assert!(json.contains("instances"), "serialised state must have 'instances' key");
+    }
+
+    #[test]
+    fn state_json_fails_on_missing_file() {
+        let svc = ExportService {
+            state_path: "/tmp/nonexistent-export-test.json".to_string(),
+        };
+        assert!(svc.state_json(false).is_err());
+    }
+
+    // --- diagnostics ---
+
+    #[test]
+    fn diagnostics_csv_returns_ok_and_has_header() {
+        let (_f, svc) = make_temp_mesh_with_instance();
+        let (csv, _count) = svc.diagnostics_csv().unwrap();
+        assert!(
+            csv.starts_with("instance_id,severity,code,message"),
+            "CSV must begin with the header row"
+        );
+    }
+
+    #[test]
+    fn diagnostics_csv_empty_mesh_has_header_only() {
+        let (_f, svc) = make_empty_mesh();
+        let (csv, count) = svc.diagnostics_csv().unwrap();
+        assert_eq!(count, 0);
+        assert_eq!(csv.trim(), "instance_id,severity,code,message");
+    }
+
+    #[test]
+    fn diagnostics_json_returns_ok() {
+        let (_f, svc) = make_temp_mesh_with_instance();
+        assert!(svc.diagnostics_json().is_ok());
+    }
+
+    #[test]
+    fn diagnostics_json_output_is_valid_json_array() {
+        let (_f, svc) = make_temp_mesh_with_instance();
+        let (json, _) = svc.diagnostics_json().unwrap();
+        let parsed: serde_json::Value = serde_json::from_str(&json).expect("must parse as JSON");
+        assert!(parsed.is_array(), "diagnostics export must be a JSON array");
+    }
+
+    // --- receipts ---
+
+    #[test]
+    fn receipts_json_returns_ok() {
+        let (_f, svc) = make_temp_mesh_with_instance();
+        assert!(svc.receipts_json().is_ok());
+    }
+
+    #[test]
+    fn receipts_json_empty_instance_has_zero_receipts() {
+        let (_f, svc) = make_temp_mesh_with_instance();
+        let (_json, receipt_count) = svc.receipts_json().unwrap();
+        assert_eq!(receipt_count, 0);
+    }
+
+    // --- conformance ---
+
+    #[test]
+    fn conformance_json_format_returns_ok() {
+        let (_f, svc) = make_temp_mesh_with_instance();
+        assert!(svc.conformance("json").is_ok());
+    }
+
+    #[test]
+    fn conformance_csv_format_returns_ok() {
+        let (_f, svc) = make_temp_mesh_with_instance();
+        let (csv, count) = svc.conformance("csv").unwrap();
+        assert_eq!(count, 1);
+        assert!(
+            csv.starts_with("instance_id,score"),
+            "CSV conformance must start with header"
+        );
+    }
+
+    #[test]
+    fn conformance_json_is_parseable_array() {
+        let (_f, svc) = make_temp_mesh_with_instance();
+        let (json, _) = svc.conformance("json").unwrap();
+        let parsed: serde_json::Value = serde_json::from_str(&json).expect("must parse as JSON");
+        assert!(parsed.is_array());
+    }
+
+    // --- write_to_file ---
+
+    #[test]
+    fn write_to_file_returns_byte_count() {
+        let f = tempfile::NamedTempFile::new().unwrap();
+        let content = "hello world";
+        let bytes = ExportService::write_to_file(f.path().to_str().unwrap(), content).unwrap();
+        assert_eq!(bytes, content.len());
+    }
+
+    #[test]
+    fn write_to_file_fails_for_invalid_path() {
+        assert!(ExportService::write_to_file("/no/such/dir/file.json", "x").is_err());
+    }
+}

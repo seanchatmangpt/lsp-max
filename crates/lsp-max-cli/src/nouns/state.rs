@@ -409,4 +409,127 @@ mod tests {
         let result = svc.patch("test-inst", StatePatch { status: None });
         assert!(!result.unwrap());
     }
+
+    // --- dump falsification ---
+
+    #[test]
+    fn dump_all_output_contains_instances_key() {
+        let (_f, svc) = make_temp_mesh();
+        let json = svc.dump("all").unwrap();
+        assert!(json.contains("instances"), "dump all must include 'instances' key");
+    }
+
+    // --- verify falsification ---
+
+    #[test]
+    fn verify_unknown_instance_returns_false() {
+        let (_f, svc) = make_temp_mesh();
+        // Unknown instance → mesh.get returns None → false
+        assert!(!svc.verify("no-such"));
+    }
+
+    // --- RPC verb tests via isolated env ---
+
+    fn with_mesh_state<F: FnOnce()>(f: F) {
+        let _lock = crate::nouns::TEST_ENV_LOCK
+            .lock()
+            .unwrap_or_else(|p| p.into_inner());
+        let mut mesh = AutonomicMesh::new();
+        mesh.add_instance(LspInstance::new("test-inst"));
+        let tmpf = tempfile::NamedTempFile::new().unwrap();
+        let path = tmpf.path().to_str().unwrap().to_string();
+        mesh.save_to_file(&path).unwrap();
+        let prev = std::env::var("LSP_MAX_STATE_PATH").ok();
+        // SAFETY: under TEST_ENV_LOCK.
+        unsafe { std::env::set_var("LSP_MAX_STATE_PATH", &path) };
+        f();
+        // SAFETY: restoring env under TEST_ENV_LOCK.
+        unsafe {
+            match prev {
+                Some(v) => std::env::set_var("LSP_MAX_STATE_PATH", v),
+                None => std::env::remove_var("LSP_MAX_STATE_PATH"),
+            }
+        }
+    }
+
+    #[test]
+    fn transition_to_degraded_returns_ok() {
+        with_mesh_state(|| {
+            let result = transition("test-inst".to_string(), "Degraded".to_string());
+            assert!(result.is_ok(), "transition to Degraded must return Ok");
+            let r = result.unwrap();
+            assert_eq!(r.instance_id, "test-inst");
+            assert!(r.success);
+        });
+    }
+
+    #[test]
+    fn transition_invalid_state_name_returns_err() {
+        with_mesh_state(|| {
+            let result = transition("test-inst".to_string(), "NotARealState".to_string());
+            assert!(result.is_err(), "invalid state name must return Err");
+        });
+    }
+
+    #[test]
+    fn action_records_action_and_returns_ok() {
+        with_mesh_state(|| {
+            let result = action(
+                "test-inst".to_string(),
+                "act-001".to_string(),
+                "apply remediation".to_string(),
+            );
+            assert!(result.is_ok());
+            let r = result.unwrap();
+            assert_eq!(r.instance_id, "test-inst");
+            assert_eq!(r.action_id, "act-001");
+            assert!(r.success);
+        });
+    }
+
+    #[test]
+    fn lawful_transition_returns_ok() {
+        with_mesh_state(|| {
+            let result = lawful_transition(
+                "test-inst".to_string(),
+                "Operational".to_string(),
+                "Degraded".to_string(),
+            );
+            assert!(result.is_ok());
+            let r = result.unwrap();
+            assert_eq!(r.from_state, "Operational");
+            assert_eq!(r.to_state, "Degraded");
+        });
+    }
+
+    #[test]
+    fn dump_rpc_returns_ok() {
+        with_mesh_state(|| {
+            assert!(dump_rpc("test-inst".to_string()).is_ok());
+        });
+    }
+
+    #[test]
+    fn dump_rpc_result_carries_instance_id() {
+        with_mesh_state(|| {
+            let res = dump_rpc("test-inst".to_string()).unwrap();
+            assert_eq!(res.instance_id, "test-inst");
+        });
+    }
+
+    #[test]
+    fn restore_rpc_returns_ok() {
+        with_mesh_state(|| {
+            assert!(restore_rpc("test-inst".to_string(), 0).is_ok());
+        });
+    }
+
+    #[test]
+    fn restore_rpc_result_carries_revision() {
+        with_mesh_state(|| {
+            let res = restore_rpc("test-inst".to_string(), 42).unwrap();
+            assert_eq!(res.revision, 42);
+            assert_eq!(res.instance_id, "test-inst");
+        });
+    }
 }

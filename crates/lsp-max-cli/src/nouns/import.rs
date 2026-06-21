@@ -163,3 +163,130 @@ pub fn diagnostics(src: String, instance_id: String) -> Result<ImportDiagnostics
         status: "ADMITTED".to_string(),
     })
 }
+
+// ==============================================================================
+// 4. Tests
+// ==============================================================================
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use lsp_max_runtime::{AutonomicMesh, LspInstance};
+
+    fn make_live_mesh_svc() -> (tempfile::NamedTempFile, ImportService) {
+        let mut mesh = AutonomicMesh::new();
+        mesh.add_instance(LspInstance::new("live-inst"));
+        let f = tempfile::NamedTempFile::new().unwrap();
+        mesh.save_to_file(f.path().to_str().unwrap()).unwrap();
+        let svc = ImportService {
+            state_path: f.path().to_str().unwrap().to_string(),
+        };
+        (f, svc)
+    }
+
+    // --- merge_state ---
+
+    #[test]
+    fn merge_state_new_instance_increments_imported_count() {
+        let (live_f, svc) = make_live_mesh_svc();
+
+        // Build an import file containing a different instance.
+        let mut import_mesh = AutonomicMesh::new();
+        import_mesh.add_instance(LspInstance::new("new-inst"));
+        let import_f = tempfile::NamedTempFile::new().unwrap();
+        // Export via to_state so we get the AutonomicMeshState format.
+        let state_json = serde_json::to_string(&import_mesh.to_state()).unwrap();
+        std::fs::write(import_f.path(), &state_json).unwrap();
+
+        let summary = svc
+            .merge_state(import_f.path().to_str().unwrap())
+            .unwrap();
+        assert_eq!(summary.instances_imported, 1);
+        assert_eq!(summary.instances_merged, 0);
+        let _ = live_f;
+    }
+
+    #[test]
+    fn merge_state_existing_instance_increments_merged_count() {
+        let (live_f, svc) = make_live_mesh_svc();
+
+        // Import file contains the same "live-inst" id → collision → merged.
+        let mut import_mesh = AutonomicMesh::new();
+        import_mesh.add_instance(LspInstance::new("live-inst"));
+        let import_f = tempfile::NamedTempFile::new().unwrap();
+        let state_json = serde_json::to_string(&import_mesh.to_state()).unwrap();
+        std::fs::write(import_f.path(), &state_json).unwrap();
+
+        let summary = svc
+            .merge_state(import_f.path().to_str().unwrap())
+            .unwrap();
+        assert_eq!(summary.instances_imported, 0);
+        assert_eq!(summary.instances_merged, 1);
+        let _ = live_f;
+    }
+
+    #[test]
+    fn merge_state_missing_src_returns_err() {
+        let (_live_f, svc) = make_live_mesh_svc();
+        assert!(svc
+            .merge_state("/tmp/nonexistent-import-src.json")
+            .is_err());
+    }
+
+    #[test]
+    fn merge_state_invalid_json_returns_err() {
+        let (_live_f, svc) = make_live_mesh_svc();
+        let bad_f = tempfile::NamedTempFile::new().unwrap();
+        std::fs::write(bad_f.path(), b"{ not valid json }").unwrap();
+        let result = svc.merge_state(bad_f.path().to_str().unwrap());
+        assert!(result.is_err());
+        assert!(
+            result.unwrap_err().contains("parse error"),
+            "error must identify parse failure"
+        );
+    }
+
+    // --- bulk_import_diagnostics ---
+
+    #[test]
+    fn bulk_import_empty_array_returns_zero() {
+        let (live_f, svc) = make_live_mesh_svc();
+        let src_f = tempfile::NamedTempFile::new().unwrap();
+        std::fs::write(src_f.path(), b"[]").unwrap();
+        let count = svc
+            .bulk_import_diagnostics(src_f.path().to_str().unwrap(), "live-inst")
+            .unwrap();
+        assert_eq!(count, 0);
+        let _ = live_f;
+    }
+
+    #[test]
+    fn bulk_import_creates_instance_if_absent() {
+        let (live_f, svc) = make_live_mesh_svc();
+        let src_f = tempfile::NamedTempFile::new().unwrap();
+        std::fs::write(src_f.path(), b"[]").unwrap();
+        // "brand-new-inst" does not exist — it must be auto-created without error.
+        let result =
+            svc.bulk_import_diagnostics(src_f.path().to_str().unwrap(), "brand-new-inst");
+        assert!(result.is_ok());
+        let _ = live_f;
+    }
+
+    #[test]
+    fn bulk_import_missing_src_returns_err() {
+        let (_live_f, svc) = make_live_mesh_svc();
+        assert!(svc
+            .bulk_import_diagnostics("/tmp/nonexistent-diag-import.json", "live-inst")
+            .is_err());
+    }
+
+    #[test]
+    fn bulk_import_invalid_json_returns_err() {
+        let (_live_f, svc) = make_live_mesh_svc();
+        let bad_f = tempfile::NamedTempFile::new().unwrap();
+        std::fs::write(bad_f.path(), b"not an array").unwrap();
+        let result =
+            svc.bulk_import_diagnostics(bad_f.path().to_str().unwrap(), "live-inst");
+        assert!(result.is_err());
+    }
+}
