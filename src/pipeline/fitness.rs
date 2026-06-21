@@ -1,3 +1,4 @@
+use crate::pipeline::catalog::{breed_category, BreedCategory};
 use std::collections::HashSet;
 
 /// Fitness evaluator for breed pipelines against OCEL event logs.
@@ -80,70 +81,23 @@ impl BreedFitnessEvaluator for SubprocessFitnessEvaluator {
 #[derive(Debug)]
 pub struct HeuristicFitnessEvaluator;
 
-/// Map a breed name to its category tag for heuristic scoring.
+/// Map a breed name to its lowercase category tag for heuristic scoring.
+///
+/// Delegates to the authoritative [`breed_category`] catalog so the heuristic and
+/// the catalog can never disagree. A prior substring-matching implementation
+/// misclassified breeds whose names contained a foreign category token (e.g.
+/// `markov_logic` matched `"logic"` and was scored as a logic breed though the
+/// catalog classifies it as rule-based); routing through [`breed_category`]
+/// removes that divergence.
 fn category_for(breed: &str) -> &'static str {
-    if breed.contains("asp")
-        || breed.contains("prolog")
-        || breed.contains("logic")
-        || breed.contains("sat")
-        || breed.contains("tableau")
-        || breed.contains("abductive")
-        || breed.contains("clp")
-        || breed.contains("circumscription")
-    {
-        "logic"
-    } else if breed.contains("rule")
-        || breed.contains("cbr")
-        || breed.contains("dendral")
-        || breed.contains("ebl")
-        || breed.contains("ilp")
-        || breed.contains("version")
-    {
-        "rule"
-    } else if breed.contains("plan")
-        || breed.contains("strips")
-        || breed.contains("gps")
-        || breed.contains("htn")
-        || breed.contains("contingent")
-        || breed.contains("mdp")
-        || breed.contains("pomdp")
-        || breed.contains("rl_")
-        || breed.contains("situation")
-        || breed.contains("event_calc")
-    {
-        "planning"
-    } else if breed.contains("bayes")
-        || breed.contains("dempster")
-        || breed.contains("fuzzy")
-        || breed.contains("qualitative")
-        || breed.contains("problog")
-        || breed.contains("markov")
-    {
-        "probabilistic"
-    } else if breed.contains("ltl")
-        || breed.contains("ctl")
-        || breed.contains("allen")
-        || breed.contains("naive_physics")
-    {
-        "temporal"
-    } else if breed.contains("frame")
-        || breed.contains("hearsay")
-        || breed.contains("soar")
-        || breed.contains("act_r")
-        || breed.contains("episodic")
-        || breed.contains("script")
-        || breed.contains("analogy")
-    {
-        "memory"
-    } else if breed.contains("meta")
-        || breed.contains("belief")
-        || breed.contains("triz")
-        || breed.contains("csp")
-        || breed.contains("morpho")
-    {
-        "meta"
-    } else {
-        "unknown"
+    match breed_category(breed) {
+        BreedCategory::LogicBased => "logic",
+        BreedCategory::RuleBased => "rule",
+        BreedCategory::PlanningBased => "planning",
+        BreedCategory::Probabilistic => "probabilistic",
+        BreedCategory::Temporal => "temporal",
+        BreedCategory::MemoryBased => "memory",
+        BreedCategory::MetaBased => "meta",
     }
 }
 
@@ -153,11 +107,11 @@ impl BreedFitnessEvaluator for HeuristicFitnessEvaluator {
             return 0.0;
         }
 
-        // Category diversity: score by number of distinct known categories
+        // Category diversity: distinct catalog categories present, normalized by
+        // the 7 categories in `BreedCategory`. Every breed maps to exactly one
+        // category via `category_for`, so the count needs no "unknown" filter.
         let categories: HashSet<&str> = breeds.iter().map(|b| category_for(b.as_str())).collect();
-        // 7 named categories; "unknown" does not contribute to diversity
-        let known_count = categories.iter().filter(|&&c| c != "unknown").count();
-        let diversity = (known_count as f64 / 7.0_f64).min(1.0);
+        let diversity = (categories.len() as f64 / 7.0_f64).min(1.0);
 
         // Length preference: 2–4 nodes is optimal for process mining pipelines
         let length_score = match breeds.len() {
@@ -192,7 +146,17 @@ fn which_wasm4pm_cli() -> String {
     "wasm4pm".to_string()
 }
 
-/// Auto-select evaluator: subprocess if wasm4pm-cli is available, else heuristic.
+/// Auto-select a fitness evaluator, in descending order of grounding:
+///
+/// 1. `wasm4pm-cli` present -> [`SubprocessFitnessEvaluator`] (engine-backed).
+/// 2. else an OCEL log present and carrying process structure ->
+///    [`LogGroundedFitnessEvaluator`], scoring breeds against the log's own
+///    object-centric structure instead of ignoring the log.
+/// 3. else -> [`HeuristicFitnessEvaluator`] (log-blind composition heuristic).
+///
+/// The log-grounded path is a structural proxy, not engine-backed alignment
+/// conformance; the caller's status mapping keeps an unverifiable outcome
+/// UNKNOWN rather than coercing it to ADMITTED.
 pub fn auto_evaluator(ocel_path: Option<String>) -> Box<dyn BreedFitnessEvaluator> {
     let cli = which_wasm4pm_cli();
     if std::process::Command::new(&cli)
@@ -200,13 +164,21 @@ pub fn auto_evaluator(ocel_path: Option<String>) -> Box<dyn BreedFitnessEvaluato
         .output()
         .is_ok()
     {
-        Box::new(SubprocessFitnessEvaluator {
+        return Box::new(SubprocessFitnessEvaluator {
             ocel_path,
             wasm4pm_cli: cli,
-        })
-    } else {
-        Box::new(HeuristicFitnessEvaluator)
+        });
     }
+    if let Some(path) = ocel_path.as_deref() {
+        if let Some(log) = crate::pipeline::ocel::read_ocel_log(path) {
+            if !log.events.is_empty() {
+                return Box::new(crate::pipeline::ocel::LogGroundedFitnessEvaluator {
+                    profile: crate::pipeline::ocel::LogProfile::from_log(&log),
+                });
+            }
+        }
+    }
+    Box::new(HeuristicFitnessEvaluator)
 }
 
 #[cfg(test)]
@@ -283,5 +255,13 @@ mod tests {
         assert_eq!(category_for("bayesian_network"), "probabilistic");
         assert_eq!(category_for("frame"), "memory");
         assert_eq!(category_for("production_rules"), "rule");
+    }
+
+    #[test]
+    fn category_for_markov_logic_is_rule_not_logic() {
+        // Regression: substring matching misfiled `markov_logic` under "logic"
+        // because the name contains the token. The catalog classifies it as
+        // rule-based; `category_for` now delegates to the catalog and must agree.
+        assert_eq!(category_for("markov_logic"), "rule");
     }
 }

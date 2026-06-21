@@ -88,21 +88,34 @@ pub enum BreedCategory {
 /// Unknown breed names default to [`BreedCategory::MetaBased`].
 pub fn breed_category(breed: &str) -> BreedCategory {
     match breed {
-        "asp" | "prolog" | "description_logic" | "circumscription" | "default_logic" |
-        "sat_cdcl" | "tableaux" | "abductive_ibe" | "abductive_lp" | "clp" => BreedCategory::LogicBased,
+        "asp" | "prolog" | "description_logic" | "circumscription" | "default_logic"
+        | "sat_cdcl" | "tableaux" | "abductive_ibe" | "abductive_lp" | "clp" => {
+            BreedCategory::LogicBased
+        }
 
-        "production_rules" | "dendral" | "cbr" | "analogy_sme" | "version_space" |
-        "ebl" | "ilp" | "markov_logic" | "problog" => BreedCategory::RuleBased,
+        "production_rules" | "dendral" | "cbr" | "analogy_sme" | "version_space" | "ebl"
+        | "ilp" | "markov_logic" | "problog" => BreedCategory::RuleBased,
 
-        "strips" | "htn_planning" | "gps" | "partial_order_plan" | "contingent_plan" |
-        "situation_calculus" | "event_calculus" | "mdp" | "pomdp" | "rl_symbolic" => BreedCategory::PlanningBased,
+        "strips" | "htn_planning" | "gps" | "partial_order_plan" | "contingent_plan"
+        | "situation_calculus" | "event_calculus" | "mdp" | "pomdp" | "rl_symbolic" => {
+            BreedCategory::PlanningBased
+        }
 
-        "bayesian_network" | "dempster_shafer" | "fuzzy_logic" | "qualitative_reason" => BreedCategory::Probabilistic,
+        "bayesian_network" | "dempster_shafer" | "fuzzy_logic" | "qualitative_reason" => {
+            BreedCategory::Probabilistic
+        }
 
         "ltl_monitor" | "ctl_check" | "allen_temporal" | "naive_physics" => BreedCategory::Temporal,
 
-        "frame" | "frames_inheritance" | "hearsay" | "soar" | "act_r" |
-        "episodic_memory" | "script_sam" | "construction_grammar" | "morphological" => BreedCategory::MemoryBased,
+        "frame"
+        | "frames_inheritance"
+        | "hearsay"
+        | "soar"
+        | "act_r"
+        | "episodic_memory"
+        | "script_sam"
+        | "construction_grammar"
+        | "morphological" => BreedCategory::MemoryBased,
 
         "meta_reasoning" | "belief_merging" | "triz" | "csp_ac3" => BreedCategory::MetaBased,
 
