@@ -10,3 +10,4 @@
 pub mod admit;
 pub mod gate;
 pub mod serve;
+pub mod verify;

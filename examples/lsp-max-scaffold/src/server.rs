@@ -1,5 +1,7 @@
+use crate::analyzer::DefaultAnalyzer;
 use crate::diagnostics::ScaffoldDiagnostic;
 use crate::law::ScaffoldConformanceVector;
+use crate::verifiable::{VerifiableDiagnostic, VerifiableEngine};
 use lsp_max::jsonrpc;
 use lsp_max::lsp_types::*;
 use lsp_max::{Client, LanguageServer};
@@ -8,7 +10,8 @@ use tokio::sync::Mutex;
 /// Layer 2: Local LSP state surface.
 ///
 /// Holds per-session law state. The LSP surface is read-only — this server
-/// emits diagnostics, hovers, and intents but never mutates files directly.
+/// emits diagnostics, hovers, and code actions but never mutates files. Every
+/// diagnostic it publishes carries a replay-verifiable receipt in `data`.
 pub struct ScaffoldServer {
     client: Client,
     conformance: Mutex<ScaffoldConformanceVector>,
@@ -44,6 +47,21 @@ impl ScaffoldServer {
         }
         None
     }
+
+    /// Build proof-carrying diagnostics for a document, plus any gate diagnostic.
+    fn diagnostics_for(text: &str) -> Vec<Diagnostic> {
+        let analyzer = DefaultAnalyzer::new();
+        let mut engine = VerifiableEngine::new(&analyzer);
+        let mut out: Vec<Diagnostic> = engine
+            .extend(text)
+            .iter()
+            .map(|vd| verifiable_to_lsp(text, vd))
+            .collect();
+        if let Some(gate_diag) = Self::gate_check() {
+            out.push(scaffold_diagnostic_to_lsp(&gate_diag, zero_range()));
+        }
+        out
+    }
 }
 
 fn gate_file_path() -> std::path::PathBuf {
@@ -64,6 +82,31 @@ fn fnv1a(bytes: &[u8]) -> u64 {
     hash
 }
 
+fn zero_range() -> Range {
+    Range {
+        start: Position::new(0, 0),
+        end: Position::new(0, 0),
+    }
+}
+
+/// Map a byte offset in `text` to an LSP (line, utf-16 character) position.
+fn offset_to_position(text: &str, offset: usize) -> Position {
+    let offset = offset.min(text.len());
+    let mut line = 0u32;
+    let mut line_start = 0usize;
+    for (i, b) in text.bytes().enumerate() {
+        if i >= offset {
+            break;
+        }
+        if b == b'\n' {
+            line += 1;
+            line_start = i + 1;
+        }
+    }
+    let character = text[line_start..offset].encode_utf16().count() as u32;
+    Position::new(line, character)
+}
+
 fn scaffold_diagnostic_to_lsp(d: &ScaffoldDiagnostic, range: Range) -> Diagnostic {
     Diagnostic {
         range,
@@ -71,6 +114,28 @@ fn scaffold_diagnostic_to_lsp(d: &ScaffoldDiagnostic, range: Range) -> Diagnosti
         code: Some(NumberOrString::String(d.code.to_string())),
         source: Some("lsp-max-scaffold".to_string()),
         message: d.message.clone(),
+        ..Default::default()
+    }
+}
+
+/// Convert a verifiable diagnostic to LSP, embedding its proof in `data` so the
+/// receipt travels on the wire and any client can re-verify it.
+fn verifiable_to_lsp(text: &str, vd: &VerifiableDiagnostic) -> Diagnostic {
+    let range = Range {
+        start: offset_to_position(text, vd.witness.doc_span.0),
+        end: offset_to_position(text, vd.witness.doc_span.1),
+    };
+    let data = serde_json::json!({
+        "receipt": vd.receipt,
+        "witness": vd.witness,
+    });
+    Diagnostic {
+        range,
+        severity: Some(DiagnosticSeverity::WARNING),
+        code: Some(NumberOrString::String(vd.code.clone())),
+        source: Some("lsp-max-scaffold/rvd".to_string()),
+        message: vd.message.clone(),
+        data: Some(data),
         ..Default::default()
     }
 }
@@ -116,7 +181,7 @@ impl LanguageServer for ScaffoldServer {
         self.client
             .log_message(
                 MessageType::INFO,
-                "lsp-max-scaffold: CANDIDATE — law axes UNKNOWN until receipts are produced",
+                "lsp-max-scaffold: CANDIDATE — diagnostics carry replay-verifiable receipts",
             )
             .await;
     }
@@ -126,46 +191,28 @@ impl LanguageServer for ScaffoldServer {
     }
 
     async fn did_open(&self, params: DidOpenTextDocumentParams) {
-        let uri = params.text_document.uri;
-        let mut lsp_diags: Vec<Diagnostic> = vec![];
-
-        if let Some(gate_diag) = Self::gate_check() {
-            let range = Range {
-                start: Position::new(0, 0),
-                end: Position::new(0, 0),
-            };
-            lsp_diags.push(scaffold_diagnostic_to_lsp(&gate_diag, range));
-        }
-
-        self.push_diagnostics(uri, lsp_diags).await;
+        let uri = params.text_document.uri.clone();
+        let diags = Self::diagnostics_for(&params.text_document.text);
+        self.push_diagnostics(uri, diags).await;
     }
 
     async fn did_change(&self, params: DidChangeTextDocumentParams) {
         let uri = params.text_document.uri;
-        let mut lsp_diags: Vec<Diagnostic> = vec![];
-
-        if let Some(gate_diag) = Self::gate_check() {
-            lsp_diags.push(scaffold_diagnostic_to_lsp(&gate_diag, Range::default()));
-        }
-
-        self.push_diagnostics(uri, lsp_diags).await;
+        let text = params
+            .content_changes
+            .into_iter()
+            .last()
+            .map(|c| c.text)
+            .unwrap_or_default();
+        let diags = Self::diagnostics_for(&text);
+        self.push_diagnostics(uri, diags).await;
     }
 
     async fn did_save(&self, params: DidSaveTextDocumentParams) {
         let uri = params.text_document.uri.clone();
-        let mut lsp_diags: Vec<Diagnostic> = vec![];
-
-        if let Some(gate_diag) = Self::gate_check() {
-            lsp_diags.push(scaffold_diagnostic_to_lsp(&gate_diag, Range::default()));
-        }
-
-        let conformance = self.conformance.lock().await;
-        if conformance.score().is_none() {
-            let d = crate::diagnostics::ScaffoldDiagnostic::receipt_absent("(all methods)");
-            lsp_diags.push(scaffold_diagnostic_to_lsp(&d, Range::default()));
-        }
-
-        self.push_diagnostics(uri, lsp_diags).await;
+        let text = params.text.unwrap_or_default();
+        let diags = Self::diagnostics_for(&text);
+        self.push_diagnostics(uri, diags).await;
     }
 
     async fn code_action(
@@ -182,14 +229,10 @@ impl LanguageServer for ScaffoldServer {
                     _ => return None,
                 };
                 let title = match code {
-                    "SCAFFOLD-RECEIPT-001" => {
-                        "Run `lsp-max-scaffold admit receipt` to generate a CANDIDATE receipt"
-                    }
+                    "RVD-FORK-001" => "Remove the forbidden fork reference (use lsp-max)",
+                    "RVD-VICTORY-001" => "Replace victory language with a bounded status",
                     "SCAFFOLD-GATE-001" => {
                         "Resolve WASM4PM-* / GGEN-* diagnostics to clear the ANDON gate"
-                    }
-                    "SCAFFOLD-AXIS-001" => {
-                        "Produce transcript + negative-control before promoting the axis"
                     }
                     _ => return None,
                 };

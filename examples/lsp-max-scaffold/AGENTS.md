@@ -17,12 +17,22 @@ This is **not** a hexagonal-architecture scaffold:
 | SemVer | CalVer (YY.M.D) |
 | Stable toolchain | `nightly-2026-04-15` |
 
+## Headline: Replay-Verifiable Diagnostics (RVD)
+
+This scaffold's defining innovation: every diagnostic carries a **proof**.
+A witness (minimal reproducing input) plus a receipt (BLAKE3 digests in a hash
+chain) let any verifier replay the finding and confirm it — without trusting the
+emitter. Forged or tampered diagnostics fail replay and are `REFUSED`. This is
+the anti-cheat thesis made executable; see `docs/RVD.md` and `src/verifiable.rs`.
+
 ## The Five-Layer Model
 
 ```
 Layer 1 — Actuation Grammar     src/nouns/         clap-noun-verb CLI
 Layer 2 — Local LSP State       src/server.rs      LanguageServer impl
 Layer 3 — Law-State Runtime     src/law.rs         ConformanceVector, AxisState
+          Proof surface         src/verifiable.rs   receipts, witnesses, hash chain
+          Analyzer              src/analyzer.rs     pure, replayable detection
           Diagnostics           src/diagnostics.rs  ScaffoldDiagnostic, codes
 Layers 4/5 — (extend here)     lsp-max-runtime     AutonomicMesh, mesh routing
 ```
@@ -86,6 +96,17 @@ Run `lsp-max-scaffold admit promote --method <method>` when all three exist.
 Version is `version.workspace = true` — inherits the workspace CalVer
 (`YY.M.D`). Never introduce a SemVer bump or a `version = "0.x"` in any crate.
 
+## Law #6 — Diagnostics Carry Proofs (RVD)
+
+A diagnostic without a witness and a verifying receipt is `UNKNOWN`, never
+trusted. Analyzers (`analyzer::ReplayableAnalyzer`) must be **pure** — no clock,
+no RNG, no I/O — because replay on the witness must reproduce the finding
+exactly. The verifier (`verifiable::verify_receipt`) replays the witness, never
+the emitter's claim.
+
+Run `lsp-max-scaffold verify scan --file <path>` to build and replay-verify a
+chain; `lsp-max-scaffold verify chain --file <receipts.json>` to check linkage.
+
 ## Noun/Verb Pattern
 
 Each file in `src/nouns/` is a noun with three tiers:
@@ -116,8 +137,10 @@ and checks out all three sibling repos before running `cargo fmt -- --check`,
 
 ## Anti-Patterns (Enforced)
 
-1. `tower-lsp` / `tower_lsp` in code → ANTI-LLM-CHEAT-* (blocked by canary)
+1. Upstream-fork references (the `tower` stem joined with `-lsp` / `_lsp`) in
+   code or docs → ANTI-LLM-CHEAT-* (blocked by canary). Use `lsp-max`.
 2. `Unknown` coerced to `Admitted` without receipts → SCAFFOLD-AXIS-001
 3. Victory language in messages/statuses → ANTI-LLM-CHEAT-VICTORY-*
 4. Exhaustive struct literals for LSP types → breaks when lsp-types-max adds fields
 5. `cargo test` output as admission evidence → ANTI-LLM-CHEAT-RECEIPT-INVALID
+6. Impure analyzers (clock/RNG/IO) → break replay → diagnostics unverifiable

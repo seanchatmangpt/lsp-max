@@ -38,7 +38,10 @@ fn admit_transitions_axis_from_unknown() {
     let mut v = ScaffoldConformanceVector::new();
     let was_unknown = v.unknown.contains(&ScaffoldAxis::Gate);
     let promoted = v.admit_axis(ScaffoldAxis::Gate);
-    assert_eq!(was_unknown, promoted, "admit_axis returns true only when axis was UNKNOWN");
+    assert_eq!(
+        was_unknown, promoted,
+        "admit_axis returns true only when axis was UNKNOWN"
+    );
     assert!(!v.unknown.contains(&ScaffoldAxis::Gate));
     assert!(v.admitted.contains(&ScaffoldAxis::Gate));
 }
@@ -55,7 +58,15 @@ fn refuse_axis_does_not_admit() {
 fn status_label_is_bounded_vocabulary() {
     let v = ScaffoldConformanceVector::new();
     let label = v.status_label();
-    let allowed = ["ADMITTED", "REFUSED", "PARTIAL", "UNKNOWN", "BLOCKED", "CANDIDATE", "OPEN"];
+    let allowed = [
+        "ADMITTED",
+        "REFUSED",
+        "PARTIAL",
+        "UNKNOWN",
+        "BLOCKED",
+        "CANDIDATE",
+        "OPEN",
+    ];
     assert!(
         allowed.contains(&label),
         "status label must be from bounded vocabulary, got: {label}"

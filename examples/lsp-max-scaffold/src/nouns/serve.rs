@@ -30,10 +30,9 @@ impl ServeService {
             1 => "debug",
             _ => "trace",
         };
-        let filter = tracing_subscriber::EnvFilter::try_from_default_env()
-            .unwrap_or_else(|_| {
-                tracing_subscriber::EnvFilter::new(format!("lsp_max_scaffold={level}"))
-            });
+        let filter = tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(|_| {
+            tracing_subscriber::EnvFilter::new(format!("lsp_max_scaffold={level}"))
+        });
         tracing_subscriber::fmt().with_env_filter(filter).init();
     }
 }
@@ -60,8 +59,7 @@ pub fn stdio(verbose: Option<u8>) -> Result<ServeResult> {
     rt.block_on(async {
         let stdin = tokio::io::stdin();
         let stdout = tokio::io::stdout();
-        let (service, socket) =
-            lsp_max::LspService::new(crate::server::ScaffoldServer::new);
+        let (service, socket) = lsp_max::LspService::new(crate::server::ScaffoldServer::new);
         lsp_max::Server::new(stdin, stdout, socket)
             .serve(service)
             .await;
