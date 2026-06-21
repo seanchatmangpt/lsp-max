@@ -1,7 +1,7 @@
 # lsp-max Roadmap
 
-**As of:** 2026-06-13
-**Baseline commit:** 1f1e0cf
+**As of:** 2026-06-21
+**Baseline commit:** 40c05c2 (branch `claude/compassionate-newton-9nnifc`)
 
 ---
 
@@ -33,6 +33,26 @@
 - LSP 3.18 coverage matrix (`src/coverage/lsp_coverage.rs`) — watermark calibrated to 75% (22 client-push/transport methods correctly excluded)
 - LSIF coverage matrix (`crates/lsp-max-lsif/`) — 18 coverage tests green
 - 27 Chicago TDD tests for all ERRC innovations
+
+### LSP 3.18 Full Detection Surface (committed 40c05c2)
+- `anti-llm-cheat-lsp/src/rules/lsp318_coverage.rs`: 43 handlers promoted
+  `Absent → Wired`; `workspace/applyEdit` promoted `Absent → Refuses` (read-only law)
+- `anti-llm-cheat-lsp/src/server.rs`: 29 new `LanguageServer` overrides; 9
+  server-to-client wires in `initialized`; 5 refresh/telemetry calls in
+  `run_scan_and_publish`
+- `anti-llm-cheat-lsp/src/capabilities.rs`: matrix-derived `ServerCapabilities`
+  updated for all newly-wired methods (willSave, documentLink, color,
+  onTypeFormatting, typeHierarchy, codeAction/resolve, workspace file-ops,
+  notebook sync)
+- **Coverage state (PARTIAL):** 93/95 methods `Wired` or `Refuses`; only
+  `exit` and `$/cancelRequest` remain `Absent` (no trait entry point)
+
+### LSIF 0.6 Full Element Surface
+- `anti-llm-cheat-lsp/src/rules/lsif06.rs` enumerates all 38 elements
+  (20 vertices + 18 edges); `modeled_in_crate: true` for every row
+- `anti-llm://lsif06-matrix` virtual document renders the live surface
+- Example-coverage status: `OPEN` throughout — no transcripts or receipts
+  produced by the canary crate (correct and honest)
 
 ### Infrastructure
 - ggen-lsp plugin wired in `.claude/settings.json` (`enabledPlugins`)

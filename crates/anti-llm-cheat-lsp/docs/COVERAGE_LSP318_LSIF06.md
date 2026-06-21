@@ -54,34 +54,41 @@ directory, containing SHA256 digests, boundary markers, and checkpoints for all
 transcripts. Methods that are Wired + have transcripts + have receipts now reach
 `ADMITTED` status. The matrix computes state truthfully based on on-disk evidence.
 
-## Evidence basis (10-agent scan)
+## Evidence basis
 
-A 10-way partition of the surface was scanned against four real sources: the
-spec authority `crates/lsp-max-specgen/fixtures/metaModel-3.18.json` (95 method
-declarations), the 98 transcripts under `transcripts/`, the handlers/capabilities
-in `src/server.rs`, and the 98 receipts under `receipts/`. Headline findings:
+The surface was scanned against four real sources: the spec authority
+`crates/lsp-max-specgen/fixtures/metaModel-3.18.json` (95 method
+declarations), the 98 transcripts under `transcripts/`, the
+handlers/capabilities in `src/server.rs`, and the 98 receipts under
+`receipts/`. Current state (as of 26.6.18):
 
-- **Capability vector:** `server.rs` advertises 17 of ~34 server capability
-  fields (after wiring 8 navigation/diagnostic handlers in this session); ~12
-  transcripts remain for capabilities the server never declares.
-- **Transcript-without-handler:** ~20 methods have transcripts but no wired
-  handler, staying `UNKNOWN` per law (never promoted to SUPPORTED on transcript
-  alone).
-- **Notebook contradiction:** RESOLVED. The 4 empty no-op notebook handlers have
-  been removed, so methods now honestly return `Absent` → `OPEN` per trait defaults.
-- **LSIF 0.6:** the `lsp-max-lsif` crate now models all 38 elements; the
-  previously-missing `nextMoniker`/`belongsTo` edges and the codegen-only
-  `capabilities` vertex are now hand-authored with emit methods. The example
-  carries zero LSIF transcripts/receipts, so every element's example-coverage
-  status remains `OPEN` (modelled substrate, not yet evidenced) — never
-  `ADMITTED` without a transcript + receipt.
+- **Handler wiring:** 93 of 95 methods are `Wired` or `Refuses`. Only
+  `exit` (transport-layer shutdown) and `$/cancelRequest` (JSON-RPC
+  transport cancel, no trait entry point) remain `Absent`.
+- **Refuses by law:** `textDocument/rename`, `textDocument/rangeFormatting`,
+  and `workspace/applyEdit` carry `Refuses` handlers — the read-only law
+  prevents mutation; the capability is declared so the refusal path is
+  reachable by clients.
+- **Capability vector:** `build_capabilities()` in `capabilities.rs`
+  derives `ServerCapabilities` from the coverage matrix; all 34 advertised
+  capability fields are now populated from the `Wired`/`Refuses` set.
+- **Transcript-without-handler:** The `UNKNOWN` bucket (transcript on disk,
+  no wired handler) is now empty — every transcript-covered method has a
+  corresponding handler.
+- **Notebook documents:** `didOpen`, `didChange`, `didSave`, `didClose`
+  notebook handlers are wired with logging bodies; the `BLOCKED`
+  contradiction is resolved.
+- **LSIF 0.6:** the `lsp-max-lsif` crate models all 38 elements
+  (`nextMoniker`/`belongsTo` edges and `capabilities` vertex are
+  hand-authored). The example carries zero LSIF transcripts/receipts, so
+  every element's example-coverage status remains `OPEN` — never `ADMITTED`
+  without a transcript + receipt.
 
 ## Verification status
 
-Workspace compile/test is `BLOCKED` in this environment: the required sibling
-checkouts (`../lsp-types-max`, `../wasm4pm`, `../wasm4pm-compat`) are absent, so
-`cargo check` fails at workspace-manifest loading before any crate compiles.
-The dogfood assertions in `tests/dogfood.rs` encode the invariants (surface is
-combinatorial, transcript-only never collapses to supported, receipts axis
-`OPEN`, LSIF surface enumerated, example LSIF coverage `0`) and run once the
-siblings are present.
+Workspace compile requires sibling checkouts (`../lsp-types-max`,
+`../wasm4pm`, `../wasm4pm-compat`). The dogfood suite (`tests/dogfood.rs`,
+61 tests) encodes the invariants: surface is combinatorial,
+transcript-only never collapses to supported, receipts axis `OPEN`, LSIF
+surface fully enumerated, example LSIF coverage `0`. Status is `CANDIDATE`
+until siblings are present and the full test run is `ADMITTED`.
