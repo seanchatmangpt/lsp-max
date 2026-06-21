@@ -13,6 +13,7 @@ pub mod custom_methods;
 pub mod diagnostics;
 pub mod explain;
 pub mod hooks;
+pub mod phase;
 pub mod pipeline;
 pub mod policy;
 pub mod repair;

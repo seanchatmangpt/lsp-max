@@ -1,0 +1,17 @@
+{
+  "boundary": "-----BEGIN RECEIPT-----",
+  "checkpoint": "-----END RECEIPT-----",
+  "raw_command": "cargo test && cargo clippy --all-targets -- -D warnings (manifest: tpot2-harness over src/pipeline)",
+  "digest": "a383171798528076e1b13cd8185adee19c78330ddc151245d78b53bd59114ed1",
+  "digest_algorithm": "sha256",
+  "output_digest": "a383171798528076e1b13cd8185adee19c78330ddc151245d78b53bd59114ed1",
+  "status": "ADMITTED",
+  "boundary_note": "standalone harness over src/pipeline; full workspace build is BLOCKED (siblings absent); digest binds a normalized projection (test counts + clippy/fmt verdicts), not raw timing",
+  "negative_controls": [
+    "ocel::garbage_and_absent_sources_are_none",
+    "search::empty_breed_pool_refused",
+    "phase::unknown_never_collapses_into_liquid_or_vapor"
+  ],
+  "test_result": "test result: ok. 36 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out",
+  "verified_at": "2026-06-21T05:23:07Z"
+}
