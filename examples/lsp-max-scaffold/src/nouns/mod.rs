@@ -10,4 +10,5 @@
 pub mod admit;
 pub mod gate;
 pub mod serve;
+pub mod session;
 pub mod verify;

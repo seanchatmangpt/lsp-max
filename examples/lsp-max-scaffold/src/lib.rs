@@ -36,6 +36,10 @@
 /// Layer 1 — actuation grammar: noun/verb CLI surface.
 pub mod nouns;
 
+/// Process-Mined Session Conformance (PMSC): OCEL 2.0 event log, Declare
+/// constraints, token replay fitness metric, and Oracle classes A8–A12.
+pub mod session_conformance;
+
 /// Layer 2 — local LSP state surface: LanguageServer implementation.
 pub mod server;
 
