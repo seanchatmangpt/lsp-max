@@ -182,6 +182,74 @@ Build orchestration uses `just` recipes as the primary development interface. Ke
 
 Run scripts directly when debugging compliance issues or validating reception chains; they are not automatically invoked by recipes.
 
+## Remote Execution — Claude Code Web
+
+Sessions run in Anthropic-managed ephemeral containers. Key constraints:
+
+- **Git commits are the only persistence.** Container state is lost between sessions. Push before the session ends.
+- **Sibling repos are NOT auto-cloned.** `../lsp-types-max`, `../wasm4pm-compat`, `../wasm4pm` must be present for the workspace to build. In a remote container, check with `ls ../lsp-types-max ../wasm4pm-compat ../wasm4pm` before attempting compilation.
+- **`lsp-max-cli` may not be in PATH.** In a freshly cloned container without a pre-built binary, `gate check` returns exit 0 (compositor not running = gate clear). Build with `cargo build -p lsp-max-cli` to wire the CLI.
+- **Setup script is cached per environment.** If the environment has a setup script that builds the CLI and fetches dependencies, subsequent sessions reuse it.
+
+### Session Status Check (run at session start)
+
+```bash
+git log --oneline -5          # what was last committed?
+git status                    # uncommitted work?
+ls ../lsp-types-max 2>/dev/null || echo "sibling repos missing — build will fail"
+lsp-max-cli gate check        # gate clear?
+```
+
+### Parallel Subagent Patterns
+
+Each subagent gets a fresh 1M token context window. Use parallel agents for independent crate work:
+
+```
+# Spawn 3 agents in one message (independent files = safe to parallelize)
+Agent(description="Update compositor declare.rs", isolation="worktree", ...)
+Agent(description="Update anti-llm-cheat-lsp server.rs", isolation="worktree", ...)
+Agent(description="Run tests and collect results", ...)
+```
+
+Rules:
+- **Parallel only when agents touch DIFFERENT files.** Overlapping edits cause conflicts.
+- Use `isolation: "worktree"` for agents that write code.
+- Use foreground (default) when you need results before proceeding.
+- Use `run_in_background: true` for independent research.
+
+Every subagent prompt MUST include a gate check as its first Bash action — subagents do NOT inherit the parent session's PreToolUse hooks:
+
+```bash
+lsp-max-cli gate check || { echo "ANDON gate blocked"; exit 1; }
+```
+
+### Skills System
+
+Skills in `.claude/skills/<name>/SKILL.md` load on-demand via `/<name>`:
+
+```
+/dx-workflow        — format + lint + verify + test pipeline
+/rule-pack-server   — RulePackServer implementation pattern
+/gate-conformance   — gate state, ANDON resolution, Λ_CD predicate
+/van-der-aalst      — DFG, Declare, OCEL accumulation
+/session-continuity — remote session patterns, git persistence, PR watching
+```
+
+Skills keep the root context lean — load only what the current task needs.
+
+### PR Watching
+
+After pushing a branch and opening a PR, subscribe to activity:
+
+```
+subscribe_pr_activity(pr_number=<N>)
+```
+
+PR events (`<github-webhook-activity>` tags) arrive automatically. On each event:
+- CI failure → diagnose, fix, push
+- Review comment → fix if clear; check with user if ambiguous
+- PR merged/closed → unsubscribe
+
 ## Common Anti-Patterns
 
 Avoid these patterns; they are enforced by linting, gate rules, and code review:
