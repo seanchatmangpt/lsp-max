@@ -1,7 +1,13 @@
-/// Tri-state admission status for a law axis.
+/// Tri-state admission status for a single law axis.
 ///
-/// UNKNOWN must never collapse into ADMITTED or REFUSED — it signals a
-/// tracing gap or unmet precondition, not a default.
+/// The three states are disjoint and form the core of the conformance model:
+///
+/// - `Admitted` — all preconditions verified (receipt + transcript + neg-control)
+/// - `Refused`  — the axis is intentionally rejected by law; refusal must be cited
+/// - `Unknown`  — status not yet traced; **never** collapses to either other state
+///
+/// A diagnostic (`SCAFFOLD-AXIS-001`) is emitted whenever code attempts to
+/// coerce `Unknown` into `Admitted` without producing the required evidence.
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum AxisState {
@@ -38,8 +44,15 @@ pub enum ScaffoldAxis {
 
 /// Conformance vector for a single scaffold session.
 ///
-/// A method row is ADMITTED only when all three axes satisfy their
-/// preconditions. Unknown is never coerced to either polarity.
+/// Tracks the admission state of every law axis through three disjoint sets.
+/// Each axis begins in `unknown` and may only transition to `admitted` once
+/// its receipt chain is verified (see `AGENTS.md` Law #1).
+///
+/// The vector never merges its sets — the type system enforces the invariant
+/// that an axis cannot be both `unknown` and `admitted` simultaneously.
+///
+/// Use `status_label()` for a single bounded-vocabulary summary token, and
+/// `score()` for a numeric ratio. Neither output is a receipt.
 #[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
 pub struct ScaffoldConformanceVector {
     pub admitted: Vec<ScaffoldAxis>,

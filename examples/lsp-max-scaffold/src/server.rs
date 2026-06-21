@@ -142,34 +142,71 @@ impl LanguageServer for ScaffoldServer {
 
     async fn did_change(&self, params: DidChangeTextDocumentParams) {
         let uri = params.text_document.uri;
-        let content = params
-            .content_changes
-            .into_iter()
-            .last()
-            .map(|c| c.text)
-            .unwrap_or_default();
-
         let mut lsp_diags: Vec<Diagnostic> = vec![];
 
         if let Some(gate_diag) = Self::gate_check() {
-            let range = Range {
-                start: Position::new(0, 0),
-                end: Position::new(0, 0),
-            };
-            lsp_diags.push(scaffold_diagnostic_to_lsp(&gate_diag, range));
-        }
-
-        let conformance = self.conformance.lock().await;
-        if conformance.unknown.is_empty() && conformance.admitted.is_empty() {
-            let d = crate::diagnostics::ScaffoldDiagnostic::unknown_collapsed("all axes");
-            let range = Range {
-                start: Position::new(0, 0),
-                end: Position::new(0, content.lines().count().saturating_sub(1) as u32),
-            };
-            lsp_diags.push(scaffold_diagnostic_to_lsp(&d, range));
+            lsp_diags.push(scaffold_diagnostic_to_lsp(&gate_diag, Range::default()));
         }
 
         self.push_diagnostics(uri, lsp_diags).await;
+    }
+
+    async fn did_save(&self, params: DidSaveTextDocumentParams) {
+        let uri = params.text_document.uri.clone();
+        let mut lsp_diags: Vec<Diagnostic> = vec![];
+
+        if let Some(gate_diag) = Self::gate_check() {
+            lsp_diags.push(scaffold_diagnostic_to_lsp(&gate_diag, Range::default()));
+        }
+
+        let conformance = self.conformance.lock().await;
+        if conformance.score().is_none() {
+            let d = crate::diagnostics::ScaffoldDiagnostic::receipt_absent("(all methods)");
+            lsp_diags.push(scaffold_diagnostic_to_lsp(&d, Range::default()));
+        }
+
+        self.push_diagnostics(uri, lsp_diags).await;
+    }
+
+    async fn code_action(
+        &self,
+        params: CodeActionParams,
+    ) -> jsonrpc::Result<Option<CodeActionResponse>> {
+        let actions: Vec<CodeActionOrCommand> = params
+            .context
+            .diagnostics
+            .iter()
+            .filter_map(|d| {
+                let code = match &d.code {
+                    Some(NumberOrString::String(s)) => s.as_str(),
+                    _ => return None,
+                };
+                let title = match code {
+                    "SCAFFOLD-RECEIPT-001" => {
+                        "Run `lsp-max-scaffold admit receipt` to generate a CANDIDATE receipt"
+                    }
+                    "SCAFFOLD-GATE-001" => {
+                        "Resolve WASM4PM-* / GGEN-* diagnostics to clear the ANDON gate"
+                    }
+                    "SCAFFOLD-AXIS-001" => {
+                        "Produce transcript + negative-control before promoting the axis"
+                    }
+                    _ => return None,
+                };
+                Some(CodeActionOrCommand::CodeAction(CodeAction {
+                    title: title.to_string(),
+                    kind: Some(CodeActionKind::QUICKFIX),
+                    diagnostics: Some(vec![d.clone()]),
+                    ..Default::default()
+                }))
+            })
+            .collect();
+
+        if actions.is_empty() {
+            Ok(None)
+        } else {
+            Ok(Some(actions))
+        }
     }
 
     async fn hover(&self, params: HoverParams) -> jsonrpc::Result<Option<Hover>> {
