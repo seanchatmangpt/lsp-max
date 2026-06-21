@@ -4,6 +4,7 @@ use crate::breeds::breed::{BreedInput, CognitiveBreed};
 use crate::breeds::cbr::Cbr;
 use crate::breeds::frame::Eliza;
 use crate::breeds::frames_inheritance::FramesInheritance;
+use crate::breeds::llm::Llm;
 use crate::breeds::ltl_monitor::LtlMonitor;
 use crate::breeds::meta_reasoning::MetaReasoning;
 use crate::breeds::pomdp::Pomdp;
@@ -16,6 +17,7 @@ pub fn dispatch(breed: &str, input: &BreedInput) -> Option<serde_json::Value> {
         "cbr"                => run_breed(&Cbr, input),
         "eliza"              => run_breed(&Eliza, input),
         "frames_inheritance" => run_breed(&FramesInheritance, input),
+        "llm"                => run_breed(&Llm, input),
         "ltl_monitor"        => run_breed(&LtlMonitor, input),
         "meta_reasoning"     => run_breed(&MetaReasoning, input),
         "mycin"              => run_breed(&Mycin, input),

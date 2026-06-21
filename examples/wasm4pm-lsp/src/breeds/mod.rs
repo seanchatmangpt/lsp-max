@@ -1,5 +1,6 @@
 pub mod breed;
 pub mod asp;
+pub mod llm;
 pub mod bayesian_network;
 pub mod cbr;
 pub mod dispatch;
