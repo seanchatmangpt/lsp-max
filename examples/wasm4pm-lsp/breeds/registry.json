@@ -92,6 +92,16 @@
       "paper_ref": "kaelbling1998planning",
       "oracle_value": 0.969,
       "status": "CANDIDATE"
+    },
+    {
+      "breed_id": "llm",
+      "label": "Large Language Model Reasoning",
+      "family": "NeuralAI",
+      "module_stem": "llm",
+      "struct_name": "Llm",
+      "paper_ref": "brown2020language",
+      "oracle_value": 0.0,
+      "status": "CANDIDATE"
     }
   ]
 }
