@@ -1,0 +1,169 @@
+{
+  "eventTypes": [
+    {
+      "name": "place order",
+      "attributes": [
+        { "name": "channel", "type": "string" }
+      ]
+    },
+    {
+      "name": "pick item",
+      "attributes": [
+        { "name": "station", "type": "string" }
+      ]
+    },
+    {
+      "name": "deliver order",
+      "attributes": [
+        { "name": "carrier", "type": "string" }
+      ]
+    }
+  ],
+  "objectTypes": [
+    {
+      "name": "Order",
+      "attributes": [
+        { "name": "priority", "type": "string" }
+      ]
+    },
+    {
+      "name": "Item",
+      "attributes": [
+        { "name": "sku", "type": "string" }
+      ]
+    },
+    {
+      "name": "Customer",
+      "attributes": [
+        { "name": "segment", "type": "string" }
+      ]
+    }
+  ],
+  "events": [
+    {
+      "id": "e1",
+      "type": "place order",
+      "time": "2026-06-01T08:00:00Z",
+      "attributes": [
+        { "name": "channel", "value": "web" }
+      ],
+      "relationships": [
+        { "objectId": "o1", "qualifier": "order" },
+        { "objectId": "c1", "qualifier": "customer" }
+      ]
+    },
+    {
+      "id": "e2",
+      "type": "pick item",
+      "time": "2026-06-01T09:15:00Z",
+      "attributes": [
+        { "name": "station", "value": "A3" }
+      ],
+      "relationships": [
+        { "objectId": "o1", "qualifier": "order" },
+        { "objectId": "i1", "qualifier": "item" }
+      ]
+    },
+    {
+      "id": "e3",
+      "type": "pick item",
+      "time": "2026-06-01T09:42:00Z",
+      "attributes": [
+        { "name": "station", "value": "A7" }
+      ],
+      "relationships": [
+        { "objectId": "o1", "qualifier": "order" },
+        { "objectId": "i2", "qualifier": "item" }
+      ]
+    },
+    {
+      "id": "e4",
+      "type": "deliver order",
+      "time": "2026-06-02T11:30:00Z",
+      "attributes": [
+        { "name": "carrier", "value": "ground" }
+      ],
+      "relationships": [
+        { "objectId": "o1", "qualifier": "order" },
+        { "objectId": "c1", "qualifier": "customer" }
+      ]
+    },
+    {
+      "id": "e5",
+      "type": "place order",
+      "time": "2026-06-03T14:05:00Z",
+      "attributes": [
+        { "name": "channel", "value": "mobile" }
+      ],
+      "relationships": [
+        { "objectId": "o2", "qualifier": "order" },
+        { "objectId": "c2", "qualifier": "customer" }
+      ]
+    },
+    {
+      "id": "e6",
+      "type": "deliver order",
+      "time": "2026-06-04T10:20:00Z",
+      "attributes": [
+        { "name": "carrier", "value": "air" }
+      ],
+      "relationships": [
+        { "objectId": "o2", "qualifier": "order" },
+        { "objectId": "c2", "qualifier": "customer" }
+      ]
+    }
+  ],
+  "objects": [
+    {
+      "id": "o1",
+      "type": "Order",
+      "attributes": [
+        { "name": "priority", "value": "high", "time": "2026-06-01T08:00:00Z" }
+      ],
+      "relationships": [
+        { "objectId": "i1", "qualifier": "contains" },
+        { "objectId": "i2", "qualifier": "contains" }
+      ]
+    },
+    {
+      "id": "o2",
+      "type": "Order",
+      "attributes": [
+        { "name": "priority", "value": "normal", "time": "2026-06-03T14:05:00Z" }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "i1",
+      "type": "Item",
+      "attributes": [
+        { "name": "sku", "value": "SKU-100", "time": "2026-06-01T08:00:00Z" }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "i2",
+      "type": "Item",
+      "attributes": [
+        { "name": "sku", "value": "SKU-205", "time": "2026-06-01T08:00:00Z" }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "c1",
+      "type": "Customer",
+      "attributes": [
+        { "name": "segment", "value": "retail", "time": "2026-06-01T08:00:00Z" }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "c2",
+      "type": "Customer",
+      "attributes": [
+        { "name": "segment", "value": "wholesale", "time": "2026-06-03T14:05:00Z" }
+      ],
+      "relationships": []
+    }
+  ]
+}

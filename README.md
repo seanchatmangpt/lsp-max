@@ -18,12 +18,19 @@ Law-state LSP runtime that projects a multidimensional state machine through LSP
 
 ## Quick start
 
-**Clone and build** (≤5s on recent hardware):
+**Clone and build**:
 ```bash
 git clone https://github.com/seanchatmangpt/lsp-max.git
 cd lsp-max
+just setup            # clones the sibling repos this workspace needs to build
 cargo test --workspace
 ```
+
+> This workspace does not build standalone: it depends on three sibling
+> checkouts (`../lsp-types-max`, `../wasm4pm-compat`, `../wasm4pm`). `just setup`
+> (or `bash scripts/bootstrap.sh`) fetches them; `just doctor` reports what is
+> missing without changing anything. In Claude Code on the web, a `SessionStart`
+> hook runs the bootstrap automatically, so sessions start build-ready.
 
 **Run an example**:
 ```bash
