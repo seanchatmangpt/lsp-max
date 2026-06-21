@@ -10,6 +10,8 @@ generated/*
 vendors/
 .claude/*
 !.claude/settings.json
+!.claude/hooks/
+!.claude/hooks/*.sh
 **/refund_receipt.txt
 **/target_e2e/
 **/lsif_dump.json

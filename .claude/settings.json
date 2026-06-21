@@ -1,12 +1,22 @@
 {
   "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/session-start.sh"
+          }
+        ]
+      }
+    ],
     "PreToolUse": [
       {
         "matcher": "Bash|Edit|Write|TaskCreate|NotebookEdit",
         "hooks": [
           {
             "type": "command",
-            "command": "lsp-max-cli gate check"
+            "command": "${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/gate-check.sh"
           }
         ]
       }
@@ -17,7 +27,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "cd /Users/sac/lsp-max && lsp-max-cli diagnostic snapshot 2>/dev/null || true"
+            "command": "command -v lsp-max-cli >/dev/null 2>&1 && lsp-max-cli diagnostic snapshot 2>/dev/null || true"
           }
         ]
       }
