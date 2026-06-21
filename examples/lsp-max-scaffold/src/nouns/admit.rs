@@ -165,16 +165,15 @@ impl AdmitService {
     ) -> Result<AdmitPromoteResult, clap_noun_verb::error::NounVerbError> {
         let check = self.check(method);
         if !check.eligible {
-            return Err(clap_noun_verb::error::NounVerbError::execution_error(format!(
-                "BLOCKED: cannot promote {method} — {}",
-                check.blocking_reasons.join("; ")
-            )));
+            return Err(clap_noun_verb::error::NounVerbError::execution_error(
+                format!(
+                    "BLOCKED: cannot promote {method} — {}",
+                    check.blocking_reasons.join("; ")
+                ),
+            ));
         }
         let snake = snake_case(method);
-        let receipt_path = self
-            .base_dir
-            .join("receipts")
-            .join(format!("{snake}.json"));
+        let receipt_path = self.base_dir.join("receipts").join(format!("{snake}.json"));
         Ok(AdmitPromoteResult {
             method: method.to_string(),
             previous_status: "CANDIDATE",
@@ -199,7 +198,10 @@ impl AdmitService {
             "note": "digest is a placeholder; compute blake3 of the transcript before promoting"
         });
 
-        std::fs::write(&receipt_path, serde_json::to_string_pretty(&receipt).unwrap())?;
+        std::fs::write(
+            &receipt_path,
+            serde_json::to_string_pretty(&receipt).unwrap(),
+        )?;
 
         Ok(AdmitReceiptResult {
             method: method.to_string(),
