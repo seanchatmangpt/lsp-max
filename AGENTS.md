@@ -367,7 +367,13 @@ fanout          — broadcasts inbound client requests to all children in parall
 merge           — ConformanceVector-aware diagnostic dedup; REFUSED_BY_LAW codes survive always
 capability_merge — Primary wins hover/completion; DiagnosticsOnly excluded; sync FULL forced
 diagnostic_buffer — DashMap per-URI staging; deposit() replaces same server_id; flush() is non-destructive
-flush_coordinator — 100ms debounce mpsc; emits CompositorReceipt (prefixes_fingerprint) after each push
+flush_coordinator — adaptive quorum debounce (fires at quorum or 2×spread, ≤30ms cap); emits
+                    CompositorReceipt after each push; accumulates OCEL 2.0 events (take_ocel_events());
+                    runs DeclareModel::compositor() + DirectlyFollowsGraph fitness after every flush
+declare         — Van der Aalst Declare constraint model (9 constraint types); DeclareModel::compositor()
+                  and DeclareModel::anti_llm_detection() normative models; extract_traces() from OCEL events
+dfg             — Directly-Follows Graph (Van der Aalst DFG): from_traces(), fitness_against_model(),
+                  precision_against_model(), to_mermaid(), to_dot()
 registry        — ChildTier (Primary | Secondary | DiagnosticsOnly) + ExtensionRouter
 compositor_state  — via state_response; live registry snapshot; non-destructive, bypasses debounce
 compositor_health — via health_response; per-child liveness, O(1)
@@ -452,6 +458,22 @@ lsp-max hosts anti-llm-cheat-lsp
 anti-llm-cheat-lsp detects tower-lsp
 therefore lsp-max cannot silently regress to tower-lsp
 ```
+
+Implementation pattern — `RulePackServer` bridge:
+
+```text
+impl RulePackServer for AntiLlmServer
+  rule_packs()          → ValidatedRulePackSet::empty()  (no TOML packs; engine-bridge server)
+  grammar()             → tree_sitter_rust::LANGUAGE
+  server_name()         → "anti-llm-cheat-lsp"
+  client()              → &self.client
+  adapter()             → self.ast_adapter.inner()       (AutoLspAdapter ref)
+  workspace_index()     → Some(&self.workspace_index)    (lock-free DashMap doc store)
+  scan_uri_classified() → bridges engine::scan_directory + evaluate_diagnostics
+                          into ClassifiedFindings via LawAxis::Custom(d.category)
+```
+
+Virtual document `anti-llm://process-model` is served from `virtual_docs/process_model.rs` and renders a live DFG + Declare conformance report using Van der Aalst process mining primitives inline (no compositor dependency).
 
 ---
 
@@ -543,7 +565,16 @@ anti-llm://lsp318-matrix
 anti-llm://receipt-ledger
 anti-llm://forbidden-implications
 anti-llm://checkpoint-status
+anti-llm://process-model
 ```
+
+`anti-llm://process-model` is a live markdown document rendered from active `AntiLlmDiagnostic` observations. It contains:
+- Directly-Follows Graph summary (node/edge counts, transition frequencies)
+- Mermaid flowchart of the DFG
+- Declare conformance report (Van der Aalst normative model)
+- Fitness score and activity legend
+
+Activities map from diagnostic code prefixes: `ANTI-LLM-VICTORY-*` / `ANTI-LLM-CLAIMS-*` → `VictoryLanguageDetected`; `WASM4PM-*` → `ProcessViolationDetected`; `GGEN-*` → `GgenViolationDetected`; etc. `ScanComplete` is the synthetic terminal appended to every case.
 
 These must be dynamic, not static files pretending to be dynamic content.
 
@@ -607,9 +638,19 @@ $XDG_RUNTIME_DIR/lsp-max-gate-{fnv1a(cwd):016x}
 
 Content: single byte — `b"0"` when clear, `b"1"` when ANDON is set. File absent means compositor is not running (gate not enforced).
 
+Two CLI verbs are available for gate inspection:
+
+```bash
+lsp-max-cli gate check   # Exit 0 = clear; exit 1 = ANDON blocked
+lsp-max-cli gate list    # JSON: { andon_blocked, gate_file, compositor_active,
+                         #         active_codes: ["WASM4PM-*", "GGEN-*"], agent_scope: "global" }
+```
+
+`gate list` is useful for subagent prompts that want to surface the blocking families before taking any action. `active_codes` lists the ANDON-triggering code-prefix families; specific code IDs require a running diagnostic server. `agent_scope` is `"global"` until RFC A per-agent partitioning is wired (currently OPEN).
+
 Reference implementations:
 
-- `crates/lsp-max-cli/src/nouns/gate.rs` — `GateService::gate_file_path()` and `GateService::check()`
+- `crates/lsp-max-cli/src/nouns/gate.rs` — `GateService::gate_file_path()`, `GateService::check()`, `GateService::list()`
 - `crates/lsp-max-compositor/src/gate_file.rs` — `GateFile::for_workspace()`
 
 Both use the same FNV-1a constants (`offset_basis = 0xcbf29ce484222325`, `prime = 0x100000001b3`) and format the hash with `{hash:016x}`.
@@ -647,7 +688,7 @@ Do not collapse OPEN into ADMITTED. The gap is present until structural enforcem
 
 ---
 
-## Current Framework Status — 2026-06-13
+## Current Framework Status — 2026-06-21
 
 ### ADMITTED
 - Concurrent fanout: O(max RTT) dispatch, N=500 in <1ms
@@ -660,6 +701,10 @@ Do not collapse OPEN into ADMITTED. The gap is present until structural enforcem
 - Clippy `-D warnings`: ADMITTED (zero warnings in workspace crates)
 
 ### CANDIDATE
+- RFC A — `gate list` verb: `GateListResult` with `active_codes` and `agent_scope`; per-agent partitioning is OPEN (full RFC A); `gate list` CLI is wired and tested
+- RFC C — OCEL accumulation: `FlushCoordinator::take_ocel_events()` accumulates OCEL 2.0 events from `CompositorReceipt::to_ocel_event`; Declare + DFG conformance run inline after every flush
+- Van der Aalst process model virtual doc: `anti-llm://process-model` renders live DFG + Declare report from active `AntiLlmDiagnostic` observations
+- `RulePackServer` trait adoption in `anti-llm-cheat-lsp`: `scan_uri_classified` override bridges AhoCorasick engine into `ClassifiedFindings`; `WorkspaceIndex` wired
 - papaya::HashMap for DiagnosticBuffer (DashMap contention elimination)
 - kanal channel for FlushCoordinator (lower send latency — kanal integrated but not benchmarked at N=500)
 - simd-json for JSON-RPC framing (larger scope change; not yet prototyped)
@@ -673,6 +718,8 @@ Do not collapse OPEN into ADMITTED. The gap is present until structural enforcem
 
 ### OPEN
 - Subagent gate propagation: PreToolUse hooks do not cross Agent session boundaries (structural gap — see Subagent Gate Propagation section)
+- RFC A per-agent gate partitioning: `agent_scope` is `"global"`; per-agent `HashMap<agent_id, Vec<String>>` routing not yet wired
+- RFC B per-server receipt chain: `ChildEvidence` chain link exists; full per-server cryptographic receipt chain from child to compositor is OPEN
 - dx-verify sibling repo violations: `wasm4pm` codebase has uncommitted changes (`tps-metrics/Cargo.toml`) — outside this workspace
 - gc006 sealed-repo test (`test_gc006_authority_surface_lock`): BLOCKED — wasm4pm sibling has uncommitted changes; test is a known expected failure until sibling is clean
 - L7 Speciation per-server isolation: `MergeContext` uses workspace-wide union of ANDON prefixes; per-server `HashMap<server_id, Vec<String>>` routing is CANDIDATE (see L7 Speciation Status section)
@@ -716,12 +763,12 @@ The current implementation straddles two models. The gate file is the **SELECT s
 
 The gate does not replace the agent's full admissibility predicate `Λ(a)`. It enforces only the law axes enumerated in `A`. Diagnostic codes outside `A`, stylistic choices, architectural trade-offs, and work outside governed surfaces remain under agent judgment. The gate is a floor, not a ceiling.
 
-### RFC Backlog — Architectural Priorities (2026-06-13)
+### RFC Backlog — Architectural Priorities (2026-06-21)
 
 Three RFC-level changes identified via multi-agent architectural review. Ordered by effort tier:
 
 **RFC-1: D_t PUSH injection** (effort: days, impact: high, interface-safe)
-Extend `lsp-max-cli gate check` with `--format=agent-context` flag. When exit 1 (BLOCKED), stdout emits a structured JSON block — `active_andon_codes`, `governing_axes`, `available_repairs`, `since_seq` cursor — which the PreToolUse hook injects as a `<gate-context>` system-reminder block. Converts the 1-bit gate signal into the full governing diagnostic set in agent context. Moves D_t PUSH from OPEN toward ADMITTED. No interface breaks. Status: CANDIDATE.
+Extend `lsp-max-cli gate check` with `--format=agent-context` flag. When exit 1 (BLOCKED), stdout emits a structured JSON block — `active_andon_codes`, `governing_axes`, `available_repairs`, `since_seq` cursor — which the PreToolUse hook injects as a `<gate-context>` system-reminder block. Converts the 1-bit gate signal into the full governing diagnostic set in agent context. The `gate list` verb (RFC A, CANDIDATE) provides a subset of this — `active_codes` and `agent_scope` — without the `--format` flag. Moves D_t PUSH from OPEN toward ADMITTED. No interface breaks. Status: CANDIDATE.
 
 **RFC-2: Per-connection state — remove global REGISTRY/MESH singletons** (effort: weeks, impact: critical, breaks interface)
 `REGISTRY` and `MESH` are `OnceLock<Mutex<...>>` singletons in `src/lib.rs`. Every LSP method acquires the same global Mutex. Replace with a per-connection `ServerSession<S>` struct threaded through the Tower layer as an Extension. Removes `reset_registry_for_tests()`. Enables true multi-tenancy: N concurrent LSP connections each have isolated D_t, conformance_delta_log, action_seq, and GateFile handle. Status: OPEN.
@@ -729,15 +776,15 @@ Extend `lsp-max-cli gate check` with `--format=agent-context` flag. When exit 1 
 **RFC-3: Event-sourced D_t log — replace mutable HashMap dispatch** (effort: months, impact: critical, interface-safe)
 AutonomicMesh's `Vec<Box<dyn Hook>>` dispatch and `Vec<HookEvent>` log (capped at 1000 entries, never persisted) prevent causal replay and D_t addressability. Replace with an append-only lock-free ring buffer (65536 entries). Hooks become pure `(LawEvent) -> Vec<MeshAction>` functions. Live D_t is a materialized view maintained by a background tailer. Replay becomes a cursor read, not a destructive HashMap overwrite. Prerequisite for making D_t replay trustworthy. Status: OPEN.
 
-### Session Audit Summary — 2026-06-13
+### Session Audit Summary — 2026-06-21
 
-22 conjuncts audited across the Λ_CD implementation surface.
+26 conjuncts audited across the Λ_CD implementation surface.
 
 ```text
 ADMITTED:  5  (gate file write, PreToolUse hook, receipt blocking, speciation test suite, subagent gate check availability)
 PARTIAL:   1  (L7 per-server C_D routing — union is conservative superset; isolation gap documented)
-CANDIDATE: 1  (D_t context format — structurally present; PUSH injection not wired)
-OPEN:      11 (subagent structural enforcement, dx-verify sibling violations, gc006 sealed-repo test, D_t PUSH wiring, and others — see Current Framework Status section)
+CANDIDATE: 5  (D_t context format; RFC A gate list; RFC C OCEL accumulation; anti-llm://process-model virtual doc; RulePackServer adoption in anti-llm-cheat-lsp)
+OPEN:      13 (subagent structural enforcement, RFC A per-agent partitioning, RFC B per-server receipt chain, dx-verify sibling violations, gc006 sealed-repo test, D_t PUSH wiring, and others — see Current Framework Status section)
 BLOCKED:   0
 ```
 

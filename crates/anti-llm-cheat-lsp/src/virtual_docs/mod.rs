@@ -6,4 +6,5 @@ pub mod lsif06_matrix;
 pub mod lsp318_full_matrix;
 pub mod lsp318_matrix;
 pub mod ocel_export;
+pub mod process_model;
 pub mod receipt_ledger;
