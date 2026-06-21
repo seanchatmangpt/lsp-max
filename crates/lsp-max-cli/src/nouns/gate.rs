@@ -1,4 +1,3 @@
-use clap_noun_verb::error::NounVerbError;
 use clap_noun_verb::Result;
 use clap_noun_verb_macros::verb;
 use serde::Serialize;
@@ -69,17 +68,19 @@ fn fnv1a(bytes: &[u8]) -> u64 {
 // 3. Verb Tier
 // ==============================================================================
 
-/// Check the compositor ANDON gate file. Exits 1 if ANDON is set; 0 if clear.
-/// Reads a single byte — no IPC, no subprocess — safe for PreToolUse hooks.
+/// Check the compositor ANDON gate file.
+/// Exit 2 when ANDON is set (blocks PreToolUse hook per Claude Code semantics).
+/// Exit 0 when clear. Reads a single byte — no IPC, no subprocess.
 #[verb("check")]
 pub fn check() -> Result<GateCheckResult> {
     let svc = GateService::new();
     let status = svc.check();
     if status.andon_blocked {
-        return Err(NounVerbError::execution_error(format!(
-            "ANDON gate BLOCKED — law violations active ({})",
+        eprintln!(
+            "ANDON BLOCKED — law violations active\ngate: {}\nResolve all WASM4PM-* and GGEN-* diagnostics to clear.",
             status.gate_file
-        )));
+        );
+        std::process::exit(2);
     }
     Ok(status)
 }
