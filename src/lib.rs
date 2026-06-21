@@ -147,6 +147,9 @@ pub mod coverage;
 /// First-class framework primitives: `DocumentStore`, `DiagnosticSink`, `debounce`.
 pub mod primitives;
 
+/// TPOT2-style breed pipeline type system for automated wasm4pm cognitive breed search.
+pub mod pipeline;
+
 pub(crate) use diagnostics::update_diagnostics;
 
 /// Returns current UTC time as an RFC-3339 string (seconds precision), using only std::time.

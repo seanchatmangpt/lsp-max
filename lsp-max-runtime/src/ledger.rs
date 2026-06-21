@@ -138,11 +138,11 @@ impl AutonomicMesh {
         let mut report = format!("Ledger Diagnostic Report for Instance: {}\n", instance_id);
         match self.verify_instance_ledger(instance_id) {
             Ok(()) => {
-                report.push_str("Status: VERIFIED (Cryptographic integrity intact)\n");
+                report.push_str("Status: ADMITTED (Cryptographic integrity confirmed)\n");
             }
             Err(e) => {
                 report.push_str(&format!(
-                    "Status: FAILED (Ledger verification failed: {})\n",
+                    "Status: REFUSED (Ledger verification refused: {})\n",
                     e
                 ));
             }
