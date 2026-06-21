@@ -104,3 +104,113 @@ Over the LSP wire, every published `Diagnostic` carries its proof in `data`:
 
 `UNKNOWN` and `OPEN` axes do not collapse into `ADMITTED`. The mechanism is
 sound and tested; the law status remains bounded until the open axes close.
+
+---
+
+# Process-Mined Session Conformance (PMSC)
+
+Status: **CANDIDATE** — implemented and tested; reaching ADMITTED requires
+cross-session replay and signed session digests.
+
+## Why RVD alone is not enough
+
+RVD proves that **individual findings** are honest: the witness replays, the
+digests hold, the chain is intact. But an adversarial *process* can emit
+individually-honest findings while still violating the **causal, temporal, and
+epistemic laws** that govern the overall session:
+
+| Gap | Example |
+|-----|---------|
+| Causal | A receipt exists before any analysis ran — how? |
+| Temporal | A finding is produced *after* the chain was reported broken |
+| Epistemic | `UNKNOWN` collapses to `ADMITTED` with no `ReceiptVerified` event on record |
+| Audit | A refused receipt is followed by a `ChainVerified(intact)` verdict |
+| Liveness | The gate is blocked in an infinite loop without resolution |
+
+These gaps are invisible to per-receipt verification. PMSC closes them by
+lifting the unit of analysis from **receipt → session**.
+
+## The van der Aalst insight
+
+Wil van der Aalst's Process Mining discipline treats execution traces as first-
+class artifacts and checks them against a *reference model* via token replay.
+The fitness metric `fitness = 1 − (missing_tokens / produced_tokens)` quantifies
+how closely a real trace conforms to what the model permits. Deviations are not
+just failures — they are **evidence of specific violations**, classifiable into
+an Oracle taxonomy.
+
+PMSC applies this directly to LSP sessions:
+
+- Every session event becomes an **OCEL 2.0** object-centric log entry, bound
+  simultaneously to: `Document`, `Finding`, `Receipt`, `Gate`, `AxisState`, `RuleSet`.
+- A **Declare constraint model** encodes the scaffold's process laws as temporal
+  logic (Response, Precedence, Absence, NotCoexistence).
+- **Token replay** computes van der Aalst fitness and surfaces violations.
+- **Oracle classes A8–A12** detect deeper audit anomalies.
+
+## OCEL 2.0 event binding
+
+```
+SessionEvent {
+    seq: u64,           // monotonic — no wall-clock, deterministic replay
+    activity: EventActivity,
+    objects: EventObjects {
+        document?,      // file URI
+        finding?,       // diagnostic code
+        receipt?,       // chain_head digest
+        ruleset?,       // analyzer version+digest
+        axis?,          // law axis name
+        gate?,          // gate blocked state
+    },
+}
+```
+
+An event is not bound to a single object: a `FindingProduced` event binds the
+document, the finding code, and the ruleset that produced it simultaneously.
+This is the OCEL 2.0 property that distinguishes it from flat event logs.
+
+## Declare constraint model
+
+```
+Response(FindingProduced → ReceiptProduced)
+    Every finding must eventually produce a receipt.
+
+Precedence(AnalysisRun → ReceiptProduced)
+    No receipt can exist without a prior analysis run.
+
+Precedence(ReceiptProduced → ReceiptVerified)
+    Verification requires a receipt to verify.
+```
+
+Additional constraints can be added by calling `replay_session` with a custom
+`Vec<DeclareConstraint>`.
+
+## Oracle classes
+
+| Class | Trigger |
+|-------|---------|
+| A8 AuditTampering | `ChainVerified(intact)` after a refused receipt — the chain was contaminated but reported clean |
+| A9 TemporalAnomaly | `FindingProduced` after `ChainVerified(intact=false)` — findings must not append to a broken chain |
+| A10 CausalViolation | `ReceiptProduced` without a prior `AnalysisRun` — orphan receipts cannot exist honestly |
+| A11 UnknownCollapse | `AxisTransitioned(Unknown→Admitted\|Refused)` with no prior `ReceiptVerified` — the cardinal law-state invariant |
+| A12 CyclicDependency | `GateChecked(blocked)` repeated ≥ 5 times without resolution — non-terminating blocked loop |
+
+## Try it
+
+```sh
+# Replay a persisted OCEL session log (JSON).
+lsp-max-scaffold session replay --file session.json
+```
+
+The session log is a `SessionLog` (serializable to JSON via serde). Instrument
+the server by appending events as they occur; persist the log; replay later for
+post-hoc conformance scoring.
+
+## Open axes (what blocks ADMITTED)
+
+| Axis | State | Blocking precondition |
+|------|-------|-----------------------|
+| Declare replay (single-session) | ADMITTED | tested in `tests/session_conformance.rs` |
+| OCEL signing | OPEN | session digest is computed but not yet signed (ed25519) |
+| Cross-session correlation | UNKNOWN | multi-session OCEL object merging not yet implemented |
+| Live instrumentation | OPEN | server does not yet auto-append to a SessionLog |
