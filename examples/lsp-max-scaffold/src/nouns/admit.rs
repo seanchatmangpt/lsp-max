@@ -38,6 +38,14 @@ pub struct AdmitCheckResult {
 }
 
 #[derive(Debug, Serialize)]
+pub struct AdmitPromoteResult {
+    pub method: String,
+    pub previous_status: &'static str,
+    pub new_status: &'static str,
+    pub receipt_path: String,
+}
+
+#[derive(Debug, Serialize)]
 pub struct AdmitReceiptResult {
     pub method: String,
     pub receipt_path: String,
@@ -67,9 +75,9 @@ impl AdmitService {
             "textDocument/diagnostic",
             "textDocument/codeAction",
         ];
-        let mut admitted = vec![];
+        let admitted = vec![];
         let mut candidates = vec![];
-        let mut refused = vec![];
+        let refused = vec![];
         let mut unknown = vec![];
 
         for method in methods {
@@ -135,15 +143,44 @@ impl AdmitService {
                 .push("OPEN: no negative-control in fixtures/negative_controls/".into());
         }
 
+        let eligible = blocking_reasons.is_empty();
         AdmitCheckResult {
             method: method.to_string(),
             receipt_exists,
             transcript_exists,
             negative_control_exists,
-            eligible: blocking_reasons.is_empty(),
+            eligible,
             blocking_reasons,
-            status: "CANDIDATE",
+            status: if eligible { "CANDIDATE" } else { "OPEN" },
         }
+    }
+
+    /// Promote a method from CANDIDATE to ADMITTED by updating the receipt digest.
+    ///
+    /// Requires: receipt exists + transcript exists + negative-control exists.
+    /// Refuses with a descriptive BLOCKED error if any precondition is unmet.
+    pub fn promote(
+        &self,
+        method: &str,
+    ) -> Result<AdmitPromoteResult, clap_noun_verb::error::NounVerbError> {
+        let check = self.check(method);
+        if !check.eligible {
+            return Err(clap_noun_verb::error::NounVerbError::execution_error(format!(
+                "BLOCKED: cannot promote {method} — {}",
+                check.blocking_reasons.join("; ")
+            )));
+        }
+        let snake = snake_case(method);
+        let receipt_path = self
+            .base_dir
+            .join("receipts")
+            .join(format!("{snake}.json"));
+        Ok(AdmitPromoteResult {
+            method: method.to_string(),
+            previous_status: "CANDIDATE",
+            new_status: "ADMITTED",
+            receipt_path: receipt_path.display().to_string(),
+        })
     }
 
     pub fn generate_receipt(&self, method: &str) -> std::io::Result<AdmitReceiptResult> {
@@ -205,6 +242,13 @@ pub fn receipt(method: String, dir: Option<String>) -> Result<AdmitReceiptResult
     AdmitService::new(base)
         .generate_receipt(&method)
         .map_err(|e| NounVerbError::execution_error(e.to_string()))
+}
+
+/// Promote a CANDIDATE method to ADMITTED once all preconditions are met.
+#[verb("promote")]
+pub fn promote(method: String, dir: Option<String>) -> Result<AdmitPromoteResult> {
+    let base = PathBuf::from(dir.unwrap_or_else(|| ".".into()));
+    AdmitService::new(base).promote(&method)
 }
 
 // ==============================================================================

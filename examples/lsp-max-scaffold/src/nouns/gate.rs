@@ -55,6 +55,12 @@ impl GateService {
     }
 }
 
+impl Default for GateService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 fn fnv1a(bytes: &[u8]) -> u64 {
     let mut hash: u64 = 0xcbf29ce484222325;
     for &b in bytes {

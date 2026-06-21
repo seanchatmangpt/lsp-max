@@ -2,7 +2,7 @@
 ///
 /// These tests assert the invariants that the law-state runtime must maintain.
 /// They are NOT receipts — test stdout is not evidence of admission.
-use lsp_max_scaffold::law::{AxisState, ScaffoldAxis, ScaffoldConformanceVector};
+use lsp_max_scaffold::law::{ScaffoldAxis, ScaffoldConformanceVector};
 
 #[test]
 fn all_axes_start_unknown() {
@@ -18,13 +18,19 @@ fn all_axes_start_unknown() {
 #[test]
 fn unknown_never_collapses_to_admitted_without_evidence() {
     let v = ScaffoldConformanceVector::new();
+    // Every axis that starts UNKNOWN must not appear in the admitted set —
+    // the constructor must not pre-admit anything.
     for axis in &v.unknown {
-        assert_ne!(
-            AxisState::Admitted,
-            AxisState::Unknown,
-            "axis {axis:?} must not be coerced from UNKNOWN to ADMITTED"
+        assert!(
+            !v.admitted.contains(axis),
+            "axis {axis:?} is in unknown but also in admitted — UNKNOWN collapsed without evidence"
         );
     }
+    // And the admitted set must be empty from construction.
+    assert!(
+        v.admitted.is_empty(),
+        "ScaffoldConformanceVector::new() must not pre-admit any axis"
+    );
 }
 
 #[test]

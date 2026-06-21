@@ -1,0 +1,2 @@
+{"jsonrpc":"2.0","method":"textDocument/didOpen","params":{"textDocument":{"uri":"file:///tmp/scaffold_test.rs","languageId":"rust","version":1,"text":"fn main() {}\n"}}}
+{"jsonrpc":"2.0","method":"textDocument/publishDiagnostics","params":{"uri":"file:///tmp/scaffold_test.rs","diagnostics":[]}}
