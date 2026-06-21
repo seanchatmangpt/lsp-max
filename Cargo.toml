@@ -74,6 +74,11 @@ lsif-rust = { path = "crates/lsif-rust" }
 lsif-typescript = { path = "crates/lsif-typescript" }
 tree-sitter-rust = "0.23"
 blake3 = "1"
+criterion = { version = "0.5", features = ["html_reports"] }
+
+[[bench]]
+name = "pipeline_search"
+harness = false
 
 [workspace]
 resolver = "3"
