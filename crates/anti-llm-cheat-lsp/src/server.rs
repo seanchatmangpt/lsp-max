@@ -14,7 +14,7 @@ use crate::diagnostics::AntiLlmDiagnostic;
 use crate::engine;
 use crate::virtual_docs::{
     checkpoint_status, failset, forbidden_implications, ggen_render, lsif06_matrix,
-    lsp318_full_matrix, lsp318_matrix, ocel_export, receipt_ledger,
+    lsp318_full_matrix, lsp318_matrix, ocel_export, process_model, receipt_ledger,
 };
 
 pub struct AntiLlmServer {
@@ -291,6 +291,17 @@ impl LanguageServer for AntiLlmServer {
                 let obs = engine::scan_directory(&root_dir);
                 let diags = engine::evaluate_diagnostics(&obs);
                 ocel_export::render(&diags)
+            }
+            // Van der Aalst process model: Directly-Follows Graph + Declare conformance
+            // derived from live anti-llm detection observations.
+            "anti-llm://process-model" => {
+                let root_dir = {
+                    let guard = self.workspace_root.lock().unwrap();
+                    guard.clone().unwrap_or_else(|| ".".to_string())
+                };
+                let obs = engine::scan_directory(&root_dir);
+                let diags = engine::evaluate_diagnostics(&obs);
+                process_model::render(&diags)
             }
             // ggen:// virtual document — render a ggen artifact for the ontology
             // URI embedded in the `ggen://` path; never written to disk. The
