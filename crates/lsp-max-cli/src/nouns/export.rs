@@ -389,7 +389,7 @@ mod tests {
     #[test]
     fn state_json_fails_on_missing_file() {
         let svc = ExportService {
-            state_path: "/tmp/nonexistent-export-test.json".to_string(),
+            state_path: "/tmp/no-such-dir-lsp-max/export/state.json".to_string(),
         };
         assert!(svc.state_json(false).is_err());
     }

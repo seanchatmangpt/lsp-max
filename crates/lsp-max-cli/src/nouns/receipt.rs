@@ -175,7 +175,7 @@ mod tests {
     #[test]
     fn list_fails_on_missing_state_file() {
         let svc = ReceiptService {
-            state_path: "/tmp/nonexistent-receipt-test.json".to_string(),
+            state_path: "/tmp/no-such-dir-lsp-max/receipt/state.json".to_string(),
         };
         assert!(svc.list("inst-1").is_err());
     }

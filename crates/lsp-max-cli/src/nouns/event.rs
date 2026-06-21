@@ -137,7 +137,7 @@ mod tests {
     #[test]
     fn list_fails_on_missing_state_file() {
         let svc = EventService {
-            state_path: "/tmp/nonexistent-event-test.json".to_string(),
+            state_path: "/tmp/no-such-dir-lsp-max/event/state.json".to_string(),
         };
         assert!(svc.list(None).is_err());
     }

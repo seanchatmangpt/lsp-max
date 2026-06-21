@@ -133,7 +133,7 @@ mod tests {
     #[test]
     fn dispatch_fails_on_missing_state_file() {
         let svc = RpcService {
-            state_path: "/tmp/nonexistent-rpc-test-state.json".to_string(),
+            state_path: "/tmp/no-such-dir-lsp-max/rpc/state.json".to_string(),
         };
         assert!(svc.dispatch("inst-1", "max/dumpState", "null").is_err());
     }
