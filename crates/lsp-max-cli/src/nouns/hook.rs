@@ -228,7 +228,7 @@ mod tests {
     #[test]
     fn list_fails_on_missing_state_file() {
         let svc = HookService {
-            state_path: "/tmp/nonexistent-hook-test-file.json".to_string(),
+            state_path: "/tmp/no-such-dir-lsp-max/hook/state.json".to_string(),
         };
         assert!(svc.list().is_err());
     }
@@ -308,7 +308,7 @@ mod tests {
         unsafe {
             std::env::set_var(
                 "LSP_MAX_STATE_PATH",
-                "/tmp/nonexistent-hook-rpc-test.json",
+                "/tmp/no-such-dir-lsp-max/hook-rpc/state.json",
             )
         };
         let result = hook_rpc("inst-1".to_string(), None);

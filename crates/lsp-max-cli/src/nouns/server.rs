@@ -341,9 +341,11 @@ mod tests {
         let started = svc.start("127.0.0.1".to_string(), 9999).unwrap();
         // The service spawns a real `sleep` process; stop it immediately.
         assert!(started.pid.is_some(), "start must allocate a pid");
-        let stopped = svc.stop(true).unwrap();
-        assert!(matches!(stopped.state, ServerState::Stopped));
-        assert!(stopped.pid.is_none());
+        let _ = svc.stop(true).unwrap();
+        // status() re-checks the OS, unlike stop() which always returns Stopped.
+        let after = svc.status().unwrap();
+        assert!(matches!(after.state, ServerState::Stopped), "OS must show process gone");
+        assert!(after.pid.is_none(), "pid must clear after force-stop");
     }
 
     #[test]
