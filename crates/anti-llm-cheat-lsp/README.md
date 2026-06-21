@@ -19,15 +19,33 @@ The canary monitors files and uses a multi-layered detector stack to produce dia
 
 All forbidden victory-claim terms are defined in `src/config.rs` as the single source of truth. The engine (`engine.rs`) and all rule modules reference this list — no rule hand-rolls its own term list. This prevents drift where one rule detects "done" but another silently misses "fully admitted".
 
-## LSP 3.18 Features and Virtual Documents
+## LSP 3.18 Detection Surface and Virtual Documents
 
-The canary implements a capability matrix covering 15 distinct LSP 3.18 features (with transcripts and BLAKE3 receipts). It exposes key state structures dynamically via custom virtual documents:
+The canary wires **93 of 95 LSP 3.18 methods** as detection surfaces
+(`Wired` handler state). The remaining 2 — `exit` and `$/cancelRequest` —
+are handled at the transport layer with no `LanguageServer` trait entry
+point. `workspace/applyEdit` is `Refuses` by the read-only law.
 
-* `anti-llm://failset`: The live list of active blocking diagnostics.
-* `anti-llm://lsp318-matrix`: The matrix of LSP 3.18 feature support, methods, and cryptographic receipts.
-* `anti-llm://receipt-ledger`: Rendered list of BLAKE3 receipts.
-* `anti-llm://forbidden-implications`: Map of LLM overclaim prevention logic.
-* `anti-llm://checkpoint-status`: Checkpoint verification status.
+Coverage is **computed from evidence** (on-disk handlers, transcripts,
+receipts), never declared. Status values follow the bounded taxonomy:
+`SUPPORTED_WITH_TRANSCRIPT`, `PARTIAL`, `UNKNOWN`, `OPEN`, `REFUSED`,
+`BLOCKED`. See
+[`docs/COVERAGE_LSP318_LSIF06.md`](docs/COVERAGE_LSP318_LSIF06.md) for
+the full matrix and evidence basis.
+
+The LSIF 0.6 element graph (38 elements: 20 vertices + 18 edges) is fully
+modeled in `crates/lsp-max-lsif`; example-coverage status is `OPEN`
+(modeled substrate, no transcripts or receipts produced by this canary).
+
+Virtual documents expose live state:
+
+* `anti-llm://failset` — live list of active blocking diagnostics.
+* `anti-llm://lsp318-matrix` — LSP 3.18 15-row delta changelog matrix (historical).
+* `anti-llm://lsp318-full-matrix` — full 95-method combinatorial surface (authoritative).
+* `anti-llm://lsif06-matrix` — full 38-element LSIF 0.6 surface.
+* `anti-llm://receipt-ledger` — rendered list of BLAKE3 receipts.
+* `anti-llm://forbidden-implications` — map of LLM overclaim prevention logic.
+* `anti-llm://checkpoint-status` — checkpoint verification status.
 
 ## Usage
 
@@ -44,7 +62,11 @@ cargo run --package anti-llm-cheat-lsp -- serve --stdio
 ```
 
 ## Running Tests
-Run the 30 dogfood tests to verify all canary functions and rules:
+
+Run the dogfood suite (61 tests) to verify detection surfaces, handler coverage,
+and virtual-document rendering:
+
 ```bash
 cargo test --package anti-llm-cheat-lsp
+cargo test -p anti-llm-cheat-lsp --test dogfood
 ```

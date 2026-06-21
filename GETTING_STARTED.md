@@ -231,9 +231,19 @@ cargo run --example anti-llm-cheat-lsp
 4. **Fake receipts** — Claims without BLAKE3 artifacts are rejected
    - Diagnostic: `ANTI-LLM-FAKE-RECEIPT`
 
+The server implements `RulePackServer` (bridging the internal AhoCorasick engine into `ClassifiedFindings`) and wires a `WorkspaceIndex` for lock-free concurrent document tracking.
+
+**Virtual documents** (request via `workspace/textDocumentContent`):
+- `anti-llm://failset` — active failing diagnostic codes
+- `anti-llm://lsp318-matrix` — LSP 3.18 feature support matrix
+- `anti-llm://receipt-ledger` — receipt chain inventory
+- `anti-llm://forbidden-implications` — forbidden implication register
+- `anti-llm://checkpoint-status` — admission checkpoint status
+- `anti-llm://process-model` — live DFG + Declare conformance report (Van der Aalst process mining from active diagnostics)
+
 The server scans open files and emits diagnostics; they are **not** auto-fixable. Use them to catch anti-patterns in CI.
 
-See `examples/anti-llm-cheat-lsp/admissibility_report.md` for full negative-control inventory.
+See `crates/anti-llm-cheat-lsp/admissibility_report.md` for full negative-control inventory.
 
 ### Run clap-noun-verb-lsp
 
@@ -358,7 +368,7 @@ cd ../wasm4pm && grep '^version' Cargo.toml
 cd ../../lsp-max && grep '^version' Cargo.toml
 ```
 
-All should match (e.g., `26.6.9`). If not, fetch the latest from each repo:
+All should match (e.g., `26.6.18`). If not, fetch the latest from each repo:
 ```bash
 cd ../lsp-types-max && git pull origin main
 cd ../wasm4pm-compat && git pull origin main
@@ -374,7 +384,8 @@ cd ../../lsp-max && git pull origin main
 
 **Fix**: Resolve all active diagnostics, then retry:
 ```bash
-lsp-max-cli gate check     # Check current gate state
+lsp-max-cli gate check     # Exit 0 = clear; exit 1 = ANDON blocked
+lsp-max-cli gate list      # JSON with active_codes (WASM4PM-*, GGEN-*) and agent_scope
 cargo test                 # Should proceed if gate is open
 ```
 

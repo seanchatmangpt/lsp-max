@@ -7,7 +7,7 @@
 
 [build-badge]: https://github.com/seanchatmangpt/lsp-max/workflows/rust/badge.svg
 [build-url]: https://github.com/seanchatmangpt/lsp-max/actions
-[crates-badge]: https://img.shields.io/crates/v/lsp-max.svg?label=26.6.9
+[crates-badge]: https://img.shields.io/crates/v/lsp-max.svg?label=26.6.18
 [crates-url]: https://crates.io/crates/lsp-max
 [license-badge]: https://img.shields.io/badge/license-MIT%2FApache--2.0-blue
 [license-url]: #license
@@ -47,13 +47,14 @@ lsp-max = "26.6"
 
 | Feature | Status | Notes |
 |---------|--------|-------|
-| LSP 3.18 capability coverage | ~87% | See `docs/FEATURES.md` |
+| LSP 3.18 detection surface | 93/95 methods (PARTIAL) | `exit` and `$/cancelRequest` are framework-handled; see `crates/anti-llm-cheat-lsp/docs/COVERAGE_LSP318_LSIF06.md` |
+| LSIF 0.6 element modeling | 38/38 (OPEN — no transcripts yet) | All 20 vertices + 18 edges modeled in `crates/lsp-max-lsif`; `anti-llm://lsif06-matrix` shows live status |
 | ConformanceVector (`admitted`/`refused`/`unknown`) | Supported | Axes never collapse; unknown is preserved |
 | Process-mining via wasm4pm | Supported | OCEL event logs from OTel traces, checked against declared models |
 | Receipt-chain admission | Supported | BLAKE3-hashed receipts required; tests without receipts rejected |
 | Λ_CD gate (PreToolUse enforcement) | Supported | CI gate blocks shell actions while `WASM4PM-*`/`GGEN-*` diagnostics active |
 | Anti-LLM diagnostics | Supported | Detects tower-lsp references, victory language, fake receipts, contract violations |
-| CalVer versioning | Enforced | `26.6.9` = 2026-06-09; version mismatches are diagnostic events |
+| CalVer versioning | Enforced | `26.6.18` = 2026-06-21; version mismatches are diagnostic events |
 | Multi-server compositor | Supported | Fans to child servers, merges diagnostics with quorum debounce, emits receipts |
 
 ## Directory structure
@@ -144,7 +145,7 @@ All other workspace crates have `publish = false`.
 - **Unknown is preserved**: `ConformanceVector` axes never collapse unknown into admitted or refused; ambiguity is explicit.
 - **Receipts, not logs**: Capability claims require BLAKE3-hashed receipt artifacts with path, digest, boundary, and checkpoint — test stdout is not a receipt.
 - **Read-only LSP surface**: The server emits diagnostics, hovers, and intents but never mutates files; all mutation is client-driven.
-- **CalVer, not SemVer**: Version `26.6.9` encodes the date (2026-06-09); mismatches are diagnostic events.
+- **CalVer, not SemVer**: Version `26.6.18` encodes the date (2026-06-21); mismatches are diagnostic events.
 - **Distinct from tower-lsp**: Never reference plain `tower_lsp` or `tower-lsp` in code, manifests, or docs (outside negative-control fixtures).
 
 ## Build & test
@@ -182,7 +183,8 @@ No intermediary type crates (`wasm4pm_types`, `ocel_core`, etc.) are allowed.
 - **[GETTING_STARTED.md](GETTING_STARTED.md)** — Setup and first server
 - **[CONTRIBUTING.md](CONTRIBUTING.md)** — Development workflow and law enforcement
 - **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** — Five-layer model, typestate machine, Λ_CD gate
-- **[docs/FEATURES.md](docs/FEATURES.md)** — LSP 3.18 coverage with receipts
+- **[crates/anti-llm-cheat-lsp/docs/COVERAGE_LSP318_LSIF06.md](crates/anti-llm-cheat-lsp/docs/COVERAGE_LSP318_LSIF06.md)** — Authoritative LSP 3.18 (95-method) + LSIF 0.6 (38-element) combinatorial coverage matrix
+- **[docs/FEATURES.md](docs/FEATURES.md)** — Legacy per-version feature table (superseded by COVERAGE_LSP318_LSIF06.md for LSP 3.18)
 - **[DOC_COVERAGE_LOG.md](DOC_COVERAGE_LOG.md)** — Documentation audit and gaps
 - **[CLAUDE.md](CLAUDE.md)** — Codebase laws and constraints (consulted by anti-llm-cheat-lsp)
 - **[AGENTS.md](AGENTS.md)** — Agent protocol and conformance rules
@@ -193,4 +195,4 @@ Dual-licensed under [MIT](LICENSE-MIT) or [Apache 2.0](LICENSE-APACHE) at your o
 
 ---
 
-**Rust version**: 1.70+ | **CalVer**: 26.6.9 (2026-06-09) | **Status**: CANDIDATE
+**Rust version**: 1.70+ | **CalVer**: 26.6.18 (2026-06-21) | **Status**: CANDIDATE
