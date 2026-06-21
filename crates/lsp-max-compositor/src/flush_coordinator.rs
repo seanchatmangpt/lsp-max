@@ -16,6 +16,8 @@ use lsp_max::lsp_types::{Diagnostic, DiagnosticSeverity, NumberOrString, Positio
 use tokio::time::{Duration, Instant};
 
 use crate::child_process::ChildProcessPool;
+use crate::declare::{extract_traces, DeclareModel};
+use crate::dfg::DirectlyFollowsGraph;
 use crate::diagnostic_buffer::DiagnosticBuffer;
 use crate::gate_file::GateFile;
 use crate::merge::MergeContext;
@@ -254,7 +256,44 @@ impl FlushCoordinator {
                     };
                     let ocel_event = receipt.to_ocel_event(&format!("cf-{eid}"), &ts);
                     if let Ok(mut guard) = ocel_events_bg.lock() {
-                        guard.push(ocel_event);
+                        guard.push(ocel_event.clone());
+
+                        // RFC C + Van der Aalst: run Declare conformance + DFG on the
+                        // accumulated log after every flush so violations are surfaced
+                        // continuously rather than only at log-export time.
+                        let traces = extract_traces(&guard);
+                        let model = DeclareModel::compositor();
+                        let violations = model.check(&traces);
+                        if !violations.is_empty() {
+                            tracing::warn!(
+                                violations = violations.len(),
+                                uri = %uri,
+                                "declare-conformance: compositor process model violated"
+                            );
+                            for v in &violations {
+                                tracing::warn!(
+                                    constraint = %v.constraint,
+                                    case_id = %v.case_id,
+                                    detail = %v.detail,
+                                    "declare-violation"
+                                );
+                            }
+                        }
+                        let dfg = DirectlyFollowsGraph::from_traces(&traces);
+                        let normative_arcs = [
+                            ("CompositorFlush".to_string(), "CompositorFlushAdmitted".to_string()),
+                            ("CompositorFlush".to_string(), "CompositorFlushBlocked".to_string()),
+                            ("CompositorFlushBlocked".to_string(), "AndonCodePresent".to_string()),
+                        ];
+                        if let Some(fitness) = dfg.fitness_against_model(&normative_arcs) {
+                            tracing::debug!(
+                                fitness,
+                                nodes = dfg.node_count(),
+                                edges = dfg.edge_count(),
+                                transitions = dfg.total_transitions(),
+                                "dfg-fitness: compositor process model"
+                            );
+                        }
                     }
 
                     // Compute per-server acks from the merge result and notify child servers.

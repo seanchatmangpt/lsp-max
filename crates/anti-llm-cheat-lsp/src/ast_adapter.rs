@@ -58,11 +58,11 @@ impl RustAstAdapter {
         }
     }
 
-/// Return a reference to the underlying `AutoLspAdapter` for use in
-/// `RulePackServer::adapter()` implementations that require the raw adapter.
-pub fn inner(&self) -> &AutoLspAdapter {
-    &self.adapter
-}
+    /// Return a reference to the underlying `AutoLspAdapter` for use in
+    /// `RulePackServer::adapter()` implementations that require the raw adapter.
+    pub fn inner(&self) -> &AutoLspAdapter {
+        &self.adapter
+    }
 
     pub fn get_document<F, R>(&self, uri: &DocumentUri, f: F) -> Option<R>
     where
