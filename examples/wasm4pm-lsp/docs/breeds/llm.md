@@ -50,8 +50,9 @@ The following laws remain OPEN or CANDIDATE and block full admission:
 - **COG-007**: `measured_by`, `measured_on`, and `run_id` in
   `ocel/reports/llm.json` are OPEN placeholders; a conformance runner
   execution must populate them.
-- **COG-010**: oracle_value is 0.0 (too common to scan meaningfully);
-  no oracle injection risk — remains CANDIDATE pending formal scan policy.
+- **COG-010**: oracle_value is 0.0 (excluded from scan; too common to distinguish injection).
+  Scan test at `tests/cog010_oracle_scan.rs` exists but does not cover this breed.
+  Status remains CANDIDATE; no oracle injection risk identified.
 - **COG-011**: `admitted` stays false and `fitness` stays 0.0 until COG-003/006/007
   are resolved by a conformance runner run.
 
