@@ -663,6 +663,13 @@ Do not collapse OPEN into ADMITTED. The gap is present until structural enforcem
 - papaya::HashMap for DiagnosticBuffer (DashMap contention elimination)
 - kanal channel for FlushCoordinator (lower send latency — kanal integrated but not benchmarked at N=500)
 - simd-json for JSON-RPC framing (larger scope change; not yet prototyped)
+- **examples/lsp-max-scaffold PMSC** — Process-Mined Session Conformance:
+  OCEL 2.0 object-centric event log (`SessionLog`), van der Aalst Declare
+  constraint model, token replay fitness metric, Oracle classes A8–A12
+  (`src/session_conformance.rs`). Closes the gap where per-receipt proof
+  (RVD) passes but causal / temporal / epistemic session laws are violated.
+  Status: CANDIDATE — implemented and tested; reaching ADMITTED requires
+  cross-session replay and signed session digests (ed25519 over `log.digest()`).
 
 ### OPEN
 - Subagent gate propagation: PreToolUse hooks do not cross Agent session boundaries (structural gap — see Subagent Gate Propagation section)
