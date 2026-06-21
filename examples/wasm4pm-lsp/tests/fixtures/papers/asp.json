@@ -3,15 +3,15 @@
   "label": "Answer Set Programmer",
   "paper_ref": "gelfond1991stable",
   "family": "FormalMethods",
-  "description": "Paper example problem instance for Answer Set Programmer. Replace inputs and expected_value with the exact values from gelfond1991stable.",
+  "description": "Gelfond-Lifschitz (1991) two-atom choice program; both {a} and {b} are stable models under GL reduct.",
   "inputs": {
-    "note": "Replace with real BreedInput fields from gelfond1991stable"
+    "program": ["a :- not b.", "b :- not a."]
   },
   "expected": {
-    "value": "PENDING",
-    "note": "Replace with oracle_value=0.0 from gelfond1991stable. COG-005 requires this field."
+    "value": {"models": [["a"], ["b"]]},
+    "note": "GL reduct of {a}: {a:-} → {a}, minimal model = {a}; stable. Symmetric for {b}."
   },
-  "expected_value": "PENDING",
-  "asserted_value": "PENDING",
+  "expected_value": 2,
+  "asserted_value": 2,
   "paper_value": 0.0
 }

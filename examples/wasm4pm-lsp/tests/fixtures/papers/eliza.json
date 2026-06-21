@@ -3,15 +3,16 @@
   "label": "ELIZA Frame Reasoner",
   "paper_ref": "weizenbaum1966eliza",
   "family": "SymbolicAI",
-  "description": "Paper example problem instance for ELIZA Frame Reasoner. Replace inputs and expected_value with the exact values from weizenbaum1966eliza.",
+  "description": "Weizenbaum (1966) ELIZA script pattern match: 'I am *' matches 'I am unhappy', captures 'unhappy', fills template 'How long have you been (1)?'.",
   "inputs": {
-    "note": "Replace with real BreedInput fields from weizenbaum1966eliza"
+    "text": "I am unhappy",
+    "call_count": 0
   },
   "expected": {
-    "value": "PENDING",
-    "note": "Replace with oracle_value=0.0 from weizenbaum1966eliza. COG-005 requires this field."
+    "value": {"response": "How long have you been unhappy?", "pattern_matched": "I am *"},
+    "note": "call_count=0 selects the first response template for the matched rule."
   },
-  "expected_value": "PENDING",
-  "asserted_value": "PENDING",
+  "expected_value": 1,
+  "asserted_value": 1,
   "paper_value": 0.0
 }

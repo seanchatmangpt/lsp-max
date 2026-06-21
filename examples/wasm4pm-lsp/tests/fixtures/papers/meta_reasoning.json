@@ -3,15 +3,22 @@
   "label": "Meta Reasoner",
   "paper_ref": "cox2005metacognition",
   "family": "MetaCognition",
-  "description": "Paper example problem instance for Meta Reasoner. Replace inputs and expected_value with the exact values from cox2005metacognition.",
+  "description": "Cox (2005) meta-reasoning strategy selector: remaining time=15, heuristic_search rejected (needs domain_knowledge), DFS wins with base_score=0.9/√8≈0.318.",
   "inputs": {
-    "note": "Replace with real BreedInput fields from cox2005metacognition"
+    "cognitive_state": {"confidence": 0.3, "knowledge_gaps": ["network", "disk"], "time_elapsed": 5},
+    "resources": {"time_budget": 20, "available_knowledge": ["network"]},
+    "strategies": [
+      {"name": "depth_first_search",   "cost": 8,  "utility": 0.9, "requires": []},
+      {"name": "breadth_first_search", "cost": 12, "utility": 0.7, "requires": []},
+      {"name": "heuristic_search",     "cost": 3,  "utility": 0.6, "requires": ["domain_knowledge"]},
+      {"name": "random_restart",       "cost": 5,  "utility": 0.4, "requires": []}
+    ]
   },
   "expected": {
-    "value": "PENDING",
-    "note": "Replace with oracle_value=0.0 from cox2005metacognition. COG-005 requires this field."
+    "value": {"selected_strategy": "depth_first_search", "score": 0.318},
+    "note": "rank_score = base_score × (1+(1-confidence)) = 0.318×1.7=0.541; DFS beats BFS(0.343) and random_restart(0.304)."
   },
-  "expected_value": "PENDING",
-  "asserted_value": "PENDING",
+  "expected_value": 0.318,
+  "asserted_value": 0.318,
   "paper_value": 0.0
 }

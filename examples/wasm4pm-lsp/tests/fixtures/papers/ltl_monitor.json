@@ -3,15 +3,20 @@
   "label": "LTL Runtime Monitor",
   "paper_ref": "bauer2011ltl",
   "family": "FormalMethods",
-  "description": "Paper example problem instance for LTL Runtime Monitor. Replace inputs and expected_value with the exact values from bauer2011ltl.",
+  "description": "Bauer et al. (2011) finite-trace LTL: G(request → F response) on a 3-event trace where position 0 requests and position 1 responds — formula is satisfied.",
   "inputs": {
-    "note": "Replace with real BreedInput fields from bauer2011ltl"
+    "formula": "G ( request -> F response )",
+    "trace": [
+      {"request": true,  "response": false},
+      {"request": false, "response": true},
+      {"request": false, "response": false}
+    ]
   },
   "expected": {
-    "value": "PENDING",
-    "note": "Replace with oracle_value=1.0 from bauer2011ltl. COG-005 requires this field."
+    "value": {"verdict": "TRUE", "value": 1.0},
+    "note": "At position 0: request=T requires F(response) to hold; response=T at position 1 satisfies F. Positions 1 and 2: request=F, implication trivially true."
   },
-  "expected_value": "PENDING",
-  "asserted_value": "PENDING",
+  "expected_value": 1.0,
+  "asserted_value": 1.0,
   "paper_value": 1.0
 }
