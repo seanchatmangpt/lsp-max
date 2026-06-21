@@ -143,6 +143,7 @@ pub struct ConformanceScoreResult {
     pub conformance_vector: ConformanceVector,
 }
 
+/// Return the numeric conformance score (0–100) for the given instance.
 #[verb("score")]
 pub fn score(instance_id: String) -> Result<ConformanceScoreResult> {
     let svc = ConformanceService::new();
@@ -165,6 +166,7 @@ pub struct ConformanceBreakdownResult {
     pub breakdown: Vec<AxisBreakdown>,
 }
 
+/// Return per-axis admitted/refused/unknown counts for the given instance.
 #[verb("breakdown")]
 pub fn breakdown(instance_id: String) -> Result<ConformanceBreakdownResult> {
     let svc = ConformanceService::new();
@@ -185,6 +187,7 @@ pub struct ConformanceVectorResult {
     pub unknown: Vec<String>,
 }
 
+/// Return the full ConformanceVector (admitted/refused/unknown law-axis sets) for the given instance.
 #[verb("vector")]
 pub fn vector(instance_id: String) -> Result<ConformanceVectorResult> {
     let cv = ConformanceService::new()
@@ -207,6 +210,7 @@ pub struct ConformanceVectorRpcResult {
     pub raw: serde_json::Value,
 }
 
+/// Dispatch `max/conformanceVector` RPC and return admitted/refused/unknown axis counts.
 #[verb("vector-rpc")]
 pub fn vector_rpc(instance_id: String) -> Result<ConformanceVectorRpcResult> {
     let state_path = crate::nouns::get_state_path();
@@ -254,6 +258,7 @@ pub struct RunGateResult {
     pub raw: serde_json::Value,
 }
 
+/// Execute a named gate check for the given instance via the `max/runGate` RPC.
 #[verb("run-gate")]
 pub fn run_gate(instance_id: String, gate_id: String) -> Result<RunGateResult> {
     let state_path = crate::nouns::get_state_path();
@@ -337,6 +342,7 @@ pub struct ConformanceDeltaResult {
     pub raw: serde_json::Value,
 }
 
+/// Return the conformance delta for an instance via the `max/conformanceDelta` RPC.
 #[verb("delta")]
 pub fn delta(instance_id: String) -> Result<ConformanceDeltaResult> {
     let state_path = crate::nouns::get_state_path();
