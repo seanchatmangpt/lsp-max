@@ -333,6 +333,40 @@ in this tree; "*(target)*" marks the not-yet-present TPOT2 dependency (§0).
 | Breed-affinity feedback | Bias mutation sampling from receipt-witnessed history | `ConformanceDeltaEntry` (`lsp-max-runtime/src/mesh_types.rs`) *(present)*; TPOT2 catalog *(target)* | CANDIDATE (not built; §7.1) |
 | Convergence hysteresis | Escalate an advisory signal after N non-convergent runs | `ConformanceDeltaEntry` (`lsp-max-runtime/src/mesh_types.rs`) *(present)* | CANDIDATE (not built; §7.2) |
 | No-collapse contract witness | A test asserting TPOT2 `UNKNOWN` lands in `.unknown`, not `.admitted` | analogue of `examples/conformance_vector_explained.rs` *(present, as model)* | OPEN (does not exist; prerequisite for trusting the actuate hop) |
+| Phase-shift resolver | Resolve a search outcome into a bounded `ConformancePhase` | `phase_for`, `ConformancePhase` (`src/pipeline/phase.rs`) *(present)* | ADMITTED in isolation (harness); not yet wired to the loop |
+| Phase-shift protocol surface | Read-only `max/phaseShift` request/result + `PHASE-*` diagnostics | `lsp-max-protocol/src/phase.rs` *(present)* | CANDIDATE (build BLOCKED here; mirrors verified `pipeline.rs`) |
+| Mesh expansion factor | Carry the `Vapor`/ADMITTED fan-out amplitude (1,700×) into actuate | `STEAM_EXPANSION_FACTOR` (`src/pipeline/phase.rs`) *(present)* | CANDIDATE (factor defined; fan-out actuation not built) |
+| `max/phaseShift` dispatch | Route the method through the runtime registry to a handler | `MaxMethod` (`lsp-max-runtime/src/mesh_types.rs`) *(present)* | OPEN (not registered; matches `max/pipelineSearch` precedent of declared-not-dispatched) |
+
+---
+
+## 6.5 Phase-shift expansion — water → steam (1,700×)
+
+The four-beat path of [§3](#3-signal-flow) answers *whether* an outcome is
+admitted. The phase-shift model answers *how far it then propagates*. It reframes
+the bounded admission status as a **thermodynamic phase**: the admission
+threshold is a **boiling point**, the conformance score is a **temperature**, and
+crossing the boiling point is the water→steam transition that expands volume
+roughly **1,700×**.
+
+| Phase | Bounded status | Mesh expansion | Loop effect |
+|---|---|---|---|
+| `Frozen` | `BLOCKED` | 0 | ANDON is set; the loop does not actuate |
+| `Liquid` | `PARTIAL` | 1 | the outcome flows but is not amplified |
+| `Vapor` | `ADMITTED` | 1,700 | the admitted observation fans out across the mesh |
+| `Unsettled` | `UNKNOWN` | 0 | carried as `unknown`; **never** boiled into `Vapor` |
+| `Decomposed` | `REFUSED` | 0 | explicit refusal; nothing propagates |
+
+The **expansion factor is the actuate-hop amplitude**: an `ADMITTED`/`Vapor`
+observation is the only phase whose single decision is intended to fan out as
+many bounded intents across the layer-5 mesh (the `1,700×` is the metaphor's
+amplitude, not a literal fan-out count yet — that actuation is CANDIDATE). The
+three-state discipline of [§4](#4-the-three-state-discipline-end-to-end) is
+preserved exactly: `Unsettled`/`UNKNOWN` is its own phase with expansion 0 and is
+never coerced into `Liquid` or `Vapor`. The resolver (`phase_for`) uses the same
+precedence as `repair::simulate_admission` — BLOCKED > REFUSED > UNKNOWN > the
+boiling-point comparison — so the phase view and the admission view cannot
+disagree. Full design: `docs/tpot2-phase-shift.md`.
 
 ---
 

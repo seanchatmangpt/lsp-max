@@ -33,7 +33,11 @@ impl Prng {
     pub fn new(seed: u64) -> Self {
         let mixed = seed ^ 0xcafef00d_deadbeef;
         Self {
-            state: if mixed == 0 { 0x9e3779b97f4a7c15 } else { mixed },
+            state: if mixed == 0 {
+                0x9e3779b97f4a7c15
+            } else {
+                mixed
+            },
         }
     }
 
@@ -108,11 +112,6 @@ impl<'a> PipelineSearch<'a> {
 
     /// Build a random pipeline of length `len` drawn from `breed_pool`.
     fn random_pipeline(&mut self, len: usize) -> BreedPipeline {
-        use std::time::{SystemTime, UNIX_EPOCH};
-        let ts = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap_or_default()
-            .subsec_nanos();
         let nodes: Vec<BreedNodeConfig> = (0..len)
             .map(|_| {
                 let idx = self.rng.next_usize(self.breed_pool.len());
@@ -122,8 +121,12 @@ impl<'a> PipelineSearch<'a> {
                 }
             })
             .collect();
+        // Id is derived from the PRNG only (no wall-clock), so a fixed seed makes
+        // the entire serialized result — id included — reproducible, matching the
+        // determinism contract `pareto.rs` already holds. The PRNG is advanced
+        // exactly once here, leaving the breed-selection stream unchanged.
         BreedPipeline {
-            id: format!("pipe-{:08x}", ts ^ self.rng.next_u64() as u32),
+            id: format!("pipe-{:016x}", self.rng.next_u64()),
             nodes,
         }
     }
@@ -167,11 +170,6 @@ impl<'a> PipelineSearch<'a> {
     /// Single-point crossover of two parent pipelines.
     /// Falls back to cloning the first parent when crossover is skipped.
     fn crossover(&mut self, a: &BreedPipeline, b: &BreedPipeline) -> BreedPipeline {
-        use std::time::{SystemTime, UNIX_EPOCH};
-        let ts = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap_or_default()
-            .subsec_nanos();
         if self.rng.next_f64() > self.crossover_rate || a.nodes.is_empty() || b.nodes.is_empty() {
             return a.clone();
         }
@@ -188,7 +186,7 @@ impl<'a> PipelineSearch<'a> {
             });
         }
         BreedPipeline {
-            id: format!("pipe-xo-{:08x}", ts ^ self.rng.next_u64() as u32),
+            id: format!("pipe-xo-{:016x}", self.rng.next_u64()),
             nodes,
         }
     }
@@ -437,5 +435,31 @@ mod tests {
         let result = search.run();
         assert_eq!(result.status, PipelineBoundedStatus::Refused);
         assert!(result.best_pipeline.is_none());
+    }
+
+    #[test]
+    fn full_result_including_id_is_reproducible() {
+        // Determinism now covers the serialized result in full, the pipeline id
+        // included: a fixed seed yields byte-identical JSON across runs. The id
+        // previously embedded wall-clock nanoseconds, which broke this contract
+        // and forced the reproducibility witness to project the id out.
+        let run = || {
+            let mut s = PipelineSearch::new(
+                PipelineSearchConfig {
+                    population_size: 8,
+                    generations: 5,
+                    ..Default::default()
+                },
+                TEST_BREEDS,
+                Box::new(DiversityFitnessEvaluator),
+                7,
+            );
+            serde_json::to_string(&s.run()).unwrap()
+        };
+        assert_eq!(
+            run(),
+            run(),
+            "fixed-seed search must reproduce its full result, id included"
+        );
     }
 }
