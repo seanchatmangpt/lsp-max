@@ -3,15 +3,20 @@
   "label": "MYCIN Production Rules",
   "paper_ref": "shortliffe1976mycin",
   "family": "SymbolicAI",
-  "description": "Paper example problem instance for MYCIN Production Rules. Replace inputs and expected_value with the exact values from shortliffe1976mycin.",
+  "description": "Shortliffe (1976) MYCIN certainty factor combination: CF(fever)=0.6, CF(bacteria)=0.2325; combined CF = 0.6 + 0.2325×(1−0.6) = 0.693.",
   "inputs": {
-    "note": "Replace with real BreedInput fields from shortliffe1976mycin"
+    "rules": [
+      {"hypothesis": "infection", "evidence": "fever",    "cf": 0.6},
+      {"hypothesis": "infection", "evidence": "bacteria", "cf": 0.2325}
+    ],
+    "evidence": ["fever", "bacteria"],
+    "query": "infection"
   },
   "expected": {
-    "value": "PENDING",
-    "note": "Replace with oracle_value=0.693 from shortliffe1976mycin. COG-005 requires this field."
+    "value": {"hypothesis": "infection", "cf": 0.693},
+    "note": "Positive-CF pairwise fold: 0.6 + 0.2325*(1-0.6) = 0.6 + 0.093 = 0.693."
   },
-  "expected_value": "PENDING",
-  "asserted_value": "PENDING",
+  "expected_value": 0.693,
+  "asserted_value": 0.693,
   "paper_value": 0.693
 }
