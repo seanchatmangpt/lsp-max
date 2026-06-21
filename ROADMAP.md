@@ -145,14 +145,17 @@ ggen sync --manifest .specify/specs/lsp-max/ggen.toml
 
 | # | Item | Effort | Status |
 |---|------|--------|--------|
+| 5 | `anti-llm-cheat-lsp` → `RulePackServer` | Medium | ✅ CANDIDATE |
 | 6 | `anti-llm-cheat-lsp` new rule modules (contract, ggen, oracle, trace, complexity) | Medium | ⬜ In progress (untracked files) |
-| 7 | `WorkspaceIndex` wiring in `anti-llm-cheat-lsp` | Small | ⬜ Remaining |
-| 8 | Λ_CD RFC items from AGENTS.md backlog (3 priorities) | Large | ⬜ Remaining |
+| 7 | `WorkspaceIndex` wiring in `anti-llm-cheat-lsp` | Small | ✅ CANDIDATE |
+| 8A | Λ_CD RFC A: `gate list` verb (agent-queryable gate state) | Small | ✅ CANDIDATE |
+| 8B | Λ_CD RFC B: per-server speciation receipt chain | Large | ⬜ OPEN |
+| 8C | Λ_CD RFC C: `CompositorReceipt` → OCEL accumulation | Medium | ✅ CANDIDATE |
 
 ### RFC Backlog Detail (item 8)
 
 Three Λ_CD architectural priorities recorded in AGENTS.md after the 1000x review:
 
-- **A — Agent-boundary enforcement**: subagent gate state must be queryable per-agent, not just globally. Goal: a subagent that hits ANDON sees a scoped block, not a global halt that affects the parent session.
-- **B — Per-server speciation receipt chain**: each child server in the compositor must emit its own `C_D` receipt chain so the compositor's `ADMITTED` verdict is traceable back to individual server evidence, not a merged aggregate.
-- **C — Compositor receipt → OCEL**: `CompositorReceipt` events must be derivable into an OCEL event log and mined for conformance against the declared compositor process model (fan-out → merge → admit).
+- **A — Agent-boundary enforcement**: `gate list` verb wired in `crates/lsp-max-cli/src/nouns/gate.rs`; returns `active_codes` and `agent_scope`. Per-agent partitioning (scoped block vs global halt) remains OPEN — `agent_scope` is `"global"` in the current release.
+- **B — Per-server speciation receipt chain**: `CompositorReceipt::child_evidence: Vec<ChildEvidence>` exists and surfaces in `to_ocel_event()`. Full per-server `C_D` receipt chain wiring (each child emits its own traceable chain linked by `chain_object_id`) is OPEN.
+- **C — Compositor receipt → OCEL**: `FlushCoordinator` now accumulates `CompositorReceipt::to_ocel_event()` into `ocel_events: Arc<Mutex<Vec<Value>>>` on every flush. `take_ocel_events()` drains the buffer for export. Process-model mining (conformance against fan-out → merge → admit model) is OPEN.

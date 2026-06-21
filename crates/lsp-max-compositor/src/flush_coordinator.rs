@@ -70,6 +70,10 @@ pub struct FlushCoordinator {
     /// Cumulative count of signals dropped due to a full channel.
     /// Incremented on each `try_send` failure; readable via `signal_drop_count()`.
     drop_counter: Arc<AtomicU64>,
+    /// RFC C: accumulated OCEL 2.0 events derived from `CompositorReceipt` flushes.
+    ocel_events: Arc<std::sync::Mutex<Vec<serde_json::Value>>>,
+    /// Monotonic counter used as the OCEL event-id source.
+    event_counter: Arc<AtomicU64>,
 }
 
 impl FlushCoordinator {
@@ -89,6 +93,11 @@ impl FlushCoordinator {
         let (tx, rx) = kanal::bounded_async::<FlushSignal>(512);
         let drop_counter = Arc::new(AtomicU64::new(0));
         let _drop_counter_bg = Arc::clone(&drop_counter);
+        let ocel_events: Arc<std::sync::Mutex<Vec<serde_json::Value>>> =
+            Arc::new(std::sync::Mutex::new(Vec::new()));
+        let ocel_events_bg = Arc::clone(&ocel_events);
+        let event_counter = Arc::new(AtomicU64::new(0));
+        let event_counter_bg = Arc::clone(&event_counter);
 
         tokio::spawn(async move {
             // per_uri: tracks which servers have deposited for each URI in the current window.
@@ -234,6 +243,20 @@ impl FlushCoordinator {
                         }
                     }
 
+                    // RFC C: derive OCEL 2.0 event from the receipt and append to the log.
+                    let eid = event_counter_bg.fetch_add(1, Ordering::Relaxed);
+                    let ts = {
+                        let secs = std::time::SystemTime::now()
+                            .duration_since(std::time::UNIX_EPOCH)
+                            .unwrap_or_default()
+                            .as_secs();
+                        format!("{secs}")
+                    };
+                    let ocel_event = receipt.to_ocel_event(&format!("cf-{eid}"), &ts);
+                    if let Ok(mut guard) = ocel_events_bg.lock() {
+                        guard.push(ocel_event);
+                    }
+
                     // Compute per-server acks from the merge result and notify child servers.
                     let mut per_server: HashMap<String, (usize, bool)> = HashMap::new();
                     for d in &result.diagnostics {
@@ -290,7 +313,29 @@ impl FlushCoordinator {
         Self {
             sender: tx,
             drop_counter,
+            ocel_events,
+            event_counter,
         }
+    }
+
+    /// RFC C: drain the accumulated OCEL 2.0 events and return them.
+    ///
+    /// Each element is a `CompositorFlush` OCEL event produced by
+    /// `CompositorReceipt::to_ocel_event`.  The internal buffer is cleared on
+    /// each call, so callers own the drained slice.
+    pub fn take_ocel_events(&self) -> Vec<serde_json::Value> {
+        self.ocel_events
+            .lock()
+            .map(|mut g| std::mem::take(&mut *g))
+            .unwrap_or_default()
+    }
+
+    /// RFC C: snapshot the accumulated OCEL log without draining it.
+    pub fn ocel_event_count(&self) -> usize {
+        self.ocel_events
+            .lock()
+            .map(|g| g.len())
+            .unwrap_or(0)
     }
 
     /// Signal that `uri` received a deposit from `server_id`.

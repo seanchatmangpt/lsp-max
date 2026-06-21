@@ -1,6 +1,8 @@
 use lsp_max::jsonrpc::{Error, ErrorCode, Result};
 use lsp_max::lsp_types::*;
-use lsp_max::{Client, LanguageServer};
+use lsp_max::max_protocol::{LawAxis, MaxDiagnostic};
+use lsp_max::{Client, ClassifiedFindings, Finding, LanguageServer, RulePackServer, ValidatedRulePackSet, WorkspaceIndex};
+use lsp_max_ast::AutoLspAdapter;
 use std::str::FromStr;
 use std::sync::{Arc, Mutex};
 
@@ -19,6 +21,8 @@ pub struct AntiLlmServer {
     pub client: Client,
     pub workspace_root: Arc<Mutex<Option<String>>>,
     pub ast_adapter: RustAstAdapter,
+    pub workspace_index: WorkspaceIndex,
+    rule_packs: ValidatedRulePackSet,
 }
 
 impl AntiLlmServer {
@@ -27,6 +31,8 @@ impl AntiLlmServer {
             client,
             workspace_root: Arc::new(Mutex::new(None)),
             ast_adapter: RustAstAdapter::new(),
+            workspace_index: WorkspaceIndex::new(),
+            rule_packs: ValidatedRulePackSet::empty(),
         }
     }
 
@@ -60,6 +66,10 @@ impl AntiLlmServer {
             .publish_diagnostics(uri.clone(), file_diags, None)
             .await;
 
+        self.fire_refreshes(uri).await;
+    }
+
+    async fn fire_refreshes(&self, uri: &Uri) {
         // LSP 3.18 dynamic refreshes (LSP318-003 and LSP318-002 refresh)
         let _ = self.client.folding_range_refresh().await;
         let _ = self
@@ -187,13 +197,15 @@ impl LanguageServer for AntiLlmServer {
     }
 
     async fn did_open(&self, params: DidOpenTextDocumentParams) {
-        self.ast_adapter.handle_did_open(params.clone());
-        self.run_scan_and_publish(&params.text_document.uri).await;
+        let uri = params.text_document.uri.clone();
+        <Self as RulePackServer>::handle_did_open(self, params).await;
+        self.fire_refreshes(&uri).await;
     }
 
     async fn did_change(&self, params: DidChangeTextDocumentParams) {
-        self.ast_adapter.handle_did_change(params.clone());
-        self.run_scan_and_publish(&params.text_document.uri).await;
+        let uri = params.text_document.uri.clone();
+        <Self as RulePackServer>::handle_did_change(self, params).await;
+        self.fire_refreshes(&uri).await;
     }
 
     async fn did_save(&self, params: DidSaveTextDocumentParams) {
@@ -202,7 +214,7 @@ impl LanguageServer for AntiLlmServer {
 
     /// Final scan on close ensures the CI pull path sees up-to-date detections.
     async fn did_close(&self, params: DidCloseTextDocumentParams) {
-        self.ast_adapter.handle_did_close(params.clone());
+        <Self as RulePackServer>::handle_did_close(self, params.clone());
         self.run_scan_and_publish(&params.text_document.uri).await;
     }
 
@@ -1167,5 +1179,64 @@ impl LanguageServer for AntiLlmServer {
 
     async fn progress(&self, _params: ProgressParams) {
         // Progress notification received
+    }
+}
+
+impl RulePackServer for AntiLlmServer {
+    fn rule_packs(&self) -> &ValidatedRulePackSet {
+        &self.rule_packs
+    }
+
+    fn grammar(&self) -> tree_sitter::Language {
+        tree_sitter_rust::LANGUAGE.into()
+    }
+
+    fn server_name(&self) -> &'static str {
+        "anti-llm-cheat-lsp"
+    }
+
+    fn client(&self) -> &Client {
+        &self.client
+    }
+
+    fn adapter(&self) -> &AutoLspAdapter {
+        self.ast_adapter.inner()
+    }
+
+    fn workspace_index(&self) -> Option<&WorkspaceIndex> {
+        Some(&self.workspace_index)
+    }
+
+    /// Bridge the engine's AhoCorasick + multi-format scan into `ClassifiedFindings`.
+    ///
+    /// The canary does not use TOML rule packs; it delegates to `engine::scan_directory`
+    /// which owns the AhoCorasick automaton.  This override converts `AntiLlmDiagnostic`
+    /// results into the `(MaxDiagnostic, Diagnostic)` pairs the trait expects.
+    fn scan_uri_classified(&self, uri: &DocumentUri, _content: &str) -> ClassifiedFindings {
+        let root_dir = self.root_dir();
+        let obs = engine::scan_directory(&root_dir);
+        let raw = engine::evaluate_diagnostics(&obs);
+        let norm_uri = uri.to_string().replace('\\', "/");
+
+        let findings: Vec<Finding> = raw
+            .into_iter()
+            .filter(|d| norm_uri.ends_with(&d.file_path.replace('\\', "/")))
+            .map(|d| {
+                let lsp_diag = d.to_lsp();
+                let law_axis = LawAxis::Custom(d.category.clone());
+                let max_diag = MaxDiagnostic {
+                    lsp: lsp_diag.clone(),
+                    diagnostic_id: d.code.clone(),
+                    law_id: d.category.clone(),
+                    law_axis,
+                    violated_invariant: d.forbidden_implication.clone(),
+                    ..MaxDiagnostic::default()
+                };
+                (max_diag, lsp_diag)
+            })
+            .collect();
+
+        // All engine findings are sync-classified (AhoCorasick is fast).
+        (findings, vec![])
     }
 }
