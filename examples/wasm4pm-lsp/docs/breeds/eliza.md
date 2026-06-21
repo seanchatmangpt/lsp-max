@@ -30,7 +30,7 @@ Falls back to scripted responses if no pattern matches.
 | COG-007 | OPEN      | provenance fields need measured_by from conformance runner          |
 | COG-008 | ADMITTED  | this doc card exists                                                |
 | COG-009 | ADMITTED  | TS fixture mirror exists in packages/                               |
-| COG-010 | CANDIDATE | no oracle fresh-name leak detected (pending formal scan)            |
+| COG-010 | CANDIDATE | no non-comment oracle literals found; scan test at tests/cog010_oracle_scan.rs |
 | COG-011 | OPEN      | DoD incomplete: fitness=0.0, admitted=false in report               |
 | COG-012 | ADMITTED  | dispatch arm present in dispatch.rs                                 |
 
@@ -43,9 +43,9 @@ The following laws remain OPEN or CANDIDATE and block full admission:
 - **COG-006**: Conformance suite measurement required; fitness ≠ 1.0.
 - **COG-007**: `measured_by`, `measured_on`, and `run_id` in `ocel/reports/eliza.json`
   are OPEN placeholders; a conformance runner execution must populate them.
-- **COG-010**: No oracle fresh-name leak detected in `src/breeds/frame.rs` in manual
-  review, but a formal scan has not been recorded. Status remains CANDIDATE until scan
-  receipt exists.
+- **COG-010**: No non-comment oracle literals detected in `src/breeds/frame.rs`. Formal
+  scan test at `tests/cog010_oracle_scan.rs` exists and writes a receipt at runtime.
+  Status remains CANDIDATE until the test has been run and its receipt is present on disk.
 - **COG-011**: `admitted` stays false and `fitness` stays 0.0 until COG-003/006/007
   are resolved by a conformance runner run.
 
