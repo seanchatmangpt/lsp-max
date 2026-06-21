@@ -647,7 +647,7 @@ Do not collapse OPEN into ADMITTED. The gap is present until structural enforcem
 
 ---
 
-## Current Framework Status — 2026-06-13
+## Current Framework Status — 2026-06-21
 
 ### ADMITTED
 - Concurrent fanout: O(max RTT) dispatch, N=500 in <1ms
@@ -658,6 +658,10 @@ Do not collapse OPEN into ADMITTED. The gap is present until structural enforcem
 - daachorse ANDON prefix matching: O(|code|) classification, asymmetry eliminated
 - Workspace test suite: all tests ADMITTED except known OPEN items listed below
 - Clippy `-D warnings`: ADMITTED (zero warnings in workspace crates)
+- lsp-max-cli noun/verb grammar: 31 noun modules — actuation grammar layer complete
+- Process mining surface (Van der Aalst): DFG, variants, replay fitness, causal footprint (`process` noun)
+- AGI swarm coordination: consensus voting, autonomic convergence, emergence detection (`swarm` noun)
+- OCEL 2.0 export: object-centric event log, OC-DFG discovery, per-object case grouping (`ocel` noun)
 
 ### CANDIDATE
 - papaya::HashMap for DiagnosticBuffer (DashMap contention elimination)
@@ -722,15 +726,18 @@ Extend `lsp-max-cli gate check` with `--format=agent-context` flag. When exit 1 
 **RFC-3: Event-sourced D_t log — replace mutable HashMap dispatch** (effort: months, impact: critical, interface-safe)
 AutonomicMesh's `Vec<Box<dyn Hook>>` dispatch and `Vec<HookEvent>` log (capped at 1000 entries, never persisted) prevent causal replay and D_t addressability. Replace with an append-only lock-free ring buffer (65536 entries). Hooks become pure `(LawEvent) -> Vec<MeshAction>` functions. Live D_t is a materialized view maintained by a background tailer. Replay becomes a cursor read, not a destructive HashMap overwrite. Prerequisite for making D_t replay trustworthy. Status: OPEN.
 
-### Session Audit Summary — 2026-06-13
+### Session Audit Summary — 2026-06-21
 
-22 conjuncts audited across the Λ_CD implementation surface.
+25 conjuncts audited across the Λ_CD implementation surface.
 
 ```text
-ADMITTED:  5  (gate file write, PreToolUse hook, receipt blocking, speciation test suite, subagent gate check availability)
+ADMITTED:  8  (gate file write, PreToolUse hook, receipt blocking, speciation test suite,
+               subagent gate check availability, 31-noun CLI grammar, process mining surface,
+               OCEL 2.0 + AGI swarm surface)
 PARTIAL:   1  (L7 per-server C_D routing — union is conservative superset; isolation gap documented)
 CANDIDATE: 1  (D_t context format — structurally present; PUSH injection not wired)
-OPEN:      11 (subagent structural enforcement, dx-verify sibling violations, gc006 sealed-repo test, D_t PUSH wiring, and others — see Current Framework Status section)
+OPEN:      11 (subagent structural enforcement, dx-verify sibling violations, gc006 sealed-repo test,
+               D_t PUSH wiring, and others — see Current Framework Status section)
 BLOCKED:   0
 ```
 
