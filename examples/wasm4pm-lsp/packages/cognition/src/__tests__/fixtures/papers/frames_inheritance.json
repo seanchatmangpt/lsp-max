@@ -3,14 +3,20 @@
   "label": "Frame Inheritance System",
   "paper_ref": "minsky1975frames",
   "family": "SymbolicAI",
-  "platform": "typescript",
+  "description": "Minsky (1975) frame inheritance: slot 'breathes' not in Poodle or Dog; inherited from Mammal at ISA-chain depth 2.",
   "inputs": {
-    "note": "Replace with real BreedInput fields from minsky1975frames"
+    "frames": {
+      "Mammal": {"breathes": "air", "has": "spine"},
+      "Dog": {"isa": "Mammal", "sound": "bark", "legs": "4"},
+      "Poodle": {"isa": "Dog", "size": "small"}
+    },
+    "query": {"frame": "Poodle", "slot": "breathes"}
   },
   "expected": {
-    "value": "PENDING",
-    "note": "Replace with oracle_value=0.0 from minsky1975frames. COG-005 requires this field."
+    "value": {"value": "air", "inherited_from": "Mammal", "depth": 2},
+    "note": "Traversal: Poodle(0) → Dog(1) → Mammal(2); 'breathes'='air' found at depth 2."
   },
-  "expected_value": "PENDING",
+  "expected_value": 2,
+  "asserted_value": 2,
   "paper_value": 0.0
 }
