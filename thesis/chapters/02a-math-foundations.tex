@@ -1,0 +1,49 @@
+\chapter{Mathematical Foundations, from First Principles}
+\label{ch:math}
+
+\epigraph{Mathematics is the art of giving the same name to different
+things.}{Henri Poincar\'e}
+
+The arguments of this thesis---that three protocols compose into one substrate,
+that conformance is three-valued, that convergence is a phase transition, that a
+repository can be read as a curved space of trajectories---are stated informally
+in \cref{ch:framework} and instantiated in \cref{ch:artifact}. This chapter
+supplies their mathematics, and it does so \emph{from first principles}: each
+construct is built from sets and axioms, with definitions, and with proofs of the
+propositions the later chapters invoke. The intent is that no subsequent claim
+rests on borrowed authority; where the thesis says ``composition'', ``lattice'',
+``latent heat'', or ``curvature'', this chapter says exactly what is meant.
+
+We make no claim to new mathematics. The contribution is the \emph{derivation of
+the thesis's own constructs} within standard mathematics, so that they are
+falsifiable rather than merely evocative. Four pillars are built, each
+terminating in a result used later:
+
+\begin{description}[leftmargin=1.6em,style=nextline]
+  \item[Pillar I --- The algebra of composition (\cref{sec:alg}).] From monoids
+  through categories, functors, adjunctions, monoidal categories, and operads to
+  the \emph{Decoupling Theorem} (\cref{thm:decoupling}), which is the algebraic
+  engine behind the phase transition's mechanism (\cref{prop:discontinuous}).
+  \item[Pillar II --- The order-theoretic logic of conformance.] From posets and
+  lattices to Kleene's and Belnap's many-valued logics, formalising the
+  \code{ConformanceVector} (\cref{lst:cv}) and \cref{prin:three-valued}.
+  \item[Pillar III --- The analysis of phase transitions.] From limits and
+  continuity to Landau's free-energy expansion and a from-scratch derivation of
+  the Clausius--Clapeyron relation and the latent heat that anchors
+  \cref{sec:fw-latent}.
+  \item[Pillar IV --- The geometry of law-state.] From topological spaces through
+  smooth manifolds, connections, and curvature to gradient flow, formalising the
+  manifold metaphors of \code{AGENTS.md} (repository as manifold, failsets as
+  curvature, admissibility as $\Phi_G = 0$).
+\end{description}
+
+A reader fluent in these areas may treat the chapter as fixing notation and skip
+to \cref{ch:framework}; a reader who wants the thesis to stand on its own will
+find here the load it is asked to bear. Pillars are developed in the order above;
+forward references to later chapters are deliberate, marking where each piece of
+mathematics is spent.
+
+\input{chapters/02a-algebra}
+\input{chapters/02a-order-logic}      % Pillar II
+\input{chapters/02a-analysis}         % Pillar III
+\input{chapters/02a-geometry}         % Pillar IV
