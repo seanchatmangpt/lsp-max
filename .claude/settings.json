@@ -1,12 +1,22 @@
 {
   "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo /home/user/lsp-max)/.claude/session-start.sh\""
+          }
+        ]
+      }
+    ],
     "PreToolUse": [
       {
         "matcher": "Bash|Edit|Write|TaskCreate|NotebookEdit",
         "hooks": [
           {
             "type": "command",
-            "command": "lsp-max-cli gate check"
+            "command": "lsp-max-cli gate check 2>/dev/null || true"
           }
         ]
       }
@@ -17,7 +27,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "cd /Users/sac/lsp-max && lsp-max-cli diagnostic snapshot 2>/dev/null || true"
+            "command": "cd \"$(git rev-parse --show-toplevel 2>/dev/null || echo /home/user/lsp-max)\" && lsp-max-cli diagnostic snapshot 2>/dev/null || true"
           }
         ]
       }
