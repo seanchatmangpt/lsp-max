@@ -1,0 +1,17 @@
+{
+  "breed_id": "asp",
+  "label": "Answer Set Programmer",
+  "paper_ref": "gelfond1991stable",
+  "family": "FormalMethods",
+  "description": "Gelfond-Lifschitz (1991) two-atom choice program; both {a} and {b} are stable models under GL reduct.",
+  "inputs": {
+    "program": ["a :- not b.", "b :- not a."]
+  },
+  "expected": {
+    "value": {"models": [["a"], ["b"]]},
+    "note": "GL reduct of {a}: {a:-} → {a}, minimal model = {a}; stable. Symmetric for {b}."
+  },
+  "expected_value": 2,
+  "asserted_value": 2,
+  "paper_value": 0.0
+}

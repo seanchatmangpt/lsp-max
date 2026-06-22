@@ -1,0 +1,54 @@
+{
+  "$schema": "https://wasm4pm.dev/cognition/ocpn.schema.json",
+  "breed_id": "eliza",
+  "label": "ELIZA Script OCPN Model",
+  "family": "PatternMatchingAI",
+  "status": "CANDIDATE",
+  "places": [
+    { "id": "p_input_text", "label": "InputText",        "type": "input" },
+    { "id": "p_script",     "label": "Script",           "type": "internal" },
+    { "id": "p_pattern",    "label": "MatchedPattern",   "type": "internal" },
+    { "id": "p_captures",   "label": "CaptureGroups",    "type": "internal" },
+    { "id": "p_template",   "label": "ResponseTemplate", "type": "internal" },
+    { "id": "p_response",   "label": "Response",         "type": "output" }
+  ],
+  "transitions": [
+    {
+      "id": "t_scan_patterns",
+      "label": "scan_patterns",
+      "input_arcs":  [
+        { "place": "p_input_text", "weight": 1 },
+        { "place": "p_script",     "weight": 1 }
+      ],
+      "output_arcs": [{ "place": "p_pattern", "weight": 1 }]
+    },
+    {
+      "id": "t_extract_captures",
+      "label": "extract_captures",
+      "input_arcs":  [
+        { "place": "p_input_text", "weight": 1 },
+        { "place": "p_pattern",    "weight": 1 }
+      ],
+      "output_arcs": [{ "place": "p_captures", "weight": 1 }]
+    },
+    {
+      "id": "t_select_template",
+      "label": "select_template",
+      "input_arcs":  [
+        { "place": "p_pattern",  "weight": 1 },
+        { "place": "p_captures", "weight": 1 }
+      ],
+      "output_arcs": [{ "place": "p_template", "weight": 1 }]
+    },
+    {
+      "id": "t_fill_template",
+      "label": "fill_template",
+      "input_arcs":  [
+        { "place": "p_template", "weight": 1 },
+        { "place": "p_captures", "weight": 1 }
+      ],
+      "output_arcs": [{ "place": "p_response", "weight": 1 }]
+    }
+  ],
+  "object_types": ["InputText", "Script", "MatchedPattern", "CaptureGroups", "ResponseTemplate", "Response"]
+}

@@ -1,0 +1,18 @@
+{
+  "breed_id": "llm",
+  "label": "Large Language Model Reasoning",
+  "paper_ref": "brown2020language",
+  "family": "NeuralAI",
+  "description": "Brown et al. (2020) GPT-3 few-shot reasoning: sends a prompt via the Anthropic Messages API and returns the model response with token counts.",
+  "inputs": {
+    "prompt": "What is 2 + 2? Reply with just the number.",
+    "max_tokens": 10
+  },
+  "expected": {
+    "value": { "response": "4" },
+    "note": "Non-deterministic; pass condition is response non-empty (API key may be absent in CI, in which case dispatch returns None and the breed is SKIPPED)."
+  },
+  "expected_value": 1,
+  "asserted_value": 1,
+  "paper_value": 0.0
+}

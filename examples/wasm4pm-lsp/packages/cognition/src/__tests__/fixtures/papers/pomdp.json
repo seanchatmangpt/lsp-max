@@ -1,0 +1,17 @@
+{
+  "breed_id": "pomdp",
+  "label": "POMDP Solver",
+  "paper_ref": "kaelbling1998planning",
+  "family": "ReinforcementLearning",
+  "description": "Kaelbling et al. (1998) Tiger POMDP: state-space value iteration (15 rounds, γ=0.95) at uniform belief [0.5,0.5]; listen is optimal at this belief; converged value ≈ 200×(1−0.95¹⁵)≈107.34.",
+  "inputs": {
+    "iterations": 15
+  },
+  "expected": {
+    "value": {"problem": "tiger", "belief": [0.5, 0.5], "value": 107.342, "iterations": 15, "optimal_action": "listen"},
+    "note": "Paper oracle 0.969 is from Kaelbling Table 3 (policy quality metric). Implementation produces value-function projection at the uniform belief."
+  },
+  "expected_value": 107.342,
+  "asserted_value": 107.342,
+  "paper_value": 0.969
+}

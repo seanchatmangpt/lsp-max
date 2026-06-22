@@ -1,0 +1,19 @@
+PREFIX rdf:    <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX rdfs:   <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX compat: <https://wasm4pm.dev/cognition/compat#>
+
+SELECT ?breed_id ?breed_label ?breed_family ?module_stem ?struct_name ?paper_ref ?oracle_value ?status
+WHERE {
+    ?breed rdf:type       compat:CognitiveBr ;
+           compat:breedId  ?breed_id ;
+           compat:breedLabel ?breed_label ;
+           compat:breedFamily ?breed_family ;
+           compat:moduleStem  ?module_stem ;
+           compat:structName  ?struct_name ;
+           compat:paperRef    ?paper_ref ;
+           compat:oracleValue ?oracle_value ;
+           compat:status      ?status_node .
+
+    ?status_node rdfs:label ?status .
+}
+ORDER BY ?breed_id

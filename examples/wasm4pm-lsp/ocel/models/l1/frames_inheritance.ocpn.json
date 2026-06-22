@@ -1,0 +1,48 @@
+{
+  "$schema": "https://wasm4pm.dev/cognition/ocpn.schema.json",
+  "breed_id": "frames_inheritance",
+  "label": "Frames Inheritance OCPN Model",
+  "family": "StructuredKnowledge",
+  "status": "CANDIDATE",
+  "places": [
+    { "id": "p_frame_store",   "label": "FrameStore",   "type": "input" },
+    { "id": "p_query",         "label": "SlotQuery",    "type": "internal" },
+    { "id": "p_current_frame", "label": "CurrentFrame", "type": "internal" },
+    { "id": "p_slot_found",    "label": "SlotFound",    "type": "internal" },
+    { "id": "p_isa_ptr",       "label": "IsaPointer",   "type": "internal" },
+    { "id": "p_result",        "label": "SlotResult",   "type": "output" }
+  ],
+  "transitions": [
+    {
+      "id": "t_init",
+      "label": "init",
+      "input_arcs":  [
+        { "place": "p_frame_store", "weight": 1 },
+        { "place": "p_query",       "weight": 1 }
+      ],
+      "output_arcs": [{ "place": "p_current_frame", "weight": 1 }]
+    },
+    {
+      "id": "t_check_slot",
+      "label": "check_slot",
+      "input_arcs":  [{ "place": "p_current_frame", "weight": 1 }],
+      "output_arcs": [
+        { "place": "p_slot_found", "weight": 1 },
+        { "place": "p_isa_ptr",    "weight": 1 }
+      ]
+    },
+    {
+      "id": "t_follow_isa",
+      "label": "follow_isa",
+      "input_arcs":  [{ "place": "p_isa_ptr",      "weight": 1 }],
+      "output_arcs": [{ "place": "p_current_frame", "weight": 1 }]
+    },
+    {
+      "id": "t_emit_result",
+      "label": "emit_result",
+      "input_arcs":  [{ "place": "p_slot_found", "weight": 1 }],
+      "output_arcs": [{ "place": "p_result",     "weight": 1 }]
+    }
+  ],
+  "object_types": ["FrameStore", "SlotQuery", "CurrentFrame", "SlotFound", "IsaPointer", "SlotResult"]
+}
