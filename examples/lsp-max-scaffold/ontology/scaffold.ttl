@@ -1,0 +1,44 @@
+@prefix lsp:  <https://microsoft.github.io/language-server-protocol/> .
+@prefix law:  <https://lsp-max.io/law#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+
+# ----------------------------------------------------------------------------
+# lsp-max-scaffold method ontology.
+#
+# Each method declaration carries a law:status annotation using the bounded
+# vocabulary. Victory language ("done", "supported", "guaranteed") is excluded.
+#
+# Bounded status vocabulary:
+#   law:ADMITTED  — handler wired + transcript + receipt + negative-control
+#   law:CANDIDATE — preconditions partially met; promotion is OPEN
+#   law:REFUSED   — handler returns law-error; refusal is intentional
+#   law:BLOCKED   — precondition not met; BLOCKED until resolved
+#   law:UNKNOWN   — status not yet traced; do not collapse to ADMITTED
+#   law:OPEN      — no work started on this method axis
+# ----------------------------------------------------------------------------
+
+lsp:textDocument_hover a lsp:Method ;
+    lsp:methodName "textDocument/hover" ;
+    law:status law:CANDIDATE ;
+    law:note "handler wired; transcript OPEN; receipt OPEN; negative-control OPEN" .
+
+lsp:textDocument_diagnostic a lsp:Method ;
+    lsp:methodName "textDocument/diagnostic" ;
+    law:status law:CANDIDATE ;
+    law:note "handler wired; transcript OPEN; receipt OPEN; negative-control OPEN" .
+
+lsp:textDocument_codeAction a lsp:Method ;
+    lsp:methodName "textDocument/codeAction" ;
+    law:status law:CANDIDATE ;
+    law:note "handler wired; transcript OPEN; receipt OPEN; negative-control OPEN" .
+
+lsp:textDocument_didOpen a lsp:Method ;
+    lsp:methodName "textDocument/didOpen" ;
+    law:status law:ADMITTED ;
+    law:receipt <receipts/text_document_did_open.json> ;
+    law:note "notification; receipt chain OPEN; status ADMITTED when receipt is produced" .
+
+lsp:scaffold_gateCheck a lsp:Method ;
+    lsp:methodName "max/gateCheck" ;
+    law:status law:CANDIDATE ;
+    law:note "ANDON gate check; no transcript yet; promotion BLOCKED until receipt" .

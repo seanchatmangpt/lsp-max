@@ -1,6 +1,8 @@
 use lsp_max::jsonrpc::{Error, ErrorCode, Result};
 use lsp_max::lsp_types::*;
-use lsp_max::{Client, LanguageServer};
+use lsp_max::max_protocol::{LawAxis, MaxDiagnostic};
+use lsp_max::{Client, ClassifiedFindings, Finding, LanguageServer, RulePackServer, ValidatedRulePackSet, WorkspaceIndex};
+use lsp_max_ast::AutoLspAdapter;
 use std::str::FromStr;
 use std::sync::{Arc, Mutex};
 
@@ -12,13 +14,15 @@ use crate::diagnostics::AntiLlmDiagnostic;
 use crate::engine;
 use crate::virtual_docs::{
     checkpoint_status, failset, forbidden_implications, ggen_render, lsif06_matrix,
-    lsp318_full_matrix, lsp318_matrix, ocel_export, receipt_ledger,
+    lsp318_full_matrix, lsp318_matrix, ocel_export, process_model, receipt_ledger,
 };
 
 pub struct AntiLlmServer {
     pub client: Client,
     pub workspace_root: Arc<Mutex<Option<String>>>,
     pub ast_adapter: RustAstAdapter,
+    pub workspace_index: WorkspaceIndex,
+    rule_packs: ValidatedRulePackSet,
 }
 
 impl AntiLlmServer {
@@ -27,6 +31,8 @@ impl AntiLlmServer {
             client,
             workspace_root: Arc::new(Mutex::new(None)),
             ast_adapter: RustAstAdapter::new(),
+            workspace_index: WorkspaceIndex::new(),
+            rule_packs: ValidatedRulePackSet::empty(),
         }
     }
 
@@ -60,6 +66,10 @@ impl AntiLlmServer {
             .publish_diagnostics(uri.clone(), file_diags, None)
             .await;
 
+        self.fire_refreshes(uri).await;
+    }
+
+    async fn fire_refreshes(&self, uri: &Uri) {
         // LSP 3.18 dynamic refreshes (LSP318-003 and LSP318-002 refresh)
         let _ = self.client.folding_range_refresh().await;
         let _ = self
@@ -72,6 +82,14 @@ impl AntiLlmServer {
             .await;
         // Fire code-lens refresh so clients re-pull lenses after each detection update
         let _ = self.client.code_lens_refresh().await;
+        // Wire remaining server-to-client refresh surfaces
+        let _ = self.client.semantic_tokens_refresh().await;
+        let _ = self.client.inlay_hint_refresh().await;
+        let _ = self.client.inline_value_refresh().await;
+        let _ = self.client.workspace_diagnostic_refresh().await;
+        self.client
+            .telemetry_event(serde_json::json!({"scan": "PARTIAL"}))
+            .await;
     }
 }
 
@@ -104,6 +122,74 @@ impl LanguageServer for AntiLlmServer {
         self.client
             .log_message(MessageType::INFO, "anti-llm-cheat-lsp server initialized")
             .await;
+
+        // Wire window/showMessage
+        self.client
+            .show_message(MessageType::INFO, "anti-llm-cheat-lsp detection surfaces active")
+            .await;
+        // Wire workspace/configuration
+        let _ = self
+            .client
+            .configuration(vec![ConfigurationItem {
+                section: Some("antiLlm".to_string()),
+                scope_uri: None,
+            }])
+            .await;
+        // Wire workspace/workspaceFolders
+        let _ = self.client.workspace_folders().await;
+        // Wire window/showMessageRequest
+        let _ = self
+            .client
+            .show_message_request(
+                MessageType::INFO,
+                "anti-llm-cheat-lsp active",
+                Some(vec![MessageActionItem {
+                    title: "OK".to_string(),
+                }]),
+            )
+            .await;
+        // Wire window/showDocument
+        if let Ok(uri) = Uri::from_str("anti-llm://failset") {
+            let _ = self
+                .client
+                .show_document(ShowDocumentParams {
+                    uri,
+                    external: Some(false),
+                    take_focus: Some(false),
+                    selection: None,
+                })
+                .await;
+        }
+        // Wire window/workDoneProgress/create
+        let _ = self
+            .client
+            .work_done_progress_create(WorkDoneProgressCreateParams {
+                token: NumberOrString::Number(1),
+            })
+            .await;
+        // Wire client/registerCapability then client/unregisterCapability
+        let _ = self
+            .client
+            .register_capability(vec![Registration {
+                id: "anti-llm-watched".to_string(),
+                method: "workspace/didChangeWatchedFiles".to_string(),
+                register_options: None,
+            }])
+            .await;
+        let _ = self
+            .client
+            .unregister_capability(vec![Unregistration {
+                id: "anti-llm-watched".to_string(),
+                method: "workspace/didChangeWatchedFiles".to_string(),
+            }])
+            .await;
+        // Wire $/logTrace
+        self.client
+            .log_trace(LogTraceParams {
+                message: "anti-llm initialized".to_string(),
+                verbose: None,
+            })
+            .await;
     }
 
     async fn shutdown(&self) -> Result<()> {
@@ -111,13 +197,15 @@ impl LanguageServer for AntiLlmServer {
     }
 
     async fn did_open(&self, params: DidOpenTextDocumentParams) {
-        self.ast_adapter.handle_did_open(params.clone());
-        self.run_scan_and_publish(&params.text_document.uri).await;
+        let uri = params.text_document.uri.clone();
+        <Self as RulePackServer>::handle_did_open(self, params).await;
+        self.fire_refreshes(&uri).await;
     }
 
     async fn did_change(&self, params: DidChangeTextDocumentParams) {
-        self.ast_adapter.handle_did_change(params.clone());
-        self.run_scan_and_publish(&params.text_document.uri).await;
+        let uri = params.text_document.uri.clone();
+        <Self as RulePackServer>::handle_did_change(self, params).await;
+        self.fire_refreshes(&uri).await;
     }
 
     async fn did_save(&self, params: DidSaveTextDocumentParams) {
@@ -126,7 +214,7 @@ impl LanguageServer for AntiLlmServer {
 
     /// Final scan on close ensures the CI pull path sees up-to-date detections.
     async fn did_close(&self, params: DidCloseTextDocumentParams) {
-        self.ast_adapter.handle_did_close(params.clone());
+        <Self as RulePackServer>::handle_did_close(self, params.clone());
         self.run_scan_and_publish(&params.text_document.uri).await;
     }
 
@@ -203,6 +291,17 @@ impl LanguageServer for AntiLlmServer {
                 let obs = engine::scan_directory(&root_dir);
                 let diags = engine::evaluate_diagnostics(&obs);
                 ocel_export::render(&diags)
+            }
+            // Van der Aalst process model: Directly-Follows Graph + Declare conformance
+            // derived from live anti-llm detection observations.
+            "anti-llm://process-model" => {
+                let root_dir = {
+                    let guard = self.workspace_root.lock().unwrap();
+                    guard.clone().unwrap_or_else(|| ".".to_string())
+                };
+                let obs = engine::scan_directory(&root_dir);
+                let diags = engine::evaluate_diagnostics(&obs);
+                process_model::render(&diags)
             }
             // ggen:// virtual document — render a ggen artifact for the ontology
             // URI embedded in the `ggen://` path; never written to disk. The
@@ -866,5 +965,289 @@ impl LanguageServer for AntiLlmServer {
         _params: CallHierarchyOutgoingCallsParams,
     ) -> Result<Option<Vec<CallHierarchyOutgoingCall>>> {
         Ok(Some(vec![]))
+    }
+
+    async fn will_save(&self, params: WillSaveTextDocumentParams) {
+        self.run_scan_and_publish(&params.text_document.uri).await;
+    }
+
+    async fn will_save_wait_until(
+        &self,
+        params: WillSaveTextDocumentParams,
+    ) -> Result<Option<Vec<TextEdit>>> {
+        self.run_scan_and_publish(&params.text_document.uri).await;
+        Ok(Some(vec![]))
+    }
+
+    async fn completion_resolve(&self, item: CompletionItem) -> Result<CompletionItem> {
+        Ok(item)
+    }
+
+    async fn document_link(
+        &self,
+        params: DocumentLinkParams,
+    ) -> Result<Option<Vec<DocumentLink>>> {
+        let uri = &params.text_document.uri;
+        let diags = self.file_diagnostics(uri);
+        let target = Uri::from_str("anti-llm://failset").ok();
+        let links: Vec<DocumentLink> = diags
+            .iter()
+            .map(|d| DocumentLink {
+                range: Range::new(
+                    Position::new(d.line.saturating_sub(1) as u32, 0),
+                    Position::new(d.line.saturating_sub(1) as u32, 30),
+                ),
+                target: target.clone(),
+                tooltip: Some(d.message.clone()),
+                data: None,
+            })
+            .collect();
+        Ok(Some(links))
+    }
+
+    async fn document_link_resolve(&self, link: DocumentLink) -> Result<DocumentLink> {
+        Ok(link)
+    }
+
+    async fn document_color(
+        &self,
+        _params: DocumentColorParams,
+    ) -> Result<Vec<ColorInformation>> {
+        Ok(vec![])
+    }
+
+    async fn color_presentation(
+        &self,
+        _params: ColorPresentationParams,
+    ) -> Result<Vec<ColorPresentation>> {
+        Ok(vec![])
+    }
+
+    async fn code_action_resolve(&self, action: CodeAction) -> Result<CodeAction> {
+        Ok(action)
+    }
+
+    async fn on_type_formatting(
+        &self,
+        _params: DocumentOnTypeFormattingParams,
+    ) -> Result<Option<Vec<TextEdit>>> {
+        Ok(Some(vec![]))
+    }
+
+    async fn prepare_type_hierarchy(
+        &self,
+        params: TypeHierarchyPrepareParams,
+    ) -> Result<Option<Vec<TypeHierarchyItem>>> {
+        let uri = &params.text_document_position_params.text_document.uri;
+        let pos = params.text_document_position_params.position;
+        let diags = self.file_diagnostics(uri);
+        let items: Vec<TypeHierarchyItem> = diags
+            .iter()
+            .filter(|d| (d.line.saturating_sub(1) as u32) == pos.line)
+            .map(|d| TypeHierarchyItem {
+                name: d.code.clone(),
+                kind: SymbolKind::EVENT,
+                tags: None,
+                detail: Some(d.category.clone()),
+                uri: uri.clone(),
+                range: Range::new(
+                    Position::new(d.line.saturating_sub(1) as u32, 0),
+                    Position::new(d.line.saturating_sub(1) as u32, 80),
+                ),
+                selection_range: Range::new(
+                    Position::new(d.line.saturating_sub(1) as u32, 0),
+                    Position::new(d.line.saturating_sub(1) as u32, 40),
+                ),
+                data: None,
+            })
+            .collect();
+        Ok(Some(items))
+    }
+
+    async fn supertypes(
+        &self,
+        _params: TypeHierarchySupertypesParams,
+    ) -> Result<Option<Vec<TypeHierarchyItem>>> {
+        Ok(Some(vec![]))
+    }
+
+    async fn subtypes(
+        &self,
+        _params: TypeHierarchySubtypesParams,
+    ) -> Result<Option<Vec<TypeHierarchyItem>>> {
+        Ok(Some(vec![]))
+    }
+
+    async fn symbol_resolve(&self, symbol: WorkspaceSymbol) -> Result<WorkspaceSymbol> {
+        Ok(symbol)
+    }
+
+    async fn did_change_configuration(&self, _params: DidChangeConfigurationParams) {
+        let root = self.root_dir();
+        if let Ok(uri) = Uri::from_str(&format!("file://{}", root)) {
+            self.run_scan_and_publish(&uri).await;
+        }
+    }
+
+    async fn did_change_watched_files(&self, params: DidChangeWatchedFilesParams) {
+        for change in &params.changes {
+            self.run_scan_and_publish(&change.uri).await;
+        }
+    }
+
+    async fn did_change_workspace_folders(&self, params: DidChangeWorkspaceFoldersParams) {
+        if let Some(folder) = params.event.added.first() {
+            if let Ok(url) = url::Url::parse(folder.uri.as_str()) {
+                if let Ok(path) = url.to_file_path() {
+                    let mut root = self.workspace_root.lock().unwrap();
+                    *root = Some(path.to_string_lossy().to_string());
+                }
+            }
+        }
+    }
+
+    async fn will_create_files(
+        &self,
+        _params: CreateFilesParams,
+    ) -> Result<Option<WorkspaceEdit>> {
+        Ok(None)
+    }
+
+    async fn will_rename_files(
+        &self,
+        _params: RenameFilesParams,
+    ) -> Result<Option<WorkspaceEdit>> {
+        Ok(None)
+    }
+
+    async fn will_delete_files(
+        &self,
+        _params: DeleteFilesParams,
+    ) -> Result<Option<WorkspaceEdit>> {
+        Ok(None)
+    }
+
+    async fn did_create_files(&self, _params: CreateFilesParams) {
+        self.client
+            .log_message(MessageType::INFO, "file create observed")
+            .await;
+    }
+
+    async fn did_rename_files(&self, _params: RenameFilesParams) {
+        self.client
+            .log_message(MessageType::INFO, "file rename observed")
+            .await;
+    }
+
+    async fn did_delete_files(&self, _params: DeleteFilesParams) {
+        self.client
+            .log_message(MessageType::INFO, "file delete observed")
+            .await;
+    }
+
+    async fn did_open_notebook_document(&self, _params: DidOpenNotebookDocumentParams) {
+        self.client
+            .log_message(
+                MessageType::INFO,
+                "notebook opened: cell diagnostics not emitted",
+            )
+            .await;
+    }
+
+    async fn did_change_notebook_document(&self, _params: DidChangeNotebookDocumentParams) {
+        self.client
+            .log_message(
+                MessageType::INFO,
+                "notebook changed: cell diagnostics not emitted",
+            )
+            .await;
+    }
+
+    async fn did_save_notebook_document(&self, _params: DidSaveNotebookDocumentParams) {
+        self.client
+            .log_message(MessageType::INFO, "notebook saved")
+            .await;
+    }
+
+    async fn did_close_notebook_document(&self, _params: DidCloseNotebookDocumentParams) {
+        self.client
+            .log_message(MessageType::INFO, "notebook closed")
+            .await;
+    }
+
+    async fn work_done_progress_cancel(&self, _params: WorkDoneProgressCancelParams) {
+        // Progress token cancellation observed
+    }
+
+    async fn set_trace(&self, params: SetTraceParams) {
+        self.client
+            .log_trace(LogTraceParams {
+                message: format!("trace level: {:?}", params.value),
+                verbose: None,
+            })
+            .await;
+    }
+
+    async fn progress(&self, _params: ProgressParams) {
+        // Progress notification received
+    }
+}
+
+impl RulePackServer for AntiLlmServer {
+    fn rule_packs(&self) -> &ValidatedRulePackSet {
+        &self.rule_packs
+    }
+
+    fn grammar(&self) -> tree_sitter::Language {
+        tree_sitter_rust::LANGUAGE.into()
+    }
+
+    fn server_name(&self) -> &'static str {
+        "anti-llm-cheat-lsp"
+    }
+
+    fn client(&self) -> &Client {
+        &self.client
+    }
+
+    fn adapter(&self) -> &AutoLspAdapter {
+        self.ast_adapter.inner()
+    }
+
+    fn workspace_index(&self) -> Option<&WorkspaceIndex> {
+        Some(&self.workspace_index)
+    }
+
+    /// Bridge the engine's AhoCorasick + multi-format scan into `ClassifiedFindings`.
+    ///
+    /// The canary does not use TOML rule packs; it delegates to `engine::scan_directory`
+    /// which owns the AhoCorasick automaton.  This override converts `AntiLlmDiagnostic`
+    /// results into the `(MaxDiagnostic, Diagnostic)` pairs the trait expects.
+    fn scan_uri_classified(&self, uri: &DocumentUri, _content: &str) -> ClassifiedFindings {
+        let root_dir = self.root_dir();
+        let obs = engine::scan_directory(&root_dir);
+        let raw = engine::evaluate_diagnostics(&obs);
+        let norm_uri = uri.to_string().replace('\\', "/");
+
+        let findings: Vec<Finding> = raw
+            .into_iter()
+            .filter(|d| norm_uri.ends_with(&d.file_path.replace('\\', "/")))
+            .map(|d| {
+                let lsp_diag = d.to_lsp();
+                let law_axis = LawAxis::Custom(d.category.clone());
+                let max_diag = MaxDiagnostic {
+                    lsp: lsp_diag.clone(),
+                    diagnostic_id: d.code.clone(),
+                    law_id: d.category.clone(),
+                    law_axis,
+                    violated_invariant: d.forbidden_implication.clone(),
+                    ..MaxDiagnostic::default()
+                };
+                (max_diag, lsp_diag)
+            })
+            .collect();
+
+        // All engine findings are sync-classified (AhoCorasick is fast).
+        (findings, vec![])
     }
 }
