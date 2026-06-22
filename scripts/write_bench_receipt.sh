@@ -10,7 +10,7 @@ set -euo pipefail
 RECEIPT_PATH="receipts/perf-refactors.receipt.json"
 BENCH_OUTPUT_FILE="/tmp/lsp_max_bench_output.txt"
 CHECKPOINT="PERF-REFACTORS-ADMITTED-26.6.9"
-BOUNDARY="examples/anti-llm-cheat-lsp/benches/perf_refactors.rs"
+BOUNDARY="crates/anti-llm-cheat-lsp/benches/perf_refactors.rs"
 
 echo "Running perf_refactors benchmark suite..."
 cargo bench -p anti-llm-cheat-lsp --bench perf_refactors -- \

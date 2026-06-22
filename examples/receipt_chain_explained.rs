@@ -63,7 +63,7 @@
 //!   write(receipt, {digest: hash})        ← receipt matches file ✓
 //! ```
 //!
-//! lsp-max's `write_ocel_outputs` in `examples/anti-llm-cheat-lsp/src/ocel.rs`
+//! lsp-max's `write_ocel_outputs` in `crates/anti-llm-cheat-lsp/src/ocel.rs`
 //! was fixed to use the correct pattern after the circular-hash bug was found.
 //!
 //! ## Why receipts are written *beside* artifacts, not inside them
@@ -90,7 +90,7 @@
 // breaks. Run it:  cargo run --example receipt_chain_explained
 //
 // Receipt type: lsp-max-protocol/src/core.rs
-// Content-addressing in production: examples/anti-llm-cheat-lsp/src/ocel.rs
+// Content-addressing in production: crates/anti-llm-cheat-lsp/src/ocel.rs
 //   (write_ocel_outputs — same blake3::hash(final_bytes) pattern shown here)
 
 use lsp_max::max_protocol::Receipt;

@@ -12,18 +12,16 @@ Admissibility detection library that identifies patterns incompatible with law-s
 
 ## Quick Start
 
-```rust
+```rust,no_run
 use lsp_max_anti_cheat::{engine::scan_directory, engine::evaluate_diagnostics};
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
+fn main() {
     let observations = scan_directory("./");
     let diagnostics = evaluate_diagnostics(&observations);
     
     for diag in diagnostics {
         println!("[{}] {}: {}", diag.code, diag.file_path, diag.message);
     }
-    
-    Ok(())
 }
 ```
 
@@ -54,7 +52,7 @@ structural_check_paths = ["tests/strict_contracts.rs"]
 
 ### Main Functions
 
-- **`scan_directory(path: &str) -> Result<Vec<Observation>>`** — Scan workspace and collect raw observations
+- **`scan_directory(path: &str) -> Vec<Observation>`** — Scan workspace and collect raw observations
 - **`evaluate_diagnostics(obs: &[Observation]) -> Vec<AntiLlmDiagnostic>`** — Evaluate all rules
 - **`evaluate_diagnostics_with_config(obs: &[Observation], config_path: &str) -> Result<Vec<AntiLlmDiagnostic>>`** — Evaluate with custom config
 

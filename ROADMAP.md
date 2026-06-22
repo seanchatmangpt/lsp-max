@@ -1,7 +1,7 @@
 # lsp-max Roadmap
 
-**As of:** 2026-06-13
-**Baseline commit:** 1f1e0cf
+**As of:** 2026-06-21
+**Baseline commit:** 40c05c2 (branch `claude/compassionate-newton-9nnifc`)
 
 ---
 
@@ -34,6 +34,26 @@
 - LSIF coverage matrix (`crates/lsp-max-lsif/`) — 18 coverage tests green
 - 27 Chicago TDD tests for all ERRC innovations
 
+### LSP 3.18 Full Detection Surface (committed 40c05c2)
+- `anti-llm-cheat-lsp/src/rules/lsp318_coverage.rs`: 43 handlers promoted
+  `Absent → Wired`; `workspace/applyEdit` promoted `Absent → Refuses` (read-only law)
+- `anti-llm-cheat-lsp/src/server.rs`: 29 new `LanguageServer` overrides; 9
+  server-to-client wires in `initialized`; 5 refresh/telemetry calls in
+  `run_scan_and_publish`
+- `anti-llm-cheat-lsp/src/capabilities.rs`: matrix-derived `ServerCapabilities`
+  updated for all newly-wired methods (willSave, documentLink, color,
+  onTypeFormatting, typeHierarchy, codeAction/resolve, workspace file-ops,
+  notebook sync)
+- **Coverage state (PARTIAL):** 93/95 methods `Wired` or `Refuses`; only
+  `exit` and `$/cancelRequest` remain `Absent` (no trait entry point)
+
+### LSIF 0.6 Full Element Surface
+- `anti-llm-cheat-lsp/src/rules/lsif06.rs` enumerates all 38 elements
+  (20 vertices + 18 edges); `modeled_in_crate: true` for every row
+- `anti-llm://lsif06-matrix` virtual document renders the live surface
+- Example-coverage status: `OPEN` throughout — no transcripts or receipts
+  produced by the canary crate (correct and honest)
+
 ### Infrastructure
 - ggen-lsp plugin wired in `.claude/settings.json` (`enabledPlugins`)
 - Default model set to `claude-sonnet-4-6`
@@ -52,8 +72,8 @@
 **Remaining:** `anti-llm-cheat-lsp` uses `AhoCorasick` + `engine::scan_directory()` + `virtual_docs` module — a fundamentally different architecture. Needs its own approach (replace `AntiLlmEngine` scanner with `RulePackServer::scan_uri()`).
 
 **Files to change:**
-- `examples/anti-llm-cheat-lsp/src/engine.rs` — replace `AntiLlmEngine` scanner with `RulePackServer::scan_uri()`
-- `examples/anti-llm-cheat-lsp/src/main.rs` — add `index: WorkspaceIndex` field; override `workspace_index()`
+- `crates/anti-llm-cheat-lsp/src/engine.rs` — replace `AntiLlmEngine` scanner with `RulePackServer::scan_uri()`
+- `crates/anti-llm-cheat-lsp/src/main.rs` — add `index: WorkspaceIndex` field; override `workspace_index()`
 
 **Definition of done:** `anti-llm-cheat-lsp` implements only `rule_packs()`, `grammar()`, `server_name()`, `client()`, `adapter()`. Zero hand-rolled AhoCorasick loops remain in the server path.
 
@@ -125,14 +145,17 @@ ggen sync --manifest .specify/specs/lsp-max/ggen.toml
 
 | # | Item | Effort | Status |
 |---|------|--------|--------|
+| 5 | `anti-llm-cheat-lsp` → `RulePackServer` | Medium | ✅ CANDIDATE |
 | 6 | `anti-llm-cheat-lsp` new rule modules (contract, ggen, oracle, trace, complexity) | Medium | ⬜ In progress (untracked files) |
-| 7 | `WorkspaceIndex` wiring in `anti-llm-cheat-lsp` | Small | ⬜ Remaining |
-| 8 | Λ_CD RFC items from AGENTS.md backlog (3 priorities) | Large | ⬜ Remaining |
+| 7 | `WorkspaceIndex` wiring in `anti-llm-cheat-lsp` | Small | ✅ CANDIDATE |
+| 8A | Λ_CD RFC A: `gate list` verb (agent-queryable gate state) | Small | ✅ CANDIDATE |
+| 8B | Λ_CD RFC B: per-server speciation receipt chain | Large | ⬜ OPEN |
+| 8C | Λ_CD RFC C: `CompositorReceipt` → OCEL accumulation | Medium | ✅ CANDIDATE |
 
 ### RFC Backlog Detail (item 8)
 
 Three Λ_CD architectural priorities recorded in AGENTS.md after the 1000x review:
 
-- **A — Agent-boundary enforcement**: subagent gate state must be queryable per-agent, not just globally. Goal: a subagent that hits ANDON sees a scoped block, not a global halt that affects the parent session.
-- **B — Per-server speciation receipt chain**: each child server in the compositor must emit its own `C_D` receipt chain so the compositor's `ADMITTED` verdict is traceable back to individual server evidence, not a merged aggregate.
-- **C — Compositor receipt → OCEL**: `CompositorReceipt` events must be derivable into an OCEL event log and mined for conformance against the declared compositor process model (fan-out → merge → admit).
+- **A — Agent-boundary enforcement**: `gate list` verb wired in `crates/lsp-max-cli/src/nouns/gate.rs`; returns `active_codes` and `agent_scope`. Per-agent partitioning (scoped block vs global halt) remains OPEN — `agent_scope` is `"global"` in the current release.
+- **B — Per-server speciation receipt chain**: `CompositorReceipt::child_evidence: Vec<ChildEvidence>` exists and surfaces in `to_ocel_event()`. Full per-server `C_D` receipt chain wiring (each child emits its own traceable chain linked by `chain_object_id`) is OPEN.
+- **C — Compositor receipt → OCEL**: `FlushCoordinator` now accumulates `CompositorReceipt::to_ocel_event()` into `ocel_events: Arc<Mutex<Vec<Value>>>` on every flush. `take_ocel_events()` drains the buffer for export. Process-model mining (conformance against fan-out → merge → admit model) is OPEN.

@@ -42,11 +42,37 @@ impl CompiledRule {
     }
 
     fn matches_path(&self, path_str: &str) -> bool {
-        let included =
-            self.path_globs.is_empty() || self.path_globs.iter().any(|p| p.matches(path_str));
-        let excluded = self.exclude_globs.iter().any(|p| p.matches(path_str));
+        let included = self.path_globs.is_empty()
+            || self
+                .path_globs
+                .iter()
+                .any(|p| glob_matches_suffix(p, path_str));
+        let excluded = self
+            .exclude_globs
+            .iter()
+            .any(|p| glob_matches_suffix(p, path_str));
         included && !excluded
     }
+}
+
+/// Match a workspace-relative rule glob (e.g. `src/**`) against a path that may
+/// be absolute. `scan_document` receives absolute file-uri paths, whereas rule
+/// globs are written relative to the workspace root; try the glob against the
+/// full path and each `/`-delimited suffix so `src/**` also matches
+/// `/abs/proj/src/lib.rs`. Relative paths from `scan_workspace` still match via
+/// the full-path attempt.
+fn glob_matches_suffix(pat: &Pattern, path_str: &str) -> bool {
+    if pat.matches(path_str) {
+        return true;
+    }
+    let mut rest = path_str;
+    while let Some(idx) = rest.find('/') {
+        rest = &rest[idx + 1..];
+        if pat.matches(rest) {
+            return true;
+        }
+    }
+    false
 }
 
 // ── Rule cache — compiled once per process ────────────────────────────────────

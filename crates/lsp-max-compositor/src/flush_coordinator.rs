@@ -16,6 +16,8 @@ use lsp_max::lsp_types::{Diagnostic, DiagnosticSeverity, NumberOrString, Positio
 use tokio::time::{Duration, Instant};
 
 use crate::child_process::ChildProcessPool;
+use crate::declare::{extract_traces, DeclareModel};
+use crate::dfg::DirectlyFollowsGraph;
 use crate::diagnostic_buffer::DiagnosticBuffer;
 use crate::gate_file::GateFile;
 use crate::merge::MergeContext;
@@ -71,6 +73,10 @@ pub struct FlushCoordinator {
     /// Cumulative count of signals dropped due to a full channel.
     /// Incremented on each `try_send` failure; readable via `signal_drop_count()`.
     drop_counter: Arc<AtomicU64>,
+    /// RFC C: accumulated OCEL 2.0 events derived from `CompositorReceipt` flushes.
+    ocel_events: Arc<std::sync::Mutex<Vec<serde_json::Value>>>,
+    /// Monotonic counter used as the OCEL event-id source.
+    event_counter: Arc<AtomicU64>,
 }
 
 impl FlushCoordinator {
@@ -90,6 +96,11 @@ impl FlushCoordinator {
         let (tx, rx) = kanal::bounded_async::<FlushSignal>(512);
         let drop_counter = Arc::new(AtomicU64::new(0));
         let _drop_counter_bg = Arc::clone(&drop_counter);
+        let ocel_events: Arc<std::sync::Mutex<Vec<serde_json::Value>>> =
+            Arc::new(std::sync::Mutex::new(Vec::new()));
+        let ocel_events_bg = Arc::clone(&ocel_events);
+        let event_counter = Arc::new(AtomicU64::new(0));
+        let event_counter_bg = Arc::clone(&event_counter);
 
         tokio::spawn(async move {
             // per_uri: tracks which servers have deposited for each URI in the current window.
@@ -307,10 +318,11 @@ impl FlushCoordinator {
                         }
                     }
 
-                    let event_id = uuid::Uuid::new_v4().to_string();
+                    let eid = event_counter_bg.fetch_add(1, Ordering::Relaxed);
+                    let event_id = format!("cf-{eid}");
                     let timestamp = chrono::Utc::now().to_rfc3339();
                     let compositor_event = receipt.to_ocel_event(&event_id, &timestamp);
-                    let mut events_to_log = vec![compositor_event];
+                    let mut events_to_log = vec![compositor_event.clone()];
                     for (idx, ev) in receipt.child_evidence.iter().enumerate() {
                         let child_event_id = format!("{}-child-{}", event_id, idx);
                         let child_event = ev.to_ocel_event(
@@ -319,6 +331,47 @@ impl FlushCoordinator {
                             &receipt.merge_object_id(),
                         );
                         events_to_log.push(child_event);
+                    }
+
+                    if let Ok(mut guard) = ocel_events_bg.lock() {
+                        guard.push(compositor_event);
+
+                        // RFC C + Van der Aalst: run Declare conformance + DFG on the
+                        // accumulated log after every flush so violations are surfaced
+                        // continuously rather than only at log-export time.
+                        let traces = extract_traces(&guard);
+                        let model = DeclareModel::compositor();
+                        let violations = model.check(&traces);
+                        if !violations.is_empty() {
+                            tracing::warn!(
+                                violations = violations.len(),
+                                uri = %uri,
+                                "declare-conformance: compositor process model violated"
+                            );
+                            for v in &violations {
+                                tracing::warn!(
+                                    constraint = %v.constraint,
+                                    case_id = %v.case_id,
+                                    detail = %v.detail,
+                                    "declare-violation"
+                                );
+                            }
+                        }
+                        let dfg = DirectlyFollowsGraph::from_traces(&traces);
+                        let normative_arcs = [
+                            ("CompositorFlush".to_string(), "CompositorFlushAdmitted".to_string()),
+                            ("CompositorFlush".to_string(), "CompositorFlushBlocked".to_string()),
+                            ("CompositorFlushBlocked".to_string(), "AndonCodePresent".to_string()),
+                        ];
+                        if let Some(fitness) = dfg.fitness_against_model(&normative_arcs) {
+                            tracing::debug!(
+                                fitness,
+                                nodes = dfg.node_count(),
+                                edges = dfg.edge_count(),
+                                transitions = dfg.total_transitions(),
+                                "dfg-fitness: compositor process model"
+                            );
+                        }
                     }
 
                     let log_path = gate.path().with_extension("ocel.jsonl");
@@ -395,7 +448,29 @@ impl FlushCoordinator {
         Self {
             sender: tx,
             drop_counter,
+            ocel_events,
+            event_counter,
         }
+    }
+
+    /// RFC C: drain the accumulated OCEL 2.0 events and return them.
+    ///
+    /// Each element is a `CompositorFlush` OCEL event produced by
+    /// `CompositorReceipt::to_ocel_event`.  The internal buffer is cleared on
+    /// each call, so callers own the drained slice.
+    pub fn take_ocel_events(&self) -> Vec<serde_json::Value> {
+        self.ocel_events
+            .lock()
+            .map(|mut g| std::mem::take(&mut *g))
+            .unwrap_or_default()
+    }
+
+    /// RFC C: snapshot the accumulated OCEL log without draining it.
+    pub fn ocel_event_count(&self) -> usize {
+        self.ocel_events
+            .lock()
+            .map(|g| g.len())
+            .unwrap_or(0)
     }
 
     /// Signal that `uri` received a deposit from `server_id`.

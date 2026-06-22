@@ -123,3 +123,63 @@ pub fn ledger_report(instance_id: String) -> Result<LedgerReportResult> {
         .map_err(|e| clap_noun_verb::error::NounVerbError::execution_error(e.to_string()))?;
     Ok(LedgerReportResult { instance_id, raw })
 }
+
+#[derive(Serialize)]
+pub struct ReceiptWalkEntry {
+    pub index: usize,
+    pub receipt_id: String,
+    pub status: String,
+    pub detail: String,
+}
+
+#[derive(Serialize)]
+pub struct ReceiptWalkResult {
+    pub instance_id: String,
+    pub overall: String,
+    pub entries: Vec<ReceiptWalkEntry>,
+    pub total: usize,
+}
+
+#[verb("walk")]
+pub fn walk(instance_id: String) -> Result<ReceiptWalkResult> {
+    let service = ReceiptService::new();
+    let receipts = service
+        .list(&instance_id)
+        .map_err(clap_noun_verb::error::NounVerbError::execution_error)?;
+
+    let total = receipts.len();
+    let mut entries = Vec::new();
+    let mut overall = if total == 0 { "UNKNOWN" } else { "ADMITTED" }.to_string();
+
+    for (idx, r) in receipts.iter().enumerate() {
+        let (status, detail) = if r.receipt_id.is_empty() || r.hash.is_empty() {
+            overall = "REFUSED".to_string();
+            (
+                "REFUSED".to_string(),
+                format!("empty receipt_id or hash at index {}", idx),
+            )
+        } else {
+            (
+                "ADMITTED".to_string(),
+                format!(
+                    "id={} hash={}...",
+                    r.receipt_id,
+                    &r.hash[..8.min(r.hash.len())]
+                ),
+            )
+        };
+        entries.push(ReceiptWalkEntry {
+            index: idx,
+            receipt_id: r.receipt_id.clone(),
+            status,
+            detail,
+        });
+    }
+
+    Ok(ReceiptWalkResult {
+        instance_id,
+        overall,
+        entries,
+        total,
+    })
+}

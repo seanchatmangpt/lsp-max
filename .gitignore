@@ -10,10 +10,16 @@ generated/*
 vendors/
 .claude/*
 !.claude/settings.json
+!.claude/skills/
+.claude/skills/*
+!.claude/skills/*/
+.claude/skills/*/*
+!.claude/skills/*/SKILL.md
 **/refund_receipt.txt
 **/target_e2e/
 **/lsif_dump.json
 **/receipts/
-!/examples/anti-llm-cheat-lsp/receipts/
+!/crates/anti-llm-cheat-lsp/receipts/
+!/examples/lsp-max-scaffold/receipts/
 scratch/
 /doc/

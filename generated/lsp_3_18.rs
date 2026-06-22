@@ -147,7 +147,10 @@ impl<'de> Deserialize<'de> for SymbolKind {
             24 => Ok(SymbolKind::Event),
             25 => Ok(SymbolKind::Operator),
             26 => Ok(SymbolKind::TypeParameter),
-            other => Err(serde::de::Error::custom(format!("unknown SymbolKind: {}", other))),
+            other => Err(serde::de::Error::custom(format!(
+                "unknown SymbolKind: {}",
+                other
+            ))),
         }
     }
 }

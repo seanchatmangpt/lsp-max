@@ -71,7 +71,7 @@ Scan: "Observations: N, Diagnostics emitted: M" with per-file, per-line findings
 Tests: All 30 dogfood tests ADMITTED (no rule violations, receipts present)
 ```
 
-**README:** [Present](#anti-llm-cheat-lspreadmemd) at `examples/anti-llm-cheat-lsp/README.md`
+**README:** [Present](#anti-llm-cheat-lspreadmemd) at `crates/anti-llm-cheat-lsp/README.md`
 
 ---
 

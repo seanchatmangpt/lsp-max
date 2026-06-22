@@ -29,6 +29,11 @@ fn test_no_bullshit_stubs_or_comments() {
                     || path_str.ends_with("test_no_bullshit_stubs.rs")
                     // lsp-coverage defines a list of stub-body patterns as string data
                     || path_str.ends_with("lsp-coverage.rs")
+                    // hollow.rs likewise defines stub-body patterns as string data
+                    || path_str.ends_with("hollow.rs")
+                    // negative-control fixtures intentionally carry stub bait for
+                    // the anti-llm-cheat detector's own tests to catch
+                    || path_str.contains("/fixtures/")
                 {
                     continue;
                 }
