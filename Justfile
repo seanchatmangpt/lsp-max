@@ -67,6 +67,14 @@ bench-compositor:
 test-compositor-admission:
     cargo test --test test_compositor_perf_admission -- --nocapture
 
+# Run process-mining benchmarks (DFG construction, Declare conformance, trace extraction)
+bench-pm:
+    cargo bench -p lsp-max-compositor --bench process_mining
+
+# Run pipeline genetic-search benchmarks (PRNG, Objectives, PipelineSearch, ParetoSearch)
+bench-pipeline:
+    cargo bench -p lsp-max --bench pipeline_search
+
 # --- Inner Loop (fast feedback) ---
 
 # Fast pre-commit: fmt -> clippy -> test, only on crates changed since {{base}}. Fast-fail.
