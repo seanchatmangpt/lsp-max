@@ -1,0 +1,63 @@
+{
+  "$schema": "https://wasm4pm.dev/cognition/ocpn.schema.json",
+  "breed_id": "meta_reasoning",
+  "label": "Meta-Reasoning OCPN Model",
+  "family": "MetaCognition",
+  "status": "CANDIDATE",
+  "places": [
+    { "id": "p_strategies", "label": "StrategyDescriptors", "type": "input" },
+    { "id": "p_cog_state",  "label": "CognitiveState",      "type": "internal" },
+    { "id": "p_resources",  "label": "Resources",           "type": "internal" },
+    { "id": "p_feasible",   "label": "FeasibleStrategies",  "type": "internal" },
+    { "id": "p_rejected",   "label": "RejectedStrategies",  "type": "internal" },
+    { "id": "p_selected",   "label": "SelectedStrategy",    "type": "output" }
+  ],
+  "transitions": [
+    {
+      "id": "t_introspect",
+      "label": "introspect",
+      "input_arcs":  [{ "place": "p_cog_state", "weight": 1 }],
+      "output_arcs": [{ "place": "p_cog_state", "weight": 1 }]
+    },
+    {
+      "id": "t_filter_knowledge",
+      "label": "filter_knowledge",
+      "input_arcs":  [
+        { "place": "p_strategies", "weight": 1 },
+        { "place": "p_resources",  "weight": 1 }
+      ],
+      "output_arcs": [
+        { "place": "p_feasible", "weight": 1 },
+        { "place": "p_rejected", "weight": 1 }
+      ]
+    },
+    {
+      "id": "t_filter_time",
+      "label": "filter_time",
+      "input_arcs":  [
+        { "place": "p_feasible",  "weight": 1 },
+        { "place": "p_resources", "weight": 1 }
+      ],
+      "output_arcs": [
+        { "place": "p_feasible", "weight": 1 },
+        { "place": "p_rejected", "weight": 1 }
+      ]
+    },
+    {
+      "id": "t_score",
+      "label": "score",
+      "input_arcs":  [
+        { "place": "p_feasible",  "weight": 1 },
+        { "place": "p_cog_state", "weight": 1 }
+      ],
+      "output_arcs": [{ "place": "p_feasible", "weight": 1 }]
+    },
+    {
+      "id": "t_select",
+      "label": "select",
+      "input_arcs":  [{ "place": "p_feasible", "weight": 1 }],
+      "output_arcs": [{ "place": "p_selected", "weight": 1 }]
+    }
+  ],
+  "object_types": ["StrategyDescriptors", "CognitiveState", "Resources", "FeasibleStrategies", "RejectedStrategies", "SelectedStrategy"]
+}
