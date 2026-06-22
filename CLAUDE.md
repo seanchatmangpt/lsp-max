@@ -62,6 +62,25 @@ cargo test -p wasm4pm-lsp cog010_no_oracle_injection -- --nocapture
 
 Clippy with `-D warnings` is the bar; run `just dx-polish` before considering a change complete.
 
+## Fresh Web Session Bootstrap
+
+On a new cloud/web session, sibling repos and `lsp-max-cli` are absent — the workspace will not
+build and the ANDON gate will not function. The `SessionStart` hook (`.claude/session-start.sh`)
+runs automatically and reports which components are OPEN. To advance from OPEN to ADMITTED, run
+the setup script once per environment:
+
+```sh
+bash .claude/setup.sh
+```
+
+This installs `just`, clones the three sibling repos at `../`, and builds `lsp-max-cli`.
+After setup, the PreToolUse ANDON gate and PostToolUse diagnostic snapshot will function.
+
+Status meanings from the hook output:
+- `ADMITTED` — present and functional
+- `CANDIDATE` — just installed/cloned; build not yet verified
+- `OPEN` — absent; setup required before that component can be used
+
 ## Workspace architecture
 
 The five-layer model: (1) actuation grammar → (2) local LSP state surface → (3) law-state runtime → (4) knowledge hooks → (5) autonomic LSP mesh. Crates map onto it:
