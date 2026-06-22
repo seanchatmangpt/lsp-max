@@ -128,8 +128,8 @@ impl Default for AnalysisBundle {
         Self {
             snapshot_id: SnapshotId(String::new()),
             capability_vector: MaxCapabilityVector {
-                client: lsp_types_max::ClientCapabilities::default(),
-                server: lsp_types_max::ServerCapabilities::default(),
+                client: ClientCapabilities::default(),
+                server: ServerCapabilities::default(),
                 negotiated: serde_json::Value::Null,
                 experimental: serde_json::Value::Null,
                 gaps: Vec::new(),

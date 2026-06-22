@@ -3,18 +3,29 @@ id = "wasm4pm-lsp"
 primary_extensions = [".ocel.json", ".receipt.json", ".ocel.jsonl"]
 secondary_extensions = [".rs", ".ts", ".json"]
 priority = "diagnostics-only"
-andon_code_prefixes = ["WASM4PM-CROWN-", "WASM4PM-GALL-"]
+# Per-server ANDON routing does not borrow the workspace union (AGENTS.md L7
+# Speciation), so this list must cover every ERROR-severity code this server
+# surfaces: WASM4PM-* (CROWN/GALL/DANGLING-REF/TIME-ORDER/UNKNOWN-ACTIVITY/
+# PARSE-FAILED/MISSING-ADMISSION/VERDICT-*), the GGEN evidence law, and the
+# unbound pack-handler code. COG- is the wiring half for breed-conformance laws
+# (src/diagnostics/cognition_laws.rs); live emission is BLOCKED until ../wasm4pm
+# is present. Only ERROR severity sets ANDON, so non-error members never block.
+andon_code_prefixes = ["WASM4PM-", "GGEN-EVIDENCE-", "CLAP-PACK-HANDLER-UNBOUND", "COG-"]
 
 [[server]]
 id = "anti-llm-cheat-lsp"
 primary_extensions = [".rs", ".ts", ".tsx", ".json", ".jsonl", ".md"]
 secondary_extensions = []
 priority = "diagnostics-only"
-andon_code_prefixes = ["ANTI-LLM-CHEAT-C", "ANTI-LLM-VERSION-"]
+# Cover the whole ANTI-LLM- namespace. `blocking: true` rules map to ERROR, and
+# many families (SURFACE/ROUTE/RECEIPT/AUTH/ORACLE/ADMIT/MUT/CLAIM/CONTRACT/...)
+# were self-isolating out of ANDON under the narrow CHEAT-C/VERSION- list.
+andon_code_prefixes = ["ANTI-LLM-"]
 
 [[server]]
 id = "ggen-lsp"
 primary_extensions = [".ttl", ".rq", ".tera"]
 secondary_extensions = []
 priority = "full"
-andon_code_prefixes = ["GGEN-TPL-", "GGEN-YIELD-", "GGEN-SRC-"]
+# Cover the whole GGEN- namespace (TPL/YIELD/SRC and others). Only ERROR blocks.
+andon_code_prefixes = ["GGEN-"]

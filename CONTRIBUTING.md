@@ -292,7 +292,7 @@ use tower_lsp::{Client, LanguageServer};
 use lsp_max::LanguageServer;  // from lsp-max crate
 ```
 
-Negative-control fixtures in `examples/anti-llm-cheat-lsp` may reference `tower_lsp` explicitly to test detection.
+Negative-control fixtures in `crates/anti-llm-cheat-lsp` may reference `tower_lsp` explicitly to test detection.
 
 #### 5.2 Environment Variables: `LSP_MAX_*`
 
@@ -472,7 +472,7 @@ The project has non-negotiable laws (from AGENTS.md):
 - **`ConformanceVector` is tristate** — never collapse unknown
 - **LSP surface is read-only** — no file mutations
 
-Violating these triggers automated diagnostics from `examples/anti-llm-cheat-lsp`:
+Violating these triggers automated diagnostics from `crates/anti-llm-cheat-lsp`:
 
 ```
 GC004B_NO_TOWER_LSP_LOCK = BLOCKED
@@ -522,13 +522,13 @@ Understand where your code belongs (from CLAUDE.md):
 | `lsp-max-agent` | Agent integration, analysis bundles | `lsp-max-agent/` | Agent hooks |
 | `lsp-max-cli` | Noun/verb CLI, actuation grammar | `crates/lsp-max-cli/` | Commands and verbs |
 | `lsp-max-client` | LSP client for testing | `crates/lsp-max-client/` | Test harness |
-| `anti-llm-cheat-lsp` | Diagnostic canary (detects violations) | `examples/anti-llm-cheat-lsp/` | Negative controls |
+| `anti-llm-cheat-lsp` | Diagnostic canary (detects violations) | `crates/anti-llm-cheat-lsp/` | Negative controls |
 
 ### 4. Version Management: CalVer (YY.M.D)
 
 `lsp-max` uses **CalVer**, not SemVer:
 
-- Current version: `26.6.9` (2026, June, 14th)
+- Current version: `26.6.18` (2026, June, 21st)
 - Date-based; reflects release date
 - Update `version.workspace` in `Cargo.toml` when releasing
 
@@ -647,5 +647,5 @@ By participating in this project, you agree to abide by its terms.
 
 ---
 
-**Last updated:** 2026-06-14  
-**For:** lsp-max version 26.6.9
+**Last updated:** 2026-06-21  
+**For:** lsp-max version 26.6.18

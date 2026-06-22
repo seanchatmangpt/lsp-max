@@ -138,7 +138,7 @@ None.
 
 ### Triple closed: CalVer version law (`ANTI-LLM-VERSION-*`)
 
-- **doc** — `examples/anti-llm-cheat-lsp/src/rules/version.rs` (the production
+- **doc** — `crates/anti-llm-cheat-lsp/src/rules/version.rs` (the production
   enforcement) now has a module doc citing the example; the example keeps its
   Diataxis explanation of why CalVer, not SemVer.
 - **example** — `examples/calver_law_explained.rs`: was prose-only, now validates
@@ -444,7 +444,7 @@ None.
 
 - **gap** — `web/REPRESENTATION_MAP.md` listed "OCEL process evidence" as
   `❌ exposed-but-unrepresented`. Real `*.ocel.json` files existed in
-  `crates/playground/ocel/` and `examples/anti-llm-cheat-lsp/ocel/` with no web
+  `crates/playground/ocel/` and `crates/anti-llm-cheat-lsp/ocel/` with no web
   page rendering their content.
 - **data boundary** — `web/lib/project.ts`: added `OcelFile` interface and
   `readOcelEvidence()`. Reads every `*.ocel.json` under the two known OCEL
@@ -466,7 +466,7 @@ None.
 | File | Format | Events | Objects |
 |---|---|---|---|
 | `crates/playground/ocel/admitted_evidence.ocel.json` | OCEL2 array | 10 | 10 |
-| `examples/anti-llm-cheat-lsp/ocel/anti_llm_lsp_ocel.json` | object-keyed | 8 | 17 |
+| `crates/anti-llm-cheat-lsp/ocel/anti_llm_lsp_ocel.json` | object-keyed | 8 | 17 |
 
 Inventory files (`ocel_event_inventory.json`, `ocel_object_inventory.json`) are plain
 JSON arrays — they have no `events` or `eventTypes` key and are correctly skipped by

@@ -74,6 +74,11 @@ lsif-rust = { path = "crates/lsif-rust" }
 lsif-typescript = { path = "crates/lsif-typescript" }
 tree-sitter-rust = "0.23"
 blake3 = "1"
+criterion = { version = "0.5", features = ["html_reports"] }
+
+[[bench]]
+name = "pipeline_search"
+harness = false
 
 [workspace]
 resolver = "3"
@@ -86,6 +91,7 @@ members = [
     "crates/lsp-max-specgen",
     "crates/lsp-max-anti-cheat",
     "crates/lsp-max-anti-cheat-cli",
+    "crates/anti-llm-cheat-lsp",
     "crates/lsp-max-cli",
     "crates/playground",
     "crates/lsp-max-client",
@@ -96,7 +102,6 @@ members = [
     "examples/powl-lsp",
     "examples/wasm4pm-lsp",
     "examples/pattern-lsp",
-    "examples/anti-llm-cheat-lsp",
     "examples/clap-noun-verb-lsp",
     "examples/wasm4pm-compat-lsp",
     "examples/axum-lsp",
@@ -104,6 +109,9 @@ members = [
     "examples/tex-lsp",
     "examples/gc005-wasm4pm-adapter",
     "examples/justfile-lsp",
+    "examples/ggen-lsp",
+    "examples/wasm-lsp",
+    "examples/lsp-max-scaffold",
     "crates/lsp-max-adapters/lsp-max-ast-core",
     "crates/lsp-max-adapters/lsp-max-ast-codegen",
     "crates/lsif-rust",
@@ -112,6 +120,8 @@ members = [
     "crates/lsif-cli",
     "crates/lsif-tests",
     "crates/lsp-max-compositor",
+    "crates/lsp-max-gen",
+    "crates/lsp-max-meta",
 ]
 
 [workspace.package]

@@ -1,0 +1,218 @@
+name: TPOT2 Conformance
+
+# Projects the TPOT2 breed-pipeline conformance surface into CI as a bounded
+# law-state signal. Runs three surfaces — the Rust pipeline integration tests,
+# the lsp-max-protocol pipeline tests, and the e2e transcript — then derives a
+# single BOUNDED overall status (ADMITTED / PARTIAL / BLOCKED / UNKNOWN) and
+# writes it to the run summary. Per project law, test stdout is NOT a receipt:
+# the only receipt is the artifact the e2e script emits, and that receipt is
+# ephemeral (the script removes its temp dir on `trap cleanup EXIT`), so this
+# workflow uploads the e2e transcript log instead and the status is derived from
+# step outcomes, not from any claim word in stdout.
+
+on:
+  pull_request:
+    branches:
+      - master
+      - main
+      - develop
+  workflow_dispatch:
+
+concurrency:
+  group: tpot2-conformance-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  tpot2-conformance:
+    name: tpot2-conformance
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: lsp-max
+
+      # Sibling repos required by Cargo.toml path deps and [patch.crates-io].
+      # Mirrors .github/workflows/ci.yml exactly: the workspace does NOT build
+      # without these checkouts. If any sibling repo is private, add a
+      # SIBLING_REPO_TOKEN secret (PAT with repo read access). Public repos work
+      # without a token.
+      - uses: actions/checkout@v4
+        with:
+          repository: seanchatmangpt/lsp-types-max
+          path: lsp-types-max
+          token: ${{ secrets.SIBLING_REPO_TOKEN || github.token }}
+
+      - uses: actions/checkout@v4
+        with:
+          repository: seanchatmangpt/wasm4pm-compat
+          path: wasm4pm-compat
+
+      - uses: actions/checkout@v4
+        with:
+          repository: seanchatmangpt/wasm4pm
+          path: wasm4pm
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: lsp-max
+
+      # ── Surface 1: Rust pipeline integration tests ──────────────────────────
+      # continue-on-error so a failure here does not mask the other surfaces;
+      # the bounded status is derived from outcomes in the summary step.
+      - name: rust pipeline tests (test_tpot2_pipeline)
+        id: rust_pipeline
+        continue-on-error: true
+        working-directory: lsp-max
+        run: cargo test --test test_tpot2_pipeline
+
+      # ── Surface 2: lsp-max-protocol pipeline tests ──────────────────────────
+      # NOTE: `cargo test <filter>` exits 0 even when the filter matches zero
+      # tests. The protocol-crate pipeline coverage may be sparse; an outcome of
+      # `success` here therefore means "ran without failure", not "fully
+      # covered". The summary step keeps the status bounded accordingly.
+      - name: protocol pipeline tests (lsp-max-protocol)
+        id: protocol_pipeline
+        continue-on-error: true
+        working-directory: lsp-max
+        run: cargo test -p lsp-max-protocol pipeline
+
+      # ── Surface 3: e2e transcript ───────────────────────────────────────────
+      # The script's own exit code is a bounded signal:
+      #   0  -> transcript bounded-consistent, receipt validated, neg-controls rejected
+      #   2  -> BLOCKED (could not build or locate lsp-max-cli; siblings/workspace)
+      #   other non-zero -> REFUSED (a bounded assertion did not hold)
+      # The receipt the script emits lives under a mktemp dir removed on
+      # `trap cleanup EXIT`, so it is ephemeral; we capture the transcript log
+      # for upload instead and record the exit code for the summary.
+      - name: e2e transcript (test_tpot2_e2e.sh)
+        id: e2e
+        continue-on-error: true
+        working-directory: lsp-max
+        run: |
+          set +e
+          bash tests/test_tpot2_e2e.sh 2>&1 | tee "${RUNNER_TEMP}/tpot2_e2e.log"
+          rc=${PIPESTATUS[0]}
+          echo "e2e_rc=${rc}" >> "$GITHUB_OUTPUT"
+          # Surface the bounded e2e exit code without failing the step here; the
+          # summary step owns the overall verdict. Re-exit with the same code so
+          # the step `outcome` reflects the script result.
+          exit "${rc}"
+
+      - name: upload e2e transcript log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tpot2-e2e-transcript-log
+          path: ${{ runner.temp }}/tpot2_e2e.log
+          if-no-files-found: warn
+          retention-days: 14
+
+      # ── Bounded overall status ──────────────────────────────────────────────
+      # Derives ONE bounded status from the three step outcomes. Bounded
+      # vocabulary only (ADMITTED / PARTIAL / BLOCKED / UNKNOWN); no claim
+      # words. GitHub's `steps.*.outcome` is the API surface used here.
+      - name: tpot2 bounded conformance status
+        if: always()
+        id: status
+        env:
+          RUST_OUTCOME: ${{ steps.rust_pipeline.outcome }}
+          PROTOCOL_OUTCOME: ${{ steps.protocol_pipeline.outcome }}
+          E2E_OUTCOME: ${{ steps.e2e.outcome }}
+          E2E_RC: ${{ steps.e2e.outputs.e2e_rc }}
+        run: |
+          set -euo pipefail
+
+          rust="${RUST_OUTCOME:-unknown}"
+          protocol="${PROTOCOL_OUTCOME:-unknown}"
+          e2e="${E2E_OUTCOME:-unknown}"
+          e2e_rc="${E2E_RC:-}"
+
+          # Count outcomes across the three surfaces.
+          pass=0
+          fail=0
+          unevaluated=0
+          classify() {
+            case "$1" in
+              success) pass=$((pass + 1)) ;;
+              failure) fail=$((fail + 1)) ;;
+              *)       unevaluated=$((unevaluated + 1)) ;;  # skipped / cancelled / unknown
+            esac
+          }
+          classify "$rust"
+          classify "$protocol"
+          classify "$e2e"
+
+          # The e2e script's exit code is a three-way bounded contract:
+          #   2  -> BLOCKED  (could not build or locate lsp-max-cli)
+          #   non-zero & non-2 -> REFUSED (a bounded assertion did not hold)
+          #   0  -> the transcript was bounded-consistent
+          # `e2e_refused` is true only when the e2e ran and refused for a reason
+          # other than the workspace-build block.
+          e2e_refused="false"
+          if [ -n "$e2e_rc" ] && [ "$e2e_rc" != "0" ] && [ "$e2e_rc" != "2" ]; then
+            e2e_refused="true"
+          fi
+
+          # BLOCKED takes precedence: the e2e script reports exit 2 when the
+          # workspace could not build or the CLI could not be located (the
+          # canonical "siblings unavailable" signal). If, in addition, every
+          # surface failed, that is also a workspace-level build block.
+          status="UNKNOWN"
+          reason=""
+          if [ "$e2e_rc" = "2" ]; then
+            status="BLOCKED"
+            reason="e2e reported exit 2 (could not build or locate lsp-max-cli; workspace/siblings unavailable)"
+          elif [ "$fail" -eq 3 ]; then
+            status="BLOCKED"
+            reason="all three surfaces failed; workspace likely could not build (siblings unavailable)"
+          elif [ "$unevaluated" -eq 3 ]; then
+            status="UNKNOWN"
+            reason="no surface produced an evaluable outcome"
+          elif [ "$pass" -eq 3 ]; then
+            status="ADMITTED"
+            reason="all three surfaces ran and reported success (test stdout is not a receipt; see uploaded transcript log)"
+          elif [ "$e2e_refused" = "true" ] && [ "$pass" -ge 1 ]; then
+            status="REFUSED"
+            reason="e2e transcript REFUSED (rc=${e2e_rc}); ${pass} of 3 surfaces reported success"
+          elif [ "$pass" -ge 1 ]; then
+            status="PARTIAL"
+            reason="${pass} of 3 surfaces reported success; ${fail} failed, ${unevaluated} unevaluated"
+          else
+            status="UNKNOWN"
+            reason="surfaces produced no success and no evaluable BLOCKED signal"
+          fi
+
+          {
+            echo "## TPOT2 Conformance"
+            echo ""
+            echo "Bounded status: **${status}**"
+            echo ""
+            echo "${reason}"
+            echo ""
+            echo "| Surface | Command | Outcome |"
+            echo "| --- | --- | --- |"
+            echo "| Rust pipeline | \`cargo test --test test_tpot2_pipeline\` | ${rust} |"
+            echo "| Protocol pipeline | \`cargo test -p lsp-max-protocol pipeline\` | ${protocol} |"
+            echo "| E2E transcript | \`bash tests/test_tpot2_e2e.sh\` (rc=${e2e_rc:-n/a}) | ${e2e} |"
+            echo ""
+            echo "_Bounded statuses only. The e2e receipt is ephemeral (script removes its temp dir on exit); the transcript log is uploaded as the artifact. Test stdout is not a receipt._"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          echo "TPOT2 bounded status: ${status} — ${reason}"
+          echo "status=${status}" >> "$GITHUB_OUTPUT"
+
+          # The job is allowed to stand only for ADMITTED or PARTIAL. BLOCKED and
+          # UNKNOWN exit non-zero so the bounded gap is visible on the PR; this is
+          # a bounded refusal of false closure, not a polarity claim either way.
+          case "$status" in
+            ADMITTED|PARTIAL) exit 0 ;;
+            *)                exit 1 ;;
+          esac
