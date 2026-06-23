@@ -790,8 +790,7 @@ ADMITTED:  8  (gate file write, PreToolUse hook, receipt blocking, speciation te
                OCEL 2.0 + AGI swarm surface)
 PARTIAL:   1  (L7 per-server C_D routing — union is conservative superset; isolation gap documented)
 CANDIDATE: 5  (D_t context format; RFC A gate list; RFC C OCEL accumulation; anti-llm://process-model virtual doc; RulePackServer adoption in anti-llm-cheat-lsp)
-OPEN:      11 (subagent structural enforcement, dx-verify sibling violations, gc006 sealed-repo test,
-               D_t PUSH wiring, and others — see Current Framework Status section)
+OPEN:      13 (subagent structural enforcement, RFC A per-agent partitioning, RFC B per-server receipt chain, dx-verify sibling violations, gc006 sealed-repo test, D_t PUSH wiring, and others — see Current Framework Status section)
 BLOCKED:   0
 ```
 
