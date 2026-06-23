@@ -1,0 +1,14 @@
+# LaTeX build intermediates (the compiled thesis.pdf is tracked)
+*.aux
+*.bbl
+*.bcf
+*.blg
+*.fdb_latexmk
+*.fls
+*.lof
+*.lot
+*.out
+*.run.xml
+*.synctex.gz
+*.toc
+*.log

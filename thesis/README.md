@@ -37,7 +37,7 @@ pdflatex thesis && biber thesis && pdflatex thesis && pdflatex thesis
 ```
 
 Required packages (all in TeX Live / Overleaf): `geometry`, `setspace`,
-`fancyhdr`, `amsmath/amssymb/amsthm`, `mathtools`, `stmaryrd`, `tikz`,
+`fancyhdr`, `amsmath/amssymb/amsthm`, `mathtools`, `tikz`,
 `tikz-cd`, `booktabs`, `tabularx`, `longtable`, `listings`, `biblatex`,
 `hyperref`, `cleveref`, `epigraph`, `enumitem`, `csquotes`, `microtype`.
 
