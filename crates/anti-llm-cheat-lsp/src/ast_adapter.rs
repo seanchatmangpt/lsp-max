@@ -58,7 +58,12 @@ impl RustAstAdapter {
         }
     }
 
-    /// Provide read-access to the managed document for AST-derived features.
+    /// Return a reference to the underlying `AutoLspAdapter` for use in
+    /// `RulePackServer::adapter()` implementations that require the raw adapter.
+    pub fn inner(&self) -> &AutoLspAdapter {
+        &self.adapter
+    }
+
     pub fn get_document<F, R>(&self, uri: &DocumentUri, f: F) -> Option<R>
     where
         F: FnOnce(&lsp_max_ast_core::document::Document) -> R,
