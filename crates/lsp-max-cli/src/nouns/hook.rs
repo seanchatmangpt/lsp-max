@@ -144,18 +144,22 @@ pub fn propagate(
     let mut mesh = AutonomicMesh::load_from_file(&state_path)
         .map_err(|e| NounVerbError::execution_error(e.to_string()))?;
     // max/propagate emits a receipt into the instance ledger; build one keyed to
-    // the chain/hook being propagated, with a deterministic content hash.
+    // the chain/hook being propagated. The hash uses the same sha256 the runtime
+    // applies to its own receipts, chained onto the instance's latest receipt.
     let receipt_id = format!("rcpt-propagate-{chain_or_hook_id}");
-    let hash = {
-        use std::hash::{Hash, Hasher};
-        let mut hasher = std::collections::hash_map::DefaultHasher::new();
-        receipt_id.hash(&mut hasher);
-        format!("{:016x}", hasher.finish())
+    let prev_receipt_hash = mesh
+        .instances
+        .get(&instance_id)
+        .and_then(|inst| inst.receipts.last())
+        .map(|r| r.hash.clone());
+    let hash = match &prev_receipt_hash {
+        Some(prev) => lsp_max_runtime::sha256(format!("{prev}:{receipt_id}").as_bytes()),
+        None => lsp_max_runtime::sha256(receipt_id.as_bytes()),
     };
-    let receipt = lsp_max_protocol::Receipt {
+    let receipt = lsp_max_runtime::Receipt {
         receipt_id,
         hash,
-        prev_receipt_hash: None,
+        prev_receipt_hash,
     };
     let params = serde_json::to_value(&receipt)
         .map_err(|e| NounVerbError::execution_error(e.to_string()))?;
