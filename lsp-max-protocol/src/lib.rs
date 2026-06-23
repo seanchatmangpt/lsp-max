@@ -19,6 +19,7 @@ pub mod policy;
 pub mod repair;
 pub mod intent;
 pub mod stream;
+mod request_impls;
 
 // Re-export all types so they are visible at the crate root level exactly as before.
 
@@ -90,4 +91,4 @@ pub use stream::{
 
 // LspRequest is implemented for FoldingRangeRefreshRequest and
 // TextDocumentContentRefreshRequest directly in lsp_3_18.rs.
-// The impls are available via `lsp_3_18::LspRequest`.
+// lsp_types_max::request::Request for TextDocumentContentRefreshRequest is in request_impls.

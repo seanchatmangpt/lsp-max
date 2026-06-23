@@ -27,5 +27,5 @@ tempfile = "3"
 sha2 = "0.10"
 walkdir = "2"
 lsp_max = { package = "lsp-max", path = "../.." }
-lsp-types-max = { path = "../../../lsp-types-max" }
+lsp-types-max = { version = "^26.6.5" }
 url = "2"

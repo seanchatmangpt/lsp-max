@@ -27,7 +27,7 @@ tokio = { version = "1", features = ["full"] }
 linkme = "0.3.36"
 lsp-max = { path = "../..", version = "26.6.18" }
 lsp-max-protocol = { path = "../../lsp-max-protocol", version = "26.6.18" }
-lsp-types-max = { path = "../../../lsp-types-max", version = "26.6.5" }
+lsp-types-max = { version = "^26.6.5" }
 lsp-max-agent = { path = "../../lsp-max-agent", version = "26.6.18" }
 lsp-max-gen = { path = "../../crates/lsp-max-gen", version = "26.6.18" }
 lsp-max-runtime = { path = "../../lsp-max-runtime", version = "26.6.18" }
