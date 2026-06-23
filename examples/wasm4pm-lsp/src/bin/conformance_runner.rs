@@ -107,7 +107,7 @@ fn is_pass(breed_id: &str, output: &Value) -> bool {
 }
 
 fn run_breed_conformance(
-    root: &Path,
+    _root: &Path,
     breed_id: &str,
     fixture_inputs: &Value,
 ) -> (f64, bool, Value) {

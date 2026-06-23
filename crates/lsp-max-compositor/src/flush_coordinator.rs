@@ -377,6 +377,12 @@ impl FlushCoordinator {
             .unwrap_or(0)
     }
 
+    /// Monotonic count of OCEL event ids assigned over this coordinator's
+    /// lifetime. Unlike `ocel_event_count`, this is not reset by `take_*`.
+    pub fn event_id_count(&self) -> u64 {
+        self.event_counter.load(Ordering::Relaxed)
+    }
+
     /// Signal that `uri` received a deposit from `server_id`.
     /// Non-blocking — if the channel is full, the signal is dropped and the drop counter
     /// is incremented. A `tracing::warn` makes the event observable.

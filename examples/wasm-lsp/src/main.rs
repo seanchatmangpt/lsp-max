@@ -20,11 +20,11 @@ use wasm_lsp::Backend;
 async fn main() {
     tracing_subscriber::fmt().init();
 
-    let (service, socket) = LspService::new(|client| Backend::new(client));
+    let (service, socket) = LspService::new(Backend::new);
 
     // tokio::io::stdin / stdout require the "io-std" feature, declared in
     // Cargo.toml per CLAUDE.md guidance for crates that depend on lsp-max.
-    Server::new(tokio::io::stdin(), tokio::io::stdout(), socket)
+    let _ = Server::new(tokio::io::stdin(), tokio::io::stdout(), socket)
         .serve(service)
         .await;
 }

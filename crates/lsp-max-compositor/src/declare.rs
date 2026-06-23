@@ -52,15 +52,19 @@ pub struct DeclareModel {
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 fn act(name: &str) -> ActivityName {
-    ActivityName::new(name).expect("non-empty activity name")
+    ActivityName::from_str(name).expect("non-empty activity name")
 }
 
 fn wasm_constraint(template: DeclareTemplate, activities: Vec<ActivityName>) -> DeclareConstraint {
     DeclareConstraint {
         template,
         activities,
-        support: Support(1.0),
-        confidence: Confidence(1.0),
+        // support/confidence are stored as f64; validate the range via the
+        // newtypes (per wasm4pm's construction-site guidance) and store the value.
+        support: Support::new(1.0).expect("support 1.0 is in [0,1]").value(),
+        confidence: Confidence::new(1.0)
+            .expect("confidence 1.0 is in [0,1]")
+            .value(),
     }
 }
 
@@ -121,9 +125,12 @@ impl DeclareModel {
                     DeclareTemplate::Precedence,
                     vec![act("ScanComplete"), act("ReceiptValidated")],
                 ),
-                wasm_constraint(DeclareTemplate::ExactlyN, vec![act("ScanComplete")]),
                 wasm_constraint(
-                    DeclareTemplate::Absence,
+                    DeclareTemplate::ExactlyN { n: 1 },
+                    vec![act("ScanComplete")],
+                ),
+                wasm_constraint(
+                    DeclareTemplate::Absence { max: 0 },
                     vec![act("VictoryLanguageEmitted")],
                 ),
                 wasm_constraint(
@@ -178,9 +185,9 @@ fn constraint_label(c: &DeclareConstraint) -> String {
         DeclareTemplate::Precedence => format!("precedence({a}, {b})"),
         DeclareTemplate::AlternatePrecedence => format!("alternate_precedence({a}, {b})"),
         DeclareTemplate::ChainPrecedence => format!("chain_precedence({a}, {b})"),
-        DeclareTemplate::Existence => format!("existence({a})"),
-        DeclareTemplate::Absence => format!("absence({a})"),
-        DeclareTemplate::ExactlyN => format!("exactly_one({a})"),
+        DeclareTemplate::Existence { .. } => format!("existence({a})"),
+        DeclareTemplate::Absence { .. } => format!("absence({a})"),
+        DeclareTemplate::ExactlyN { .. } => format!("exactly_n({a})"),
         DeclareTemplate::NotCoExistence => format!("not_co_existence({a}, {b})"),
         DeclareTemplate::RespondedExistence => format!("responded_existence({a}, {b})"),
         DeclareTemplate::CoExistence => format!("co_existence({a}, {b})"),
@@ -277,24 +284,30 @@ fn check_constraint(
             }
             None
         }
-        DeclareTemplate::ExactlyN => {
+        DeclareTemplate::ExactlyN { n } => {
             let count = trace.iter().filter(|act| act.as_str() == a).count();
-            if count != 1 && !trace.is_empty() {
-                Some(viol(format!("{a} occurred {count} times (expected 1)")))
+            if count != *n as usize && !trace.is_empty() {
+                Some(viol(format!("{a} occurred {count} times (expected {n})")))
             } else {
                 None
             }
         }
-        DeclareTemplate::Existence => {
-            if !trace.is_empty() && !trace.iter().any(|act| act.as_str() == a) {
-                Some(viol(format!("required activity {a} never occurred")))
+        DeclareTemplate::Existence { min } => {
+            let count = trace.iter().filter(|act| act.as_str() == a).count();
+            if !trace.is_empty() && count < *min as usize {
+                Some(viol(format!(
+                    "{a} occurred {count} times (expected at least {min})"
+                )))
             } else {
                 None
             }
         }
-        DeclareTemplate::Absence => {
-            if trace.iter().any(|act| act.as_str() == a) {
-                Some(viol(format!("forbidden activity {a} occurred")))
+        DeclareTemplate::Absence { max } => {
+            let count = trace.iter().filter(|act| act.as_str() == a).count();
+            if count > *max as usize {
+                Some(viol(format!(
+                    "{a} occurred {count} times (at most {max} allowed)"
+                )))
             } else {
                 None
             }
