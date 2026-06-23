@@ -35,7 +35,6 @@
 % ---- Mathematics -----------------------------------------------------------
 \usepackage{amsmath,amssymb,amsthm}
 \usepackage{mathtools}
-\usepackage{stmaryrd}
 
 % ---- Graphics, colour, diagrams --------------------------------------------
 \usepackage{graphicx}
@@ -125,9 +124,9 @@
 
 % ---- Custom semantics ------------------------------------------------------
 % Bounded-status rendering (the thesis grades its own claims this way).
-\newcommand{\stat}[1]{{\scshape #1}}
+\newcommand{\stat}[1]{\textsc{#1}}
 \newcommand{\admitted}{\textcolor{admitted}{\stat{admitted}}}
-\newcommand{\refused}{\textcolor{refused}{\stat{refused}}}
+\def\refused{\textcolor{refused}{\stat{refused}}}
 \newcommand{\unknownstat}{\textcolor{unknown}{\stat{unknown}}}
 \newcommand{\candidate}{\stat{candidate}}
 \newcommand{\partialstat}{\stat{partial}}
@@ -139,7 +138,7 @@
 \newcommand{\maxm}[1]{\texttt{max/#1}}
 \newcommand{\code}[1]{\texttt{#1}}
 % Research-question environment
-\newcommand{\rq}[2]{\paragraph{RQ#1.}\textit{#2}}
+\def\rq#1#2{\paragraph{RQ#1.}\textit{#2}}
 
 % A reusable "claim card" for graded findings.
 \newcommand{\finding}[2]{\par\noindent\fbox{\parbox{0.97\linewidth}{%
@@ -170,7 +169,7 @@
   \vspace{1.6cm}
   {\large [Author Name]\par}
   \vspace{0.4cm}
-  {\normalsize [Department / Doctoral School]\\ [Institution]\par}
+  {\normalsize [Department / Doctoral School]\\ {[Institution]}\par}
   \vfill
   {\normalsize Prepared for the consideration of\par}
   \vspace{0.2cm}
