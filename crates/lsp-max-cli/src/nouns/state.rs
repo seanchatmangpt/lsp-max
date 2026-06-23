@@ -173,10 +173,7 @@ pub fn state(instance_id: String) -> Result<StateResult> {
         .map_err(|e| NounVerbError::execution_error(e.to_string()))?;
 
     let inst = mesh.instances.get(&instance_id).ok_or_else(|| {
-        NounVerbError::execution_error(format!(
-            "Instance not found: {}",
-            instance_id
-        ))
+        NounVerbError::execution_error(format!("Instance not found: {}", instance_id))
     })?;
 
     let policy_state = inst.policy_state.as_ref().map(|p| format!("{:?}", p));
@@ -271,10 +268,9 @@ pub fn lawful_transition(
     let mut mesh = AutonomicMesh::load_from_file(&crate::nouns::get_state_path())
         .map_err(|e| NounVerbError::execution_error(e.to_string()))?;
 
-    let params = serde_json::json!({
-        "from_state": from_state,
-        "to_state": to_state,
-    });
+    // max/lawfulTransition deserialises params as the bare target-phase string
+    // and reports admissibility via the `admitted` field.
+    let params = serde_json::json!(to_state);
 
     let response = mesh
         .dispatch_rpc(&instance_id, "max/lawfulTransition", params)
@@ -284,9 +280,9 @@ pub fn lawful_transition(
         .map_err(|e| NounVerbError::execution_error(e.to_string()))?;
 
     let lawful = response
-        .get("lawful")
+        .get("admitted")
         .and_then(|v| v.as_bool())
-        .unwrap_or(true);
+        .unwrap_or(false);
 
     Ok(LawfulTransitionResult {
         instance_id,
@@ -333,9 +329,12 @@ pub fn restore_rpc(instance_id: String, revision: u64) -> Result<RestoreRpcResul
     let state_path = crate::nouns::get_state_path();
     let mut mesh = AutonomicMesh::load_from_file(&state_path)
         .map_err(|e| NounVerbError::execution_error(e.to_string()))?;
-    let params = serde_json::json!({ "instance_id": instance_id, "revision": revision });
+    // max/restoreState re-applies a full AutonomicMeshState. Re-apply the
+    // persisted state (reload); `revision` is an echoed concurrency marker.
+    let snapshot = serde_json::to_value(mesh.to_state())
+        .map_err(|e| NounVerbError::execution_error(e.to_string()))?;
     let raw = mesh
-        .dispatch_rpc(&instance_id, "max/restoreState", params)
+        .dispatch_rpc(&instance_id, "max/restoreState", snapshot)
         .map_err(NounVerbError::execution_error)?;
     mesh.save_to_file(&state_path)
         .map_err(|e| NounVerbError::execution_error(e.to_string()))?;
@@ -416,7 +415,10 @@ mod tests {
     fn dump_all_output_contains_instances_key() {
         let (_f, svc) = make_temp_mesh();
         let json = svc.dump("all").unwrap();
-        assert!(json.contains("instances"), "dump all must include 'instances' key");
+        assert!(
+            json.contains("instances"),
+            "dump all must include 'instances' key"
+        );
     }
 
     // --- verify falsification ---
@@ -453,12 +455,20 @@ mod tests {
     }
 
     #[test]
-    fn transition_to_degraded_returns_ok() {
+    fn transition_to_clarification_requested_returns_ok() {
         with_mesh_state(|| {
-            let result = transition("test-inst".to_string(), "Degraded".to_string());
-            assert!(result.is_ok(), "transition to Degraded must return Ok");
+            // ClarificationRequested is a real PolicyState variant; "Degraded" is not.
+            let result = transition(
+                "test-inst".to_string(),
+                "ClarificationRequested".to_string(),
+            );
+            assert!(
+                result.is_ok(),
+                "transition to a valid PolicyState must return Ok"
+            );
             let r = result.unwrap();
             assert_eq!(r.instance_id, "test-inst");
+            assert_eq!(r.new_state, "ClarificationRequested");
             assert!(r.success);
         });
     }

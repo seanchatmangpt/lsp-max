@@ -29,6 +29,29 @@ pub struct BatchStore {
     pub batches: HashMap<String, Batch>,
 }
 
+/// Outcome of one command in an executed batch.
+#[derive(Debug, Clone, Serialize)]
+pub struct CommandOutcome {
+    pub command: String,
+    /// Process exit code; `None` if the child was terminated by a signal.
+    pub exit_code: Option<i32>,
+    pub success: bool,
+    pub stdout: String,
+    pub stderr: String,
+}
+
+/// Result of executing a batch's command sequence.
+#[derive(Debug, Clone, Serialize)]
+pub struct BatchExecution {
+    pub name: String,
+    pub total_commands: usize,
+    /// Commands actually run (≤ total under fail-fast).
+    pub executed: usize,
+    pub outcomes: Vec<CommandOutcome>,
+    /// True when every command ran and exited 0.
+    pub all_succeeded: bool,
+}
+
 // ==============================================================================
 // 2. Service Tier
 // ==============================================================================
@@ -50,6 +73,10 @@ impl BatchService {
             return Ok(BatchStore::default());
         }
         let content = std::fs::read_to_string(&self.store_path).map_err(|e| e.to_string())?;
+        // An empty or whitespace-only store file is an absent store, not corruption.
+        if content.trim().is_empty() {
+            return Ok(BatchStore::default());
+        }
         serde_json::from_str(&content).map_err(|e| e.to_string())
     }
 
@@ -146,17 +173,69 @@ impl BatchService {
 
     pub fn run(&self, name: &str) -> std::result::Result<Vec<String>, String> {
         let batch = self.show(name)?;
-        let lines = batch
-            .commands
-            .iter()
-            .map(|cmd| {
-                let mut parts =
-                    vec!["lsp-max-cli".to_string(), cmd.noun.clone(), cmd.verb.clone()];
-                parts.extend(cmd.args.iter().cloned());
-                parts.join(" ")
-            })
-            .collect();
+        let lines = batch.commands.iter().map(Self::command_line).collect();
         Ok(lines)
+    }
+
+    /// Reconstruct the `lsp-max-cli` command line for one batch command.
+    fn command_line(cmd: &BatchCommand) -> String {
+        let mut parts = vec![
+            "lsp-max-cli".to_string(),
+            cmd.noun.clone(),
+            cmd.verb.clone(),
+        ];
+        parts.extend(cmd.args.iter().cloned());
+        parts.join(" ")
+    }
+
+    /// Execute a batch by spawning each command as a child of `program`,
+    /// stopping at the first failure (fail-fast). At runtime `program` is the
+    /// `lsp-max-cli` binary; the registry mutex is held for the duration of the
+    /// parent verb, so re-entering the CLI in-process would deadlock — a child
+    /// process is the only safe dispatch path. Tests inject a harmless stand-in
+    /// program to exercise the spawn plumbing without re-entering the harness.
+    pub fn execute_with<P: AsRef<std::ffi::OsStr>>(
+        &self,
+        name: &str,
+        program: P,
+    ) -> std::result::Result<BatchExecution, String> {
+        let batch = self.show(name)?;
+        let total_commands = batch.commands.len();
+        let mut outcomes = Vec::new();
+        let mut all_succeeded = true;
+        for cmd in &batch.commands {
+            let output = std::process::Command::new(program.as_ref())
+                .arg(&cmd.noun)
+                .arg(&cmd.verb)
+                .args(&cmd.args)
+                .output()
+                .map_err(|e| format!("spawn failed: {e}"))?;
+            let success = output.status.success();
+            outcomes.push(CommandOutcome {
+                command: Self::command_line(cmd),
+                exit_code: output.status.code(),
+                success,
+                stdout: String::from_utf8_lossy(&output.stdout).into_owned(),
+                stderr: String::from_utf8_lossy(&output.stderr).into_owned(),
+            });
+            if !success {
+                all_succeeded = false;
+                break;
+            }
+        }
+        Ok(BatchExecution {
+            name: name.to_string(),
+            total_commands,
+            executed: outcomes.len(),
+            outcomes,
+            all_succeeded,
+        })
+    }
+
+    /// Execute a batch against the current `lsp-max-cli` binary.
+    pub fn execute(&self, name: &str) -> std::result::Result<BatchExecution, String> {
+        let exe = std::env::current_exe().map_err(|e| e.to_string())?;
+        self.execute_with(name, exe)
     }
 }
 
@@ -277,8 +356,31 @@ pub fn run(name: String) -> Result<BatchRunResult> {
     Ok(BatchRunResult {
         name,
         commands,
-        note: "DRY_RUN: commands listed but not executed — invoke each manually".to_string(),
+        note: "DRY_RUN: commands listed but not executed — use `batch exec <name>` to run them"
+            .to_string(),
     })
+}
+
+#[derive(Serialize)]
+pub struct BatchExecResult {
+    pub execution: BatchExecution,
+    /// ADMITTED when all commands ran and exited 0; PARTIAL otherwise.
+    pub status: String,
+}
+
+/// Execute a batch: run each command as a child `lsp-max-cli` process,
+/// stopping at the first failure (fail-fast).
+#[verb("exec")]
+pub fn exec(name: String) -> Result<BatchExecResult> {
+    let svc = BatchService::new();
+    let execution = svc.execute(&name).map_err(NounVerbError::execution_error)?;
+    let status = if execution.all_succeeded {
+        "ADMITTED"
+    } else {
+        "PARTIAL"
+    }
+    .to_string();
+    Ok(BatchExecResult { execution, status })
 }
 
 // ==============================================================================
@@ -374,5 +476,52 @@ mod tests {
         let cmds = svc.run("run-test").unwrap();
         assert_eq!(cmds[0], "lsp-max-cli gate check");
         assert_eq!(cmds[1], "lsp-max-cli receipt show --id abc");
+    }
+
+    #[test]
+    fn execute_with_runs_all_commands_on_success() {
+        let (_f, svc) = make_temp_service();
+        svc.create("seq", None).unwrap();
+        svc.add_command("seq", "gate", "check", None).unwrap();
+        svc.add_command("seq", "gate", "list", None).unwrap();
+        // `true` ignores its arguments and exits 0 — exercises spawn plumbing.
+        let exec = svc.execute_with("seq", "true").unwrap();
+        assert_eq!(exec.total_commands, 2);
+        assert_eq!(exec.executed, 2);
+        assert!(exec.all_succeeded);
+        assert!(exec.outcomes.iter().all(|o| o.success));
+    }
+
+    #[test]
+    fn execute_with_fail_fast_stops_at_first_failure() {
+        let (_f, svc) = make_temp_service();
+        svc.create("seq", None).unwrap();
+        svc.add_command("seq", "a", "b", None).unwrap();
+        svc.add_command("seq", "c", "d", None).unwrap();
+        // `false` exits 1 — fail-fast must stop after the first command.
+        let exec = svc.execute_with("seq", "false").unwrap();
+        assert_eq!(exec.total_commands, 2);
+        assert_eq!(
+            exec.executed, 1,
+            "fail-fast stops after the first failing command"
+        );
+        assert!(!exec.all_succeeded);
+    }
+
+    #[test]
+    fn execute_with_unknown_batch_returns_err() {
+        let (_f, svc) = make_temp_service();
+        let result = svc.execute_with("ghost", "true");
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("BATCH_NOT_FOUND"));
+    }
+
+    #[test]
+    fn execute_empty_batch_succeeds_vacuously() {
+        let (_f, svc) = make_temp_service();
+        svc.create("empty", None).unwrap();
+        let exec = svc.execute_with("empty", "true").unwrap();
+        assert_eq!(exec.executed, 0);
+        assert!(exec.all_succeeded);
     }
 }

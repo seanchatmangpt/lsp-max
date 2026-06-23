@@ -110,9 +110,7 @@ impl ProcessMiningService {
     }
 
     /// Build ordered per-case activity traces from the event log.
-    fn build_traces(
-        events: &[serde_json::Value],
-    ) -> HashMap<String, Vec<String>> {
+    fn build_traces(events: &[serde_json::Value]) -> HashMap<String, Vec<String>> {
         let mut traces: HashMap<String, Vec<String>> = HashMap::new();
         for ev in events {
             if let Some((activity, case_id)) = Self::parse_event(ev) {
@@ -156,14 +154,18 @@ impl ProcessMiningService {
 
         let mut edges: Vec<DfgEdge> = edge_map
             .into_iter()
-            .map(|((source, target), frequency)| DfgEdge { source, target, frequency })
+            .map(|((source, target), frequency)| DfgEdge {
+                source,
+                target,
+                frequency,
+            })
             .collect();
         edges.sort_by(|a, b| b.frequency.cmp(&a.frequency).then(a.source.cmp(&b.source)));
 
         let mut start_activities: Vec<(String, usize)> = start_map.into_iter().collect();
-        start_activities.sort_by(|a, b| b.1.cmp(&a.1));
+        start_activities.sort_by_key(|a| std::cmp::Reverse(a.1));
         let mut end_activities: Vec<(String, usize)> = end_map.into_iter().collect();
-        end_activities.sort_by(|a, b| b.1.cmp(&a.1));
+        end_activities.sort_by_key(|a| std::cmp::Reverse(a.1));
 
         Ok(DirectlyFollowsGraph {
             nodes,
@@ -176,9 +178,7 @@ impl ProcessMiningService {
     }
 
     /// Extract process variants sorted by descending frequency.
-    pub fn variants(
-        &self,
-    ) -> std::result::Result<Vec<ProcessVariant>, String> {
+    pub fn variants(&self) -> std::result::Result<Vec<ProcessVariant>, String> {
         let events = self.load_event_jsons()?;
         let traces = Self::build_traces(&events);
         let total_cases = traces.len();
@@ -204,19 +204,19 @@ impl ProcessMiningService {
             })
             .collect();
         variants.sort_by(|a, b| {
-            b.frequency
-                .cmp(&a.frequency)
-                .then(a.trace.first().unwrap_or(&String::new()).cmp(b.trace.first().unwrap_or(&String::new())))
+            b.frequency.cmp(&a.frequency).then(
+                a.trace
+                    .first()
+                    .unwrap_or(&String::new())
+                    .cmp(b.trace.first().unwrap_or(&String::new())),
+            )
         });
         Ok(variants)
     }
 
     /// Replay fitness of a single instance trace against the DFG.
     /// Returns 1.0 for traces with fewer than 2 events (vacuously fit).
-    pub fn fitness(
-        &self,
-        instance_id: &str,
-    ) -> std::result::Result<FitnessScore, String> {
+    pub fn fitness(&self, instance_id: &str) -> std::result::Result<FitnessScore, String> {
         let events = self.load_event_jsons()?;
         let traces = Self::build_traces(&events);
         let dfg = self.dfg()?;
@@ -344,7 +344,11 @@ pub fn variants() -> Result<VariantsResult> {
     let variants = svc.variants().map_err(NounVerbError::execution_error)?;
     let total_cases = variants.iter().map(|v| v.frequency).sum();
     let total_variants = variants.len();
-    Ok(VariantsResult { variants, total_variants, total_cases })
+    Ok(VariantsResult {
+        variants,
+        total_variants,
+        total_cases,
+    })
 }
 
 #[derive(Serialize)]
@@ -391,7 +395,11 @@ pub fn causal() -> Result<CausalResult> {
         }
         acts.len()
     };
-    Ok(CausalResult { footprint, activity_count, pair_count })
+    Ok(CausalResult {
+        footprint,
+        activity_count,
+        pair_count,
+    })
 }
 
 // ==============================================================================
@@ -421,7 +429,10 @@ mod tests {
     fn dfg_on_empty_event_log_returns_ok_with_no_edges() {
         let (_f, svc) = make_temp_svc();
         let graph = svc.dfg().unwrap();
-        assert!(graph.edges.is_empty(), "fresh mesh has no events → no DFG edges");
+        assert!(
+            graph.edges.is_empty(),
+            "fresh mesh has no events → no DFG edges"
+        );
         assert_eq!(graph.event_count, 0);
     }
 
@@ -448,7 +459,10 @@ mod tests {
         let vars = svc.variants().unwrap();
         if !vars.is_empty() {
             let total: f64 = vars.iter().map(|v| v.relative_frequency).sum();
-            assert!((total - 1.0).abs() < 1e-9, "relative frequencies must sum to 1.0");
+            assert!(
+                (total - 1.0).abs() < 1e-9,
+                "relative frequencies must sum to 1.0"
+            );
         }
     }
 
@@ -483,13 +497,14 @@ mod tests {
     #[test]
     fn causal_relation_causes_and_exclusive_logic() {
         type Pairs = std::collections::HashSet<(String, String)>;
-        let classify = |df: &Pairs, a: &str, b: &str| {
-            match (df.contains(&(a.to_string(), b.to_string())), df.contains(&(b.to_string(), a.to_string()))) {
-                (true, false) => CausalRelation::Causes,
-                (false, true) => CausalRelation::CausedBy,
-                (true, true) => CausalRelation::Parallel,
-                (false, false) => CausalRelation::Exclusive,
-            }
+        let classify = |df: &Pairs, a: &str, b: &str| match (
+            df.contains(&(a.to_string(), b.to_string())),
+            df.contains(&(b.to_string(), a.to_string())),
+        ) {
+            (true, false) => CausalRelation::Causes,
+            (false, true) => CausalRelation::CausedBy,
+            (true, true) => CausalRelation::Parallel,
+            (false, false) => CausalRelation::Exclusive,
         };
         let mut df: Pairs = Pairs::new();
         df.insert(("A".to_string(), "B".to_string()));

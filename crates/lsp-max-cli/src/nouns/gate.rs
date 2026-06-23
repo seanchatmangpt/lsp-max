@@ -299,13 +299,10 @@ pub fn clear() -> Result<GateClearResult> {
 
 /// Poll the gate file on an interval until it clears or max_polls is reached.
 #[verb("watch")]
-pub fn watch(
-    #[arg(long, default_value_t = 2)]
-    interval_secs: u64,
-    #[arg(long, default_value_t = 30)]
-    max_polls: u64,
-) -> Result<GateWatchResult> {
+pub fn watch(interval_secs: Option<u64>, max_polls: Option<u64>) -> Result<GateWatchResult> {
     let svc = GateService::new();
+    let interval_secs = interval_secs.unwrap_or(2);
+    let max_polls = max_polls.unwrap_or(30);
     let mut polls: usize = 0;
     let mut final_status = "BLOCKED".to_string();
     for _ in 0..max_polls {

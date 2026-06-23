@@ -65,14 +65,9 @@ impl RepairService {
 
     /// Save a modified plan map back into mesh.extra.
     fn save_plans(mesh: &mut AutonomicMesh, map: &HashMap<String, RepairPlan>) {
-        let serialized = serde_json::to_value(map)
-            .unwrap_or(serde_json::Value::Object(serde_json::Map::new()));
+        let serialized =
+            serde_json::to_value(map).unwrap_or(serde_json::Value::Object(serde_json::Map::new()));
         mesh.extra.insert(REPAIR_PLANS_KEY.to_string(), serialized);
-    }
-
-    /// Composite key for a plan: "<instance_id>/<plan_id>".
-    fn composite_key(instance_id: &str, plan_id: &str) -> String {
-        format!("{}/{}", instance_id, plan_id)
     }
 
     /// Load the raw plan map from mesh.extra.
@@ -84,10 +79,7 @@ impl RepairService {
     }
 
     /// List all repair plans, optionally filtered to a single instance.
-    pub fn list(
-        &self,
-        instance_id: Option<&str>,
-    ) -> std::result::Result<RepairListResult, String> {
+    pub fn list(&self, instance_id: Option<&str>) -> std::result::Result<RepairListResult, String> {
         let mesh = AutonomicMesh::load_from_file(&self.state_path)
             .unwrap_or_else(|_| AutonomicMesh::new());
 
@@ -95,7 +87,7 @@ impl RepairService {
 
         let plans: Vec<RepairPlanSummary> = all
             .into_iter()
-            .filter(|(iid, _)| instance_id.map_or(true, |filter| iid == filter))
+            .filter(|(iid, _)| instance_id.is_none_or(|filter| iid == filter))
             .map(|(iid, plan)| RepairPlanSummary {
                 action_count: plan.actions.len(),
                 plan_id: plan.plan_id,
@@ -124,17 +116,20 @@ impl RepairService {
 
     /// Apply a repair plan — set its status to "ADMITTED".
     pub fn apply(&self, plan_id: &str) -> std::result::Result<RepairApplyResult, String> {
-        let mut mesh = AutonomicMesh::load_from_file(&self.state_path).map_err(|e| e.to_string())?;
+        let mut mesh =
+            AutonomicMesh::load_from_file(&self.state_path).map_err(|e| e.to_string())?;
 
         let mut map = Self::load_plan_map(&mesh);
 
         let composite = map
             .keys()
-            .find(|k| k.rfind('/').map_or(false, |pos| &k[pos + 1..] == plan_id))
+            .find(|k| k.rfind('/').is_some_and(|pos| &k[pos + 1..] == plan_id))
             .cloned()
             .ok_or_else(|| format!("PLAN_NOT_FOUND: {}", plan_id))?;
 
-        let slash_pos = composite.rfind('/').expect("composite key always has slash");
+        let slash_pos = composite
+            .rfind('/')
+            .expect("composite key always has slash");
         let instance_id = composite[..slash_pos].to_string();
 
         let plan = map.get_mut(&composite).expect("key was just found");
@@ -143,7 +138,8 @@ impl RepairService {
         let new_status = plan.status.clone();
 
         Self::save_plans(&mut mesh, &map);
-        mesh.save_to_file(&self.state_path).map_err(|e| e.to_string())?;
+        mesh.save_to_file(&self.state_path)
+            .map_err(|e| e.to_string())?;
 
         Ok(RepairApplyResult {
             plan_id: plan_id.to_string(),
@@ -155,13 +151,14 @@ impl RepairService {
 
     /// Rollback a repair plan from "ADMITTED" back to "OPEN".
     pub fn rollback(&self, plan_id: &str) -> std::result::Result<RepairRollbackResult, String> {
-        let mut mesh = AutonomicMesh::load_from_file(&self.state_path).map_err(|e| e.to_string())?;
+        let mut mesh =
+            AutonomicMesh::load_from_file(&self.state_path).map_err(|e| e.to_string())?;
 
         let mut map = Self::load_plan_map(&mesh);
 
         let composite = map
             .keys()
-            .find(|k| k.rfind('/').map_or(false, |pos| &k[pos + 1..] == plan_id))
+            .find(|k| k.rfind('/').is_some_and(|pos| &k[pos + 1..] == plan_id))
             .cloned()
             .ok_or_else(|| format!("PLAN_NOT_FOUND: {}", plan_id))?;
 
@@ -173,14 +170,17 @@ impl RepairService {
             ));
         }
 
-        let slash_pos = composite.rfind('/').expect("composite key always has slash");
+        let slash_pos = composite
+            .rfind('/')
+            .expect("composite key always has slash");
         let instance_id = composite[..slash_pos].to_string();
         let previous_status = plan.status.clone();
         plan.status = "OPEN".to_string();
         let new_status = plan.status.clone();
 
         Self::save_plans(&mut mesh, &map);
-        mesh.save_to_file(&self.state_path).map_err(|e| e.to_string())?;
+        mesh.save_to_file(&self.state_path)
+            .map_err(|e| e.to_string())?;
 
         Ok(RepairRollbackResult {
             plan_id: plan_id.to_string(),
@@ -210,12 +210,14 @@ impl RepairService {
         instance_id: &str,
         plan: RepairPlan,
     ) -> std::result::Result<(), String> {
-        let mut mesh = AutonomicMesh::load_from_file(&self.state_path).map_err(|e| e.to_string())?;
+        let mut mesh =
+            AutonomicMesh::load_from_file(&self.state_path).map_err(|e| e.to_string())?;
         let mut map = Self::load_plan_map(&mesh);
-        let key = Self::composite_key(instance_id, &plan.plan_id);
+        let key = format!("{}/{}", instance_id, plan.plan_id);
         map.insert(key, plan);
         Self::save_plans(&mut mesh, &map);
-        mesh.save_to_file(&self.state_path).map_err(|e| e.to_string())?;
+        mesh.save_to_file(&self.state_path)
+            .map_err(|e| e.to_string())?;
         Ok(())
     }
 }
