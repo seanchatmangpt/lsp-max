@@ -1,0 +1,16 @@
+{
+  "breed_id": "mycin",
+  "label": "MYCIN Production Rules",
+  "fitness": 0.0,
+  "admitted": false,
+  "status": "OPEN",
+  "measured_by": "OPEN",
+  "measured_on": "OPEN",
+  "run_id": "OPEN",
+  "provenance": {
+    "run_id": "OPEN",
+    "tool": "wasm4pm-conformance-runner",
+    "source_ocpn": "ocel/models/l1/mycin.ocpn.json",
+    "source_log": "ocel/logs/mycin_run.ocel.json"
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "breed_id": "frames_inheritance",
+  "label": "Frame Inheritance System",
+  "fitness": 0.0,
+  "admitted": false,
+  "status": "OPEN",
+  "measured_by": "OPEN",
+  "measured_on": "OPEN",
+  "run_id": "OPEN",
+  "provenance": {
+    "run_id": "OPEN",
+    "tool": "wasm4pm-conformance-runner",
+    "source_ocpn": "ocel/models/l1/frames_inheritance.ocpn.json",
+    "source_log": "ocel/logs/frames_inheritance_run.ocel.json"
+  }
+}

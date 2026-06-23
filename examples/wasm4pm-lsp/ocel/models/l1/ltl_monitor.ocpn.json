@@ -1,0 +1,54 @@
+{
+  "$schema": "https://wasm4pm.dev/cognition/ocpn.schema.json",
+  "breed_id": "ltl_monitor",
+  "label": "LTL Monitor OCPN Model",
+  "family": "FormalMethods",
+  "status": "CANDIDATE",
+  "places": [
+    { "id": "p_formula",    "label": "FormulaAST",    "type": "input" },
+    { "id": "p_trace",      "label": "TraceEvents",   "type": "internal" },
+    { "id": "p_position",   "label": "TracePosition", "type": "internal" },
+    { "id": "p_eval_stack", "label": "EvalStack",     "type": "internal" },
+    { "id": "p_atom_val",   "label": "AtomValue",     "type": "internal" },
+    { "id": "p_verdict",    "label": "Verdict",       "type": "output" }
+  ],
+  "transitions": [
+    {
+      "id": "t_parse_formula",
+      "label": "parse_formula",
+      "input_arcs":  [{ "place": "p_formula", "weight": 1 }],
+      "output_arcs": [{ "place": "p_formula", "weight": 1 }]
+    },
+    {
+      "id": "t_step",
+      "label": "step",
+      "input_arcs":  [
+        { "place": "p_trace",    "weight": 1 },
+        { "place": "p_position", "weight": 1 }
+      ],
+      "output_arcs": [{ "place": "p_atom_val", "weight": 1 }]
+    },
+    {
+      "id": "t_eval_node",
+      "label": "eval_node",
+      "input_arcs":  [
+        { "place": "p_atom_val",   "weight": 1 },
+        { "place": "p_eval_stack", "weight": 1 }
+      ],
+      "output_arcs": [{ "place": "p_eval_stack", "weight": 1 }]
+    },
+    {
+      "id": "t_advance",
+      "label": "advance",
+      "input_arcs":  [{ "place": "p_position", "weight": 1 }],
+      "output_arcs": [{ "place": "p_position", "weight": 1 }]
+    },
+    {
+      "id": "t_emit_verdict",
+      "label": "emit_verdict",
+      "input_arcs":  [{ "place": "p_eval_stack", "weight": 1 }],
+      "output_arcs": [{ "place": "p_verdict",    "weight": 1 }]
+    }
+  ],
+  "object_types": ["FormulaAST", "TraceEvents", "TracePosition", "EvalStack", "AtomValue", "Verdict"]
+}

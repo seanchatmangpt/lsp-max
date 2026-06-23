@@ -1,0 +1,45 @@
+{
+  "$schema": "https://wasm4pm.dev/cognition/ocpn.schema.json",
+  "breed_id": "bayesian_network",
+  "label": "Bayesian Network OCPN Model",
+  "family": "ProbabilisticAI",
+  "status": "CANDIDATE",
+  "places": [
+    { "id": "p_query",          "label": "Query",                 "type": "input" },
+    { "id": "p_prior",          "label": "Prior",                 "type": "internal" },
+    { "id": "p_evidence_e",     "label": "EvidenceEarthquake",    "type": "internal" },
+    { "id": "p_evidence_alarm", "label": "EvidenceAlarm",         "type": "internal" },
+    { "id": "p_joint",          "label": "JointFactors",          "type": "internal" },
+    { "id": "p_normalised",     "label": "NormalisedPosterior",   "type": "output" }
+  ],
+  "transitions": [
+    {
+      "id": "t_enumerate_states",
+      "label": "enumerate_states",
+      "input_arcs":  [{ "place": "p_prior", "weight": 1 }],
+      "output_arcs": [{ "place": "p_joint", "weight": 1 }]
+    },
+    {
+      "id": "t_alarm_factor",
+      "label": "alarm_factor",
+      "input_arcs":  [
+        { "place": "p_evidence_e", "weight": 1 },
+        { "place": "p_joint",      "weight": 1 }
+      ],
+      "output_arcs": [{ "place": "p_evidence_alarm", "weight": 1 }]
+    },
+    {
+      "id": "t_observe_jm",
+      "label": "observe_jm",
+      "input_arcs":  [{ "place": "p_evidence_alarm", "weight": 1 }],
+      "output_arcs": [{ "place": "p_joint",           "weight": 1 }]
+    },
+    {
+      "id": "t_normalise",
+      "label": "normalise",
+      "input_arcs":  [{ "place": "p_joint",      "weight": 1 }],
+      "output_arcs": [{ "place": "p_normalised", "weight": 1 }]
+    }
+  ],
+  "object_types": ["Query", "Prior", "EvidenceEarthquake", "EvidenceAlarm", "JointFactors", "NormalisedPosterior"]
+}

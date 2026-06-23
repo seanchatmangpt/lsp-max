@@ -1,0 +1,39 @@
+//! `{{ breed_id }}` — {{ breed_label }} breed stub.
+//!
+//! Family: {{ breed_family }}
+//! Paper: `{{ paper_ref }}`
+//! Oracle value: {{ oracle_value }}
+//!
+//! Status: {{ status }}
+//!
+//! To graduate to PARTIAL_ALIVE, satisfy all 12 COG laws:
+//!   COG-001  This file (required)
+//!   COG-002  ocel/models/l1/{{ breed_id }}.ocpn.json
+//!   COG-003  ocel/reports/{{ breed_id }}.json (fitness = 1.0)
+//!   COG-004  tests/fixtures/papers/{{ breed_id }}.json
+//!   COG-005  Fixture must have expected.value field
+//!   COG-006  Report fitness must equal 1.0
+//!   COG-007  Report must have measured_by, measured_on, run_id
+//!   COG-008  docs/breeds/{{ breed_id }}.md
+//!   COG-009  packages/cognition/src/__tests__/fixtures/papers/{{ breed_id }}.json
+//!   COG-010  No oracle fresh-name in production source
+//!   COG-011  All above artifacts present and report.admitted = true
+//!   COG-012  Dispatch arm present in src/breeds/dispatch.rs
+
+use wasm4pm_compat::{BreedInput, CognitiveBreed};
+
+pub struct {{ struct_name }};
+
+impl CognitiveBreed for {{ struct_name }} {
+    fn breed_id(&self) -> &'static str {
+        "{{ breed_id }}"
+    }
+
+    fn run(&self, _input: &BreedInput) -> Option<serde_json::Value> {
+        // CANDIDATE: algorithm not yet implemented.
+        // Replace this stub with the real {{ breed_label }} algorithm.
+        // Must produce oracle_value={{ oracle_value }} for the paper example in
+        // tests/fixtures/papers/{{ breed_id }}.json.
+        None
+    }
+}

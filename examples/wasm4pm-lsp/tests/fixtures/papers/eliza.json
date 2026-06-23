@@ -1,0 +1,18 @@
+{
+  "breed_id": "eliza",
+  "label": "ELIZA Frame Reasoner",
+  "paper_ref": "weizenbaum1966eliza",
+  "family": "SymbolicAI",
+  "description": "Weizenbaum (1966) ELIZA script pattern match: 'I am *' matches 'I am unhappy', captures 'unhappy', fills template 'How long have you been (1)?'.",
+  "inputs": {
+    "text": "I am unhappy",
+    "call_count": 0
+  },
+  "expected": {
+    "value": {"response": "How long have you been unhappy?", "pattern_matched": "I am *"},
+    "note": "call_count=0 selects the first response template for the matched rule."
+  },
+  "expected_value": 1,
+  "asserted_value": 1,
+  "paper_value": 0.0
+}

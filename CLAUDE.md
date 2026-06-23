@@ -49,7 +49,37 @@ cargo test --test test_lsp318_capabilities    # one root integration-test file i
 cargo test -p anti-llm-cheat-lsp --test dogfood     # example-crate integration test
 ```
 
+wasm4pm-lsp example (breeds, conformance, COG-010):
+
+```sh
+# Run conformance runner — dispatches all 10 breeds against paper fixtures,
+# writes ocel/reports/{breed_id}.json with measured fitness and provenance.
+cargo run --bin conformance-runner --manifest-path examples/wasm4pm-lsp/Cargo.toml
+
+# COG-010 oracle injection scan — writes tests/receipts/cog010-scan.json.
+cargo test -p wasm4pm-lsp cog010_no_oracle_injection -- --nocapture
+```
+
 Clippy with `-D warnings` is the bar; run `just dx-polish` before considering a change complete.
+
+## Fresh Web Session Bootstrap
+
+On a new cloud/web session, sibling repos and `lsp-max-cli` are absent — the workspace will not
+build and the ANDON gate will not function. The `SessionStart` hook (`.claude/session-start.sh`)
+runs automatically and reports which components are OPEN. To advance from OPEN to ADMITTED, run
+the setup script once per environment:
+
+```sh
+bash .claude/setup.sh
+```
+
+This installs `just`, clones the three sibling repos at `../`, and builds `lsp-max-cli`.
+After setup, the PreToolUse ANDON gate and PostToolUse diagnostic snapshot will function.
+
+Status meanings from the hook output:
+- `ADMITTED` — present and functional
+- `CANDIDATE` — just installed/cloned; build not yet verified
+- `OPEN` — absent; setup required before that component can be used
 
 ## Workspace architecture
 
@@ -66,6 +96,7 @@ The five-layer model: (1) actuation grammar → (2) local LSP state surface → 
 - **`crates/lsp-max-adapters/`** — ported `auto-lsp` stack (`lsp-max-ast-core`, `lsp-max-ast-codegen`, `lsp-max-ast`): tree-sitter-driven AST/codegen layer. Tree-sitter observes; it never admits.
 - **`crates/lsp-max-compositor/`** — multi-server fan-out and merge. Contains `declare.rs` (Van der Aalst Declare constraint model, 9 constraint types) and `dfg.rs` (Directly-Follows Graph with fitness/precision metrics). `FlushCoordinator` uses adaptive quorum debounce and accumulates OCEL 2.0 events via `take_ocel_events()`.
 - **`crates/wasm4pm-lsp`**, **`crates/gc005-wasm4pm-adapter`** — process-mining LSP surfaces over the wasm4pm engine; dogfood tests (`dogfood_gc00*.rs`) validate gate conformance.
+- **`examples/wasm4pm-lsp/`** — standalone cognitive-breeds example (not in workspace crates). Contains 10 `CognitiveBreed` implementations (`src/breeds/`), a conformance runner binary (`src/bin/conformance_runner.rs`), OCPN models, OCEL fitness reports, and paper fixtures. `src/lib.rs` exposes `pub mod breeds;` so the runner binary can reference `wasm4pm_lsp::breeds::dispatch`. Governed by COG laws 1–12; see `examples/wasm4pm-lsp/CLAUDE.md` for local guidance. LLM breed (`llm.rs`) requires `ANTHROPIC_API_KEY`; returns `None` gracefully when absent.
 - **`crates/playground`** — dev-dependency harness with demo binaries (`dogfood_harness`, `lsif_demo`).
 - **`crates/anti-llm-cheat-lsp`** — the diagnostic canary: an LSP that detects reintroduction of plain `tower-lsp`, fake receipts, fake routes, and victory language. Implements `RulePackServer` via a `scan_uri_classified` override that bridges the internal AhoCorasick engine into `ClassifiedFindings`. Virtual document `anti-llm://process-model` surfaces a live DFG + Declare conformance report from active diagnostics. Other examples (`pattern-lsp`, `clap-noun-verb-lsp`, `axum-lsp`, `bevy-lsp`, `tex-lsp`, `wasm4pm-compat-lsp`) are workspace members and must keep compiling.
 
