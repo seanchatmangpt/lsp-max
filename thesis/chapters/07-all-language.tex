@@ -9,8 +9,10 @@ makes a domain a servable language (\cref{sec:al-criterion}), then works six
 domains through the pipeline of \cref{fig:pipeline}---natural and legal language
 (\cref{sec:al-nl,sec:al-legal}), mathematics (\cref{sec:al-math}), biological
 sequence (\cref{sec:al-bio}), music (\cref{sec:al-music}), and business process
-(\cref{sec:al-bpm})---and closes with the object-centric bridge that unifies them
-(\cref{sec:al-bridge}). Per \cref{sec:m-eval}, these are illustrative scenarios:
+(\cref{sec:al-bpm})---adds the reflexive case of an agent's own conduct
+(\cref{sec:al-reflexive}), and closes with the object-centric bridge and the single
+conformance functor that unify them (\cref{sec:al-bridge,sec:synthesis-functor}).
+Per \cref{sec:m-eval}, these are illustrative scenarios:
 they demonstrate feasibility by construction and expose limits; they are graded
 \candidate, not \admitted, and field validation is \openstat.
 
@@ -148,6 +150,25 @@ that the field did not already have---which is the point. Business process is th
 object-centric conformance here, its application to the other five domains is a
 generalisation of a working method, not an analogy to a foreign one.
 
+\section{The Reflexive Case: An Agent's Own Conduct}
+\label{sec:al-reflexive}
+
+The seventh language is the one the artifact already serves: an agent's own stream
+of edits, claims, and commands (\cref{sec:art-ocel}). The \emph{events} are tool
+calls, edits, and assertions; the \emph{objects} are the artifact's OCEL types
+(\code{CaseFile}, \code{DetectionCode}, \code{LawAxis}, \code{Receipt}, \code{Gate},
+\code{CodeSymbol}); the model $M$ is the Declare-encoded constitution; and
+conformance is the canary's verdict, emitted as \code{CheatDetected} events and
+checked by the engine's \code{GallVerdict} (\cref{sec:art-ocel}). Two features
+distinguish this case. First, where business process (\cref{sec:al-bpm}) calibrates
+against van der Aalst's original setting, the reflexive case calibrates against an
+actually-running implementation, so its status is \admitted-by-dogfood rather than
+\candidate. Second, it is self-applying: the conformance surface is policed by the
+same machinery it governs, the self-sealing property of \cref{sec:art-canary}. The
+reflexive case is therefore both the seventh demonstration and the existence proof
+that the other six are not merely conceivable---the functor of
+\cref{thm:conf-functor} is inhabited on at least one object, witnessed in code.
+
 \section{The Object-Centric Bridge}
 \label{sec:al-bridge}
 
@@ -161,9 +182,11 @@ what these domains require \citep{ocel2-2024}. This is the precise sense in whic
 van der Aalst's ``no AI without PI'' \citep{noai-nopi-2025} becomes, for this
 thesis, \emph{no conformance for all language without an object-centric
 abstraction}: the bridge that carries conformance from business process to all
-language is the object-centric event log, and it is load-bearing. The unity is
-summarised by a single observation: across all six domains, the artifact's
-machinery changed not at all; only the law axes and the model $M_L$ changed. That
+language is the object-centric event log, and it is load-bearing. Formally, this
+unity is \cref{cor:one-functor}: the seven domains are objects of one category and
+conformance is one functor (\cref{thm:conf-functor}). The unity is summarised by a
+single observation: across all seven domains, the artifact's machinery changed not
+at all; only the law axes and the model $M_L$ changed. That
 invariance, demonstrated by construction, is the evidence offered for
 \cref{hyp:substrate}'s semantic-plus-conformance claim---offered, per
 \cref{sec:m-eval}, as \candidate.

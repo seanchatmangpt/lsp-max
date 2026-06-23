@@ -53,7 +53,7 @@ Required packages (all in TeX Live / Overleaf): `geometry`, `setspace`,
 |---|---|---|
 | 1 | Introduction | `chapters/01-introduction.tex` |
 | 2 | Background & Related Work (+ Recent Advances) | `chapters/02-background.tex`, `chapters/02b-recent-advances.tex` |
-| 3 | Mathematical Foundations, from First Principles | `chapters/02a-math-foundations.tex` (+ `02a-algebra`, `02a-order-logic`, `02a-analysis`, `02a-geometry`) |
+| 3 | Mathematical Foundations, from First Principles | `chapters/02a-math-foundations.tex` (+ `02a-algebra`, `02a-order-logic`, `02a-analysis`, `02a-geometry`, `02a-measure`, `02a-synthesis`) |
 | 4 | Conceptual Framework: Language as Process | `chapters/03-conceptual-framework.tex` |
 | 5 | Research Methodology | `chapters/04-methodology.tex` |
 | 6 | The `lsp-max` Artifact | `chapters/05-artifact.tex` |
@@ -66,14 +66,17 @@ Required packages (all in TeX Live / Overleaf): `geometry`, `setspace`,
 | B | Laws, Statuses, and Diagnostic Families | `chapters/B-law-table.tex` |
 | C | A Protocol Timeline, 2016–2030 | `chapters/C-timeline.tex` |
 
-The four pillars of Chapter 3 derive, from sets and axioms: the **algebra** of
+The five pillars of Chapter 3 derive, from sets and axioms: the **algebra** of
 composition (monoids → categories → functors/adjunctions → monoidal categories →
 operads, ending in the Decoupling Theorem); the **order-theoretic logic** of
 conformance (lattices → Kleene/Belnap many-valued logic → the non-collapse
 theorem); the **analysis** of phase transitions (limits → Ehrenfest → a
-from-scratch Clausius–Clapeyron derivation → a Landau first-order jump); and the
+from-scratch Clausius–Clapeyron derivation → a Landau first-order jump); the
 **geometry** of law-state (manifolds → connection/curvature → gradient flow,
-formalizing `AGENTS.md`'s manifold metaphors).
+formalizing `AGENTS.md`'s manifold metaphors); and **measure & information**
+(σ-algebras → entropy → Fisher–Rao, making receipts a literal measure and
+non-collapse a data-processing inequality). A closing **synthesis** proves a single
+*Conformance Functor* over all seven language domains.
 
 ## Epistemic discipline
 

@@ -16,8 +16,9 @@ rests on borrowed authority; where the thesis says ``composition'', ``lattice'',
 
 We make no claim to new mathematics. The contribution is the \emph{derivation of
 the thesis's own constructs} within standard mathematics, so that they are
-falsifiable rather than merely evocative. Four pillars are built, each
-terminating in a result used later:
+falsifiable rather than merely evocative. Five pillars are built, and a short
+synthesis (\cref{sec:synthesis-functor}) draws them into a single functor; each
+terminates in a result used later:
 
 \begin{description}[leftmargin=1.6em,style=nextline]
   \item[Pillar I --- The algebra of composition (\cref{sec:alg}).] From monoids
@@ -35,6 +36,11 @@ terminating in a result used later:
   smooth manifolds, connections, and curvature to gradient flow, formalising the
   manifold metaphors of \code{AGENTS.md} (repository as manifold, failsets as
   curvature, admissibility as $\Phi_G = 0$).
+  \item[Pillar V --- Measure, probability, and information.] From $\sigma$-algebras
+  through entropy and Fisher information, making ``receipts are proof measure'' a
+  literal measure, recasting non-collapse as a data-processing inequality, and
+  identifying the manifold of Pillar~IV with a statistical manifold via the
+  Fisher--Rao metric.
 \end{description}
 
 A reader fluent in these areas may treat the chapter as fixing notation and skip
@@ -47,3 +53,5 @@ mathematics is spent.
 \input{chapters/02a-order-logic}      % Pillar II
 \input{chapters/02a-analysis}         % Pillar III
 \input{chapters/02a-geometry}         % Pillar IV
+\input{chapters/02a-measure}          % Pillar V
+\input{chapters/02a-synthesis}        % Synthesis: the conformance functor
