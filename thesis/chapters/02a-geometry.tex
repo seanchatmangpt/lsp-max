@@ -1,0 +1,196 @@
+\section{Pillar IV --- The Geometry of Law-State}
+\label{sec:geometry}
+
+The artifact's constitution closes with a striking passage: ``Repo state is the
+manifold. Agent edits are trajectories. Failsets are curvature. Receipts are proof
+measure. LSP is the differential operator. Diagnostics are gradients. Code actions
+are constrained control vectors. Admissibility is $\Phi_G=0$''
+\citep{lspmax}. This pillar takes that passage literally and builds, from
+topological first principles, the differential geometry that makes each line a
+definition rather than a flourish.
+
+\subsection{From topology to smooth manifolds}
+\label{sec:geo-manifold}
+
+\begin{definition}[Topological space, continuity]
+A \emph{topology} on a set $X$ is a collection $\tau$ of subsets (the
+\emph{opens}) containing $\varnothing$ and $X$ and closed under arbitrary unions
+and finite intersections. A map $f\colon X\to Y$ is \emph{continuous} if
+preimages of opens are open. $X$ is \emph{Hausdorff} if distinct points have
+disjoint open neighbourhoods.
+\end{definition}
+
+\begin{definition}[Smooth manifold]
+An \emph{$n$-dimensional smooth manifold} $M$ is a second-countable Hausdorff
+space with an \emph{atlas} of \emph{charts} $\varphi_\alpha\colon U_\alpha\to
+\mathbb R^{n}$ (homeomorphisms from opens $U_\alpha$ covering $M$) whose
+transitions $\varphi_\beta\circ\varphi_\alpha^{-1}$ are smooth ($C^\infty$) where
+defined. A map between manifolds is \emph{smooth} if it is smooth in charts.
+\end{definition}
+
+\begin{notation}[The state manifold]
+We model the repository's admissible configuration space as a smooth manifold $M$:
+points are configurations, and a chart is a local coordinate system on
+configurations (in practice, a continuous relaxation of edit space). This is the
+sense of ``repo state is the manifold''; the idealisation to a smooth $M$ is what
+licenses the calculus below, and is itself a modelling choice we flag as
+\candidate.
+\end{notation}
+
+\subsection{Tangent vectors, fields, and trajectories}
+\label{sec:geo-tangent}
+
+\begin{definition}[Tangent space]
+A \emph{tangent vector} at $p\in M$ is a derivation $v\colon C^\infty(M)\to\mathbb
+R$: a linear map with $v(fg)=v(f)\,g(p)+f(p)\,v(g)$ (the Leibniz rule). The
+tangent vectors at $p$ form the \emph{tangent space} $T_pM$, an $n$-dimensional
+vector space; their disjoint union is the \emph{tangent bundle} $TM$. A
+\emph{vector field} is a smooth section $X\colon M\to TM$.
+\end{definition}
+
+\begin{definition}[Trajectory]
+A \emph{trajectory} (integral curve) of a vector field $X$ is a smooth
+$\gamma\colon I\to M$ with $\dot\gamma(t)=X(\gamma(t))$. An agent's sequence of
+edits is modelled as such a curve, and a \emph{code action} is the control vector
+$\dot\gamma(t)\in T_{\gamma(t)}M$ it applies---``agent edits are trajectories''
+and ``code actions are constrained control vectors''.
+\end{definition}
+
+\subsection{Metric, gradient, and the descent of failure}
+\label{sec:geo-metric}
+
+\begin{definition}[Riemannian metric and gradient]
+\label{def:geo-metric}
+A \emph{Riemannian metric} $g$ assigns to each $p$ an inner product
+$g_p(\cdot,\cdot)$ on $T_pM$, smoothly in $p$. For $f\in C^\infty(M)$ the
+\emph{gradient} $\nabla f$ is the unique vector field with
+$g_p(\nabla f, v)=\mathrm df_p(v)$ for all $v\in T_pM$, where $\mathrm df$ is the
+differential. \emph{Gradient flow} is the trajectory of $-\nabla f$.
+\end{definition}
+
+Let $\Phi_G\colon M\to\mathbb R_{\ge 0}$ be the \emph{failset potential}: a smooth
+penalty aggregating the active law-axis violations (the continuous shadow of the
+\code{ConformanceVector}, zero exactly on configurations whose active axes are all admitted). Then
+``diagnostics are gradients'' is the identification of the emitted corrective
+direction with $-\nabla\Phi_G$, and ``LSP is the differential operator'' is the
+reading of the read-only LSP surface as the map $f\mapsto\mathrm df$ that exposes
+that gradient without itself moving the point (\cref{sec:art-overview}).
+
+\begin{proposition}[Admissibility descends]
+\label{prop:descent}
+Along the gradient flow $\dot x=-\nabla\Phi_G(x)$, the potential is
+non-increasing: $\tfrac{\mathrm d}{\mathrm dt}\Phi_G(x(t))=-\lVert\nabla\Phi_G
+\rVert_g^{2}\le 0$, with equality only at critical points. Hence trajectories move
+monotonically toward the admissible region.
+\end{proposition}
+\begin{proof}
+By the chain rule and the defining property of the gradient,
+$\frac{\mathrm d}{\mathrm dt}\Phi_G(x)=\mathrm d\Phi_G(\dot x)
+=g(\nabla\Phi_G,-\nabla\Phi_G)=-\lVert\nabla\Phi_G\rVert_g^{2}\le 0$,
+which vanishes iff $\nabla\Phi_G=0$.
+\end{proof}
+
+\Cref{prop:descent} gives ``effective admitted velocity $\mathrm
+dA_{\text{admitted}}/\mathrm dt$'' a precise reading: the rate at which a
+trajectory reduces $\Phi_G$, maximised by following the diagnostic gradient. The
+artifact's slogan ``optimise for admitted work, not raw output'' is the
+instruction to descend $\Phi_G$ rather than to maximise path length in $M$.
+
+\subsection{The admissible submanifold (admissibility as \texorpdfstring{$\Phi_G=0$}{Phi=0})}
+\label{sec:geo-submanifold}
+
+\begin{theorem}[Regular value / preimage theorem]
+\label{thm:regval}
+Let $F\colon M\to\mathbb R^{k}$ be smooth and let $0$ be a \emph{regular value}:
+$\mathrm dF_p$ is surjective at every $p\in F^{-1}(0)$. Then $A=F^{-1}(0)$ is a
+smooth submanifold of $M$ of codimension $k$, with $T_pA=\ker\mathrm dF_p$.
+\end{theorem}
+\begin{proof}[Proof sketch]
+At $p\in A$, surjectivity of $\mathrm dF_p$ lets one choose coordinates in which
+$F$ is a projection onto the last $k$ coordinates (implicit function theorem); in
+those coordinates $A$ is the coordinate slice where they vanish, a submanifold of
+codimension $k$, and its tangent space is the kernel of the projection's
+differential, $\ker\mathrm dF_p$.
+\end{proof}
+
+\begin{corollary}[Geometry of admissibility]
+\label{cor:admissible}
+Write $\Phi_G=(\phi_1,\dots,\phi_k)$ for the $k$ independent active law-axis
+penalties. If $0$ is a regular value, the admissible set
+$A=\{\,x:\Phi_G(x)=0\,\}$ is a submanifold of codimension $k$: each independent
+law removes one degree of freedom. Admissible trajectories are exactly those
+remaining within $A$, i.e.\ with control vectors in $T_xA=\ker\mathrm d\Phi_{G,x}$.
+\end{corollary}
+
+\Cref{cor:admissible} makes ``admissibility is $\Phi_G=0$'' exact and quantifies
+it: the admissible world is not a point but a submanifold whose codimension counts
+the binding laws, and lawful action is motion tangent to it. The three-valued
+discipline of Pillar~II reappears geometrically: a point off $A$ is \refused\
+(some $\phi_i>0$), a point on $A$ with verified evidence is \admitted, and a
+direction not yet known to lie in $T_xA$ is \unknownstat\ until checked.
+
+\subsection{Connection, curvature, and ``failsets are curvature''}
+\label{sec:geo-curvature}
+
+\begin{definition}[Affine connection, geodesic, curvature]
+An \emph{affine connection} $\nabla$ assigns to vector fields $X,Y$ a field
+$\nabla_XY$, $\mathbb R$-linear in $Y$, $C^\infty(M)$-linear in $X$, and Leibniz
+in $Y$. A \emph{geodesic} satisfies $\nabla_{\dot\gamma}\dot\gamma=0$
+(``straightest'' curves). The \emph{Riemann curvature} is
+$R(X,Y)Z=\nabla_X\nabla_YZ-\nabla_Y\nabla_XZ-\nabla_{[X,Y]}Z$, measuring the
+failure of second covariant derivatives to commute.
+\end{definition}
+
+Curvature measures how constraints bend straightness. We propose the precise
+reading of ``failsets are curvature'': near the admissible submanifold $A$, the
+\emph{second fundamental form} (the normal component of $\nabla_XY$ for $X,Y$
+tangent to $A$) records how the failset potential $\Phi_G$ curves the admissible
+sheet, equivalently the Hessian $\operatorname{Hess}\Phi_G$ restricted to the
+normal bundle. Where this curvature is large, small lawful steps demand large
+corrective detours; where it is flat, admissible motion is cheap. The failset is
+not a wall but a shape, and its shape is curvature.
+
+\begin{table}[t]
+\centering
+\caption[The geometry of law-state]{A precise reading of the artifact's manifold
+metaphors \citep{lspmax}. Each informal line on the left is assigned a geometric
+object derived in this pillar.}
+\label{tab:geometry}
+\small
+\begin{tabularx}{\textwidth}{@{}l Y@{}}
+\toprule
+\textbf{\code{AGENTS.md} metaphor} & \textbf{Geometric object (this pillar)} \\
+\midrule
+Repository state is the manifold & smooth manifold $M$ (\cref{sec:geo-manifold}) \\
+Agent edits are trajectories & integral curves $\gamma$ of a vector field (\cref{sec:geo-tangent}) \\
+Code actions are constrained control vectors & tangent vectors $\dot\gamma\in T_xA$ (\cref{cor:admissible}) \\
+LSP is the differential operator & the map $f\mapsto\mathrm df$ (read-only) (\cref{sec:geo-metric}) \\
+Diagnostics are gradients & $-\nabla\Phi_G$ (\cref{prop:descent}) \\
+Admissibility is $\Phi_G=0$ & the submanifold $A=\Phi_G^{-1}(0)$ (\cref{cor:admissible}) \\
+Failsets are curvature & second fundamental form / $\operatorname{Hess}\Phi_G|_{NA}$ (\cref{sec:geo-curvature}) \\
+Effective velocity $\mathrm dA_{\text{admitted}}/\mathrm dt$ & descent rate $-\lVert\nabla\Phi_G\rVert^2$ (\cref{prop:descent}) \\
+Receipts are proof measure & a measure on trajectory space (\cref{sec:geo-measure}) \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Receipts as proof measure}
+\label{sec:geo-measure}
+
+The final metaphor, ``receipts are proof measure'', asks for measure theory. A
+\emph{measure} assigns non-negative, countably additive mass to (measurable) sets;
+a receipt ledger (\cref{sec:art-receipts}) assigns admitted mass to the set of
+trajectories it witnesses. Admissible volume is then $\mu(A\cap\,\cdot\,)$ rather
+than path length: the artifact's refusal to equate ``ran far'' with ``did
+admitted work'' is the refusal to confuse Lebesgue length of $\gamma$ with the
+receipt-measure of the admissible region it traversed. A trajectory may be long
+and carry zero proof measure; a short one, bound to a valid receipt chain, carries
+positive measure. This is \cref{thm:noncollapse} once more, now measure-theoretic:
+unwitnessed motion contributes no admitted mass, just as unevidenced axes never
+leave \unknownstat.
+
+\medskip
+Four pillars---composition, verdicts, transition, and law-state---are now in place.
+A fifth (\cref{sec:measure}) supplies the measure and information theory that the
+artifact's ``receipts are proof measure'' demands, after which a short synthesis
+(\cref{sec:synthesis-functor}) draws the five into a single functor.
