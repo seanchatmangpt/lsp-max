@@ -1,0 +1,185 @@
+@prefix rdf:    <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:   <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl:    <http://www.w3.org/2002/07/owl#> .
+@prefix xsd:    <http://www.w3.org/2001/XMLSchema#> .
+@prefix compat: <https://wasm4pm.dev/cognition/compat#> .
+@prefix breed:  <https://wasm4pm.dev/cognition/breeds#> .
+
+# ── Ontology declaration ──────────────────────────────────────────────────────
+
+<https://wasm4pm.dev/cognition/breeds>
+    rdf:type owl:Ontology ;
+    rdfs:label "wasm4pm Cognitive Breed Vocabulary" ;
+    rdfs:comment "Defines the canonical set of cognitive breeds for the wasm4pm-cognition subsystem. Each breed is an AI reasoning algorithm family admitted (or candidate for admission) to the law-state runtime. ggen reads this TTL to auto-generate registry.json, dispatch.rs, and artifact stubs." .
+
+# ── Core classes ─────────────────────────────────────────────────────────────
+
+compat:CognitiveBr rdf:type owl:Class ;
+    rdfs:label "CognitiveBreed" ;
+    rdfs:comment "A cognitive reasoning algorithm that can be registered in the wasm4pm-cognition dispatch table. Must satisfy all 12 COG laws to reach PARTIAL_ALIVE status." .
+
+compat:BreedStatus rdf:type owl:Class ;
+    rdfs:label "BreedStatus" ;
+    rdfs:comment "Admission status of a breed in the registry." .
+
+compat:ModuleStem rdf:type owl:DatatypeProperty ;
+    rdfs:domain compat:CognitiveBr ;
+    rdfs:range xsd:string ;
+    rdfs:label "moduleStem" ;
+    rdfs:comment "The Rust module stem in src/breeds/<stem>.rs that implements this breed. Derived from dispatch.rs; may differ from breed_id (e.g. eliza → frame)." .
+
+compat:StructName rdf:type owl:DatatypeProperty ;
+    rdfs:domain compat:CognitiveBr ;
+    rdfs:range xsd:string ;
+    rdfs:label "structName" ;
+    rdfs:comment "The PascalCase Rust struct implementing the CognitiveBreed trait." .
+
+compat:breedId rdf:type owl:DatatypeProperty ;
+    rdfs:domain compat:CognitiveBr ;
+    rdfs:range xsd:string ;
+    rdfs:label "breedId" ;
+    rdfs:comment "Stable snake_case identifier. Used as the dispatch key in dispatch.rs match arms." .
+
+compat:breedLabel rdf:type owl:DatatypeProperty ;
+    rdfs:domain compat:CognitiveBr ;
+    rdfs:range xsd:string ;
+    rdfs:label "breedLabel" ;
+    rdfs:comment "Human-readable name of the breed." .
+
+compat:breedFamily rdf:type owl:DatatypeProperty ;
+    rdfs:domain compat:CognitiveBr ;
+    rdfs:range xsd:string ;
+    rdfs:label "breedFamily" ;
+    rdfs:comment "AI reasoning family: SymbolicAI, ProbabilisticAI, ReinforcementLearning, FormalMethods, MetaCognition." .
+
+compat:paperRef rdf:type owl:DatatypeProperty ;
+    rdfs:domain compat:CognitiveBr ;
+    rdfs:range xsd:string ;
+    rdfs:label "paperRef" ;
+    rdfs:comment "Canonical paper citation key for this breed's algorithm (used in fixture.json paper_value assertions)." .
+
+compat:oracleValue rdf:type owl:DatatypeProperty ;
+    rdfs:domain compat:CognitiveBr ;
+    rdfs:range xsd:decimal ;
+    rdfs:label "oracleValue" ;
+    rdfs:comment "Known oracle float value for the paper's example problem instance (used by COG-006 and ORACLE-006 checkers)." .
+
+compat:status rdf:type owl:ObjectProperty ;
+    rdfs:domain compat:CognitiveBr ;
+    rdfs:range compat:BreedStatus ;
+    rdfs:label "status" .
+
+# ── Status individuals ────────────────────────────────────────────────────────
+
+compat:PARTIAL_ALIVE rdf:type compat:BreedStatus ;
+    rdfs:label "PARTIAL_ALIVE" ;
+    rdfs:comment "Module exists, artifacts provisioned, DoD checkpoint admitted." .
+
+compat:CANDIDATE rdf:type compat:BreedStatus ;
+    rdfs:label "CANDIDATE" ;
+    rdfs:comment "Breed declared in ontology; implementation not yet started." .
+
+compat:BLOCKED rdf:type compat:BreedStatus ;
+    rdfs:label "BLOCKED" ;
+    rdfs:comment "Implementation blocked on external dependency or unresolved law." .
+
+# ── Cognitive breed individuals ───────────────────────────────────────────────
+
+# 1. ELIZA — Frame-based dialogue reasoning
+breed:eliza rdf:type compat:CognitiveBr ;
+    compat:breedId       "eliza" ;
+    compat:breedLabel    "ELIZA Frame Reasoner" ;
+    compat:breedFamily   "SymbolicAI" ;
+    compat:moduleStem    "frame" ;
+    compat:structName    "Eliza" ;
+    compat:paperRef      "weizenbaum1966eliza" ;
+    compat:oracleValue   "0.000"^^xsd:decimal ;
+    compat:status        compat:CANDIDATE .
+
+# 2. MYCIN — Production-rule expert system
+breed:mycin rdf:type compat:CognitiveBr ;
+    compat:breedId       "mycin" ;
+    compat:breedLabel    "MYCIN Production Rules" ;
+    compat:breedFamily   "SymbolicAI" ;
+    compat:moduleStem    "production_rules" ;
+    compat:structName    "Mycin" ;
+    compat:paperRef      "shortliffe1976mycin" ;
+    compat:oracleValue   "0.693"^^xsd:decimal ;
+    compat:status        compat:CANDIDATE .
+
+# 3. CBR — Case-Based Reasoning
+breed:cbr rdf:type compat:CognitiveBr ;
+    compat:breedId       "cbr" ;
+    compat:breedLabel    "Case-Based Reasoner" ;
+    compat:breedFamily   "SymbolicAI" ;
+    compat:moduleStem    "cbr" ;
+    compat:structName    "Cbr" ;
+    compat:paperRef      "kolodner1993cbr" ;
+    compat:oracleValue   "0.850"^^xsd:decimal ;
+    compat:status        compat:CANDIDATE .
+
+# 4. FRAMES_INHERITANCE — Frame inheritance system (Minsky)
+breed:frames_inheritance rdf:type compat:CognitiveBr ;
+    compat:breedId       "frames_inheritance" ;
+    compat:breedLabel    "Frame Inheritance System" ;
+    compat:breedFamily   "SymbolicAI" ;
+    compat:moduleStem    "frames_inheritance" ;
+    compat:structName    "FramesInheritance" ;
+    compat:paperRef      "minsky1975frames" ;
+    compat:oracleValue   "0.000"^^xsd:decimal ;
+    compat:status        compat:CANDIDATE .
+
+# 5. BAYESIAN_NETWORK — Bayesian network reasoning (Pearl)
+breed:bayesian_network rdf:type compat:CognitiveBr ;
+    compat:breedId       "bayesian_network" ;
+    compat:breedLabel    "Bayesian Network" ;
+    compat:breedFamily   "ProbabilisticAI" ;
+    compat:moduleStem    "bayesian_network" ;
+    compat:structName    "BayesianNetwork" ;
+    compat:paperRef      "pearl1988probabilistic" ;
+    compat:oracleValue   "0.284"^^xsd:decimal ;
+    compat:status        compat:CANDIDATE .
+
+# 6. POMDP — Partially Observable Markov Decision Process
+breed:pomdp rdf:type compat:CognitiveBr ;
+    compat:breedId       "pomdp" ;
+    compat:breedLabel    "POMDP Solver" ;
+    compat:breedFamily   "ReinforcementLearning" ;
+    compat:moduleStem    "pomdp" ;
+    compat:structName    "Pomdp" ;
+    compat:paperRef      "kaelbling1998planning" ;
+    compat:oracleValue   "0.969"^^xsd:decimal ;
+    compat:status        compat:CANDIDATE .
+
+# 7. LTL_MONITOR — Linear Temporal Logic runtime monitor
+breed:ltl_monitor rdf:type compat:CognitiveBr ;
+    compat:breedId       "ltl_monitor" ;
+    compat:breedLabel    "LTL Runtime Monitor" ;
+    compat:breedFamily   "FormalMethods" ;
+    compat:moduleStem    "ltl_monitor" ;
+    compat:structName    "LtlMonitor" ;
+    compat:paperRef      "bauer2011ltl" ;
+    compat:oracleValue   "1.000"^^xsd:decimal ;
+    compat:status        compat:CANDIDATE .
+
+# 8. ASP — Answer Set Programming
+breed:asp rdf:type compat:CognitiveBr ;
+    compat:breedId       "asp" ;
+    compat:breedLabel    "Answer Set Programmer" ;
+    compat:breedFamily   "FormalMethods" ;
+    compat:moduleStem    "asp" ;
+    compat:structName    "Asp" ;
+    compat:paperRef      "gelfond1991stable" ;
+    compat:oracleValue   "0.000"^^xsd:decimal ;
+    compat:status        compat:CANDIDATE .
+
+# 9. META_REASONING — Meta-cognitive control layer
+breed:meta_reasoning rdf:type compat:CognitiveBr ;
+    compat:breedId       "meta_reasoning" ;
+    compat:breedLabel    "Meta Reasoner" ;
+    compat:breedFamily   "MetaCognition" ;
+    compat:moduleStem    "meta_reasoning" ;
+    compat:structName    "MetaReasoning" ;
+    compat:paperRef      "cox2005metacognition" ;
+    compat:oracleValue   "0.000"^^xsd:decimal ;
+    compat:status        compat:CANDIDATE .

@@ -1,0 +1,107 @@
+{
+  "$schema": "https://wasm4pm.dev/cognition/registry.schema.json",
+  "generated_by": "ggen sync --rule breed-registry",
+  "source_ontology": "schema/cognition-breeds.ttl",
+  "breeds": [
+    {
+      "breed_id": "asp",
+      "label": "Answer Set Programmer",
+      "family": "FormalMethods",
+      "module_stem": "asp",
+      "struct_name": "Asp",
+      "paper_ref": "gelfond1991stable",
+      "oracle_value": 0.0,
+      "status": "CANDIDATE"
+    },
+    {
+      "breed_id": "bayesian_network",
+      "label": "Bayesian Network",
+      "family": "ProbabilisticAI",
+      "module_stem": "bayesian_network",
+      "struct_name": "BayesianNetwork",
+      "paper_ref": "pearl1988probabilistic",
+      "oracle_value": 0.284,
+      "status": "CANDIDATE"
+    },
+    {
+      "breed_id": "cbr",
+      "label": "Case-Based Reasoner",
+      "family": "SymbolicAI",
+      "module_stem": "cbr",
+      "struct_name": "Cbr",
+      "paper_ref": "kolodner1993cbr",
+      "oracle_value": 0.85,
+      "status": "CANDIDATE"
+    },
+    {
+      "breed_id": "eliza",
+      "label": "ELIZA Frame Reasoner",
+      "family": "SymbolicAI",
+      "module_stem": "frame",
+      "struct_name": "Eliza",
+      "paper_ref": "weizenbaum1966eliza",
+      "oracle_value": 0.0,
+      "status": "CANDIDATE"
+    },
+    {
+      "breed_id": "frames_inheritance",
+      "label": "Frame Inheritance System",
+      "family": "SymbolicAI",
+      "module_stem": "frames_inheritance",
+      "struct_name": "FramesInheritance",
+      "paper_ref": "minsky1975frames",
+      "oracle_value": 0.0,
+      "status": "CANDIDATE"
+    },
+    {
+      "breed_id": "ltl_monitor",
+      "label": "LTL Runtime Monitor",
+      "family": "FormalMethods",
+      "module_stem": "ltl_monitor",
+      "struct_name": "LtlMonitor",
+      "paper_ref": "bauer2011ltl",
+      "oracle_value": 1.0,
+      "status": "CANDIDATE"
+    },
+    {
+      "breed_id": "meta_reasoning",
+      "label": "Meta Reasoner",
+      "family": "MetaCognition",
+      "module_stem": "meta_reasoning",
+      "struct_name": "MetaReasoning",
+      "paper_ref": "cox2005metacognition",
+      "oracle_value": 0.0,
+      "status": "CANDIDATE"
+    },
+    {
+      "breed_id": "mycin",
+      "label": "MYCIN Production Rules",
+      "family": "SymbolicAI",
+      "module_stem": "production_rules",
+      "struct_name": "Mycin",
+      "paper_ref": "shortliffe1976mycin",
+      "oracle_value": 0.693,
+      "status": "CANDIDATE"
+    },
+    {
+      "breed_id": "pomdp",
+      "label": "POMDP Solver",
+      "family": "ReinforcementLearning",
+      "module_stem": "pomdp",
+      "struct_name": "Pomdp",
+      "paper_ref": "kaelbling1998planning",
+      "oracle_value": 0.969,
+      "status": "CANDIDATE"
+    },
+    {
+      "breed_id": "llm",
+      "label": "Large Language Model Reasoning",
+      "family": "NeuralAI",
+      "module_stem": "llm",
+      "struct_name": "Llm",
+      "paper_ref": "brown2020language",
+      "oracle_value": 0.0,
+      "status": "CANDIDATE"
+    }
+  ]
+}

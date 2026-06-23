@@ -1,0 +1,15 @@
+{
+  "breed_id": "bayesian_network",
+  "label": "Bayesian Network",
+  "paper_ref": "pearl1988probabilistic",
+  "family": "ProbabilisticAI",
+  "description": "Pearl (1988) alarm/burglary network: P(Burglary=T | JohnCalls=T, MaryCalls=T) via variable elimination over Earthquake and Alarm.",
+  "inputs": {},
+  "expected": {
+    "value": {"query": "Burglary", "true": 0.284, "false": 0.716, "network": "alarm"},
+    "note": "P(B=T|J=T,M=T) ≈ 0.2842 — exact from summing E×A combinations; rounded to 0.284 per Pearl Table 4.4."
+  },
+  "expected_value": 0.284,
+  "asserted_value": 0.284,
+  "paper_value": 0.284
+}

@@ -1,0 +1,24 @@
+{
+  "breed_id": "cbr",
+  "label": "Case-Based Reasoner",
+  "paper_ref": "kolodner1993cbr",
+  "family": "SymbolicAI",
+  "description": "Kolodner (1993) weighted cosine similarity CBR retrieve: query pain=1,fever=1,cough=0 is an exact match to case c1 (similarity=1.0); paper oracle is a partial-match scenario (0.85).",
+  "inputs": {
+    "cases": [
+      {"features": {"pain": 1, "fever": 1, "cough": 0}, "solution": "flu",      "id": "c1"},
+      {"features": {"pain": 0, "fever": 1, "cough": 1}, "solution": "cold",     "id": "c2"},
+      {"features": {"pain": 1, "fever": 0, "cough": 0}, "solution": "headache", "id": "c3"},
+      {"features": {"pain": 1, "fever": 1, "cough": 1}, "solution": "flu",      "id": "c4"}
+    ],
+    "query":   {"features": {"pain": 1, "fever": 1, "cough": 0}},
+    "weights": {"pain": 1.0, "fever": 1.0, "cough": 0.5}
+  },
+  "expected": {
+    "value": {"retrieved_case": "c1", "solution": "flu", "similarity": 1.0},
+    "note": "Exact-match query → similarity=1.0 for c1; paper oracle 0.85 is from a partial-match example in Kolodner §3."
+  },
+  "expected_value": 1.0,
+  "asserted_value": 1.0,
+  "paper_value": 0.85
+}
