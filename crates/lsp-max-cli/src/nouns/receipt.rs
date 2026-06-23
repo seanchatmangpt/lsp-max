@@ -129,6 +129,67 @@ pub fn ledger_report(instance_id: String) -> Result<LedgerReportResult> {
     Ok(LedgerReportResult { instance_id, raw })
 }
 
+#[derive(Serialize)]
+pub struct ReceiptWalkEntry {
+    pub index: usize,
+    pub receipt_id: String,
+    pub status: String,
+    pub detail: String,
+}
+
+#[derive(Serialize)]
+pub struct ReceiptWalkResult {
+    pub instance_id: String,
+    pub overall: String,
+    pub entries: Vec<ReceiptWalkEntry>,
+    pub total: usize,
+}
+
+/// Walk the receipt chain for an instance, reporting per-receipt admission status.
+#[verb("walk")]
+pub fn walk(instance_id: String) -> Result<ReceiptWalkResult> {
+    let service = ReceiptService::new();
+    let receipts = service
+        .list(&instance_id)
+        .map_err(clap_noun_verb::error::NounVerbError::execution_error)?;
+
+    let total = receipts.len();
+    let mut entries = Vec::new();
+    let mut overall = if total == 0 { "UNKNOWN" } else { "ADMITTED" }.to_string();
+
+    for (idx, r) in receipts.iter().enumerate() {
+        let (status, detail) = if r.receipt_id.is_empty() || r.hash.is_empty() {
+            overall = "REFUSED".to_string();
+            (
+                "REFUSED".to_string(),
+                format!("empty receipt_id or hash at index {}", idx),
+            )
+        } else {
+            (
+                "ADMITTED".to_string(),
+                format!(
+                    "id={} hash={}...",
+                    r.receipt_id,
+                    &r.hash[..8.min(r.hash.len())]
+                ),
+            )
+        };
+        entries.push(ReceiptWalkEntry {
+            index: idx,
+            receipt_id: r.receipt_id.clone(),
+            status,
+            detail,
+        });
+    }
+
+    Ok(ReceiptWalkResult {
+        instance_id,
+        overall,
+        entries,
+        total,
+    })
+}
+
 // ==============================================================================
 // 4. Tests
 // ==============================================================================
@@ -148,8 +209,6 @@ mod tests {
         };
         (f, svc)
     }
-
-    // --- list ---
 
     #[test]
     fn list_known_instance_returns_ok() {
@@ -180,20 +239,11 @@ mod tests {
         assert!(svc.list("inst-1").is_err());
     }
 
-    // --- verify ---
-
-    #[test]
-    fn verify_known_instance_returns_ok() {
-        let (_f, svc) = make_temp_mesh();
-        assert!(svc.verify("inst-1").is_ok());
-    }
-
     #[test]
     fn verify_empty_receipt_chain_is_not_valid() {
         let (_f, svc) = make_temp_mesh();
         let (count, chain_valid) = svc.verify("inst-1").unwrap();
         assert_eq!(count, 0);
-        // Empty receipt list → chain cannot be valid (requires at least one receipt).
         assert!(!chain_valid, "empty receipt list must not be chain-valid");
     }
 
@@ -202,8 +252,6 @@ mod tests {
         let (_f, svc) = make_temp_mesh();
         assert!(svc.verify("no-such").is_err());
     }
-
-    // --- RPC verbs ---
 
     fn with_mesh_state<F: FnOnce()>(f: F) {
         let _lock = crate::nouns::TEST_ENV_LOCK

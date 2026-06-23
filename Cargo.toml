@@ -74,6 +74,11 @@ lsif-rust = { path = "crates/lsif-rust" }
 lsif-typescript = { path = "crates/lsif-typescript" }
 tree-sitter-rust = "0.23"
 blake3 = "1"
+criterion = { version = "0.5", features = ["html_reports"] }
+
+[[bench]]
+name = "pipeline_search"
+harness = false
 
 [workspace]
 resolver = "3"
@@ -104,6 +109,9 @@ members = [
     "examples/tex-lsp",
     "examples/gc005-wasm4pm-adapter",
     "examples/justfile-lsp",
+    "examples/ggen-lsp",
+    "examples/wasm-lsp",
+    "examples/lsp-max-scaffold",
     "crates/lsp-max-adapters/lsp-max-ast-core",
     "crates/lsp-max-adapters/lsp-max-ast-codegen",
     "crates/lsif-rust",
@@ -112,6 +120,8 @@ members = [
     "crates/lsif-cli",
     "crates/lsif-tests",
     "crates/lsp-max-compositor",
+    "crates/lsp-max-gen",
+    "crates/lsp-max-meta",
 ]
 
 [workspace.package]

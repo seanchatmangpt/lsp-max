@@ -1,0 +1,47 @@
+{
+  "$schema": "https://wasm4pm.dev/cognition/ocpn.schema.json",
+  "breed_id": "llm",
+  "label": "Large Language Model Reasoning OCPN Model",
+  "family": "NeuralAI",
+  "status": "CANDIDATE",
+  "places": [
+    { "id": "p_prompt",           "label": "Prompt",             "type": "input" },
+    { "id": "p_tokenised",        "label": "TokenisedRequest",   "type": "internal" },
+    { "id": "p_api_call",         "label": "APICall",            "type": "internal" },
+    { "id": "p_raw_completion",   "label": "RawCompletion",      "type": "internal" },
+    { "id": "p_parsed_tokens",    "label": "ParsedTokens",       "type": "internal" },
+    { "id": "p_response",         "label": "Response",           "type": "output" }
+  ],
+  "transitions": [
+    {
+      "id": "t_tokenise",
+      "label": "tokenise",
+      "input_arcs":  [{ "place": "p_prompt",         "weight": 1 }],
+      "output_arcs": [{ "place": "p_tokenised",       "weight": 1 }]
+    },
+    {
+      "id": "t_dispatch_api",
+      "label": "dispatch_api",
+      "input_arcs":  [{ "place": "p_tokenised",       "weight": 1 }],
+      "output_arcs": [{ "place": "p_api_call",         "weight": 1 }]
+    },
+    {
+      "id": "t_receive_completion",
+      "label": "receive_completion",
+      "input_arcs":  [{ "place": "p_api_call",         "weight": 1 }],
+      "output_arcs": [{ "place": "p_raw_completion",   "weight": 1 }]
+    },
+    {
+      "id": "t_parse_response",
+      "label": "parse_response",
+      "input_arcs":  [
+        { "place": "p_raw_completion",   "weight": 1 }
+      ],
+      "output_arcs": [
+        { "place": "p_parsed_tokens",    "weight": 1 },
+        { "place": "p_response",         "weight": 1 }
+      ]
+    }
+  ],
+  "object_types": ["Prompt", "TokenisedRequest", "APICall", "RawCompletion", "ParsedTokens", "Response"]
+}

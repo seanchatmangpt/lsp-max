@@ -11,6 +11,54 @@ Versioning: **CalVer (YY.M.D)** — `26.6.13` = 2026-06-13.
 
 ---
 
+## [26.6.18] — 2026-06-21
+
+### anti-llm-cheat-lsp — full LSP 3.18 detection surface
+
+- **`lsp318_coverage.rs`**: 43 handlers promoted from `Absent` → `Wired`;
+  `workspace/applyEdit` promoted from `Absent` → `Refuses` (read-only law).
+  Only `exit` and `$/cancelRequest` remain `Absent` — these are
+  transport-layer entries with no `LanguageServer` trait method to override.
+- **`server.rs`**: 29 new handler overrides covering `willSave`,
+  `willSaveWaitUntil`, `completionResolve`, `documentLink`,
+  `documentLinkResolve`, `documentColor`, `colorPresentation`,
+  `codeActionResolve`, `onTypeFormatting`, `prepareTypeHierarchy`,
+  `supertypes`, `subtypes`, `symbolResolve`, `didChangeConfiguration`,
+  `didChangeWatchedFiles`, `didChangeWorkspaceFolders`,
+  `willCreateFiles`, `willRenameFiles`, `willDeleteFiles`,
+  `didCreateFiles`, `didRenameFiles`, `didDeleteFiles`,
+  `didOpenNotebookDocument`, `didChangeNotebookDocument`,
+  `didSaveNotebookDocument`, `didCloseNotebookDocument`,
+  `workDoneProgressCancel`, `setTrace`, `progress`.
+- **`initialized` handler**: 9 server-to-client wires — `showMessage`,
+  `configuration`, `workspaceFolders`, `showMessageRequest`,
+  `showDocument`, `workDoneProgressCreate`, `registerCapability`,
+  `unregisterCapability`, `logTrace` — exercising the reverse-request
+  surface so clients observe the full detection channel.
+- **`run_scan_and_publish`**: 5 refresh/telemetry calls added —
+  `semanticTokensRefresh`, `inlayHintRefresh`, `inlineValueRefresh`,
+  `workspaceDiagnosticRefresh`, `telemetryEvent`.
+- **`capabilities.rs`**: matrix-driven capability declarations updated for
+  all newly-wired methods; `textDocument/willSave` and `willSaveWaitUntil`
+  upgraded from `Kind` to full `TextDocumentSyncOptions`; type hierarchy,
+  color, document-link, on-type-formatting, workspace file-ops, and
+  notebook-sync capability blocks added.
+
+### LSIF 0.6 — full element surface confirmed
+
+- `src/rules/lsif06.rs` enumerates all 38 LSIF 0.6 elements (20 vertices
+  + 18 edges). All have `modeled_in_crate: true`; example-coverage status
+  is `OPEN` — no transcripts or receipts produced in this canary crate.
+- `anti-llm://lsif06-matrix` virtual document renders the live surface.
+
+### Coverage summary (PARTIAL — bounded)
+
+LSP 3.18: 93/95 methods wired as detection surfaces. LSIF 0.6: 38/38
+elements modeled (OPEN — no transcripts yet). Receipt axis: OPEN in this
+canary. No victory language; no handler collapses `Unknown` to `Admitted`.
+
+---
+
 ## [26.6.13] — 2026-06-13
 
 ### lsp-max-compositor — Λ_CD gate + full fan-out hub
@@ -282,7 +330,8 @@ This is the last upstream `tower-lsp` release before the fork diverged into
 * Edition `2018` → `2021`.
 * Clippy lints addressed.
 
-[Unreleased]: https://github.com/seanchatmangpt/lsp-max/compare/v26.6.13...HEAD
+[Unreleased]: https://github.com/seanchatmangpt/lsp-max/compare/v26.6.18...HEAD
+[26.6.18]: https://github.com/seanchatmangpt/lsp-max/compare/v26.6.13...v26.6.18
 [26.6.13]: https://github.com/seanchatmangpt/lsp-max/compare/v26.6.12...v26.6.13
 [26.6.12]: https://github.com/seanchatmangpt/lsp-max/compare/v26.6.10...v26.6.12
 [26.6.10]: https://github.com/seanchatmangpt/lsp-max/compare/v26.6.9...v26.6.10

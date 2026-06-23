@@ -1,0 +1,43 @@
+[project]
+name = "ggen-lsp"
+language_id = "ggen"
+version = "26.6.9"
+
+[ontology]
+source = "schema/domain.ttl"
+packs = ["lsp-max"]
+
+[generation]
+output_dir = "src"
+
+# Rule 1: generate a handler stub for each LSP method declared in the ontology
+[[generation.rules]]
+name = "handlers"
+query   = { file = "../../queries/lsp-max/handlers.sparql" }
+template = { file = "../../templates/lsp-max/handler.rs.tera" }
+output_file = "src/handlers/{{ snake_method }}.rs"
+mode = "Skip"
+
+# Rule 2: regenerate ServerCapabilities from ontology assertions
+[[generation.rules]]
+name = "capabilities"
+query   = { file = "../../queries/lsp-max/capabilities.sparql" }
+template = { file = "../../templates/lsp-max/capabilities.rs.tera" }
+output_file = "src/capabilities.rs"
+mode = "Overwrite"
+
+# Rule 3: regenerate ConformanceVector from law-axis states
+[[generation.rules]]
+name = "conformance-vector"
+query   = { file = "../../queries/lsp-max/conformance.sparql" }
+template = { file = "../../templates/lsp-max/conformance_vector.rs.tera" }
+output_file = "src/conformance.rs"
+mode = "Overwrite"
+
+# Rule 4: negative-control fixtures for REFUSED methods
+[[generation.rules]]
+name = "negative-controls"
+query   = { file = "../../queries/lsp-max/refused.sparql" }
+template = { file = "../../templates/lsp-max/negative_control.rs.tera" }
+output_file = "tests/negative/{{ snake_method }}.rs"
+mode = "Skip"

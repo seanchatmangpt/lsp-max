@@ -1,5 +1,13 @@
 # Supported Features
 
+> **Note (26.6.18):** This per-version table covers LSP 3.0–3.17 at
+> coarse granularity (90 methods, ~89.4%). It is superseded for LSP 3.18
+> by the authoritative 95-method combinatorial surface in
+> [`crates/anti-llm-cheat-lsp/docs/COVERAGE_LSP318_LSIF06.md`](../crates/anti-llm-cheat-lsp/docs/COVERAGE_LSP318_LSIF06.md).
+> The live matrices are at `anti-llm://lsp318-full-matrix` (LSP 3.18) and
+> `anti-llm://lsif06-matrix` (LSIF 0.6). This document is maintained on a
+> best-effort basis for historical reference.
+
 This document tracks which features defined in the [Language Server Protocol
 (LSP) specification][spec] are currently supported by `lsp-max` and to what
 degree. Please note that this document is provided _as-is_ and will be updated
@@ -35,18 +43,23 @@ Symbol          | Description
 
 </details>
 
-### Overall status: (80.5/90) _~89.4%_
+### Overall status: (84.5/90) _~93.9%_
+
+> For the authoritative 95-method LSP 3.18 surface, see
+> [`crates/anti-llm-cheat-lsp/docs/COVERAGE_LSP318_LSIF06.md`](../crates/anti-llm-cheat-lsp/docs/COVERAGE_LSP318_LSIF06.md).
+> The 4 notebook methods now have `Wired` handlers (26.6.18), raising this
+> table from 80.5/90 to 84.5/90.
 
 ## [3.17.0] - 2022-05-10
 
-### Status: (12/16)
+### Status: (16/16)
 
 Method Name                           | Message Type                | Supported      | Tracking Issue(s)
 --------------------------------------|:---------------------------:|:--------------:|------------------
-[`notebookDocument/didOpen`]          | :arrow_right:               | :red_circle:   |
-[`notebookDocument/didChange`]        | :arrow_right:               | :red_circle:   |
-[`notebookDocument/didSave`]          | :arrow_right:               | :red_circle:   |
-[`notebookDocument/didClose`]         | :arrow_right:               | :red_circle:   |
+[`notebookDocument/didOpen`]          | :arrow_right:               | :green_circle: |
+[`notebookDocument/didChange`]        | :arrow_right:               | :green_circle: |
+[`notebookDocument/didSave`]          | :arrow_right:               | :green_circle: |
+[`notebookDocument/didClose`]         | :arrow_right:               | :green_circle: |
 [`textDocument/prepareTypeHierarchy`] | :leftwards_arrow_with_hook: | :green_circle: |
 [`typeHierarchy/supertypes`]          | :leftwards_arrow_with_hook: | :green_circle: |
 [`typeHierarchy/subtypes`]            | :leftwards_arrow_with_hook: | :green_circle: |

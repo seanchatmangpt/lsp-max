@@ -1,0 +1,48 @@
+{
+  "$schema": "https://wasm4pm.dev/cognition/ocpn.schema.json",
+  "breed_id": "asp",
+  "label": "Answer Set Programmer OCPN Model",
+  "family": "FormalMethods",
+  "status": "CANDIDATE",
+  "places": [
+    { "id": "p_program",       "label": "Program",         "type": "input" },
+    { "id": "p_herbrand_base", "label": "HerbrandBase",    "type": "internal" },
+    { "id": "p_candidate",     "label": "Candidate",       "type": "internal" },
+    { "id": "p_reduct",        "label": "GLReduct",        "type": "internal" },
+    { "id": "p_verified",      "label": "VerifiedModel",   "type": "internal" },
+    { "id": "p_output",        "label": "StableModels",    "type": "output" }
+  ],
+  "transitions": [
+    {
+      "id": "t_parse",
+      "label": "parse",
+      "input_arcs":  [{ "place": "p_program",       "weight": 1 }],
+      "output_arcs": [{ "place": "p_herbrand_base",  "weight": 1 }]
+    },
+    {
+      "id": "t_enumerate",
+      "label": "enumerate",
+      "input_arcs":  [{ "place": "p_herbrand_base", "weight": 1 }],
+      "output_arcs": [{ "place": "p_candidate",     "weight": 1 }]
+    },
+    {
+      "id": "t_reduct",
+      "label": "reduct",
+      "input_arcs":  [{ "place": "p_candidate", "weight": 1 }],
+      "output_arcs": [{ "place": "p_reduct",    "weight": 1 }]
+    },
+    {
+      "id": "t_check_stable",
+      "label": "check_stable",
+      "input_arcs":  [{ "place": "p_reduct",   "weight": 1 }],
+      "output_arcs": [{ "place": "p_verified",  "weight": 1 }]
+    },
+    {
+      "id": "t_collect",
+      "label": "collect",
+      "input_arcs":  [{ "place": "p_verified", "weight": 1 }],
+      "output_arcs": [{ "place": "p_output",   "weight": 1 }]
+    }
+  ],
+  "object_types": ["Program", "HerbrandBase", "Candidate", "GLReduct", "VerifiedModel", "StableModels"]
+}

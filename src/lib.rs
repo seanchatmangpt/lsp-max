@@ -136,13 +136,19 @@ pub mod workspace_edit;
 
 /// Bridge trait eliminating hand-rolled regex-pattern LSP server boilerplate.
 pub mod rule_pack_server;
-pub use rule_pack_server::{glob_matches, Rule, RulePack, RulePackServer, ValidatedRulePackSet};
+pub use rule_pack_server::{
+    glob_matches, ClassifiedFindings, Finding, Rule, RulePack, RulePackServer,
+    ValidatedRulePackSet, WorkspaceIndex,
+};
 
 /// LSP 3.18 and LSIF protocol coverage matrices.
 pub mod coverage;
 
 /// First-class framework primitives: `DocumentStore`, `DiagnosticSink`, `debounce`.
 pub mod primitives;
+
+/// TPOT2-style breed pipeline type system for automated wasm4pm cognitive breed search.
+pub mod pipeline;
 
 pub(crate) use diagnostics::update_diagnostics;
 

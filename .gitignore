@@ -10,6 +10,13 @@ generated/*
 vendors/
 .claude/*
 !.claude/settings.json
+!.claude/session-start.sh
+!.claude/setup.sh
+!.claude/skills/
+.claude/skills/*
+!.claude/skills/*/
+.claude/skills/*/*
+!.claude/skills/*/SKILL.md
 !.claude/hooks/
 !.claude/hooks/*.sh
 **/refund_receipt.txt
@@ -17,5 +24,7 @@ vendors/
 **/lsif_dump.json
 **/receipts/
 !/crates/anti-llm-cheat-lsp/receipts/
+!/examples/lsp-max-scaffold/receipts/
 scratch/
 /doc/
+libstdin.rlib
