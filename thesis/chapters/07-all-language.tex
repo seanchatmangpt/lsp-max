@@ -1,0 +1,192 @@
+\chapter{Conformance Checking for All Language}
+\label{ch:all-language}
+
+\epigraph{In the case of LTeX, the ``language'' is not a single natural language,
+but all natural languages.}{\textit{LTeX documentation} \citep{ltex}}
+
+This chapter discharges contributions~C2 and~C5. It states the criterion that
+makes a domain a servable language (\cref{sec:al-criterion}), then works six
+domains through the pipeline of \cref{fig:pipeline}---natural and legal language
+(\cref{sec:al-nl,sec:al-legal}), mathematics (\cref{sec:al-math}), biological
+sequence (\cref{sec:al-bio}), music (\cref{sec:al-music}), and business process
+(\cref{sec:al-bpm})---adds the reflexive case of an agent's own conduct
+(\cref{sec:al-reflexive}), and closes with the object-centric bridge and the single
+conformance functor that unify them (\cref{sec:al-bridge,sec:synthesis-functor}).
+Per \cref{sec:m-eval}, these are illustrative scenarios:
+they demonstrate feasibility by construction and expose limits; they are graded
+\candidate, not \admitted, and field validation is \openstat.
+
+\section{The Criterion: When Is a Domain a Language?}
+\label{sec:al-criterion}
+
+\Cref{def:eventlog} gives the test. A domain is a servable language when its use
+admits an object-centric event-log abstraction: its activities can be recorded as
+timed events referring to typed objects. Given that, \cref{def:conformance-surface}
+supplies a conformance surface, and the artifact of \cref{ch:artifact} supplies
+the machinery---three-valued verdicts, receipts, OCEL events---without
+modification, because the law axes are extensible (the \code{Custom} variant of
+\cref{lst:cv}). The criterion is deliberately restrictive: a domain whose use
+cannot be observed as events (a purely private, untraced mental act) falls
+outside the claim, and saying so is what keeps ``all language'' from meaning
+``everything''. \Cref{tab:domains} previews the six demonstrations.
+
+\begin{table}[t]
+\centering
+\caption[Six languages under one conformance surface]{Six domains as servable
+languages. Each admits an event-log abstraction (activity over typed objects) and
+therefore a conformance surface; existing tooling shows the semantic stratum is
+already partly built.}
+\label{tab:domains}
+\scriptsize
+\begin{tabularx}{\textwidth}{@{}l Y Y Y l@{}}
+\toprule
+\textbf{Domain} & \textbf{Event (activity)} & \textbf{Typed objects} & \textbf{Example law axis} & \textbf{Semantic-stratum tooling} \\
+\midrule
+Code & edit, parse, build & symbol, module, file & type safety, API stability & LSP servers \citep{lsp-official} \\
+Natural language & draft, revise, translate & sentence, term, claim & grammar, style, consistency & LTeX, textLSP \citep{ltex,textlsp} \\
+Legal / regulatory & draft clause, amend, cite & clause, obligation, party & obligation consistency, citation validity & emerging \\
+Mathematics & state, step, justify & proposition, lemma, term & logical validity, acyclic dependency & proof assistants \\
+Biological seq. & transcribe, edit, annotate & base, gene, variant & reading-frame integrity, reference conformance & bioinformatics validators \\
+Music & state, transpose, vary & note, motif, voice & voice-leading, key/metre conformance & notation formats \\
+Business process & execute, hand off & case objects, resource & control-flow conformance & process mining \citep{vdaalst-book-2016} \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Natural Language}
+\label{sec:al-nl}
+
+Natural language is the domain where the semantic stratum is most mature outside
+code. LTeX serves grammar and style over LSP for ``all natural languages
+supported by LanguageTool'' \citep{ltex}; textLSP and similar servers add prose
+checks \citep{textlsp}. The process view adds what these lack: a memory of
+behaviour. The \emph{events} are drafting and revision acts; the \emph{objects}
+are sentences, terms, and claims; a model $M_L$ encodes constraints such as
+``a defined term is used consistently'' or ``a claim asserted is not later
+contradicted''. Conformance checking then locates contradiction or terminological
+drift as a \refused\ axis, with the offending events as the diagnostic's witness,
+and marks as \unknownstat\ those claims whose truth it cannot assess---refusing,
+per \cref{prin:three-valued}, to label the unchecked as correct. This is the
+direct generalisation of the artifact's own claim-versus-proof checker
+(\cref{sec:art-canary}) from agent reports to arbitrary prose.
+
+\section{Legal and Regulatory Text}
+\label{sec:al-legal}
+
+Law is language whose entire purpose is conformance, which makes it the domain
+where the thesis bites hardest---and the one the artifact's ``affidavit'' lineage
+(\cref{ch:artifact}) already gestures at, through receipts that function as
+cryptographic attestations. The \emph{events} are the drafting, amendment, and
+citation of provisions; the \emph{objects} are clauses, obligations, parties, and
+referenced statutes, with exactly the object-to-object relationships OCEL~2.0 was
+extended to express (an obligation \emph{borne by} a party, a clause
+\emph{amending} another) \citep{ocel2-2024}. A model $M_L$ encodes obligation
+consistency (no clause both requires and forbids the same act), citation validity
+(every reference resolves to an in-force provision), and temporal coherence
+(amendments respect effective dates---precisely the A9 ``temporal anomaly'' axiom
+of \cref{tab:oracle}). A conformance verdict over a contract or regulation is
+then a receipt-bound, three-valued document: \admitted\ obligations, \refused\
+contradictions, and \unknownstat\ provisions whose compliance depends on facts
+not in evidence. The receipt is the natural digital analogue of a sworn
+attestation.
+
+\section{Mathematics and Formal Proof}
+\label{sec:al-math}
+
+Mathematical proof is language with the strictest conformance model of all:
+logical validity. Proof assistants already expose their language over LSP, so the
+semantic stratum exists. The \emph{events} are the statement of propositions and
+the application of inference steps; the \emph{objects} are propositions, lemmas,
+definitions, and terms, related by \emph{depends-on}. The model $M_L$ is the
+proof calculus itself, and conformance checking is proof checking: a step that
+does not follow is \refused; a lemma invoked before it is established is an A10
+``causal violation'' (a mutation---use---preceding its observation---proof); a
+circular dependency among lemmas is the A12 ``cyclic dependency'' of
+\cref{tab:oracle}. That the artifact's Oracle classes, designed to catch agent
+cheating, map without strain onto proof pathologies is evidence for the unity the
+thesis claims.
+
+\section{Biological Sequence}
+\label{sec:al-bio}
+
+A genome is a language over a four-letter alphabet with rich grammar. The
+\emph{events} are transcription, editing, and annotation operations; the
+\emph{objects} are bases, codons, genes, variants, and regions; the model $M_L$
+encodes reading-frame integrity, conformance to a reference sequence, and
+constraints on permissible edits. Conformance checking flags a frame-shifting
+edit as \refused, a variant of unknown significance as \unknownstat---a domain
+that has independently institutionalised \cref{prin:three-valued} under the very
+name ``variant of uncertain significance''---and a reference-matching region as
+\admitted. The semantic-stratum tooling here is bioinformatics validation rather
+than an LSP server today; the contribution of the thesis is to observe that the
+\emph{same} conformance surface serves it, and that an LSP-style server is a
+natural packaging.
+
+\section{Music and Multimodal Notation}
+\label{sec:al-music}
+
+A score is notation with grammar (key, metre, voice-leading). The \emph{events}
+are the statement, transposition, and variation of material; the \emph{objects}
+are notes, motifs, voices, and bars; the model $M_L$ encodes voice-leading rules,
+key conformance, and metric consistency. Conformance checking locates parallel
+fifths or a metric overflow as \refused, and leaves stylistically open choices
+\unknownstat. Music is included not for its economic weight but because it
+stresses the criterion of \cref{sec:al-criterion}: it shows the event-log
+abstraction applies to a non-textual, time-structured, aesthetic language, and
+that ``law'' need not mean ``regulation'' to be conformance-checkable.
+
+\section{Business Process: The Return Home}
+\label{sec:al-bpm}
+
+The sixth domain is the one process mining began with, and including it closes the
+loop. Here the \emph{events} are activity executions and hand-offs; the
+\emph{objects} are the multiple case objects whose entanglement motivated OCEL in
+the first place (\cref{sec:bg-ocel}); the model $M_L$ is a Petri net or a POWL
+model; and conformance checking is conformance checking in van der Aalst's
+original sense, computed by the \code{wasm4pm} engine and returned as a
+\code{GallVerdict} (\cref{sec:art-ocel}). The thesis adds nothing to this domain
+that the field did not already have---which is the point. Business process is the
+\emph{calibration} case: because the artifact's machinery reproduces standard
+object-centric conformance here, its application to the other five domains is a
+generalisation of a working method, not an analogy to a foreign one.
+
+\section{The Reflexive Case: An Agent's Own Conduct}
+\label{sec:al-reflexive}
+
+The seventh language is the one the artifact already serves: an agent's own stream
+of edits, claims, and commands (\cref{sec:art-ocel}). The \emph{events} are tool
+calls, edits, and assertions; the \emph{objects} are the artifact's OCEL types
+(\code{CaseFile}, \code{DetectionCode}, \code{LawAxis}, \code{Receipt}, \code{Gate},
+\code{CodeSymbol}); the model $M$ is the Declare-encoded constitution; and
+conformance is the canary's verdict, emitted as \code{CheatDetected} events and
+checked by the engine's \code{GallVerdict} (\cref{sec:art-ocel}). Two features
+distinguish this case. First, where business process (\cref{sec:al-bpm}) calibrates
+against van der Aalst's original setting, the reflexive case calibrates against an
+actually-running implementation, so its status is \admitted-by-dogfood rather than
+\candidate. Second, it is self-applying: the conformance surface is policed by the
+same machinery it governs, the self-sealing property of \cref{sec:art-canary}. The
+reflexive case is therefore both the seventh demonstration and the existence proof
+that the other six are not merely conceivable---the functor of
+\cref{thm:conf-functor} is inhabited on at least one object, witnessed in code.
+
+\section{The Object-Centric Bridge}
+\label{sec:al-bridge}
+
+What lets one surface serve six domains is the object-centric event log. A flat,
+single-case log would force each domain into a single ``case'' notion---one
+sentence, one proof, one gene---and suffer the convergence and divergence
+pathologies of \cref{sec:bg-ocel}: a legal obligation borne by several parties, a
+lemma used in several proofs, a motif recurring in several voices would each be
+mismodelled. OCEL~2.0's object-to-object and qualified relationships are exactly
+what these domains require \citep{ocel2-2024}. This is the precise sense in which
+van der Aalst's ``no AI without PI'' \citep{noai-nopi-2025} becomes, for this
+thesis, \emph{no conformance for all language without an object-centric
+abstraction}: the bridge that carries conformance from business process to all
+language is the object-centric event log, and it is load-bearing. Formally, this
+unity is \cref{cor:one-functor}: the seven domains are objects of one category and
+conformance is one functor (\cref{thm:conf-functor}). The unity is summarised by a
+single observation: across all seven domains, the artifact's machinery changed not
+at all; only the law axes and the model $M_L$ changed. That
+invariance, demonstrated by construction, is the evidence offered for
+\cref{hyp:substrate}'s semantic-plus-conformance claim---offered, per
+\cref{sec:m-eval}, as \candidate.

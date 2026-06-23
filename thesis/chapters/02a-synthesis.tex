@@ -1,0 +1,121 @@
+\section{Synthesis: The Conformance Functor}
+\label{sec:synthesis-functor}
+
+The five pillars converge on a single object. Pillar~I gave categories and the
+monoidal product; Pillar~II gave the verdict lattice and monotonicity; Pillars~III
+and~IV gave the transition and the manifold; Pillar~V gave the measure. We now show
+that conformance-for-all-language is one \emph{functor}, and that the thesis's three
+load-bearing results---non-collapse, refusal-survives-composition, and
+admission-carries-measure---are its three defining properties.
+
+\begin{definition}[Event category and verdict category]
+\label{def:event-cat}
+For a domain $d$ (\cref{ch:all-language}), let the \emph{event category}
+$\mathcal E_d$ have as objects the object-centric event logs over $d$'s schema and as
+morphisms the \emph{evidence refinements} (log extensions that add events or resolve
+attributes without contradicting existing order). Let the \emph{verdict category}
+$\mathcal L$ be the verdict lattice of \cref{def:verdict} regarded as a thin
+category: objects are verdict assignments and there is a unique morphism
+$v\to w$ exactly when $v\sqsubseteq w$ in the knowledge order.
+\end{definition}
+
+\begin{theorem}[The conformance functor]
+\label{thm:conf-functor}
+Fix for each domain $d$ a model $M_d$, and let $\mathrm{Conf}_d\colon\mathcal E_d\to
+\mathcal L$ send a log to its verdict against $M_d$ (\cref{def:conformance-surface}).
+Then:
+\begin{enumerate}[label=(\roman*),leftmargin=2.2em]
+  \item each $\mathrm{Conf}_d$ is a functor;
+  \item the domains assemble into the coproduct category
+  $\mathcal E=\coprod_d\mathcal E_d$, and the copairing
+  $\mathrm{Conf}=[\mathrm{Conf}_d]_d\colon\mathcal E\to\mathcal L$ is a single
+  functor---one conformance surface for all language;
+  \item $\mathrm{Conf}$ is monotone (\cref{thm:noncollapse}): it sends evidence
+  refinements to knowledge increases and never to collapses.
+\end{enumerate}
+\end{theorem}
+\begin{proof}
+(i) A functor must preserve identities and composition. The identity refinement
+(adding nothing) leaves the verdict fixed, and $\mathrm{Conf}_d$ of a composite
+refinement equals the composite of verdict morphisms because verdict depends only on
+the accumulated evidence, which composes associatively (\cref{prop:replay-lfp}).
+Functoriality requires that a refinement $\ell\to\ell'$ map to a morphism
+$\mathrm{Conf}_d(\ell)\to\mathrm{Conf}_d(\ell')$ in $\mathcal L$, i.e.\ to a
+knowledge increase $\sqsubseteq$; this is exactly the monotonicity of
+\cref{thm:noncollapse}. (ii) The coproduct $\mathcal E$ has the universal property
+that a functor out of it is precisely a family of functors out of the summands; the
+copairing $[\mathrm{Conf}_d]_d$ is that functor, defined on the summand $\mathcal
+E_d$ as $\mathrm{Conf}_d$. (iii) is (i) read across all summands.
+\end{proof}
+
+\begin{figure}[t]
+\centering
+\begin{tikzcd}[ampersand replacement=\&,column sep=large]
+\mathcal E_d \arrow[r,hook,"\iota_d"] \arrow[dr,"\mathrm{Conf}_d"'] \& \mathcal E \arrow[d,"\mathrm{Conf}"]\\
+\& \mathcal L
+\end{tikzcd}
+\caption[The conformance functor]{Each domain's conformance $\mathrm{Conf}_d$
+factors through the one functor $\mathrm{Conf}$ on the coproduct of event
+categories (\cref{thm:conf-functor}). ``All language, one surface'' is the
+commutativity of this triangle for every domain $d$.}
+\label{fig:conf-functor}
+\end{figure}
+
+The thesis's two further results are now properties of this functor.
+
+\begin{proposition}[Refusal survives composition]
+\label{prop:refusal-survives}
+Equip $\mathcal E$ with the monoidal product $\otimes$ that fuses two logs
+(Pillar~I) and $\mathcal L$ with the axiswise truth-order meet $\wedge_t$. Then
+$\mathrm{Conf}(x\otimes y)\preceq_t\mathrm{Conf}(x)\wedge_t\mathrm{Conf}(y)$: on each
+axis the fused verdict is no more admitted than the meet of the parts. In
+particular a \refused\ axis in either part is \refused\ in the fusion.
+\end{proposition}
+\begin{proof}
+On an axis $a$, the fused log contains the evidence of both parts. If either part
+refuses $a$ (witnessing a violation), the violation persists in the fusion, so the
+fused verdict is $\mathsf f=\min_t$. Admission ($\mathsf t$) of the fusion requires
+the violation-free evidence of both, hence both parts admit; and an axis
+\unknownstat\ in either part cannot exceed $\mathsf u$ in the fusion without new
+evidence (\cref{thm:noncollapse}). In every case the fused value is
+$\le_t\min_t(\mathrm{Conf}(x)_a,\mathrm{Conf}(y)_a)$.
+\end{proof}
+
+\Cref{prop:refusal-survives} is the compositor invariant of \cref{sec:fus-stack}
+(``\code{REFUSED\_BY\_LAW} codes survive always'') stated as a lax-monoidality, and
+it is the formal guarantee behind the portable verdict of
+\cref{sec:fus-conformance}: fusing more agents can only lower, never launder, an
+admission.
+
+\begin{proposition}[Admission carries measure]
+\label{prop:admission-measure}
+An \admitted\ verdict of $\mathrm{Conf}$ on a trajectory is accompanied by positive
+receipt measure: $\mu_R(\{\gamma\})>0$ (\cref{prop:receipt-measure}). Equivalently,
+$\mathrm{Conf}$ factors through the witnessed set $W$, and admission off $W$ is not
+in the image.
+\end{proposition}
+\begin{proof}
+Admission requires a receipt by \cref{def:lawstate}; a receipt assigns positive
+weight $w(\gamma)>0$, so $\mu_R(\{\gamma\})>0$ by \cref{con:receipt-measure}.
+Trajectories with $w=0$ lie outside $W$ and cannot be admitted, so $\mathrm{Conf}$
+restricted to admission has image in the witnessed set.
+\end{proof}
+
+\begin{corollary}[All language, one functor]
+\label{cor:one-functor}
+The seven domains of \cref{ch:all-language}---natural language, legal text,
+mathematics, biological sequence, music, business process, and the reflexive case
+of an agent's own conduct---are objects of $\mathcal E$, and a single functor
+$\mathrm{Conf}$ (\cref{thm:conf-functor}), monotone (\cref{thm:noncollapse}),
+lax-monoidal (\cref{prop:refusal-survives}), and measure-valued
+(\cref{prop:admission-measure}), is their common conformance surface. Passing from
+one domain to another changes the object and the model $M_d$; it does not change the
+functor.
+\end{corollary}
+
+\Cref{cor:one-functor} is the mathematical statement of the thesis. The reach of the
+fused protocols (Pillar~I) and the trustworthiness of three-valued, receipt-bound,
+measure-carrying conformance (Pillars~II and~V) are not two systems bolted together
+but one functor on one category---and the phase transition of
+Pillars~III and~IV is what carries that functor from the single domain where van der
+Aalst built it to the whole of language.

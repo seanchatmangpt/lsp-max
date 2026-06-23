@@ -1,0 +1,314 @@
+\section{Pillar I --- The Algebra of Composition}
+\label{sec:alg}
+
+The thesis's central structural claim is about \emph{composition}: that a
+capability isolated behind a contract can be recombined freely, turning an
+$M\times N$ burden into $M+N$ (\cref{tab:three-decouplings}). Composition is the
+subject matter of algebra and, at its most general, of category theory. We build
+the needed apparatus from sets.
+
+\subsection{Sets, maps, and the combinatorics of integration}
+\label{sec:alg-sets}
+
+We take as primitive the notions of \emph{set}, \emph{element} ($x\in X$), and
+\emph{function} $f\colon X\to Y$ assigning to each $x\in X$ a unique
+$f(x)\in Y$. For finite $X$ write $|X|$ for its cardinality. The
+\emph{product} $X\times Y=\{(x,y):x\in X,\ y\in Y\}$ satisfies
+$|X\times Y|=|X|\,|Y|$. These suffice to state the problem every protocol in this
+thesis attacks.
+
+\begin{definition}[Integration problem]
+\label{def:integration}
+Let $E$ be a set of \emph{clients} (editors, hosts, agents) and $L$ a set of
+\emph{providers} (language servers, tools, agents). A \emph{bespoke integration}
+is a partial function assigning to a pair $(e,\ell)\in E\times L$ a connector
+realising the capability of $\ell$ in $e$. Full coverage requires a connector for
+every pair.
+\end{definition}
+
+\begin{lemma}[Quadratic cost of bespoke integration]
+\label{lem:mn}
+Full bespoke coverage of \cref{def:integration} requires $|E|\,|L|$ connectors.
+\end{lemma}
+\begin{proof}
+Full coverage demands a connector for each $(e,\ell)\in E\times L$; distinct
+pairs need distinct connectors because each names a distinct client--provider
+interface. Hence the count equals $|E\times L| = |E|\,|L|$.
+\end{proof}
+
+\begin{construction}[Hub interposition]
+\label{con:hub}
+Introduce a single object $H$ (a \emph{protocol}) and replace each pair-connector
+by two contract-conformances: a client side $e\rightsquigarrow H$ for each $e\in
+E$, and a provider side $H\rightsquigarrow \ell$ for each $\ell\in L$. A pair
+$(e,\ell)$ is served by routing $e\rightsquigarrow H\rightsquigarrow \ell$.
+\end{construction}
+
+\begin{proposition}[Linear cost via a hub]
+\label{prop:mplusn}
+\Cref{con:hub} achieves full coverage with $|E|+|L|$ contract-conformances, and
+$|E|+|L| \le |E|\,|L|$ whenever $|E|,|L|\ge 2$, with the gap
+$|E|\,|L|-(|E|+|L|)$ growing without bound.
+\end{proposition}
+\begin{proof}
+Each client and each provider is connected once to $H$, giving $|E|+|L|$
+conformances; routing through $H$ serves every pair, so coverage is full. For the
+inequality, $|E|\,|L|-|E|-|L|=(|E|-1)(|L|-1)-1\ge 0$ for $|E|,|L|\ge 2$, and
+$(|E|-1)(|L|-1)\to\infty$ as either grows.
+\end{proof}
+
+\Cref{prop:mplusn} is LSP's founding insight made arithmetic
+\citep{lsp-official,lsp-mxn-fcc}. The remainder of the pillar promotes this
+arithmetic to structure, so that it can be \emph{composed across strata}---which
+is what distinguishes the thesis's fusion claim from a single application of
+\cref{prop:mplusn}.
+
+\subsection{Monoids and the free monoid: language as algebra}
+\label{sec:alg-monoid}
+
+The objects this thesis calls ``language'' are, at bottom, sequences of symbols
+with a notion of concatenation. That is a monoid.
+
+\begin{definition}[Magma, semigroup, monoid]
+A \emph{magma} is a set $M$ with a binary operation $\cdot\colon M\times M\to M$.
+It is a \emph{semigroup} if $\cdot$ is associative, $a\cdot(b\cdot c)=(a\cdot
+b)\cdot c$, and a \emph{monoid} if additionally there is a unit $e$ with $e\cdot
+a=a\cdot e=a$. A monoid homomorphism $\varphi\colon (M,\cdot,e)\to(M',\ast,e')$
+satisfies $\varphi(a\cdot b)=\varphi(a)\ast\varphi(b)$ and $\varphi(e)=e'$.
+\end{definition}
+
+\begin{definition}[Free monoid / Kleene star]
+For a set $\Sigma$ (an \emph{alphabet}), the \emph{free monoid} $\Sigma^{*}$ is
+the set of finite sequences (\emph{words}) over $\Sigma$, with operation
+concatenation and unit the empty word $\varepsilon$. A \emph{formal language} is
+a subset $L\subseteq\Sigma^{*}$, and a \emph{trace} is an element of
+$\Sigma^{*}$.
+\end{definition}
+
+\begin{theorem}[Universal property of the free monoid]
+\label{thm:freemon}
+For every set $\Sigma$, every monoid $M$, and every function $f\colon\Sigma\to M$,
+there is a unique monoid homomorphism $\bar f\colon\Sigma^{*}\to M$ with $\bar
+f(a)=f(a)$ for all $a\in\Sigma$.
+\end{theorem}
+\begin{proof}
+Define $\bar f(\varepsilon)=e_M$ and $\bar f(a_1a_2\cdots a_n)=f(a_1)\cdot
+f(a_2)\cdots f(a_n)$. This is well defined (words have unique symbol
+decompositions), is a homomorphism by associativity of $M$, and restricts to $f$
+on $\Sigma$. Any homomorphism agreeing with $f$ on $\Sigma$ must agree on all
+words, since it preserves concatenation and unit; hence $\bar f$ is unique.
+\end{proof}
+
+\Cref{thm:freemon} is the algebraic content of \cref{def:eventlog}: a
+\emph{semantics} for a language $L$ is exactly a monoid (or richer algebra)
+homomorphism out of $\Sigma^{*}$, and the ``event-log abstraction'' records the
+generating events $\Sigma$ together with the homomorphism that interprets their
+compositions. Process mining's \emph{trace} is a free-monoid element; an event
+log is a multiset of such elements.
+
+\subsection{Categories}
+\label{sec:alg-cat}
+
+Monoids compose elements; categories compose \emph{morphisms} between objects,
+and so model client--provider conformance directly.
+
+\begin{definition}[Category]
+\label{def:category}
+A \emph{category} $\mathcal C$ consists of a class of \emph{objects}
+$\operatorname{ob}\mathcal C$; for each ordered pair $(X,Y)$ a set
+$\mathcal C(X,Y)$ of \emph{morphisms}; a composition
+$\circ\colon\mathcal C(Y,Z)\times\mathcal C(X,Y)\to\mathcal C(X,Z)$; and for each
+$X$ an identity $\mathrm{id}_X\in\mathcal C(X,X)$, such that composition is
+associative and $\mathrm{id}$ is a two-sided unit:
+$h\circ(g\circ f)=(h\circ g)\circ f$ and $\mathrm{id}_Y\circ f=f=f\circ
+\mathrm{id}_X$.
+\end{definition}
+
+\begin{example}
+$\mathbf{Set}$ has sets as objects and functions as morphisms. $\mathbf{Mon}$ has
+monoids as objects and homomorphisms as morphisms. A monoid is precisely a
+category with one object (its elements are the endomorphisms of that object). A
+preorder $(P,\le)$ is a category with at most one morphism $x\to y$, present iff
+$x\le y$; associativity and identities are transitivity and reflexivity.
+\end{example}
+
+The last example matters: \cref{sec:order} (Pillar~II) treats the conformance
+verdict lattice as such a category, so order and composition are the same theory
+viewed twice. We model each protocol stratum of \cref{ch:fusion} as a category
+$\mathcal P$ whose objects are participants and whose morphisms are admissible
+conformances; capability negotiation is the assertion that a morphism exists.
+
+\subsection{Functors, adjunctions, and the decoupling}
+\label{sec:alg-functor}
+
+\begin{definition}[Functor]
+A \emph{functor} $F\colon\mathcal C\to\mathcal D$ assigns to each object $X$ an
+object $FX$ and to each morphism $f\colon X\to Y$ a morphism $Ff\colon FX\to FY$,
+preserving identities and composition: $F\,\mathrm{id}_X=\mathrm{id}_{FX}$ and
+$F(g\circ f)=Fg\circ Ff$.
+\end{definition}
+
+\begin{definition}[Natural transformation]
+For functors $F,G\colon\mathcal C\to\mathcal D$, a \emph{natural transformation}
+$\eta\colon F\Rightarrow G$ assigns to each $X$ a morphism $\eta_X\colon FX\to GX$
+such that for every $f\colon X\to Y$ the square commutes,
+$G f\circ\eta_X=\eta_Y\circ F f$:
+\[
+\begin{tikzcd}[ampersand replacement=\&]
+FX \arrow[r,"\eta_X"] \arrow[d,"Ff"'] \& GX \arrow[d,"Gf"]\\
+FY \arrow[r,"\eta_Y"'] \& GY
+\end{tikzcd}
+\]
+\end{definition}
+
+Functors are the morphisms between protocol strata---a translation from one
+contract to another that respects composition---and natural transformations are
+the coherent families of such translations. The free monoid of
+\cref{thm:freemon} is functorial, and its universal property is an
+\emph{adjunction}, the precise form of ``decoupling''.
+
+\begin{definition}[Adjunction]
+\label{def:adjunction}
+Functors $F\colon\mathcal C\to\mathcal D$ and $U\colon\mathcal D\to\mathcal C$
+form an \emph{adjunction} $F\dashv U$ when there is a natural isomorphism
+$\mathcal D(FX,Y)\cong\mathcal C(X,UY)$. Equivalently, there are natural
+transformations $\eta\colon\mathrm{Id}\Rightarrow UF$ (unit) and
+$\varepsilon\colon FU\Rightarrow\mathrm{Id}$ (counit) satisfying the triangle
+identities.
+\end{definition}
+
+\begin{proposition}[Free $\dashv$ forgetful]
+\label{prop:free-adj}
+Let $U\colon\mathbf{Mon}\to\mathbf{Set}$ forget the monoid structure and
+$F\colon\mathbf{Set}\to\mathbf{Mon}$ send $\Sigma\mapsto\Sigma^{*}$. Then
+$F\dashv U$.
+\end{proposition}
+\begin{proof}
+By \cref{thm:freemon}, monoid homomorphisms $\Sigma^{*}\to M$ correspond
+bijectively and naturally to functions $\Sigma\to U M$. That bijection is the
+hom-set isomorphism of \cref{def:adjunction}, with unit
+$\eta_\Sigma\colon\Sigma\hookrightarrow\Sigma^{*}$ the inclusion of letters as
+one-symbol words.
+\end{proof}
+
+The adjunction reframes \cref{prop:mplusn}: the hub $H$ is a representing object
+through which morphisms factor, and ``decoupling'' is the statement that
+client--provider morphisms are computed \emph{once} against $H$ and reused, the
+unit/counit doing the bookkeeping. This factorisation is what we now make
+quantitative across several hubs.
+
+\subsection{Monoidal categories and the algebra of fusion}
+\label{sec:alg-monoidal}
+
+Fusion is not composition \emph{within} one stratum but the placing of strata
+\emph{side by side}. The algebra of side-by-side combination is a monoidal
+category.
+
+\begin{definition}[Monoidal category]
+\label{def:monoidal}
+A \emph{monoidal category} is a category $\mathcal C$ with a functor
+$\otimes\colon\mathcal C\times\mathcal C\to\mathcal C$, a unit object $I$, and
+natural isomorphisms $\alpha_{X,Y,Z}\colon(X\otimes Y)\otimes Z\xrightarrow{\sim}
+X\otimes(Y\otimes Z)$, $\lambda_X\colon I\otimes X\xrightarrow{\sim}X$,
+$\rho_X\colon X\otimes I\xrightarrow{\sim}X$ satisfying Mac\,Lane's pentagon and
+triangle coherence axioms. It is \emph{symmetric} if there is moreover a braiding
+$\sigma_{X,Y}\colon X\otimes Y\xrightarrow{\sim}Y\otimes X$ with
+$\sigma_{Y,X}\circ\sigma_{X,Y}=\mathrm{id}$.
+\end{definition}
+
+\begin{notation}[Strata as a monoidal product]
+We model the fused substrate of \cref{hyp:substrate} as an object
+$\mathsf{LSP}\otimes\mathsf{MCP}\otimes\mathsf{A2A}$ in a symmetric monoidal
+category of protocol strata; an agent's end-to-end behaviour is a morphism in
+this category, and $\otimes$ is the formal meaning of ``fusion''. Coherence
+(\cref{def:monoidal}) is what guarantees that the order in which strata are
+associated does not change the composite---the mathematical license for drawing
+\cref{fig:stack} as layers without ambiguity.
+\end{notation}
+
+Symmetric monoidal categories possess a sound and complete graphical calculus of
+\emph{string diagrams}: objects are wires, morphisms are boxes, $\otimes$ is
+horizontal juxtaposition, and $\circ$ is vertical wiring. The diagrams of
+\cref{ch:fusion} are not decoration but terms in this calculus, and equality of
+diagrams up to planar isotopy is equality of morphisms.
+
+\subsection{Operads and PROPs: many-in, one-out composition}
+\label{sec:alg-operad}
+
+Agents consume several inputs and produce one output, and are wired into larger
+agents. The algebra of such multi-input composition is an operad.
+
+\begin{definition}[Operad]
+A (symmetric, one-coloured) \emph{operad} $\mathcal O$ assigns to each
+$n\in\mathbb N$ a set $\mathcal O(n)$ of $n$-ary operations, with a unit
+$1\in\mathcal O(1)$, an action of the symmetric group $S_n$ on $\mathcal O(n)$,
+and composition maps
+$\gamma\colon\mathcal O(k)\times\mathcal O(n_1)\times\cdots\times\mathcal
+O(n_k)\to\mathcal O(n_1+\cdots+n_k)$
+that are associative, unital, and equivariant.
+\end{definition}
+
+\begin{remark}
+A \emph{PROP} is the symmetric monoidal category generated by a single object; it
+extends operads to many-in, many-out operations and is the natural home for
+A2A-style orchestration, in which agents (operations) are wired into networks of
+agents. We read the fused substrate as a PROP whose operations are
+conformance-preserving agent compositions, so that the result of
+\cref{sec:fus-conformance}---that a verdict survives composition---is the
+statement that conformance is a PROP morphism. Recent applied-category-theory work
+develops exactly such compositional accounts of interacting systems
+(\cref{sec:bg-landscape} and the recent-advances synthesis).
+\end{remark}
+
+\subsection{The Decoupling Theorem}
+\label{sec:alg-theorem}
+
+We can now state the algebraic core of the thesis: that fusing three hub-decoupled
+strata makes integration cost grow linearly while reachable surface grows as a
+product.
+
+\begin{theorem}[Decoupling]
+\label{thm:decoupling}
+Let $D$, $C$, $A$ be finite sets (domains, capabilities, agents), and let the
+fused substrate be modelled by three hub objects $H_{\mathrm{sem}}$ (LSP),
+$H_{\mathrm{ctx}}$ (MCP), $H_{\mathrm{coord}}$ (A2A) together with two fixed
+inter-hub morphisms $H_{\mathrm{sem}}\to H_{\mathrm{ctx}}\to H_{\mathrm{coord}}$.
+Suppose each domain connects once to $H_{\mathrm{sem}}$, each capability once to
+$H_{\mathrm{ctx}}$, and each agent once to $H_{\mathrm{coord}}$. Then:
+\begin{enumerate}[label=(\roman*),leftmargin=2.2em]
+  \item the substrate is generated by $|D|+|C|+|A|+2$ morphisms;
+  \item every triple in $D\times C\times A$ is reachable as a composite, so the
+  reachable surface has cardinality $|D|\,|C|\,|A|$;
+  \item the \emph{expansion factor}, reachable surface per generator, is
+  \[
+  \chi(D,C,A)\;=\;\frac{|D|\,|C|\,|A|}{|D|+|C|+|A|+2}.
+  \]
+\end{enumerate}
+\end{theorem}
+\begin{proof}
+(i) The generators are the $|D|$ domain conformances, the $|C|$ capability
+conformances, the $|A|$ agent conformances, and the two fixed inter-hub
+morphisms, totalling $|D|+|C|+|A|+2$. (ii) Given $(d,c,a)$, compose
+$d\to H_{\mathrm{sem}}\to H_{\mathrm{ctx}}\to H_{\mathrm{coord}}\leftarrow a$ with
+the capability $c\to H_{\mathrm{ctx}}$ available at the context hub; by
+associativity (\cref{def:category}) this composite is well defined and realises
+the triple, and distinct triples are distinct composites, so the reachable set is
+all of $D\times C\times A$, of size $|D|\,|C|\,|A|$. (iii) Divide (ii) by (i).
+\end{proof}
+
+\begin{corollary}[Superlinear surface from linear investment]
+\label{cor:superlinear}
+If $|D|=|C|=|A|=n$, then integration cost is $3n+2=\Theta(n)$ while reachable
+surface is $n^{3}=\Theta(n^{3})$, and $\chi=\dfrac{n^{3}}{3n+2}=\Theta(n^{2})$.
+\end{corollary}
+
+\Cref{cor:superlinear} is the precise, finite-combinatorial shadow of the phase
+transition. It does not by itself produce a discontinuity---$\chi$ is a smooth
+function of $n$---but it shows that the \emph{return} on each unit of
+standardisation effort is not constant: it grows as $\Theta(n^2)$. When this
+algebraic gearing is coupled, in \cref{sec:fw-phase}, to an adoption dynamics with
+a threshold (network effects make each new participant worth joining only once
+enough others have), the smooth gearing of \cref{cor:superlinear} is what a
+threshold dynamics \emph{amplifies} into the discontinuous expansion asserted in
+\cref{prop:discontinuous}. Pillar~III supplies the threshold; Pillar~I has
+supplied the gearing.

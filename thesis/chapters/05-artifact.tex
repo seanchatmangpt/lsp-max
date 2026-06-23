@@ -1,0 +1,297 @@
+\chapter{The \texorpdfstring{\lspmax}{lsp-max} Artifact}
+\label{ch:artifact}
+
+\epigraph{The repository is not passive text. It is a law-bearing
+system.}{\textit{\lspmax}, \texttt{AGENTS.md}}
+
+This chapter presents \lspmax\ as the instantiation of the law-state runtime of
+\cref{def:lawstate}. It is, in the words of its own manifest, ``a law-state
+runtime projected through LSP'' \citep{lspmax}, and it is studied here at
+CalVer~26.6.18. The chapter traces its five-layer architecture
+(\cref{sec:art-layers}), its \maxm{*} protocol surface (\cref{sec:art-maxm}), its
+three-valued \code{ConformanceVector} (\cref{sec:art-cv}), its receipts and
+typestate kernel (\cref{sec:art-receipts}), its self-enforcing constitution
+(\cref{sec:art-canary}), and---the point of contact with van der Aalst's
+formalisms---its binding of diagnostics to object-centric events
+(\cref{sec:art-ocel}).
+
+\section{Overview: Inverted LSP}
+\label{sec:art-overview}
+
+A conventional language server helps a human write code. \lspmax\ inverts the
+direction: it ``makes the repository speak back to agents while they work''
+\citep{lspmax}. The same JSON-RPC surface that an editor uses to ask ``what does
+this symbol mean?'' is repurposed so that an agent may ask ``is this trajectory
+admissible?''. The artifact's constitution, \code{AGENTS.md}, states the governing
+condition for admission in a form worth reproducing, because it is
+\cref{def:lawstate} in the artifact's own notation:
+\[
+  \mathrm{Done}_B(A) \;=\; \big[\,\mathrm{FailSet}_B(A)=\varnothing\,\big]
+  \;\wedge\; \big[\,R_B \vdash A = \mu(O^{*}_B)\,\big].
+\]
+In words: agent output is admitted not because it compiles, logs success, or
+passes a test, but only when bounded receipts prove the action equals the lawful
+transformation of admitted observations \citep{lspmax}. The artifact thus refuses
+exactly the inference---``the test passed, therefore the work is admissible''---that
+\cref{prin:three-valued} forbids.
+
+\section{The Five-Layer Model}
+\label{sec:art-layers}
+
+\lspmax\ is organised as five layers in which ``law-state'' is the load-bearing
+abstraction (\code{docs/ARCHITECTURE.md}). \Cref{tab:five-layers} lists them with
+the crates that realise each.
+
+\begin{table}[t]
+\centering
+\caption[The five-layer model of \lspmax]{The five-layer model and its crate
+mapping \citep{lspmax}. Layer numbering runs from the actuation grammar (1) up to
+the autonomic mesh (5); ``law-state'' (Layer 3) is the load-bearing abstraction.}
+\label{tab:five-layers}
+\small
+\begin{tabularx}{\textwidth}{@{}c l Y@{}}
+\toprule
+\textbf{Layer} & \textbf{Name} & \textbf{Realising crate(s)} \\
+\midrule
+5 & Autonomic LSP mesh & \code{lsp-max-compositor}; example servers \\
+4 & Knowledge hooks & \code{src/composition/}; hook graph \\
+3 & Law-state runtime & \code{lsp-max-runtime}, \code{lsp-max-protocol} \\
+2 & Local LSP state surface & root crate \code{src/} (\code{LanguageServer}, \code{LspService}, \code{Server}) \\
+1 & Actuation grammar & \code{crates/lsp-max-cli} (clap-noun-verb) \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+Two design rules of the model matter for the thesis. First, the LSP surface is
+\emph{read-only}: it may emit diagnostics, hovers, code-action intents, virtual
+documents, and protocol traces, but ``it must not directly mutate files''; any
+future mutation must route through an explicit chain ending in a receipt
+\citep{lspmax}. This realises the read-only posture that
+\cref{sec:fw-lawstate} requires of a trustworthy observer. Second, the actuation
+grammar at Layer~1 is a noun/verb CLI built on \code{clap-noun-verb}, in which a
+filename is a noun and an annotated function is a verb---a small but real
+demonstration that even the command surface is treated as a language with a
+grammar.
+
+\section{The \texorpdfstring{\maxm{*}}{max/*} Protocol Surface}
+\label{sec:art-maxm}
+
+Atop the standard LSP methods, \lspmax\ declares a custom \maxm{*} method family
+(\code{lsp-max-protocol/src/custom\_methods.rs}) that exposes the law-state
+runtime over JSON-RPC. \Cref{tab:maxm} groups the most load-bearing of these. The
+surface is the concrete form of \cref{def:lawstate}(iii): the conformance state is
+not an internal detail but a queryable protocol.
+
+\begin{table}[t]
+\centering
+\caption[Representative \texttt{max/*} methods]{Representative methods of the
+\maxm{*} surface \citep{lspmax}. The family exposes snapshots, three-valued
+admission, receipts, repair plans, and release actuation over JSON-RPC.}
+\label{tab:maxm}
+\small
+\begin{tabularx}{\textwidth}{@{}l Y@{}}
+\toprule
+\textbf{Method} & \textbf{Role} \\
+\midrule
+\maxm{snapshot}, \maxm{manifoldSnapshot} & capture server / full law-state snapshot \\
+\maxm{conformanceVector} & query the three-valued conformance state at a snapshot \\
+\maxm{admission} & admissibility gate over a law axis (\admitted/\refused/\unknownstat) \\
+\maxm{refusal} & explicit refusal with rationale and receipt \\
+\maxm{lawfulTransition} & assert that a phase transition is lawful \\
+\maxm{explainDiagnostic}, \maxm{repairPlan} & explain a diagnostic; emit read-only repair steps \\
+\maxm{receipt}, \maxm{replay} & retrieve a receipt; replay the event log against a snapshot \\
+\maxm{releaseActuation} & actuate a release \emph{iff} the \code{ConformanceVector} admits it \\
+\maxm{workspaceConformance}, \maxm{lsif} & aggregate workspace conformance; stream an LSIF graph \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+Note in particular \maxm{releaseActuation}: a release is gated on the conformance
+vector admitting it, and \maxm{refusal} carries a rationale \emph{and} a receipt.
+Admission and refusal are first-class, symmetric, and evidence-bound.
+
+\section{The \texttt{ConformanceVector} and Three-Valued Law Logic}
+\label{sec:art-cv}
+
+The artifact's core type is the realisation of \cref{prin:three-valued}. It keeps
+three disjoint sets of law axes and never coerces one into another
+(\code{lsp-max-protocol/src/conformance.rs}).
+
+\begin{lstlisting}[language=Rust,caption={The three-valued conformance state (abridged from \texttt{conformance.rs}).},label={lst:cv}]
+pub struct ConformanceVector {
+    pub admitted: Vec<LawAxis>,  // evidence present and valid
+    pub refused:  Vec<LawAxis>,  // evidence present, violation confirmed
+    pub unknown:  Vec<LawAxis>,  // admissibility NOT determinable
+    pub score: Option<f64>,      // 100 * admitted / (admitted+refused+unknown)
+    pub strict_mode: bool,       // do unknown axes block release?
+    pub process_quality: Option<ConformanceResult>, // POWL conformance
+    // bitmasks (not serialized) enforce mutual disjointness
+}
+
+impl ConformanceVector {
+    pub fn all_admitted(&self) -> bool {
+        self.refused.is_empty() && self.unknown.is_empty()
+    }
+    pub fn admits_release(&self) -> bool {
+        self.refused.is_empty() && (!self.strict_mode || self.unknown.is_empty())
+    }
+}
+\end{lstlisting}
+
+Three properties deserve comment. First, \unknownstat\ is a peer of \admitted\ and
+\refused, not the absence of a verdict; the three backing bitmasks are mutually
+disjoint and an invariant check asserts it. Second, \code{admits\_release}
+encodes a genuine policy choice: in \code{strict\_mode}, unknown axes block
+release, so that ``not yet checked'' is treated as ``not yet permitted''. Third,
+the law axes are an enumeration---\code{Protocol}, \code{Type}, \code{Fixture},
+\code{Documentation}, \code{Release}, \code{Hook}, \code{Repair}, \code{Receipt},
+\code{Security}, \code{Autopoiesis}, \code{Domain}, and an extensible
+\code{Custom(String)}---so the same machinery scales from protocol conformance to
+arbitrary domain law, which is exactly the extensibility \cref{ch:all-language}
+will exploit. The \code{process\_quality} field, carrying a conformance result
+from the process-mining engine, is the seam through which van der Aalst's
+machinery enters the type.
+
+\section{Receipts, Snapshots, and the Typestate Kernel}
+\label{sec:art-receipts}
+
+A claim of admission is worthless without something that cannot be cheaply
+forged. \lspmax\ binds admission to a \emph{receipt} whose hash chains to its
+predecessor (\code{lsp-max-protocol/src/core.rs}):
+
+\begin{lstlisting}[language=Rust,caption={Content-addressed receipts form a hash chain (abridged from \texttt{core.rs}).},label={lst:receipt}]
+pub struct Receipt {
+    pub receipt_id: String,
+    pub hash: String,                       // SHA-256 digest of the artifact
+    pub prev_receipt_hash: Option<String>,  // None only for the genesis receipt
+}
+\end{lstlisting}
+
+Each receipt's \code{prev\_receipt\_hash} points to the digest of the previous
+receipt, forming a tamper-evident ledger whose genesis link is the only one
+permitted to be \code{None}. The compositor additionally issues a
+\code{CryptographicReceipt} chain (BLAKE3 hashing with Ed25519 signatures) so that
+per-server contributions to a merged verdict remain attributable \citep{lspmax}.
+A companion script validates the chain, requiring boundary markers
+(\code{-----BEGIN RECEIPT-----}), a 64-hex digest, and a bounded status word, and
+returning \refused\ when any are absent---so that the validator itself obeys the
+three-valued discipline.
+
+State evolution is governed by a typestate kernel
+(\code{lsp-max-runtime/src/typestate/}) whose phases are monotonic---%
+\code{Uninitialized} $\to$ \code{Initializing} $\to$ \code{Initialized} $\to$
+\code{ShutDown} $\to$ \code{Exited}, with no back-edges---and whose trait exposes
+a \code{validate} $\to$ \code{select} $\to$ \code{admit} $\to$ \code{receipt}
+$\to$ \code{exit} $\to$ \code{replay} life cycle. The presence of \code{replay}
+is significant: the runtime can reconstruct its state from the receipt ledger, so
+the law-state is not merely asserted but \emph{re-derivable} from evidence---the
+computational form of conformance checking's ``replay the log against the model''.
+
+\section{The Anti-Cheat Canary and the Enforceable Constitution}
+\label{sec:art-canary}
+
+What makes \lspmax\ a \emph{law}-state runtime rather than a state machine with
+aspirational documentation is that its constitution is enforced by a component of
+the system itself: \code{anti-llm-cheat-lsp}, the ``diagnostic canary''. It runs
+on \lspmax, exercises the LSP surface, and detects attempts to reintroduce the
+prohibited base framework that \lspmax\ forks, to forge receipts or routes, or to
+use the language of unbounded success \citep{lspmax}. The self-sealing property is
+stated plainly in the constitution: \lspmax\ hosts the canary; the canary detects
+regression; therefore \lspmax\ cannot silently regress \citep{lspmax}.
+
+Detection is layered---raw-text scan, tree-sitter AST scan, manifest and
+dependency-graph scan, claim scan over Markdown and agent reports, JSON-RPC
+transcript scan, a receipt validator, a route-evidence checker, and a
+claim-versus-proof checker---and every diagnostic must name the \emph{forbidden
+implication} it prevents (for example, ``TestStdout $\Rightarrow$ Receipt'')
+\citep{lspmax}. The diagnostic families span surface, authority, receipt, route,
+mutation, test, version, and overclaim violations. Two enforcement mechanisms are
+directly relevant to the thesis.
+
+\paragraph{Bounded status and the refusal of victory language.} The constitution
+forbids the words of triumph and enumerates the only permitted statuses---the
+same vocabulary this thesis adopts in \cref{tab:status}. The canary's
+overclaim family raises a diagnostic when forbidden terms appear, using an
+Aho--Corasick automaton for linear-time classification \citep{lspmax}.
+
+\paragraph{The ANDON gate.} A pre-tool-use hook runs \code{lsp-max-cli gate
+check} before each shell, edit, or write action; exit~1 blocks the action while an
+ANDON signal is set. The governing predicate is
+\[
+  \Lambda_{CD}(a) \;=\; \Lambda(a)\;\wedge\;\neg\,\exists\, d \in D_t :
+  d.\mathit{law\_id} \in \mathcal{A}\ \wedge\ d.\mathit{severity}=\textsc{Error},
+\]
+where $\Lambda(a)$ is the base admissibility predicate, $D_t$ the live diagnostic
+set, and $\mathcal{A}$ the governed law axes (\code{WASM4PM-*}, \code{ANTI-LLM-*},
+\code{GGEN-*}) \citep{lspmax}. The gate state is published as a single byte in a
+deterministically named file, so any process---including a subagent---can read it
+in one syscall. The artifact is candid that subagent hooks do not cross session
+boundaries, recording this as \openstat\ rather than \admitted: an honesty the
+thesis takes as a model.
+
+\section{OCEL Binding: Diagnostics as Object-Centric Events}
+\label{sec:art-ocel}
+
+The artifact's deepest point of contact with the paradigm of
+\cref{sec:bg-pm}---and the strongest single piece of evidence for
+\cref{hyp:substrate}---is that it does not merely \emph{borrow vocabulary} from
+process mining; it \emph{runs} on it.
+
+First, the constitution's laws are expressed as \emph{Declare} constraints---the
+declarative, LTL-based process-modelling formalism from van der Aalst's
+school---and mapped to diagnostics (\code{declare\_laws.rs}): the prohibition on
+the base framework becomes \code{Absence}; ``a diagnostic must produce an OCEL
+event'' becomes \code{Response}; ``a receipt must precede an admission'' becomes
+\code{Precedence}; ``test output and a receipt cannot co-occur'' becomes
+\code{NotCoexistence}; and ``an unknown axis cannot be succeeded by an admitted
+one without a resolution event'' becomes \code{NotSuccession}. The artifact's
+governance is, literally, a declarative process model checked for conformance.
+
+Second, each diagnostic emission is recorded as an object-centric event
+(\code{ocel.rs}). The object types are \code{CaseFile}, \code{DetectionCode},
+\code{LawAxis}, \code{Receipt}, \code{Gate}, and \code{CodeSymbol}; a
+\code{CheatDetected} event binds a file, a detection code, and a law axis, and a
+\code{ScanComplete} event closes over the files scanned. The result is an OCEL
+log of the agent's own conduct that any process-mining tool can read.
+
+Third, conformance of that log is checked by the \code{wasm4pm} engine, which
+returns a \code{GallVerdict}---\code{Fit\{fitness\}}, \code{Deviation\{fitness,
+missing\}}, \code{Blocked\{reason\}}, or \code{Inconclusive\{reason\}}---whose four
+cases map cleanly onto the bounded statuses and, notably, reserve
+\code{Inconclusive} for the \unknownstat\ case. The engine's type-authority crate
+further encodes OCEL axioms (disjoint event and object universes; mandatory
+event-to-object cardinality; temporal continuity; type closure) and a family of
+\emph{Oracle classes} (A8--A12) that recast adversarial behaviour---audit-log
+tampering, temporal anomaly, causal violation, unknown-state collapse, cyclic
+dependency---as \emph{violations of those axioms} \citep{lspmax}. Anti-cheat
+detection is thereby lifted from pattern-matching to specification-derived
+conformance checking.
+
+\begin{table}[t]
+\centering
+\caption[Oracle classes as conformance violations]{The \code{wasm4pm} Oracle
+classes recast cheating as object-centric axiom violations \citep{lspmax}. The
+last row is the computational guardian of \cref{prin:three-valued}.}
+\label{tab:oracle}
+\small
+\begin{tabularx}{\textwidth}{@{}l Y@{}}
+\toprule
+\textbf{Oracle} & \textbf{Formalised violation} \\
+\midrule
+A8 Audit-log tampering & an event with no causal predecessor \\
+A9 Temporal anomaly & $e_1 \to e_2$ in causality but $t(e_1) \ge t(e_2)$ \\
+A10 Causal violation & a mutation with no preceding observation \\
+A11 Unknown-state collapse & \unknownstat $\to$ \{\admitted, \refused\} without a resolution event \\
+A12 Cyclic dependency & a cycle in the causality graph \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+The artifact therefore exhibits, in miniature, the entire claim of this thesis:
+a non-code ``language''---the agent's own stream of edits, claims, and
+commands---is given an event-log abstraction (\cref{def:eventlog}), checked
+against a declarative model on a conformance surface
+(\cref{def:conformance-surface}), and reported in three-valued, receipt-bound,
+read-only terms. What \cref{ch:all-language} does is widen the aperture from the
+agent's conduct to natural language, law, mathematics, biology, music, and
+business process. The mechanism is already present; only the domain changes.

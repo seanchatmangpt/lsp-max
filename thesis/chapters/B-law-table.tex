@@ -1,0 +1,63 @@
+\chapter{Laws, Statuses, and Diagnostic Families}
+\label{app:laws}
+
+This appendix collects the artifact's enforced constitution \citep{lspmax}, on
+which the thesis's epistemic discipline (\cref{sec:m-epistemics}) is modelled.
+
+\section*{The non-negotiable laws}
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabularx}{\textwidth}{@{}l Y@{}}
+\toprule
+\textbf{Law} & \textbf{Statement (paraphrased; forbidden implication prevented)} \\
+\midrule
+No plain base framework & the pre-fork LSP crate must not appear outside negative-control fixtures (\emph{Pass(plain LSP) $\Rightarrow$ Pass(LSP 3.18)}) \\
+Maximise LSP 3.18 & every 3.18 feature row is \stat{supported-with-transcript}, \stat{refused-by-law-with-receipt}, or \stat{blocked}; never ``implied'' \\
+Exact name clap-noun-verb & no invented ``CLAP'' authority (\emph{ElegantAbstraction $\Rightarrow$ ExistingAuthority}) \\
+LSP is read-only & the surface emits, never mutates; mutation routes through CodeAction $\to$ receipt (\emph{observation $\Rightarrow$ mutation authority}) \\
+Logs are not route proof & a logged route is not an executed route (\emph{Log(RouteIntent) $\Rightarrow$ RouteExecution}) \\
+Test output is not a receipt & admission needs a bound receipt, not stdout (\emph{TestStdout $\Rightarrow$ Receipt}) \\
+Tree-sitter observes, not admits & AST observation is not admission (\emph{ASTObservation $\Rightarrow$ Admission}) \\
+No victory language & only bounded statuses; no ``done'', ``solved'', ``guaranteed'' \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section*{The bounded-status vocabulary}
+
+\admitted, \admitted-by-dogfood, \candidate, \refused, \refused-by-law-with-receipt,
+\unknownstat, \stat{unsupported}, \partialstat, \stat{regression-risk}, \openstat,
+\stat{failset-nonempty}, \stat{matrix-incomplete}, \stat{supported-with-transcript},
+\blocked. Three of these---\admitted, \refused, \unknownstat---are kept mutually
+disjoint and never collapsed (\cref{thm:noncollapse}).
+
+\section*{Diagnostic families of the anti-cheat canary}
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabularx}{\textwidth}{@{}l Y@{}}
+\toprule
+\textbf{Family} & \textbf{Detects} \\
+\midrule
+\code{ANTI-LLM-SURFACE-*} & fake protocol or dependency surface \\
+\code{ANTI-LLM-AUTH-*} & fake authority or abstraction \\
+\code{ANTI-LLM-RECEIPT-*} & fake or malformed receipts \\
+\code{ANTI-LLM-ROUTE-*} & fake routes (logs in place of route evidence) \\
+\code{ANTI-LLM-MUT-*} & mutation bypassing the actuation chain \\
+\code{ANTI-LLM-TEST-*} & test laundering \\
+\code{ANTI-LLM-VERSION-*} & CalVer / version-law violations \\
+\code{ANTI-LLM-CLAIM-*} & victory or status overclaim \\
+\code{ANTI-LLM-OCEL-*} & a diagnostic emitted without its object-centric event \\
+\code{ANTI-LLM-DECLARE-*} & violations of the Declare-encoded laws \\
+\code{ANTI-LLM-ORACLE-*} & Oracle classes A8--A12 (\cref{tab:oracle}) \\
+\code{ANTI-LLM-HOLLOW-*} & hollow / placeholder implementations \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\noindent The \code{DECLARE} and \code{ORACLE} families are the artifact's literal
+use of van der Aalst's formalisms---declarative constraints and object-centric
+conformance---to police its own conduct (\cref{sec:art-ocel}).
