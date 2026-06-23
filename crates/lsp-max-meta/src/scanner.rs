@@ -33,9 +33,7 @@ pub fn scan(content: &str) -> Vec<Violation> {
                     line: lnum,
                     col_start: col as u32,
                     col_end: (col + kw.len()) as u32,
-                    message: format!(
-                        "LawViolation: forbidden plain {kw} reference — use lsp-max"
-                    ),
+                    message: format!("LawViolation: forbidden plain {kw} reference — use lsp-max"),
                     severity: ViolationSeverity::Error,
                     code: "ANTI-LLM-META-001".into(),
                 });

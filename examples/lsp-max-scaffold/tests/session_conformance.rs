@@ -5,7 +5,7 @@
 //! crate boundary.  Uses only the public API.
 
 use lsp_max_scaffold::session_conformance::{
-    EventActivity, EventObjects, OracleClass, SessionLog, replay_session,
+    replay_session, EventActivity, EventObjects, OracleClass, SessionLog,
 };
 
 fn append(log: &mut SessionLog, activity: EventActivity) {
@@ -81,7 +81,10 @@ fn finding_with_no_following_receipt_violates_response() {
     append(&mut log, finding()); // no ReceiptProduced ever follows
     let r = replay_session(&log);
     let has = r.violations.iter().any(|v| v.constraint_name == "Response");
-    assert!(has, "Response constraint must fire when finding has no receipt");
+    assert!(
+        has,
+        "Response constraint must fire when finding has no receipt"
+    );
 }
 
 #[test]
@@ -93,7 +96,10 @@ fn receipt_without_analysis_violates_precedence() {
         .violations
         .iter()
         .any(|v| v.constraint_name == "Precedence");
-    assert!(has, "Precedence constraint must fire for ReceiptProduced without AnalysisRun");
+    assert!(
+        has,
+        "Precedence constraint must fire for ReceiptProduced without AnalysisRun"
+    );
 }
 
 #[test]
@@ -106,7 +112,10 @@ fn verify_without_receipt_violates_precedence() {
         .violations
         .iter()
         .any(|v| v.constraint_name == "Precedence");
-    assert!(has, "Precedence constraint must fire for ReceiptVerified without ReceiptProduced");
+    assert!(
+        has,
+        "Precedence constraint must fire for ReceiptVerified without ReceiptProduced"
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -117,7 +126,10 @@ fn a10_fires_for_orphan_receipt() {
     let mut log = SessionLog::new();
     append(&mut log, receipt());
     let r = replay_session(&log);
-    let has = r.oracle_hits.iter().any(|h| h.class == OracleClass::A10CausalViolation);
+    let has = r
+        .oracle_hits
+        .iter()
+        .any(|h| h.class == OracleClass::A10CausalViolation);
     assert!(has, "A10 must fire for receipt without prior analysis");
 }
 
@@ -128,7 +140,10 @@ fn a10_clear_when_analysis_precedes_receipt() {
     append(&mut log, finding());
     append(&mut log, receipt());
     let r = replay_session(&log);
-    let has = r.oracle_hits.iter().any(|h| h.class == OracleClass::A10CausalViolation);
+    let has = r
+        .oracle_hits
+        .iter()
+        .any(|h| h.class == OracleClass::A10CausalViolation);
     assert!(!has, "A10 must not fire when analysis precedes receipt");
 }
 
@@ -151,7 +166,10 @@ fn a11_fires_for_collapse_without_evidence() {
         .oracle_hits
         .iter()
         .any(|h| h.class == OracleClass::A11UnknownCollapse);
-    assert!(has, "A11 must fire when Unknown collapses without ReceiptVerified evidence");
+    assert!(
+        has,
+        "A11 must fire when Unknown collapses without ReceiptVerified evidence"
+    );
 }
 
 #[test]
@@ -174,7 +192,10 @@ fn a11_clear_when_evidence_precedes_transition() {
         .oracle_hits
         .iter()
         .any(|h| h.class == OracleClass::A11UnknownCollapse);
-    assert!(!has, "A11 must not fire when ReceiptVerified evidence precedes the transition");
+    assert!(
+        !has,
+        "A11 must not fire when ReceiptVerified evidence precedes the transition"
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -226,7 +247,10 @@ fn a12_resets_on_resolution() {
         .oracle_hits
         .iter()
         .any(|h| h.class == OracleClass::A12CyclicDependency);
-    assert!(!has, "A12 must not fire when gate resolves before threshold");
+    assert!(
+        !has,
+        "A12 must not fire when gate resolves before threshold"
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -245,7 +269,10 @@ fn a8_fires_when_refused_receipt_precedes_intact_chain() {
         .oracle_hits
         .iter()
         .any(|h| h.class == OracleClass::A8AuditTampering);
-    assert!(has, "A8 must fire when intact chain follows a refused receipt");
+    assert!(
+        has,
+        "A8 must fire when intact chain follows a refused receipt"
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -277,5 +304,8 @@ fn digest_is_stable_across_serialization_roundtrip() {
     let restored: SessionLog = serde_json::from_str(&json).unwrap();
     let after = restored.digest();
 
-    assert_eq!(before, after, "digest must survive serialization round-trip");
+    assert_eq!(
+        before, after,
+        "digest must survive serialization round-trip"
+    );
 }

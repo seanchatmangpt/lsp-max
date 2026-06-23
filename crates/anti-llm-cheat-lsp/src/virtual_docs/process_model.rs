@@ -83,14 +83,14 @@ fn build_dfg(traces: &HashMap<String, Vec<String>>) -> Dfg {
             continue;
         }
         *start_activities.entry(trace[0].clone()).or_insert(0) += 1;
-        *end_activities.entry(trace[trace.len() - 1].clone()).or_insert(0) += 1;
+        *end_activities
+            .entry(trace[trace.len() - 1].clone())
+            .or_insert(0) += 1;
         for act in trace {
             *nodes.entry(act.clone()).or_insert(0) += 1;
         }
         for pair in trace.windows(2) {
-            *edges
-                .entry((pair[0].clone(), pair[1].clone()))
-                .or_insert(0) += 1;
+            *edges.entry((pair[0].clone(), pair[1].clone())).or_insert(0) += 1;
         }
     }
     Dfg {
@@ -144,7 +144,13 @@ fn check_conformance(traces: &HashMap<String, Vec<String>>) -> Vec<Violation> {
 
 fn mermaid_id(name: &str) -> String {
     name.chars()
-        .map(|c| if c.is_alphanumeric() || c == '_' { c } else { '_' })
+        .map(|c| {
+            if c.is_alphanumeric() || c == '_' {
+                c
+            } else {
+                '_'
+            }
+        })
         .collect()
 }
 
@@ -268,7 +274,9 @@ pub fn render(diagnostics: &[AntiLlmDiagnostic]) -> String {
     md.push_str("|---|---|---|\n");
     md.push_str("| 1 | `responded_existence(Detected, ScanComplete)` | Every detection must co-occur with a ScanComplete in the case |\n");
     md.push_str("| 2 | `absence(VictoryLanguageEmitted)` | Victory language is forbidden in all detection output |\n");
-    md.push_str("| 3 | `init(ScanComplete)` | ScanComplete is the canonical terminal activity per case |\n");
+    md.push_str(
+        "| 3 | `init(ScanComplete)` | ScanComplete is the canonical terminal activity per case |\n",
+    );
     md.push('\n');
 
     md.push_str("## Activity Legend\n\n");

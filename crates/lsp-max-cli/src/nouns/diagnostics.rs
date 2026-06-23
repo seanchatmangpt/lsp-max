@@ -566,12 +566,10 @@ pub fn snapshot() -> Result<SnapshotResult> {
     let result = svc.build();
     println!("{}", result.dt_block);
     if result.andon_count > 0 {
-        return Err(NounVerbError::execution_error(
-            format!(
-                "D_t ANDON: {} block(s) active — gate is BLOCKED",
-                result.andon_count
-            ),
-        ));
+        return Err(NounVerbError::execution_error(format!(
+            "D_t ANDON: {} block(s) active — gate is BLOCKED",
+            result.andon_count
+        )));
     }
     Ok(result)
 }

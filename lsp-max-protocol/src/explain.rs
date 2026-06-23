@@ -34,8 +34,8 @@ pub struct LawAxisTrace {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ExplainDiagnosticResult {
     pub diagnostic_code: String,
-    pub law_status: String,        // overall status
-    pub summary: String,           // one-sentence explanation
+    pub law_status: String, // overall status
+    pub summary: String,    // one-sentence explanation
     pub law_axes: Vec<LawAxisTrace>,
     pub resolution_steps: Vec<String>, // ordered steps to resolve
     pub related_receipts: Vec<String>, // receipt paths if any
