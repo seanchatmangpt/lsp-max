@@ -66,6 +66,19 @@ pub struct AgentContextResult {
     pub gate_file: String,
 }
 
+#[derive(Debug, Serialize)]
+pub struct GateClearResult {
+    pub was_active: bool,
+    pub gate_file: String,
+    pub status: String,
+}
+
+#[derive(Debug, Serialize)]
+pub struct GateWatchResult {
+    pub polls: usize,
+    pub final_status: String,
+}
+
 // ==============================================================================
 // 2. Service Tier
 // ==============================================================================
@@ -217,10 +230,7 @@ fn fnv1a(bytes: &[u8]) -> u64 {
 // 3. Verb Tier
 // ==============================================================================
 
-/// Check the compositor ANDON gate file.
-/// Exit 2 when ANDON is set (blocks PreToolUse hook per Claude Code semantics).
-/// Exit 0 when clear. Reads a single byte — no IPC, no subprocess.
-/// Check the compositor ANDON gate file. Exits 1 if ANDON is set; 0 if clear.
+/// Check the compositor ANDON gate file. Exits 2 if ANDON is set; 0 if clear.
 /// Reads a single byte — no IPC, no subprocess — safe for PreToolUse hooks.
 ///
 /// With `--format=agent-context`: emits structured JSON and always returns Ok,
@@ -232,7 +242,7 @@ pub fn check(format: Option<String>) -> Result<serde_json::Value> {
     if format.as_deref() == Some("agent-context") {
         let ctx = svc.check_agent_context();
         let v = serde_json::to_value(&ctx)
-            .map_err(|e| NounVerbError::execution_error(e.to_string()))?;
+            .map_err(|e| clap_noun_verb::error::NounVerbError::execution_error(e.to_string()))?;
         return Ok(v);
     }
 
@@ -245,7 +255,7 @@ pub fn check(format: Option<String>) -> Result<serde_json::Value> {
         std::process::exit(2);
     }
     let v = serde_json::to_value(&status)
-        .map_err(|e| NounVerbError::execution_error(e.to_string()))?;
+        .map_err(|e| clap_noun_verb::error::NounVerbError::execution_error(e.to_string()))?;
     Ok(v)
 }
 
@@ -258,6 +268,63 @@ pub fn check(format: Option<String>) -> Result<serde_json::Value> {
 pub fn list() -> Result<GateListResult> {
     let svc = GateService::new();
     Ok(svc.list())
+}
+
+/// Clear the ANDON gate signal by writing '0' to the gate file.
+/// Does NOT resolve the underlying diagnostic — only clears the signal.
+#[verb("clear")]
+pub fn clear() -> Result<GateClearResult> {
+    let path = GateService::gate_file_path();
+    let gate_file = path.display().to_string();
+    if !path.exists() {
+        return Ok(GateClearResult {
+            was_active: false,
+            gate_file,
+            status: "OPEN".to_string(),
+        });
+    }
+    let was_active = std::fs::read(&path)
+        .ok()
+        .and_then(|b| b.first().copied())
+        .map(|b| b == b'1')
+        .unwrap_or(false);
+    std::fs::write(&path, b"0")
+        .map_err(|e| clap_noun_verb::error::NounVerbError::execution_error(e.to_string()))?;
+    Ok(GateClearResult {
+        was_active,
+        gate_file,
+        status: "OPEN".to_string(),
+    })
+}
+
+/// Poll the gate file on an interval until it clears or max_polls is reached.
+#[verb("watch")]
+pub fn watch(
+    #[arg(long, default_value_t = 2)]
+    interval_secs: u64,
+    #[arg(long, default_value_t = 30)]
+    max_polls: u64,
+) -> Result<GateWatchResult> {
+    let svc = GateService::new();
+    let mut polls: usize = 0;
+    let mut final_status = "BLOCKED".to_string();
+    for _ in 0..max_polls {
+        let poll_result = svc.check();
+        polls += 1;
+        eprintln!(
+            "{}",
+            serde_json::to_string(&poll_result).unwrap_or_default()
+        );
+        if !poll_result.andon_blocked {
+            final_status = "OPEN".to_string();
+            break;
+        }
+        std::thread::sleep(std::time::Duration::from_secs(interval_secs));
+    }
+    Ok(GateWatchResult {
+        polls,
+        final_status,
+    })
 }
 
 // ==============================================================================
@@ -278,7 +345,6 @@ mod tests {
     #[test]
     fn gate_check_returns_clear_when_compositor_absent() {
         let svc = GateService::new();
-        // The compositor is not running in unit tests; the gate file does not exist.
         let path = GateService::gate_file_path();
         if !path.exists() {
             let result = svc.check();
@@ -340,10 +406,19 @@ mod tests {
         let svc = GateService::new();
         let path = GateService::gate_file_path();
         if !path.exists() {
-            // Gate is clear in tests; just verify the logic path via direct struct construction.
             let ctx = svc.check_agent_context();
-            // No codes, not blocked — unknown axis must be empty.
             assert!(ctx.governing_axes.unknown.is_empty());
         }
+    }
+
+    #[test]
+    fn clear_writes_zero_byte_to_gate_file() {
+        let tmp = tempfile::NamedTempFile::new().expect("tempfile");
+        std::fs::write(tmp.path(), b"1\nWASM4PM-001").unwrap();
+        let before = std::fs::read(tmp.path()).unwrap();
+        assert_eq!(before.first().copied(), Some(b'1'));
+        std::fs::write(tmp.path(), b"0").unwrap();
+        let after = std::fs::read(tmp.path()).unwrap();
+        assert_eq!(after.first().copied(), Some(b'0'));
     }
 }

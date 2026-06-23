@@ -1,6 +1,5 @@
 use clap_noun_verb::Result;
 use clap_noun_verb_macros::verb;
-use lsp_max_protocol;
 use lsp_max_runtime::AutonomicMesh;
 use serde::Serialize;
 
@@ -131,6 +130,7 @@ pub struct ExportResult {
     pub data_id: String,
 }
 
+/// Export telemetry data to the given destination, emitting a receipt in the mesh.
 #[verb("export")]
 pub fn export(destination: String, data_id: String) -> Result<ExportResult> {
     let service = TelemetryService::new();
@@ -150,6 +150,7 @@ pub struct TraceResult {
     pub span_name: String,
 }
 
+/// Record an OTel trace span as a bounded action in the mesh.
 #[verb("trace")]
 pub fn trace(span_name: String) -> Result<TraceResult> {
     let service = TelemetryService::new();
@@ -166,6 +167,7 @@ pub struct MetricsResult {
     pub value: f64,
 }
 
+/// Record a metric data point as a bounded action in the mesh.
 #[verb("metrics")]
 pub fn metrics(metric_name: String, value: f64) -> Result<MetricsResult> {
     let service = TelemetryService::new();
@@ -184,6 +186,7 @@ pub struct FlushResult {
     pub status: TelemetryStatus,
 }
 
+/// Verify the mesh state is loadable and signal a telemetry flush.
 #[verb("flush")]
 pub fn flush() -> Result<FlushResult> {
     let service = TelemetryService::new();
@@ -205,13 +208,17 @@ mod tests {
         let tmp = tempfile::NamedTempFile::new().expect("tempfile");
         let path = tmp.path().to_str().unwrap().to_string();
         let prev = env::var("LSP_MAX_STATE_PATH").ok();
-        env::set_var("LSP_MAX_STATE_PATH", &path);
+        // SAFETY: test-only, guarded by TEST_ENV_LOCK
+        unsafe { env::set_var("LSP_MAX_STATE_PATH", &path); }
         let _ = std::fs::remove_file(&path);
         f();
         let _ = std::fs::remove_file(&path);
-        match prev {
-            Some(v) => env::set_var("LSP_MAX_STATE_PATH", v),
-            None => env::remove_var("LSP_MAX_STATE_PATH"),
+        // SAFETY: test-only, guarded by TEST_ENV_LOCK
+        unsafe {
+            match prev {
+                Some(v) => env::set_var("LSP_MAX_STATE_PATH", v),
+                None => env::remove_var("LSP_MAX_STATE_PATH"),
+            }
         }
     }
 
