@@ -1,0 +1,127 @@
+\chapter{Discussion}
+\label{ch:discussion}
+
+\epigraph{The first principle is that you must not fool yourself---and you are the
+easiest person to fool.}{Richard P. Feynman}
+
+This chapter evaluates the thesis against its own questions and threats. It
+revisits the research questions with bounded verdicts (\cref{sec:disc-rqs}), states
+the threats to validity in full (\cref{sec:disc-threats}), enumerates limitations
+and open items (\cref{sec:disc-limits}), and considers ethical and societal
+consequences (\cref{sec:disc-ethics}).
+
+\section{The Research Questions, Revisited}
+\label{sec:disc-rqs}
+
+\paragraph{RQ1 (shared structure; one substrate) --- \admitted\ analytically,
+\candidate\ empirically.} That LSP, MCP, and A2A instantiate one decoupling is
+\admitted: they share JSON-RPC with capability negotiation
+\citep{lsp-spec-318,mcp-spec-2025,a2a-spec}, acknowledged lineage
+\citep{mcp-spec-2025,a2a-mcp}, and converging governance
+\citep{lf-a2a-press,lf-aaif-press}, and the Decoupling Theorem (\cref{thm:decoupling})
+formalises the common mechanism. That their \emph{composition} forms a single
+operational substrate is \candidate: it is demonstrated by construction
+(\cref{ch:fusion}) and instantiated partly in the artifact, but not yet at
+ecosystem scale.
+
+\paragraph{RQ2 (when a domain is a language) --- \admitted\ as a criterion,
+\candidate\ in demonstration.} The criterion---a domain is servable when it admits
+an object-centric event-log abstraction (\cref{def:eventlog})---is stated and
+defended \admitted. Its application across six domains (\cref{ch:all-language}) is
+\candidate: the demonstrations are illustrative scenarios, not deployed systems
+(\cref{sec:m-eval}).
+
+\paragraph{RQ3 (process mining for all language) --- \candidate.} The thesis shows,
+by construction and through the artifact's own OCEL binding (\cref{sec:art-ocel}),
+that conformance checking applies beyond business process, and that the
+object-centric log is the bridge (\cref{sec:al-bridge}). Field validation across
+domains is \openstat, and the strongest evidence---the artifact reproducing
+standard object-centric conformance on its calibration domain---is partial.
+
+\paragraph{RQ4 (a trustworthy law-state runtime) --- \admitted\ for the four
+properties, with \partialstat/\openstat\ sub-items.} The artifact realises the four
+properties of \cref{def:lawstate}: object-centric observation, a conformance
+surface, protocol exposure, and receipt-bound admission, each traced to source
+(\cref{ch:artifact}). Three-valued non-collapse is \admitted\ (\cref{thm:noncollapse},
+\cref{lst:cv}); read-only observation is \admitted\ by construction; receipt
+chaining is \admitted. Sub-items remain \openstat, notably subagent gate
+propagation, which the artifact itself records as \openstat\ rather than masking.
+
+\paragraph{RQ5 (phase transition; 2030) --- \admitted\ as a model, \forecast\ as a
+prediction.} The phase-transition account is \admitted\ as a model with a stated
+mechanism (\cref{thm:decoupling} gearing $\times$ \cref{prop:landau-jump} threshold)
+and a rigorous metaphor (\cref{thm:clausius}). Its application to 2030 is a
+\forecast\ (\cref{ch:vision}), bounded by \cref{prin:plateau}.
+
+\section{Threats to Validity}
+\label{sec:disc-threats}
+
+\paragraph{Construct validity.} The chief threat is the metaphor. If ``phase
+transition'' is read literally---as a claim that information obeys
+thermodynamics---the construct is invalid. \Cref{sec:fw-phase} confines the claim to
+\emph{order type} (a discontinuity) established by an independent mechanism, and
+\cref{thm:clausius} grounds only the metaphor's internal consistency, not a physical
+identity. A second construct threat is the word ``conformance'' itself: the thesis
+uses it in van der Aalst's technical sense, and its extension to, say, legal or
+musical ``law'' is an analogy whose precision varies by domain
+(\cref{ch:all-language}).
+
+\paragraph{Internal validity.} The artifact is analysed from source and
+specification, not from a live deployment exercised across all six domains
+(\cref{sec:m-artifact}). Claims about its runtime behaviour are therefore warranted
+to the extent that source implies behaviour---strong for type-level invariants
+(\cref{thm:noncollapse} mirrors a compiled bitmask invariant), weaker for emergent
+or concurrent behaviour. The sibling \code{wasm4pm} engine and its type authority
+were not present in the study environment and are characterised from the artifact's
+interfaces; their internals are \unknownstat.
+
+\paragraph{External validity.} Generalising from one artifact and six illustrative
+domains to ``all language'' is the largest threat. The event-log criterion
+(\cref{def:eventlog}) is the explicit boundary: domains whose use cannot be observed
+as timed events over typed objects fall outside the claim, and the thesis does not
+assert universality beyond that criterion. The six domains were chosen to span text,
+formal systems, sequence, and time-structured notation, but they are not a random
+sample.
+
+\paragraph{Reliability and reproducibility.} Primary claims are traced to primary
+sources and to file-and-line locations so a later reader can re-examine them. The
+recent-advances citations (\cref{sec:recent}) were machine-harvested with a
+fifteen-item hand-verified spot-check; as living preprints they are \candidate\ and
+should be re-verified. The forecasts (\cref{sec:vis-forecasts}) are third-party and
+time-stamped.
+
+\section{Limitations and Open Items}
+\label{sec:disc-limits}
+
+The thesis is conceptual and design-scientific, and three limitations follow.
+First, no longitudinal deployment substantiates the 2030 expansion; the prediction
+is a \forecast\ and may be falsified by a plateau that does not end
+(\cref{prin:plateau}). Second, the artifact carries its own \openstat\ items---most
+clearly that pre-tool-use gate enforcement does not cross subagent session
+boundaries---and the thesis inherits them rather than resolving them. Third, the
+mathematical pillars (\cref{ch:math}) derive the thesis's constructs but make no new
+mathematical claim; their contribution is rigour and unification, not novelty in
+algebra, analysis, or geometry. Each limitation is recorded here so that no later
+sentence is read as more than it is.
+
+\section{Ethical and Societal Considerations}
+\label{sec:disc-ethics}
+
+A substrate that lets a single conformance verdict travel across every agent
+boundary is a concentration of authority, and concentrations invite three concerns.
+\emph{Capture}: whoever defines the law axes defines admissibility; neutral
+governance (\cref{sec:vis-governance}) mitigates but does not eliminate this, and
+the thesis takes no position that a foundation cannot be captured. \emph{Over-trust}:
+a receipt attests that a check ran, not that the check was right; ``proof-of-guardrail''
+must be trusted only as far as its analysis warrants \citep{jin26guardrail}, and the
+oversight stratum inherits the finite human-attention capacity that can make more
+escalation less safe \citep{turan26}. \emph{Conformance theatre}: the easiest way to
+pass a conformance gate is to weaken the law, and a system that rewards green
+verdicts will be pressured to do so---which is precisely why the artifact forbids
+victory language and requires receipts with negative controls
+(\cref{sec:art-canary}). The dual-use character is real: the same machinery that
+holds an agent accountable can surveil a human author whose prose, law, or code is
+being ``conformance-checked''. The thesis's read-only, three-valued, evidence-bound
+posture is a partial safeguard---it refuses silent mutation and refuses to call the
+unchecked compliant---but it is not a complete answer, and presenting it as one would
+violate the discipline the thesis adopts.

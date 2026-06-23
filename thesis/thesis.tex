@@ -1,0 +1,298 @@
+% ============================================================================
+%  The Phase Transition of Language
+%  A doctoral thesis (design-science monograph)
+%
+%  Build: biber + pdflatex (x2).  No TeX toolchain is assumed locally;
+%  this source is Overleaf-ready.  A Markdown reading copy is provided
+%  alongside as thesis.md.
+%
+%  Epistemic discipline (inherited from the artifact under study):
+%    - claims are graded with bounded status, not declarations of success;
+%    - forecasts are flagged as forecasts;
+%    - the words of triumph are declined throughout.
+% ============================================================================
+\documentclass[11pt,a4paper,oneside]{report}
+
+% ---- Encoding and fonts ----------------------------------------------------
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{textcomp}
+\usepackage{microtype}
+
+% ---- Page layout -----------------------------------------------------------
+\usepackage[a4paper,margin=3cm,bindingoffset=0.6cm]{geometry}
+\usepackage{setspace}
+\onehalfspacing
+\usepackage{emptypage}
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\nouppercase{\leftmark}}
+\fancyhead[R]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+% ---- Mathematics -----------------------------------------------------------
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{mathtools}
+
+% ---- Graphics, colour, diagrams --------------------------------------------
+\usepackage{graphicx}
+\usepackage{xcolor}
+\definecolor{admitted}{RGB}{27,94,32}
+\definecolor{refused}{RGB}{183,28,28}
+\definecolor{unknown}{RGB}{120,120,120}
+\definecolor{lawblue}{RGB}{13,71,161}
+\definecolor{codebg}{RGB}{245,245,245}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric,calc,fit,backgrounds,decorations.pathreplacing}
+\usepackage{tikz-cd}
+
+% ---- Tables ----------------------------------------------------------------
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{longtable}
+\usepackage{tabularx}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+
+% ---- Lists and quotations --------------------------------------------------
+\usepackage{enumitem}
+\usepackage{csquotes}
+\usepackage{epigraph}
+\setlength{\epigraphwidth}{0.62\textwidth}
+
+% ---- Code listings ---------------------------------------------------------
+\usepackage{listings}
+\lstdefinelanguage{Rust}{
+  morekeywords={pub,struct,enum,trait,impl,fn,let,mut,self,Self,match,if,else,%
+    for,in,while,loop,return,type,const,static,use,mod,where,async,await,dyn,%
+    move,ref,as,crate,super,unsafe,true,false,Option,Result,Vec,Box,String,%
+    HashMap,bool,u8,u32,u64,i32,f64,usize,Some,None,Ok,Err},
+  sensitive=true,
+  morecomment=[l]{//},
+  morecomment=[s]{/*}{*/},
+  morestring=[b]",
+}
+\lstset{
+  basicstyle=\ttfamily\footnotesize,
+  backgroundcolor=\color{codebg},
+  keywordstyle=\color{lawblue}\bfseries,
+  commentstyle=\color{unknown}\itshape,
+  stringstyle=\color{admitted},
+  numberstyle=\tiny\color{unknown},
+  numbers=left,
+  numbersep=8pt,
+  frame=single,
+  framesep=5pt,
+  rulecolor=\color{unknown!40},
+  breaklines=true,
+  showstringspaces=false,
+  captionpos=b,
+  xleftmargin=14pt,
+}
+
+% ---- Bibliography ----------------------------------------------------------
+\usepackage[backend=biber,style=authoryear,sorting=nyt,natbib=true,%
+  maxcitenames=2,mincitenames=1,maxbibnames=12,uniquelist=false,giveninits=true]{biblatex}
+\addbibresource{references.bib}
+
+% ---- Hyperlinks and cross-references ---------------------------------------
+\usepackage[hidelinks,breaklinks=true]{hyperref}
+\hypersetup{
+  pdftitle={The Phase Transition of Language},
+  pdfauthor={Sean Chatman},
+  pdfsubject={The convergence of LSP, MCP, and A2A into a universal law-state runtime},
+  pdfkeywords={process mining, conformance checking, LSP, MCP, A2A, agentic AI, OCEL},
+}
+\usepackage[nameinlink,capitalise]{cleveref}
+
+% ---- Theorem-like environments ---------------------------------------------
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}[chapter]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{proposition}{Proposition}[chapter]
+\newtheorem{hypothesis}{Hypothesis}[chapter]
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}[chapter]
+\newtheorem{principle}{Principle}[chapter]
+\newtheorem{axiom}{Axiom}[chapter]
+\newtheorem{construction}{Construction}[chapter]
+\newtheorem{example}{Example}[chapter]
+\newtheorem{notation}{Notation}[chapter]
+\theoremstyle{remark}
+\newtheorem*{remark}{Remark}
+
+% ---- Custom semantics ------------------------------------------------------
+% Bounded-status rendering (the thesis grades its own claims this way).
+\newcommand{\stat}[1]{\textsc{#1}}
+\newcommand{\admitted}{\textcolor{admitted}{\stat{admitted}}}
+\def\refused{\textcolor{refused}{\stat{refused}}}
+\newcommand{\unknownstat}{\textcolor{unknown}{\stat{unknown}}}
+\newcommand{\candidate}{\stat{candidate}}
+\newcommand{\partialstat}{\stat{partial}}
+\newcommand{\blocked}{\stat{blocked}}
+\newcommand{\openstat}{\stat{open}}
+\newcommand{\forecast}{\textcolor{refused}{\stat{forecast}}}
+% Artifact vocabulary
+\newcommand{\lspmax}{\mbox{\textsc{lsp-max}}}
+\newcommand{\maxm}[1]{\texttt{max/#1}}
+\newcommand{\code}[1]{\texttt{#1}}
+% Research-question environment
+\def\rq#1#2{\paragraph{RQ#1.}\textit{#2}}
+
+% A reusable "claim card" for graded findings.
+\newcommand{\finding}[2]{\par\noindent\fbox{\parbox{0.97\linewidth}{%
+\textbf{Finding #1} \hfill #2}}\par\vspace{4pt}}
+
+\title{The Phase Transition of Language}
+\author{Sean Chatman}
+\date{June 2026}
+
+% ============================================================================
+\begin{document}
+% ============================================================================
+
+\pagenumbering{roman}
+
+% ---------------------------------------------------------------- Title page
+\begin{titlepage}
+  \centering
+  \vspace*{1.2cm}
+  {\scshape\large Doctoral Thesis\par}
+  \vspace{1.0cm}
+  {\Huge\bfseries The Phase Transition of Language\par}
+  \vspace{0.9cm}
+  {\large\itshape On the Convergence of the Language Server, Model Context,\\
+   and Agent-to-Agent Protocols into a Universal Law-State Runtime\par}
+  \vspace{0.4cm}
+  {\large A Process-Mining Vision for 2030\par}
+  \vspace{1.6cm}
+  {\large Sean Chatman\par}
+  \vspace{0.4cm}
+  {\normalsize ChatmanGPT\par}
+  \vfill
+  {\normalsize Prepared for the consideration of\par}
+  \vspace{0.2cm}
+  {\large Prof.\ dr.\ ir.\ Wil M.\ P.\ van der Aalst\par}
+  \vspace{1.2cm}
+  {\normalsize June 2026\par}
+  \vspace{0.6cm}
+  {\footnotesize Workspace artifact under study: \lspmax{} (CalVer 26.6.18).\par}
+\end{titlepage}
+
+% ---------------------------------------------------------------- Abstract
+\chapter*{Abstract}
+\addcontentsline{toc}{chapter}{Abstract}
+\markboth{Abstract}{Abstract}
+
+The Language Server Protocol (LSP) decoupled editors from language intelligence,
+collapsing an $M \times N$ integration burden into $M + N$ and turning code
+understanding into a reusable service \citep{lsp-redhat-2016,lsp-official}.
+A decade later, two further protocols have repeated this move at higher layers:
+the Model Context Protocol (MCP), open-sourced by Anthropic in November~2024,
+standardised how models reach tools, data, and context \citep{mcp-anthropic-2024};
+and the Agent-to-Agent protocol (A2A), published by Google in April~2025,
+standardised how autonomous agents discover and coordinate with one another
+\citep{a2a-google-2025}. This thesis argues that the fusion of these three
+protocols---LSP for meaning, MCP for context, A2A for coordination---constitutes
+not an incremental integration but a \emph{phase transition} in machine-mediated
+language, analogous to the roughly $1{,}600$--$1{,}700$-fold volume expansion when
+water becomes steam at its boiling point \citep{phys-illinois-steam,nationalboard-steam}.
+The input that drives the transition is standardisation: a large, discontinuous
+investment---a latent heat---absorbed at apparent constant ``temperature'' that,
+once paid, expands the addressable surface of language by orders of magnitude.
+
+We develop the argument through the lens of process mining, the discipline
+founded by Wil van der Aalst, in which behaviour recorded as event logs is checked
+for conformance against a model of how it ought to unfold
+\citep{pm-manifesto-2011,vdaalst-book-2016}. We contend that when LSP is
+generalised beyond source code to all forms of language---natural language,
+legal and regulatory text, mathematics, biological sequence, music, and business
+process---each such language acquires an event log and therefore a conformance
+surface. Echoing van der Aalst's recent dictum that there is ``no AI without PI''
+(process intelligence), in which object-centric process mining is ``the missing
+link connecting data and processes'' \citep{noai-nopi-2025}, we argue that there
+is no trustworthy conformance for all language without an object-centric event
+abstraction \citep{ocel2-2024}.
+
+We instantiate the argument in \lspmax, a law-state runtime projected through LSP
+whose \code{ConformanceVector} keeps \admitted, \refused, and \unknownstat{} law
+axes strictly distinct, whose diagnostics are emitted as object-centric events
+(OCEL~2.0), and whose claims are graded only by bounded status \citep{lspmax}.
+Using design-science methodology \citep{hevner2004,peffers2007}, we present the
+artifact, a fusion architecture, and a 2030 roadmap. Throughout, we adopt the
+artifact's own epistemic discipline: we grade each claim as \admitted, \refused,
+or \unknownstat; we mark every projection as a \forecast; and we decline the
+language of triumph.
+
+\vfill
+\noindent\textbf{Keywords:} process mining; conformance checking; object-centric
+event logs; Language Server Protocol; Model Context Protocol; Agent-to-Agent
+protocol; agentic AI; law-state runtime; protocol convergence.
+
+% ---------------------------------------------------------- Epistemic note
+\chapter*{A Note on Method and Language}
+\addcontentsline{toc}{chapter}{A Note on Method and Language}
+\markboth{A Note on Method and Language}{A Note on Method and Language}
+
+This thesis studies an artifact, \lspmax, whose constitution forbids
+\emph{victory language}---unbounded declarations such as ``solved'' or
+``guaranteed''---and instead requires every claim to carry a \emph{bounded
+status} and, where admission is asserted, a \emph{receipt}: a content-addressed
+record binding a digest, a boundary, and a negative-control result
+\citep{lspmax}. It would be inconsistent to describe such an artifact in the
+register it refuses. We therefore adopt its discipline as our own. Findings are
+graded \admitted{} (evidence present and checked), \refused{} (evidence present,
+contrary), or \unknownstat{} (admissibility not yet determinable); intermediate
+grades \candidate, \partialstat, and \openstat{} are used where appropriate. The
+three states never collapse into one another: an \unknownstat{} is never quietly
+promoted to \admitted. Numerical predictions about 2030 are commercial or
+analyst forecasts, not measurements, and are marked \forecast. Quotations from
+primary specifications are reproduced verbatim and cited to the revision in force
+at the time of writing; the reader is cautioned that living specifications
+(MCP, A2A, and LSP~3.18 among them) continue to evolve.
+
+% ---------------------------------------------------------------- Contents
+\cleardoublepage
+\tableofcontents
+\listoffigures
+\listoftables
+
+% ============================================================================
+\cleardoublepage
+\pagenumbering{arabic}
+\setcounter{page}{1}
+% ============================================================================
+%
+%  Chapters are maintained as separate files under chapters/ and included
+%  below. Each \input is uncommented as the chapter is written, so that the
+%  document always compiles with whatever content currently exists.
+%
+\input{chapters/01-introduction}            % Ch 1: Introduction; thesis statement; RQs
+\input{chapters/02-background}              % Ch 2: Process mining; LSP; MCP; A2A
+\input{chapters/02b-recent-advances}        %        (closing section of Ch 2: recent arXiv 2025-2026)
+\input{chapters/02a-math-foundations}       % Ch 3: Mathematical foundations (algebra/logic/analysis/geometry)
+\input{chapters/03-conceptual-framework}    % Ch 4: Language as process; phase transition
+\input{chapters/04-methodology}             % Ch 5: Design science; bounded-status epistemics
+\input{chapters/05-artifact}                % Ch 6: The lsp-max artifact
+\input{chapters/06-fusion}                  % Ch 7: The LSP x MCP x A2A fusion architecture
+\input{chapters/07-all-language}            % Ch 8: Conformance checking for all language
+\input{chapters/08-vision-2030}             % Ch 9: The phase transition realised; roadmap
+\input{chapters/09-discussion}              % Ch 10: RQs revisited; threats to validity
+\input{chapters/10-conclusion}              % Ch 11: Contributions; future work
+% NOTE: chapter numbers follow \input order, not file names.
+%
+% ============================================================================
+
+% ---------------------------------------------------------------- References
+\cleardoublepage
+\printbibliography[heading=bibintoc,title={References}]
+
+% ---------------------------------------------------------------- Appendices
+\appendix
+\input{chapters/A-method-catalog}           % App A: the max/* method catalogue
+\input{chapters/B-law-table}                % App B: laws and bounded-status vocabulary
+\input{chapters/C-timeline}                 % App C: protocol timeline 2016--2030
+
+\end{document}
