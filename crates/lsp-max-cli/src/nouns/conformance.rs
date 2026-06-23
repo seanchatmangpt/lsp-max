@@ -264,7 +264,8 @@ pub fn run_gate(instance_id: String, gate_id: String) -> Result<RunGateResult> {
     let state_path = crate::nouns::get_state_path();
     let mut mesh = AutonomicMesh::load_from_file(&state_path)
         .map_err(|e| NounVerbError::execution_error(e.to_string()))?;
-    let params = serde_json::json!({ "gate_id": gate_id });
+    // max/runGate deserialises params as the bare gate-name string.
+    let params = serde_json::json!(gate_id);
     let response = mesh
         .dispatch_rpc(&instance_id, "max/runGate", params)
         .map_err(NounVerbError::execution_error)?;
@@ -363,7 +364,10 @@ mod tests {
         let cv = svc.vector("test-inst").unwrap();
         assert!(cv.admitted.is_empty(), "no diagnostics → no admitted axes");
         assert!(cv.refused.is_empty(), "no diagnostics → no refused axes");
-        assert!(!cv.unknown.is_empty(), "all named axes must start as unknown");
+        assert!(
+            !cv.unknown.is_empty(),
+            "all named axes must start as unknown"
+        );
     }
 
     // --- RPC verbs ---

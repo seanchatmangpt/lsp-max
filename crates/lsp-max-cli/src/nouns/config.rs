@@ -16,6 +16,30 @@ pub struct ConfigEntity {
     pub value: String,
 }
 
+/// Per-key configuration health, surfaced by `config doctor` and consumed by
+/// the `insight` law-axis fold.
+#[derive(Debug, Clone, Serialize)]
+pub struct ConfigKeyStatus {
+    pub key: String,
+    /// ADMITTED when explicitly set; PARTIAL when relying on a built-in default.
+    pub status: String,
+    pub value: String,
+}
+
+/// Aggregate configuration health across the canonical keys.
+#[derive(Debug, Clone, Serialize)]
+pub struct ConfigDoctorResult {
+    /// ADMITTED when every known key is set; PARTIAL otherwise.
+    pub overall: String,
+    pub keys: Vec<ConfigKeyStatus>,
+}
+
+/// Canonical configuration keys whose presence governs config health.
+const KNOWN_CONFIG_KEYS: &[&str] = &["api_base", "model"];
+
+/// (only-in-current, only-in-profile, changed: key/current/profile) from `diff`.
+type ConfigDiff = (Vec<String>, Vec<String>, Vec<(String, String, String)>);
+
 // ==========================================
 // Tier 2: Service Tier
 // ==========================================
@@ -129,6 +153,33 @@ impl ConfigService {
             .collect()
     }
 
+    /// Report per-key configuration health for the canonical keys. A key that
+    /// is set is ADMITTED; an unset key is PARTIAL (a built-in default applies).
+    pub fn doctor(&self) -> ConfigDoctorResult {
+        let keys: Vec<ConfigKeyStatus> = KNOWN_CONFIG_KEYS
+            .iter()
+            .map(|key| match self.view(key) {
+                Some(entity) => ConfigKeyStatus {
+                    key: (*key).to_string(),
+                    status: "ADMITTED".to_string(),
+                    value: entity.value,
+                },
+                None => ConfigKeyStatus {
+                    key: (*key).to_string(),
+                    status: "PARTIAL".to_string(),
+                    value: String::new(),
+                },
+            })
+            .collect();
+        let overall = if keys.iter().all(|k| k.status == "ADMITTED") {
+            "ADMITTED"
+        } else {
+            "PARTIAL"
+        }
+        .to_string();
+        ConfigDoctorResult { overall, keys }
+    }
+
     pub fn profile_list(&self) -> (Vec<String>, usize) {
         let profiles = self.load_profiles();
         let mut names: Vec<String> = profiles.into_keys().collect();
@@ -146,10 +197,7 @@ impl ConfigService {
         Ok((name.to_string(), key_count))
     }
 
-    pub fn profile_load(
-        &self,
-        name: &str,
-    ) -> std::result::Result<(String, usize), String> {
+    pub fn profile_load(&self, name: &str) -> std::result::Result<(String, usize), String> {
         let profiles = self.load_profiles();
         let profile = profiles
             .get(name)
@@ -164,11 +212,7 @@ impl ConfigService {
         Ok((name.to_string(), keys_applied))
     }
 
-    pub fn diff(
-        &self,
-        profile_name: &str,
-    ) -> std::result::Result<(Vec<String>, Vec<String>, Vec<(String, String, String)>), String>
-    {
+    pub fn diff(&self, profile_name: &str) -> std::result::Result<ConfigDiff, String> {
         let current = self.load_config();
         let profiles = self.load_profiles();
         let profile = profiles
@@ -506,7 +550,10 @@ mod tests {
         let svc = ConfigService::new();
         svc.set("gate_timeout", "30").unwrap();
         svc.reset("gate_timeout").unwrap();
-        assert!(svc.view("gate_timeout").is_none(), "reset must delete the key");
+        assert!(
+            svc.view("gate_timeout").is_none(),
+            "reset must delete the key"
+        );
     }
 
     // --- list ---

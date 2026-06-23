@@ -102,10 +102,8 @@ impl OcelService {
     pub fn export(&self) -> std::result::Result<OcelLog, String> {
         let mesh = AutonomicMesh::load_from_file(&self.state_path).map_err(|e| e.to_string())?;
 
+        // One OCEL object per LspInstance.
         let mut objects: HashMap<String, OcelObject> = HashMap::new();
-        let mut events: HashMap<String, OcelEvent> = HashMap::new();
-        let mut event_seq = 0usize;
-
         for (instance_id, inst) in &mesh.instances {
             objects.insert(
                 instance_id.clone(),
@@ -117,30 +115,36 @@ impl OcelService {
                     }),
                 },
             );
+        }
 
-            for (idx, hook_event) in inst.event_log.iter().enumerate() {
-                let raw =
-                    serde_json::to_value(hook_event).map_err(|e| e.to_string())?;
-                // Externally-tagged enum: outer key = variant name = activity.
-                let activity = raw
-                    .as_object()
-                    .and_then(|m| m.keys().next())
-                    .unwrap_or("Unknown")
-                    .to_string();
+        // Events live on the mesh event log; each HookEvent serialises as
+        // `{"VariantName": {"instance_id": "...", ...}}`. The variant name is the
+        // activity; the payload's instance_id is the related object.
+        let mut events: HashMap<String, OcelEvent> = HashMap::new();
+        for (idx, hook_event) in mesh.event_log.iter().enumerate() {
+            let raw = serde_json::to_value(hook_event).map_err(|e| e.to_string())?;
+            let obj = raw.as_object();
+            let activity = obj
+                .and_then(|m| m.keys().next())
+                .map(|s| s.to_string())
+                .unwrap_or_else(|| "Unknown".to_string());
+            let instance_id = obj
+                .and_then(|m| m.values().next())
+                .and_then(|payload| payload.get("instance_id"))
+                .and_then(|v| v.as_str())
+                .map(|s| s.to_string());
 
-                event_seq += 1;
-                let event_id = format!("e{event_seq}-{instance_id}-{idx}");
-                events.insert(
-                    event_id,
-                    OcelEvent {
-                        activity,
-                        // Wall-clock not stored on events; use a stable placeholder.
-                        timestamp: "1970-01-01T00:00:00Z".to_string(),
-                        object_map: vec![instance_id.clone()],
-                        value_map: serde_json::json!({}),
-                    },
-                );
-            }
+            let object_map = instance_id.into_iter().collect();
+            events.insert(
+                format!("e{}", idx + 1),
+                OcelEvent {
+                    activity,
+                    // Wall-clock not stored on events; use a stable placeholder.
+                    timestamp: "1970-01-01T00:00:00Z".to_string(),
+                    object_map,
+                    value_map: serde_json::json!({}),
+                },
+            );
         }
 
         Ok(OcelLog {
@@ -161,10 +165,7 @@ impl OcelService {
     /// If `instance_id` is given only events whose `ocel:omap` includes that id
     /// are counted.  Returns an empty list when there are no events — an object
     /// with no events has no traceable case.
-    pub fn cases(
-        &self,
-        instance_id: Option<&str>,
-    ) -> std::result::Result<Vec<OcelCase>, String> {
+    pub fn cases(&self, instance_id: Option<&str>) -> std::result::Result<Vec<OcelCase>, String> {
         let log = self.export()?;
         let mut case_map: HashMap<String, (String, Vec<String>)> = HashMap::new();
 
@@ -261,7 +262,7 @@ impl OcelService {
                 object_type: otype,
             })
             .collect();
-        arcs.sort_by(|a, b| b.frequency.cmp(&a.frequency));
+        arcs.sort_by_key(|arc| std::cmp::Reverse(arc.frequency));
 
         let activity_set: std::collections::HashSet<String> =
             log.events.values().map(|e| e.activity.clone()).collect();
@@ -337,9 +338,7 @@ pub struct OcelObjectTypesResult {
 #[verb("object-types")]
 pub fn object_types() -> Result<OcelObjectTypesResult> {
     let svc = OcelService::new();
-    let types = svc
-        .object_types()
-        .map_err(NounVerbError::execution_error)?;
+    let types = svc.object_types().map_err(NounVerbError::execution_error)?;
     Ok(OcelObjectTypesResult { types })
 }
 

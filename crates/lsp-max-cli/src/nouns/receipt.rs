@@ -221,7 +221,10 @@ mod tests {
         let (_f, svc) = make_temp_mesh();
         let result = svc.list("no-such");
         assert!(result.is_err());
-        assert!(result.unwrap_err().contains("not found"), "error should name the instance");
+        assert!(
+            result.unwrap_err().contains("not found"),
+            "error should name the instance"
+        );
     }
 
     #[test]
@@ -259,6 +262,15 @@ mod tests {
             .unwrap_or_else(|p| p.into_inner());
         let mut mesh = AutonomicMesh::new();
         mesh.add_instance(LspInstance::new("inst-1"));
+        // Seed a genesis receipt: a non-LSP_1 ledger verifies once it is non-empty
+        // and every receipt carries a non-empty id and hash.
+        if let Some(inst) = mesh.instances.get_mut("inst-1") {
+            inst.receipts.push(Receipt {
+                receipt_id: "rcpt-genesis".to_string(),
+                hash: "genesis-hash".to_string(),
+                prev_receipt_hash: None,
+            });
+        }
         let tmpf = tempfile::NamedTempFile::new().unwrap();
         let path = tmpf.path().to_str().unwrap().to_string();
         mesh.save_to_file(&path).unwrap();
