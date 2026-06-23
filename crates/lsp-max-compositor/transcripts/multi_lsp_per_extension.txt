@@ -1,0 +1,19 @@
+# multi-LSP-per-extension routing verification — lsp-max-compositor
+# date: 2026-06-23T21:16:49Z
+# raw_command: cargo test -p lsp-max-compositor (registry + fanout routing)
+# behavior under test: ExtensionRouter::servers_for_filename resolves dotted
+#   (.rs) and compound (.ocel.json) config keys, fans one extension to N
+#   servers, dedups across keys; servers_for_uri tier-orders; FirstSuccess
+#   candidate set is Primary-only.
+---
+running 3 tests
+test registry::tests::extension_matches_handles_dot_normalisation_and_boundaries ... ok
+test registry::tests::compound_and_generic_match_dedup_same_server ... ok
+test registry::tests::config_format_dotted_key_routes_multiple_servers_to_one_extension ... ok
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 37 filtered out; finished in 0.00s
+running 4 tests
+test fanout::tests::filename_extracted_from_file_uri ... ok
+test fanout::tests::strategy_classification ... ok
+test fanout::tests::first_success_candidates_are_primary_only ... ok
+test fanout::tests::servers_ordered_by_tier ... ok
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 36 filtered out; finished in 0.00s
