@@ -8957,6 +8957,16 @@ impl LspRequest for TextDocumentContentRefreshRequest {
     type Result = ();
     const METHOD: &'static str = "workspace/textDocumentContent/refresh";
 }
+// `Client::send_request` is bound by `lsp_types_max::request::Request`, the LSP
+// type authority's request trait. This proposed 3.18 request is owned by the
+// protocol mirror rather than sourced from `lsp_types_max`, so it must satisfy
+// that bound explicitly to be dispatched through `Client` like the stabilized
+// requests. Params/Result mirror the `LspRequest` impl above.
+impl lsp_types_max::request::Request for TextDocumentContentRefreshRequest {
+    type Params = TextDocumentContentRefreshParams;
+    type Result = ();
+    const METHOD: &'static str = "workspace/textDocumentContent/refresh";
+}
 pub struct RegistrationRequest;
 impl LspRequest for RegistrationRequest {
     type Params = RegistrationParams;
