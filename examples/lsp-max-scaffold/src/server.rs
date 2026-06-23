@@ -25,7 +25,7 @@ impl ScaffoldServer {
         }
     }
 
-    async fn push_diagnostics(&self, uri: Url, diagnostics: Vec<Diagnostic>) {
+    async fn push_diagnostics(&self, uri: Uri, diagnostics: Vec<Diagnostic>) {
         self.client
             .publish_diagnostics(uri, diagnostics, None)
             .await;

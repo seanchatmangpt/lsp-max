@@ -159,10 +159,7 @@ impl AdmitService {
     ///
     /// Requires: receipt exists + transcript exists + negative-control exists.
     /// Refuses with a descriptive BLOCKED error if any precondition is unmet.
-    pub fn promote(
-        &self,
-        method: &str,
-    ) -> Result<AdmitPromoteResult, clap_noun_verb::error::NounVerbError> {
+    pub fn promote(&self, method: &str) -> Result<AdmitPromoteResult> {
         let check = self.check(method);
         if !check.eligible {
             return Err(clap_noun_verb::error::NounVerbError::execution_error(

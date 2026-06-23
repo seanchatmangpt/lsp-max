@@ -145,6 +145,7 @@ impl LanguageServer for AntiLlmServer {
                 "anti-llm-cheat-lsp active",
                 Some(vec![MessageActionItem {
                     title: "OK".to_string(),
+                    properties: Default::default(),
                 }]),
             )
             .await;

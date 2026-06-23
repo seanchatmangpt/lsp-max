@@ -199,15 +199,12 @@ pub fn build_capabilities() -> ServerCapabilities {
             }
 
             // ── Type hierarchy ────────────────────────────────────────────────
+            // lsp_types_max's ServerCapabilities models no type_hierarchy_provider
+            // field in this version, so the capability cannot be advertised through
+            // the typed struct; the server still routes these methods when invoked.
             "textDocument/prepareTypeHierarchy"
             | "typeHierarchy/supertypes"
-            | "typeHierarchy/subtypes"
-                if caps.type_hierarchy_provider.is_none() =>
-            {
-                // Use the simple boolean form; the full TypeHierarchyServerCapability
-                // enum variant may vary across lsp_types_max versions.
-                caps.type_hierarchy_provider = Some(OneOf::Left(true));
-            }
+            | "typeHierarchy/subtypes" => {}
 
             // ── Call hierarchy ────────────────────────────────────────────────
             "textDocument/prepareCallHierarchy"
