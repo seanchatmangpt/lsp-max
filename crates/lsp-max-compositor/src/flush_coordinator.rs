@@ -281,9 +281,18 @@ impl FlushCoordinator {
                         }
                         let dfg = DirectlyFollowsGraph::from_traces(&traces);
                         let normative_arcs = [
-                            ("CompositorFlush".to_string(), "CompositorFlushAdmitted".to_string()),
-                            ("CompositorFlush".to_string(), "CompositorFlushBlocked".to_string()),
-                            ("CompositorFlushBlocked".to_string(), "AndonCodePresent".to_string()),
+                            (
+                                "CompositorFlush".to_string(),
+                                "CompositorFlushAdmitted".to_string(),
+                            ),
+                            (
+                                "CompositorFlush".to_string(),
+                                "CompositorFlushBlocked".to_string(),
+                            ),
+                            (
+                                "CompositorFlushBlocked".to_string(),
+                                "AndonCodePresent".to_string(),
+                            ),
                         ];
                         if let Some(fitness) = dfg.fitness_against_model(&normative_arcs) {
                             tracing::debug!(
@@ -371,10 +380,7 @@ impl FlushCoordinator {
 
     /// RFC C: snapshot the accumulated OCEL log without draining it.
     pub fn ocel_event_count(&self) -> usize {
-        self.ocel_events
-            .lock()
-            .map(|g| g.len())
-            .unwrap_or(0)
+        self.ocel_events.lock().map(|g| g.len()).unwrap_or(0)
     }
 
     /// Monotonic count of OCEL event ids assigned over this coordinator's

@@ -16,9 +16,7 @@ use serde_json::Value;
 use std::collections::HashMap;
 
 use wasm4pm::declare::DeclareModel as WasmDeclareModel;
-pub use wasm4pm::declare::{
-    ActivityName, Confidence, DeclareConstraint, DeclareTemplate, Support,
-};
+pub use wasm4pm::declare::{ActivityName, Confidence, DeclareConstraint, DeclareTemplate, Support};
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Violation
@@ -97,7 +95,10 @@ impl DeclareModel {
                 ),
                 wasm_constraint(
                     DeclareTemplate::NotCoExistence,
-                    vec![act("CompositorFlushAdmitted"), act("CompositorFlushBlocked")],
+                    vec![
+                        act("CompositorFlushAdmitted"),
+                        act("CompositorFlushBlocked"),
+                    ],
                 ),
                 wasm_constraint(
                     DeclareTemplate::RespondedExistence,
@@ -239,9 +240,7 @@ fn check_constraint(
         DeclareTemplate::Response | DeclareTemplate::AlternateResponse => {
             for (i, act) in trace.iter().enumerate() {
                 if act.as_str() == a && !trace[i + 1..].iter().any(|x| x.as_str() == b) {
-                    return Some(viol(format!(
-                        "{a} at position {i} has no subsequent {b}"
-                    )));
+                    return Some(viol(format!("{a} at position {i} has no subsequent {b}")));
                 }
             }
             None
@@ -274,7 +273,10 @@ fn check_constraint(
         DeclareTemplate::ChainPrecedence => {
             for (i, act) in trace.iter().enumerate() {
                 if act.as_str() == b {
-                    let prev = i.checked_sub(1).and_then(|p| trace.get(p)).map(|s| s.as_str());
+                    let prev = i
+                        .checked_sub(1)
+                        .and_then(|p| trace.get(p))
+                        .map(|s| s.as_str());
                     if prev != Some(a) {
                         return Some(viol(format!(
                             "{b} at {i} not directly preceded by {a} (got {prev:?})"
@@ -354,9 +356,7 @@ fn check_constraint(
             }
             for (i, act) in trace.iter().enumerate() {
                 if act.as_str() == a && !trace[i + 1..].iter().any(|x| x.as_str() == b) {
-                    return Some(viol(format!(
-                        "succession: {a} at {i} not followed by {b}"
-                    )));
+                    return Some(viol(format!("succession: {a} at {i} not followed by {b}")));
                 }
             }
             None
@@ -382,10 +382,7 @@ fn check_constraint(
 pub fn extract_traces(events: &[Value]) -> HashMap<String, Vec<String>> {
     let mut traces: HashMap<String, Vec<String>> = HashMap::new();
     for ev in events {
-        let event_type = ev
-            .get("type")
-            .and_then(|t| t.as_str())
-            .unwrap_or("Unknown");
+        let event_type = ev.get("type").and_then(|t| t.as_str()).unwrap_or("Unknown");
         let case_id = ev
             .get("attributes")
             .and_then(|a| {
@@ -413,7 +410,10 @@ mod tests {
     fn test_model(template: DeclareTemplate, activities: Vec<&str>) -> DeclareModel {
         build_model(
             "test",
-            vec![wasm_constraint(template, activities.into_iter().map(act).collect())],
+            vec![wasm_constraint(
+                template,
+                activities.into_iter().map(act).collect(),
+            )],
         )
     }
 
@@ -451,7 +451,10 @@ mod tests {
             ],
         );
         let violations = model.check(&traces);
-        assert!(violations.is_empty(), "unexpected violations: {violations:?}");
+        assert!(
+            violations.is_empty(),
+            "unexpected violations: {violations:?}"
+        );
     }
 
     #[test]

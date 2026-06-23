@@ -81,10 +81,8 @@ impl AdmitService {
                 let content = fs::read_to_string(&path).unwrap_or_default();
                 for line in content.lines() {
                     if line.contains("lsp:methodName") {
-                        let method =
-                            line.split('"').nth(1).unwrap_or("unknown").to_string();
-                        let snake =
-                            method.replace(['/', '-'], "_").replace('*', "star");
+                        let method = line.split('"').nth(1).unwrap_or("unknown").to_string();
+                        let snake = method.replace(['/', '-'], "_").replace('*', "star");
                         let receipt_path = PathBuf::from(dir)
                             .join("receipts")
                             .join(format!("{snake}.json"));
@@ -157,18 +155,15 @@ impl AdmitService {
             method: method.to_string(),
             receipt_path,
             status: "CANDIDATE".into(),
-            next_step:
-                "Attach transcript, verify negative-control, then run `admit promote`".into(),
+            next_step: "Attach transcript, verify negative-control, then run `admit promote`"
+                .into(),
         })
     }
 
     pub fn check(&self, method: &str, dir: &str) -> AdmitCheckResult {
         let snake = method.replace(['/', '-'], "_").replace('*', "star");
         let base = PathBuf::from(dir);
-        let receipt_exists = base
-            .join("receipts")
-            .join(format!("{snake}.json"))
-            .exists();
+        let receipt_exists = base.join("receipts").join(format!("{snake}.json")).exists();
         let transcript_exists = base
             .join("transcripts")
             .join(format!("{snake}.txt"))
@@ -189,12 +184,10 @@ impl AdmitService {
             blocking_reasons.push("OPEN: no receipt file in receipts/".into());
         }
         if !transcript_exists {
-            blocking_reasons
-                .push("OPEN: no transcript in transcripts/ or tests/dogfood/".into());
+            blocking_reasons.push("OPEN: no transcript in transcripts/ or tests/dogfood/".into());
         }
         if !negative_control_exists {
-            blocking_reasons
-                .push("OPEN: no negative-control in tests/negative/".into());
+            blocking_reasons.push("OPEN: no negative-control in tests/negative/".into());
         }
 
         AdmitCheckResult {
@@ -230,10 +223,7 @@ impl AdmitService {
         let snake = method.replace(['/', '-'], "_").replace('*', "star");
         let receipt_path = format!("receipts/{snake}.json");
         let updated = content.replace(
-            &format!(
-                "\"{}\";\n    law:status law:CANDIDATE",
-                method
-            ),
+            &format!("\"{}\";\n    law:status law:CANDIDATE", method),
             &format!(
                 "\"{}\";\n    law:status law:ADMITTED ;\n    law:receipt <{}> ",
                 method, receipt_path

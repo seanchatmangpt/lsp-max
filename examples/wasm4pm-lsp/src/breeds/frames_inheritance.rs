@@ -6,8 +6,8 @@ pub struct FramesInheritance;
 
 const MAX_DEPTH: usize = 20;
 
-fn lookup_slot<'a>(
-    frames: &'a HashMap<String, HashMap<String, String>>,
+fn lookup_slot(
+    frames: &HashMap<String, HashMap<String, String>>,
     start: &str,
     slot: &str,
 ) -> Option<Value> {
@@ -74,7 +74,9 @@ impl CognitiveBreed for FramesInheritance {
         let slot = query.get("slot")?.as_str()?;
 
         let frames = parse_frames(frames_val)?;
-        Some(lookup_slot(&frames, frame_name, slot)
-            .unwrap_or_else(|| json!({"error": "frame not found"})))
+        Some(
+            lookup_slot(&frames, frame_name, slot)
+                .unwrap_or_else(|| json!({"error": "frame not found"})),
+        )
     }
 }

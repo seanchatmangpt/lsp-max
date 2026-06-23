@@ -72,15 +72,13 @@ fn mesh_unknown_collapse_clean_when_collapse_beyond_window() {
 #[test]
 fn stream_receipt_catches_missing_receipt() {
     let content = r#"{"method": "max/stream", "params": {}}"#;
-    assert_eq!(
-        check_stream_receipt(content),
-        Some(ANTI_STREAM_NO_RECEIPT)
-    );
+    assert_eq!(check_stream_receipt(content), Some(ANTI_STREAM_NO_RECEIPT));
 }
 
 #[test]
 fn stream_receipt_clean_when_receipt_present() {
-    let content = r#"{"method": "max/stream"} -----BEGIN RECEIPT----- digest: abc -----END RECEIPT-----"#;
+    let content =
+        r#"{"method": "max/stream"} -----BEGIN RECEIPT----- digest: abc -----END RECEIPT-----"#;
     assert_eq!(check_stream_receipt(content), None);
 }
 

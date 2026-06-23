@@ -118,7 +118,11 @@ fn run_breed_conformance(
             let fitness = if pass { 1.0_f64 } else { 0.0_f64 };
             (fitness, pass, output)
         }
-        None => (0.0, false, serde_json::json!({"error": "dispatch returned None"})),
+        None => (
+            0.0,
+            false,
+            serde_json::json!({"error": "dispatch returned None"}),
+        ),
     }
 }
 
@@ -223,7 +227,10 @@ fn main() {
         }
     }
 
-    println!("\nConformance summary: {} pass, {} fail, {} skip", pass_count, fail_count, skip_count);
+    println!(
+        "\nConformance summary: {} pass, {} fail, {} skip",
+        pass_count, fail_count, skip_count
+    );
 
     if fail_count > 0 {
         std::process::exit(1);

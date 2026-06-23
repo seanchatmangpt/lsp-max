@@ -383,7 +383,10 @@ mod tests {
         let (_f, svc) = make_temp_mesh_with_instance();
         let (json, count) = svc.state_json(true).unwrap();
         assert_eq!(count, 1, "one instance must be reported");
-        assert!(json.contains("instances"), "serialised state must have 'instances' key");
+        assert!(
+            json.contains("instances"),
+            "serialised state must have 'instances' key"
+        );
     }
 
     #[test]

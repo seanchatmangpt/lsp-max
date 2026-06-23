@@ -1,5 +1,5 @@
-use crate::*;
 use crate::lsp_3_18::LspRequest as Request;
+use crate::*;
 
 // ---------------------------------------------------------------------------
 // Method name constants for the 11 new max/* methods

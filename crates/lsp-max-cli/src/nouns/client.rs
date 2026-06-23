@@ -172,8 +172,7 @@ pub struct ConnectResult {
 /// Register a client as Connected and persist its state.
 #[verb("connect")]
 pub fn connect(id: String) -> Result<ConnectResult> {
-    let client = ClientService::connect(id)
-        .map_err(NounVerbError::execution_error)?;
+    let client = ClientService::connect(id).map_err(NounVerbError::execution_error)?;
     Ok(ConnectResult { client })
 }
 
@@ -185,8 +184,7 @@ pub struct DisconnectResult {
 /// Set a client to Disconnected, creating the record if absent.
 #[verb("disconnect")]
 pub fn disconnect(id: String) -> Result<DisconnectResult> {
-    let client = ClientService::disconnect(id)
-        .map_err(NounVerbError::execution_error)?;
+    let client = ClientService::disconnect(id).map_err(NounVerbError::execution_error)?;
     Ok(DisconnectResult { client })
 }
 
@@ -198,8 +196,7 @@ pub struct SendResult {
 /// Append a message to a client's inbound queue.
 #[verb("send")]
 pub fn send(id: String, message: String) -> Result<SendResult> {
-    let success = ClientService::send(id, message)
-        .map_err(NounVerbError::execution_error)?;
+    let success = ClientService::send(id, message).map_err(NounVerbError::execution_error)?;
     Ok(SendResult { success })
 }
 
@@ -211,8 +208,7 @@ pub struct ReceiveResult {
 /// Pop and return the first message from a client's queue.
 #[verb("receive")]
 pub fn receive(id: String) -> Result<ReceiveResult> {
-    let message = ClientService::receive(id)
-        .map_err(NounVerbError::execution_error)?;
+    let message = ClientService::receive(id).map_err(NounVerbError::execution_error)?;
     Ok(ReceiveResult { message })
 }
 
@@ -324,7 +320,10 @@ mod tests {
         let _ = ClientService::connect("client-5".to_string()).unwrap();
         ClientService::send("client-5".to_string(), "ping".to_string()).unwrap();
         let msg = ClientService::receive("client-5".to_string()).unwrap();
-        assert_eq!(msg.body, "ping", "receive must pop and return the sent message");
+        assert_eq!(
+            msg.body, "ping",
+            "receive must pop and return the sent message"
+        );
     }
 
     #[test]

@@ -101,14 +101,19 @@ mod tests {
         assert_eq!(files.len(), 2);
         let paths: Vec<_> = files.iter().map(|f| f.path.to_str().unwrap()).collect();
         assert!(paths.iter().any(|p| p.contains("max_snapshot.rs")));
-        assert!(paths.iter().any(|p| p.contains("max_snapshot_registration.md")));
+        assert!(paths
+            .iter()
+            .any(|p| p.contains("max_snapshot_registration.md")));
     }
 
     #[test]
     fn rust_file_contains_method_const_and_types() {
         let gen = ProtocolGenerator;
         let files = gen.generate(&ctx("Snapshot")).unwrap();
-        let rust = files.iter().find(|f| f.path.to_str().unwrap().ends_with(".rs")).unwrap();
+        let rust = files
+            .iter()
+            .find(|f| f.path.to_str().unwrap().ends_with(".rs"))
+            .unwrap();
         assert!(rust.content.contains("SnapshotParams"));
         assert!(rust.content.contains("SnapshotResult"));
         assert!(rust.content.contains("max/snapshot"));

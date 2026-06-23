@@ -1,5 +1,5 @@
-use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 /// A server's capability declaration.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -42,14 +42,16 @@ impl RoutingTable {
     pub fn register(&mut self, decl: &ServerCapabilityDecl) {
         for method in &decl.methods {
             let entry = self.routes.entry(method.clone()).or_default();
-            entry.push((decl.priority, decl.server_id.clone(), decl.law_status.clone()));
+            entry.push((
+                decl.priority,
+                decl.server_id.clone(),
+                decl.law_status.clone(),
+            ));
             // Sort: ADMITTED first, then by priority number (lower = higher priority)
             entry.sort_by(|a, b| {
                 let admitted_a = a.2 == "ADMITTED";
                 let admitted_b = b.2 == "ADMITTED";
-                admitted_b
-                    .cmp(&admitted_a)
-                    .then(a.0.cmp(&b.0))
+                admitted_b.cmp(&admitted_a).then(a.0.cmp(&b.0))
             });
         }
     }
@@ -70,11 +72,7 @@ impl RoutingTable {
                     let best = servers
                         .iter()
                         .find(|(_, _, status)| status == "ADMITTED")
-                        .or_else(|| {
-                            servers
-                                .iter()
-                                .find(|(_, _, status)| status == "CANDIDATE")
-                        })
+                        .or_else(|| servers.iter().find(|(_, _, status)| status == "CANDIDATE"))
                         .or_else(|| servers.first());
                     match best {
                         Some((_, id, status)) => RoutingDecision::Route {
