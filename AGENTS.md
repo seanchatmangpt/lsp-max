@@ -699,6 +699,10 @@ Do not collapse OPEN into ADMITTED. The gap is present until structural enforcem
 - daachorse ANDON prefix matching: O(|code|) classification, asymmetry eliminated
 - Workspace test suite: all tests ADMITTED except known OPEN items listed below
 - Clippy `-D warnings`: ADMITTED (zero warnings in workspace crates)
+- lsp-max-cli noun/verb grammar: 31 noun modules — actuation grammar layer complete
+- Process mining surface (Van der Aalst): DFG, variants, replay fitness, causal footprint (`process` noun)
+- AGI swarm coordination: consensus voting, autonomic convergence, emergence detection (`swarm` noun)
+- OCEL 2.0 export: object-centric event log, OC-DFG discovery, per-object case grouping (`ocel` noun)
 
 ### CANDIDATE
 - RFC A — `gate list` verb: `GateListResult` with `active_codes` and `agent_scope`; per-agent partitioning is OPEN (full RFC A); `gate list` CLI is wired and tested
@@ -781,7 +785,9 @@ AutonomicMesh's `Vec<Box<dyn Hook>>` dispatch and `Vec<HookEvent>` log (capped a
 26 conjuncts audited across the Λ_CD implementation surface.
 
 ```text
-ADMITTED:  5  (gate file write, PreToolUse hook, receipt blocking, speciation test suite, subagent gate check availability)
+ADMITTED:  8  (gate file write, PreToolUse hook, receipt blocking, speciation test suite,
+               subagent gate check availability, 31-noun CLI grammar, process mining surface,
+               OCEL 2.0 + AGI swarm surface)
 PARTIAL:   1  (L7 per-server C_D routing — union is conservative superset; isolation gap documented)
 CANDIDATE: 5  (D_t context format; RFC A gate list; RFC C OCEL accumulation; anti-llm://process-model virtual doc; RulePackServer adoption in anti-llm-cheat-lsp)
 OPEN:      13 (subagent structural enforcement, RFC A per-agent partitioning, RFC B per-server receipt chain, dx-verify sibling violations, gc006 sealed-repo test, D_t PUSH wiring, and others — see Current Framework Status section)

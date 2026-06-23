@@ -1,3 +1,4 @@
+use clap_noun_verb::error::NounVerbError;
 use clap_noun_verb::Result;
 use clap_noun_verb_macros::verb;
 use lsp_max_runtime::AutonomicMesh;
@@ -186,12 +187,13 @@ pub struct RunResult {
     pub count: usize,
 }
 
+/// Collect diagnostics for a target (instance id or "all") from the mesh state.
 #[verb("run")]
 pub fn run(target: String) -> Result<RunResult> {
     let service = DiagnosticsService::new();
     let issues = service
         .run(&target)
-        .map_err(clap_noun_verb::error::NounVerbError::execution_error)?;
+        .map_err(NounVerbError::execution_error)?;
     let count = issues.len();
 
     Ok(RunResult { issues, count })
@@ -202,12 +204,13 @@ pub struct ReportResult {
     pub report_content: String,
 }
 
+/// Format a diagnostic report for all instances; accepts "json" or "text" format.
 #[verb("report")]
 pub fn report(format: String) -> Result<ReportResult> {
     let service = DiagnosticsService::new();
     let report_content = service
         .report(&format)
-        .map_err(clap_noun_verb::error::NounVerbError::execution_error)?;
+        .map_err(NounVerbError::execution_error)?;
 
     Ok(ReportResult { report_content })
 }
@@ -219,12 +222,13 @@ pub struct ClearResult {
     pub diagnostic_id: String,
 }
 
+/// Clear a specific diagnostic from an instance via the mesh run_command interface.
 #[verb("clear")]
 pub fn clear(instance_id: String, diagnostic_id: String) -> Result<ClearResult> {
     let service = DiagnosticsService::new();
     let success = service
         .clear(&instance_id, &diagnostic_id)
-        .map_err(clap_noun_verb::error::NounVerbError::execution_error)?;
+        .map_err(NounVerbError::execution_error)?;
 
     Ok(ClearResult {
         success,
@@ -239,6 +243,7 @@ pub struct WatchResult {
     pub target: String,
 }
 
+/// Return whether the mesh is currently tracking the given target instance.
 #[verb("watch")]
 pub fn watch(target: String) -> Result<WatchResult> {
     let service = DiagnosticsService::new();
@@ -255,6 +260,7 @@ pub struct DiagnoseResult {
     pub message: String,
 }
 
+/// Inject a diagnostic into an instance via the mesh run_command interface.
 #[verb("diagnose")]
 pub fn diagnose(
     instance_id: String,
@@ -266,7 +272,7 @@ pub fn diagnose(
     let service = DiagnosticsService::new();
     let success = service
         .diagnose(&instance_id, &diagnostic_id, &law_id, &severity, &message)
-        .map_err(clap_noun_verb::error::NounVerbError::execution_error)?;
+        .map_err(NounVerbError::execution_error)?;
 
     Ok(DiagnoseResult {
         success,
@@ -282,13 +288,14 @@ pub struct ExportBundleResult {
     pub bundle: serde_json::Value,
 }
 
+/// Export the analysis bundle for an instance via the `max/exportAnalysisBundle` RPC.
 #[verb("export-bundle")]
 pub fn export_bundle(
     instance_id: String,
     output_path: Option<String>,
 ) -> Result<ExportBundleResult> {
     let mut mesh = AutonomicMesh::load_from_file(&crate::nouns::get_state_path())
-        .map_err(|e| clap_noun_verb::error::NounVerbError::execution_error(e.to_string()))?;
+        .map_err(|e| NounVerbError::execution_error(e.to_string()))?;
 
     let bundle = mesh
         .dispatch_rpc(
@@ -296,13 +303,13 @@ pub fn export_bundle(
             "max/exportAnalysisBundle",
             serde_json::Value::Null,
         )
-        .map_err(clap_noun_verb::error::NounVerbError::execution_error)?;
+        .map_err(NounVerbError::execution_error)?;
 
     if let Some(path) = output_path {
         let json_str = serde_json::to_string_pretty(&bundle)
-            .map_err(|e| clap_noun_verb::error::NounVerbError::execution_error(e.to_string()))?;
+            .map_err(|e| NounVerbError::execution_error(e.to_string()))?;
         std::fs::write(&path, json_str)
-            .map_err(|e| clap_noun_verb::error::NounVerbError::execution_error(e.to_string()))?;
+            .map_err(|e| NounVerbError::execution_error(e.to_string()))?;
     }
 
     Ok(ExportBundleResult {
@@ -322,18 +329,19 @@ pub struct ExplainResult {
     pub explanation: serde_json::Value,
 }
 
+/// Explain a specific diagnostic via the `max/explainDiagnostic` RPC.
 #[verb("explain")]
 pub fn explain(instance_id: String, diagnostic_id: String) -> Result<ExplainResult> {
     let path = crate::nouns::get_state_path();
     let mut mesh = AutonomicMesh::load_from_file(&path)
-        .map_err(|e| clap_noun_verb::error::NounVerbError::execution_error(e.to_string()))?;
+        .map_err(|e| NounVerbError::execution_error(e.to_string()))?;
     let explanation = mesh
         .dispatch_rpc(
             &instance_id,
             "max/explainDiagnostic",
             serde_json::Value::String(diagnostic_id.clone()),
         )
-        .map_err(clap_noun_verb::error::NounVerbError::execution_error)?;
+        .map_err(NounVerbError::execution_error)?;
     Ok(ExplainResult {
         instance_id,
         diagnostic_id,
@@ -348,18 +356,19 @@ pub struct RepairPlanResult {
     pub actions: serde_json::Value,
 }
 
+/// Generate a repair plan for a diagnostic via the `max/repairPlan` RPC.
 #[verb("repair-plan")]
 pub fn repair_plan(instance_id: String, diagnostic_id: String) -> Result<RepairPlanResult> {
     let path = crate::nouns::get_state_path();
     let mut mesh = AutonomicMesh::load_from_file(&path)
-        .map_err(|e| clap_noun_verb::error::NounVerbError::execution_error(e.to_string()))?;
+        .map_err(|e| NounVerbError::execution_error(e.to_string()))?;
     let actions = mesh
         .dispatch_rpc(
             &instance_id,
             "max/repairPlan",
             serde_json::Value::String(diagnostic_id.clone()),
         )
-        .map_err(clap_noun_verb::error::NounVerbError::execution_error)?;
+        .map_err(NounVerbError::execution_error)?;
     Ok(RepairPlanResult {
         instance_id,
         diagnostic_id,
@@ -378,17 +387,18 @@ pub struct ApplyRepairResult {
     pub transaction_id: String,
 }
 
+/// Apply a repair transaction to an instance via the `max/applyRepairTransaction` RPC.
 #[verb("apply-repair")]
 pub fn apply_repair(instance_id: String, transaction_id: String) -> Result<ApplyRepairResult> {
     let path = crate::nouns::get_state_path();
     let mut mesh = AutonomicMesh::load_from_file(&path)
-        .map_err(|e| clap_noun_verb::error::NounVerbError::execution_error(e.to_string()))?;
+        .map_err(|e| NounVerbError::execution_error(e.to_string()))?;
     let payload = serde_json::json!({ "transaction_id": transaction_id });
     let resp = mesh
         .dispatch_rpc(&instance_id, "max/applyRepairTransaction", payload)
-        .map_err(clap_noun_verb::error::NounVerbError::execution_error)?;
+        .map_err(NounVerbError::execution_error)?;
     mesh.save_to_file(&path)
-        .map_err(|e| clap_noun_verb::error::NounVerbError::execution_error(e.to_string()))?;
+        .map_err(|e| NounVerbError::execution_error(e.to_string()))?;
     let success = resp["success"].as_bool().unwrap_or(true);
     Ok(ApplyRepairResult {
         success,
@@ -556,7 +566,7 @@ pub fn snapshot() -> Result<SnapshotResult> {
     let result = svc.build();
     println!("{}", result.dt_block);
     if result.andon_count > 0 {
-        return Err(clap_noun_verb::error::NounVerbError::execution_error(
+        return Err(NounVerbError::execution_error(
             format!(
                 "D_t ANDON: {} block(s) active — gate is BLOCKED",
                 result.andon_count

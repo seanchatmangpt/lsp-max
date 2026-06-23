@@ -1,3 +1,4 @@
+use clap_noun_verb::error::NounVerbError;
 use clap_noun_verb::Result;
 use clap_noun_verb_macros::verb;
 use lsp_max_runtime::{AutonomicMesh, Receipt};
@@ -61,12 +62,13 @@ pub struct ReceiptListResult {
     pub count: usize,
 }
 
+/// List all receipts for the given instance.
 #[verb("list")]
 pub fn list(instance_id: String) -> Result<ReceiptListResult> {
     let service = ReceiptService::new();
     let receipts = service
         .list(&instance_id)
-        .map_err(clap_noun_verb::error::NounVerbError::execution_error)?;
+        .map_err(NounVerbError::execution_error)?;
     let count = receipts.len();
     Ok(ReceiptListResult { receipts, count })
 }
@@ -77,12 +79,13 @@ pub struct ReceiptVerifyResult {
     pub chain_valid: bool,
 }
 
+/// Verify the receipt chain for an instance (all receipts have non-empty ids and hashes).
 #[verb("verify")]
 pub fn verify(instance_id: String) -> Result<ReceiptVerifyResult> {
     let service = ReceiptService::new();
     let (count, chain_valid) = service
         .verify(&instance_id)
-        .map_err(clap_noun_verb::error::NounVerbError::execution_error)?;
+        .map_err(NounVerbError::execution_error)?;
     Ok(ReceiptVerifyResult { count, chain_valid })
 }
 
@@ -92,16 +95,17 @@ pub struct VerifyLedgerResult {
     pub raw: serde_json::Value,
 }
 
+/// Verify the receipt ledger for an instance via the `max/verifyLedger` RPC.
 #[verb("verify-ledger")]
 pub fn verify_ledger(instance_id: String) -> Result<VerifyLedgerResult> {
     let state_path = crate::nouns::get_state_path();
     let mut mesh = AutonomicMesh::load_from_file(&state_path)
-        .map_err(|e| clap_noun_verb::error::NounVerbError::execution_error(e.to_string()))?;
+        .map_err(|e| NounVerbError::execution_error(e.to_string()))?;
     let raw = mesh
         .dispatch_rpc(&instance_id, "max/verifyLedger", serde_json::Value::Null)
-        .map_err(clap_noun_verb::error::NounVerbError::execution_error)?;
+        .map_err(NounVerbError::execution_error)?;
     mesh.save_to_file(&state_path)
-        .map_err(|e| clap_noun_verb::error::NounVerbError::execution_error(e.to_string()))?;
+        .map_err(|e| NounVerbError::execution_error(e.to_string()))?;
     Ok(VerifyLedgerResult { instance_id, raw })
 }
 
@@ -111,16 +115,17 @@ pub struct LedgerReportResult {
     pub raw: serde_json::Value,
 }
 
+/// Generate a ledger report for an instance via the `max/ledgerReport` RPC.
 #[verb("ledger-report")]
 pub fn ledger_report(instance_id: String) -> Result<LedgerReportResult> {
     let state_path = crate::nouns::get_state_path();
     let mut mesh = AutonomicMesh::load_from_file(&state_path)
-        .map_err(|e| clap_noun_verb::error::NounVerbError::execution_error(e.to_string()))?;
+        .map_err(|e| NounVerbError::execution_error(e.to_string()))?;
     let raw = mesh
         .dispatch_rpc(&instance_id, "max/ledgerReport", serde_json::Value::Null)
-        .map_err(clap_noun_verb::error::NounVerbError::execution_error)?;
+        .map_err(NounVerbError::execution_error)?;
     mesh.save_to_file(&state_path)
-        .map_err(|e| clap_noun_verb::error::NounVerbError::execution_error(e.to_string()))?;
+        .map_err(|e| NounVerbError::execution_error(e.to_string()))?;
     Ok(LedgerReportResult { instance_id, raw })
 }
 
@@ -140,6 +145,7 @@ pub struct ReceiptWalkResult {
     pub total: usize,
 }
 
+/// Walk the receipt chain for an instance, reporting per-receipt admission status.
 #[verb("walk")]
 pub fn walk(instance_id: String) -> Result<ReceiptWalkResult> {
     let service = ReceiptService::new();
@@ -182,4 +188,104 @@ pub fn walk(instance_id: String) -> Result<ReceiptWalkResult> {
         entries,
         total,
     })
+}
+
+// ==============================================================================
+// 4. Tests
+// ==============================================================================
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use lsp_max_runtime::{AutonomicMesh, LspInstance};
+
+    fn make_temp_mesh() -> (tempfile::NamedTempFile, ReceiptService) {
+        let mut mesh = AutonomicMesh::new();
+        mesh.add_instance(LspInstance::new("inst-1"));
+        let f = tempfile::NamedTempFile::new().unwrap();
+        mesh.save_to_file(f.path().to_str().unwrap()).unwrap();
+        let svc = ReceiptService {
+            state_path: f.path().to_str().unwrap().to_string(),
+        };
+        (f, svc)
+    }
+
+    #[test]
+    fn list_known_instance_returns_ok() {
+        let (_f, svc) = make_temp_mesh();
+        assert!(svc.list("inst-1").is_ok());
+    }
+
+    #[test]
+    fn list_unknown_instance_returns_err() {
+        let (_f, svc) = make_temp_mesh();
+        let result = svc.list("no-such");
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("not found"), "error should name the instance");
+    }
+
+    #[test]
+    fn list_new_instance_has_no_receipts() {
+        let (_f, svc) = make_temp_mesh();
+        let receipts = svc.list("inst-1").unwrap();
+        assert!(receipts.is_empty(), "fresh instance must have no receipts");
+    }
+
+    #[test]
+    fn list_fails_on_missing_state_file() {
+        let svc = ReceiptService {
+            state_path: "/tmp/no-such-dir-lsp-max/receipt/state.json".to_string(),
+        };
+        assert!(svc.list("inst-1").is_err());
+    }
+
+    #[test]
+    fn verify_empty_receipt_chain_is_not_valid() {
+        let (_f, svc) = make_temp_mesh();
+        let (count, chain_valid) = svc.verify("inst-1").unwrap();
+        assert_eq!(count, 0);
+        assert!(!chain_valid, "empty receipt list must not be chain-valid");
+    }
+
+    #[test]
+    fn verify_unknown_instance_returns_err() {
+        let (_f, svc) = make_temp_mesh();
+        assert!(svc.verify("no-such").is_err());
+    }
+
+    fn with_mesh_state<F: FnOnce()>(f: F) {
+        let _lock = crate::nouns::TEST_ENV_LOCK
+            .lock()
+            .unwrap_or_else(|p| p.into_inner());
+        let mut mesh = AutonomicMesh::new();
+        mesh.add_instance(LspInstance::new("inst-1"));
+        let tmpf = tempfile::NamedTempFile::new().unwrap();
+        let path = tmpf.path().to_str().unwrap().to_string();
+        mesh.save_to_file(&path).unwrap();
+        let prev = std::env::var("LSP_MAX_STATE_PATH").ok();
+        // SAFETY: under TEST_ENV_LOCK.
+        unsafe { std::env::set_var("LSP_MAX_STATE_PATH", &path) };
+        f();
+        // SAFETY: restoring env under TEST_ENV_LOCK.
+        unsafe {
+            match prev {
+                Some(v) => std::env::set_var("LSP_MAX_STATE_PATH", v),
+                None => std::env::remove_var("LSP_MAX_STATE_PATH"),
+            }
+        }
+    }
+
+    #[test]
+    fn verify_ledger_returns_ok_for_known_instance() {
+        with_mesh_state(|| {
+            assert!(verify_ledger("inst-1".to_string()).is_ok());
+        });
+    }
+
+    #[test]
+    fn ledger_report_returns_ok_for_known_instance() {
+        with_mesh_state(|| {
+            assert!(ledger_report("inst-1".to_string()).is_ok());
+        });
+    }
 }

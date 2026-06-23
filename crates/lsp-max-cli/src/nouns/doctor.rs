@@ -99,7 +99,6 @@ impl DoctorService {
     }
 
     fn check_toolchain(&self) -> DoctorCheck {
-        // Read the pinned channel from rust-toolchain.toml in the workspace root.
         let pin = read_toolchain_pin();
 
         let output = std::process::Command::new("rustup")
@@ -201,13 +200,11 @@ fn compute_overall(checks: &[DoctorCheck]) -> String {
 /// Read the `channel` field from `rust-toolchain.toml` in the workspace root.
 /// Returns None if the file is absent or unparseable.
 fn read_toolchain_pin() -> Option<String> {
-    // Walk up from cwd looking for the file.
     let mut dir = std::env::current_dir().ok()?;
     loop {
         let candidate = dir.join("rust-toolchain.toml");
         if candidate.exists() {
             let text = std::fs::read_to_string(&candidate).ok()?;
-            // Parse: channel = "nightly-2026-04-15"
             for line in text.lines() {
                 let trimmed = line.trim();
                 if trimmed.starts_with("channel") {
@@ -260,24 +257,9 @@ mod tests {
     #[test]
     fn compute_overall_blocked_dominates() {
         let checks = vec![
-            DoctorCheck {
-                id: "a".into(),
-                status: "ADMITTED".into(),
-                detail: String::new(),
-                fix: String::new(),
-            },
-            DoctorCheck {
-                id: "b".into(),
-                status: "BLOCKED".into(),
-                detail: String::new(),
-                fix: String::new(),
-            },
-            DoctorCheck {
-                id: "c".into(),
-                status: "PARTIAL".into(),
-                detail: String::new(),
-                fix: String::new(),
-            },
+            DoctorCheck { id: "a".into(), status: "ADMITTED".into(), detail: String::new(), fix: String::new() },
+            DoctorCheck { id: "b".into(), status: "BLOCKED".into(), detail: String::new(), fix: String::new() },
+            DoctorCheck { id: "c".into(), status: "PARTIAL".into(), detail: String::new(), fix: String::new() },
         ];
         assert_eq!(compute_overall(&checks), "BLOCKED");
     }
@@ -285,30 +267,17 @@ mod tests {
     #[test]
     fn compute_overall_partial_demotes_admitted() {
         let checks = vec![
-            DoctorCheck {
-                id: "a".into(),
-                status: "ADMITTED".into(),
-                detail: String::new(),
-                fix: String::new(),
-            },
-            DoctorCheck {
-                id: "b".into(),
-                status: "PARTIAL".into(),
-                detail: String::new(),
-                fix: String::new(),
-            },
+            DoctorCheck { id: "a".into(), status: "ADMITTED".into(), detail: String::new(), fix: String::new() },
+            DoctorCheck { id: "b".into(), status: "PARTIAL".into(), detail: String::new(), fix: String::new() },
         ];
         assert_eq!(compute_overall(&checks), "PARTIAL");
     }
 
     #[test]
     fn compute_overall_all_admitted() {
-        let checks = vec![DoctorCheck {
-            id: "a".into(),
-            status: "ADMITTED".into(),
-            detail: String::new(),
-            fix: String::new(),
-        }];
+        let checks = vec![
+            DoctorCheck { id: "a".into(), status: "ADMITTED".into(), detail: String::new(), fix: String::new() },
+        ];
         assert_eq!(compute_overall(&checks), "ADMITTED");
     }
 

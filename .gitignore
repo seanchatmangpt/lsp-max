@@ -17,6 +17,8 @@ vendors/
 !.claude/skills/*/
 .claude/skills/*/*
 !.claude/skills/*/SKILL.md
+!.claude/hooks/
+!.claude/hooks/*.sh
 **/refund_receipt.txt
 **/target_e2e/
 **/lsif_dump.json

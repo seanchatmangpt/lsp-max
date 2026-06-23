@@ -1,3 +1,4 @@
+use clap_noun_verb::error::NounVerbError;
 use clap_noun_verb::Result;
 use clap_noun_verb_macros::verb;
 use serde::{Deserialize, Serialize};
@@ -165,6 +166,7 @@ pub struct ListResult {
     pub plugins: Vec<Plugin>,
 }
 
+/// List all plugins registered in the mesh state.
 #[verb("list")]
 pub fn list() -> Result<ListResult> {
     let service = PluginService::new();
@@ -177,12 +179,13 @@ pub struct LoadResult {
     pub plugin: Plugin,
 }
 
+/// Load a plugin from the given filesystem path and register it in the mesh state.
 #[verb("load")]
 pub fn load(path: String) -> Result<LoadResult> {
     let service = PluginService::new();
     let plugin = service
         .load(&path)
-        .map_err(clap_noun_verb::error::NounVerbError::execution_error)?;
+        .map_err(NounVerbError::execution_error)?;
     Ok(LoadResult { plugin })
 }
 
@@ -191,12 +194,13 @@ pub struct UnloadResult {
     pub plugin: Plugin,
 }
 
+/// Set a plugin's status to Unloaded by id.
 #[verb("unload")]
 pub fn unload(id: String) -> Result<UnloadResult> {
     let service = PluginService::new();
     let plugin = service
         .unload(&id)
-        .map_err(clap_noun_verb::error::NounVerbError::execution_error)?;
+        .map_err(NounVerbError::execution_error)?;
     Ok(UnloadResult { plugin })
 }
 
@@ -205,11 +209,165 @@ pub struct UpdateResult {
     pub plugin: Plugin,
 }
 
+/// Update a plugin's version by id and set its status to Loaded.
 #[verb("update")]
 pub fn update(id: String, new_version: String) -> Result<UpdateResult> {
     let service = PluginService::new();
     let plugin = service
         .update(&id, &new_version)
-        .map_err(clap_noun_verb::error::NounVerbError::execution_error)?;
+        .map_err(NounVerbError::execution_error)?;
     Ok(UpdateResult { plugin })
+}
+
+// ==============================================================================
+// 4. Tests
+// ==============================================================================
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// RAII guard — redirects LSP_MAX_STATE_PATH to a temp file.
+    struct StateGuard {
+        _tmp: tempfile::NamedTempFile,
+        prev: Option<String>,
+    }
+
+    impl StateGuard {
+        fn new() -> Self {
+            let tmp = tempfile::NamedTempFile::new().unwrap();
+            let path = tmp.path().to_str().unwrap().to_string();
+            let prev = std::env::var("LSP_MAX_STATE_PATH").ok();
+            // SAFETY: under TEST_ENV_LOCK.
+            unsafe { std::env::set_var("LSP_MAX_STATE_PATH", &path) };
+            Self { _tmp: tmp, prev }
+        }
+    }
+
+    impl Drop for StateGuard {
+        fn drop(&mut self) {
+            // SAFETY: restoring env state under TEST_ENV_LOCK.
+            unsafe {
+                match &self.prev {
+                    Some(v) => std::env::set_var("LSP_MAX_STATE_PATH", v),
+                    None => std::env::remove_var("LSP_MAX_STATE_PATH"),
+                }
+            }
+        }
+    }
+
+    // --- list ---
+
+    #[test]
+    fn list_returns_at_least_one_default_plugin() {
+        let _lock = crate::nouns::TEST_ENV_LOCK
+            .lock()
+            .unwrap_or_else(|p| p.into_inner());
+        let _g = StateGuard::new();
+        let svc = PluginService::new();
+        let plugins = svc.list();
+        assert!(!plugins.is_empty(), "list must return at least the default plugin");
+    }
+
+    #[test]
+    fn list_default_plugin_is_loaded() {
+        let _lock = crate::nouns::TEST_ENV_LOCK
+            .lock()
+            .unwrap_or_else(|p| p.into_inner());
+        let _g = StateGuard::new();
+        let svc = PluginService::new();
+        let plugins = svc.list();
+        let first = &plugins[0];
+        assert!(
+            matches!(first.status, PluginStatus::Loaded),
+            "default plugin must have Loaded status"
+        );
+    }
+
+    // --- load ---
+
+    #[test]
+    fn load_nonexistent_path_records_error_status() {
+        let _lock = crate::nouns::TEST_ENV_LOCK
+            .lock()
+            .unwrap_or_else(|p| p.into_inner());
+        let _g = StateGuard::new();
+        let svc = PluginService::new();
+        let plugin = svc.load("/no/such/plugin.wasm").unwrap();
+        assert!(
+            matches!(plugin.status, PluginStatus::Error(_)),
+            "non-existent plugin path must produce Error status"
+        );
+    }
+
+    #[test]
+    fn load_existing_file_returns_loaded_status() {
+        let _lock = crate::nouns::TEST_ENV_LOCK
+            .lock()
+            .unwrap_or_else(|p| p.into_inner());
+        let _g = StateGuard::new();
+        let tmp = tempfile::NamedTempFile::new().unwrap();
+        let path = tmp.path().to_str().unwrap().to_string();
+        let svc = PluginService::new();
+        let plugin = svc.load(&path).unwrap();
+        assert!(matches!(plugin.status, PluginStatus::Loaded));
+    }
+
+    // --- unload ---
+
+    #[test]
+    fn unload_unknown_id_returns_err() {
+        let _lock = crate::nouns::TEST_ENV_LOCK
+            .lock()
+            .unwrap_or_else(|p| p.into_inner());
+        let _g = StateGuard::new();
+        // Ensure state is initialised (list seeds defaults).
+        let svc = PluginService::new();
+        let _ = svc.list();
+        let result = svc.unload("999");
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("not found"));
+    }
+
+    #[test]
+    fn unload_known_id_sets_unloaded_status() {
+        let _lock = crate::nouns::TEST_ENV_LOCK
+            .lock()
+            .unwrap_or_else(|p| p.into_inner());
+        let _g = StateGuard::new();
+        let svc = PluginService::new();
+        let plugins = svc.list();
+        let id = plugins[0].id.clone();
+        let plugin = svc.unload(&id).unwrap();
+        assert!(matches!(plugin.status, PluginStatus::Unloaded));
+    }
+
+    // --- update ---
+
+    #[test]
+    fn update_unknown_id_returns_err() {
+        let _lock = crate::nouns::TEST_ENV_LOCK
+            .lock()
+            .unwrap_or_else(|p| p.into_inner());
+        let _g = StateGuard::new();
+        let svc = PluginService::new();
+        let _ = svc.list();
+        let result = svc.update("999", "2.0.0");
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("not found"));
+    }
+
+    #[test]
+    fn update_known_id_sets_new_version() {
+        let _lock = crate::nouns::TEST_ENV_LOCK
+            .lock()
+            .unwrap_or_else(|p| p.into_inner());
+        let _g = StateGuard::new();
+        let svc = PluginService::new();
+        let plugins = svc.list();
+        let id = plugins[0].id.clone();
+        let plugin = svc.update(&id, "9.9.9").unwrap();
+        assert_eq!(plugin.version, "9.9.9");
+        assert!(matches!(plugin.status, PluginStatus::Loaded));
+    }
 }
