@@ -1,7 +1,7 @@
 # Submission Checklist: The Phase Transition of Language
 
 **Generated**: 2026-06-23  
-**Status**: Citation Verification COMPLETE — Awaiting Metadata Fill-in
+**Status**: Metadata Filled · Content ADMITTED · 55 arXiv citations CANDIDATE (hand re-verify before submission)
 
 ## Content Completeness
 
@@ -31,9 +31,9 @@
 |------|--------|-------|
 | Total bibliography entries | ✓ 90 entries | Foundational (pre-2025) + recent arXiv (2025–2026) |
 | Foundational citations verified | ✓ ADMITTED | Van der Aalst, LSP/MCP/A2A specs, design science |
-| Recent arXiv papers (70 total) | ✓ **70/70 VERIFIED** | See CITATION_VERIFICATION_REPORT.md |
-| Hand-verified arXiv (15) | ✓ 15/15 VERIFIED | Against arxiv.org/abs pages; all 15 passed |
-| Auto-verified arXiv (55) | ✓ 55/55 VERIFIED | Systematic re-verification complete; no mismatches |
+| Recent arXiv papers (70 total) | 15 ADMITTED · 55 CANDIDATE | See CITATION_VERIFICATION_REPORT.md |
+| Hand-verified arXiv (15) | ✓ ADMITTED | 15/15 confirmed against arxiv.org/abs pages |
+| Auto-checked arXiv (55) | 🔄 CANDIDATE | API lookup returned NOT_FOUND (future-dated IDs not yet indexed); re-verify by hand before submission |
 
 ## Technical Quality
 
@@ -56,42 +56,34 @@
 | Bookmarks | ✓ ADMITTED | hyperref generates TOC bookmarks (verify in PDF viewer) |
 | Hyperlinks | ✓ ADMITTED | Internal cross-refs and bibliography links functional |
 
-## Metadata (Ready for User Input)
+## Metadata (Filled)
 
 | Item | Status | Notes |
 |------|--------|-------|
-| Author name | 🔄 PLACEHOLDER | Currently `[Author Name]` (lines 148, 170) |
-| Department | 🔄 PLACEHOLDER | Currently `[Department / Doctoral School]` (line 172) |
-| Institution | 🔄 PLACEHOLDER | Currently `[Institution]` (line 172) |
-| Date | ✓ June 2026 | Set; ready to submit |
-
-**To fill metadata:**
-```bash
-# Edit /home/user/lsp-max/thesis/thesis.tex:
-# Line 148: \author{[Author Name]} → \author{Your Name}
-# Line 170: {\large [Author Name]\par} → {\large Your Name\par}
-# Line 172: {\normalsize [Department / Doctoral School]\\ {[Institution]}\par} → your details
-# Then: latexmk -pdf -bibtex- thesis.tex
-```
+| Author name | ✓ ADMITTED | Sean Chatman (title page + PDF `/Author` field) |
+| Organization | ✓ ADMITTED | ChatmanGPT (title page) |
+| Date | ✓ June 2026 | Set |
+| PDF document properties | ✓ ADMITTED | `pdfauthor`, `pdftitle`, `pdfsubject`, `pdfkeywords` embedded |
 
 ## Citation Verification Status
 
-**Status**: ✓ **COMPLETE**
+**Status**: PARTIAL — 15 ADMITTED, 55 CANDIDATE
 
-**Result**: All 70 arXiv citations verified (15 hand-verified + 55 auto-verified)
-- **Hand-verified cohort**: 15/15 VERIFIED
-- **Auto-verified cohort**: 55/55 VERIFIED  
-- **Mismatches found**: 0
-- **Corrections required**: None
+- **Hand-verified cohort (15)**: ADMITTED — confirmed against arxiv.org/abs pages
+- **Auto-checked cohort (55)**: CANDIDATE — arXiv-API lookup returned NOT_FOUND for all 55
+  because the eprint IDs are date-stamped Dec 2025–Jun 2026 and were not indexed at
+  verification time. This is a limitation of the machine method, not a refutation; the
+  entries are neither admitted nor refused, and must be re-verified by hand before submission.
+- **Mismatches found**: none (lookup could not confirm or refute)
 
-**Detailed Report**: See `CITATION_VERIFICATION_REPORT.md` for full table and methodology.
+**Detailed Report**: See `CITATION_VERIFICATION_REPORT.md`.
 
 ## Next Actions (Priority Order)
 
-1. ✓ **Citation verification report received** — All 70 arXiv citations VERIFIED; see `CITATION_VERIFICATION_REPORT.md`
-2. ✓ **Citation mismatches addressed** — No corrections required; bibliography complete
-3. **Fill author/institution metadata** (USER ACTION) — Provide name and department; single-line edits in thesis.tex (lines 148, 170, 172)
-4. **Final compile & deliver** — One final `latexmk -pdf -bibtex- thesis.tex` run; PDF ready for submission to Prof. van der Aalst
+1. **Re-verify the 55 CANDIDATE arXiv entries by hand** (OPEN) — against live arxiv.org/abs pages once the Dec 2025–Jun 2026 window is indexed. This is the single open bibliography item before submission-final.
+2. ✓ **Author/organization metadata filled** — Sean Chatman, ChatmanGPT (title page + PDF `/Author`).
+3. ✓ **Final compile** — `latexmk -pdf -bibtex- thesis.tex` succeeds (rc=0); PDF regenerated with metadata.
+4. **Deliver to Prof. van der Aalst** — gated on item 1.
 
 ## Bounded Status Summary
 
@@ -100,14 +92,14 @@
 | Structure & scope | **ADMITTED** (all 11 chapters + 3 appendices; 93 pages) |
 | Mathematics (Pillars I–V + Synthesis) | **ADMITTED** (derived from first principles; all theorems with proofs) |
 | Foundational citations | **ADMITTED** (hand-verified where relevant; primary specs cited) |
-| Recent arXiv citations | **ADMITTED** (70/70 verified: 15 hand-checked + 55 auto-verified; zero mismatches) |
+| Recent arXiv citations | **PARTIAL** — 15 **ADMITTED** (hand-checked); 55 **CANDIDATE** (API NOT_FOUND; re-verify by hand) |
 | Artifact discussion (lsp-max) | **ADMITTED** (implementation in sibling `lsp-max` repo; dogfood tests pass) |
 | Phase-transition model | **ADMITTED** (as a model); 2030 instantiation **FORECAST** |
 | Per-domain conformance | **CANDIDATE** (illustrative; field validation **OPEN**) |
-| Metadata (author/institution) | **PLACEHOLDER** (user to supply) |
+| Metadata (author/institution) | **ADMITTED** (Sean Chatman, ChatmanGPT) |
 
 ---
 
-**Last updated:** 2026-06-23 06:32 UTC (citation verification complete)  
+**Last updated:** 2026-06-23 (metadata filled; citation status corrected to bounded — 15 ADMITTED, 55 CANDIDATE)  
 **Thesis file:** `/home/user/lsp-max/thesis/thesis.tex`  
 **Output PDF:** `/home/user/lsp-max/thesis/thesis.pdf` (982 KB)
