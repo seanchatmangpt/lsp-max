@@ -655,36 +655,49 @@ Reference implementations:
 
 Both use the same FNV-1a constants (`offset_basis = 0xcbf29ce484222325`, `prime = 0x100000001b3`) and format the hash with `{hash:016x}`.
 
-### Proposed mitigation (convention, not enforcement)
+### Proposed mitigation (convention, not enforcement) — RFC-1 OPEN
 
-Subagent prompts should include a gate-check preamble as the first Bash action:
+Subagent prompts MUST include a gate-check preamble as the first Bash action. Two equivalent forms:
+
+**Inline preamble** (minimum required form):
 
 ```bash
-lsp-max-cli gate check || exit 1
+lsp-max-cli gate check || { echo "ANDON gate blocked"; exit 1; }
 ```
+
+**Helper script** (codified preamble — preferred for new subagent prompts):
+
+```bash
+bash scripts/subagent-gate-check.sh
+```
+
+`scripts/subagent-gate-check.sh` mirrors the `.claude/hooks/gate-check.sh` PreToolUse hook behavior: it passes through when `lsp-max-cli` is absent (compositor not running, gate not enforced), exits 1 with an actionable message when the ANDON gate is ACTIVE, and exits 0 when the gate is clear. Using the helper script makes the preamble auditable and keeps subagent prompts consistent with future changes to the gate check protocol.
 
 This reads the gate file, exits 1 if ANDON is set, and blocks further shell actions in that subagent invocation. It mirrors what the PreToolUse hook does in the parent session.
 
-Subagent prompt authors are responsible for including this preamble. There is no structural mechanism that forces it.
+Subagent prompt authors are responsible for including this preamble. There is no structural mechanism that forces it. The `D_t PUSH` injection (RFC-1) is the CANDIDATE path toward structural enforcement; until it is ADMITTED, the preamble convention is the only available mitigation.
 
 ### What this gap does not affect
 
 - The parent session's gate enforcement is unaffected.
 - The compositor continues to write the gate file correctly.
 - `lsp-max-cli gate check` remains the canonical single-syscall check for any caller.
+- `scripts/subagent-gate-check.sh` is available to any caller that can run a bash script.
 
 ### Admitted / Refused / OPEN
 
 ```text
-PreToolUse hook enforcement in parent session:   ADMITTED
-Gate file written by compositor:                 ADMITTED
-lsp-max-cli gate check available to subagents:  ADMITTED
-Structural enforcement in subagent sessions:     REFUSED — hook boundary is not crossable
-Convention-based mitigation (prompt preamble):   CANDIDATE — not structurally enforced
-Subagent gate propagation overall:               OPEN
+PreToolUse hook enforcement in parent session:         ADMITTED
+Gate file written by compositor:                       ADMITTED
+lsp-max-cli gate check available to subagents:        ADMITTED
+scripts/subagent-gate-check.sh helper:                CANDIDATE — convention, not structural enforcement
+Structural enforcement in subagent sessions:           REFUSED — hook boundary is not crossable
+D_t PUSH injection (RFC-1):                            CANDIDATE — see RFC Backlog
+Convention-based mitigation (prompt preamble):         CANDIDATE — not structurally enforced
+Subagent gate propagation overall:                     OPEN
 ```
 
-Do not collapse OPEN into ADMITTED. The gap is present until structural enforcement exists.
+Do not collapse OPEN into ADMITTED. The gap remains present until structural enforcement (RFC-1 D_t PUSH or equivalent) is ADMITTED.
 
 ---
 
