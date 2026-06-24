@@ -91,7 +91,6 @@ members = [
     "crates/lsp-max-specgen",
     "crates/lsp-max-anti-cheat",
     "crates/lsp-max-anti-cheat-cli",
-    "crates/anti-llm-cheat-lsp",
     "crates/lsp-max-cli",
     "crates/playground",
     "crates/lsp-max-client",
