@@ -6,4 +6,6 @@ pub mod lsif_builder;
 pub mod lsif_indexer;
 pub mod lsif_reader;
 pub mod lsif_types;
+pub mod lsif_store;
+pub mod salsa_db;
 pub use coverage::{lsif_coverage, LsifCoverageReport};

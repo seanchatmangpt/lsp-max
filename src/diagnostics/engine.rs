@@ -7,7 +7,15 @@ use std::str::FromStr;
 pub(crate) fn get_receipt_uri(root_path: &std::path::Path, filename: &str) -> lsp_types_max::Uri {
     let fallback = lsp_types_max::Uri::from_str("file:///")
         .expect("static URI 'file:///' is valid UTF-8 and always parses");
-    url::Url::from_file_path(root_path.join(filename))
+    let joined = root_path.join(filename);
+    let abs_path = if joined.is_absolute() {
+        joined
+    } else {
+        std::env::current_dir()
+            .unwrap_or_else(|_| std::path::PathBuf::from("."))
+            .join(joined)
+    };
+    url::Url::from_file_path(abs_path)
         .ok()
         .and_then(|u| lsp_types_max::Uri::from_str(u.as_str()).ok())
         .unwrap_or(fallback)

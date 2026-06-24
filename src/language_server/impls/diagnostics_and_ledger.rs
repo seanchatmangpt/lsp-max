@@ -1,7 +1,7 @@
 //! Ledger, autonomic loop, hooks, and diagnostic query implementations.
 
 use crate::jsonrpc::{Error, Result};
-use crate::{lock_mesh, lock_registry, sha256, update_diagnostics};
+use crate::{lock_mesh, lock_registry, update_diagnostics};
 use lsp_types_max::DiagnosticSeverity;
 use serde_json::Value;
 
@@ -54,12 +54,25 @@ pub async fn max_release_actuation(params: Value) -> Result<Value> {
             instance_diag_count
         )));
     }
-    // Emit a release receipt into the registry.
+    // Emit a cryptographically sealed release receipt using the affidavit crate.
+    let mut assembler = affidavit::chain::ChainAssembler::new();
+    let event = affidavit::types::OperationEvent {
+        id: format!("evt-release-{}", instance_id),
+        seq: registry.action_seq,
+        event_type: "release_actuation".to_string(),
+        objects: vec![],
+        payload_commitment: affidavit::types::Blake3Hash::from_bytes(b"release approved by autonomic loop"),
+    };
+    // Append the event
+    assembler.append(event).map_err(|_| Error::internal_error())?;
+    
+    // Finalize the receipt to obtain the sealed BLAKE3 hash.
+    let affidavit_receipt = assembler.finalize();
+    
     let receipt_id = format!("rcpt-release-{}", instance_id);
-    let hash = sha256(receipt_id.as_bytes());
     let receipt = max_protocol::Receipt {
         receipt_id: receipt_id.clone(),
-        hash,
+        hash: affidavit_receipt.chain_hash.0,
         prev_receipt_hash: None,
     };
     registry

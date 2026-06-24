@@ -36,8 +36,6 @@ pub fn evaluate(obs: &[Observation], config: &AntiLlmConfig) -> Vec<AntiLlmDiagn
                     .to_string(),
                 required_next_proof: "Run cargo check / cargo test to verify lsp-max integration."
                     .to_string(),
-                oracle_class: None,
-                confidence: None,
             });
         }
 
@@ -57,8 +55,6 @@ pub fn evaluate(obs: &[Observation], config: &AntiLlmConfig) -> Vec<AntiLlmDiagn
                     "Do not use PackObserver/static analyzer results as runtime authority."
                         .to_string(),
                 required_next_proof: "Verify with active capability checks.".to_string(),
-                oracle_class: None,
-                confidence: None,
             });
         }
 
@@ -81,8 +77,6 @@ pub fn evaluate(obs: &[Observation], config: &AntiLlmConfig) -> Vec<AntiLlmDiagn
                     .to_string(),
                 required_next_proof: "Provide a client-to-server initialize handshake transcript."
                     .to_string(),
-                oracle_class: None,
-                confidence: None,
             });
         }
     }

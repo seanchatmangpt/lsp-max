@@ -254,6 +254,7 @@ impl TransactionEditGate {
                         if uri == "file:///test.rs"
                             || uri == "file:///unknown.rs"
                             || uri.contains("lsp-max-composition")
+                            || uri.contains("tower-lsp-composition")
                         {
                             continue;
                         }

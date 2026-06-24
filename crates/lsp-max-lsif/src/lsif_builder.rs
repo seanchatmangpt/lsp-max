@@ -10,6 +10,7 @@ pub struct LsifBuilder<W: Write> {
     open_documents: std::collections::HashSet<i64>,
     open_projects: std::collections::HashSet<i64>,
     has_emitted_metadata: bool,
+    pub store: Option<crate::lsif_store::LsifStore>,
 }
 
 impl<W: Write> LsifBuilder<W> {
@@ -20,7 +21,13 @@ impl<W: Write> LsifBuilder<W> {
             open_documents: std::collections::HashSet::new(),
             open_projects: std::collections::HashSet::new(),
             has_emitted_metadata: false,
+            store: None,
         }
+    }
+
+    pub fn with_store(mut self) -> io::Result<Self> {
+        self.store = Some(crate::lsif_store::LsifStore::new()?);
+        Ok(self)
     }
 
     pub fn next_id(&mut self) -> Id {
@@ -36,6 +43,9 @@ impl<W: Write> LsifBuilder<W> {
             } else {
                 panic!("MetaData MUST be the first element emitted in an LSIF graph.");
             }
+        }
+        if let Some(store) = &mut self.store {
+            store.insert_element(&element)?;
         }
         let json = serde_json::to_string(&element)?;
         writeln!(self.writer, "{}", json)

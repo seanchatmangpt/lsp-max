@@ -144,6 +144,7 @@ pub fn server_capabilities() -> ServerCapabilities {
                 did_delete: Some(FileOperationRegistrationOptions { filters: vec![] }),
                 will_delete: Some(FileOperationRegistrationOptions { filters: vec![] }),
             }),
+            ..Default::default()
         }),
 
         experimental: Some(serde_json::json!({

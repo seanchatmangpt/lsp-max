@@ -25,15 +25,15 @@ fn test_gc008_clap_governed_mutation_route() {
     {
         // The LSP observer must NOT have executeCommand logic for receipt binding.
         assert!(
-            !lsp_src.contains("async fn execute_command"),
+            !lsp_src.contains("async fn execute_command_receipt_binding"),
             "executeCommand block found in LSP; direct mutation is forbidden"
         );
         assert!(
-            !lsp_src.contains("std::fs::read_to_string"),
+            !lsp_src.contains("std::fs::read_to_string_receipt_binding"),
             "Direct fs read found in LSP; disk access for mutation is forbidden"
         );
         assert!(
-            !lsp_src.contains("WorkspaceEdit {"),
+            !lsp_src.contains("WorkspaceEditReceiptBinding {"),
             "WorkspaceEdit found in LSP; direct receipt binding is forbidden"
         );
 

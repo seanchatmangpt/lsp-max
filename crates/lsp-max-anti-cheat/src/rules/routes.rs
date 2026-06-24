@@ -22,9 +22,7 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
                 blocking: true,
                 required_correction: "Collect concrete evidence at each step of the route (CodeAction, clap admission, PackPlan, Staging, MutationGate, Receipt).".to_string(),
                 required_next_proof: "Require active receipt matching the checkpoint.".to_string(),
-                            oracle_class: None,
-                confidence: None,
-});
+            });
         }
 
         // Static scan substituted for route proof
@@ -44,9 +42,7 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
                 blocking: true,
                 required_correction: "Use dynamic mutation gate check instead of static text scan checks.".to_string(),
                 required_next_proof: "Prove MutationGate denial handles unadmitted paths.".to_string(),
-                            oracle_class: None,
-                confidence: None,
-});
+            });
         }
     }
 

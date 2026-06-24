@@ -71,11 +71,7 @@ fn temporal_breed_helps_on_the_real_log() {
 fn demand_match_drives_the_phase_across_the_boiling_point() {
     let log = read_ocel_log(FIXTURE).unwrap();
     let p = LogProfile::from_log(&log);
-    let score = p.demand_match(&[
-        "ltl_monitor".to_string(),
-        "asp".to_string(),
-        "bayesian_network".to_string(),
-    ]);
+    let score = p.demand_match(&["ltl_monitor".to_string(), "asp".to_string()]);
 
     // A boiling point just under the score admits (Vapor); just over stays Liquid.
     let below_bp = (score - 0.01).max(0.0);

@@ -267,6 +267,9 @@ use std::collections::{BTreeMap, BTreeSet, HashMap};
 use std::sync::{LazyLock, Mutex, RwLock};
 use utils::TOKENS;
 
+#[cfg(test)]
+pub(crate) static TEST_LOCK: Mutex<()> = Mutex::new(());
+
 /// List of all named rules (nodes with `named: true`)
 pub(crate) static NAMED_RULES: LazyLock<Mutex<Vec<String>>> = LazyLock::new(Default::default);
 
@@ -331,6 +334,30 @@ pub fn generate(
     language: &tree_sitter::Language,
     tokens: Option<HashMap<&'static str, &'static str>>,
 ) -> TokenStream {
+    // Reset all global static states to ensure test isolation
+    NAMED_RULES.lock().unwrap().clear();
+    OPERATORS_RULES.lock().unwrap().clear();
+    INLINE_MULTIPLE_RULES.lock().unwrap().clear();
+    ANONYMOUS_TYPES.lock().unwrap().clear();
+    NODE_ID_FOR_NAMED_NODE.lock().unwrap().clear();
+    NODE_ID_FOR_UNNAMED_NODE.lock().unwrap().clear();
+    FIELD_ID_FOR_NAME.lock().unwrap().clear();
+    SUPER_TYPES.write().unwrap().clear();
+    {
+        let default_keys: BTreeSet<&'static str> = BTreeSet::from([
+            "{", "}", "(", ")", "[", "]", ",", ":", ";", ".", "'", "\"", "@", "!", "#", "$", "%",
+            "^", "&", "*", "-", "_", "+", "=", ">", "<", "|", "~", "/", "\\", "//", "//=>", "//=",
+            "/=", "/>", "/?", "/??", "/*", "*/", "+++", "!!", "!!=", "!!?", "!!??", "!!???", "?",
+            "->", "=>", "++", "--", "&&", "||", "==", "!=", ">=", "<=", "===", "!==", "<<", ">>",
+            ">>>", "+=", "-=", "*=", "%=", "&=", "|=", "^=", "&&=", "||=", "??=", "??", "???",
+            "**", "**=", "<>", "<=>", "<!", "</", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9",
+        ]);
+        TOKENS
+            .write()
+            .unwrap()
+            .retain(|k, _| default_keys.contains(k));
+    }
+
     if let Some(tokens) = tokens {
         // extend or overwrite the default tokens
 
@@ -453,10 +480,16 @@ pub fn generate(
 
     // Generate the list of super types
     // We need to clone because generate_enum will also check if some variants are super types
-    for (super_type_name, super_type) in SUPER_TYPES.read().unwrap().iter() {
+    let super_types_cloned: Vec<(String, Vec<TypeInfo>)> = SUPER_TYPES
+        .read()
+        .unwrap()
+        .iter()
+        .map(|(k, v)| (k.clone(), v.variants.clone()))
+        .collect();
+    for (super_type_name, variants) in super_types_cloned {
         output.extend(generate_enum(
-            &format_ident!("{}", &sanitize_string_to_pascal(super_type_name)),
-            &super_type.variants,
+            &format_ident!("{}", &sanitize_string_to_pascal(&super_type_name)),
+            &variants,
         ));
     }
 

@@ -43,8 +43,6 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
                 blocking: true,
                 required_correction: "Remove hardcoded metric and compute from algorithm output.".to_string(),
                 required_next_proof: "Run conformance check and capture live metric output.".to_string(),
-                            oracle_class: None,
-                confidence: None,
 });
         }
 
@@ -78,8 +76,6 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
                 blocking: true,
                 required_correction: "Remove seeded RNG from production code. Use crypto-secure random or algorithmic output.".to_string(),
                 required_next_proof: "Verify no seeded RNG in production paths.".to_string(),
-                            oracle_class: None,
-                confidence: None,
 });
         }
 
@@ -100,8 +96,6 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
                 required_correction: "Compute output_hash from actual algorithm output at runtime."
                     .to_string(),
                 required_next_proof: "Verify output_hash is computed, not copied.".to_string(),
-                oracle_class: None,
-                confidence: None,
             });
         }
 
@@ -121,8 +115,6 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
                 blocking: false,
                 required_correction: "Remove suppression attribute and fix the underlying issue.".to_string(),
                 required_next_proof: "Build without suppression attribute and verify zero warnings.".to_string(),
-                            oracle_class: None,
-                confidence: None,
 });
         }
 
@@ -147,8 +139,6 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
                 blocking: false,
                 required_correction: "Replace unsafe code with safe alternatives or document necessity with a receipt.".to_string(),
                 required_next_proof: "Audit unsafe usage and confirm necessity with process evidence.".to_string(),
-                            oracle_class: None,
-                confidence: None,
 });
         }
     }

@@ -10,6 +10,7 @@ pub mod repair;
 pub mod snapshot;
 pub mod text_document;
 pub mod type_hierarchy;
+pub mod intent;
 
 pub mod diag_ext;
 pub mod file_ops_ext;
@@ -35,7 +36,7 @@ pub use fmt_ext::{formatting, on_type_formatting, range_formatting};
 pub use goto_definition::goto_definition;
 pub use hover::hover;
 pub use lsif_and_state::{
-    max_dump_state, max_instance_list, max_lsif, max_reset, max_restore_state,
+    execute_sparql, max_dump_state, max_instance_list, max_lsif, max_reset, max_restore_state,
 };
 pub use references::references;
 pub use repair::{
@@ -49,3 +50,4 @@ pub use snapshot::{
 pub use sync::*;
 pub use text_document::*;
 pub use type_hierarchy::{prepare_type_hierarchy, subtypes, supertypes};
+pub use intent::*;

@@ -237,6 +237,7 @@ mod tests {
 
     #[test]
     fn sanitize() {
+        let _lock = crate::TEST_LOCK.lock().unwrap();
         assert_eq!(sanitize_string("fn"), "Fn");
         assert_eq!(
             sanitize_string("namespace_0_async_$"),
@@ -262,6 +263,7 @@ mod tests {
 
     #[test]
     fn sanitize_to_pascal() {
+        let _lock = crate::TEST_LOCK.lock().unwrap();
         assert_eq!(sanitize_string("fn"), "Fn");
         assert_eq!(
             sanitize_string_to_pascal("namespace_0_async_$"),
