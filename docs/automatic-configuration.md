@@ -92,7 +92,7 @@ Run in a container after `bash scripts/bootstrap.sh` cloned the three siblings:
 
 A build-blocking manifest bug was fixed as part of this work:
 `crates/anti-llm-cheat-lsp/Cargo.toml` pointed `lsp-types-max` at
-`../../lsp-types-max` (resolving inside the repo) with `version = "26.6.8"`; the
+`../../lsp-types-max` (resolving inside the repo) with `version = "26.6.24"`; the
 sibling is `26.6.5` and every other `crates/*` manifest uses `../../../lsp-types-max`.
 Corrected to `path = "../../../lsp-types-max", version = "26.6.5"` — without this,
 `just setup` would clone the siblings yet `cargo` would still fail to resolve.

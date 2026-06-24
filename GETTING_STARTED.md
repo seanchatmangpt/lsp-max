@@ -355,7 +355,7 @@ cd lsp-max
 cargo build
 ```
 
-### Version mismatch: "version requirement `=26.6.8` not satisfied"
+### Version mismatch: "version requirement `=26.6.24` not satisfied"
 
 **Cause**: Sibling repos have diverged versions.
 
@@ -368,7 +368,7 @@ cd ../wasm4pm && grep '^version' Cargo.toml
 cd ../../lsp-max && grep '^version' Cargo.toml
 ```
 
-All should match (e.g., `26.6.18`). If not, fetch the latest from each repo:
+All should match (e.g., `26.6.24`). If not, fetch the latest from each repo:
 ```bash
 cd ../lsp-types-max && git pull origin main
 cd ../wasm4pm-compat && git pull origin main

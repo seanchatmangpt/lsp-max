@@ -16,7 +16,7 @@ lsp-max-ast-codegen = { workspace = true }
 tree-sitter-rust = "0.23"
 
 [dependencies]
-lsp-max-lsif = { path = "../lsp-max-lsif", version = "26.6.18" }
+lsp-max-lsif = { path = "../lsp-max-lsif", version = "26.6.24" }
 lsp-max-ast-core = { workspace = true }
 lsp-max-ast = { workspace = true }
 lsp-types-max = { version = "26.6.24" }

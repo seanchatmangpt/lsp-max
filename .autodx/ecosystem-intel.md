@@ -27,7 +27,7 @@ lsp-max v26.6.9 (/Users/sac/lsp-max)
 ├── lsp-max-macros v26.6.9 (proc-macro) (/Users/sac/lsp-max/lsp-max-macros)
 ├── lsp-max-protocol v26.6.9 (/Users/sac/lsp-max/lsp-max-protocol)
 ├── lsp-max-runtime v26.6.9 (/Users/sac/lsp-max/lsp-max-runtime)
-├── lsp-types-max v26.6.14 (/Users/sac/lsp-types-max)
+├── lsp-types-max v26.6.24 (/Users/sac/lsp-types-max)
 ├── memchr v2.8.1
 ├── parking_lot v0.12.5
 ├── regex v1.12.3
@@ -41,7 +41,7 @@ lsp-max v26.6.9 (/Users/sac/lsp-max)
 ├── tree-sitter v0.26.9
 │   [build-dependencies]
 ├── url v2.5.8
-├── wasm4pm-compat v26.6.14 (/Users/sac/wasm4pm-compat)
+├── wasm4pm-compat v26.6.24 (/Users/sac/wasm4pm-compat)
 └── windows-sys v0.52.0
 [dev-dependencies]
 ├── async-tungstenite v0.29.1
@@ -63,6 +63,6 @@ lsp-max v26.6.9 (/Users/sac/lsp-max)
 │   [build-dependencies]
 ├── uuid v1.23.2
 ├── walkdir v2.5.0
-├── wasm4pm-compat v26.6.14 (/Users/sac/wasm4pm-compat) (*)
+├── wasm4pm-compat v26.6.24 (/Users/sac/wasm4pm-compat) (*)
 └── ws_stream_tungstenite v0.15.0
     [build-dependencies]

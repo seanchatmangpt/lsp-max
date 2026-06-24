@@ -131,4 +131,4 @@ The final PDF will be ready at:
 **Thesis prepared by**: Claude (Claude Code)  
 **For consideration of**: Prof. dr. ir. Wil M. P. van der Aalst  
 **Date**: 2026-06-23  
-**Workspace artifact**: lsp-max (CalVer 26.6.18)
+**Workspace artifact**: lsp-max (CalVer 26.6.24)

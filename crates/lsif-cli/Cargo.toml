@@ -16,8 +16,8 @@ name = "lsp-max-lsif"
 path = "src/main.rs"
 
 [dependencies]
-lsp-max-lsif = { path = "../lsp-max-lsif", version = "26.6.18" }
-lsif-rust = { path = "../lsif-rust", version = "26.6.18" }
-lsif-typescript = { path = "../lsif-typescript", version = "26.6.18" }
-lsif-linker = { path = "../lsif-linker", version = "26.6.18" }
+lsp-max-lsif = { path = "../lsp-max-lsif", version = "26.6.24" }
+lsif-rust = { path = "../lsif-rust", version = "26.6.24" }
+lsif-typescript = { path = "../lsif-typescript", version = "26.6.24" }
+lsif-linker = { path = "../lsif-linker", version = "26.6.24" }
 anyhow = { workspace = true }

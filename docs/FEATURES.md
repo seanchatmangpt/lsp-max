@@ -1,6 +1,6 @@
 # Supported Features
 
-> **Note (26.6.18):** This per-version table covers LSP 3.0–3.17 at
+> **Note (26.6.24):** This per-version table covers LSP 3.0–3.17 at
 > coarse granularity (90 methods, ~89.4%). It is superseded for LSP 3.18
 > by the authoritative 95-method combinatorial surface in
 > [`crates/anti-llm-cheat-lsp/docs/COVERAGE_LSP318_LSIF06.md`](../crates/anti-llm-cheat-lsp/docs/COVERAGE_LSP318_LSIF06.md).
@@ -47,7 +47,7 @@ Symbol          | Description
 
 > For the authoritative 95-method LSP 3.18 surface, see
 > [`crates/anti-llm-cheat-lsp/docs/COVERAGE_LSP318_LSIF06.md`](../crates/anti-llm-cheat-lsp/docs/COVERAGE_LSP318_LSIF06.md).
-> The 4 notebook methods now have `Wired` handlers (26.6.18), raising this
+> The 4 notebook methods now have `Wired` handlers (26.6.24), raising this
 > table from 80.5/90 to 84.5/90.
 
 ## [3.17.0] - 2022-05-10
