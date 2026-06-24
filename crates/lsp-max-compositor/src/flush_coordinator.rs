@@ -13,6 +13,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 
 use lsp_max::lsp_types::{Diagnostic, DiagnosticSeverity, NumberOrString, Position, Range};
+use lsp_max_runtime::control_plane::receipts::{Blake3Hash, Keystore};
 use tokio::time::{Duration, Instant};
 
 use crate::child_process::ChildProcessPool;
@@ -22,6 +23,7 @@ use crate::diagnostic_buffer::DiagnosticBuffer;
 use crate::gate_file::GateFile;
 use crate::merge::MergeContext;
 use crate::receipt::CompositorReceipt;
+use crate::receipt_chain::ChildEvidence;
 
 const MIN_WAIT: Duration = Duration::from_millis(1);
 const MAX_WAIT: Duration = Duration::from_millis(30);
@@ -76,6 +78,11 @@ pub struct FlushCoordinator {
     ocel_events: Arc<std::sync::Mutex<Vec<serde_json::Value>>>,
     /// Monotonic counter used as the OCEL event-id source.
     event_counter: Arc<AtomicU64>,
+    /// RFC B: monotonic sequence counter for per-child `ChildEvidence` chain links.
+    /// Each per-server flush contribution consumes one sequence slot, ensuring the
+    /// `consequence_hash` in each `CryptographicReceipt` is unique across the
+    /// coordinator lifetime. Shared with the background task via `Arc<AtomicU64>`.
+    receipt_seq: Arc<AtomicU64>,
 }
 
 impl FlushCoordinator {
@@ -100,6 +107,12 @@ impl FlushCoordinator {
         let ocel_events_bg = Arc::clone(&ocel_events);
         let event_counter = Arc::new(AtomicU64::new(0));
         let event_counter_bg = Arc::clone(&event_counter);
+        // RFC B: compositor-level Keystore for signing per-child chain links.
+        // Generated fresh at spawn time — not persisted. A persistent Keystore backed
+        // by a stable seed is OPEN (requires key-management infrastructure).
+        let compositor_keystore = Keystore::generate();
+        let receipt_seq = Arc::new(AtomicU64::new(0));
+        let receipt_seq_bg = Arc::clone(&receipt_seq);
 
         tokio::spawn(async move {
             // per_uri: tracks which servers have deposited for each URI in the current window.
@@ -222,14 +235,61 @@ impl FlushCoordinator {
                             .await;
                     }
 
+                    // RFC B: aggregate per-server flush contributions before building
+                    // the receipt so child evidence can be attached in one pass.
+                    // `per_server`: server_id → (admitted_count, has_andon_contribution)
+                    let mut per_server: HashMap<String, (usize, bool)> = HashMap::new();
+                    for d in &result.diagnostics {
+                        if let Some(sid) = &d.server_id {
+                            let entry = per_server.entry(sid.clone()).or_insert((0, false));
+                            entry.0 += 1;
+                            if d.severity == 1 && crate::merge::is_refused_by_law(&d.code) {
+                                entry.1 = true;
+                            }
+                        }
+                    }
+
+                    // RFC B: build one `ChildEvidence` per contributing server and attach
+                    // to the receipt. The compositor signs each link using its ephemeral
+                    // `Keystore`; the child's own receipt file is OPEN (not yet published).
+                    // `prev_hash` uses the zero hash as the chain genesis — a persistent
+                    // prev_hash from the previous flush is OPEN (requires chain head state).
+                    let child_evidence: Vec<ChildEvidence> = per_server
+                        .iter()
+                        .map(|(sid, &(admitted_count, has_andon))| {
+                            let seq = receipt_seq_bg.fetch_add(1, Ordering::Relaxed);
+                            let ev = ChildEvidence::from_flush_contribution(
+                                sid.as_str(),
+                                admitted_count,
+                                has_andon,
+                                seq,
+                                Blake3Hash([0u8; 32]),
+                                &compositor_keystore,
+                            );
+                            // compositor_signed = true means this is a compositor-side chain link
+                            // (child's own receipt file is OPEN — not yet published by the child).
+                            tracing::debug!(
+                                server_id = %ev.server_id,
+                                compositor_signed = true,
+                                has_andon = %ev.has_andon_contribution,
+                                admitted_count,
+                                seq,
+                                "rfc-b: child evidence chain link — status CANDIDATE"
+                            );
+                            ev
+                        })
+                        .collect();
+
                     let receipt =
-                        CompositorReceipt::new(uri.clone(), &result, ctx.andon_prefixes());
+                        CompositorReceipt::new(uri.clone(), &result, ctx.andon_prefixes())
+                            .with_child_evidence(child_evidence);
                     match receipt.status() {
                         crate::receipt::ReceiptStatus::Blocked => {
                             tracing::error!(
                                 uri = %receipt.uri,
                                 andon_codes = ?receipt.andon_codes,
                                 prefixes_fingerprint = receipt.prefixes_fingerprint,
+                                child_evidence_count = receipt.child_evidence.len(),
                                 status = %receipt.status(),
                                 "compositor-receipt: ANDON block — status BLOCKED"
                             );
@@ -239,6 +299,7 @@ impl FlushCoordinator {
                                 uri = %receipt.uri,
                                 diagnostic_count = receipt.diagnostic_count,
                                 prefixes_fingerprint = receipt.prefixes_fingerprint,
+                                child_evidence_count = receipt.child_evidence.len(),
                                 status = %receipt.status(),
                                 "compositor-receipt: flush ADMITTED"
                             );
@@ -305,18 +366,6 @@ impl FlushCoordinator {
                         }
                     }
 
-                    // Compute per-server acks from the merge result and notify child servers.
-                    let mut per_server: HashMap<String, (usize, bool)> = HashMap::new();
-                    for d in &result.diagnostics {
-                        if let Some(sid) = &d.server_id {
-                            let entry = per_server.entry(sid.clone()).or_insert((0, false));
-                            entry.0 += 1;
-                            if d.severity == 1 && crate::merge::is_refused_by_law(&d.code) {
-                                entry.1 = true;
-                            }
-                        }
-                    }
-
                     // Collect (server_id, handle) while DashMap ref is held briefly,
                     // then drop all refs before awaiting to avoid holding shard locks.
                     let mut ack_targets: Vec<(String, lsp_max_client::ServerHandle)> =
@@ -363,6 +412,7 @@ impl FlushCoordinator {
             drop_counter,
             ocel_events,
             event_counter,
+            receipt_seq,
         }
     }
 
@@ -412,5 +462,12 @@ impl FlushCoordinator {
     /// A non-zero value indicates backpressure; the compositor state endpoint surfaces this.
     pub fn signal_drop_count(&self) -> u64 {
         self.drop_counter.load(Ordering::Relaxed)
+    }
+
+    /// RFC B: monotonic count of `ChildEvidence` chain links signed by the
+    /// compositor's ephemeral Keystore over this coordinator lifetime.
+    /// Each per-server flush contribution consumes one sequence slot.
+    pub fn receipt_seq_count(&self) -> u64 {
+        self.receipt_seq.load(Ordering::Relaxed)
     }
 }
