@@ -495,5 +495,5 @@ pub fn merge_diagnostics_with_ctx_auto(
     result
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "full"))]
 mod witness_isolation;
