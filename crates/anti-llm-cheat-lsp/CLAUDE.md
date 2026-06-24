@@ -65,5 +65,5 @@ GGEN-*               — ggen violation (triggers gate ANDON)
 - Virtual doc `anti-llm://process-model`: CANDIDATE (renders live DFG + Declare)
 - `RulePackServer` bridge: CANDIDATE
 - `WorkspaceIndex` wiring: CANDIDATE
-- LSP 3.18 coverage: PARTIAL (93/95 methods Wired or Refuses)
+- LSP 3.18 coverage: PARTIAL (89/95 methods Wired or Refuses; 4 BLOCKED notebook handlers; 2 OPEN transport-layer methods)
 - LSIF 0.6 coverage: PARTIAL (all 38 elements modeled; no transcripts yet)
