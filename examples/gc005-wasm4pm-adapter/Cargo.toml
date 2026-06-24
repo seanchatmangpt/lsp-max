@@ -20,12 +20,12 @@ rustdoc-args = ["--cfg", "docsrs"]
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 wasm4pm-compat = { workspace = true }
-wasm4pm = { path = "/home/user/wasm4pm/wasm4pm" }
+wasm4pm = { git = "https://github.com/seanchatmangpt/wasm4pm", branch = "main" }
 
 [dev-dependencies]
 tempfile = "3"
 sha2 = "0.10"
 walkdir = "2"
 lsp_max = { package = "lsp-max", path = "../.." }
-lsp-types-max = { path = "../../../lsp-types-max" }
+lsp-types-max = { git = "https://github.com/seanchatmangpt/lsp-types-max", branch = "main" }
 url = "2"
