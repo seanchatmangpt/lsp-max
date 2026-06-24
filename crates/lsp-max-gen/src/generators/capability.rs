@@ -59,8 +59,7 @@ impl Generator for CapabilityGenerator {
 
         Ok(vec![
             GeneratedFile {
-                path: PathBuf::from("src/capabilities")
-                    .join(format!("{}.rs", ctx.snake_name)),
+                path: PathBuf::from("src/capabilities").join(format!("{}.rs", ctx.snake_name)),
                 content: capability_content,
                 // Skip preserves any prior edits to the capability module.
                 mode: WriteMode::Skip,

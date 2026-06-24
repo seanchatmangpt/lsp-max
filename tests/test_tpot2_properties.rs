@@ -18,9 +18,7 @@
 
 use lsp_max::pipeline::catalog::KNOWN_BREEDS;
 use lsp_max::pipeline::search::{DiversityFitnessEvaluator, PipelineSearch};
-use lsp_max::pipeline::types::{
-    PipelineBoundedStatus, PipelineSearchConfig, PipelineSearchResult,
-};
+use lsp_max::pipeline::types::{PipelineBoundedStatus, PipelineSearchConfig, PipelineSearchResult};
 
 /// A single generated test point: one config paired with one seed.
 #[derive(Clone)]
@@ -35,7 +33,9 @@ struct Case {
 /// fully reproducible run-to-run. Not the engine PRNG — only the driver's way
 /// of choosing which seeds to probe.
 fn spread_seed(counter: u64) -> u64 {
-    let mut x = counter.wrapping_mul(0x9e3779b97f4a7c15).wrapping_add(0x1234_5678);
+    let mut x = counter
+        .wrapping_mul(0x9e3779b97f4a7c15)
+        .wrapping_add(0x1234_5678);
     x ^= x >> 30;
     x = x.wrapping_mul(0xbf58_476d_1ce4_e5b9);
     x ^= x >> 27;

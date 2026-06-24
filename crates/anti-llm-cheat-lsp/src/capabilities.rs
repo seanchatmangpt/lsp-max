@@ -36,14 +36,15 @@ pub fn build_capabilities() -> ServerCapabilities {
             | "textDocument/willSaveWaitUntil"
                 if caps.text_document_sync.is_none() =>
             {
-                caps.text_document_sync =
-                    Some(TextDocumentSyncCapability::Options(TextDocumentSyncOptions {
+                caps.text_document_sync = Some(TextDocumentSyncCapability::Options(
+                    TextDocumentSyncOptions {
                         open_close: Some(true),
                         change: Some(TextDocumentSyncKind::FULL),
                         will_save: Some(true),
                         will_save_wait_until: Some(true),
                         save: Some(TextDocumentSyncSaveOptions::Supported(true)),
-                    }));
+                    },
+                ));
             }
 
             // ── Navigation language features ──────────────────────────────────
@@ -116,13 +117,12 @@ pub fn build_capabilities() -> ServerCapabilities {
                 caps.code_action_provider = Some(CodeActionProviderCapability::Simple(true));
             }
             "codeAction/resolve" => {
-                caps.code_action_provider = Some(CodeActionProviderCapability::Options(
-                    CodeActionOptions {
+                caps.code_action_provider =
+                    Some(CodeActionProviderCapability::Options(CodeActionOptions {
                         code_action_kinds: None,
                         resolve_provider: Some(true),
                         work_done_progress_options: WorkDoneProgressOptions::default(),
-                    },
-                ));
+                    }));
             }
 
             // ── Document link / color / on-type formatting ────────────────────
@@ -142,11 +142,10 @@ pub fn build_capabilities() -> ServerCapabilities {
             "textDocument/onTypeFormatting"
                 if caps.document_on_type_formatting_provider.is_none() =>
             {
-                caps.document_on_type_formatting_provider =
-                    Some(DocumentOnTypeFormattingOptions {
-                        first_trigger_character: ".".to_string(),
-                        more_trigger_character: Some(vec!["(".to_string()]),
-                    });
+                caps.document_on_type_formatting_provider = Some(DocumentOnTypeFormattingOptions {
+                    first_trigger_character: ".".to_string(),
+                    more_trigger_character: Some(vec!["(".to_string()]),
+                });
             }
 
             // ── Formatting / folding / hints / inline / semantic / symbol ─────
@@ -199,15 +198,12 @@ pub fn build_capabilities() -> ServerCapabilities {
             }
 
             // ── Type hierarchy ────────────────────────────────────────────────
+            // lsp_types_max's ServerCapabilities models no type_hierarchy_provider
+            // field in this version, so the capability cannot be advertised through
+            // the typed struct; the server still routes these methods when invoked.
             "textDocument/prepareTypeHierarchy"
             | "typeHierarchy/supertypes"
-            | "typeHierarchy/subtypes"
-                if caps.type_hierarchy_provider.is_none() =>
-            {
-                // Use the simple boolean form; the full TypeHierarchyServerCapability
-                // enum variant may vary across lsp_types_max versions.
-                caps.type_hierarchy_provider = Some(OneOf::Left(true));
-            }
+            | "typeHierarchy/subtypes" => {}
 
             // ── Call hierarchy ────────────────────────────────────────────────
             "textDocument/prepareCallHierarchy"

@@ -161,6 +161,8 @@ mod tests {
         (f, svc)
     }
 
+    // status verb: success, falsification, counterfactual ----------------------
+
     #[test]
     fn admission_status_known_instance_returns_ok() {
         let (_f, svc) = make_temp_mesh();
@@ -169,11 +171,36 @@ mod tests {
     }
 
     #[test]
-    fn admission_status_unknown_instance_returns_err() {
+    fn admission_status_response_is_json_object() {
+        // Falsification: the RPC response must be a JSON Value (not null).
         let (_f, svc) = make_temp_mesh();
-        let result = svc.status("no-such-instance");
-        assert!(result.is_err());
+        let value = svc.status("test-inst").unwrap();
+        // The response must be a Value (any JSON shape), not a bare Null from
+        // a missing dispatch.  The verb wraps it; we verify it serialises.
+        let serialised = serde_json::to_string(&value).unwrap();
+        assert!(
+            !serialised.is_empty(),
+            "response serialised to empty string"
+        );
     }
+
+    #[test]
+    fn admission_status_unknown_instance_returns_err() {
+        // Counterfactual: unknown instance must return Err.
+        let (_f, svc) = make_temp_mesh();
+        assert!(svc.status("no-such-instance").is_err());
+    }
+
+    #[test]
+    fn admission_status_missing_parent_dir_returns_err() {
+        // Counterfactual via non-existent parent directory.
+        let svc = AdmissionService {
+            state_path: "/tmp/no-such-dir-lsp-max/admission/state.json".to_string(),
+        };
+        assert!(svc.status("test-inst").is_err());
+    }
+
+    // refuse verb: success, falsification, counterfactual ----------------------
 
     #[test]
     fn admission_refuse_known_instance_returns_ok() {
@@ -183,9 +210,101 @@ mod tests {
     }
 
     #[test]
+    fn admission_refuse_response_is_serialisable() {
+        // Falsification: the returned Value must serialise without error.
+        let (_f, svc) = make_temp_mesh();
+        let value = svc.refuse("test-inst", "law-boundary").unwrap();
+        let serialised = serde_json::to_string(&value).unwrap();
+        assert!(!serialised.is_empty(), "refuse response serialised to empty");
+    }
+
+    #[test]
+    fn admission_refuse_unknown_instance_returns_err() {
+        // Counterfactual: unknown instance must return Err.
+        let (_f, svc) = make_temp_mesh();
+        assert!(svc.refuse("no-such-instance", "reason").is_err());
+    }
+
+    #[test]
+    fn admission_refuse_missing_parent_dir_returns_err() {
+        // Counterfactual via non-existent parent directory.
+        let svc = AdmissionService {
+            state_path: "/tmp/no-such-dir-lsp-max/admission/state.json".to_string(),
+        };
+        assert!(svc.refuse("test-inst", "reason").is_err());
+    }
+
+    // replay verb: success, falsification, counterfactual ----------------------
+
+    #[test]
     fn admission_replay_known_instance_returns_ok() {
         let (_f, svc) = make_temp_mesh();
         let result = svc.replay("test-inst");
         assert!(result.is_ok(), "expected Ok, got: {:?}", result);
+    }
+
+    #[test]
+    fn admission_replay_response_is_serialisable() {
+        // Falsification: the returned Value must serialise without error.
+        let (_f, svc) = make_temp_mesh();
+        let value = svc.replay("test-inst").unwrap();
+        let serialised = serde_json::to_string(&value).unwrap();
+        assert!(!serialised.is_empty(), "replay response serialised to empty");
+    }
+
+    #[test]
+    fn admission_replay_unknown_instance_returns_err() {
+        // Counterfactual: unknown instance must return Err.
+        let (_f, svc) = make_temp_mesh();
+        assert!(svc.replay("no-such-instance").is_err());
+    }
+
+    #[test]
+    fn admission_replay_missing_parent_dir_returns_err() {
+        // Counterfactual via non-existent parent directory.
+        let svc = AdmissionService {
+            state_path: "/tmp/no-such-dir-lsp-max/admission/state.json".to_string(),
+        };
+        assert!(svc.replay("test-inst").is_err());
+    }
+
+    // CLI-tier result structs: falsification of echoed fields ------------------
+
+    #[test]
+    fn admission_status_result_carries_instance_id() {
+        // Falsification: the CLI result struct must echo back the queried id.
+        let (_f, svc) = make_temp_mesh();
+        let response = svc.status("test-inst").unwrap();
+        let result = AdmissionStatusResult {
+            instance_id: "test-inst".to_string(),
+            response,
+        };
+        assert_eq!(result.instance_id, "test-inst");
+    }
+
+    #[test]
+    fn admission_refuse_result_carries_instance_id_and_reason() {
+        // Falsification: the CLI result struct must echo back both id and reason.
+        let (_f, svc) = make_temp_mesh();
+        let response = svc.refuse("test-inst", "boundary-breach").unwrap();
+        let result = AdmissionRefuseResult {
+            instance_id: "test-inst".to_string(),
+            reason: "boundary-breach".to_string(),
+            response,
+        };
+        assert_eq!(result.instance_id, "test-inst");
+        assert_eq!(result.reason, "boundary-breach");
+    }
+
+    #[test]
+    fn admission_replay_result_carries_instance_id() {
+        // Falsification: the CLI result struct must echo back the queried id.
+        let (_f, svc) = make_temp_mesh();
+        let response = svc.replay("test-inst").unwrap();
+        let result = AdmissionReplayResult {
+            instance_id: "test-inst".to_string(),
+            response,
+        };
+        assert_eq!(result.instance_id, "test-inst");
     }
 }

@@ -5,7 +5,16 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo /home/user/lsp-max)/.claude/session-start.sh\""
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/session-start.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "startup",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/discover-lsp-chains.sh"
           }
         ]
       }
@@ -16,7 +25,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "lsp-max-cli gate check 2>/dev/null || true"
+            "command": "${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/gate-check.sh"
           }
         ]
       }
@@ -27,7 +36,18 @@
         "hooks": [
           {
             "type": "command",
-            "command": "cd \"$(git rev-parse --show-toplevel 2>/dev/null || echo /home/user/lsp-max)\" && lsp-max-cli diagnostic snapshot 2>/dev/null || true"
+            "command": "command -v lsp-max-cli >/dev/null 2>&1 && lsp-max-cli diagnostic snapshot 2>/dev/null || true"
+          }
+        ]
+      }
+    ],
+    "FileChanged": [
+      {
+        "matcher": "lsp-max\\.toml$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "command -v lsp-max-mcp >/dev/null 2>&1 && lsp-max-mcp reload-config 2>/dev/null || true"
           }
         ]
       }

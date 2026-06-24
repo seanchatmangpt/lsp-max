@@ -96,8 +96,7 @@ impl MeshService {
             }),
         );
         state["mesh_nodes"] = serde_json::Value::Object(new_nodes);
-        Self::save_state(&state)
-            .map_err(|e| clap_noun_verb::error::NounVerbError::execution_error(e))?;
+        Self::save_state(&state).map_err(clap_noun_verb::error::NounVerbError::execution_error)?;
         Ok(MeshRegisterResult {
             server_id: id.to_string(),
             capabilities_count: capabilities.len(),

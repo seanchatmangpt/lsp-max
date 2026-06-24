@@ -1,0 +1,9 @@
+[package]
+name = "lsp-types-max"
+version = "26.6.8"
+edition = "2021"
+description = "Stub for lsp-types-max — satisfies workspace path-dep resolution; routing tests only"
+license = "MIT OR Apache-2.0"
+
+[features]
+proposed = []

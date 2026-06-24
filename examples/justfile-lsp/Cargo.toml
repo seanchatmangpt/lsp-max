@@ -18,7 +18,7 @@ path = "src/main.rs"
 
 [dependencies]
 lsp-max = { path = "../../" }
-lsp-types-max = { path = "../../../lsp-types-max", version = "26.6.5", features = ["proposed"] }
+lsp-types-max = { version = "26.6.24", features = ["proposed"] }
 tokio = { version = "1", features = ["rt", "rt-multi-thread", "macros", "io-std"] }
 parking_lot = { workspace = true }
 regex = { workspace = true }

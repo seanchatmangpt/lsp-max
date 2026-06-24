@@ -17,11 +17,16 @@ vendors/
 !.claude/skills/*/
 .claude/skills/*/*
 !.claude/skills/*/SKILL.md
+!.claude/hooks/
+!.claude/hooks/*.sh
+!.claude/agents/
+!.claude/agents/*.md
 **/refund_receipt.txt
 **/target_e2e/
 **/lsif_dump.json
 **/receipts/
 !/crates/anti-llm-cheat-lsp/receipts/
+!/crates/lsp-max-compositor/receipts/
 !/examples/lsp-max-scaffold/receipts/
 scratch/
 /doc/

@@ -44,8 +44,14 @@ fn fixture_profile_is_bounded_and_structurally_nontrivial() {
     }
     // Order o1 runs place -> pick -> pick -> deliver: a multi-event, divergent
     // trace (the repeated "pick item"), with object types Order/Item/Customer.
-    assert!(p.temporal_density > 0.0, "multi-event object traces present");
-    assert!(p.divergence > 0.0, "a repeated per-object activity is present");
+    assert!(
+        p.temporal_density > 0.0,
+        "multi-event object traces present"
+    );
+    assert!(
+        p.divergence > 0.0,
+        "a repeated per-object activity is present"
+    );
     assert!(p.object_type_spread > 0.0, "multiple object types present");
 }
 

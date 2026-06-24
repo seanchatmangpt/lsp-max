@@ -1,5 +1,19 @@
+# lsp-max-compositor manifest. Each [[server]] is a child LSP the compositor
+# spawns and multiplexes behind one LSP session. An editor/agent (e.g. Claude
+# Code) binds a single LSP per file extension; the compositor is that front door
+# and fans out to every child registered for the extension — diagnostics from
+# all of them (FanAll, merged), request features from the Primary (FirstSuccess).
+#
+# `command` is resolved relative to the compositor's working directory (the
+# workspace root). Run `cargo build` so the debug binaries exist, or replace the
+# paths with absolute paths / PATH-resolved names for an installed deployment.
+# `args = []`: these servers speak LSP over stdio with no subcommand. A server
+# whose `command` fails to spawn degrades gracefully (logged, others continue).
+
 [[server]]
 id = "wasm4pm-lsp"
+command = "target/debug/wasm4pm-lsp"
+args = []
 primary_extensions = [".ocel.json", ".receipt.json", ".ocel.jsonl"]
 secondary_extensions = [".rs", ".ts", ".json"]
 priority = "diagnostics-only"
@@ -14,6 +28,8 @@ andon_code_prefixes = ["WASM4PM-", "GGEN-EVIDENCE-", "CLAP-PACK-HANDLER-UNBOUND"
 
 [[server]]
 id = "anti-llm-cheat-lsp"
+command = "target/debug/anti-llm-cheat-lsp"
+args = []
 primary_extensions = [".rs", ".ts", ".tsx", ".json", ".jsonl", ".md"]
 secondary_extensions = []
 priority = "diagnostics-only"
@@ -24,6 +40,8 @@ andon_code_prefixes = ["ANTI-LLM-"]
 
 [[server]]
 id = "ggen-lsp"
+command = "target/debug/ggen-lsp"
+args = []
 primary_extensions = [".ttl", ".rq", ".tera"]
 secondary_extensions = []
 priority = "full"

@@ -1,0 +1,154 @@
+\chapter{The Fusion Architecture: LSP \texorpdfstring{$\times$}{x} MCP \texorpdfstring{$\times$}{x} A2A}
+\label{ch:fusion}
+
+\epigraph{A single Language Server can be re-used in multiple development tools,
+which in turn can support multiple languages.}{\textit{Microsoft}, on LSP
+\citep{lsp-official}}
+
+\Cref{ch:background} established that LSP, MCP, and A2A are the same decoupling at
+three layers; \cref{ch:framework} hypothesised that they are therefore strata of
+one substrate (\cref{hyp:substrate}); \cref{ch:artifact} showed an artifact that
+already runs the conformance stratum. This chapter composes the strata explicitly.
+It assigns each protocol its role (\cref{sec:fus-lsp,sec:fus-mcp,sec:fus-a2a}),
+shows how \lspmax\ occupies more than one stratum at once (\cref{sec:fus-stack}),
+and traces a single conformance verdict through the whole stack
+(\cref{sec:fus-conformance}).
+
+\section{The Convergence Thesis, Concretely}
+\label{sec:fus-convergence}
+
+The fusion claim is not that the three protocols will be merged into one
+specification. It is that they \emph{compose}: because all three are JSON-RPC
+contracts with explicit capability negotiation
+\citep{lsp-spec-318,mcp-spec-2025,a2a-spec}, a single agent can speak all three
+without impedance, and the output of one becomes the input of another. An agent
+discovered over A2A consults tools over MCP and reasons about language over a
+generalised LSP; nothing in the three specifications obstructs this layering, and
+their shared lineage and governance actively invite it
+\citep{mcp-spec-2025,a2a-mcp,lf-aaif-press}. \Cref{fig:stack} renders the
+resulting architecture.
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}[
+  font=\footnotesize,
+  layer/.style={draw,rounded corners,minimum width=10.5cm,minimum height=10mm,align=center},
+  >=Latex]
+  \node[layer,fill=black!4] (agents) {\textbf{Agents} \;(human and autonomous)};
+  \node[layer,fill=lawblue!10,below=4mm of agents] (a2a)
+    {\textbf{A2A} --- coordination stratum \;\;(agent\,$\leftrightarrow$\,agent: Agent Cards, Tasks)};
+  \node[layer,fill=lawblue!10,below=4mm of a2a] (mcp)
+    {\textbf{MCP} --- context stratum \;\;(agent\,$\leftrightarrow$\,tools/data: resources, tools, prompts)};
+  \node[layer,fill=lawblue!10,below=4mm of mcp] (lsp)
+    {\textbf{LSP, generalised} --- semantic stratum \;\;(utterance\,$\leftrightarrow$\,meaning)};
+  \node[layer,fill=black!4,below=4mm of lsp] (langs)
+    {\textbf{Languages}\; code $\cdot$ natural $\cdot$ legal $\cdot$ math $\cdot$ bio $\cdot$ music $\cdot$ process};
+  \draw[->] (agents) -- (a2a);
+  \draw[->] (a2a) -- (mcp);
+  \draw[->] (mcp) -- (lsp);
+  \draw[->] (lsp) -- (langs);
+  % cross-cutting conformance stratum
+  \node[draw,rounded corners,fill=admitted!12,rotate=90,minimum width=4.9cm,
+        minimum height=9mm,align=center,right=5mm of mcp.east,anchor=center,
+        xshift=5mm] (conf)
+    {\textbf{Conformance} (\lspmax)\\ three-valued $\cdot$ receipts $\cdot$ OCEL};
+  \draw[decorate,decoration={brace,amplitude=4pt,mirror}]
+    ($(a2a.north east)+(0.2,0)$) -- ($(lsp.south east)+(0.2,0)$);
+\end{tikzpicture}
+\caption[The fused substrate]{The fused substrate. A2A, MCP, and a generalised
+LSP form three horizontal strata between agents and languages; \lspmax\ supplies a
+cross-cutting conformance stratum (\cref{hyp:substrate}) that observes every layer
+as an object-centric event log and reports three-valued, receipt-bound verdicts.}
+\label{fig:stack}
+\end{figure}
+
+\section{LSP as the Semantic Substrate}
+\label{sec:fus-lsp}
+
+The lowest protocol stratum answers ``what does this utterance mean?''. Its
+contribution to the fusion is the very property that made it successful for code:
+it isolates language understanding behind a uniform contract so that the layers
+above need not know how meaning is computed. Generalised per \cref{def:mml}, an
+LSP server need not serve a programming language at all---LTeX already serves
+natural language, and the YAML server serves a data format
+\citep{ltex,yamlls}---and \lspmax\ extends the surface with the \maxm{*} family so
+that ``meaning'' includes ``law-state'' (\cref{sec:art-maxm}). In the fused
+architecture, every language domain of \cref{ch:all-language} appears as an
+LSP-style server, integrated once and reachable by every agent above.
+
+\section{MCP as the Context Substrate}
+\label{sec:fus-mcp}
+
+The middle stratum answers ``what may I consult, and what may I do?''. MCP's three
+server primitives---resources, prompts, and tools \citep{mcp-spec-2025}---are the
+natural envelope in which a generalised LSP server is presented to a model: a
+language server's analyses become MCP \emph{resources}, its repair plans become
+\emph{prompts}, and its actuations become \emph{tools}. The composition is
+direct and already idiomatic, since MCP was itself shaped by LSP
+\citep{mcp-spec-2025}. Concretely, \lspmax's read-only analyses (\maxm{conformanceVector},
+\maxm{explainDiagnostic}) map to MCP resources, while its guarded actuations
+(\maxm{releaseActuation}) map to MCP tools whose invocation the law-state runtime
+may refuse. MCP thus carries conformance \emph{outward} to any host application
+without that host needing to understand the conformance machinery.
+
+\section{A2A as the Coordination Substrate}
+\label{sec:fus-a2a}
+
+The upper stratum answers ``which agents exist, and how do we combine?''. A2A's
+Agent Card advertises capabilities for discovery \citep{a2a-spec,a2a-discovery};
+in the fused architecture, ``produces receipt-bound conformance verdicts'' is
+itself an advertisable capability, so that a coordinating agent can locate a
+\emph{conformance authority} the way it locates any other skill. A2A's Task
+lifecycle---\code{submitted}, \code{working}, \code{input-required},
+\code{completed}, \code{failed}---is, read through \cref{ch:framework}, already an
+event log: each state transition is an event with a timestamp and an actor. The
+coordination stratum thus not only \emph{carries} conformance verdicts between
+agents; its own activity is a language with a conformance surface, exactly as
+\cref{sec:art-ocel} showed for an agent's stream of edits.
+
+\section{The Composed Stack: \texorpdfstring{\lspmax}{lsp-max} as Mesh}
+\label{sec:fus-stack}
+
+\lspmax\ is instructive because it does not sit in a single stratum. Its Layer-2
+surface is an LSP server (semantics); its \maxm{*} methods and \code{ConformanceVector}
+are the conformance stratum; and its Layer-5 \emph{compositor} is a multi-server
+mesh that fans a client request out to $N$ child servers and merges their
+diagnostics, with the rule that refusals survive the merge
+(``\code{REFUSED\_BY\_LAW} codes survive always'') \citep{lspmax}. This last
+property is the architectural expression of \cref{prin:three-valued} at the mesh
+level: aggregating many servers must not let an admission elsewhere overwrite a
+refusal here. The compositor emits its own merge receipts and can render the
+fan-out-then-merge flush as an OCEL event, so that even the act of composition is
+minable. A mesh of conformance authorities, coordinated over A2A and consulted
+over MCP, each understanding some language over LSP, is the fused substrate made
+operational.
+
+\section{Conformance Across the Fusion}
+\label{sec:fus-conformance}
+
+The point of fusing the strata is that a single verdict can travel the whole
+height of \cref{fig:stack}. Consider a coordinating agent that must release a
+regulated artifact. It discovers, over A2A, a conformance authority whose Agent
+Card advertises the capability. It invokes that authority's analysis as an MCP
+tool. The authority is, internally, an \lspmax\ mesh: it treats the artifact as
+an object-centric event log (\cref{def:eventlog}), runs the conformance surface
+over the relevant law axes (\cref{def:conformance-surface}), and returns a
+\code{ConformanceVector}. If any axis is \refused, \maxm{releaseActuation} refuses
+and emits a refusal receipt; if axes are \unknownstat\ and the policy is strict,
+release is withheld rather than granted; only if the vector admits release does
+the coordinating agent proceed---carrying the receipt as evidence that other
+agents, over A2A, can in turn verify.
+
+Two features of this flow are worth isolating as the fusion's distinctive
+contributions. First, \emph{accountability composes with reach}: the same
+capability-negotiated, JSON-RPC machinery that lets the agent reach further also
+lets a verdict and its receipt travel back, so expansion of reach need not
+outrun expansion of accountability---the deficiency P2 of \cref{sec:problem}.
+Second, \emph{the verdict is portable}: because the receipt is content-addressed
+and chained (\cref{lst:receipt}), an admission produced deep in an \lspmax\ mesh
+remains checkable after it has crossed an MCP tool boundary and an A2A task
+boundary. The fusion does not merely connect systems; it lets a single,
+three-valued, evidence-bound judgement remain meaningful across every connection
+it crosses. Whether this portability holds under adversarial conditions at scale
+is, properly, \candidate\ rather than \admitted, and \cref{ch:discussion} returns
+to it.

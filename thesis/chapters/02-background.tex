@@ -1,0 +1,278 @@
+\chapter{Background and Related Work}
+\label{ch:background}
+
+\epigraph{There is no AI without PI.}{\textit{Wil van der Aalst}, on
+object-centric process mining as the enabler of artificial intelligence
+\citep{noai-nopi-2025}}
+
+This chapter establishes the four foundations on which the thesis rests: process
+mining and the paradigm founded by van der Aalst (\cref{sec:bg-pm}); the Language
+Server Protocol (\cref{sec:bg-lsp}); the Model Context Protocol
+(\cref{sec:bg-mcp}); and the Agent-to-Agent protocol together with the wider
+agent-interoperability landscape (\cref{sec:bg-a2a,sec:bg-landscape}).
+\Cref{sec:bg-synthesis} draws them together into the observation that organises
+the rest of the thesis: each is the same decoupling, performed at a different
+layer.
+
+\section{Process Mining and the van der Aalst Paradigm}
+\label{sec:bg-pm}
+
+\subsection{Origins and definition}
+
+Process mining sits between data mining and business process management. Its
+canonical statement, from the \emph{Process Mining Manifesto} issued by the IEEE
+Task Force on Process Mining---a document drafted by more than seventy-five people
+across more than fifty organisations \citep{tfpm-manifesto}---is that ``the basic
+idea of process mining is to discover, monitor and improve real processes
+(i.e., not assumed processes) by extracting knowledge from event logs readily
+available in today's (information) systems'' \citep{pm-manifesto-2011}. The
+field's reference monograph is van der Aalst's \emph{Process Mining: Data Science
+in Action} \citep{vdaalst-book-2016}.
+
+The discipline was, in a real sense, founded and sustained by a single central
+figure. Van der Aalst holds the Chair of Process and Data Science (PADS) at RWTH
+Aachen University, is part-time affiliated with Fraunhofer FIT, and since August
+2021 has been Chief Scientist at Celonis \citep{vdaalst-cv,celonis-godfather}; he
+is a Fellow of the IFIP, IEEE, and ACM, and received the Alexander von Humboldt
+Professorship in 2018 \citep{vdaalst-cv}. He is widely styled ``the Godfather of
+Process Mining''---a descriptor used both on his own curriculum vitae and in the
+official Celonis appointment \citep{vdaalst-cv,celonis-godfather}---and is among
+the most highly cited computer scientists, with an $h$-index of roughly
+$188$--$191$ and on the order of $170{,}000$ citations as reported by Google
+Scholar in the mid-2020s.\footnote{Citation metrics are time-variant; the figures
+are reported as a snapshot rather than a fixed quantity \citep{vdaalst-cv}.} We
+foreground this not as flattery but because the thesis argues that his
+paradigm---not merely his tools---generalises beyond its origin domain, and the
+strength of that claim is proportional to the maturity of what is being
+generalised.
+
+\subsection{The three types of process mining}
+
+Process mining comprises three complementary activities
+\citep{pm-manifesto-2011,vdaalst-book-2016}:
+
+\begin{description}[leftmargin=1.4em,style=nextline]
+  \item[Discovery] taking an event log and producing a process model without any
+  a-priori model.
+  \item[Conformance checking] comparing an existing model with an event log of
+  the same process to locate where reality and model agree and where they
+  diverge.
+  \item[Enhancement] extending or improving a model using information recorded in
+  the actual log.
+\end{description}
+
+Conformance checking is the activity this thesis elevates to a protocol surface.
+
+\subsection{Conformance checking and the four quality dimensions}
+\label{sec:bg-conformance}
+
+Two principal techniques realise conformance checking. \emph{Token-based replay}
+replays each trace against a (Petri-net) model, counting produced, consumed,
+missing, and remaining tokens to compute a fitness score; \emph{alignments}, the
+more modern technique, compute an optimal correspondence between trace and model,
+yielding more precise diagnostics at higher computational cost
+\citep{conformance-review-2020}. The quality of a discovered or checked model is
+judged along four dimensions that are in tension with one another
+\citep{vdaalst-book-2016}:
+
+\begin{description}[leftmargin=1.4em,style=nextline]
+  \item[Fitness] the model can replay the observed behaviour.
+  \item[Precision] the model does not allow much behaviour that was never
+  observed (avoiding underfitting).
+  \item[Generalisation] the model is not over-specialised to the log (avoiding
+  overfitting).
+  \item[Simplicity] the model is as simple as the behaviour permits (Occam's
+  razor).
+\end{description}
+
+These four dimensions recur in \cref{ch:framework} as the criteria a conformance
+surface for \emph{any} language must balance.
+
+\subsection{Event-log standards: XES, OCEL, and OCEL 2.0}
+\label{sec:bg-ocel}
+
+Conformance requires logs, and logs require a standard. The first was XES
+(eXtensible Event Stream), ratified as IEEE Std~1849-2016 \citep{xes-2016}. XES
+assumes a single \emph{case notion}: every event belongs to exactly one case.
+Real systems violate this assumption---an event may touch an order, several
+items, a package, and a customer at once---and forcing a single case identifier
+produces two pathologies that van der Aalst names \emph{convergence} (an event is
+duplicated across cases) and \emph{divergence} (ordering within a case is lost)
+\citep{ocpn-2020}.
+
+The response is the \emph{Object-Centric Event Log} (OCEL): OCEL~1.0 appeared in
+2020, and OCEL~2.0 was specified in 2023--2024 \citep{ocel2-2024,ocel-standard}.
+Per its specification, OCEL~2.0 ``forms the new, more expressive standard'' and,
+unlike its predecessor, ``can depict changes in objects, provide information on
+object relationships, and qualify these relationships'' \citep{ocel2-2024}.
+Concretely it adds dynamic object attributes (values that change over time),
+object-to-object relationships (two objects related without sharing an event),
+and qualified relationships (the role an object plays in an event), with exchange
+formats in SQLite, XML, and JSON \citep{ocel2-2024,ocel-standard}. OCEL~2.0 is
+the data model the artifact of this thesis emits, and \cref{ch:all-language}
+argues it is the right abstraction for \emph{all} language, not only business
+process.
+
+\subsection{Object-centric process mining and ``no AI without PI''}
+\label{sec:bg-ocpm}
+
+Object-centric process mining (OCPM) generalises discovery and conformance to
+logs with many interrelated object types; object-centric Petri nets give each
+object type its own subnet within one integrated net \citep{ocpn-2020}. Van der
+Aalst frames OCPM as ``the next frontier'' and, most recently, as the
+indispensable substrate for artificial intelligence: in \emph{No AI Without PI!}
+he argues that object-centric process mining is ``the missing link connecting
+data and processes'' and introduces \emph{Process Intelligence} (PI) as the
+amalgamation of process-centric, data-driven techniques required to ground
+generative, predictive, and prescriptive AI \citep{noai-nopi-2025}. A parallel
+strand in the community has begun to re-examine process mining in light of
+LLM-based agents, proposing agent-workflow decompositions of mining tasks
+\citep{rethinking-pm-agents-2024}. This thesis is, in effect, the contrapositive
+of van der Aalst's slogan applied to language: \emph{no conformance for all
+language without an object-centric event abstraction}.
+
+\subsection{Methodology: PM\texorpdfstring{$^2$}{2} and L*}
+
+Process-mining projects are themselves structured. The PM\textsuperscript{2}
+methodology defines staged activities with explicit inputs and outputs and was
+validated on an industrial purchasing process \citep{pm2-2015}; the earlier L*
+life-cycle model in \citet{vdaalst-book-2016} sets out a five-stage progression
+from planning and extraction through model construction to operational support.
+\Cref{ch:methodology} positions the present work's design-science process
+alongside these.
+
+\section{The Language Server Protocol}
+\label{sec:bg-lsp}
+
+LSP was announced on 27~June~2016 as a collaboration of Red Hat, Codenvy, and
+Microsoft, having grown out of the integration of the OmniSharp (C\#) and
+TypeScript servers into VS~Code \citep{lsp-redhat-2016}. Its design is built on
+JSON-RPC~2.0: the content of every message ``uses JSON-RPC 2.0 to describe
+requests, responses and notifications'', framed by a required \code{Content-Length}
+header \citep{lsp-spec-318}. Communication begins with capability negotiation:
+the \code{initialize} request, ``the first request \dots\ from the client to the
+server'', exchanges client and server capabilities, and features may further be
+registered dynamically thereafter \citep{lsp-spec-318}.
+
+The protocol's load-bearing idea is captured in \cref{sec:motivation}: it
+decouples language intelligence from the editor so that the integration burden
+falls from $M \times N$ to $M + N$ \citep{lsp-official,lsp-mxn-fcc}. Versions
+3.16 (December~2020) and 3.17 (May~2022) added semantic tokens, call and type
+hierarchies, inlay hints, and notebook support; version 3.18 is, at the time of
+writing, explicitly ``under development'' rather than finalised, a status this
+thesis is careful to preserve \citep{lsp-spec-317,lsp-spec-318}.
+
+Crucially for \cref{ch:all-language}, LSP has already escaped the boundary of
+programming languages in practice. LTeX is a language server whose ``language''
+is natural language: its documentation states that ``the `language' is not a
+single natural language, but all natural languages supported by LanguageTool''
+\citep{ltex}. Other servers target prose (textLSP) and data/configuration formats
+(the Red Hat YAML language server) \citep{textlsp,yamlls}. These are existence
+proofs, not a theory; supplying the theory---a criterion for what counts as a
+servable language---is contribution~C2.
+
+\section{The Model Context Protocol}
+\label{sec:bg-mcp}
+
+MCP was open-sourced by Anthropic on 25~November~2024 as ``a new standard for
+connecting AI assistants to the systems where data lives''
+\citep{mcp-anthropic-2024}. Like LSP, it is a JSON-RPC~2.0 protocol with explicit
+capability negotiation \citep{mcp-spec-2025}, and it defines three roles: hosts
+(``LLM applications that initiate connections''), clients (``connectors within
+the host application''), and servers (``services that provide context and
+capabilities'') \citep{mcp-spec-2025,mcp-architecture}. Servers expose three
+primitives---\emph{resources} (context and data), \emph{prompts} (templated
+workflows), and \emph{tools} (functions the model may execute)---while clients may
+offer \emph{sampling}, \emph{roots}, and \emph{elicitation} back to servers
+\citep{mcp-spec-2025}. Its transports are stdio for local processes and, since
+the 2025-03-26 revision, ``Streamable HTTP'', which replaced the earlier HTTP+SSE
+transport \citep{mcp-transports-2025,mcp-architecture}.
+
+MCP's adoption through 2025 was unusually rapid for a vendor-originated standard:
+OpenAI announced support on 26~March~2025 \citep{openai-mcp-techcrunch}, Google
+followed on 9~April~2025 \citep{google-mcp-techcrunch}, and Microsoft integrated
+it into Copilot Studio and Windows. In December~2025 Anthropic donated MCP to the
+Agentic AI Foundation, ``a directed fund under the Linux Foundation'', co-founded
+with Block and OpenAI and backed by AWS, Bloomberg, Cloudflare, Google, and
+Microsoft, while stating that the project's governance model would remain
+unchanged \citep{mcp-aaif-2025,lf-aaif-press}.
+
+\section{The Agent-to-Agent Protocol}
+\label{sec:bg-a2a}
+
+Google published A2A on 9~April~2025 with more than fifty technology partners
+\citep{a2a-google-2025}. Its central artefact is the \emph{Agent Card}, a JSON
+document advertising an agent's identity, capabilities, skills, endpoint, and
+authentication requirements, served---in current revisions---at the well-known
+path \code{/.well-known/agent-card.json} \citep{a2a-spec,a2a-discovery}. The unit
+of work is the \emph{Task}, with a defined lifecycle (\code{submitted},
+\code{working}, \code{input-required}, \code{completed}, \code{failed},
+\code{canceled}, and related states); communication uses \emph{Messages} and
+\emph{Artifacts} composed of typed \emph{Parts} \citep{a2a-spec}. Like LSP and
+MCP, A2A reuses ``existing, well-understood standards (HTTP, JSON-RPC 2.0,
+Server-Sent Events)'' \citep{a2a-spec}.
+
+A2A is positioned as complementary to, not competitive with, MCP. The
+specification states that ``the Model Context Protocol (MCP) defines how an AI
+agent interacts with \dots\ tools and resources'' while ``the Agent2Agent
+Protocol focuses on enabling different agents to collaborate'': an application
+uses A2A to talk to other agents, each of which uses MCP internally for its tools
+\citep{a2a-mcp}. In June~2025 Google donated A2A to the Linux Foundation, seeding
+an Agent2Agent project with AWS, Cisco, Google, Microsoft, Salesforce, SAP, and
+ServiceNow \citep{a2a-lf-donation,lf-a2a-press}.
+
+\section{The Agent-Interoperability Landscape}
+\label{sec:bg-landscape}
+
+A2A and MCP are the most prominent but not the only agent-interoperability
+efforts. IBM's Agent Communication Protocol (ACP), a REST-native alternative,
+merged with A2A under the Linux Foundation in August~2025 \citep{acp-a2a-merge};
+the Agent Network Protocol (ANP) pursues a decentralised ``HTTP of the agentic
+web'' built on decentralised identifiers \citep{anp-github}; and Cisco's AGNTCY
+collective promotes an ``Internet of Agents'' spanning discovery, composition,
+and evaluation \citep{agntcy-cisco}. Commentary oscillates between a ``protocol
+wars'' framing and a ``co-opetition'' one, but the institutional trajectory---A2A
+and then MCP arriving under the Linux Foundation umbrella within six months
+\citep{lf-a2a-press,lf-aaif-press}---favours consolidation. The emerging
+reference architecture is a two-layer stack: MCP for vertical agent-to-tool
+integration, A2A for horizontal agent-to-agent coordination
+\citep{a2a-google-2025,a2a-mcp}. This thesis adds a third, lower stratum---LSP,
+generalised---and a cross-cutting surface---conformance.
+
+\section{Synthesis: Three Decouplings, One Trajectory}
+\label{sec:bg-synthesis}
+
+\Cref{tab:three-decouplings} reads the three protocols as instances of one move.
+Each isolates a capability that was previously fused to a host, exposes it behind
+a JSON-RPC contract with capability negotiation, and thereby converts an
+$M \times N$ integration burden into $M + N$.
+
+\begin{table}[t]
+\centering
+\caption[Three decouplings, one trajectory]{LSP, MCP, and A2A as three instances
+of the same decoupling. Each exposes a previously host-bound capability behind a
+JSON-RPC contract with capability negotiation, collapsing $M \times N$ into
+$M + N$.}
+\label{tab:three-decouplings}
+\small
+\begin{tabularx}{\textwidth}{@{}l l l Y@{}}
+\toprule
+\textbf{Protocol} & \textbf{Year} & \textbf{Decouples\,\dots} & \textbf{\dots from} \\
+\midrule
+LSP & 2016 & language intelligence & the editor \citep{lsp-redhat-2016} \\
+MCP & 2024 & context and tools & the model \citep{mcp-anthropic-2024} \\
+A2A & 2025 & agent capability & the framework \citep{a2a-google-2025} \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+Three facts make the ``one trajectory'' reading more than analogy. First, common
+mechanism: all three are JSON-RPC protocols with explicit client/server
+capability negotiation \citep{lsp-spec-318,mcp-spec-2025,a2a-spec}. Second,
+acknowledged lineage: the MCP specification records that it ``takes some
+inspiration from the Language Server Protocol'' \citep{mcp-spec-2025}, and A2A
+defines itself relative to MCP \citep{a2a-mcp}. Third, converging governance: MCP
+and A2A now share a foundation \citep{lf-a2a-press,lf-aaif-press}. What the stack
+still lacks---and what process mining supplies---is a surface that asks not
+whether a message was delivered but whether the resulting behaviour conformed.
+\Cref{ch:framework} builds that surface.

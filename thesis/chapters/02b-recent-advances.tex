@@ -1,0 +1,110 @@
+\section{Recent Advances (December 2025 -- June 2026)}
+\label{sec:recent}
+
+The thesis is written into a fast-moving literature. This section surveys
+seventy preprints from the six months preceding submission to show that the
+argument sits at a live confluence rather than on settled ground.\footnote{The
+works surveyed here were located by a machine-assisted arXiv harvest restricted to
+the window 2025-12-01 to 2026-06-21; fifteen were additionally verified by hand
+against their arXiv abstract pages (identifier, title, authors, and v1 date), and
+the remainder by the harvest's per-item fetch. As living preprints whose contents
+and versions change, every entry should be re-verified before formal submission;
+the set carries bounded status \candidate\ rather than \admitted.} The survey is
+organised by the five research currents the thesis joins.
+
+\paragraph{Process mining is becoming agentic and object-centric.} The discipline
+of \cref{sec:bg-pm} is, in real time, turning toward the agents and the
+object-centric data this thesis foregrounds. Van der Aalst's own group has
+released \emph{PMAx}, ``an agentic framework for AI-driven process mining'' that
+turns natural-language business questions into mining artifacts
+\citep{pmax26}, and a neuro-symbolic anomaly detector that injects \emph{Declare}
+constraints into neural conformance \citep{gaikwad26}---the very Declare-plus-OCEL
+combination the artifact of \cref{ch:artifact} uses. Object-centric event data is
+receiving fresh ontological foundations for time and relations \citep{hooshyar25}
+and comparative grounding against industrial multilevel mining \citep{ronzoni25}.
+LLMs are entering predictive monitoring \citep{padella26}, business-process
+modelling assessment \citep{lauer26}, multi-agent work-in-progress prediction
+\citep{bibalan25}, and clinical-pathway risk estimation \citep{ardimento26}, while
+the field reflects on ``process analytics'' as a discipline \citep{stierle25},
+explainable workflow verification \citep{klimek25}, decentralised edge mining
+\citep{reiter25}, and network-traffic mining \citep{vitale25}. The thesis's
+premise---that conformance over object-centric logs is the bridge to AI---is the
+premise the field itself is now adopting.
+
+\paragraph{Agent interoperability is consolidating around MCP and A2A.} The
+landscape of \cref{sec:bg-landscape} is maturing fastest along its security and
+semantics. A systematisation of MCP security \citep{gaire25} sits beside
+spec-level analyses \citep{maloyan26}, tool-poisoning attacks \citep{li26mcpitp,
+huang26threat}, defense-placement taxonomies \citep{rostamzadeh26}, and verifiably
+safe tool use \citep{doshi26}; orchestration is surveyed \citep{adimulam26} and
+made task-adaptive \citep{yu26adaptorch}, trained on traces \citep{zhang26rl}, and
+re-examined as design choice \citep{felendler26} and workflow engine
+\citep{parmar26}. Most relevant to \cref{hyp:substrate}, a wave of work pushes
+\emph{beyond} message passing toward the conformance-bearing strata this thesis
+argues for: a ``semantic view'' of agent communication protocols
+\citep{yuan26semantic}, identity and verifiable delegation \emph{across MCP and
+A2A} \citep{prakash26aip, patil26sentinel, otsuka26}, cryptographic capability
+binding with reproducibility \citep{zhou26gov}, new delegation and memory
+protocols \citep{nie26, xu26mesh}, and agentic peer-to-peer substrates
+\citep{wang26p2p}. The cryptographic-binding and verifiable-delegation works are,
+in effect, independent rediscoveries of the receipt discipline of
+\cref{sec:art-receipts}.
+
+\paragraph{Agentic AI is preoccupied with reliability, evaluation, and
+guardrails.} The deficiency this thesis names P2---reach without
+accountability---is the field's dominant anxiety. There are calls for a ``science
+of AI agent reliability'' \citep{rabanser26} and unified evaluation
+\citep{zhu26eval, souza26, arunkumar26}, benchmarks for MCP tool use
+\citep{mcpagentbench25}, productivity-agent safety \citep{li26claws}, and test-time
+scaling \citep{li26scaling}; diagnoses of tool-invocation failure
+\citep{huang26fail} and agentic-framework bugs \citep{zhang26bug}; and a
+proliferation of guardrail and oversight mechanisms---learned access control
+\citep{abaev26}, diagnostic guardrails \citep{liu26dog}, proof-of-guardrail
+\citep{jin26guardrail}, provably secure guardrails \citep{wu26guardrail},
+self-healing \citep{jeong26}, and the sobering observation that human oversight
+has finite capacity \citep{turan26}. Agent memory and ``skills'' are being
+formalised and governed \citep{du26memory, lam26memory, xu26skills, zhou26ext}.
+Each of these is a partial, domain-specific instance of the law-state surface this
+thesis argues should be a first-class, three-valued, receipt-bound stratum
+(\cref{prin:three-valued}); ``proof-of-guardrail'' \citep{jin26guardrail} is the
+phrase the field reaches for when it wants exactly a receipt.
+
+\paragraph{Compositional and formal foundations remain active.} Pillar~I's
+categorical framing (\cref{sec:alg}) is contemporary, not antiquarian. Recent work
+develops string-diagrammatic and categorical accounts of stochastic and
+non-deterministic systems \citep{bonchi26, lynch26}, profunctorial algebra
+\citep{aristote26}, monadic metalanguages \citep{liellcock25}, and categorical
+semantics for real systems \citep{carlisle26}; abstract interpretation
+\citep{lueker25}, dataflow analysis \citep{brahmakshatriya26}, session-typed
+metaprogramming \citep{angelo26}, and game-semantic verification
+\citep{koutavas25} keep the program-analysis lineage of LSP active. Categorical
+systems theory \citep{lynch26} is, in particular, the natural setting for the
+operadic reading of agent composition in \cref{sec:alg-operad}.
+
+\paragraph{Learning itself is being read as a phase transition.} Pillars~III and
+IV (\cref{sec:analysis,sec:geometry}) keep close company with a surge of work
+treating deep learning through statistical mechanics and geometry. Phase
+transitions are reported in feature learning \citep{montanari26}, in the
+hierarchical structure of trained networks \citep{ersoy25}, and as ``cascades''
+in scaling \citep{defilippis26}; ``grokking'' is analysed as a finite-size
+transition \citep{bi26grok}, a dimensional transition \citep{wang26grok}, a
+metastable escape \citep{ersoy26}, and over non-commutative algebra
+\citep{notsawo26}. The geometry of representations and generalisation
+\citep{yadav26}, Riemannian approximation \citep{david25}, and
+renormalisation-group methods \citep{tan26rg} are all under active study, and a
+fourteen-author manifesto argues outright that ``there will be a scientific theory
+of deep learning'' built on solvable limits, scaling laws, and universality
+\citep{simon26}. That learning is now routinely modelled with the precise tools
+this thesis applies to protocol convergence---phase transitions, latent variables,
+curvature---is the strongest external evidence that the framing of
+\cref{ch:framework} is the right register, and the company the model of
+\cref{sec:an-standardisation} keeps.
+
+\medskip
+\noindent Two cautions close the survey. First, half-life: a six-month citation
+window is, by construction, perishable, and several of these preprints will be
+superseded or revised. Second, direction of fit: the convergence of these
+literatures toward conformance, receipts, composition, and transition is
+consistent with this thesis's claims but does not by itself confirm them; it
+establishes timeliness, not truth. The confirmation, such as it is, is the
+argument of the chapters that follow.

@@ -16,6 +16,7 @@ pub struct GateFile {
 impl GateFile {
     /// Derive a workspace-specific gate file path from the working directory.
     /// Routes through the single authoritative formula so the path cannot diverge.
+    #[cfg(feature = "full")]
     pub fn for_workspace() -> Self {
         Self {
             path: lsp_max::primitives::gate_file_path(),

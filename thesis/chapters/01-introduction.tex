@@ -1,0 +1,259 @@
+\chapter{Introduction}
+\label{ch:introduction}
+
+\epigraph{When water flashes to steam, it will always attempt to increase to
+roughly $1{,}700$ times its original volume.}{\textit{The National Board of
+Boiler and Pressure Vessel Inspectors} \citep{nationalboard-steam}}
+
+\section{Background and Motivation}
+\label{sec:motivation}
+
+For most of computing history, the only ``language'' a machine could be made to
+understand with any depth was source code, and even that understanding was
+trapped inside individual tools. An editor that knew how to complete a Python
+symbol knew nothing about Rust; a tool that could navigate Java could not hover
+over TypeScript. Each pair of an editor and a programming language demanded its
+own integration, so that supporting $M$ editors across $N$ languages implied, in
+the worst case, $M \times N$ separate implementations of the same handful of
+ideas: completion, go-to-definition, diagnostics, hover.
+
+In 2016, Microsoft, Red Hat, and Codenvy published the \emph{Language Server
+Protocol} (LSP), a JSON-RPC contract that let a single \emph{language server}
+serve any number of editors \citep{lsp-redhat-2016,lsp-official}. The protocol's
+own documentation states the design intent plainly: ``a single Language Server
+can be re-used in multiple development tools, which in turn can support multiple
+languages with minimal effort'' \citep{lsp-official}. The combinatorial effect
+is the move from $M \times N$ to $M + N$: $M$ editor adapters plus $N$ servers
+\citep{lsp-mxn-fcc}. LSP did not make editors smarter; it \emph{decoupled} the
+locus of language intelligence from the locus of display, and in doing so turned
+``understanding a language'' into a reusable, networked service.
+
+A decade later, the same decoupling has been performed twice more, one layer up
+the stack, in response to the arrival of capable language models. In November
+2024 Anthropic open-sourced the \emph{Model Context Protocol} (MCP), ``a new
+standard for connecting AI assistants to the systems where data lives''
+\citep{mcp-anthropic-2024}; its documentation likens it to ``a USB-C port for AI
+applications'' \citep{mcp-intro}, and---tellingly for this thesis---its
+specification records that ``MCP takes some inspiration from the Language Server
+Protocol'' \citep{mcp-spec-2025}. In April 2025 Google published the
+\emph{Agent-to-Agent} protocol (A2A), which standardises how autonomous agents
+``communicate with each other, securely exchange information, and coordinate
+actions'' and which Google explicitly frames as complementary to MCP: ``A2A is an
+open protocol that complements Anthropic's Model Context Protocol (MCP), which
+provides helpful tools and context to agents'' \citep{a2a-google-2025}. Where LSP
+decoupled language intelligence from the editor, MCP decouples context and tools
+from the model, and A2A decouples agent capability from the framework that hosts
+it.
+
+These three protocols are no longer merely conceptually adjacent; they are
+converging institutionally. A2A was donated to the Linux Foundation in June 2025
+\citep{a2a-lf-donation,lf-a2a-press}, and in December 2025 MCP was contributed to
+the newly formed \emph{Agentic AI Foundation} under the same neutral umbrella,
+alongside further interoperability projects \citep{mcp-aaif-2025,lf-aaif-press}.
+The substrate on which the next decade of machine-mediated language will run is,
+visibly, being poured.
+
+Yet a gap remains, and it is the gap this thesis addresses. The protocols above
+expand \emph{reach}---which tools a model can call, which agents an agent can
+summon---without expanding \emph{accountability}. They standardise how messages
+flow, not whether the behaviour those messages induce conforms to any model of
+how it ought to unfold. This is precisely the question that an entire scientific
+discipline already answers for business processes.
+
+That discipline is \emph{process mining}, founded by Wil van der Aalst, whose
+central idea is ``to discover, monitor and improve real processes \dots\ by
+extracting knowledge from event logs readily available in today's
+\dots\ systems'' \citep{pm-manifesto-2011,vdaalst-book-2016}. Process mining
+already possesses a mature theory of \emph{conformance checking}: given a
+recorded event log and a model of intended behaviour, it measures where reality
+and model agree and where they diverge \citep{conformance-review-2020}. Van der
+Aalst has recently argued that object-centric process mining is ``the missing
+link connecting data and processes'' and the prerequisite for trustworthy
+generative, predictive, and prescriptive AI---``no AI without PI'' (process
+intelligence) \citep{noai-nopi-2025}. This thesis takes that argument to its
+conclusion across \emph{all} language, not only business process.
+
+\section{Problem Statement}
+\label{sec:problem}
+
+Three problems motivate the work.
+
+\paragraph{P1 --- The narrowness of machine language.} The infrastructure for
+deep, tool-mediated language understanding (LSP and its descendants) was built
+for source code. Natural language, legal and regulatory text, mathematics,
+biological sequence, music, and business process each have rich structure and
+rich notions of correctness, yet none enjoys the editor-grade, server-mediated
+intelligence that code does. The generalisation of LSP beyond code is asserted in
+isolated projects---grammar servers such as LTeX \citep{ltex}, data-format
+servers such as the YAML language server \citep{yamlls}---but lacks a unifying
+account of \emph{when} a domain is ``a language'' that a language server can
+serve.
+
+\paragraph{P2 --- Reach without accountability.} MCP and A2A multiply what
+agents can do and whom they can ask, but they carry no native notion of
+conformance. An agent may call a tool, receive a result, and act, with no
+standing surface that asks whether the trajectory conformed to a declared model
+of lawful behaviour. As agentic systems scale---Gartner forecasts that a large
+fraction of agentic-AI projects will be cancelled by 2027 for, among other
+reasons, ``inadequate risk controls'' \citep{gartner-agentic-2025}---the absence
+of a conformance surface becomes a structural, not cosmetic, deficiency.
+
+\paragraph{P3 --- Fragmentation versus fusion.} The interoperability landscape is
+often narrated as a ``protocol war'' among MCP, A2A, and alternatives such as
+ACP, ANP, and AGNTCY \citep{acp-a2a-merge,anp-github,agntcy-cisco}. This thesis
+contends the opposite: that LSP, MCP, and A2A are not competitors but
+\emph{strata} of one substrate, and that their fusion---rather than the dominance
+of any one---is the event of consequence.
+
+\section{The Central Thesis}
+\label{sec:thesis-statement}
+
+\begin{hypothesis}[The phase-transition thesis]
+\label{hyp:central}
+When the Language Server Protocol is generalised from source code to all forms of
+language and fused with the Model Context Protocol and the Agent-to-Agent
+protocol, the addressable surface of machine-mediated language undergoes a
+\emph{phase transition}: a discontinuous, latent-heat-driven expansion---on the
+order of the ${\sim}1{,}600$--$1{,}700\times$ expansion of liquid water into
+steam at its boiling point---in which language ceases to be a thing models
+\emph{read} and becomes a medium agents \emph{inhabit, observe, and are held to
+account within}. The enabling abstraction for trustworthy expansion is
+conformance checking: every language, once recorded as an event log, acquires a
+conformance surface.
+\end{hypothesis}
+
+The phase-transition framing is developed formally in \cref{ch:framework}. Its
+force is twofold. First, it is \emph{quantitative}: phase transitions are not
+gradual: water at $99\,^{\circ}\mathrm{C}$ and water at $100\,^{\circ}\mathrm{C}$
+differ by a degree, but liquid water and steam differ in volume by roughly three
+orders of magnitude \citep{phys-illinois-steam,nationalboard-steam}. Second, it
+is \emph{energetic}: the expansion is paid for, all at once, by a large input
+absorbed at constant temperature---the latent heat of vaporisation, about
+$2{,}256\ \mathrm{kJ/kg}$ for water \citep{latentheat-openstax}. The analogue of
+that latent heat, we argue, is \emph{standardisation}: the unglamorous,
+discontinuous investment of agreeing on a protocol, which yields no visible
+progress while it is being paid and an order-of-magnitude expansion once it is.
+
+\section{Research Questions}
+\label{sec:rqs}
+
+\rq{1}{What structural property do LSP, MCP, and A2A share, and in what sense is
+their composition a single substrate rather than three protocols?}
+
+\rq{2}{Under what conditions does generalising LSP beyond source code to an
+arbitrary domain become coherent---that is, what must a domain provide in order
+to be served by a ``language server''?}
+
+\rq{3}{How can van der Aalst's process-mining paradigm---event logs, conformance
+checking, and object-centric event logs (OCEL)---be applied to all such language,
+and what does it add that the protocols alone do not provide?}
+
+\rq{4}{What artifact design realises a law-state runtime that brings conformance
+to all language while remaining trustworthy---read-only with respect to the
+artifacts it judges, receipt-bound in its claims, and three-valued in its
+verdicts?}
+
+\rq{5}{Is the convergence of these protocols best understood as incremental
+integration or as a phase transition, and what does the metaphor, taken
+seriously, predict for the year 2030?}
+
+\section{Objectives, Scope, and Contributions}
+\label{sec:contributions}
+
+The objective is a coherent, evidence-grounded, and falsifiable account of
+protocol convergence as a phase transition, instantiated in a concrete artifact.
+The scope is conceptual and design-scientific: we build and analyse an artifact
+(\lspmax) and reason about a 2030 horizon; we do \emph{not} claim a completed
+empirical deployment across all six language domains, and we are explicit
+(\cref{ch:discussion}) about which claims are \admitted, which are \candidate,
+and which remain \openstat. The contributions are:
+
+\begin{itemize}[leftmargin=2.2em]
+  \item[\textbf{C1}] A unifying account (\cref{ch:background,ch:framework}) of
+  LSP, MCP, and A2A as three instances of one decoupling, each turning an
+  $M \times N$ integration burden into $M + N$ at a different layer, and
+  composing into a single substrate.
+  \item[\textbf{C2}] A criterion (\cref{ch:all-language}) for when a domain is
+  ``a language'' amenable to a language server: it must admit an event-log
+  abstraction and therefore a conformance surface.
+  \item[\textbf{C3}] The phase-transition model of protocol convergence
+  (\cref{ch:framework}), including the \emph{latent-heat-of-standardisation}
+  formalism that distinguishes incremental integration from discontinuous
+  expansion.
+  \item[\textbf{C4}] A design-science artifact, \lspmax\ (\cref{ch:artifact}), a
+  law-state runtime projected through LSP whose \code{ConformanceVector} keeps
+  \admitted, \refused, and \unknownstat\ axes strictly distinct and whose
+  diagnostics are emitted as object-centric (OCEL~2.0) events.
+  \item[\textbf{C5}] A demonstration (\cref{ch:all-language}) of
+  conformance-for-all-language across six domains---natural language, legal text,
+  mathematics, biological sequence, music, and business process---unified by the
+  object-centric bridge.
+  \item[\textbf{C6}] A 2030 roadmap and a sober governance-and-risk analysis
+  (\cref{ch:vision}), with every forecast flagged as a \forecast.
+\end{itemize}
+
+\section{The Water-to-Steam Metaphor, Made Honest}
+\label{sec:metaphor-intro}
+
+Because the metaphor carries argumentative weight, it must be stated with
+precision rather than rounded for effect. At $100\,^{\circ}\mathrm{C}$ and one
+atmosphere, the specific volume of saturated steam ($\approx 1.673\
+\mathrm{m^3/kg}$) divided by that of liquid water ($\approx 0.001044\
+\mathrm{m^3/kg}$) gives an expansion factor of about $1{,}603\times$
+\citep{engtoolbox-steam,phys-illinois-steam}. The figure of $1{,}700\times$ that
+this thesis adopts in its title is the rounded engineering convention used in
+boiler-safety practice \citep{nationalboard-steam}; it describes the same
+phenomenon at a coarser grain, not a different physical condition. We therefore
+speak of a ``${\sim}1{,}600$--$1{,}700\times$'' expansion and treat the precise
+ratio as conditions-dependent. This candour is not incidental: the artifact under
+study forbids overclaiming, and a thesis about that artifact should model the
+discipline it describes.
+
+\Cref{fig:latent-heat} shows the property of phase transitions that the metaphor
+turns on. As energy is added to liquid water its temperature rises---until the
+boiling point, where temperature \emph{stalls} on a plateau while the substance
+absorbs its latent heat and reorganises from liquid to vapour. Only after the
+plateau is paid does the expansion appear. Standardisation behaves the same way:
+years of specification work register as a flat plateau of apparent
+non-progress, after which capability expands discontinuously.
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}[scale=1.05]
+  \draw[->,thick] (0,0) -- (10.2,0) node[right]{\footnotesize energy added $Q$ (``standardisation effort'')};
+  \draw[->,thick] (0,0) -- (0,5.2) node[above]{\footnotesize state / capability};
+  \draw[very thick,lawblue] (0.3,0.5) -- (3,2.7);
+  \draw[very thick,refused] (3,2.7) -- (7,2.7);
+  \draw[very thick,lawblue] (7,2.7) -- (9.4,4.6);
+  \node[lawblue] at (1.5,2.0) {\footnotesize liquid (code only)};
+  \node[refused,align=center] at (5,3.15) {\footnotesize latent heat: the protocol is agreed\\\footnotesize (LSP $\to$ MCP $\to$ A2A; LF / AAIF)};
+  \node[lawblue,align=center,rotate=38] at (8.5,3.9) {\footnotesize phase change};
+  \node[align=center] at (8.7,1.4) {\footnotesize ${\sim}1{,}600$--$1{,}700\times$\\\footnotesize expansion\\\footnotesize (``all language'')};
+  \draw[dashed,unknown] (3,0) -- (3,2.7);
+  \draw[dashed,unknown] (7,0) -- (7,2.7);
+\end{tikzpicture}
+\caption[The latent-heat plateau of standardisation]{The latent-heat plateau.
+Adding energy raises temperature until the boiling point, where it stalls while
+the latent heat of vaporisation is absorbed and the substance expands by
+${\sim}1{,}600$--$1{,}700\times$ \citep{nationalboard-steam,latentheat-openstax}.
+This thesis reads the standardisation of LSP, MCP, and A2A as the latent heat,
+and the generalisation to all language as the phase change.}
+\label{fig:latent-heat}
+\end{figure}
+
+\section{Structure of the Thesis}
+\label{sec:structure}
+
+\Cref{ch:background} surveys the four bodies of work the argument rests on:
+process mining and the van der Aalst paradigm; LSP; MCP; and A2A with the wider
+agent-interoperability landscape. \Cref{ch:framework} develops the conceptual
+framework---``language as process'' and the phase-transition model.
+\Cref{ch:methodology} states the design-science methodology and the
+bounded-status epistemics inherited from the artifact. \Cref{ch:artifact}
+presents \lspmax\ as the artifact. \Cref{ch:fusion} composes LSP, MCP, and A2A
+into a single fusion architecture. \Cref{ch:all-language} generalises conformance
+checking to six language domains. \Cref{ch:vision} sets out the 2030 vision, the
+expansion argument, a roadmap, and risks. \Cref{ch:discussion} revisits the
+research questions and the threats to validity, and \cref{ch:conclusion}
+concludes. Throughout, claims are graded with bounded status and forecasts are
+marked as such.

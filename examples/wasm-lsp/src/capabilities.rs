@@ -13,7 +13,9 @@ pub fn server_capabilities() -> ServerCapabilities {
         // CANDIDATE: hover — law:CANDIDATE in domain.ttl; receipt OPEN
         hover_provider: Some(HoverProviderCapability::Simple(true)),
         // CANDIDATE: completion — receipt OPEN
-        completion_provider: Some(CompletionOptions { ..Default::default() }),
+        completion_provider: Some(CompletionOptions {
+            ..Default::default()
+        }),
         // REFUSED: rename — law:REFUSED; wasm-lsp is read-only
         // rename_provider: omitted
         ..Default::default()

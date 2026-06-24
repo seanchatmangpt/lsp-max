@@ -19,15 +19,15 @@ const SCAN_PAIRS: &[(&str, &str)] = &[
     ("bayesian_network", "0.284"),
     ("bayesian_network", "0.2842"),
     ("production_rules", "0.693"),
-    ("cbr",              "0.85"),
-    ("pomdp",            "0.969"),
+    ("cbr", "0.85"),
+    ("pomdp", "0.969"),
 ];
 
 struct Violation {
-    module_stem:    &'static str,
+    module_stem: &'static str,
     oracle_literal: &'static str,
-    line_number:    usize,
-    line_content:   String,
+    line_number: usize,
+    line_content: String,
 }
 
 fn scan_for_violations() -> Vec<Violation> {
@@ -80,7 +80,11 @@ fn write_receipt(violations: &[Violation]) {
         })
         .collect();
 
-    let result = if violations.is_empty() { "ADMITTED" } else { "REFUSED" };
+    let result = if violations.is_empty() {
+        "ADMITTED"
+    } else {
+        "REFUSED"
+    };
 
     let scanned_stems: Vec<&str> = {
         let mut seen = std::collections::HashSet::new();

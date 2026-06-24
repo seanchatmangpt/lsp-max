@@ -1,0 +1,150 @@
+\section{Pillar V --- Measure, Probability, and Information}
+\label{sec:measure}
+
+Pillar~IV ended with a promissory note: ``receipts are proof measure'' calls for
+measure theory, and it was deferred (\cref{sec:geo-measure}). This pillar pays the
+note, and in doing so binds the previous two pillars together. Measure makes the
+receipt a genuine measure; information theory recasts the non-collapse principle
+(\cref{thm:noncollapse}) as a data-processing inequality and gives the entropy that
+the thermodynamics of Pillar~III presupposed; and the Fisher--Rao metric reveals
+the manifold of Pillar~IV and the statistical structure of Pillar~V to be one
+object.
+
+\subsection{$\sigma$-algebras, measures, and the receipt measure}
+\label{sec:meas-sigma}
+
+\begin{definition}[Measurable space and measure]
+A \emph{$\sigma$-algebra} on a set $\Omega$ is a family $\Sigma\subseteq 2^{\Omega}$
+containing $\Omega$ and closed under complementation and countable union. A
+\emph{measure} is a map $\mu\colon\Sigma\to[0,\infty]$ with $\mu(\varnothing)=0$ and
+countable additivity, $\mu\bigl(\bigsqcup_{n}A_{n}\bigr)=\sum_{n}\mu(A_{n})$ for
+pairwise-disjoint $A_n\in\Sigma$. It is a \emph{probability measure} if
+$\mu(\Omega)=1$.
+\end{definition}
+
+\begin{construction}[The receipt measure]
+\label{con:receipt-measure}
+Let $\Omega$ be the space of trajectories of \cref{sec:geo-tangent} and $\Sigma$ a
+$\sigma$-algebra on it. A receipt ledger assigns each trajectory $\gamma$ a weight
+$w(\gamma)\ge 0$---unity for a trajectory bound to a valid receipt chain
+(\cref{lst:receipt}), zero otherwise. Define, for $S\in\Sigma$,
+$\mu_R(S)=\int_S w\,\mathrm d\nu$ against a base measure $\nu$ (a weighted sum in the
+discrete case).
+\end{construction}
+
+\begin{proposition}[The receipt measure is concentrated on the witnessed set]
+\label{prop:receipt-measure}
+$\mu_R$ is a measure, and with $W=\{\gamma:w(\gamma)>0\}$ one has
+$\mu_R(S)=\mu_R(S\cap W)$ for all $S$. Hence unwitnessed motion carries zero admitted
+mass.
+\end{proposition}
+\begin{proof}
+Non-negativity and $\mu_R(\varnothing)=0$ are immediate; countable additivity is the
+additivity of the integral over disjoint sets. For concentration,
+$w\equiv 0$ on $\Omega\setminus W$, so $\int_{S\setminus W}w\,\mathrm d\nu=0$ and
+$\mu_R(S)=\int_{S\cap W}w\,\mathrm d\nu=\mu_R(S\cap W)$.
+\end{proof}
+
+\Cref{prop:receipt-measure} makes ``admitted volume is $\mu_R(A\cap\,\cdot\,)$''
+exact: lawful, witnessed motion within the admissible submanifold $A$
+(\cref{cor:admissible}) has positive measure; a long but unwitnessed trajectory has
+none. This is the measure-theoretic form of the artifact's refusal to equate
+``ran far'' with ``did admitted work''.
+
+\subsection{Entropy, relative entropy, and Gibbs' inequality}
+\label{sec:meas-entropy}
+
+\begin{definition}[Shannon and relative entropy]
+For a probability vector $p=(p_i)$, the \emph{Shannon entropy} is
+$H(p)=-\sum_i p_i\log p_i$ (with $0\log 0:=0$). For two probability vectors $p,q$ on
+the same support the \emph{relative entropy} (Kullback--Leibler divergence) is
+$D(p\Vert q)=\sum_i p_i\log\tfrac{p_i}{q_i}$.
+\end{definition}
+
+\begin{lemma}[Gibbs' inequality]
+\label{lem:gibbs}
+$D(p\Vert q)\ge 0$, with equality iff $p=q$.
+\end{lemma}
+\begin{proof}
+Using $\ln x\le x-1$ (equality iff $x=1$),
+$-D(p\Vert q)=\sum_i p_i\ln\tfrac{q_i}{p_i}\le\sum_i p_i\bigl(\tfrac{q_i}{p_i}-1\bigr)
+=\sum_i(q_i-p_i)=0$, so $D\ge 0$; equality requires $q_i/p_i=1$ throughout.
+\end{proof}
+
+\subsection{Conformance as information: a data-processing view}
+\label{sec:meas-dpi}
+
+Entropy quantifies the \unknownstat\ of Pillar~II. Assign each law axis a
+distribution over $\{\mathsf t,\mathsf f\}$ summarising current evidence; a fully
+\unknownstat\ axis is maximal-entropy (uniform), a resolved axis is a point mass.
+Write $J(v)=\tfrac{1}{|\mathcal A|}\sum_{a}\bigl(1-H_a\bigr)$ for the mean resolved
+information of a verdict assignment $v$, where $H_a\in[0,1]$ is the (normalised)
+entropy of axis $a$.
+
+\begin{proposition}[Non-collapse as a data-processing inequality]
+\label{prop:dpi}
+Let $T$ be an \emph{evidence-free} transformation of the conformance state---a map
+that introduces no new observation, i.e.\ factors through the current verdict. Then
+$J(Tv)\le J(v)$: evidence-free processing cannot increase resolved information.
+Equivalently, no axis moves from \unknownstat\ toward a polarity without evidence.
+\end{proposition}
+\begin{proof}
+By the classical data-processing inequality, applying a stochastic map $T$ that does
+not depend on the latent truth cannot decrease the relative entropy to the truth,
+hence cannot increase the mutual information between state and truth; $J$ is an
+affine, increasing functional of that information, so $J(Tv)\le J(v)$. The boundary
+case---strict increase---would require $T$ to depend on a new observation,
+contradicting evidence-freeness, and corresponds exactly to the forbidden
+$\unknownstat\to\{\admitted,\refused\}$ jump of \cref{thm:noncollapse}.
+\end{proof}
+
+\Cref{prop:dpi} is the information-theoretic twin of \cref{thm:noncollapse} and of
+the second-law reading of Pillar~III: admitted information is conserved or lost
+under evidence-free manipulation, never manufactured. ``Conformance theatre''
+(\cref{sec:disc-ethics})---raising $J$ by processing rather than by evidence---is
+forbidden not merely by policy but by the inequality.
+
+\subsection{Fisher information and the statistical manifold}
+\label{sec:meas-fisher}
+
+When the configurations of the manifold $M$ (Pillar~IV) are themselves probability
+models $p(\cdot\mid\theta)$, the manifold carries a canonical metric.
+
+\begin{definition}[Fisher information and the Fisher--Rao metric]
+For a smooth family $p(x\mid\theta)$ the \emph{Fisher information matrix} is
+$g_{ij}(\theta)=\mathbb E_\theta\!\bigl[\partial_i\log p\,\partial_j\log p\bigr]$.
+As $\theta$ ranges over the parameter manifold, $g$ defines the \emph{Fisher--Rao}
+Riemannian metric.
+\end{definition}
+
+\begin{proposition}[Cram\'er--Rao bound]
+\label{prop:cramer-rao}
+For any unbiased estimator $\hat\theta$ of a scalar $\theta$,
+$\operatorname{Var}(\hat\theta)\ge 1/g(\theta)$.
+\end{proposition}
+
+The Fisher--Rao metric is the precise object that makes Pillars~IV and~V one: the
+``state manifold'' of law-state, when its points are evidential distributions, is a
+statistical manifold whose Riemannian metric (\cref{def:geo-metric} in spirit) is
+Fisher--Rao, and along which the gradient descent of $\Phi_G$ (\cref{prop:descent})
+is natural-gradient descent. This is not idle unification: the recent geometry-of-
+learning literature studies exactly such Riemannian and representation-geometric
+structure in trained models \citep{david25,yadav26}, and the renormalisation and
+scaling analyses of \cref{sec:recent} live on the same manifolds
+\citep{tan26rg,montanari26}.
+
+\subsection{The information cost of standardisation}
+\label{sec:meas-landauer}
+
+Finally, Pillar~III's ``latent heat of standardisation'' (\cref{def:latent}) has an
+information reading. To agree on a protocol is to fix a shared code; specifying that
+code has a description length in bits, and Landauer's principle prices the
+thermodynamic cost of irreversible information operations at $k_B T\ln 2$ per bit.
+The plateau of \cref{fig:latent-heat}---effort with no visible capability---is, in
+this reading, the paying-down of the description length of the shared substrate: an
+information debt incurred once and amortised over every later composition. The three
+pillars meet here. Standardisation is a phase transition (III) whose order parameter
+lives on a statistical manifold (IV/V) and whose latent heat is, to within
+Landauer's constant, the information content of the agreement. The thesis's metaphor
+is, at its base, a single statement in three dialects: thermodynamic, geometric, and
+informational.

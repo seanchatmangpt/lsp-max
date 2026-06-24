@@ -167,6 +167,9 @@ fn surface_table() -> Vec<MethodSurface> {
             Wired,
             General,
         ),
+        // No dedicated transcript for client/registerCapability — the method is
+        // exercised indirectly when dynamic registration fires, but no standalone
+        // transcript file captures the full request/response pair. Status: PARTIAL.
         (
             "client/registerCapability",
             "*.dynamicRegistration",
@@ -841,12 +844,20 @@ fn surface_table() -> Vec<MethodSurface> {
             ClientNotification,
         ),
         // ── Notebook documents ────────────────────────────────────────────────
+        // The delta matrix (LSP318-007) carries REFUSED_BY_LAW_WITH_RECEIPT for
+        // the notebook family. The anti-llm-cheat-lsp server wires handlers that
+        // emit only log messages and never publish diagnostics — a no-op posture
+        // that contradicts the REFUSED_BY_LAW claim. NoopContradiction surfaces
+        // this as BLOCKED so the gap is visible rather than hidden behind PARTIAL.
+        // Resolution paths: (a) remove these handlers so refusal is unambiguous,
+        // or (b) promote to real diagnostic-emitting handlers with transcripts
+        // and retract LSP318-007's REFUSED_BY_LAW posture.
         (
             "notebookDocument/didOpen",
             "notebookDocument.synchronization",
             "notebookDocumentSync",
             "",
-            Wired,
+            NoopContradiction,
             ClientNotification,
         ),
         (
@@ -854,7 +865,7 @@ fn surface_table() -> Vec<MethodSurface> {
             "notebookDocument.synchronization",
             "notebookDocumentSync",
             "",
-            Wired,
+            NoopContradiction,
             ClientNotification,
         ),
         (
@@ -862,7 +873,7 @@ fn surface_table() -> Vec<MethodSurface> {
             "notebookDocument.synchronization",
             "notebookDocumentSync",
             "",
-            Wired,
+            NoopContradiction,
             ClientNotification,
         ),
         (
@@ -870,7 +881,7 @@ fn surface_table() -> Vec<MethodSurface> {
             "notebookDocument.synchronization",
             "notebookDocumentSync",
             "",
-            Wired,
+            NoopContradiction,
             ClientNotification,
         ),
     ];
