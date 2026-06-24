@@ -7,7 +7,7 @@
 
 [build-badge]: https://github.com/seanchatmangpt/lsp-max/workflows/rust/badge.svg
 [build-url]: https://github.com/seanchatmangpt/lsp-max/actions
-[crates-badge]: https://img.shields.io/crates/v/lsp-max.svg?label=26.6.18
+[crates-badge]: https://img.shields.io/crates/v/lsp-max.svg?label=26.6.24
 [crates-url]: https://crates.io/crates/lsp-max
 [license-badge]: https://img.shields.io/badge/license-MIT%2FApache--2.0-blue
 [license-url]: #license
@@ -54,7 +54,7 @@ lsp-max = "26.6"
 | Receipt-chain admission | Supported | BLAKE3-hashed receipts required; tests without receipts rejected |
 | Λ_CD gate (PreToolUse enforcement) | Supported | CI gate blocks shell actions while `WASM4PM-*`/`GGEN-*` diagnostics active |
 | Anti-LLM diagnostics | Supported | Detects tower-lsp references, victory language, fake receipts, contract violations |
-| CalVer versioning | Enforced | `26.6.18` = 2026-06-21; version mismatches are diagnostic events |
+| CalVer versioning | Enforced | `26.6.24` = 2026-06-24; version mismatches are diagnostic events |
 | Multi-server compositor | Supported | Fans to child servers, merges diagnostics with quorum debounce, emits receipts |
 
 ## Directory structure
@@ -145,7 +145,7 @@ All other workspace crates have `publish = false`.
 - **Unknown is preserved**: `ConformanceVector` axes never collapse unknown into admitted or refused; ambiguity is explicit.
 - **Receipts, not logs**: Capability claims require BLAKE3-hashed receipt artifacts with path, digest, boundary, and checkpoint — test stdout is not a receipt.
 - **Read-only LSP surface**: The server emits diagnostics, hovers, and intents but never mutates files; all mutation is client-driven.
-- **CalVer, not SemVer**: Version `26.6.18` encodes the date (2026-06-21); mismatches are diagnostic events.
+- **CalVer, not SemVer**: Version `26.6.24` encodes the date (2026-06-24); mismatches are diagnostic events.
 - **Distinct from tower-lsp**: Never reference plain `tower_lsp` or `tower-lsp` in code, manifests, or docs (outside negative-control fixtures).
 
 ## Build & test
@@ -195,4 +195,4 @@ Dual-licensed under [MIT](LICENSE-MIT) or [Apache 2.0](LICENSE-APACHE) at your o
 
 ---
 
-**Rust version**: 1.70+ | **CalVer**: 26.6.18 (2026-06-21) | **Status**: CANDIDATE
+**Rust version**: 1.70+ | **CalVer**: 26.6.24 (2026-06-24) | **Status**: CANDIDATE

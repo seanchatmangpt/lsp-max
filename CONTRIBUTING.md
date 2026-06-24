@@ -528,7 +528,7 @@ Understand where your code belongs (from CLAUDE.md):
 
 `lsp-max` uses **CalVer**, not SemVer:
 
-- Current version: `26.6.18` (2026, June, 21st)
+- Current version: `26.6.24` (2026, June, 21st)
 - Date-based; reflects release date
 - Update `version.workspace` in `Cargo.toml` when releasing
 
@@ -648,4 +648,4 @@ By participating in this project, you agree to abide by its terms.
 ---
 
 **Last updated:** 2026-06-21  
-**For:** lsp-max version 26.6.18
+**For:** lsp-max version 26.6.24

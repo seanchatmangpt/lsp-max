@@ -11,7 +11,7 @@ Versioning: **CalVer (YY.M.D)** — `26.6.13` = 2026-06-13.
 
 ---
 
-## [26.6.18] — 2026-06-21
+## [26.6.24] — 2026-06-24
 
 ### anti-llm-cheat-lsp — full LSP 3.18 detection surface
 
@@ -197,7 +197,7 @@ canary. No victory language; no handler collapses `Unknown` to `Admitted`.
 
 ### Chore
 
-- CalVer bumped `26.6.8 → 26.6.9`.
+- CalVer bumped `26.6.24 → 26.6.9`.
 - Publish enabled for internal crates; version constraints fixed.
 - Accidental `.backup` / `.bak` artifacts removed.
 - 6-phase gap remediation: dead code, hook registry, handler wiring, law table,
@@ -205,7 +205,7 @@ canary. No victory language; no handler collapses `Unknown` to `Admitted`.
 
 ---
 
-## [26.6.8] — 2026-06-08
+## [26.6.24] — 2026-06-08
 
 ### Features
 
@@ -330,8 +330,8 @@ This is the last upstream `tower-lsp` release before the fork diverged into
 * Edition `2018` → `2021`.
 * Clippy lints addressed.
 
-[Unreleased]: https://github.com/seanchatmangpt/lsp-max/compare/v26.6.18...HEAD
-[26.6.18]: https://github.com/seanchatmangpt/lsp-max/compare/v26.6.13...v26.6.18
+[Unreleased]: https://github.com/seanchatmangpt/lsp-max/compare/v26.6.24...HEAD
+[26.6.24]: https://github.com/seanchatmangpt/lsp-max/compare/v26.6.13...v26.6.24
 [26.6.13]: https://github.com/seanchatmangpt/lsp-max/compare/v26.6.12...v26.6.13
 [26.6.12]: https://github.com/seanchatmangpt/lsp-max/compare/v26.6.10...v26.6.12
 [26.6.10]: https://github.com/seanchatmangpt/lsp-max/compare/v26.6.9...v26.6.10

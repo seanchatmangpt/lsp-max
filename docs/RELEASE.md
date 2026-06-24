@@ -437,7 +437,7 @@ bash scripts/publish-github-release.sh 26.6.9
 
 ### If Publish Succeeds But Sibling Repo Is Out of Sync
 
-**Symptom:** lsp-max 26.6.9 is published, but `../wasm4pm` is still at 26.6.8
+**Symptom:** lsp-max 26.6.9 is published, but `../wasm4pm` is still at 26.6.24
 
 **Steps:**
 
@@ -446,7 +446,7 @@ bash scripts/publish-github-release.sh 26.6.9
    ```toml
    [dependencies]
    lsp-max = "26.6"  # accepts 26.6.9
-   wasm4pm-compat = "26.6.8"  # will be updated next
+   wasm4pm-compat = "26.6.24"  # will be updated next
    ```
 3. **Coordinate release schedule** — ensure all sibling repos are versioned together
 4. **Test integration** before declaring the release complete

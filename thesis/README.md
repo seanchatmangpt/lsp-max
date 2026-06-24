@@ -18,7 +18,7 @@ with MCP and A2A, the addressable surface of machine-mediated language undergoes
 the ~1,600–1,700× expansion of water into steam — and the abstraction that makes
 the expansion trustworthy is **conformance checking**: every language, once
 recorded as an object-centric event log (OCEL 2.0), acquires a conformance
-surface. The artifact `lsp-max` (CalVer 26.6.18) is the running instantiation.
+surface. The artifact `lsp-max` (CalVer 26.6.24) is the running instantiation.
 
 ## How to build
 

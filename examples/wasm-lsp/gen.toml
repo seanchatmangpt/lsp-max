@@ -1,7 +1,7 @@
 [project]
 name = "wasm-lsp"
 language_id = "wasm"
-version = "26.6.18"
+version = "26.6.24"
 
 [ontology]
 source = "schema/domain.ttl"

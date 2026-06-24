@@ -16,7 +16,7 @@ all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
-lsp-max-ast-core = { path = "../lsp-max-ast-core", version = "26.6.18" }
+lsp-max-ast-core = { path = "../lsp-max-ast-core", version = "26.6.24" }
 lsp-types-max = { workspace = true }
 texter = { workspace = true }
 tree-sitter = { workspace = true }

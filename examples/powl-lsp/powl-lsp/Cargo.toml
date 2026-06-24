@@ -1,6 +1,6 @@
 [package]
 name = "powl-lsp"
-version = "26.6.18"
+version = "26.6.24"
 edition = "2021"
 publish = false
 

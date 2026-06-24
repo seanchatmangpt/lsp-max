@@ -29,9 +29,9 @@ Adopt **Calendar Versioning (CalVer)** with the scheme `YY.M.D`:
 - **M**: Month without leading zero (e.g., 6 for June).
 - **D**: Day without leading zero (e.g., 14 for the 14th).
 
-Example: version `26.6.14` released on June 14, 2026.
+Example: version `26.6.24` released on June 14, 2026.
 
-All version bumps are tied to release deployments, not feature scope. Within a single calendar day, there is at most one release; if multiple releases are needed, append a pre-release identifier (e.g., `26.6.14-rc.1`, `26.6.14-rc.2`).
+All version bumps are tied to release deployments, not feature scope. Within a single calendar day, there is at most one release; if multiple releases are needed, append a pre-release identifier (e.g., `26.6.24-rc.1`, `26.6.24-rc.2`).
 
 The workspace `Cargo.toml` enforces this scheme via CI checks. Any attempt to introduce SemVer-style versions (e.g., 1.0.0, 2.3.5) triggers a `ANTI-LLM-VERSION-*` diagnostic and blocks the gate.
 
@@ -45,7 +45,7 @@ The workspace `Cargo.toml` enforces this scheme via CI checks. Any attempt to in
 
 **Negative:**
 - Unfamiliarity: CalVer is less common in Rust; developers must learn the scheme.
-- Sorting challenges: lexicographic sorting works for dates (26.6.14 < 26.6.15 < 26.7.1) but not for cross-year boundaries (26.12.31 > 27.1.1 lexicographically, but chronologically earlier).
+- Sorting challenges: lexicographic sorting works for dates (26.6.24 < 26.6.15 < 26.7.1) but not for cross-year boundaries (26.12.31 > 27.1.1 lexicographically, but chronologically earlier).
 - Package manager confusion: Cargo expects SemVer; CalVer versions may trigger warnings or downgrade behavior.
 
 **Neutral:**
@@ -57,11 +57,11 @@ The workspace `Cargo.toml` enforces this scheme via CI checks. Any attempt to in
 1. **Semantic versioning**: Standard but loses temporal traceability; version bumps are decoupled from deployments.
 2. **Timestamp versioning** (e.g., 20260614): Maximally precise but verbose and harder to read.
 3. **Year-only** (e.g., 26): Too coarse; multiple releases per year are common.
-4. **Hybrid** (e.g., 26.6.14.PATCH): Adds SemVer's PATCH component for same-day releases; introduces ambiguity.
+4. **Hybrid** (e.g., 26.6.24.PATCH): Adds SemVer's PATCH component for same-day releases; introduces ambiguity.
 
 CalVer (YY.M.D) was chosen because it:
 - Provides daily granularity (sufficient for typical release cadences).
-- Is easy to read and remember (26.6.14 is clearly mid-2026).
+- Is easy to read and remember (26.6.24 is clearly mid-2026).
 - Integrates cleanly with audit logs and compliance windows.
 - Avoids the false precision of timestamp versioning (which suggests microsecond-level guarantees).
 
