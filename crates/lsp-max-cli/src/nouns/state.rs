@@ -173,10 +173,7 @@ pub fn state(instance_id: String) -> Result<StateResult> {
         .map_err(|e| NounVerbError::execution_error(e.to_string()))?;
 
     let inst = mesh.instances.get(&instance_id).ok_or_else(|| {
-        NounVerbError::execution_error(format!(
-            "Instance not found: {}",
-            instance_id
-        ))
+        NounVerbError::execution_error(format!("Instance not found: {}", instance_id))
     })?;
 
     let policy_state = inst.policy_state.as_ref().map(|p| format!("{:?}", p));
@@ -271,10 +268,9 @@ pub fn lawful_transition(
     let mut mesh = AutonomicMesh::load_from_file(&crate::nouns::get_state_path())
         .map_err(|e| NounVerbError::execution_error(e.to_string()))?;
 
-    let params = serde_json::json!({
-        "from_state": from_state,
-        "to_state": to_state,
-    });
+    // max/lawfulTransition deserialises params as the bare target-phase string
+    // and reports admissibility via the `admitted` field.
+    let params = serde_json::json!(to_state);
 
     let response = mesh
         .dispatch_rpc(&instance_id, "max/lawfulTransition", params)
@@ -284,9 +280,9 @@ pub fn lawful_transition(
         .map_err(|e| NounVerbError::execution_error(e.to_string()))?;
 
     let lawful = response
-        .get("lawful")
+        .get("admitted")
         .and_then(|v| v.as_bool())
-        .unwrap_or(true);
+        .unwrap_or(false);
 
     Ok(LawfulTransitionResult {
         instance_id,
@@ -319,29 +315,43 @@ pub fn dump_rpc(instance_id: String) -> Result<DumpRpcResult> {
     Ok(DumpRpcResult { instance_id, raw })
 }
 
-/// Result type for the  verb (RPC-backed).
+/// Result of restoring mesh state from a snapshot file (RPC-backed).
 #[derive(Serialize)]
 pub struct RestoreRpcResult {
+    /// The instance used as the dispatch target.
     pub instance_id: String,
-    pub revision: u64,
+    pub snapshot_path: String,
+    /// Number of instances present after the restore.
+    pub restored_instances: usize,
     pub raw: serde_json::Value,
 }
 
-/// Restore an instance to a given revision via the `max/restoreState` RPC.
+/// Restore the mesh from a previously dumped state snapshot via `max/restoreState`.
+///
+/// `snapshot_path` is a JSON file holding a full `AutonomicMeshState`, as written
+/// by `state dump-rpc` (its `raw` field) or by the mesh state file itself.
+/// `instance_id` is the dispatch target and must exist in the current mesh.
 #[verb("restore-rpc")]
-pub fn restore_rpc(instance_id: String, revision: u64) -> Result<RestoreRpcResult> {
+pub fn restore_rpc(instance_id: String, snapshot_path: String) -> Result<RestoreRpcResult> {
+    let content = std::fs::read_to_string(&snapshot_path).map_err(|e| {
+        NounVerbError::execution_error(format!("SNAPSHOT_NOT_FOUND: {snapshot_path}: {e}"))
+    })?;
+    let snapshot: serde_json::Value = serde_json::from_str(&content)
+        .map_err(|e| NounVerbError::execution_error(format!("Invalid snapshot JSON: {e}")))?;
+
     let state_path = crate::nouns::get_state_path();
     let mut mesh = AutonomicMesh::load_from_file(&state_path)
         .map_err(|e| NounVerbError::execution_error(e.to_string()))?;
-    let params = serde_json::json!({ "instance_id": instance_id, "revision": revision });
     let raw = mesh
-        .dispatch_rpc(&instance_id, "max/restoreState", params)
+        .dispatch_rpc(&instance_id, "max/restoreState", snapshot)
         .map_err(NounVerbError::execution_error)?;
     mesh.save_to_file(&state_path)
         .map_err(|e| NounVerbError::execution_error(e.to_string()))?;
+    let restored_instances = mesh.instances.len();
     Ok(RestoreRpcResult {
         instance_id,
-        revision,
+        snapshot_path,
+        restored_instances,
         raw,
     })
 }
@@ -416,7 +426,10 @@ mod tests {
     fn dump_all_output_contains_instances_key() {
         let (_f, svc) = make_temp_mesh();
         let json = svc.dump("all").unwrap();
-        assert!(json.contains("instances"), "dump all must include 'instances' key");
+        assert!(
+            json.contains("instances"),
+            "dump all must include 'instances' key"
+        );
     }
 
     // --- verify falsification ---
@@ -453,12 +466,20 @@ mod tests {
     }
 
     #[test]
-    fn transition_to_degraded_returns_ok() {
+    fn transition_to_clarification_requested_returns_ok() {
         with_mesh_state(|| {
-            let result = transition("test-inst".to_string(), "Degraded".to_string());
-            assert!(result.is_ok(), "transition to Degraded must return Ok");
+            // ClarificationRequested is a real PolicyState variant; "Degraded" is not.
+            let result = transition(
+                "test-inst".to_string(),
+                "ClarificationRequested".to_string(),
+            );
+            assert!(
+                result.is_ok(),
+                "transition to a valid PolicyState must return Ok"
+            );
             let r = result.unwrap();
             assert_eq!(r.instance_id, "test-inst");
+            assert_eq!(r.new_state, "ClarificationRequested");
             assert!(r.success);
         });
     }
@@ -518,18 +539,30 @@ mod tests {
     }
 
     #[test]
-    fn restore_rpc_returns_ok() {
+    fn restore_rpc_roundtrips_dumped_state() {
         with_mesh_state(|| {
-            assert!(restore_rpc("test-inst".to_string(), 0).is_ok());
+            // Dump the live mesh state, persist it, then restore from that file.
+            let dumped = dump_rpc("test-inst".to_string()).unwrap();
+            let snap = tempfile::NamedTempFile::new().unwrap();
+            std::fs::write(snap.path(), serde_json::to_string(&dumped.raw).unwrap()).unwrap();
+            let res = restore_rpc(
+                "test-inst".to_string(),
+                snap.path().to_str().unwrap().to_string(),
+            )
+            .unwrap();
+            assert_eq!(res.instance_id, "test-inst");
+            assert!(res.restored_instances >= 1);
         });
     }
 
     #[test]
-    fn restore_rpc_result_carries_revision() {
+    fn restore_rpc_missing_snapshot_returns_err() {
         with_mesh_state(|| {
-            let res = restore_rpc("test-inst".to_string(), 42).unwrap();
-            assert_eq!(res.revision, 42);
-            assert_eq!(res.instance_id, "test-inst");
+            let res = restore_rpc(
+                "test-inst".to_string(),
+                "/tmp/no-such-dir-lsp-max/snap.json".to_string(),
+            );
+            assert!(res.is_err());
         });
     }
 }

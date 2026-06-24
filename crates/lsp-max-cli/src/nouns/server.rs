@@ -344,7 +344,10 @@ mod tests {
         let _ = svc.stop(true).unwrap();
         // status() re-checks the OS, unlike stop() which always returns Stopped.
         let after = svc.status().unwrap();
-        assert!(matches!(after.state, ServerState::Stopped), "OS must show process gone");
+        assert!(
+            matches!(after.state, ServerState::Stopped),
+            "OS must show process gone"
+        );
         assert!(after.pid.is_none(), "pid must clear after force-stop");
     }
 

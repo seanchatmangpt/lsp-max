@@ -60,7 +60,7 @@ pub fn stdio(verbose: Option<u8>) -> Result<ServeResult> {
         let stdin = tokio::io::stdin();
         let stdout = tokio::io::stdout();
         let (service, socket) = lsp_max::LspService::new(crate::server::ScaffoldServer::new);
-        lsp_max::Server::new(stdin, stdout, socket)
+        let _ = lsp_max::Server::new(stdin, stdout, socket)
             .serve(service)
             .await;
     });

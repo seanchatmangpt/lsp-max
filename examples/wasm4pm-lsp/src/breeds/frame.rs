@@ -12,41 +12,66 @@ impl Script {
     fn default_script() -> Self {
         Self {
             rules: vec![
-                ("I am *".into(), vec![
-                    "How long have you been (1)?".into(),
-                    "Do you enjoy being (1)?".into(),
-                ]),
-                ("I feel *".into(), vec![
-                    "Tell me more about feeling (1).".into(),
-                    "Why do you feel (1)?".into(),
-                ]),
-                ("* mother *".into(), vec![
-                    "Tell me more about your family.".into(),
-                    "How does your mother make you feel?".into(),
-                ]),
-                ("* father *".into(), vec![
-                    "Your family seems important to you.".into(),
-                    "Tell me more about your father.".into(),
-                ]),
-                ("I need *".into(), vec![
-                    "Why do you need (1)?".into(),
-                    "What would it mean if you had (1)?".into(),
-                ]),
-                ("* dream *".into(), vec![
-                    "What do you think this dream means?".into(),
-                    "Have you dreamed of this before?".into(),
-                ]),
-                ("* sorry *".into(), vec![
-                    "Please don't apologize.".into(),
-                    "What makes you feel the need to apologize?".into(),
-                ]),
-                ("hello *".into(), vec![
-                    "Hello! How are you feeling today?".into(),
-                ]),
-                ("* computer *".into(), vec![
-                    "Do you think computers can help you?".into(),
-                    "How do machines make you feel?".into(),
-                ]),
+                (
+                    "I am *".into(),
+                    vec![
+                        "How long have you been (1)?".into(),
+                        "Do you enjoy being (1)?".into(),
+                    ],
+                ),
+                (
+                    "I feel *".into(),
+                    vec![
+                        "Tell me more about feeling (1).".into(),
+                        "Why do you feel (1)?".into(),
+                    ],
+                ),
+                (
+                    "* mother *".into(),
+                    vec![
+                        "Tell me more about your family.".into(),
+                        "How does your mother make you feel?".into(),
+                    ],
+                ),
+                (
+                    "* father *".into(),
+                    vec![
+                        "Your family seems important to you.".into(),
+                        "Tell me more about your father.".into(),
+                    ],
+                ),
+                (
+                    "I need *".into(),
+                    vec![
+                        "Why do you need (1)?".into(),
+                        "What would it mean if you had (1)?".into(),
+                    ],
+                ),
+                (
+                    "* dream *".into(),
+                    vec![
+                        "What do you think this dream means?".into(),
+                        "Have you dreamed of this before?".into(),
+                    ],
+                ),
+                (
+                    "* sorry *".into(),
+                    vec![
+                        "Please don't apologize.".into(),
+                        "What makes you feel the need to apologize?".into(),
+                    ],
+                ),
+                (
+                    "hello *".into(),
+                    vec!["Hello! How are you feeling today?".into()],
+                ),
+                (
+                    "* computer *".into(),
+                    vec![
+                        "Do you think computers can help you?".into(),
+                        "How do machines make you feel?".into(),
+                    ],
+                ),
             ],
             fallbacks: vec![
                 "Please go on.".into(),
@@ -58,17 +83,30 @@ impl Script {
 
     fn from_value(val: &Value) -> Option<Self> {
         let arr = val.as_array()?;
-        let rules = arr.iter().filter_map(|entry| {
-            let pattern = entry.get("pattern")?.as_str()?.to_string();
-            let responses = entry.get("responses")?.as_array()?
-                .iter()
-                .filter_map(|r| r.as_str().map(String::from))
-                .collect::<Vec<_>>();
-            if responses.is_empty() { None } else { Some((pattern, responses)) }
-        }).collect();
+        let rules = arr
+            .iter()
+            .filter_map(|entry| {
+                let pattern = entry.get("pattern")?.as_str()?.to_string();
+                let responses = entry
+                    .get("responses")?
+                    .as_array()?
+                    .iter()
+                    .filter_map(|r| r.as_str().map(String::from))
+                    .collect::<Vec<_>>();
+                if responses.is_empty() {
+                    None
+                } else {
+                    Some((pattern, responses))
+                }
+            })
+            .collect();
         Some(Self {
             rules,
-            fallbacks: vec!["Please go on.".into(), "I see.".into(), "Very interesting.".into()],
+            fallbacks: vec![
+                "Please go on.".into(),
+                "I see.".into(),
+                "Very interesting.".into(),
+            ],
         })
     }
 }
@@ -81,33 +119,45 @@ fn try_match(pattern: &str, text: &str) -> Option<Vec<String>> {
 
     if parts.len() == 1 {
         // No wildcard: exact match
-        return if text_lo == pattern.to_lowercase() { Some(vec![]) } else { None };
+        return if text_lo == pattern.to_lowercase() {
+            Some(vec![])
+        } else {
+            None
+        };
     }
 
     let first_lo = parts[0].trim().to_lowercase();
-    let last_lo  = parts[parts.len() - 1].trim().to_lowercase();
+    let last_lo = parts[parts.len() - 1].trim().to_lowercase();
 
     // Verify prefix and suffix match, then extract the span between them
     let inner_start = if first_lo.is_empty() {
         0
     } else {
-        if !text_lo.starts_with(&first_lo) { return None; }
+        if !text_lo.starts_with(&first_lo) {
+            return None;
+        }
         first_lo.len()
     };
 
     let inner_end = if last_lo.is_empty() {
         text.len()
     } else {
-        if !text_lo.ends_with(&last_lo) { return None; }
+        if !text_lo.ends_with(&last_lo) {
+            return None;
+        }
         text_lo.len() - last_lo.len()
     };
 
-    if inner_start > inner_end { return None; }
+    if inner_start > inner_end {
+        return None;
+    }
     let inner = text[inner_start..inner_end].trim();
 
     if parts.len() == 2 {
         // Single wildcard
-        if inner.is_empty() { return None; }
+        if inner.is_empty() {
+            return None;
+        }
         return Some(vec![inner.to_string()]);
     }
 
@@ -128,13 +178,17 @@ fn try_match(pattern: &str, text: &str) -> Option<Vec<String>> {
         }
         let pos = rest_lo.find(sep.as_str())?;
         let cap = rest_orig[..pos].trim().to_string();
-        if cap.is_empty() { return None; }
+        if cap.is_empty() {
+            return None;
+        }
         captures.push(cap);
         rest_orig = rest_orig[pos + sep.len()..].to_string();
-        rest_lo   = rest_lo[pos + sep.len()..].to_string();
+        rest_lo = rest_lo[pos + sep.len()..].to_string();
     }
     let final_cap = rest_orig.trim().to_string();
-    if final_cap.is_empty() { return None; }
+    if final_cap.is_empty() {
+        return None;
+    }
     captures.push(final_cap);
 
     Some(captures)
@@ -167,7 +221,8 @@ impl CognitiveBreed for Eliza {
 
     fn run(&self, input: &BreedInput) -> Option<Value> {
         let text = input.get("text")?.as_str()?;
-        let call_count = input.get("call_count")
+        let call_count = input
+            .get("call_count")
             .and_then(|v| v.as_u64())
             .unwrap_or(0) as usize;
 
@@ -180,7 +235,7 @@ impl CognitiveBreed for Eliza {
 
         Some(match pattern_matched {
             Some(p) => json!({"response": response, "pattern_matched": p}),
-            None    => json!({"response": response}),
+            None => json!({"response": response}),
         })
     }
 }

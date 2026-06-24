@@ -266,7 +266,10 @@ mod tests {
         let _g = StateGuard::new();
         let svc = PluginService::new();
         let plugins = svc.list();
-        assert!(!plugins.is_empty(), "list must return at least the default plugin");
+        assert!(
+            !plugins.is_empty(),
+            "list must return at least the default plugin"
+        );
     }
 
     #[test]

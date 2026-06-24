@@ -4,8 +4,15 @@ use std::path::Path;
 
 const EXPECTED_COUNT: usize = 9;
 const EXPECTED_IDS: &[&str] = &[
-    "asp", "bayesian_network", "cbr", "eliza", "frames_inheritance",
-    "ltl_monitor", "meta_reasoning", "mycin", "pomdp",
+    "asp",
+    "bayesian_network",
+    "cbr",
+    "eliza",
+    "frames_inheritance",
+    "ltl_monitor",
+    "meta_reasoning",
+    "mycin",
+    "pomdp",
 ];
 
 fn load_registry() -> Value {
@@ -100,7 +107,10 @@ fn test_breed_fixture_paper_values() {
             .unwrap_or_else(|e| panic!("fixture {:?} invalid JSON: {}", path, e));
 
         assert!(
-            fixture.get("paper_value").and_then(|v| v.as_f64()).is_some(),
+            fixture
+                .get("paper_value")
+                .and_then(|v| v.as_f64())
+                .is_some(),
             "fixture for '{}' must have a numeric 'paper_value' (COG-005 analog)",
             breed_id
         );

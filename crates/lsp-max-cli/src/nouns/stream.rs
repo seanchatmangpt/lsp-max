@@ -122,8 +122,7 @@ impl StreamService {
             }),
         );
         state["stream_subscriptions"] = serde_json::Value::Object(new_subs);
-        Self::save_state(&state)
-            .map_err(|e| clap_noun_verb::error::NounVerbError::execution_error(e))?;
+        Self::save_state(&state).map_err(clap_noun_verb::error::NounVerbError::execution_error)?;
 
         Ok(StreamSubscribeResult {
             subscription_id: id.to_string(),
@@ -138,8 +137,7 @@ impl StreamService {
         if let Some(subs) = state["stream_subscriptions"].as_object_mut() {
             subs.remove(id);
         }
-        Self::save_state(&state)
-            .map_err(|e| clap_noun_verb::error::NounVerbError::execution_error(e))?;
+        Self::save_state(&state).map_err(clap_noun_verb::error::NounVerbError::execution_error)?;
         Ok(StreamUnsubscribeResult {
             subscription_id: id.to_string(),
             status: "CANDIDATE".into(),
@@ -169,7 +167,11 @@ pub fn subscribe(
     uri: Option<String>,
 ) -> Result<StreamSubscribeResult> {
     let kinds = kinds.unwrap_or_else(|| "Diagnostic,LawViolation".to_string());
-    let kind_list: Vec<String> = kinds.split(',').map(str::trim).map(str::to_string).collect();
+    let kind_list: Vec<String> = kinds
+        .split(',')
+        .map(str::trim)
+        .map(str::to_string)
+        .collect();
     StreamService::new().subscribe(&id, kind_list, uri)
 }
 
@@ -189,7 +191,7 @@ mod tests {
 
     #[test]
     fn status_returns_candidate_with_no_state_file() {
-        let _guard = TEST_ENV_LOCK.lock().unwrap();
+        let _guard = TEST_ENV_LOCK.lock().unwrap_or_else(|p| p.into_inner());
         let svc = StreamService::new();
         let result = svc.status();
         assert_eq!(result.status, "CANDIDATE");
@@ -198,7 +200,7 @@ mod tests {
 
     #[test]
     fn subscribe_and_unsubscribe_roundtrip() {
-        let _guard = TEST_ENV_LOCK.lock().unwrap();
+        let _guard = TEST_ENV_LOCK.lock().unwrap_or_else(|p| p.into_inner());
         let tmp = tempfile::NamedTempFile::new().unwrap();
         let path = tmp.path().to_str().unwrap().to_string();
         std::env::set_var("LSP_MAX_STATE_PATH", &path);
@@ -218,7 +220,9 @@ mod tests {
         assert_eq!(status.subscriptions.len(), 1);
         assert_eq!(status.subscriptions[0].subscription_id, "test-sub-1");
 
-        let unsub = svc.unsubscribe("test-sub-1").expect("unsubscribe should not fail");
+        let unsub = svc
+            .unsubscribe("test-sub-1")
+            .expect("unsubscribe should not fail");
         assert_eq!(unsub.subscription_id, "test-sub-1");
 
         let status_after = svc.status();

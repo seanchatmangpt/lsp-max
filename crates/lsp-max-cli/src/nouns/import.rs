@@ -41,7 +41,8 @@ impl ImportService {
             serde_json::from_str(&raw).map_err(|e| format!("parse error: {}", e))?;
 
         // Load (or bootstrap) the live mesh.
-        let mut live = AutonomicMesh::load_from_file(&self.state_path).map_err(|e| e.to_string())?;
+        let mut live =
+            AutonomicMesh::load_from_file(&self.state_path).map_err(|e| e.to_string())?;
 
         let mut instances_imported = 0usize;
         let mut instances_merged = 0usize;
@@ -133,7 +134,9 @@ pub struct ImportStateResult {
 #[verb("state")]
 pub fn state(src: String) -> Result<ImportStateResult> {
     let svc = ImportService::new();
-    let summary = svc.merge_state(&src).map_err(NounVerbError::execution_error)?;
+    let summary = svc
+        .merge_state(&src)
+        .map_err(NounVerbError::execution_error)?;
     Ok(ImportStateResult {
         src,
         instances_imported: summary.instances_imported,
@@ -198,9 +201,7 @@ mod tests {
         let state_json = serde_json::to_string(&import_mesh.to_state()).unwrap();
         std::fs::write(import_f.path(), &state_json).unwrap();
 
-        let summary = svc
-            .merge_state(import_f.path().to_str().unwrap())
-            .unwrap();
+        let summary = svc.merge_state(import_f.path().to_str().unwrap()).unwrap();
         assert_eq!(summary.instances_imported, 1);
         assert_eq!(summary.instances_merged, 0);
         let _ = live_f;
@@ -217,9 +218,7 @@ mod tests {
         let state_json = serde_json::to_string(&import_mesh.to_state()).unwrap();
         std::fs::write(import_f.path(), &state_json).unwrap();
 
-        let summary = svc
-            .merge_state(import_f.path().to_str().unwrap())
-            .unwrap();
+        let summary = svc.merge_state(import_f.path().to_str().unwrap()).unwrap();
         assert_eq!(summary.instances_imported, 0);
         assert_eq!(summary.instances_merged, 1);
         let _ = live_f;
@@ -228,9 +227,7 @@ mod tests {
     #[test]
     fn merge_state_missing_src_returns_err() {
         let (_live_f, svc) = make_live_mesh_svc();
-        assert!(svc
-            .merge_state("/tmp/nonexistent-import-src.json")
-            .is_err());
+        assert!(svc.merge_state("/tmp/nonexistent-import-src.json").is_err());
     }
 
     #[test]
@@ -266,8 +263,7 @@ mod tests {
         let src_f = tempfile::NamedTempFile::new().unwrap();
         std::fs::write(src_f.path(), b"[]").unwrap();
         // "brand-new-inst" does not exist — it must be auto-created without error.
-        let result =
-            svc.bulk_import_diagnostics(src_f.path().to_str().unwrap(), "brand-new-inst");
+        let result = svc.bulk_import_diagnostics(src_f.path().to_str().unwrap(), "brand-new-inst");
         assert!(result.is_ok());
         let _ = live_f;
     }
@@ -285,8 +281,7 @@ mod tests {
         let (_live_f, svc) = make_live_mesh_svc();
         let bad_f = tempfile::NamedTempFile::new().unwrap();
         std::fs::write(bad_f.path(), b"not an array").unwrap();
-        let result =
-            svc.bulk_import_diagnostics(bad_f.path().to_str().unwrap(), "live-inst");
+        let result = svc.bulk_import_diagnostics(bad_f.path().to_str().unwrap(), "live-inst");
         assert!(result.is_err());
     }
 }

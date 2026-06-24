@@ -24,6 +24,7 @@ vendors/
 **/lsif_dump.json
 **/receipts/
 !/crates/anti-llm-cheat-lsp/receipts/
+!/crates/lsp-max-compositor/receipts/
 !/examples/lsp-max-scaffold/receipts/
 scratch/
 /doc/

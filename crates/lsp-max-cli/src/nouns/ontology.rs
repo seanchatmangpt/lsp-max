@@ -158,9 +158,8 @@ impl OntologyService {
             }
         }
 
-        fs::write(output, &all_content).map_err(|e| {
-            clap_noun_verb::error::NounVerbError::execution_error(e.to_string())
-        })?;
+        fs::write(output, &all_content)
+            .map_err(|e| clap_noun_verb::error::NounVerbError::execution_error(e.to_string()))?;
 
         Ok(OntologyExportResult {
             format: format.to_string(),
@@ -194,16 +193,11 @@ impl OntologyService {
         })
     }
 
-    pub fn query(
-        &self,
-        sparql_file: Option<&str>,
-        inline: Option<&str>,
-    ) -> OntologyQueryResult {
+    pub fn query(&self, sparql_file: Option<&str>, inline: Option<&str>) -> OntologyQueryResult {
         OntologyQueryResult {
             query: inline.unwrap_or("(see sparql_file)").to_string(),
             sparql_file: sparql_file.map(str::to_string),
-            result_hint: "Run `ggen sync` to execute SPARQL queries against the ontology"
-                .into(),
+            result_hint: "Run `ggen sync` to execute SPARQL queries against the ontology".into(),
             status: "OPEN".into(),
         }
     }
@@ -249,9 +243,6 @@ pub fn assert_triple(
 }
 
 #[verb("query")]
-pub fn query(
-    sparql_file: Option<String>,
-    inline: Option<String>,
-) -> Result<OntologyQueryResult> {
+pub fn query(sparql_file: Option<String>, inline: Option<String>) -> Result<OntologyQueryResult> {
     Ok(OntologyService::new().query(sparql_file.as_deref(), inline.as_deref()))
 }

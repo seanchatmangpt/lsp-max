@@ -17,19 +17,27 @@ const P_EARTHQUAKE: f64 = 0.002;
 
 fn p_alarm(b: bool, e: bool) -> f64 {
     match (b, e) {
-        (true,  true)  => 0.95,
-        (true,  false) => 0.94,
-        (false, true)  => 0.29,
+        (true, true) => 0.95,
+        (true, false) => 0.94,
+        (false, true) => 0.29,
         (false, false) => 0.001,
     }
 }
 
 fn p_john_calls(a: bool) -> f64 {
-    if a { 0.90 } else { 0.05 }
+    if a {
+        0.90
+    } else {
+        0.05
+    }
 }
 
 fn p_mary_calls(a: bool) -> f64 {
-    if a { 0.70 } else { 0.01 }
+    if a {
+        0.70
+    } else {
+        0.01
+    }
 }
 
 fn joint_b_j_m(b: bool) -> f64 {
@@ -38,7 +46,11 @@ fn joint_b_j_m(b: bool) -> f64 {
     for &e in &[true, false] {
         let p_e = if e { P_EARTHQUAKE } else { 1.0 - P_EARTHQUAKE };
         for &a in &[true, false] {
-            let p_a = if a { p_alarm(b, e) } else { 1.0 - p_alarm(b, e) };
+            let p_a = if a {
+                p_alarm(b, e)
+            } else {
+                1.0 - p_alarm(b, e)
+            };
             total += p_b * p_e * p_a * p_john_calls(a) * p_mary_calls(a);
         }
     }
@@ -51,10 +63,10 @@ impl CognitiveBreed for BayesianNetwork {
     }
 
     fn run(&self, _input: &BreedInput) -> Option<serde_json::Value> {
-        let p_true_jm  = joint_b_j_m(true);
+        let p_true_jm = joint_b_j_m(true);
         let p_false_jm = joint_b_j_m(false);
         let normaliser = p_true_jm + p_false_jm;
-        let p_true  = p_true_jm  / normaliser;
+        let p_true = p_true_jm / normaliser;
         let p_false = p_false_jm / normaliser;
         Some(serde_json::json!({
             "query":   "Burglary",

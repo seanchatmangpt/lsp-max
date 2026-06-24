@@ -1,7 +1,10 @@
 use lsp_max::jsonrpc::{Error, ErrorCode, Result};
 use lsp_max::lsp_types::*;
 use lsp_max::max_protocol::{LawAxis, MaxDiagnostic};
-use lsp_max::{Client, ClassifiedFindings, Finding, LanguageServer, RulePackServer, ValidatedRulePackSet, WorkspaceIndex};
+use lsp_max::{
+    ClassifiedFindings, Client, Finding, LanguageServer, RulePackServer, ValidatedRulePackSet,
+    WorkspaceIndex,
+};
 use lsp_max_ast::AutoLspAdapter;
 use std::str::FromStr;
 use std::sync::{Arc, Mutex};
@@ -125,7 +128,10 @@ impl LanguageServer for AntiLlmServer {
 
         // Wire window/showMessage
         self.client
-            .show_message(MessageType::INFO, "anti-llm-cheat-lsp detection surfaces active")
+            .show_message(
+                MessageType::INFO,
+                "anti-llm-cheat-lsp detection surfaces active",
+            )
             .await;
         // Wire workspace/configuration
         let _ = self
@@ -145,6 +151,7 @@ impl LanguageServer for AntiLlmServer {
                 "anti-llm-cheat-lsp active",
                 Some(vec![MessageActionItem {
                     title: "OK".to_string(),
+                    properties: Default::default(),
                 }]),
             )
             .await;
@@ -983,10 +990,7 @@ impl LanguageServer for AntiLlmServer {
         Ok(item)
     }
 
-    async fn document_link(
-        &self,
-        params: DocumentLinkParams,
-    ) -> Result<Option<Vec<DocumentLink>>> {
+    async fn document_link(&self, params: DocumentLinkParams) -> Result<Option<Vec<DocumentLink>>> {
         let uri = &params.text_document.uri;
         let diags = self.file_diagnostics(uri);
         let target = Uri::from_str("anti-llm://failset").ok();
@@ -1009,10 +1013,7 @@ impl LanguageServer for AntiLlmServer {
         Ok(link)
     }
 
-    async fn document_color(
-        &self,
-        _params: DocumentColorParams,
-    ) -> Result<Vec<ColorInformation>> {
+    async fn document_color(&self, _params: DocumentColorParams) -> Result<Vec<ColorInformation>> {
         Ok(vec![])
     }
 
@@ -1106,24 +1107,15 @@ impl LanguageServer for AntiLlmServer {
         }
     }
 
-    async fn will_create_files(
-        &self,
-        _params: CreateFilesParams,
-    ) -> Result<Option<WorkspaceEdit>> {
+    async fn will_create_files(&self, _params: CreateFilesParams) -> Result<Option<WorkspaceEdit>> {
         Ok(None)
     }
 
-    async fn will_rename_files(
-        &self,
-        _params: RenameFilesParams,
-    ) -> Result<Option<WorkspaceEdit>> {
+    async fn will_rename_files(&self, _params: RenameFilesParams) -> Result<Option<WorkspaceEdit>> {
         Ok(None)
     }
 
-    async fn will_delete_files(
-        &self,
-        _params: DeleteFilesParams,
-    ) -> Result<Option<WorkspaceEdit>> {
+    async fn will_delete_files(&self, _params: DeleteFilesParams) -> Result<Option<WorkspaceEdit>> {
         Ok(None)
     }
 

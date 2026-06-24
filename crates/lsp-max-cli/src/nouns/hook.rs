@@ -143,12 +143,28 @@ pub fn propagate(
     let state_path = crate::nouns::get_state_path();
     let mut mesh = AutonomicMesh::load_from_file(&state_path)
         .map_err(|e| NounVerbError::execution_error(e.to_string()))?;
+    // max/propagate emits a receipt into the instance ledger; build one keyed to
+    // the chain/hook being propagated. The hash uses the same sha256 the runtime
+    // applies to its own receipts, chained onto the instance's latest receipt.
+    let receipt_id = format!("rcpt-propagate-{chain_or_hook_id}");
+    let prev_receipt_hash = mesh
+        .instances
+        .get(&instance_id)
+        .and_then(|inst| inst.receipts.last())
+        .map(|r| r.hash.clone());
+    let hash = match &prev_receipt_hash {
+        Some(prev) => lsp_max_runtime::sha256(format!("{prev}:{receipt_id}").as_bytes()),
+        None => lsp_max_runtime::sha256(receipt_id.as_bytes()),
+    };
+    let receipt = lsp_max_runtime::Receipt {
+        receipt_id,
+        hash,
+        prev_receipt_hash,
+    };
+    let params = serde_json::to_value(&receipt)
+        .map_err(|e| NounVerbError::execution_error(e.to_string()))?;
     let raw = mesh
-        .dispatch_rpc(
-            &instance_id,
-            "max/propagate",
-            serde_json::json!(chain_or_hook_id),
-        )
+        .dispatch_rpc(&instance_id, "max/propagate", params)
         .map_err(|e| NounVerbError::execution_error(e.to_string()))?;
     mesh.save_to_file(&state_path)
         .map_err(|e| NounVerbError::execution_error(e.to_string()))?;
@@ -278,7 +294,10 @@ mod tests {
     fn hook_graph_returns_ok_for_known_instance() {
         with_mesh_state(|| {
             let result = hook_graph("inst-1".to_string(), None);
-            assert!(result.is_ok(), "hook_graph for known instance must return Ok");
+            assert!(
+                result.is_ok(),
+                "hook_graph for known instance must return Ok"
+            );
         });
     }
 
@@ -286,7 +305,10 @@ mod tests {
     fn propagate_returns_ok_for_known_instance() {
         with_mesh_state(|| {
             let result = propagate("inst-1".to_string(), "chain-a".to_string());
-            assert!(result.is_ok(), "propagate for known instance must return Ok");
+            assert!(
+                result.is_ok(),
+                "propagate for known instance must return Ok"
+            );
         });
     }
 

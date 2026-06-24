@@ -22,28 +22,66 @@ pub struct AliasStore {
     pub aliases: HashMap<String, AliasEntry>,
 }
 
-/// Nouns that aliases may not shadow.
+/// Outcome of executing an alias as a child `lsp-max-cli` invocation.
+#[derive(Debug, Clone, Serialize)]
+pub struct AliasExecution {
+    pub name: String,
+    /// The reconstructed command line, for display and audit.
+    pub command: String,
+    /// Process exit code; `None` if the child was terminated by a signal.
+    pub exit_code: Option<i32>,
+    pub success: bool,
+    pub stdout: String,
+    pub stderr: String,
+}
+
+/// Nouns that aliases may not shadow. Must cover every `pub mod` declared in
+/// `nouns/mod.rs`; the `reserved_nouns_covers_every_registered_noun` test fails
+/// if a registered noun is missing here.
 const RESERVED_NOUNS: &[&str] = &[
     "admission",
+    "admit",
     "agent",
     "alias",
+    "batch",
     "client",
     "config",
     "conformance",
     "diagnostics",
     "doctor",
     "event",
+    "explain",
+    "export",
     "gate",
+    "generate",
+    "ggen",
+    "history",
     "hook",
+    "import",
+    "insight",
+    "intent",
+    "logs",
+    "mesh",
     "metamodel",
+    "metrics",
+    "ocel",
+    "ontology",
+    "pack",
+    "pipeline",
     "plugin",
+    "process",
     "receipt",
     "repair",
     "rpc",
     "server",
     "snapshot",
     "state",
+    "stream",
+    "swarm",
+    "task",
     "telemetry",
+    "template",
+    "testmatrix",
     "workspace",
 ];
 
@@ -92,7 +130,9 @@ impl AliasService {
         args: Vec<String>,
     ) -> std::result::Result<(AliasEntry, bool), String> {
         if RESERVED_NOUNS.contains(&name) {
-            return Err(format!("ALIAS_RESERVED: '{name}' conflicts with a built-in noun"));
+            return Err(format!(
+                "ALIAS_RESERVED: '{name}' conflicts with a built-in noun"
+            ));
         }
         let mut store = self.load();
         let replaced = store.aliases.contains_key(name);
@@ -124,6 +164,52 @@ impl AliasService {
     pub fn resolve(&self, name: &str) -> Option<AliasEntry> {
         let store = self.load();
         store.aliases.get(name).cloned()
+    }
+
+    /// Reconstruct the `lsp-max-cli` command line for an alias entry.
+    fn command_line(entry: &AliasEntry) -> String {
+        let args_joined = entry.args.join(" ");
+        if args_joined.is_empty() {
+            format!("lsp-max-cli {} {}", entry.noun, entry.verb)
+        } else {
+            format!("lsp-max-cli {} {} {}", entry.noun, entry.verb, args_joined)
+        }
+    }
+
+    /// Execute an alias by spawning `program` as a child process with the
+    /// alias's noun/verb/args. At runtime `program` is the `lsp-max-cli` binary;
+    /// the registry mutex is held for the duration of the parent verb, so
+    /// re-entering the CLI in-process would deadlock — a child process is the
+    /// only safe dispatch path. Tests inject a harmless stand-in program to
+    /// exercise the spawn plumbing without re-entering the test harness.
+    pub fn execute_with<P: AsRef<std::ffi::OsStr>>(
+        &self,
+        name: &str,
+        program: P,
+    ) -> std::result::Result<AliasExecution, String> {
+        let entry = self
+            .resolve(name)
+            .ok_or_else(|| format!("ALIAS_NOT_FOUND: {name}"))?;
+        let output = std::process::Command::new(program)
+            .arg(&entry.noun)
+            .arg(&entry.verb)
+            .args(&entry.args)
+            .output()
+            .map_err(|e| format!("spawn failed: {e}"))?;
+        Ok(AliasExecution {
+            name: name.to_string(),
+            command: Self::command_line(&entry),
+            exit_code: output.status.code(),
+            success: output.status.success(),
+            stdout: String::from_utf8_lossy(&output.stdout).into_owned(),
+            stderr: String::from_utf8_lossy(&output.stderr).into_owned(),
+        })
+    }
+
+    /// Execute an alias against the current `lsp-max-cli` binary.
+    pub fn execute(&self, name: &str) -> std::result::Result<AliasExecution, String> {
+        let exe = std::env::current_exe().map_err(|e| e.to_string())?;
+        self.execute_with(name, exe)
     }
 }
 
@@ -202,9 +288,7 @@ pub fn set(
 #[verb("remove")]
 pub fn remove(name: String) -> Result<AliasRemoveResult> {
     let svc = AliasService::new();
-    let was_present = svc
-        .remove(&name)
-        .map_err(NounVerbError::execution_error)?;
+    let was_present = svc.remove(&name).map_err(NounVerbError::execution_error)?;
     Ok(AliasRemoveResult { name, was_present })
 }
 
@@ -230,6 +314,27 @@ pub fn resolve(name: String) -> Result<AliasResolveResult> {
     })
 }
 
+#[derive(Debug, Serialize)]
+pub struct AliasRunResult {
+    pub execution: AliasExecution,
+    /// ADMITTED when the child exited 0; REFUSED otherwise.
+    pub status: String,
+}
+
+/// Execute an alias by invoking its noun/verb/args as a child `lsp-max-cli` process.
+#[verb("run")]
+pub fn run(name: String) -> Result<AliasRunResult> {
+    let svc = AliasService::new();
+    let execution = svc.execute(&name).map_err(NounVerbError::execution_error)?;
+    let status = if execution.success {
+        "ADMITTED"
+    } else {
+        "REFUSED"
+    }
+    .to_string();
+    Ok(AliasRunResult { execution, status })
+}
+
 // ==============================================================================
 // 4. Tests
 // ==============================================================================
@@ -240,7 +345,8 @@ mod tests {
 
     fn make_service_with_env(tmp: &tempfile::TempDir) -> AliasService {
         // Set HOME to tmp so alias_path resolves inside tmp.
-        std::env::set_var("HOME", tmp.path());
+        // SAFETY: tests serialize env mutation through TEST_ENV_LOCK.
+        unsafe { std::env::set_var("HOME", tmp.path()) };
         AliasService::new()
     }
 
@@ -258,9 +364,7 @@ mod tests {
         let _lock = crate::nouns::TEST_ENV_LOCK.lock().unwrap();
         let tmp = tempfile::tempdir().unwrap();
         let svc = make_service_with_env(&tmp);
-        let (entry, replaced) = svc
-            .set("chk", "gate", "check", vec![])
-            .unwrap();
+        let (entry, replaced) = svc.set("chk", "gate", "check", vec![]).unwrap();
         assert!(!replaced);
         assert_eq!(entry.name, "chk");
         assert_eq!(entry.noun, "gate");
@@ -341,5 +445,80 @@ mod tests {
             .unwrap();
         let entry = svc.resolve("snap").unwrap();
         assert_eq!(entry.args, vec!["my-inst"]);
+    }
+
+    #[test]
+    fn reserved_nouns_covers_every_registered_noun() {
+        // Single source of truth: the `pub mod <name>;` lines in nouns/mod.rs.
+        // A registered noun missing from RESERVED_NOUNS means an alias could
+        // shadow it — this guards the shadow-prevention contract against drift.
+        for line in include_str!("mod.rs").lines() {
+            if let Some(rest) = line.trim().strip_prefix("pub mod ") {
+                if let Some(noun) = rest.strip_suffix(';') {
+                    assert!(
+                        RESERVED_NOUNS.contains(&noun),
+                        "noun '{noun}' is registered in mod.rs but absent from RESERVED_NOUNS"
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn newer_nouns_are_reserved() {
+        let _lock = crate::nouns::TEST_ENV_LOCK
+            .lock()
+            .unwrap_or_else(|p| p.into_inner());
+        let tmp = tempfile::tempdir().unwrap();
+        let svc = make_service_with_env(&tmp);
+        for noun in [
+            "process", "swarm", "ocel", "batch", "task", "metrics", "logs", "history", "import",
+            "export",
+        ] {
+            let result = svc.set(noun, "x", "y", vec![]);
+            assert!(result.is_err(), "alias named '{noun}' must be rejected");
+            assert!(result.unwrap_err().contains("ALIAS_RESERVED"));
+        }
+    }
+
+    #[test]
+    fn execute_with_runs_program_and_reports_success() {
+        let _lock = crate::nouns::TEST_ENV_LOCK
+            .lock()
+            .unwrap_or_else(|p| p.into_inner());
+        let tmp = tempfile::tempdir().unwrap();
+        let svc = make_service_with_env(&tmp);
+        svc.set("chk", "gate", "check", vec![]).unwrap();
+        // `true` ignores its arguments and exits 0 — exercises spawn plumbing.
+        let exec = svc.execute_with("chk", "true").unwrap();
+        assert!(exec.success);
+        assert_eq!(exec.exit_code, Some(0));
+        assert_eq!(exec.command, "lsp-max-cli gate check");
+    }
+
+    #[test]
+    fn execute_with_nonzero_exit_reports_failure() {
+        let _lock = crate::nouns::TEST_ENV_LOCK
+            .lock()
+            .unwrap_or_else(|p| p.into_inner());
+        let tmp = tempfile::tempdir().unwrap();
+        let svc = make_service_with_env(&tmp);
+        svc.set("bad", "gate", "check", vec![]).unwrap();
+        // `false` exits 1 — verifies non-zero exit maps to success = false.
+        let exec = svc.execute_with("bad", "false").unwrap();
+        assert!(!exec.success);
+        assert_eq!(exec.exit_code, Some(1));
+    }
+
+    #[test]
+    fn execute_with_unknown_alias_returns_err() {
+        let _lock = crate::nouns::TEST_ENV_LOCK
+            .lock()
+            .unwrap_or_else(|p| p.into_inner());
+        let tmp = tempfile::tempdir().unwrap();
+        let svc = make_service_with_env(&tmp);
+        let result = svc.execute_with("ghost", "true");
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("ALIAS_NOT_FOUND"));
     }
 }

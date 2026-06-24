@@ -117,30 +117,38 @@ impl OcelService {
                     }),
                 },
             );
+        }
 
-            for (idx, hook_event) in inst.event_log.iter().enumerate() {
-                let raw =
-                    serde_json::to_value(hook_event).map_err(|e| e.to_string())?;
-                // Externally-tagged enum: outer key = variant name = activity.
-                let activity = raw
-                    .as_object()
-                    .and_then(|m| m.keys().next())
-                    .unwrap_or("Unknown")
-                    .to_string();
+        // mesh.event_log is the shared event journal; each HookEvent variant carries
+        // the instance_id it belongs to as a named field inside the variant payload.
+        for (idx, hook_event) in mesh.event_log.iter().enumerate() {
+            let raw = serde_json::to_value(hook_event).map_err(|e| e.to_string())?;
+            // Externally-tagged enum: outer key = variant name = activity.
+            let obj = raw.as_object();
+            let activity = obj
+                .and_then(|m| m.keys().next())
+                .map(|s| s.to_owned())
+                .unwrap_or_else(|| "Unknown".to_string());
+            // The payload under the variant key carries `instance_id`.
+            let event_instance_id = obj
+                .and_then(|m| m.values().next())
+                .and_then(|v| v.get("instance_id"))
+                .and_then(|v| v.as_str())
+                .unwrap_or("unknown")
+                .to_string();
 
-                event_seq += 1;
-                let event_id = format!("e{event_seq}-{instance_id}-{idx}");
-                events.insert(
-                    event_id,
-                    OcelEvent {
-                        activity,
-                        // Wall-clock not stored on events; use a stable placeholder.
-                        timestamp: "1970-01-01T00:00:00Z".to_string(),
-                        object_map: vec![instance_id.clone()],
-                        value_map: serde_json::json!({}),
-                    },
-                );
-            }
+            event_seq += 1;
+            let event_id = format!("e{event_seq}-{idx}");
+            events.insert(
+                event_id,
+                OcelEvent {
+                    activity,
+                    // Wall-clock not stored on events; use a stable placeholder.
+                    timestamp: "1970-01-01T00:00:00Z".to_string(),
+                    object_map: vec![event_instance_id],
+                    value_map: serde_json::json!({}),
+                },
+            );
         }
 
         Ok(OcelLog {

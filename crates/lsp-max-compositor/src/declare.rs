@@ -16,9 +16,7 @@ use serde_json::Value;
 use std::collections::HashMap;
 
 use wasm4pm::declare::DeclareModel as WasmDeclareModel;
-pub use wasm4pm::declare::{
-    ActivityName, Confidence, DeclareConstraint, DeclareTemplate, Support,
-};
+pub use wasm4pm::declare::{ActivityName, Confidence, DeclareConstraint, DeclareTemplate, Support};
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Violation
@@ -52,15 +50,19 @@ pub struct DeclareModel {
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 fn act(name: &str) -> ActivityName {
-    ActivityName::new(name).expect("non-empty activity name")
+    ActivityName::from_str(name).expect("non-empty activity name")
 }
 
 fn wasm_constraint(template: DeclareTemplate, activities: Vec<ActivityName>) -> DeclareConstraint {
     DeclareConstraint {
         template,
         activities,
-        support: Support(1.0),
-        confidence: Confidence(1.0),
+        // support/confidence are stored as f64; validate the range via the
+        // newtypes (per wasm4pm's construction-site guidance) and store the value.
+        support: Support::new(1.0).expect("support 1.0 is in [0,1]").value(),
+        confidence: Confidence::new(1.0)
+            .expect("confidence 1.0 is in [0,1]")
+            .value(),
     }
 }
 
@@ -93,7 +95,10 @@ impl DeclareModel {
                 ),
                 wasm_constraint(
                     DeclareTemplate::NotCoExistence,
-                    vec![act("CompositorFlushAdmitted"), act("CompositorFlushBlocked")],
+                    vec![
+                        act("CompositorFlushAdmitted"),
+                        act("CompositorFlushBlocked"),
+                    ],
                 ),
                 wasm_constraint(
                     DeclareTemplate::RespondedExistence,
@@ -121,9 +126,12 @@ impl DeclareModel {
                     DeclareTemplate::Precedence,
                     vec![act("ScanComplete"), act("ReceiptValidated")],
                 ),
-                wasm_constraint(DeclareTemplate::ExactlyN, vec![act("ScanComplete")]),
                 wasm_constraint(
-                    DeclareTemplate::Absence,
+                    DeclareTemplate::ExactlyN { n: 1 },
+                    vec![act("ScanComplete")],
+                ),
+                wasm_constraint(
+                    DeclareTemplate::Absence { max: 0 },
                     vec![act("VictoryLanguageEmitted")],
                 ),
                 wasm_constraint(
@@ -178,9 +186,9 @@ fn constraint_label(c: &DeclareConstraint) -> String {
         DeclareTemplate::Precedence => format!("precedence({a}, {b})"),
         DeclareTemplate::AlternatePrecedence => format!("alternate_precedence({a}, {b})"),
         DeclareTemplate::ChainPrecedence => format!("chain_precedence({a}, {b})"),
-        DeclareTemplate::Existence => format!("existence({a})"),
-        DeclareTemplate::Absence => format!("absence({a})"),
-        DeclareTemplate::ExactlyN => format!("exactly_one({a})"),
+        DeclareTemplate::Existence { .. } => format!("existence({a})"),
+        DeclareTemplate::Absence { .. } => format!("absence({a})"),
+        DeclareTemplate::ExactlyN { .. } => format!("exactly_n({a})"),
         DeclareTemplate::NotCoExistence => format!("not_co_existence({a}, {b})"),
         DeclareTemplate::RespondedExistence => format!("responded_existence({a}, {b})"),
         DeclareTemplate::CoExistence => format!("co_existence({a}, {b})"),
@@ -232,9 +240,7 @@ fn check_constraint(
         DeclareTemplate::Response | DeclareTemplate::AlternateResponse => {
             for (i, act) in trace.iter().enumerate() {
                 if act.as_str() == a && !trace[i + 1..].iter().any(|x| x.as_str() == b) {
-                    return Some(viol(format!(
-                        "{a} at position {i} has no subsequent {b}"
-                    )));
+                    return Some(viol(format!("{a} at position {i} has no subsequent {b}")));
                 }
             }
             None
@@ -267,7 +273,10 @@ fn check_constraint(
         DeclareTemplate::ChainPrecedence => {
             for (i, act) in trace.iter().enumerate() {
                 if act.as_str() == b {
-                    let prev = i.checked_sub(1).and_then(|p| trace.get(p)).map(|s| s.as_str());
+                    let prev = i
+                        .checked_sub(1)
+                        .and_then(|p| trace.get(p))
+                        .map(|s| s.as_str());
                     if prev != Some(a) {
                         return Some(viol(format!(
                             "{b} at {i} not directly preceded by {a} (got {prev:?})"
@@ -277,24 +286,30 @@ fn check_constraint(
             }
             None
         }
-        DeclareTemplate::ExactlyN => {
+        DeclareTemplate::ExactlyN { n } => {
             let count = trace.iter().filter(|act| act.as_str() == a).count();
-            if count != 1 && !trace.is_empty() {
-                Some(viol(format!("{a} occurred {count} times (expected 1)")))
+            if count != *n as usize && !trace.is_empty() {
+                Some(viol(format!("{a} occurred {count} times (expected {n})")))
             } else {
                 None
             }
         }
-        DeclareTemplate::Existence => {
-            if !trace.is_empty() && !trace.iter().any(|act| act.as_str() == a) {
-                Some(viol(format!("required activity {a} never occurred")))
+        DeclareTemplate::Existence { min } => {
+            let count = trace.iter().filter(|act| act.as_str() == a).count();
+            if !trace.is_empty() && count < *min as usize {
+                Some(viol(format!(
+                    "{a} occurred {count} times (expected at least {min})"
+                )))
             } else {
                 None
             }
         }
-        DeclareTemplate::Absence => {
-            if trace.iter().any(|act| act.as_str() == a) {
-                Some(viol(format!("forbidden activity {a} occurred")))
+        DeclareTemplate::Absence { max } => {
+            let count = trace.iter().filter(|act| act.as_str() == a).count();
+            if count > *max as usize {
+                Some(viol(format!(
+                    "{a} occurred {count} times (at most {max} allowed)"
+                )))
             } else {
                 None
             }
@@ -341,9 +356,7 @@ fn check_constraint(
             }
             for (i, act) in trace.iter().enumerate() {
                 if act.as_str() == a && !trace[i + 1..].iter().any(|x| x.as_str() == b) {
-                    return Some(viol(format!(
-                        "succession: {a} at {i} not followed by {b}"
-                    )));
+                    return Some(viol(format!("succession: {a} at {i} not followed by {b}")));
                 }
             }
             None
@@ -369,10 +382,7 @@ fn check_constraint(
 pub fn extract_traces(events: &[Value]) -> HashMap<String, Vec<String>> {
     let mut traces: HashMap<String, Vec<String>> = HashMap::new();
     for ev in events {
-        let event_type = ev
-            .get("type")
-            .and_then(|t| t.as_str())
-            .unwrap_or("Unknown");
+        let event_type = ev.get("type").and_then(|t| t.as_str()).unwrap_or("Unknown");
         let case_id = ev
             .get("attributes")
             .and_then(|a| {
@@ -400,7 +410,10 @@ mod tests {
     fn test_model(template: DeclareTemplate, activities: Vec<&str>) -> DeclareModel {
         build_model(
             "test",
-            vec![wasm_constraint(template, activities.into_iter().map(act).collect())],
+            vec![wasm_constraint(
+                template,
+                activities.into_iter().map(act).collect(),
+            )],
         )
     }
 
@@ -438,7 +451,10 @@ mod tests {
             ],
         );
         let violations = model.check(&traces);
-        assert!(violations.is_empty(), "unexpected violations: {violations:?}");
+        assert!(
+            violations.is_empty(),
+            "unexpected violations: {violations:?}"
+        );
     }
 
     #[test]
