@@ -1,6 +1,9 @@
 use crate::analyzer::DefaultAnalyzer;
 use crate::diagnostics::ScaffoldDiagnostic;
 use crate::law::ScaffoldConformanceVector;
+use crate::session_conformance::{
+    replay_session, EventActivity, EventObjects, SessionLog,
+};
 use crate::verifiable::{VerifiableDiagnostic, VerifiableEngine};
 use lsp_max::jsonrpc;
 use lsp_max::lsp_types::*;
@@ -12,9 +15,17 @@ use tokio::sync::Mutex;
 /// Holds per-session law state. The LSP surface is read-only — this server
 /// emits diagnostics, hovers, and code actions but never mutates files. Every
 /// diagnostic it publishes carries a replay-verifiable receipt in `data`.
+///
+/// A `SessionLog` accumulates every LSP event as an OCEL 2.0 event bound to
+/// multiple object types simultaneously. After each analysis pass the scaffold
+/// Declare constraint model is checked; violations are emitted via
+/// `tracing::warn!` so they appear in structured observability pipelines
+/// without blocking the LSP response path.
 pub struct ScaffoldServer {
     client: Client,
     conformance: Mutex<ScaffoldConformanceVector>,
+    /// OCEL 2.0 session event log — accumulates one event per LSP notification.
+    session: Mutex<SessionLog>,
 }
 
 impl ScaffoldServer {
@@ -22,6 +33,34 @@ impl ScaffoldServer {
         Self {
             client,
             conformance: Mutex::new(ScaffoldConformanceVector::new()),
+            session: Mutex::new(SessionLog::new()),
+        }
+    }
+
+    /// Append an event to the session log, then run the Declare model against
+    /// the full accumulated log and emit `tracing::warn!` for each violation.
+    ///
+    /// This mirrors the FlushCoordinator pattern in `lsp-max-compositor`:
+    /// conformance is checked after every new event, not batched.
+    async fn record_and_check(&self, activity: EventActivity, objects: EventObjects) {
+        let mut log = self.session.lock().await;
+        log.append(activity, objects);
+        let result = replay_session(&log);
+        for v in &result.violations {
+            tracing::warn!(
+                constraint = %v.constraint_name,
+                event_index = v.event_index,
+                description = %v.description,
+                "PMSC Declare constraint violation"
+            );
+        }
+        for h in &result.oracle_hits {
+            tracing::warn!(
+                oracle_class = ?h.class,
+                event_index = h.event_index,
+                description = %h.description,
+                "PMSC Oracle class hit"
+            );
         }
     }
 
@@ -49,7 +88,13 @@ impl ScaffoldServer {
     }
 
     /// Build proof-carrying diagnostics for a document, plus any gate diagnostic.
-    fn diagnostics_for(text: &str) -> Vec<Diagnostic> {
+    ///
+    /// Returns `(diagnostics, source_digest)`.  The digest is the BLAKE3 hex of
+    /// the source text; callers pass it to `record_and_check` as the
+    /// `AnalysisRun` event payload so the session log records which content
+    /// triggered the analysis.
+    fn diagnostics_for(text: &str) -> (Vec<Diagnostic>, String) {
+        let source_digest = blake3::hash(text.as_bytes()).to_hex().to_string();
         let analyzer = DefaultAnalyzer::new();
         let mut engine = VerifiableEngine::new(&analyzer);
         let mut out: Vec<Diagnostic> = engine
@@ -60,7 +105,7 @@ impl ScaffoldServer {
         if let Some(gate_diag) = Self::gate_check() {
             out.push(scaffold_diagnostic_to_lsp(&gate_diag, zero_range()));
         }
-        out
+        (out, source_digest)
     }
 }
 
@@ -192,26 +237,76 @@ impl LanguageServer for ScaffoldServer {
 
     async fn did_open(&self, params: DidOpenTextDocumentParams) {
         let uri = params.text_document.uri.clone();
-        let diags = Self::diagnostics_for(&params.text_document.text);
+        let uri_str = uri.to_string();
+        self.record_and_check(
+            EventActivity::DocumentOpened,
+            EventObjects { document: Some(uri_str.clone()), ..Default::default() },
+        )
+        .await;
+        let (diags, source_digest) = Self::diagnostics_for(&params.text_document.text);
+        self.record_and_check(
+            EventActivity::AnalysisRun { source_digest },
+            EventObjects { document: Some(uri_str.clone()), ..Default::default() },
+        )
+        .await;
+        for d in &diags {
+            if let Some(NumberOrString::String(code)) = &d.code {
+                self.record_and_check(
+                    EventActivity::FindingProduced { code: code.clone() },
+                    EventObjects { document: Some(uri_str.clone()), ..Default::default() },
+                )
+                .await;
+            }
+        }
         self.push_diagnostics(uri, diags).await;
     }
 
     async fn did_change(&self, params: DidChangeTextDocumentParams) {
         let uri = params.text_document.uri;
+        let uri_str = uri.to_string();
         let text = params
             .content_changes
             .into_iter()
             .last()
             .map(|c| c.text)
             .unwrap_or_default();
-        let diags = Self::diagnostics_for(&text);
+        let (diags, source_digest) = Self::diagnostics_for(&text);
+        self.record_and_check(
+            EventActivity::AnalysisRun { source_digest },
+            EventObjects { document: Some(uri_str.clone()), ..Default::default() },
+        )
+        .await;
+        for d in &diags {
+            if let Some(NumberOrString::String(code)) = &d.code {
+                self.record_and_check(
+                    EventActivity::FindingProduced { code: code.clone() },
+                    EventObjects { document: Some(uri_str.clone()), ..Default::default() },
+                )
+                .await;
+            }
+        }
         self.push_diagnostics(uri, diags).await;
     }
 
     async fn did_save(&self, params: DidSaveTextDocumentParams) {
         let uri = params.text_document.uri.clone();
+        let uri_str = uri.to_string();
         let text = params.text.unwrap_or_default();
-        let diags = Self::diagnostics_for(&text);
+        let (diags, source_digest) = Self::diagnostics_for(&text);
+        self.record_and_check(
+            EventActivity::AnalysisRun { source_digest },
+            EventObjects { document: Some(uri_str.clone()), ..Default::default() },
+        )
+        .await;
+        for d in &diags {
+            if let Some(NumberOrString::String(code)) = &d.code {
+                self.record_and_check(
+                    EventActivity::FindingProduced { code: code.clone() },
+                    EventObjects { document: Some(uri_str.clone()), ..Default::default() },
+                )
+                .await;
+            }
+        }
         self.push_diagnostics(uri, diags).await;
     }
 

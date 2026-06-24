@@ -266,7 +266,8 @@ mod tests {
         let result = svc.check("textDocument/hover");
         assert!(!result.eligible);
         assert!(!result.blocking_reasons.is_empty());
-        assert_eq!(result.status, "CANDIDATE");
+        // No artifacts → OPEN (not CANDIDATE, which requires all preconditions met).
+        assert_eq!(result.status, "OPEN");
     }
 
     #[test]
