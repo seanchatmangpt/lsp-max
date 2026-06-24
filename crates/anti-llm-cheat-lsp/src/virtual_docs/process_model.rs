@@ -253,7 +253,7 @@ pub fn render(diagnostics: &[AntiLlmDiagnostic]) -> String {
         md.push_str("| Constraint | Case | Detail |\n");
         md.push_str("|---|---|---|\n");
         for v in &violations {
-            let short_case = v.case_id.split('/').last().unwrap_or(&v.case_id);
+            let short_case = v.case_id.split('/').next_back().unwrap_or(&v.case_id);
             md.push_str(&format!(
                 "| `{}` | `{}` | {} |\n",
                 v.constraint, short_case, v.detail
