@@ -67,7 +67,11 @@ cargo bench -p lsp-max-compositor
 
 ## Law Status
 
-- L7 Speciation: PARTIAL — `MergeContext` uses workspace-wide union; per-server HashMap routing is CANDIDATE
+- L7 Speciation: ADMITTED — `MergeContext` routes each diagnostic through its originating
+  server's own C_D (`server_automatons` + `server_prefix_overrides`). A configured server's
+  diagnostic is never classified by the workspace union. Witnessed by
+  `tests/speciation.rs` (concrete production IDs: `wasm4pm-lsp`, `anti-llm-cheat-lsp`,
+  `ggen-lsp`) and `src/merge/witness_isolation.rs` (mutation-checked alpha/beta fixture).
 - Per-server receipt chain (RFC B): OPEN
 - OCEL accumulation (RFC C): CANDIDATE — `take_ocel_events()` wired
 - Declare/DFG inline conformance: CANDIDATE — runs after every flush
