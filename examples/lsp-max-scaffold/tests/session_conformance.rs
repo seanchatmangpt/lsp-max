@@ -309,3 +309,124 @@ fn digest_is_stable_across_serialization_roundtrip() {
         "digest must survive serialization round-trip"
     );
 }
+
+// ---------------------------------------------------------------------------
+// Server-wiring pattern: the event sequence emitted by ScaffoldServer handlers
+// is the pattern that `record_and_check` appends.  These tests verify the
+// session model against the exact event shapes the server produces, so that
+// a regression in the server's event emission is caught here without needing
+// a live LSP connection.
+
+#[test]
+fn server_did_open_event_sequence_is_conformant() {
+    // ScaffoldServer::did_open emits: DocumentOpened -> AnalysisRun ->
+    // [FindingProduced*] -- mirrored here.  The Declare model requires
+    // AnalysisRun before any FindingProduced (Precedence) and that each
+    // FindingProduced is followed by a ReceiptProduced (Response).
+    // A clean document (no findings) produces no Response violation.
+    let mut log = SessionLog::new();
+    append(&mut log, EventActivity::DocumentOpened);
+    append(
+        &mut log,
+        EventActivity::AnalysisRun { source_digest: "abc".into() },
+    );
+    // No findings for a clean document.
+    let r = replay_session(&log);
+    assert_eq!(
+        r.status, "ADMITTED",
+        "clean did_open sequence must be ADMITTED; violations: {:?}",
+        r.violations
+    );
+}
+
+#[test]
+fn server_finding_without_receipt_is_partial() {
+    // Mirrors what the server would produce for a document with one finding
+    // that has not yet been receipt-wrapped (i.e., a mid-flight analysis).
+    // The Response constraint fires because FindingProduced has no subsequent
+    // ReceiptProduced.
+    let mut log = SessionLog::new();
+    append(&mut log, EventActivity::DocumentOpened);
+    append(
+        &mut log,
+        EventActivity::AnalysisRun { source_digest: "xyz".into() },
+    );
+    append(
+        &mut log,
+        EventActivity::FindingProduced { code: "RVD-TEST-001".into() },
+    );
+    // No ReceiptProduced follows -- Declare Response constraint fires.
+    let r = replay_session(&log);
+    let has_response = r.violations.iter().any(|v| v.constraint_name == "Response");
+    assert!(
+        has_response,
+        "FindingProduced without ReceiptProduced must trigger Response violation"
+    );
+    assert!(
+        r.fitness < 1.0,
+        "fitness must be below 1.0 when Declare constraint is violated"
+    );
+}
+
+#[test]
+fn server_finding_with_receipt_is_conformant() {
+    // Full honest server cycle: DocumentOpened -> AnalysisRun -> FindingProduced
+    // -> ReceiptProduced -> ReceiptVerified -> ChainVerified.
+    let mut log = SessionLog::new();
+    append(&mut log, EventActivity::DocumentOpened);
+    append(
+        &mut log,
+        EventActivity::AnalysisRun { source_digest: "d8e8fca".into() },
+    );
+    append(
+        &mut log,
+        EventActivity::FindingProduced { code: "RVD-FORK-001".into() },
+    );
+    append(
+        &mut log,
+        EventActivity::ReceiptProduced { chain_head: "genesis".into() },
+    );
+    append(&mut log, EventActivity::ReceiptVerified { admitted: true });
+    append(&mut log, EventActivity::ChainVerified { intact: true });
+    let r = replay_session(&log);
+    assert_eq!(
+        r.status, "ADMITTED",
+        "full honest cycle must be ADMITTED; fitness={}, violations={:?}",
+        r.fitness,
+        r.violations
+    );
+}
+
+#[test]
+fn incremental_conformance_check_detects_first_violation() {
+    // Simulates the incremental checking done by `record_and_check`: after
+    // each append the model is checked.  Verify that the first violation
+    // appears at the correct position in the event sequence.
+    let mut log = SessionLog::new();
+    // Step 1: after DocumentOpened, no violations yet.
+    append(&mut log, EventActivity::DocumentOpened);
+    assert!(
+        replay_session(&log).violations.is_empty(),
+        "no violations after DocumentOpened alone"
+    );
+    // Step 2: after AnalysisRun, still no violations.
+    append(
+        &mut log,
+        EventActivity::AnalysisRun { source_digest: "step2".into() },
+    );
+    assert!(
+        replay_session(&log).violations.is_empty(),
+        "no violations after AnalysisRun"
+    );
+    // Step 3: FindingProduced with no subsequent ReceiptProduced -- violation
+    // will appear when we check after this append (Response constraint).
+    append(
+        &mut log,
+        EventActivity::FindingProduced { code: "RVD-VICTORY-001".into() },
+    );
+    let r = replay_session(&log);
+    assert!(
+        r.violations.iter().any(|v| v.constraint_name == "Response"),
+        "Response violation must appear immediately after FindingProduced with no receipt"
+    );
+}

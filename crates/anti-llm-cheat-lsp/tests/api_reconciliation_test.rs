@@ -97,23 +97,28 @@ fn process_model_renders_with_empty_diagnostics() {
     );
 }
 
-/// Render with a multi-segment file path that exercises the .next_back() split
-/// (the pre-fix `.last()` consumed the same iterator; the fix uses .next_back()
-/// on a DoubleEndedIterator to avoid the clippy::iter_last warning).
+/// Render with a multi-segment file path that exercises the .next_back() split.
+///
+/// The .next_back() call (the clippy fix from .last()) shortens the case_id in the
+/// Declare violation table.  To force a violation we need a code that maps to
+/// VictoryLanguageDetected, which requires a prefix of "ANTI-LLM-VICTORY" or
+/// "ANTI-LLM-CLAIMS".  With a violation present, the table row is rendered and
+/// we can verify the filename segment is extracted correctly.
 #[test]
 fn process_model_renders_with_slash_path_case_id() {
     let diag = AntiLlmDiagnostic {
-        code: "ANTI-LLM-SURFACE-001".to_string(),
-        category: "surface".to_string(),
+        // ANTI-LLM-VICTORY prefix → VictoryLanguageDetected → absence violation fires
+        code: "ANTI-LLM-VICTORY-001".to_string(),
+        category: "claims".to_string(),
         // Multi-segment path — .next_back() shortens this to "Cargo.toml" in the table.
         file_path: "crates/anti-llm-cheat-lsp/Cargo.toml".to_string(),
         line: 1,
         column: 1,
-        message: "forbidden reference detected".to_string(),
-        forbidden_implication: "tower_lsp => lsp-max".to_string(),
-        blocking: true,
-        required_correction: "rename to lsp-max".to_string(),
-        required_next_proof: "verify no forbidden refs".to_string(),
+        message: "victory language detected".to_string(),
+        forbidden_implication: "victory => BLOCKED".to_string(),
+        blocking: false,
+        required_correction: "use bounded status".to_string(),
+        required_next_proof: "verify no victory language".to_string(),
     };
 
     let result = virtual_docs::process_model::render(std::slice::from_ref(&diag));
@@ -122,22 +127,27 @@ fn process_model_renders_with_slash_path_case_id() {
         "render must return content for a single diagnostic"
     );
     assert!(
-        result.contains("ForbiddenRefDetected"),
-        "ANTI-LLM-SURFACE-001 must map to ForbiddenRefDetected activity"
+        result.contains("VictoryLanguageDetected"),
+        "ANTI-LLM-VICTORY-001 must map to VictoryLanguageDetected activity"
     );
-    // The case shortening via .next_back() must produce the filename segment.
+    // The case shortening via .next_back() must produce the filename segment in the
+    // violation table (the table only appears when violations are present).
     assert!(
         result.contains("Cargo.toml"),
-        "case-id shortening via .next_back() must yield the filename segment"
+        "case-id shortening via .next_back() must yield the filename segment in the violation table"
     );
 }
 
 /// Render with a victory-language diagnostic — the Declare absence constraint
 /// must fire and the document status must be PARTIAL, not CANDIDATE.
+///
+/// `activity_of` maps codes with prefix "ANTI-LLM-VICTORY" or "ANTI-LLM-CLAIMS"
+/// to `VictoryLanguageDetected`; the absence constraint then fires.
 #[test]
 fn process_model_partial_status_when_victory_language_detected() {
     let diag = AntiLlmDiagnostic {
-        code: "ANTI-LLM-CLAIM-004".to_string(),
+        // Must start with "ANTI-LLM-VICTORY" to map to VictoryLanguageDetected.
+        code: "ANTI-LLM-VICTORY-001".to_string(),
         category: "claims".to_string(),
         file_path: "report.md".to_string(),
         line: 2,
