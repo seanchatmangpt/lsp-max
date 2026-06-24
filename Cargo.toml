@@ -120,6 +120,7 @@ members = [
     "crates/lsif-cli",
     "crates/lsif-tests",
     "crates/lsp-max-compositor",
+    "crates/lsp-max-compositor-routing",
     "crates/lsp-max-gen",
     "crates/lsp-max-meta",
 ]
