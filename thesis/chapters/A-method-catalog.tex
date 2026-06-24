@@ -1,0 +1,57 @@
+\chapter{The \texorpdfstring{\maxm{*}}{max/*} Method Catalogue}
+\label{app:methods}
+
+\Cref{tab:maxm-full} catalogues the custom \maxm{*} JSON-RPC surface of the
+artifact (\cref{ch:artifact}), as declared in
+\code{lsp-max-protocol/src/custom\_methods.rs} and neighbouring modules
+\citep{lspmax}. The surface is the operational form of the law-state runtime: it
+exposes snapshots, three-valued admission and refusal, receipts, repair plans, and
+release actuation over the same transport an editor would use for ordinary
+language intelligence.
+
+\begin{longtable}{@{}l p{4.0cm} p{6.4cm}@{}}
+\caption{The \maxm{*} method surface.}\label{tab:maxm-full}\\
+\toprule
+\textbf{Method} & \textbf{Params $\to$ Result} & \textbf{Role} \\
+\midrule
+\endfirsthead
+\multicolumn{3}{c}{\tablename~\thetable\ -- continued}\\
+\toprule
+\textbf{Method} & \textbf{Params $\to$ Result} & \textbf{Role} \\
+\midrule
+\endhead
+\midrule \multicolumn{3}{r}{\footnotesize continued on next page}\\
+\endfoot
+\bottomrule
+\endlastfoot
+\maxm{snapshot} & () $\to$ SnapshotId & take a server-state snapshot \\
+\maxm{manifoldSnapshot} & SnapshotId $\to$ ManifoldSnapshot & full law-state snapshot (conformance, hooks, chains, receipts) \\
+\maxm{conformanceVector} & SnapshotId $\to$ ConformanceVector & three-valued conformance at a snapshot \\
+\maxm{workspaceConformance} & () $\to$ ConformanceVector & aggregate workspace conformance \\
+\maxm{admission} & LawAxis $\to$ AdmissionResult & admissibility gate; never collapses \unknownstat \\
+\maxm{refusal} & LawAxis $\to$ RefusalResult & explicit refusal with rationale and receipt \\
+\maxm{lawfulTransition} & TransitionAttempt $\to$ LawfulTransitionResult & assert a phase transition is lawful \\
+\maxm{explainDiagnostic} & diag\_id $\to$ MaxDiagnostic & explain a diagnostic and its violated axes \\
+\maxm{repairPlan} & diag\_id $\to$ [MaxCodeAction] & emit read-only repair steps \\
+\maxm{applyRepairTransaction} & MaxCodeAction $\to$ Receipt & apply a repair via the actuation chain \\
+\maxm{clearDiagnostic} & diag\_id $\to$ () & clear a diagnostic \\
+\maxm{receipt} & receipt\_id $\to$ Receipt & retrieve a receipt by identifier \\
+\maxm{replay} & SnapshotId $\to$ ReplayResult & replay the event log against a snapshot \\
+\maxm{releaseActuation} & SnapshotId $\to$ ReleaseActuationResult & actuate a release iff the vector admits it \\
+\maxm{runGate} & GateId $\to$ bool & evaluate a named law gate \\
+\maxm{exportAnalysisBundle} & SnapshotId $\to$ AnalysisBundle & export snapshot, capabilities, diagnostics, receipts \\
+\maxm{lsif} & () $\to$ NDJSON & stream the registry as an LSIF graph \\
+\maxm{hook}, \maxm{hookGraph} & hook\_id $\to$ [HookDescriptor] / [HookGraphNode] & register/query hooks and their dependency graph \\
+\maxm{chain}, \maxm{propagate} & chain\_id $\to$ [ChainDescriptor] / PropagationResult & query chains; propagate a signal \\
+\maxm{autonomicLoop} & loop\_id $\to$ AutonomicLoopStatus & query an autonomic loop \\
+\maxm{rulePacks}, \maxm{rulePackStatus} & () / pack\_id $\to$ descriptors / status & list rule packs; per-pack conformance \\
+\maxm{rulePackDiff} & (seq, seq) $\to$ [RulePackDiffEntry] & delta between snapshots \\
+\end{longtable}
+
+\noindent Three properties of the catalogue recur in the thesis. Admission
+(\maxm{admission}) and refusal (\maxm{refusal}) are symmetric and both
+evidence-bound; release (\maxm{releaseActuation}) is gated on the
+\code{ConformanceVector}; and replay (\maxm{replay}) reconstructs state from the
+receipt ledger, realising \cref{prop:replay-lfp}. The full surface is read-only
+toward client files: any mutation routes through the \code{CodeAction}
+$\to$ clap-noun-verb $\to$ receipt chain of \cref{sec:art-layers}.

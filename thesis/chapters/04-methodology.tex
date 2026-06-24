@@ -1,0 +1,135 @@
+\chapter{Research Methodology}
+\label{ch:methodology}
+
+\epigraph{The artifact and the theory it embodies are evaluated together.}{after
+\citet{marchsmith1995}}
+
+\section{Design Science Research}
+\label{sec:m-dsr}
+
+This thesis is a work of \emph{design science}: it produces and evaluates an
+artifact in order to learn something general, rather than observing a
+pre-existing phenomenon. The paradigm is set out by \citet{marchsmith1995}, who
+distinguish \emph{build} and \emph{evaluate} as the core design activities, and
+by \citet{hevner2004}, whose three-cycle view---a \emph{relevance} cycle to the
+application environment, a \emph{rigour} cycle to the existing knowledge base, and
+a central \emph{design} cycle of building and evaluating---structures the work
+reported here. The design-science research methodology (DSRM) of
+\citet{peffers2007} supplies the process spine: problem identification,
+objectives, design and development, demonstration, evaluation, and communication.
+\citet{wieringa2014} frames the alternation of \emph{design problems} and
+\emph{knowledge questions} that this thesis interleaves.
+
+\Cref{tab:dsrm} maps the DSRM activities onto the chapters, so that the
+methodology is legible as a thread through the document rather than a detached
+preamble.
+
+\begin{table}[t]
+\centering
+\caption[DSRM activities mapped to chapters]{The design-science research
+methodology of \citet{peffers2007} mapped onto this thesis.}
+\label{tab:dsrm}
+\small
+\begin{tabularx}{\textwidth}{@{}l Y l@{}}
+\toprule
+\textbf{DSRM activity} & \textbf{Realisation in this thesis} & \textbf{Chapter} \\
+\midrule
+Problem identification & Narrowness of machine language; reach without accountability; fragmentation & \cref{ch:introduction} \\
+Objectives of a solution & The unified-substrate and phase-transition hypotheses; RQ1--RQ5 & \cref{ch:introduction,ch:framework} \\
+Design \& development & The \lspmax\ artifact and the fusion architecture & \cref{ch:artifact,ch:fusion} \\
+Demonstration & Conformance across six language domains & \cref{ch:all-language} \\
+Evaluation & RQs revisited; bounded-status grading; threats to validity & \cref{ch:discussion} \\
+Communication & The thesis itself, and the artifact's public surfaces & all \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{The Artifact and Its Study}
+\label{sec:m-artifact}
+
+The central artifact is \lspmax, a law-state runtime studied as it exists in the
+repository at CalVer~26.6.18 \citep{lspmax}. The thesis does not report the
+construction of a greenfield system; it analyses an extant, non-trivial codebase
+as the instantiation of \cref{def:lawstate}, and reasons from its design. The
+study proceeded by (i)~reading the artifact's constitution and architecture
+documents, (ii)~tracing its protocol surface, conformance types, and enforcement
+mechanisms to source with file-and-line precision, and (iii)~relating each
+mechanism to the conceptual framework of \cref{ch:framework}. Where the artifact
+references sibling systems that were not present in the study environment---the
+\code{wasm4pm} execution engine and its type-authority crate among them---those
+systems are characterised from the artifact's own interfaces and documentation,
+and the gap is recorded as \unknownstat\ rather than papered over.
+
+\section{Evaluation Strategy}
+\label{sec:m-eval}
+
+Design-science artifacts admit several evaluation methods \citep{hevner2004};
+this thesis uses two. The first is \emph{analytical}: the artifact's mechanisms
+are examined against the properties \cref{ch:framework} requires of a law-state
+runtime---three-valued verdicts, read-only observation, receipt-bound admission,
+object-centric logging---and judged present, partial, or absent. The second is
+\emph{illustrative scenarios}: \cref{ch:all-language} works each of six language
+domains through the pipeline of \cref{fig:pipeline} to show, by construction, that
+the event-log abstraction and conformance surface apply. Illustrative scenarios
+demonstrate feasibility and expose limits; they do not establish field efficacy,
+and \cref{ch:discussion} is explicit that broad empirical validation across
+deployed systems remains \openstat.
+
+\section{Bounded-Status Epistemics}
+\label{sec:m-epistemics}
+
+The artifact under study enforces an epistemic discipline through its
+constitution and its \code{anti-llm-cheat-lsp} canary: claims must carry
+\emph{bounded status}, ``victory language'' is forbidden, and an assertion of
+admission requires a \emph{receipt}---a content-addressed record binding a digest,
+a digest algorithm, a boundary, a checkpoint, the raw command, and, where
+required, a negative-control result \citep{lspmax}. This thesis adopts the same
+discipline reflexively, for two reasons. Methodologically, it is the honest
+register for design-science claims, which are warranted to varying and stateable
+degrees. Substantively, it would be incoherent to describe a conformance artifact
+in the unbounded language that artifact refuses.
+
+Concretely, every substantive finding is graded with one of the bounded statuses
+in \cref{tab:status}, and the three conformance verdicts never collapse
+(\cref{prin:three-valued}). Numerical claims about the future are marked
+\forecast\ and attributed to their forecasting body
+(\cref{ch:vision}); quotations from living specifications are pinned to the
+revision in force.
+
+\begin{table}[t]
+\centering
+\caption[Bounded-status vocabulary]{The bounded-status vocabulary used to grade
+findings, adopted from the artifact's constitution \citep{lspmax}.}
+\label{tab:status}
+\small
+\begin{tabularx}{\textwidth}{@{}l Y@{}}
+\toprule
+\textbf{Status} & \textbf{Meaning in this thesis} \\
+\midrule
+\admitted   & Evidence is present and has been checked against the relevant criterion. \\
+\refused    & Evidence is present and is contrary to the claim. \\
+\unknownstat & Admissibility cannot yet be determined; a precondition or trace is missing. \\
+\candidate  & A design or claim is plausible and partially supported, not yet admitted. \\
+\partialstat & Admitted in part; a stated remainder is outstanding. \\
+\blocked    & Determination is prevented by an external precondition. \\
+\openstat   & A known gap that no current evidence closes. \\
+\forecast   & A projection about the future; not a measurement. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Threats to Validity (Preview)}
+\label{sec:m-threats}
+
+The threats are stated in full in \cref{sec:disc-threats}; they are previewed
+here so that the reader carries them through the design chapters. \emph{Construct
+validity} is at risk where the water-to-steam metaphor is taken too literally;
+\cref{sec:fw-phase} confines it to an order-of-magnitude, same-character claim.
+\emph{Internal validity} is at risk where the artifact's documented status is
+taken for its runtime behaviour; the study relies on source and specification,
+not on a live deployment exercised across all domains, and says so.
+\emph{External validity} is at risk in generalising from one artifact and six
+illustrative domains to ``all language''; the event-log criterion
+(\cref{def:eventlog}) is the explicit boundary of the claim. \emph{Reliability}
+is supported by tracing claims to primary sources and to file-and-line locations,
+so that a later reader can re-examine them.

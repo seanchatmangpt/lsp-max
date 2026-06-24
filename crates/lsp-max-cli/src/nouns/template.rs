@@ -169,9 +169,8 @@ impl TemplateService {
         vars: serde_json::Value,
     ) -> Result<TemplateRenderResult> {
         let path = Self::templates_root(base).join(pack).join(name);
-        let content = fs::read_to_string(&path).map_err(|e| {
-            clap_noun_verb::error::NounVerbError::execution_error(e.to_string())
-        })?;
+        let content = fs::read_to_string(&path)
+            .map_err(|e| clap_noun_verb::error::NounVerbError::execution_error(e.to_string()))?;
 
         let variables_used = Self::extract_variables(&content);
         let mut ctx = tera::Context::new();
@@ -235,11 +234,7 @@ pub fn list(pack: Option<String>, dir: Option<String>) -> Result<TemplateListRes
 }
 
 #[verb("info")]
-pub fn info(
-    name: String,
-    pack: Option<String>,
-    dir: Option<String>,
-) -> Result<TemplateInfoResult> {
+pub fn info(name: String, pack: Option<String>, dir: Option<String>) -> Result<TemplateInfoResult> {
     let dir = dir.unwrap_or_else(|| ".".to_string());
     let pack = pack.unwrap_or_else(|| "lsp-max".to_string());
     TemplateService::new().info(&name, &pack, &dir)

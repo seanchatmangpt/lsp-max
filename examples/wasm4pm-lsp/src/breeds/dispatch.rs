@@ -12,17 +12,17 @@ use crate::breeds::production_rules::Mycin;
 
 pub fn dispatch(breed: &str, input: &BreedInput) -> Option<serde_json::Value> {
     match breed {
-        "asp"                => run_breed(&Asp, input),
-        "bayesian_network"   => run_breed(&BayesianNetwork, input),
-        "cbr"                => run_breed(&Cbr, input),
-        "eliza"              => run_breed(&Eliza, input),
+        "asp" => run_breed(&Asp, input),
+        "bayesian_network" => run_breed(&BayesianNetwork, input),
+        "cbr" => run_breed(&Cbr, input),
+        "eliza" => run_breed(&Eliza, input),
         "frames_inheritance" => run_breed(&FramesInheritance, input),
-        "llm"                => run_breed(&Llm, input),
-        "ltl_monitor"        => run_breed(&LtlMonitor, input),
-        "meta_reasoning"     => run_breed(&MetaReasoning, input),
-        "mycin"              => run_breed(&Mycin, input),
-        "pomdp"              => run_breed(&Pomdp, input),
-        _                    => None,
+        "llm" => run_breed(&Llm, input),
+        "ltl_monitor" => run_breed(&LtlMonitor, input),
+        "meta_reasoning" => run_breed(&MetaReasoning, input),
+        "mycin" => run_breed(&Mycin, input),
+        "pomdp" => run_breed(&Pomdp, input),
+        _ => None,
     }
 }
 

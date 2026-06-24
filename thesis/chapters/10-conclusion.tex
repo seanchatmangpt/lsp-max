@@ -1,0 +1,81 @@
+\chapter{Conclusion and Future Work}
+\label{ch:conclusion}
+
+\epigraph{Optimise for admitted work.}{\textit{\lspmax}, \texttt{AGENTS.md}}
+
+\section{Summary of Contributions}
+\label{sec:conc-summary}
+
+This thesis argued that the convergence of three protocols---the Language Server
+Protocol generalised beyond code, the Model Context Protocol, and the
+Agent-to-Agent protocol---under a conformance stratum constitutes a phase
+transition in machine-mediated language, and that the discipline founded by Wil van
+der Aalst supplies the missing surface that makes the expansion trustworthy. The
+six contributions stand, with bounded status, as follows.
+
+\begin{itemize}[leftmargin=2.2em]
+  \item[\textbf{C1}] The unifying account of LSP, MCP, and A2A as one decoupling
+  performed at three layers (\cref{ch:background}), formalised by the Decoupling
+  Theorem (\cref{thm:decoupling}). \admitted\ analytically.
+  \item[\textbf{C2}] The event-log criterion for when a domain is a servable
+  language (\cref{def:eventlog}). \admitted\ as a criterion.
+  \item[\textbf{C3}] The phase-transition model of convergence, with the
+  latent-heat-of-standardisation formalism and a from-first-principles derivation of
+  Clausius--Clapeyron and a Landau jump (\cref{ch:math,ch:framework}). \admitted\ as
+  a model; its 2030 instantiation is a \forecast.
+  \item[\textbf{C4}] The artifact, \lspmax, analysed as a law-state runtime whose
+  \code{ConformanceVector} keeps \admitted/\refused/\unknownstat\ strictly distinct
+  and whose diagnostics are object-centric events (\cref{ch:artifact}). \admitted\
+  for the four defining properties, with \openstat\ sub-items.
+  \item[\textbf{C5}] The demonstration of conformance-for-all-language across six
+  domains, unified by the object-centric bridge (\cref{ch:all-language}).
+  \candidate.
+  \item[\textbf{C6}] The 2030 roadmap and the governance-and-risk analysis, with
+  forecasts flagged (\cref{ch:vision}). \candidate, with \openstat\ later stages.
+\end{itemize}
+
+The through-line is a single inversion. Van der Aalst's dictum holds that there is
+``no AI without PI''---no trustworthy artificial intelligence without the process
+intelligence that object-centric mining provides \citep{noai-nopi-2025}. This
+thesis advanced its contrapositive across language: \emph{there is no conformance
+for all language without an object-centric event abstraction}. The protocols
+provide reach; process mining provides the account of whether that reach was
+lawfully used; and the object-centric event log is the bridge that carries
+conformance from business process---where van der Aalst built it---to natural
+language, law, mathematics, biological sequence, music, and back.
+
+\section{Future Work}
+\label{sec:conc-future}
+
+Four directions follow directly. \emph{Empirical instantiation}: build and exercise
+generalised LSP-plus-conformance servers for two or three of the six domains, emit
+their behaviour as OCEL~2.0, and measure conformance against domain models---moving
+C5 from \candidate\ toward \admitted. \emph{Cross-domain law axes}: investigate
+whether a shared vocabulary of law axes (\cref{lst:cv}'s extensible enumeration)
+can span domains without collapsing their differences, the prerequisite for
+roadmap stage~S4. \emph{Receipt portability under adversarial composition}: test
+whether a verdict's receipt survives crossing MCP and A2A boundaries when
+participants are adversarial, the open question left by \cref{sec:fus-conformance},
+in dialogue with the cryptographic-binding and verifiable-delegation literature
+\citep{zhou26gov,prakash26aip}. \emph{The guardian's own guarantees}: formalise the
+trust one may place in a conformance stratum given finite oversight capacity
+\citep{turan26} and the limits of proof-of-guardrail \citep{jin26guardrail}---the
+question of whether the guardian guards itself.
+
+\section{Closing}
+\label{sec:conc-closing}
+
+A phase transition is not louder than what precedes it; it is discontinuous with
+it. Water at the boiling point gives no warning in its temperature that, one unit
+of latent heat later, it will occupy a thousand times the space
+\citep{nationalboard-steam,latentheat-openstax}. The standardisation of how
+machines mean, consult, and coordinate has been, for a decade, such a plateau:
+much effort, little visible change. This thesis has argued---bounding the claim, and
+declining the language of triumph---that the plateau is the latent heat of a
+transition, not its absence; that the transition's signature will be conformance,
+not merely connection; and that the discipline prepared to read the new volume of
+language is the one that already learned to read behaviour as an event log. Whether
+the threshold is crossed by 2030 is a \forecast. That the surface for reading it is
+buildable is \admitted: it has been built, in part, in the artifact this thesis
+studied. The remainder is \openstat---which is the only honest place for a thesis
+about conformance to end.

@@ -17,7 +17,7 @@ A fork of `tower-lsp` (Tower-based LSP framework) upgraded into **lsp-max**: a "
 
 ## Versioning
 
-Workspace version `26.6.18` is **CalVer (YY.M.D)**, not SemVer. Version-law violations are a diagnostic family (`ANTI-LLM-VERSION-*`).
+Workspace version uses **CalVer (YY.M.D)**, not SemVer. The current version is `26.6.21`. Version-law violations are a diagnostic family (`ANTI-LLM-VERSION-*`).
 
 ## Sibling repo dependencies (build prerequisite)
 
@@ -45,7 +45,8 @@ Single test / single crate:
 
 ```sh
 cargo test -p <crate-name> <test_name>
-cargo test --test test_lsp318_capabilities    # one root integration-test file in tests/
+cargo test -p lsp-max-cli nouns::conformance   # run all tests in one noun module
+cargo test --test test_lsp318_capabilities     # one root integration-test file in tests/
 cargo test -p anti-llm-cheat-lsp --test dogfood     # example-crate integration test
 ```
 
@@ -61,6 +62,20 @@ cargo test -p wasm4pm-lsp cog010_no_oracle_injection -- --nocapture
 ```
 
 Clippy with `-D warnings` is the bar; run `just dx-polish` before considering a change complete.
+
+**`scripts/` directory**: Contains utility scripts for law compliance, receipt validation, and diagnostic automation:
+- **`scripts/check-law-compliance.sh`** — Detects plain `tower-lsp` references and victory language.
+- **`scripts/validate-receipt-chain.sh`** — Verifies SHA256 digests and boundary markers.
+- Other scripts support conformance scoring, admission law tracing, and gate-state inspection.
+
+## ANDON Gate — PreToolUse Hook (Λ_CD^runtime)
+
+A `PreToolUse` hook in `.claude/settings.json` runs `lsp-max-cli gate check` before every **Bash, Edit, and Write** tool call.
+
+- **Exit 0** — gate is clear; the tool proceeds.
+- **Exit 1** — ANDON is ACTIVE; the tool is blocked until the gate clears.
+
+This enforces `Λ_CD^runtime`: no shell-side action (build, test, release, format) and no file mutation may proceed while an active ANDON signal is present. Resolve all `WASM4PM-*` and `GGEN-*` diagnostics to clear the gate.
 
 ## Fresh Web Session Bootstrap
 
@@ -81,6 +96,86 @@ Status meanings from the hook output:
 - `CANDIDATE` — just installed/cloned; build not yet verified
 - `OPEN` — absent; setup required before that component can be used
 
+## Tooling & DX Workflow
+
+Build orchestration uses `just` recipes as the primary development interface. Key recipes:
+
+- **`just test`** — Run `cargo test --workspace`. Executes unit and integration tests across all crates; use for validation during development.
+- **`just test-e2e`** — Run `cargo test --test e2e`. Runs end-to-end integration tests against live LSP surfaces; validates gate conformance and agent workflows.
+- **`just test-pre-publish`** — Run `dx-verify` + `dx-polish` + tests with `--include-ignored`. Full pre-release pipeline: architectural boundary scan, code quality gates, and ignored test suites.
+- **`just dx-verify`** — Architectural boundary scan across sibling repos (`../lsp-types-max`, `../wasm4pm-compat`, `../wasm4pm`). Enforces: no plain `tower-lsp` references, no forbidden type crates, no legacy/deprecated/shim/facade language in sibling repos. **Must pass before any merge.**
+- **`just dx-polish`** — `cargo fmt --all` + `cargo clippy --workspace --all-targets --all-features -- -D warnings`. Code formatting and lint enforcement; `-D warnings` is non-negotiable.
+
+Run scripts directly when debugging compliance issues or validating reception chains; they are not automatically invoked by recipes.
+
+## Remote Execution — Claude Code Web
+
+Sessions run in Anthropic-managed ephemeral containers. Key constraints:
+
+- **Git commits are the only persistence.** Container state is lost between sessions. Push before the session ends.
+- **Sibling repos are NOT auto-cloned.** `../lsp-types-max`, `../wasm4pm-compat`, `../wasm4pm` must be present for the workspace to build. In a remote container, check with `ls ../lsp-types-max ../wasm4pm-compat ../wasm4pm` before attempting compilation.
+- **`lsp-max-cli` may not be in PATH.** In a freshly cloned container without a pre-built binary, `gate check` returns exit 0 (compositor not running = gate clear). Build with `cargo build -p lsp-max-cli` to wire the CLI.
+- **Setup script is cached per environment.** If the environment has a setup script that builds the CLI and fetches dependencies, subsequent sessions reuse it.
+
+### Session Status Check (run at session start)
+
+```bash
+git log --oneline -5          # what was last committed?
+git status                    # uncommitted work?
+ls ../lsp-types-max 2>/dev/null || echo "sibling repos missing — build will fail"
+lsp-max-cli gate check        # gate clear?
+```
+
+### Parallel Subagent Patterns
+
+Each subagent gets a fresh 1M token context window. Use parallel agents for independent crate work:
+
+```
+# Spawn 3 agents in one message (independent files = safe to parallelize)
+Agent(description="Update compositor declare.rs", isolation="worktree", ...)
+Agent(description="Update anti-llm-cheat-lsp server.rs", isolation="worktree", ...)
+Agent(description="Run tests and collect results", ...)
+```
+
+Rules:
+- **Parallel only when agents touch DIFFERENT files.** Overlapping edits cause conflicts.
+- Use `isolation: "worktree"` for agents that write code.
+- Use foreground (default) when you need results before proceeding.
+- Use `run_in_background: true` for independent research.
+
+Every subagent prompt MUST include a gate check as its first Bash action — subagents do NOT inherit the parent session's PreToolUse hooks:
+
+```bash
+lsp-max-cli gate check || { echo "ANDON gate blocked"; exit 1; }
+```
+
+### Skills System
+
+Skills in `.claude/skills/<name>/SKILL.md` load on-demand via `/<name>`:
+
+```
+/dx-workflow        — format + lint + verify + test pipeline
+/rule-pack-server   — RulePackServer implementation pattern
+/gate-conformance   — gate state, ANDON resolution, Λ_CD predicate
+/van-der-aalst      — DFG, Declare, OCEL accumulation
+/session-continuity — remote session patterns, git persistence, PR watching
+```
+
+Skills keep the root context lean — load only what the current task needs.
+
+### PR Watching
+
+After pushing a branch and opening a PR, subscribe to activity:
+
+```
+subscribe_pr_activity(pr_number=<N>)
+```
+
+PR events (`<github-webhook-activity>` tags) arrive automatically. On each event:
+- CI failure → diagnose, fix, push
+- Review comment → fix if clear; check with user if ambiguous
+- PR merged/closed → unsubscribe
+
 ## Workspace architecture
 
 The five-layer model: (1) actuation grammar → (2) local LSP state surface → (3) law-state runtime → (4) knowledge hooks → (5) autonomic LSP mesh. Crates map onto it:
@@ -90,7 +185,7 @@ The five-layer model: (1) actuation grammar → (2) local LSP state surface → 
 - **`lsp-max-runtime`** — typestate machine, phases, transitions, runtime snapshotting.
 - **`lsp-max-agent`** — agent integration and analysis bundles.
 - **`lsp-max-macros`** — internal proc macros (e.g. `#[tower_lsp::async_trait]` equivalent surface).
-- **`crates/lsp-max-cli`** — actuation grammar: noun/verb CLI built on `clap-noun-verb` (filename = noun, `#[verb]` = action). `gate check` and `gate list` verbs are wired here.
+- **`crates/lsp-max-cli`** — actuation grammar: noun/verb CLI built on `clap-noun-verb` (filename = noun, `#[verb]` = action). 31 noun modules — see Noun/Verb Pattern section below. `gate check` and `gate list` verbs are wired here.
 - **`crates/lsp-max-client`** — LSP *client* framework (drives servers in tests).
 - **`crates/lsp-max-base`**, **`-live`**, **`-lsif`**, **`-specgen`** — base protocol types, live surfaces, LSIF export/conformance, and codegen from the official LSP 3.18 `metaModel.json`.
 - **`crates/lsp-max-adapters/`** — ported `auto-lsp` stack (`lsp-max-ast-core`, `lsp-max-ast-codegen`, `lsp-max-ast`): tree-sitter-driven AST/codegen layer. Tree-sitter observes; it never admits.
@@ -173,6 +268,173 @@ Key types re-exported from `lsp_max`:
 
 Activities: `VictoryLanguageDetected`, `FakeReceiptDetected`, `FakeRouteDetected`, `VersionViolationDetected`, `ForbiddenRefDetected`, `ProcessViolationDetected`, `GgenViolationDetected`, `CheatDetected`, `ScanComplete` (synthetic terminal).
 
+## lsp-max-cli: Noun/Verb Pattern
+
+The CLI is a **noun/verb actuation grammar**. Each file in `crates/lsp-max-cli/src/nouns/` is one noun; each `#[verb]`-annotated function is one action.
+
+### Three-tier structure (every noun file follows this)
+
+```rust
+// 1. Domain Tier — domain types only (no logic)
+#[derive(Debug, Clone, Serialize)]
+pub struct SomeThing { pub field: String }
+
+// 2. Service Tier — business logic against AutonomicMesh
+pub struct SomeService { state_path: String }
+
+impl SomeService {
+    pub fn new() -> Self { Self { state_path: crate::nouns::get_state_path() } }
+
+    pub fn do_thing(&self, id: &str) -> std::result::Result<SomeThing, String> {
+        let mesh = AutonomicMesh::load_from_file(&self.state_path).map_err(|e| e.to_string())?;
+        let inst = mesh.instances.get(id).ok_or_else(|| format!("Instance not found: {id}"))?;
+        Ok(SomeThing { field: inst.conformance_score().to_string() })
+    }
+}
+
+impl Default for SomeService { fn default() -> Self { Self::new() } }
+
+// 3. CLI Tier — result wrapper + #[verb] function
+#[derive(Serialize)]
+pub struct DoThingResult { pub thing: SomeThing, pub status: String }
+
+/// One-line doc shown in --help.
+#[verb("do-thing")]
+pub fn do_thing(instance_id: String) -> Result<DoThingResult> {
+    let svc = SomeService::new();
+    let thing = svc.do_thing(&instance_id).map_err(NounVerbError::execution_error)?;
+    let status = "CANDIDATE".to_string();
+    Ok(DoThingResult { thing, status })
+}
+```
+
+### Registration
+
+Add `pub mod your_noun;` to `crates/lsp-max-cli/src/nouns/mod.rs`. The `linkme` crate auto-discovers `#[verb]` items; no manual wiring is needed beyond the `mod` declaration.
+
+### Current nouns (31 total, in mod.rs order)
+
+`admission`, `agent`, `alias`, `batch`, `client`, `config`, `conformance`, `diagnostics`, `doctor`, `event`, `export`, `gate`, `history`, `hook`, `import`, `logs`, `metamodel`, `metrics`, `ocel`, `plugin`, `process`, `receipt`, `repair`, `rpc`, `server`, `snapshot`, `state`, `swarm`, `task`, `telemetry`, `workspace`
+
+### State path resolution
+
+`crate::nouns::get_state_path()` reads `$LSP_MAX_STATE_PATH`, falling back to `.mesh_state.json`. Services with their own `state_path` field use it directly; services that call `new()` read from the env at call time.
+
+### `AutonomicMesh::load_from_file` — critical bootstrap behavior
+
+When the given path does not exist but the **parent directory is writable**, `load_from_file` bootstraps a default mesh, writes it to that path, and returns `Ok`. It does **not** return an error for a nonexistent file when the directory exists. This affects test design — see Testing Patterns below.
+
+### HookEvent serialization format
+
+`HookEvent` is an externally-tagged Serde enum. The serialized form is:
+
+```json
+{ "VariantName": { "instance_id": "...", ... } }
+```
+
+The outer key (variant name) is the activity name used in process-mining verbs (`process dfg`, `process variants`, etc.) and in OCEL 2.0 export (`ocel export`). Extract it with:
+
+```rust
+let activity = raw.as_object().and_then(|m| m.keys().next()).unwrap_or("Unknown");
+```
+
+## Testing Patterns for Noun Modules
+
+Two patterns apply depending on whether the service reads `state_path` from a struct field or from the env var via `get_state_path()`.
+
+### Pattern A — service-layer tests (struct field injection)
+
+Use when the service struct has a `state_path: String` field that you set directly.
+
+```rust
+fn make_temp_svc() -> (tempfile::NamedTempFile, MyService) {
+    let mut mesh = AutonomicMesh::new();
+    mesh.add_instance(LspInstance::new("test-inst"));
+    let f = tempfile::NamedTempFile::new().unwrap();
+    mesh.save_to_file(f.path().to_str().unwrap()).unwrap();
+    let svc = MyService { state_path: f.path().to_str().unwrap().to_string() };
+    (f, svc) // hold f alive; dropping it deletes the file
+}
+
+#[test]
+fn thing_returns_ok() {
+    let (_f, svc) = make_temp_svc();
+    assert!(svc.do_thing("test-inst").is_ok());
+}
+```
+
+### Pattern B — verb-level tests (env var guard)
+
+Use when the service calls `get_state_path()` internally (e.g. `ClientService`, `ServerService`, `PluginService`, `ConfigService`).
+
+```rust
+struct StateGuard { prev: Option<String>, _f: tempfile::NamedTempFile }
+
+impl StateGuard {
+    fn new() -> Self {
+        let mut mesh = AutonomicMesh::new();
+        mesh.add_instance(LspInstance::new("test-inst"));
+        let f = tempfile::NamedTempFile::new().unwrap();
+        mesh.save_to_file(f.path().to_str().unwrap()).unwrap();
+        let prev = std::env::var("LSP_MAX_STATE_PATH").ok();
+        // SAFETY: under TEST_ENV_LOCK, single-threaded env mutation.
+        unsafe { std::env::set_var("LSP_MAX_STATE_PATH", f.path()) };
+        Self { prev, _f: f }
+    }
+}
+
+impl Drop for StateGuard {
+    fn drop(&mut self) {
+        // SAFETY: restoring env under TEST_ENV_LOCK.
+        unsafe {
+            match self.prev.take() {
+                Some(v) => std::env::set_var("LSP_MAX_STATE_PATH", v),
+                None => std::env::remove_var("LSP_MAX_STATE_PATH"),
+            }
+        }
+    }
+}
+
+#[test]
+fn thing_ok() {
+    let _lock = crate::nouns::TEST_ENV_LOCK.lock().unwrap_or_else(|p| p.into_inner());
+    let _g = StateGuard::new();
+    let svc = MyService::new();
+    assert!(svc.do_thing().is_ok());
+}
+```
+
+`crate::nouns::TEST_ENV_LOCK` (a `static Mutex<()>` in `mod.rs`) serializes all tests that mutate env vars.
+
+### Unsafe env mutation (Rust 1.83+)
+
+`std::env::set_var` and `remove_var` are `unsafe` in Rust 1.83+. Always wrap in `unsafe {}` and include a `// SAFETY: under TEST_ENV_LOCK.` comment.
+
+### "Missing state file" test antipattern — critical
+
+`load_from_file` bootstraps a mesh when the parent directory is writable. This means:
+
+```rust
+// WRONG — /tmp/ is writable, so load_from_file writes the file and returns Ok
+let svc = MyService { state_path: "/tmp/nonexistent-test.json".to_string() };
+assert!(svc.do_thing().is_err()); // FAILS
+```
+
+Route through a **non-existent directory** instead:
+
+```rust
+// CORRECT — /tmp/no-such-dir-lsp-max/X/ doesn't exist, bootstrap write fails → Err
+let svc = MyService { state_path: "/tmp/no-such-dir-lsp-max/X/state.json".to_string() };
+assert!(svc.do_thing().is_err()); // PASSES
+```
+
+### Per-verb test requirements
+
+Each verb should have at minimum:
+- **Success** — happy path returns `Ok`
+- **Falsification** — verify the result contents (not just `is_ok()`)
+- **Counterfactual** — error path returns `Err` (bad arg, missing state, unknown instance)
+
 ## Code layout conventions
 
 - Keep files ≤ 500 LOC; split into submodules in a subdirectory matching the module name (`src/service/` next to `src/service.rs` is the established pattern).
@@ -184,102 +446,6 @@ Activities: `VictoryLanguageDetected`, `FakeReceiptDetected`, `FakeRouteDetected
 When a crate outside this workspace depends on `lsp-max` and also declares its own `tokio` dependency, it must include `"io-std"` in tokio features — `tokio::io::stdin` / `tokio::io::stdout` are behind that feature gate and are not inherited transitively from lsp-max.
 
 When constructing `CodeAction` literals, always use `..Default::default()` for the trailing fields rather than exhaustive field listing — lsp-types-max may add fields as LSP 3.18 evolves and exhaustive structs break at the call site.
-
-## ANDON Gate — PreToolUse Hook (Lambda_CD^runtime)
-
-A `PreToolUse` hook in `.claude/settings.json` runs `lsp-max-cli gate check` before every Bash tool call.
-
-- **Exit 0** — gate is clear; Bash proceeds.
-- **Exit 1** — ANDON is set; Bash is blocked until the gate clears.
-
-This enforces `Lambda_CD^runtime`: no shell-side action (build, test, release, format) may proceed while an active ANDON signal is present. Resolve all `WASM4PM-*` and `GGEN-*` diagnostics before the gate will clear.
-
-## Tooling & DX Workflow
-
-Build orchestration uses `just` recipes as the primary development interface. Key recipes:
-
-- **`just test`** — Run `cargo test --workspace`. Executes unit and integration tests across all crates; use for validation during development.
-- **`just test-e2e`** — Run `cargo test --test e2e`. Runs end-to-end integration tests against live LSP surfaces; validates gate conformance and agent workflows.
-- **`just test-pre-publish`** — Run `dx-verify` + `dx-polish` + tests with `--include-ignored`. Full pre-release pipeline: architectural boundary scan, code quality gates, and ignored test suites.
-- **`just dx-verify`** — Architectural boundary scan across sibling repos (`../lsp-types-max`, `../wasm4pm-compat`, `../wasm4pm`). Enforces: no plain `tower-lsp` references, no forbidden type crates, no legacy/deprecated/shim/facade language in sibling repos. **Must pass before any merge.**
-- **`just dx-polish`** — `cargo fmt --all` + `cargo clippy --workspace --all-targets --all-features -- -D warnings`. Code formatting and lint enforcement; `-D warnings` is non-negotiable.
-
-**ANDON Gate (PreToolUse Hook)**: The `.claude/settings.json` contains a `PreToolUse` hook that runs `lsp-max-cli gate check` before every Bash tool call. If the gate is set (exit 1), shell commands are blocked. The gate clears only when all `WASM4PM-*` and `GGEN-*` diagnostics are resolved. This enforces `Lambda_CD^runtime`: no build/test/release/format actions proceed while ANDON is active.
-
-**`scripts/` directory**: Contains utility scripts for law compliance, receipt validation, and diagnostic automation. Notable:
-- **`scripts/check-law-compliance.sh`** — Detects reintroduction of plain `tower-lsp` references and victory language across the codebase.
-- **`scripts/validate-receipt-chain.sh`** — Verifies SHA256 digests and boundary markers on received artifacts.
-- Other scripts support conformance scoring, admission law tracing, and gate-state inspection.
-
-Run scripts directly when debugging compliance issues or validating reception chains; they are not automatically invoked by recipes.
-
-## Remote Execution — Claude Code Web
-
-Sessions run in Anthropic-managed ephemeral containers. Key constraints:
-
-- **Git commits are the only persistence.** Container state is lost between sessions. Push before the session ends.
-- **Sibling repos are NOT auto-cloned.** `../lsp-types-max`, `../wasm4pm-compat`, `../wasm4pm` must be present for the workspace to build. In a remote container, check with `ls ../lsp-types-max ../wasm4pm-compat ../wasm4pm` before attempting compilation.
-- **`lsp-max-cli` may not be in PATH.** In a freshly cloned container without a pre-built binary, `gate check` returns exit 0 (compositor not running = gate clear). Build with `cargo build -p lsp-max-cli` to wire the CLI.
-- **Setup script is cached per environment.** If the environment has a setup script that builds the CLI and fetches dependencies, subsequent sessions reuse it.
-
-### Session Status Check (run at session start)
-
-```bash
-git log --oneline -5          # what was last committed?
-git status                    # uncommitted work?
-ls ../lsp-types-max 2>/dev/null || echo "sibling repos missing — build will fail"
-lsp-max-cli gate check        # gate clear?
-```
-
-### Parallel Subagent Patterns
-
-Each subagent gets a fresh 1M token context window. Use parallel agents for independent crate work:
-
-```
-# Spawn 3 agents in one message (independent files = safe to parallelize)
-Agent(description="Update compositor declare.rs", isolation="worktree", ...)
-Agent(description="Update anti-llm-cheat-lsp server.rs", isolation="worktree", ...)
-Agent(description="Run tests and collect results", ...)
-```
-
-Rules:
-- **Parallel only when agents touch DIFFERENT files.** Overlapping edits cause conflicts.
-- Use `isolation: "worktree"` for agents that write code.
-- Use foreground (default) when you need results before proceeding.
-- Use `run_in_background: true` for independent research.
-
-Every subagent prompt MUST include a gate check as its first Bash action — subagents do NOT inherit the parent session's PreToolUse hooks:
-
-```bash
-lsp-max-cli gate check || { echo "ANDON gate blocked"; exit 1; }
-```
-
-### Skills System
-
-Skills in `.claude/skills/<name>/SKILL.md` load on-demand via `/<name>`:
-
-```
-/dx-workflow        — format + lint + verify + test pipeline
-/rule-pack-server   — RulePackServer implementation pattern
-/gate-conformance   — gate state, ANDON resolution, Λ_CD predicate
-/van-der-aalst      — DFG, Declare, OCEL accumulation
-/session-continuity — remote session patterns, git persistence, PR watching
-```
-
-Skills keep the root context lean — load only what the current task needs.
-
-### PR Watching
-
-After pushing a branch and opening a PR, subscribe to activity:
-
-```
-subscribe_pr_activity(pr_number=<N>)
-```
-
-PR events (`<github-webhook-activity>` tags) arrive automatically. On each event:
-- CI failure → diagnose, fix, push
-- Review comment → fix if clear; check with user if ambiguous
-- PR merged/closed → unsubscribe
 
 ## Common Anti-Patterns
 
@@ -296,6 +462,10 @@ Avoid these patterns; they are enforced by linting, gate rules, and code review:
 5. **Collapsing `Unknown` into `Admitted` or `Refused`** — `ConformanceVector` law-axis sets distinguish three states. Never coerce `Unknown` to either polarity; it signals a gap in tracing or a precondition not yet met.
 
 6. **Using victory language** — Avoid "done", "all clean", "fully admitted", "solved", "guaranteed" in code, comments, commit messages, or reports. Use bounded statuses: `ADMITTED`, `CANDIDATE`, `BLOCKED`, `REFUSED`, `UNKNOWN`, `PARTIAL`, `OPEN`, etc.
+
+7. **Tautological test assertions** — Don't assert on return values that are always identical regardless of success (e.g., `stop()` always returns `Stopped`). Assert on observable state via a subsequent query (`status()` after `stop()` checks the OS).
+
+8. **Writable `/tmp/` paths in error tests** — `load_from_file` bootstraps when the parent dir is writable. Use `/tmp/no-such-dir-lsp-max/X/state.json` (non-existent parent) for error-path tests.
 
 ## Debugging & Troubleshooting
 

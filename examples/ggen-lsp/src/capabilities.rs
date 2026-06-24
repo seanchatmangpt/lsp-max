@@ -9,7 +9,9 @@ pub fn server_capabilities() -> ServerCapabilities {
         // CANDIDATE: hover — receipt OPEN
         hover_provider: Some(HoverProviderCapability::Simple(true)),
         // CANDIDATE: completion — receipt OPEN
-        completion_provider: Some(CompletionOptions { ..Default::default() }),
+        completion_provider: Some(CompletionOptions {
+            ..Default::default()
+        }),
         // CANDIDATE: go to definition — receipt OPEN
         definition_provider: Some(OneOf::Left(true)),
         // REFUSED: rename — law:REFUSED in domain.ttl

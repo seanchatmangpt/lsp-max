@@ -83,7 +83,11 @@ const MATRIX_FOOTER: &str = r#"
 "#;
 
 fn row_to_test(row: &MatrixRow) -> String {
-    let test_name = format!("matrix_{}_{}", row.snake_method, row.law_status.to_lowercase());
+    let test_name = format!(
+        "matrix_{}_{}",
+        row.snake_method,
+        row.law_status.to_lowercase()
+    );
     match row.law_status.as_str() {
         "ADMITTED" => format!(
             r#"    #[test]
@@ -96,11 +100,7 @@ fn row_to_test(row: &MatrixRow) -> String {
         // TODO: wire real handler call via lsp-max-client transport={}
     }}
 "#,
-            row.method_name,
-            row.transport,
-            row.transport,
-            row.method_name,
-            row.transport
+            row.method_name, row.transport, row.transport, row.method_name, row.transport
         ),
         "REFUSED" => format!(
             r#"    #[test]
@@ -174,7 +174,10 @@ impl Generator for TestMatrixGenerator {
         let mut body = String::from(MATRIX_HEADER);
         let admitted: Vec<_> = rows.iter().filter(|r| r.law_status == "ADMITTED").collect();
         let refused: Vec<_> = rows.iter().filter(|r| r.law_status == "REFUSED").collect();
-        let candidate: Vec<_> = rows.iter().filter(|r| r.law_status == "CANDIDATE").collect();
+        let candidate: Vec<_> = rows
+            .iter()
+            .filter(|r| r.law_status == "CANDIDATE")
+            .collect();
         let unknown: Vec<_> = rows.iter().filter(|r| r.law_status == "UNKNOWN").collect();
 
         body.push_str(&format!(

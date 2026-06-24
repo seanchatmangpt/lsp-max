@@ -30,16 +30,6 @@ pub struct CompositorServer {
     merged_capabilities: Arc<RwLock<Option<lsp_max::lsp_types::ServerCapabilities>>>,
 }
 
-/// Extract the file extension (without leading dot) from a URI string.
-/// Returns an empty string if no extension is found.
-fn ext_from_uri(uri: &str) -> String {
-    uri.rsplit('/')
-        .next()
-        .and_then(|name| name.rsplit('.').next().filter(|_| name.contains('.')))
-        .unwrap_or("")
-        .to_string()
-}
-
 #[lsp_max::async_trait]
 impl lsp_max::LanguageServer for CompositorServer {
     async fn initialize(&self, params: InitializeParams) -> Result<InitializeResult> {
@@ -222,8 +212,7 @@ impl lsp_max::LanguageServer for CompositorServer {
 
     async fn did_open(&self, params: DidOpenTextDocumentParams) {
         let uri = params.text_document.uri.to_string();
-        let ext = ext_from_uri(&uri);
-        let servers = self.router.servers_for(&ext);
+        let servers = crate::fanout::servers_for_uri(&self.router, &uri);
         for srv in &servers {
             tracing::debug!(
                 server_id = %srv.id,
@@ -234,15 +223,14 @@ impl lsp_max::LanguageServer for CompositorServer {
             self.connections.record_notification(&srv.id, &uri);
         }
         if servers.is_empty() {
-            tracing::debug!(uri = %uri, ext = %ext, "did_open: no child servers registered for extension");
+            tracing::debug!(uri = %uri, "did_open: no child servers registered for this file");
         }
         self.fanout_did_open(&uri, params).await;
     }
 
     async fn did_change(&self, params: DidChangeTextDocumentParams) {
         let uri = params.text_document.uri.to_string();
-        let ext = ext_from_uri(&uri);
-        let servers = self.router.servers_for(&ext);
+        let servers = crate::fanout::servers_for_uri(&self.router, &uri);
         for srv in &servers {
             tracing::debug!(
                 server_id = %srv.id,
@@ -253,7 +241,7 @@ impl lsp_max::LanguageServer for CompositorServer {
             self.connections.record_notification(&srv.id, &uri);
         }
         if servers.is_empty() {
-            tracing::debug!(uri = %uri, ext = %ext, "did_change: no child servers registered for extension");
+            tracing::debug!(uri = %uri, "did_change: no child servers registered for this file");
         }
         self.fanout_did_change(&uri, params).await;
     }
@@ -264,9 +252,82 @@ impl lsp_max::LanguageServer for CompositorServer {
         tracing::debug!(uri = %uri, "compositor: cleared diagnostic buffer on close");
         self.fanout_did_close(&uri, params).await;
     }
+
+    // ── Request features — FirstSuccess over Primary-tier children ────────────
+    // Per the routing invariant, hover/completion/definition dispatch only to
+    // Primary servers; the first child returning a non-null result wins. A child
+    // error is logged and treated as "no result" so one failing server does not
+    // sink the request.
+    async fn hover(&self, params: HoverParams) -> Result<Option<Hover>> {
+        let uri = params
+            .text_document_position_params
+            .text_document
+            .uri
+            .to_string();
+        for (id, handle) in self.primary_handles(&uri) {
+            match handle.hover(params.clone()).await {
+                Ok(Some(h)) => return Ok(Some(h)),
+                Ok(None) => {}
+                Err(e) => {
+                    tracing::debug!(server_id = %id, error = %e, "compositor: child hover error")
+                }
+            }
+        }
+        Ok(None)
+    }
+
+    async fn completion(&self, params: CompletionParams) -> Result<Option<CompletionResponse>> {
+        let uri = params.text_document_position.text_document.uri.to_string();
+        for (id, handle) in self.primary_handles(&uri) {
+            match handle.completion(params.clone()).await {
+                Ok(Some(r)) => return Ok(Some(r)),
+                Ok(None) => {}
+                Err(e) => {
+                    tracing::debug!(server_id = %id, error = %e, "compositor: child completion error")
+                }
+            }
+        }
+        Ok(None)
+    }
+
+    async fn goto_definition(
+        &self,
+        params: GotoDefinitionParams,
+    ) -> Result<Option<GotoDefinitionResponse>> {
+        let uri = params
+            .text_document_position_params
+            .text_document
+            .uri
+            .to_string();
+        for (id, handle) in self.primary_handles(&uri) {
+            match handle.goto_definition(params.clone()).await {
+                Ok(Some(r)) => return Ok(Some(r)),
+                Ok(None) => {}
+                Err(e) => {
+                    tracing::debug!(server_id = %id, error = %e, "compositor: child definition error")
+                }
+            }
+        }
+        Ok(None)
+    }
 }
 
 impl CompositorServer {
+    /// Cloned handles for the Primary-tier children registered for `uri`, in
+    /// tier order. Used by FirstSuccess request dispatch. DashMap refs are
+    /// dropped before the caller's first await: handles are cloned out eagerly.
+    fn primary_handles(&self, uri: &str) -> Vec<(String, ChildServerHandle)> {
+        crate::fanout::servers_for_uri(&self.router, uri)
+            .into_iter()
+            .filter(|s| matches!(s.tier, crate::registry::ChildTier::Primary))
+            .filter_map(|s| {
+                self.pool
+                    .get(&s.id)
+                    .map(|proc_ref| (s.id.clone(), proc_ref.handle.clone()))
+            })
+            .collect()
+    }
+
     /// Fan a didOpen notification to all child servers registered for this URI's extension.
     /// Concurrent dispatch — O(max RTT) not O(N × RTT). DashMap refs dropped before spawn.
     async fn fanout_did_open(&self, uri: &str, params: DidOpenTextDocumentParams) {

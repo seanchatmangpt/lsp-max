@@ -91,7 +91,53 @@ impl CompositorConfig {
             if cargo_toml.exists() {
                 let content = std::fs::read_to_string(&cargo_toml).ok()?;
                 if content.contains("[workspace]") {
-                    return None; // reached workspace root, no lsp-max.toml found
+                    return None;
+                }
+            }
+            dir = dir.parent()?.to_path_buf();
+        }
+    }
+
+    /// Load `lsp-max.toml` (static) and `.claude/lsp-max-auto.toml` (auto-discovered),
+    /// merging both. Auto-discovered servers that share an `id` with a static entry are
+    /// silently dropped — static config always wins.
+    pub fn load_with_auto() -> Option<Self> {
+        let mut base = Self::load();
+        if let Some(auto_path) = Self::find_auto_config() {
+            if let Ok(auto) = Self::from_toml_file(&auto_path) {
+                match base.as_mut() {
+                    Some(b) => b.merge(auto),
+                    None => base = Some(auto),
+                }
+            }
+        }
+        base
+    }
+
+    /// Merge `other` into `self`. Entries whose `id` already exists in `self` are dropped;
+    /// first occurrence (from `self`) wins so static config is never overridden.
+    pub fn merge(&mut self, other: CompositorConfig) {
+        let existing: std::collections::HashSet<String> =
+            self.server.iter().map(|s| s.id.clone()).collect();
+        for entry in other.server {
+            if !existing.contains(&entry.id) {
+                self.server.push(entry);
+            }
+        }
+    }
+
+    fn find_auto_config() -> Option<std::path::PathBuf> {
+        let mut dir = std::env::current_dir().ok()?;
+        loop {
+            let candidate = dir.join(".claude").join("lsp-max-auto.toml");
+            if candidate.exists() {
+                return Some(candidate);
+            }
+            let cargo_toml = dir.join("Cargo.toml");
+            if cargo_toml.exists() {
+                let content = std::fs::read_to_string(&cargo_toml).ok()?;
+                if content.contains("[workspace]") {
+                    return None;
                 }
             }
             dir = dir.parent()?.to_path_buf();

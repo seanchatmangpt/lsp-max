@@ -1,3 +1,4 @@
+use clap_noun_verb::error::NounVerbError;
 use clap_noun_verb::Result;
 use clap_noun_verb_macros::verb;
 use lsp_max_runtime::AutonomicMesh;
@@ -78,12 +79,66 @@ pub struct EventListResult {
     pub count: usize,
 }
 
+/// List events from the mesh event log, optionally filtered by instance id.
 #[verb("list")]
 pub fn list(instance: Option<String>) -> Result<EventListResult> {
     let service = EventService::new();
     let events = service
         .list(instance.as_deref())
-        .map_err(clap_noun_verb::error::NounVerbError::execution_error)?;
+        .map_err(NounVerbError::execution_error)?;
     let count = events.len();
     Ok(EventListResult { events, count })
+}
+
+// ==============================================================================
+// 4. Tests
+// ==============================================================================
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use lsp_max_runtime::{AutonomicMesh, LspInstance};
+
+    fn make_temp_mesh() -> (tempfile::NamedTempFile, EventService) {
+        let mut mesh = AutonomicMesh::new();
+        mesh.add_instance(LspInstance::new("inst-1"));
+        let f = tempfile::NamedTempFile::new().unwrap();
+        mesh.save_to_file(f.path().to_str().unwrap()).unwrap();
+        let svc = EventService {
+            state_path: f.path().to_str().unwrap().to_string(),
+        };
+        (f, svc)
+    }
+
+    // --- list ---
+
+    #[test]
+    fn list_no_filter_returns_ok() {
+        let (_f, svc) = make_temp_mesh();
+        assert!(svc.list(None).is_ok());
+    }
+
+    #[test]
+    fn list_new_mesh_has_empty_event_log() {
+        let (_f, svc) = make_temp_mesh();
+        let events = svc.list(None).unwrap();
+        assert!(events.is_empty(), "fresh mesh must have an empty event log");
+    }
+
+    #[test]
+    fn list_filter_for_nonexistent_instance_returns_empty_not_err() {
+        let (_f, svc) = make_temp_mesh();
+        let result = svc.list(Some("no-such-instance"));
+        // Unknown filter target returns Ok([]) — filter narrows, it does not error.
+        assert!(result.is_ok());
+        assert!(result.unwrap().is_empty());
+    }
+
+    #[test]
+    fn list_fails_on_missing_state_file() {
+        let svc = EventService {
+            state_path: "/tmp/no-such-dir-lsp-max/event/state.json".to_string(),
+        };
+        assert!(svc.list(None).is_err());
+    }
 }

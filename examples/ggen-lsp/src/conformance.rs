@@ -9,15 +9,15 @@ pub fn conformance_vector() -> ConformanceVector {
         admitted: vec![],
         // REFUSED axes from domain.ttl law:REFUSED declarations
         refused: vec![
-            LawAxis::Custom("textDocument/rename".to_string()),       // law:REFUSED — read-only surface
-            LawAxis::Custom("textDocument/formatting".to_string()),   // law:REFUSED — delegated to ggen CLI
+            LawAxis::Custom("textDocument/rename".to_string()), // law:REFUSED — read-only surface
+            LawAxis::Custom("textDocument/formatting".to_string()), // law:REFUSED — delegated to ggen CLI
         ],
         // CANDIDATE axes: receipt chain OPEN
         unknown: vec![
-            LawAxis::Custom("textDocument/hover".to_string()),        // CANDIDATE: receipt OPEN
-            LawAxis::Custom("textDocument/completion".to_string()),   // CANDIDATE: receipt OPEN
-            LawAxis::Custom("textDocument/definition".to_string()),   // CANDIDATE: receipt OPEN
-            LawAxis::Custom("max/ggen-sync".to_string()),             // CANDIDATE: receipt OPEN
+            LawAxis::Custom("textDocument/hover".to_string()), // CANDIDATE: receipt OPEN
+            LawAxis::Custom("textDocument/completion".to_string()), // CANDIDATE: receipt OPEN
+            LawAxis::Custom("textDocument/definition".to_string()), // CANDIDATE: receipt OPEN
+            LawAxis::Custom("max/ggen-sync".to_string()),      // CANDIDATE: receipt OPEN
         ],
         ..Default::default()
     }

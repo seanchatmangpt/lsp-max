@@ -99,7 +99,6 @@ impl DoctorService {
     }
 
     fn check_toolchain(&self) -> DoctorCheck {
-        // Read the pinned channel from rust-toolchain.toml in the workspace root.
         let pin = read_toolchain_pin();
 
         let output = std::process::Command::new("rustup")
@@ -143,11 +142,19 @@ impl DoctorService {
                         status: "PARTIAL".to_string(),
                         detail: format!(
                             "active={active} pin={}",
-                            if pin_str.is_empty() { "(unreadable)" } else { pin_str }
+                            if pin_str.is_empty() {
+                                "(unreadable)"
+                            } else {
+                                pin_str
+                            }
                         ),
                         fix: format!(
                             "rustup toolchain install {}",
-                            if pin_str.is_empty() { "<channel>" } else { pin_str }
+                            if pin_str.is_empty() {
+                                "<channel>"
+                            } else {
+                                pin_str
+                            }
                         ),
                     }
                 }
@@ -201,13 +208,11 @@ fn compute_overall(checks: &[DoctorCheck]) -> String {
 /// Read the `channel` field from `rust-toolchain.toml` in the workspace root.
 /// Returns None if the file is absent or unparseable.
 fn read_toolchain_pin() -> Option<String> {
-    // Walk up from cwd looking for the file.
     let mut dir = std::env::current_dir().ok()?;
     loop {
         let candidate = dir.join("rust-toolchain.toml");
         if candidate.exists() {
             let text = std::fs::read_to_string(&candidate).ok()?;
-            // Parse: channel = "nightly-2026-04-15"
             for line in text.lines() {
                 let trimmed = line.trim();
                 if trimmed.starts_with("channel") {

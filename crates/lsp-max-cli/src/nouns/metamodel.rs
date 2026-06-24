@@ -111,6 +111,7 @@ pub struct GenerateResult {
     pub entity: MetamodelEntity,
 }
 
+/// Generate a metamodel entity for the given LSP version and return its structure hash.
 #[verb("generate")]
 pub fn generate(version: String) -> Result<GenerateResult> {
     let service = MetamodelService::new();
@@ -123,6 +124,7 @@ pub struct InspectResult {
     pub entity: MetamodelEntity,
 }
 
+/// Inspect an existing metamodel entity by id and return its current structure hash.
 #[verb("inspect")]
 pub fn inspect(id: String) -> Result<InspectResult> {
     let service = MetamodelService::new();
@@ -136,6 +138,7 @@ pub struct ValidateResult {
     pub is_valid: bool,
 }
 
+/// Validate a metamodel entity against the runtime mesh state.
 #[verb("validate")]
 pub fn validate(id: String) -> Result<ValidateResult> {
     let service = MetamodelService::new();
@@ -149,6 +152,7 @@ pub struct DiffResult {
     pub diffs: Vec<DiffEntry>,
 }
 
+/// Compute a structural diff between two metamodel entities by id.
 #[verb("diff")]
 pub fn diff(source_id: String, target_id: String) -> Result<DiffResult> {
     let service = MetamodelService::new();

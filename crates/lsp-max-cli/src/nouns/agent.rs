@@ -186,8 +186,9 @@ mod tests {
     impl Drop for EnvGuard {
         fn drop(&mut self) {
             match &self.saved {
-                Some(val) => std::env::set_var(self.key, val),
-                // SAFETY: restoring absent state under ENV_MUTEX.
+                // SAFETY: restoring previous env state under TEST_ENV_LOCK.
+                Some(val) => unsafe { std::env::set_var(self.key, val) },
+                // SAFETY: restoring absent state under TEST_ENV_LOCK.
                 None => unsafe { std::env::remove_var(self.key) },
             }
         }
@@ -249,6 +250,7 @@ pub struct InvokeResult {
     pub message: AgentMessage,
 }
 
+/// Invoke the LSP agent with a task string and return its response.
 #[verb("invoke")]
 pub fn invoke(task: String) -> Result<InvokeResult> {
     let service = AgentService::new();
@@ -263,6 +265,7 @@ pub struct ChatResult {
     pub message: AgentMessage,
 }
 
+/// Send a chat message to an agent instance and return its response.
 #[verb("chat")]
 pub fn chat(id: String, message: String) -> Result<ChatResult> {
     let service = AgentService::new();
@@ -277,6 +280,7 @@ pub struct PlanResult {
     pub plan: AgentPlan,
 }
 
+/// Retrieve or generate a multi-step execution plan for the given task id.
 #[verb("plan")]
 pub fn plan(id: String) -> Result<PlanResult> {
     let service = AgentService::new();
@@ -302,6 +306,7 @@ pub struct AgentListResult {
     pub count: usize,
 }
 
+/// List all mesh instances as agent summaries via the `max/instanceList` RPC.
 #[verb("list")]
 pub fn list() -> Result<AgentListResult> {
     // Use max/instanceList RPC for efficient polling — avoids loading full mesh state.
@@ -344,6 +349,7 @@ pub fn list() -> Result<AgentListResult> {
     Ok(AgentListResult { agents, count })
 }
 
+/// Set an agent's status to Halted and persist the state.
 #[verb("halt")]
 pub fn halt(id: String) -> Result<HaltResult> {
     let service = AgentService::new();
@@ -357,6 +363,7 @@ pub struct ResetResult {
     pub instance_id: String,
 }
 
+/// Reset an instance to its initial state via the `max/reset` RPC.
 #[verb("reset")]
 pub fn reset(instance_id: String) -> Result<ResetResult> {
     let service = AgentService::new();
@@ -376,6 +383,7 @@ pub struct ReleaseResult {
     pub blocking_axes: Vec<String>,
 }
 
+/// Release actuation hold on an instance via the `max/releaseActuation` RPC.
 #[verb("release")]
 pub fn release(instance_id: String) -> Result<ReleaseResult> {
     let path = crate::nouns::get_state_path();
@@ -416,6 +424,7 @@ pub struct AutonomicLoopResult {
     pub instances: Vec<String>,
 }
 
+/// Trigger one iteration of the autonomic loop via the `max/autonomicLoop` RPC.
 #[verb("loop")]
 pub fn autonomic_loop() -> clap_noun_verb::Result<AutonomicLoopResult> {
     let path = crate::nouns::get_state_path();

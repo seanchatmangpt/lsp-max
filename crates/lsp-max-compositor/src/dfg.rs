@@ -157,8 +157,7 @@ impl DirectlyFollowsGraph {
 
     /// Render the DFG as GraphViz DOT notation.
     pub fn to_dot(&self) -> String {
-        let mut dot =
-            String::from("digraph DFG {\n  rankdir=LR;\n  node [shape=rectangle];\n");
+        let mut dot = String::from("digraph DFG {\n  rankdir=LR;\n  node [shape=rectangle];\n");
 
         for node in &self.0.nodes {
             dot.push_str(&format!(
@@ -184,10 +183,7 @@ impl DirectlyFollowsGraph {
         let mut ends: Vec<(&String, &usize)> = self.0.end_activities.iter().collect();
         ends.sort_by_key(|(n, _)| n.as_str());
         for (act, freq) in &ends {
-            dot.push_str(&format!(
-                "  \"{}\" -> \"[END]\" [label=\"{freq}\"];\n",
-                act
-            ));
+            dot.push_str(&format!("  \"{}\" -> \"[END]\" [label=\"{freq}\"];\n", act));
         }
 
         for edge in &self.0.edges {
@@ -219,7 +215,13 @@ impl DirectlyFollowsGraph {
 
 fn mermaid_id(name: &str) -> String {
     name.chars()
-        .map(|c| if c.is_alphanumeric() || c == '_' { c } else { '_' })
+        .map(|c| {
+            if c.is_alphanumeric() || c == '_' {
+                c
+            } else {
+                '_'
+            }
+        })
         .collect()
 }
 
@@ -237,10 +239,7 @@ mod tests {
             "case1".to_string(),
             vec!["A".to_string(), "B".to_string(), "C".to_string()],
         );
-        t.insert(
-            "case2".to_string(),
-            vec!["A".to_string(), "C".to_string()],
-        );
+        t.insert("case2".to_string(), vec!["A".to_string(), "C".to_string()]);
         t
     }
 

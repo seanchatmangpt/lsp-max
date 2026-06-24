@@ -56,6 +56,8 @@ pub struct CompositorReceipt {
     /// RFC-B speciation evidence: per-child receipt-chain links that the merged
     /// verdict is composed from. A merged verdict is traceable to these per-child
     /// links, not just to the aggregate `andon_codes` / fingerprint above.
+    /// Only present when the `full` feature is enabled (requires receipt_chain module).
+    #[cfg(feature = "full")]
     pub child_evidence: Vec<crate::receipt_chain::ChildEvidence>,
 }
 
@@ -71,6 +73,7 @@ impl CompositorReceipt {
             has_andon_block,
             andon_codes,
             prefixes_fingerprint,
+            #[cfg(feature = "full")]
             child_evidence: Vec::new(),
         }
     }
@@ -78,6 +81,7 @@ impl CompositorReceipt {
     /// RFC-B: attach per-child speciation evidence to this merged receipt.
     /// Each `ChildEvidence` binds a child server's own `CryptographicReceipt`
     /// chain link to the merged verdict, so the verdict is attributable.
+    #[cfg(feature = "full")]
     pub fn with_child_evidence(
         mut self,
         evidence: Vec<crate::receipt_chain::ChildEvidence>,
@@ -98,16 +102,29 @@ impl CompositorReceipt {
     /// relationships. Each per-child evidence link is related back by its chain id,
     /// making per-server lineage a single graph traversal.
     pub fn to_ocel_event(&self, event_id: &str, timestamp: &str) -> serde_json::Value {
-        let mut relationships: Vec<serde_json::Value> = vec![serde_json::json!({
+        #[cfg(not(feature = "full"))]
+        let relationships: Vec<serde_json::Value> = vec![serde_json::json!({
             "objectId": self.merge_object_id(),
             "qualifier": "merged_verdict"
         })];
-        for ev in &self.child_evidence {
-            relationships.push(serde_json::json!({
-                "objectId": ev.chain_object_id(),
-                "qualifier": "speciated_evidence"
-            }));
-        }
+        #[cfg(feature = "full")]
+        let relationships: Vec<serde_json::Value> = {
+            let mut rels = vec![serde_json::json!({
+                "objectId": self.merge_object_id(),
+                "qualifier": "merged_verdict"
+            })];
+            for ev in &self.child_evidence {
+                rels.push(serde_json::json!({
+                    "objectId": ev.chain_object_id(),
+                    "qualifier": "speciated_evidence"
+                }));
+            }
+            rels
+        };
+        #[cfg(feature = "full")]
+        let child_evidence_count = self.child_evidence.len();
+        #[cfg(not(feature = "full"))]
+        let child_evidence_count: usize = 0;
         serde_json::json!({
             "id": event_id,
             "type": "CompositorFlush",
@@ -119,7 +136,7 @@ impl CompositorReceipt {
                 "has_andon_block": self.has_andon_block,
                 "andon_codes": self.andon_codes,
                 "prefixes_fingerprint": self.prefixes_fingerprint,
-                "child_evidence_count": self.child_evidence.len()
+                "child_evidence_count": child_evidence_count
             },
             "relationships": relationships
         })
