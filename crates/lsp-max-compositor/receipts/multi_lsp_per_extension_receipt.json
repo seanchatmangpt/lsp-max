@@ -1,0 +1,11 @@
+{
+  "digest_algorithm": "SHA-256",
+  "digest": "3cf3be8e7cd7b0fbf4e83f164d5bc78caee4567cb6817d917fbe29bfacea43ac",
+  "boundary": "-----BEGIN RECEIPT-----",
+  "checkpoint": "-----END RECEIPT-----",
+  "raw_command": "sha256sum transcripts/multi_lsp_per_extension.txt",
+  "negative_control": "registry::tests::config_format_dotted_key_routes_multiple_servers_to_one_extension — fails under the pre-fix exact-key lookup, where servers_for(\".rs\") resolved no servers for main.rs because registration keyed on the dotted/compound form while lookup used the bare extension",
+  "boundary_scope": "ExtensionRouter routing: dotted (.rs) and compound (.ocel.json) lsp-max.toml keys resolve, one extension fans out to N child servers, servers deduped across keys and tier-ordered; FirstSuccess request candidates are Primary-only",
+  "status": "CANDIDATE",
+  "open": "Integration tests (tests/routing_integration.rs) now cover: dotted .rs routing to anti-llm-cheat-lsp and wasm4pm-lsp but not ggen-lsp; compound .ocel.json routing to a Primary-tier server; tier ordering (Primary < Secondary < DiagnosticsOnly); FirstSuccess filter excluding DiagnosticsOnly; no double-registration across extension keys; from_config TOML parse routing for .rs, .ocel.json, .ttl, and .ts. All 11 tests PASS. Reaching ADMITTED requires an end-to-end live JSON-RPC transcript that spawns the three configured child servers behind one editor session and captures hover/completion/definition responses from a live Primary child, plus a negative-control result."
+}
