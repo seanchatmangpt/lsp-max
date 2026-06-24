@@ -19,7 +19,7 @@ tree-sitter-rust = "0.23"
 lsp-max-lsif = { path = "../lsp-max-lsif", version = "26.6.18" }
 lsp-max-ast-core = { workspace = true }
 lsp-max-ast = { workspace = true }
-lsp-types-max = { git = "https://github.com/seanchatmangpt/lsp-types-max", branch = "main", version = "26.6.5" }
+lsp-types-max = { path = "../../stub/lsp-types-max", version = "26.6.8" }
 tree-sitter = { workspace = true }
 tree-sitter-rust = "0.23"
 

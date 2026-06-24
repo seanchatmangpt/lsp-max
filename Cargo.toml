@@ -35,7 +35,7 @@ dashmap.workspace = true
 futures = { version = "0.3", default-features = false, features = ["std", "async-await"] }
 httparse = "1.8"
 libc = "0.2"
-lsp-types-max = { git = "https://github.com/seanchatmangpt/lsp-types-max", branch = "main", features = ["proposed"] }
+lsp-types-max = { path = "stub/lsp-types-max", version = "26.6.8", features = ["proposed"] }
 url = { version = "2.5", features = ["serde"] }
 memchr = "2.5"
 rustc-hash = { workspace = true }
@@ -137,7 +137,7 @@ keywords = ["language-server", "lsp", "tower", "lsp-3-18"]
 
 [workspace.dependencies]
 wasm4pm-compat = { version = "26.6.11", features = ["formats", "strict", "wasm4pm"] }
-lsp-types-max = { git = "https://github.com/seanchatmangpt/lsp-types-max", branch = "main", features = ["proposed"] }
+lsp-types-max = { path = "stub/lsp-types-max", version = "26.6.8", features = ["proposed"] }
 tree-sitter = "0.26.5"
 tree-sitter-language = "0.1.7"
 downcast-rs = "2.0.2"
@@ -163,5 +163,5 @@ lsp-max-ast-codegen = { path = "crates/lsp-max-adapters/lsp-max-ast-codegen", ve
 lsp-max-ast = { path = "crates/lsp-max-adapters/lsp-max-ast", version = "26.6.18" }
 
 [patch.crates-io]
-wasm4pm = { git = "https://github.com/seanchatmangpt/wasm4pm", branch = "main" }
-wasm4pm-compat = { git = "https://github.com/seanchatmangpt/wasm4pm-compat", branch = "main" }
+# wasm4pm and wasm4pm-compat patches removed — use crates.io versions
+# (git sources are blocked by network policy in CI/cloud environments)
