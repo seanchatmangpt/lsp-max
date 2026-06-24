@@ -163,5 +163,5 @@ lsp-max-ast-codegen = { path = "crates/lsp-max-adapters/lsp-max-ast-codegen", ve
 lsp-max-ast = { path = "crates/lsp-max-adapters/lsp-max-ast", version = "26.6.18" }
 
 [patch.crates-io]
-wasm4pm = { path = "/home/user/wasm4pm/wasm4pm" }
-wasm4pm-compat = { path = "/home/user/wasm4pm-compat" }
+wasm4pm = { git = "https://github.com/seanchatmangpt/wasm4pm", branch = "main" }
+wasm4pm-compat = { git = "https://github.com/seanchatmangpt/wasm4pm-compat", branch = "main" }
