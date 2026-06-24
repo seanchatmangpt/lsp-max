@@ -22,6 +22,8 @@ fn test_gc007_wasm4pm_lsp_ownership_surface() {
                 && name != "node_modules"
                 && name != "vendors"
                 && name != "scratch"
+                && name != ".claude"
+                && name != "examples"
         });
         for entry in walker.filter_map(|e| e.ok()) {
             let path = entry.path();

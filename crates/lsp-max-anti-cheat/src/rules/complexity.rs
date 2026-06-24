@@ -29,9 +29,7 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
                     blocking: false,
                     required_correction: "Decompose function into named sub-operations; no breed run() should exceed 80 LOC.".to_string(),
                     required_next_proof: "Verify decomposed functions each have a single clear purpose.".to_string(),
-                                    oracle_class: None,
-                    confidence: None,
-});
+                });
             }
 
             // METRIC-002: high cyclomatic
@@ -49,9 +47,7 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
                     blocking: false,
                     required_correction: "Reduce conditional branching; extract sub-cases into helper functions with clear algorithmic semantics.".to_string(),
                     required_next_proof: "Cyclomatic complexity ≤ 10 after refactor; run cargo test to verify behavior preserved.".to_string(),
-                                    oracle_class: None,
-                    confidence: None,
-});
+                });
             }
 
             // METRIC-003: deep nesting
@@ -69,9 +65,7 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
                     blocking: false,
                     required_correction: "Flatten nesting via early returns, guard clauses, or extracted helpers.".to_string(),
                     required_next_proof: "Max nesting depth ≤ 4; no oracle bypass hidden in deeply nested else branches.".to_string(),
-                                    oracle_class: None,
-                    confidence: None,
-});
+                });
             }
 
             // METRIC-004: literal-dense function (BLOCKING — oracle lookup table)
@@ -89,9 +83,7 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
                     blocking: true,
                     required_correction: "Remove inline literal constants from breed implementation. All outputs must be computed from algorithm execution, not looked up from embedded tables.".to_string(),
                     required_next_proof: "Run hidden oracle test to confirm algorithm produces correct output via computation, not literal retrieval.".to_string(),
-                                    oracle_class: None,
-                    confidence: None,
-});
+                });
             }
 
             // METRIC-005: large match dispatch (BLOCKING — array dispatch oracle)
@@ -109,9 +101,7 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
                     blocking: true,
                     required_correction: "A match with >20 arms in a breed implementation is a dispatch oracle. Replace with algorithmic computation over the match parameter.".to_string(),
                     required_next_proof: "Hidden oracle test with inputs NOT in the original match arms must still produce correct output.".to_string(),
-                                    oracle_class: None,
-                    confidence: None,
-});
+                });
             }
 
             // METRIC-006: deep closure chain
@@ -129,9 +119,7 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
                     blocking: false,
                     required_correction: "Extract nested closures into named functions for auditability. Algorithm logic must not be hidden in closure nesting depth > 3.".to_string(),
                     required_next_proof: "Refactored closures each have a named, testable identity.".to_string(),
-                                    oracle_class: None,
-                    confidence: None,
-});
+                });
             }
 
             // HALSTEAD-001: low volume in core fn
@@ -149,9 +137,7 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
                     blocking: false,
                     required_correction: "A run/compute function with Halstead vocabulary < 10 is a memorization stub. Implement the full algorithm with diverse operators and operands.".to_string(),
                     required_next_proof: "Halstead vocabulary ≥ 10 after algorithm implementation; oracle test passes.".to_string(),
-                                    oracle_class: None,
-                    confidence: None,
-});
+                });
             }
 
             // HALSTEAD-002: low operand vocabulary
@@ -169,9 +155,7 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
                     blocking: false,
                     required_correction: "Critically low operand vocabulary indicates a memorization stub operating on ≤4 distinct values. Real algorithm implementations have rich operand diversity.".to_string(),
                     required_next_proof: "n2 (distinct operands) ≥ 5 in the refactored implementation.".to_string(),
-                                    oracle_class: None,
-                    confidence: None,
-});
+                });
             }
 
             // HALSTEAD-003: operator dominated
@@ -189,9 +173,7 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
                     blocking: false,
                     required_correction: "Operator-dominated functions are control-flow-only with minimal data — characteristic of oracle passthrough. Introduce real data transformation.".to_string(),
                     required_next_proof: "n2/n1 ratio ≥ 0.3 after algorithm implementation.".to_string(),
-                                    oracle_class: None,
-                    confidence: None,
-});
+                });
             }
 
             _ => {}

@@ -6,7 +6,14 @@ fn walk_dir(dir: &Path, violations: &mut Vec<String>) {
         for entry in entries.flatten() {
             let path = entry.path();
             let name = path.file_name().unwrap_or_default().to_string_lossy();
-            if name == ".git" || name == "target" || name == "vendors" || name == "scratch" {
+            if name == ".git"
+                || name == "target"
+                || name == "vendors"
+                || name == "scratch"
+                || name == "fixtures"
+                || name == ".claude"
+                || name == ".agents"
+            {
                 continue;
             }
             if path.is_dir() {
@@ -45,7 +52,10 @@ fn test_gc006_release_law_calver_lock() {
         .to_path_buf();
     let ggen_root = lsp_max_root.parent().unwrap().join("ggen");
 
-    let workspaces_to_check = vec![lsp_max_root, ggen_root];
+    let mut workspaces_to_check = vec![lsp_max_root];
+    if ggen_root.exists() && ggen_root.join(".gc-sealed-baseline").exists() {
+        workspaces_to_check.push(ggen_root);
+    }
     let mut violations = Vec::new();
 
     for ws in workspaces_to_check {

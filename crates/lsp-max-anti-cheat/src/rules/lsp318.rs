@@ -272,9 +272,7 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
                 blocking: true,
                 required_correction: "Acknowledge that 15-row matrix is delta changelog coverage only, and implement spec extractor to generate complete combinatorial coverage.".to_string(),
                 required_next_proof: "Run the spec extractor script to generate the matrix and gap report, proving real protocol graph mapping.".to_string(),
-                            oracle_class: None,
-                confidence: None,
-});
+            });
         }
     }
 

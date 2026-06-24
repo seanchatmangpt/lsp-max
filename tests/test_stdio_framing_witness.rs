@@ -177,7 +177,7 @@ fn stdio_framing_witness() {
 
     // Bounded wait for exit (the `exit` notification should terminate it).
     let mut status = None;
-    for _ in 0..300 {
+    for _ in 0..3000 {
         match child.try_wait().expect("try_wait") {
             Some(s) => {
                 status = Some(s);

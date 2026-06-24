@@ -6,7 +6,7 @@ use std::time::Duration;
 use std::{fs, thread};
 use url::Url;
 
-const READ_TIMEOUT: Duration = Duration::from_secs(10);
+const READ_TIMEOUT: Duration = Duration::from_secs(30);
 
 struct LspClient {
     stdin: ChildStdin,

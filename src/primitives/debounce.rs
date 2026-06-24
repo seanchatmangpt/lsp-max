@@ -32,7 +32,7 @@ impl DebounceHandle {
 /// called again before the delay expires the timer resets — only one `f()`
 /// invocation happens per quiet window.
 ///
-/// ```ignore
+/// ```text
 /// let store = DocumentStore::new();
 /// let sink  = DiagnosticSink::new(client.clone());
 /// let dbc   = debounce(Duration::from_millis(150), move || {

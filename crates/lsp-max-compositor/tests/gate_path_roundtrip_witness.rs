@@ -9,6 +9,7 @@ use lsp_max_compositor::GateFile;
 
 #[test]
 fn gate_path_cross_author_roundtrip_witness() {
+    std::env::set_var("LSP_MAX_AGENT_ID", "witness-temp-test");
     // (a) Determinism: the shared fn computes the same path twice.
     let p1 = lsp_max::primitives::gate_file_path();
     let p2 = lsp_max::primitives::gate_file_path();
@@ -31,6 +32,7 @@ fn gate_path_cross_author_roundtrip_witness() {
 
     // Restore CLEAR so we do not leave an ANDON byte behind.
     let _ = std::fs::write(&p1, b"0");
+    std::env::remove_var("LSP_MAX_AGENT_ID");
 
     eprintln!("WITNESS shared_fn_path={}", p1.display());
     eprintln!("WITNESS compositor_path={}", compositor_path.display());

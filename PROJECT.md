@@ -6,6 +6,7 @@ The `lsp-max` workspace provides a law-state LSP runtime with process-mining con
 - **`crates/lsp-max-cli`**: CLI frontend, including the `gate check` command that queries active ANDON gates.
 - **`examples/anti-llm-cheat-lsp`**: Reference detector for compliance violations. Uses an AhoCorasick-based scanning engine.
 - **`examples/pattern-lsp` & `examples/axum-lsp`**: Core examples showcasing pattern matching and rule validation.
+- **`lsp_automation_loop`**: Automated loop at `/Users/sac/teamwork_projects/lsp_automation_loop` that orchestrates compilation, validation, spec compliance checks, and safe local staging.
 
 ## Code Layout
 - `crates/lsp-max-compositor/src/`: Compositor source files
@@ -16,6 +17,10 @@ The `lsp-max` workspace provides a law-state LSP runtime with process-mining con
 - `examples/anti-llm-cheat-lsp/src/`: Anti-LLM server code
 - `examples/pattern-lsp/src/`: Pattern server code
 - `examples/axum-lsp/src/`: Axum server code
+- `/Users/sac/teamwork_projects/lsp_automation_loop/`:
+  - `Cargo.toml`: Cargo configuration for the automated loop validator
+  - `src/main.rs`: LSIF conformance schema validator
+  - `scripts/run_loop.sh`: Main loop executor, compiler, tester, and stager
 
 ## Milestones
 | # | Name | Scope | Dependencies | Status |
@@ -25,6 +30,10 @@ The `lsp-max` workspace provides a law-state LSP runtime with process-mining con
 | 3 | M3: Item A (Agent-scoped gate check) | Support `LSP_MAX_AGENT_ID` in gate file path to isolate gates per-agent | None | DONE |
 | 4 | M4: Item B (Child receipt chains) | Replace `NoopClient` in compositor, query child receipts during flush, map to child evidence | M2 | DONE |
 | 5 | M5: Item C (OCEL Logging) | Map compositor flushes and child evidence to OCEL JSONL files | M4 | DONE |
+| 6 | M6: Create Automation Loop Structure | Set up directory layout, Cargo.toml, scripts/run_loop.sh, and src/main.rs for the automated loop | None | DONE |
+| 7 | M7: Implement LSIF 0.6 Validator | Implement Rust program that validates JSONL output using LsifReader | M6 | DONE |
+| 8 | M8: Implement Loop Runner and Gate Check | Implement scripts/run_loop.sh compiling, testing, validating, staging, checking gates, and outputting transcripts | M7 | DONE |
+| 9 | M9: Register Scheduler and Verify Loop | Register recurring schedule with the Antigravity `schedule` tool, verify runner halts on blocked gates and simulated failures | M8 | DONE |
 
 ## Interface Contracts
 

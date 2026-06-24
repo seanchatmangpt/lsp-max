@@ -1,5 +1,6 @@
 #[test]
 fn test_codegen_dry_run() {
+    let _lock = crate::TEST_LOCK.lock().unwrap();
     let source = r#"[{"type": "identifier", "named": true}]"#;
     let _result = crate::generate(source, &tree_sitter_html::LANGUAGE.into(), None);
     assert!(!_result.is_empty());
@@ -8,6 +9,7 @@ fn test_codegen_dry_run() {
 #[test]
 #[ignore = "long running pre-publish test"]
 fn gen_python() {
+    let _lock = crate::TEST_LOCK.lock().unwrap();
     let _result = crate::generate(
         tree_sitter_python::NODE_TYPES,
         &tree_sitter_python::LANGUAGE.into(),
@@ -18,6 +20,7 @@ fn gen_python() {
 #[test]
 #[ignore = "long running pre-publish test"]
 fn gen_html() {
+    let _lock = crate::TEST_LOCK.lock().unwrap();
     let _result = crate::generate(
         tree_sitter_html::NODE_TYPES,
         &tree_sitter_html::LANGUAGE.into(),
@@ -28,6 +31,7 @@ fn gen_html() {
 #[test]
 #[ignore = "long running pre-publish test"]
 fn gen_javascript() {
+    let _lock = crate::TEST_LOCK.lock().unwrap();
     let _result = crate::generate(
         tree_sitter_javascript::NODE_TYPES,
         &tree_sitter_javascript::LANGUAGE.into(),
@@ -38,6 +42,7 @@ fn gen_javascript() {
 #[test]
 #[ignore = "long running pre-publish test"]
 fn gen_typescript() {
+    let _lock = crate::TEST_LOCK.lock().unwrap();
     let _result = crate::generate(
         tree_sitter_typescript::TYPESCRIPT_NODE_TYPES,
         &tree_sitter_typescript::LANGUAGE_TYPESCRIPT.into(),
@@ -48,6 +53,7 @@ fn gen_typescript() {
 #[test]
 #[ignore = "long running pre-publish test"]
 fn gen_tsx() {
+    let _lock = crate::TEST_LOCK.lock().unwrap();
     let _result = crate::generate(
         tree_sitter_typescript::TSX_NODE_TYPES,
         &tree_sitter_typescript::LANGUAGE_TSX.into(),
@@ -58,6 +64,7 @@ fn gen_tsx() {
 #[test]
 #[ignore = "long running pre-publish test"]
 fn gen_c() {
+    let _lock = crate::TEST_LOCK.lock().unwrap();
     let _result = crate::generate(
         tree_sitter_c::NODE_TYPES,
         &tree_sitter_c::LANGUAGE.into(),
@@ -68,6 +75,7 @@ fn gen_c() {
 #[test]
 #[ignore = "long running pre-publish test"]
 fn gen_c_sharp() {
+    let _lock = crate::TEST_LOCK.lock().unwrap();
     let _result = crate::generate(
         tree_sitter_c_sharp::NODE_TYPES,
         &tree_sitter_c_sharp::LANGUAGE.into(),
@@ -78,6 +86,7 @@ fn gen_c_sharp() {
 #[test]
 #[ignore = "long running pre-publish test"]
 fn gen_haskell() {
+    let _lock = crate::TEST_LOCK.lock().unwrap();
     let _result = crate::generate(
         tree_sitter_haskell::NODE_TYPES,
         &tree_sitter_haskell::LANGUAGE.into(),

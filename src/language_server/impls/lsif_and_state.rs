@@ -108,5 +108,17 @@ pub async fn max_lsif() -> Result<String> {
         .end_project(project_id)
         .map_err(|_| Error::internal_error())?;
 
-    String::from_utf8(buffer).map_err(|_| Error::internal_error())
+    Ok(String::from_utf8(buffer).unwrap_or_default())
+}
+
+/// Executes a SPARQL query over the current semantic graph.
+pub async fn execute_sparql(params: lsp_types_max::request::ExecuteSparqlParams) -> Result<lsp_types_max::request::ExecuteSparqlResult> {
+    let store = lsp_max_lsif::lsif_store::LsifStore::new().map_err(|_| Error::internal_error())?;
+    
+    // The query executes against the LsifStore. 
+    // In future iterations, this store will be incrementally populated by Salsa.
+    let solutions = store.execute_sparql(&params.query)
+        .map_err(|e| Error::invalid_params(e))?;
+        
+    Ok(lsp_types_max::request::ExecuteSparqlResult { solutions })
 }

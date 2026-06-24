@@ -643,4 +643,22 @@ pub trait LanguageServer: Send + Sync + 'static {
     async fn max_workspace_conformance(&self) -> Result<max_protocol::ConformanceVector> {
         impls::max_workspace_conformance().await
     }
+
+    /// Executes a semantic SPARQL query over the codebase graph.
+    #[rpc(name = "workspace/executeSparql")]
+    async fn execute_sparql(
+        &self,
+        params: lsp_types_max::request::ExecuteSparqlParams,
+    ) -> Result<lsp_types_max::request::ExecuteSparqlResult> {
+        impls::execute_sparql(params).await
+    }
+
+    /// Validates an agent intent constraint using cognitive logic.
+    #[rpc(name = "max/intent.validate")]
+    async fn max_intent_validate(
+        &self,
+        params: max_protocol::IntentValidateParams,
+    ) -> Result<max_protocol::IntentValidateResult> {
+        impls::max_intent_validate(params).await
+    }
 }

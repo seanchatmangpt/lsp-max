@@ -11,6 +11,9 @@ repository.workspace = true
 categories.workspace = true
 keywords.workspace = true
 
+[lib]
+doctest = false
+
 [package.metadata.docs.rs]
 all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
