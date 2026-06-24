@@ -86,7 +86,7 @@ impl HistoryService {
         let total = all.len();
         let filtered: Vec<HistoryEntry> = all
             .into_iter()
-            .filter(|e| noun_filter.is_none_or(|n| e.noun == n))
+            .filter(|e| noun_filter.map_or(true, |n| e.noun == n))
             .collect();
         let cap = limit.unwrap_or(20) as usize;
         let start = filtered.len().saturating_sub(cap);
@@ -232,23 +232,21 @@ pub struct HistoryRecordResult {
 }
 
 /// Append a new invocation record to the history file.
+/// `args_json` is an optional JSON array of strings, e.g. `'["--flag","value"]'`.
 #[verb("record")]
 pub fn record(
     noun: String,
     verb: String,
-    args: Option<String>,
+    args_json: Option<String>,
     status: String,
 ) -> Result<HistoryRecordResult> {
+    let args: Vec<String> = args_json
+        .as_deref()
+        .and_then(|s| serde_json::from_str(s).ok())
+        .unwrap_or_default();
     let svc = HistoryService::new();
-    // clap-noun-verb verb params are scalar/Option; accept space-separated args
-    // and split into the Vec<String> the service layer records.
-    let arg_vec: Vec<String> = args
-        .unwrap_or_default()
-        .split_whitespace()
-        .map(str::to_string)
-        .collect();
     let entry = svc
-        .record(noun, verb, arg_vec, status)
+        .record(noun, verb, args, status)
         .map_err(NounVerbError::execution_error)?;
     Ok(HistoryRecordResult {
         id: entry.id.clone(),
@@ -265,19 +263,13 @@ mod tests {
     use super::*;
     use std::env;
 
-    fn temp_history_service() -> (
-        std::sync::MutexGuard<'static, ()>,
-        tempfile::TempDir,
-        HistoryService,
-    ) {
+    fn temp_history_service() -> (std::sync::MutexGuard<'static, ()>, tempfile::TempDir, HistoryService) {
         let guard = crate::nouns::TEST_ENV_LOCK
             .lock()
             .unwrap_or_else(|e| e.into_inner());
         let dir = tempfile::TempDir::new().unwrap();
         // SAFETY: test-only, guarded by TEST_ENV_LOCK
-        unsafe {
-            env::set_var("HOME", dir.path());
-        }
+        unsafe { env::set_var("HOME", dir.path()); }
         (guard, dir, HistoryService::new())
     }
 

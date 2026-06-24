@@ -91,3 +91,4 @@ pub use stream::{
 // LspRequest is implemented for FoldingRangeRefreshRequest and
 // TextDocumentContentRefreshRequest directly in lsp_3_18.rs.
 // The impls are available via `lsp_3_18::LspRequest`.
+

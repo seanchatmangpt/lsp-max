@@ -149,7 +149,7 @@ impl MetricsService {
     pub fn format_prometheus(metrics: &[MetricEntry]) -> String {
         let mut out = String::new();
         for m in metrics {
-            let prom_name = m.name.replace(['.', '-'], "_");
+            let prom_name = m.name.replace('.', "_").replace('-', "_");
             out.push_str(&format!("# TYPE {} gauge\n", prom_name));
             let label_str = if m.labels.is_empty() {
                 String::new()
@@ -201,11 +201,11 @@ impl MetricsService {
         Ok(())
     }
 
-    /// Compare current metrics against the saved baseline. Returns per-metric
-    /// trends and an aggregate bounded status; UNKNOWN when no baseline exists.
-    pub fn trending(&self) -> std::result::Result<(Vec<MetricTrend>, String), String> {
+    /// Compare current metrics against the saved baseline and return trend data.
+    pub fn trending(&self) -> std::result::Result<MetricsTrendingResult, String> {
         let current = self.collect()?;
-        let Some(baseline) = Self::load_baseline() else {
+        let baseline_opt = MetricsService::load_baseline();
+        if baseline_opt.is_none() {
             let comparisons = current
                 .iter()
                 .map(|m| MetricTrend {
@@ -216,21 +216,26 @@ impl MetricsService {
                     trend: "UNKNOWN".into(),
                 })
                 .collect();
-            return Ok((comparisons, "UNKNOWN".into()));
-        };
-
+            return Ok(MetricsTrendingResult { comparisons, status: "UNKNOWN".into() });
+        }
+        let baseline = baseline_opt.unwrap();
         let baseline_map: HashMap<String, f64> =
             baseline.iter().map(|m| (m.name.clone(), m.value)).collect();
-
         let mut degrading = 0usize;
         let mut comparisons = Vec::new();
         for m in &current {
             let base_val = baseline_map.get(&m.name).copied().unwrap_or(0.0);
             let delta = m.value - base_val;
-            let trend = Self::classify_trend(&m.name, delta);
-            if trend == "DEGRADING" {
-                degrading += 1;
-            }
+            // Diagnostic/repair counts rising = degrading; conformance score falling = degrading.
+            let trend = if delta.abs() < f64::EPSILON {
+                "STABLE"
+            } else if m.name.contains("conformance") {
+                if delta < 0.0 { degrading += 1; "DEGRADING" } else { "IMPROVING" }
+            } else if m.name.contains("diagnostics") || m.name.contains("repairs.open") {
+                if delta > 0.0 { degrading += 1; "DEGRADING" } else { "IMPROVING" }
+            } else {
+                "STABLE"
+            };
             comparisons.push(MetricTrend {
                 name: m.name.clone(),
                 current: m.value,
@@ -239,7 +244,6 @@ impl MetricsService {
                 trend: trend.into(),
             });
         }
-
         let total = comparisons.len();
         let status = if degrading == 0 {
             "ADMITTED"
@@ -248,29 +252,7 @@ impl MetricsService {
         } else {
             "PARTIAL"
         };
-        Ok((comparisons, status.into()))
-    }
-
-    /// Classify one metric's delta. Rising diagnostics or open repairs degrade;
-    /// falling conformance degrades; equal values are stable.
-    fn classify_trend(name: &str, delta: f64) -> &'static str {
-        if delta.abs() < f64::EPSILON {
-            "STABLE"
-        } else if name.contains("conformance") {
-            if delta < 0.0 {
-                "DEGRADING"
-            } else {
-                "IMPROVING"
-            }
-        } else if name.contains("diagnostics") || name.contains("repairs.open") {
-            if delta > 0.0 {
-                "DEGRADING"
-            } else {
-                "IMPROVING"
-            }
-        } else {
-            "STABLE"
-        }
+        Ok(MetricsTrendingResult { comparisons, status: status.into() })
     }
 }
 
@@ -340,12 +322,9 @@ pub struct MetricsTrendingResult {
 
 #[verb("trending")]
 pub fn trending() -> Result<MetricsTrendingResult> {
-    let svc = MetricsService::new();
-    let (comparisons, status) = svc.trending().map_err(NounVerbError::execution_error)?;
-    Ok(MetricsTrendingResult {
-        comparisons,
-        status,
-    })
+    MetricsService::new()
+        .trending()
+        .map_err(NounVerbError::execution_error)
 }
 
 #[derive(Serialize)]
@@ -435,11 +414,10 @@ mod tests {
     #[test]
     fn trending_returns_unknown_when_no_baseline() {
         with_isolated_state(|| {
-            // No baseline file present; status and every trend must be UNKNOWN.
-            let svc = MetricsService::new();
-            let (comparisons, status) = svc.trending().unwrap();
-            assert_eq!(status, "UNKNOWN");
-            for c in &comparisons {
+            // No baseline file present; all statuses must be UNKNOWN
+            let result = trending().unwrap();
+            assert_eq!(result.status, "UNKNOWN");
+            for c in &result.comparisons {
                 assert_eq!(c.trend, "UNKNOWN");
             }
         });

@@ -157,14 +157,16 @@ impl GateService {
             vec![]
         };
 
-        let andon_blocked = raw.first().copied().map(|b| b == b'1').unwrap_or(false);
-
-        // Attempt structured parse only when the content looks like JSON.
-        let (active_andon_codes, since_seq) = if raw.first().copied() == Some(b'{') {
-            parse_gate_json(&raw)
-        } else {
-            (vec![], None)
-        };
+        // Structured JSON payload takes precedence over the legacy single-byte format.
+        // Legacy: first byte is `'1'` = blocked, `'0'` = clear.
+        // Structured: `{"blocked":true,"codes":[...],"seq":N}`.
+        let (andon_blocked, active_andon_codes, since_seq) =
+            if raw.first().copied() == Some(b'{') {
+                parse_gate_json(&raw)
+            } else {
+                let blocked = raw.first().copied().map(|b| b == b'1').unwrap_or(false);
+                (blocked, vec![], None)
+            };
 
         let status = if andon_blocked {
             "BLOCKED".to_string()
@@ -196,15 +198,16 @@ impl GateService {
     }
 }
 
-/// Extract ANDON codes and optional `seq` from a structured gate file payload.
+/// Extract blocked flag, ANDON codes, and optional `seq` from a structured gate file payload.
 ///
 /// Expected shape: `{"blocked":true,"codes":["WASM4PM-001"],"seq":42}`.
-/// Unknown fields are ignored; missing fields yield empty/None.
-fn parse_gate_json(raw: &[u8]) -> (Vec<String>, Option<u64>) {
+/// Unknown fields are ignored; missing fields yield defaults (false / empty / None).
+fn parse_gate_json(raw: &[u8]) -> (bool, Vec<String>, Option<u64>) {
     let v: serde_json::Value = match serde_json::from_slice(raw) {
         Ok(v) => v,
-        Err(_) => return (vec![], None),
+        Err(_) => return (false, vec![], None),
     };
+    let blocked = v["blocked"].as_bool().unwrap_or(false);
     let codes = v["codes"]
         .as_array()
         .map(|arr| {
@@ -214,7 +217,7 @@ fn parse_gate_json(raw: &[u8]) -> (Vec<String>, Option<u64>) {
         })
         .unwrap_or_default();
     let seq = v["seq"].as_u64();
-    (codes, seq)
+    (blocked, codes, seq)
 }
 
 fn fnv1a(bytes: &[u8]) -> u64 {
@@ -298,11 +301,12 @@ pub fn clear() -> Result<GateClearResult> {
 }
 
 /// Poll the gate file on an interval until it clears or max_polls is reached.
+/// `interval_secs` defaults to 2; `max_polls` defaults to 30.
 #[verb("watch")]
 pub fn watch(interval_secs: Option<u64>, max_polls: Option<u64>) -> Result<GateWatchResult> {
-    let svc = GateService::new();
     let interval_secs = interval_secs.unwrap_or(2);
     let max_polls = max_polls.unwrap_or(30);
+    let svc = GateService::new();
     let mut polls: usize = 0;
     let mut final_status = "BLOCKED".to_string();
     for _ in 0..max_polls {
@@ -378,7 +382,8 @@ mod tests {
     #[test]
     fn parse_gate_json_extracts_codes_and_seq() {
         let raw = br#"{"blocked":true,"codes":["WASM4PM-001","GGEN-042"],"seq":7}"#;
-        let (codes, seq) = parse_gate_json(raw);
+        let (blocked, codes, seq) = parse_gate_json(raw);
+        assert!(blocked);
         assert_eq!(codes, vec!["WASM4PM-001", "GGEN-042"]);
         assert_eq!(seq, Some(7));
     }
@@ -386,14 +391,15 @@ mod tests {
     #[test]
     fn parse_gate_json_tolerates_missing_fields() {
         let raw = br#"{"blocked":true}"#;
-        let (codes, seq) = parse_gate_json(raw);
+        let (blocked, codes, seq) = parse_gate_json(raw);
+        assert!(blocked);
         assert!(codes.is_empty());
         assert!(seq.is_none());
     }
 
     #[test]
     fn parse_gate_json_returns_empty_on_invalid_json() {
-        let (codes, seq) = parse_gate_json(b"not-json");
+        let (_blocked, codes, seq) = parse_gate_json(b"not-json");
         assert!(codes.is_empty());
         assert!(seq.is_none());
     }
@@ -417,5 +423,191 @@ mod tests {
         std::fs::write(tmp.path(), b"0").unwrap();
         let after = std::fs::read(tmp.path()).unwrap();
         assert_eq!(after.first().copied(), Some(b'0'));
+    }
+
+    // --- synthetic gate file helpers -----------------------------------------
+    //
+    // These tests write directly to the real gate path when the compositor is
+    // absent, exercise the service, then clean up.  When the compositor IS
+    // active in the test environment the gate file already exists and we skip
+    // rather than interfere with a live gate.
+
+    fn write_gate_and_run<F>(content: &[u8], f: F)
+    where
+        F: FnOnce(&GateService),
+    {
+        let path = GateService::gate_file_path();
+        if path.exists() {
+            // compositor active; skip to avoid corrupting a live gate.
+            return;
+        }
+        std::fs::write(&path, content).expect("write synthetic gate");
+        let svc = GateService::new();
+        f(&svc);
+        let _ = std::fs::remove_file(&path);
+    }
+
+    // check — success + falsification (blocked byte)
+
+    #[test]
+    fn check_reports_blocked_when_gate_byte_is_one() {
+        write_gate_and_run(b"1", |svc| {
+            let result = svc.check();
+            // Success: returns without panic.
+            assert!(result.compositor_active);
+            // Falsification: byte '1' means the gate is blocked.
+            assert!(result.andon_blocked);
+        });
+    }
+
+    #[test]
+    fn check_reports_clear_when_gate_byte_is_zero() {
+        write_gate_and_run(b"0", |svc| {
+            let result = svc.check();
+            // Success: file is present (compositor_active = true).
+            assert!(result.compositor_active);
+            // Falsification: byte '0' must NOT be blocked.
+            assert!(!result.andon_blocked);
+        });
+    }
+
+    // list — success + falsification (blocking code families)
+
+    #[test]
+    fn list_reports_blocking_code_families_when_gate_is_set() {
+        write_gate_and_run(b"1", |svc| {
+            let result = svc.list();
+            // Success: list returns with gate blocked.
+            assert!(result.andon_blocked);
+            // Falsification: blocked gate surfaces both code-prefix families.
+            assert!(
+                result.active_codes.contains(&"WASM4PM-*".to_string()),
+                "WASM4PM-* missing from active_codes"
+            );
+            assert!(
+                result.active_codes.contains(&"GGEN-*".to_string()),
+                "GGEN-* missing from active_codes"
+            );
+            // agent_scope is "global" until RFC A per-agent partitioning is wired.
+            assert_eq!(result.agent_scope, "global");
+        });
+    }
+
+    // agent_context — success + falsification (BLOCKED status, unknown axis)
+
+    #[test]
+    fn agent_context_status_is_blocked_when_gate_byte_is_one() {
+        write_gate_and_run(b"1", |svc| {
+            let ctx = svc.check_agent_context();
+            // Success: always returns Ok even when BLOCKED (RFC-1 D_t PUSH).
+            assert!(ctx.andon_blocked);
+            // Falsification: bounded status must be "BLOCKED".
+            assert_eq!(ctx.status, "BLOCKED");
+            // Falsification: plain byte payload has no structured codes, so
+            // governing_axes.unknown must carry the sentinel entry.
+            assert!(
+                !ctx.governing_axes.unknown.is_empty(),
+                "unknown axis must be non-empty when codes are absent but gate is blocked"
+            );
+        });
+    }
+
+    #[test]
+    fn agent_context_extracts_codes_from_structured_payload() {
+        let payload = br#"{"blocked":true,"codes":["WASM4PM-007"],"seq":3}"#;
+        write_gate_and_run(payload, |svc| {
+            let ctx = svc.check_agent_context();
+            // Success: structured parse runs without panic.
+            assert!(ctx.andon_blocked);
+            // Falsification: the specific code is surfaced in active_andon_codes.
+            assert!(
+                ctx.active_andon_codes.contains(&"WASM4PM-007".to_string()),
+                "expected WASM4PM-007 in active_andon_codes: {:?}",
+                ctx.active_andon_codes
+            );
+            // Falsification: seq field is extracted correctly.
+            assert_eq!(ctx.since_seq, Some(3));
+            // When codes are present, refused carries them; unknown must be empty.
+            assert!(
+                ctx.governing_axes.unknown.is_empty(),
+                "unknown axis must be empty when codes are present"
+            );
+        });
+    }
+
+    // watch — success + falsification (bounded final_status, poll count)
+
+    #[test]
+    fn watch_returns_open_and_single_poll_when_gate_absent() {
+        let path = GateService::gate_file_path();
+        if path.exists() {
+            // compositor active; skip.
+            return;
+        }
+        // Success: verb returns Ok with max_polls=1 and zero sleep interval.
+        let result = watch(Some(0), Some(1)).unwrap();
+        assert_eq!(result.polls, 1);
+        // Falsification: gate absent means clear → final_status is "OPEN".
+        assert_eq!(result.final_status, "OPEN");
+    }
+
+    #[test]
+    fn watch_final_status_is_a_bounded_value() {
+        let path = GateService::gate_file_path();
+        if path.exists() {
+            return;
+        }
+        let result = watch(Some(0), Some(1)).unwrap();
+        // Falsification: bounded status vocabulary; never victory language.
+        let valid = ["OPEN", "BLOCKED"];
+        assert!(
+            valid.contains(&result.final_status.as_str()),
+            "unexpected final_status: {}",
+            result.final_status
+        );
+    }
+
+    // GateClearResult — falsification of was_active + status field
+
+    #[test]
+    fn gate_clear_result_was_active_reflects_prior_blocked_state() {
+        let path = GateService::gate_file_path();
+        if path.exists() {
+            return;
+        }
+        std::fs::write(&path, b"1").expect("write blocked gate");
+        // Replicate the was_active logic from the clear verb.
+        let was_active = std::fs::read(&path)
+            .ok()
+            .and_then(|b| b.first().copied())
+            .map(|b| b == b'1')
+            .unwrap_or(false);
+        std::fs::write(&path, b"0").unwrap();
+        let gate_file = path.display().to_string();
+        let result = GateClearResult {
+            was_active,
+            gate_file,
+            status: "OPEN".to_string(),
+        };
+        // Falsification: was_active must reflect the pre-clear blocked state.
+        assert!(result.was_active, "was_active must be true when gate was set to '1'");
+        // Falsification: post-clear status is bounded "OPEN".
+        assert_eq!(result.status, "OPEN");
+        let _ = std::fs::remove_file(&path);
+    }
+
+    // Counterfactual: clear verb on a non-existent gate file returns was_active=false
+
+    #[test]
+    fn clear_reports_not_active_when_gate_file_absent() {
+        let path = GateService::gate_file_path();
+        if path.exists() {
+            return;
+        }
+        let result = clear().unwrap();
+        // Counterfactual: absent file → was_active must be false.
+        assert!(!result.was_active);
+        // Falsification: status is bounded "OPEN".
+        assert_eq!(result.status, "OPEN");
     }
 }

@@ -43,7 +43,7 @@ proc-macro2 = { version = "1.0", features = ["span-locations"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 wasm4pm-compat = { workspace = true }
-wasm4pm = { path = "../../../wasm4pm/wasm4pm", features = ["ocel", "feature-ocel"] }
+wasm4pm = { path = "/home/user/wasm4pm/wasm4pm", features = ["ocel", "feature-ocel"] }
 blake3 = "1"
 uuid = { version = "1", features = ["v4"] }
 chrono = { version = "0.4", features = ["serde"] }
