@@ -6,33 +6,49 @@ edition.workspace = true
 [[bin]]
 name = "lsp-max-compositor"
 path = "src/main.rs"
+required-features = ["full"]
 
 [[bin]]
 name = "lsp-echo-server"
 path = "src/bin/lsp_echo_server.rs"
+required-features = ["full"]
 
 [[bench]]
 name = "compositor_micro"
 harness = false
+required-features = ["full"]
 
 [[bench]]
 name = "compositor_fanout"
 harness = false
+required-features = ["full"]
 
 [[bench]]
 name = "compositor_backpressure"
 harness = false
+required-features = ["full"]
 
 [[bench]]
 name = "process_mining"
 harness = false
+required-features = ["full"]
+
+[features]
+default = ["full"]
+full = [
+    "dep:lsp-max",
+    "dep:lsp-max-client",
+    "dep:lsp-max-protocol",
+    "dep:lsp-max-runtime",
+    "dep:wasm4pm",
+]
 
 [dependencies]
-lsp-max = { path = "../.." }
-lsp-max-client = { path = "../../crates/lsp-max-client" }
-lsp-max-protocol = { path = "../../lsp-max-protocol" }
-lsp-max-runtime = { path = "../../lsp-max-runtime" }
-wasm4pm = { path = "/home/user/wasm4pm/wasm4pm" }
+lsp-max = { path = "../..", optional = true }
+lsp-max-client = { path = "../../crates/lsp-max-client", optional = true }
+lsp-max-protocol = { path = "../../lsp-max-protocol", optional = true }
+lsp-max-runtime = { path = "../../lsp-max-runtime", optional = true }
+wasm4pm = { version = "26.6.11", optional = true }
 async-trait = "0.1"
 tokio = { version = "1", features = ["full"] }
 serde = { version = "1", features = ["derive"] }

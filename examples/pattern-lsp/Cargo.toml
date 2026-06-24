@@ -30,7 +30,7 @@ glob = "0.3"
 ignore = "0.4"
 lsp-max = { path = "../../" }
 parking_lot = { workspace = true }
-lsp-types-max = { path = "../../../lsp-types-max", version = "26.6.5", features = ["proposed"] }
+lsp-types-max = { path = "../../stub/lsp-types-max", version = "26.6.8", features = ["proposed"] }
 chrono = { version = "0.4", features = ["serde"] }
 url = "2.5.8"
 
