@@ -121,6 +121,7 @@ members = [
     "crates/lsif-tests",
     "crates/lsp-max-compositor",
     "crates/lsp-max-compositor-routing",
+    "crates/lsp-max-mcp",
     "crates/lsp-max-gen",
     "crates/lsp-max-meta",
 ]
