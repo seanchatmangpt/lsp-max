@@ -99,8 +99,7 @@ impl CompositorConfig {
     }
 
     /// Load `lsp-max.toml` (static) and `.claude/lsp-max-auto.toml` (auto-discovered),
-    /// merging both. Auto-discovered servers that share an `id` with a static entry are
-    /// silently dropped — static config always wins.
+    /// merging both. Static entries always win on `id` collision.
     pub fn load_with_auto() -> Option<Self> {
         let mut base = Self::load();
         if let Some(auto_path) = Self::find_auto_config() {
@@ -114,8 +113,7 @@ impl CompositorConfig {
         base
     }
 
-    /// Merge `other` into `self`. Entries whose `id` already exists in `self` are dropped;
-    /// first occurrence (from `self`) wins so static config is never overridden.
+    /// Merge `other` into `self`, dropping any entry whose `id` already exists.
     pub fn merge(&mut self, other: CompositorConfig) {
         let existing: std::collections::HashSet<String> =
             self.server.iter().map(|s| s.id.clone()).collect();

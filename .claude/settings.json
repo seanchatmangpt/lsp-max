@@ -8,6 +8,15 @@
             "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/session-start.sh"
           }
         ]
+      },
+      {
+        "matcher": "startup",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/discover-lsp-chains.sh"
+          }
+        ]
       }
     ],
     "PreToolUse": [
@@ -28,6 +37,17 @@
           {
             "type": "command",
             "command": "command -v lsp-max-cli >/dev/null 2>&1 && lsp-max-cli diagnostic snapshot 2>/dev/null || true"
+          }
+        ]
+      }
+    ],
+    "FileChanged": [
+      {
+        "matcher": "lsp-max\\.toml$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "command -v lsp-max-mcp >/dev/null 2>&1 && lsp-max-mcp reload-config 2>/dev/null || true"
           }
         ]
       }
