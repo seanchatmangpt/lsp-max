@@ -32,7 +32,7 @@ lsp-max = { path = "../.." }
 lsp-max-client = { path = "../../crates/lsp-max-client" }
 lsp-max-protocol = { path = "../../lsp-max-protocol" }
 lsp-max-runtime = { path = "../../lsp-max-runtime" }
-wasm4pm = { path = "../../../wasm4pm/wasm4pm" }
+wasm4pm = { path = "/home/user/wasm4pm/wasm4pm" }
 async-trait = "0.1"
 tokio = { version = "1", features = ["full"] }
 serde = { version = "1", features = ["derive"] }

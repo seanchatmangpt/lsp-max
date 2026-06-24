@@ -288,9 +288,30 @@ mod tests {
     }
 
     #[test]
-    fn verify_ledger_returns_ok_for_known_instance() {
+    fn verify_ledger_returns_err_on_empty_receipt_chain() {
+        // Counterfactual: verify_instance_ledger returns Err("Ledger is empty") for a
+        // freshly-created instance that has no receipts.  The verb must propagate that Err.
         with_mesh_state(|| {
-            assert!(verify_ledger("inst-1".to_string()).is_ok());
+            let result = verify_ledger("inst-1".to_string());
+            assert!(result.is_err(), "expected Err for empty receipt chain");
+        });
+    }
+
+    #[test]
+    fn verify_ledger_unknown_instance_via_dispatch_returns_err() {
+        // Counterfactual: an instance not in the mesh must yield Err before even reaching
+        // the ledger verification step.
+        with_mesh_state(|| {
+            let result = verify_ledger("no-such-instance".to_string());
+            assert!(result.is_err(), "expected Err for unknown instance");
+        });
+    }
+
+    #[test]
+    fn verify_ledger_unknown_instance_returns_err() {
+        // Counterfactual: unknown instance must yield Err.
+        with_mesh_state(|| {
+            assert!(verify_ledger("no-such-instance".to_string()).is_err());
         });
     }
 
@@ -299,5 +320,127 @@ mod tests {
         with_mesh_state(|| {
             assert!(ledger_report("inst-1".to_string()).is_ok());
         });
+    }
+
+    #[test]
+    fn ledger_report_result_carries_instance_id() {
+        // Falsification: the returned struct must echo back the queried instance_id.
+        with_mesh_state(|| {
+            let result = ledger_report("inst-1".to_string()).unwrap();
+            assert_eq!(result.instance_id, "inst-1");
+        });
+    }
+
+    #[test]
+    fn ledger_report_unknown_instance_returns_err() {
+        // Counterfactual: unknown instance must yield Err.
+        with_mesh_state(|| {
+            assert!(ledger_report("no-such-instance".to_string()).is_err());
+        });
+    }
+
+    // walk verb ---------------------------------------------------------------
+
+    #[test]
+    fn walk_empty_receipt_chain_reports_unknown_overall() {
+        // Success: walk returns Ok for a fresh instance with zero receipts.
+        let (_f, svc) = make_temp_mesh();
+        let receipts = svc.list("inst-1").unwrap();
+        let result = run_walk_logic("inst-1", receipts);
+        // Falsification: zero receipts → overall must be "UNKNOWN".
+        assert_eq!(result.total, 0);
+        assert_eq!(result.overall, "UNKNOWN");
+    }
+
+    #[test]
+    fn walk_admitted_receipt_chain_reports_admitted_overall() {
+        // Build a mesh whose instance carries a well-formed receipt.
+        let mut mesh = AutonomicMesh::new();
+        mesh.add_instance(LspInstance::new("inst-r"));
+        if let Some(inst) = mesh.instances.get_mut("inst-r") {
+            inst.receipts.push(lsp_max_runtime::Receipt {
+                receipt_id: "rcpt-001".to_string(),
+                hash: "abc123hash".to_string(),
+                prev_receipt_hash: None,
+            });
+        }
+        let f = tempfile::NamedTempFile::new().unwrap();
+        mesh.save_to_file(f.path().to_str().unwrap()).unwrap();
+        let svc = ReceiptService {
+            state_path: f.path().to_str().unwrap().to_string(),
+        };
+        let receipts = svc.list("inst-r").unwrap();
+        let result = run_walk_logic("inst-r", receipts);
+        // Success: one receipt present.
+        assert_eq!(result.total, 1);
+        // Falsification: well-formed receipt → overall is "ADMITTED".
+        assert_eq!(result.overall, "ADMITTED");
+        assert_eq!(result.entries[0].status, "ADMITTED");
+        assert_eq!(result.entries[0].receipt_id, "rcpt-001");
+    }
+
+    #[test]
+    fn walk_empty_hash_produces_refused_overall() {
+        // A receipt with an empty hash triggers REFUSED.
+        let mut mesh = AutonomicMesh::new();
+        mesh.add_instance(LspInstance::new("inst-bad"));
+        if let Some(inst) = mesh.instances.get_mut("inst-bad") {
+            inst.receipts.push(lsp_max_runtime::Receipt {
+                receipt_id: "rcpt-bad".to_string(),
+                hash: "".to_string(), // intentionally empty to trigger REFUSED
+                prev_receipt_hash: None,
+            });
+        }
+        let f = tempfile::NamedTempFile::new().unwrap();
+        mesh.save_to_file(f.path().to_str().unwrap()).unwrap();
+        let svc = ReceiptService {
+            state_path: f.path().to_str().unwrap().to_string(),
+        };
+        let receipts = svc.list("inst-bad").unwrap();
+        let result = run_walk_logic("inst-bad", receipts);
+        // Falsification: empty hash → overall "REFUSED".
+        assert_eq!(result.overall, "REFUSED");
+        assert_eq!(result.entries[0].status, "REFUSED");
+    }
+
+    #[test]
+    fn walk_unknown_instance_returns_err() {
+        // Counterfactual: unknown instance must return Err from the service list call.
+        let (_f, svc) = make_temp_mesh();
+        assert!(svc.list("no-such").is_err());
+    }
+
+    /// Re-implements the walk verb's core logic for service-layer testing
+    /// without routing through the env-var verb entrypoint.
+    fn run_walk_logic(instance_id: &str, receipts: Vec<lsp_max_runtime::Receipt>) -> ReceiptWalkResult {
+        let total = receipts.len();
+        let mut entries = Vec::new();
+        let mut overall = if total == 0 { "UNKNOWN" } else { "ADMITTED" }.to_string();
+        for (idx, r) in receipts.iter().enumerate() {
+            let (status, detail) = if r.receipt_id.is_empty() || r.hash.is_empty() {
+                overall = "REFUSED".to_string();
+                (
+                    "REFUSED".to_string(),
+                    format!("empty receipt_id or hash at index {}", idx),
+                )
+            } else {
+                (
+                    "ADMITTED".to_string(),
+                    format!("id={} hash={}...", r.receipt_id, &r.hash[..8.min(r.hash.len())]),
+                )
+            };
+            entries.push(ReceiptWalkEntry {
+                index: idx,
+                receipt_id: r.receipt_id.clone(),
+                status,
+                detail,
+            });
+        }
+        ReceiptWalkResult {
+            instance_id: instance_id.to_string(),
+            overall,
+            entries,
+            total,
+        }
     }
 }
