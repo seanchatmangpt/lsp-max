@@ -20,7 +20,6 @@ struct Strategy<'a> {
     requires: Vec<&'a str>,
 }
 
-
 struct CognitiveState {
     confidence: f64,
     time_elapsed: f64,
@@ -124,7 +123,12 @@ impl CognitiveBreed for MetaReasoning {
                     .and_then(|v| v.as_array())
                     .map(|arr| arr.iter().filter_map(|r| r.as_str()).collect())
                     .unwrap_or_default();
-                Some(Strategy { name, cost, utility, requires })
+                Some(Strategy {
+                    name,
+                    cost,
+                    utility,
+                    requires,
+                })
             })
             .collect();
 
@@ -142,10 +146,7 @@ impl CognitiveBreed for MetaReasoning {
                 .collect();
 
             if !missing_knowledge.is_empty() {
-                let reason = format!(
-                    "requires {} not available",
-                    missing_knowledge.join(", ")
-                );
+                let reason = format!("requires {} not available", missing_knowledge.join(", "));
                 rejection_reasons.insert(s.name.to_string(), reason);
                 continue;
             }
@@ -153,7 +154,10 @@ impl CognitiveBreed for MetaReasoning {
             if s.cost > remaining_time {
                 rejection_reasons.insert(
                     s.name.to_string(),
-                    format!("cost {:.0} exceeds remaining time {:.0}", s.cost, remaining_time),
+                    format!(
+                        "cost {:.0} exceeds remaining time {:.0}",
+                        s.cost, remaining_time
+                    ),
                 );
                 continue;
             }

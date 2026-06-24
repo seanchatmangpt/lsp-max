@@ -427,5 +427,8 @@ fn distinct_bands_remain_separated() {
         swept += 1;
     }
 
-    assert_eq!(swept as usize, POINTS, "band-separation point count drifted");
+    assert_eq!(
+        swept as usize, POINTS,
+        "band-separation point count drifted"
+    );
 }

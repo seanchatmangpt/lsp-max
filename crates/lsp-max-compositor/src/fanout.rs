@@ -38,26 +38,24 @@ pub fn dispatch_strategy(method: &str) -> DispatchStrategy {
     }
 }
 
-/// Extract the file extension from a URI string (e.g. `"file:///foo/bar.rs"` → `"rs"`).
-/// Returns an empty string if no extension is found.
-fn ext_from_uri(uri: &str) -> &str {
-    // Strip any query/fragment first.
+/// Extract the filename (last path segment) from a URI string
+/// (e.g. `"file:///foo/bar.ocel.json"` → `"bar.ocel.json"`).
+/// Strips any query/fragment first. Returns the whole input if it has no `/`.
+fn filename_from_uri(uri: &str) -> &str {
     let path = uri.split('?').next().unwrap_or(uri);
     let path = path.split('#').next().unwrap_or(path);
-    // Find the last path segment.
-    let segment = path.rsplit('/').next().unwrap_or(path);
-    // Find the extension within the segment.
-    match segment.rsplit_once('.') {
-        Some((_, ext)) if !ext.is_empty() => ext,
-        _ => "",
-    }
+    path.rsplit('/').next().unwrap_or(path)
 }
 
 /// Return the ordered list of child servers that should receive a message for
 /// the given file URI.  Order: Primary first, then Secondary, then DiagnosticsOnly.
+///
+/// Matching is by dotted-extension suffix over the filename, so the dotted and
+/// compound keys declared in `lsp-max.toml` (`.rs`, `.ocel.json`) resolve, and a
+/// shared extension fans out to every server registered for it.
 pub fn servers_for_uri(router: &ExtensionRouter, uri: &str) -> Vec<ChildServer> {
-    let ext = ext_from_uri(uri);
-    let mut servers = router.servers_for(ext);
+    let filename = filename_from_uri(uri);
+    let mut servers = router.servers_for_filename(filename);
 
     servers.sort_by_key(|s| match s.tier {
         ChildTier::Primary => 0u8,
@@ -74,10 +72,43 @@ mod tests {
     use crate::registry::{ChildServer, ChildTier, ExtensionRouter};
 
     #[test]
-    fn ext_extracted_from_file_uri() {
-        assert_eq!(ext_from_uri("file:///workspace/main.rs"), "rs");
-        assert_eq!(ext_from_uri("file:///workspace/index.ts"), "ts");
-        assert_eq!(ext_from_uri("file:///workspace/noext"), "");
+    fn filename_extracted_from_file_uri() {
+        assert_eq!(filename_from_uri("file:///workspace/main.rs"), "main.rs");
+        assert_eq!(
+            filename_from_uri("file:///workspace/log.ocel.json"),
+            "log.ocel.json"
+        );
+        assert_eq!(filename_from_uri("file:///workspace/noext"), "noext");
+    }
+
+    #[test]
+    fn first_success_candidates_are_primary_only() {
+        // hover/completion/definition dispatch filters servers_for_uri to Primary;
+        // a DiagnosticsOnly co-tenant on the same extension is not a candidate.
+        let router = ExtensionRouter::new();
+        router.register(
+            ".rs",
+            ChildServer {
+                id: "ggen-lsp".into(),
+                tier: ChildTier::Primary,
+                extensions: vec![".rs".into()],
+            },
+        );
+        router.register(
+            ".rs",
+            ChildServer {
+                id: "anti-llm-cheat-lsp".into(),
+                tier: ChildTier::DiagnosticsOnly,
+                extensions: vec![".rs".into()],
+            },
+        );
+
+        let primary: Vec<String> = servers_for_uri(&router, "file:///w/main.rs")
+            .into_iter()
+            .filter(|s| matches!(s.tier, ChildTier::Primary))
+            .map(|s| s.id)
+            .collect();
+        assert_eq!(primary, vec!["ggen-lsp"]);
     }
 
     #[test]

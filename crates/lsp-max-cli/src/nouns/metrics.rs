@@ -200,6 +200,60 @@ impl MetricsService {
         std::fs::write(&path, json).map_err(|e| e.to_string())?;
         Ok(())
     }
+
+    /// Compare current metrics against the saved baseline and return trend data.
+    pub fn trending(&self) -> std::result::Result<MetricsTrendingResult, String> {
+        let current = self.collect()?;
+        let baseline_opt = MetricsService::load_baseline();
+        if baseline_opt.is_none() {
+            let comparisons = current
+                .iter()
+                .map(|m| MetricTrend {
+                    name: m.name.clone(),
+                    current: m.value,
+                    baseline: 0.0,
+                    delta: 0.0,
+                    trend: "UNKNOWN".into(),
+                })
+                .collect();
+            return Ok(MetricsTrendingResult { comparisons, status: "UNKNOWN".into() });
+        }
+        let baseline = baseline_opt.unwrap();
+        let baseline_map: HashMap<String, f64> =
+            baseline.iter().map(|m| (m.name.clone(), m.value)).collect();
+        let mut degrading = 0usize;
+        let mut comparisons = Vec::new();
+        for m in &current {
+            let base_val = baseline_map.get(&m.name).copied().unwrap_or(0.0);
+            let delta = m.value - base_val;
+            // Diagnostic/repair counts rising = degrading; conformance score falling = degrading.
+            let trend = if delta.abs() < f64::EPSILON {
+                "STABLE"
+            } else if m.name.contains("conformance") {
+                if delta < 0.0 { degrading += 1; "DEGRADING" } else { "IMPROVING" }
+            } else if m.name.contains("diagnostics") || m.name.contains("repairs.open") {
+                if delta > 0.0 { degrading += 1; "DEGRADING" } else { "IMPROVING" }
+            } else {
+                "STABLE"
+            };
+            comparisons.push(MetricTrend {
+                name: m.name.clone(),
+                current: m.value,
+                baseline: base_val,
+                delta,
+                trend: trend.into(),
+            });
+        }
+        let total = comparisons.len();
+        let status = if degrading == 0 {
+            "ADMITTED"
+        } else if degrading * 2 >= total {
+            "BLOCKED"
+        } else {
+            "PARTIAL"
+        };
+        Ok(MetricsTrendingResult { comparisons, status: status.into() })
+    }
 }
 
 impl Default for MetricsService {
@@ -268,85 +322,9 @@ pub struct MetricsTrendingResult {
 
 #[verb("trending")]
 pub fn trending() -> Result<MetricsTrendingResult> {
-    let svc = MetricsService::new();
-    let current = svc.collect().map_err(NounVerbError::execution_error)?;
-
-    let baseline_opt = MetricsService::load_baseline();
-
-    if baseline_opt.is_none() {
-        let comparisons = current
-            .iter()
-            .map(|m| MetricTrend {
-                name: m.name.clone(),
-                current: m.value,
-                baseline: 0.0,
-                delta: 0.0,
-                trend: "UNKNOWN".into(),
-            })
-            .collect();
-        return Ok(MetricsTrendingResult {
-            comparisons,
-            status: "UNKNOWN".into(),
-        });
-    }
-
-    let baseline = baseline_opt.unwrap();
-    let baseline_map: HashMap<String, f64> = baseline
-        .iter()
-        .map(|m| (m.name.clone(), m.value))
-        .collect();
-
-    let mut degrading = 0usize;
-    let mut comparisons = Vec::new();
-
-    for m in &current {
-        let base_val = baseline_map.get(&m.name).copied().unwrap_or(0.0);
-        let delta = m.value - base_val;
-
-        // For diagnostic/error/warning counts and open repairs: rising = degrading.
-        // For conformance score: falling = degrading.
-        let trend = if delta.abs() < f64::EPSILON {
-            "STABLE"
-        } else if m.name.contains("conformance") {
-            if delta < 0.0 {
-                degrading += 1;
-                "DEGRADING"
-            } else {
-                "IMPROVING"
-            }
-        } else if m.name.contains("diagnostics") || m.name.contains("repairs.open") {
-            if delta > 0.0 {
-                degrading += 1;
-                "DEGRADING"
-            } else {
-                "IMPROVING"
-            }
-        } else {
-            "STABLE"
-        };
-
-        comparisons.push(MetricTrend {
-            name: m.name.clone(),
-            current: m.value,
-            baseline: base_val,
-            delta,
-            trend: trend.into(),
-        });
-    }
-
-    let total = comparisons.len();
-    let status = if degrading == 0 {
-        "ADMITTED"
-    } else if degrading * 2 >= total {
-        "BLOCKED"
-    } else {
-        "PARTIAL"
-    };
-
-    Ok(MetricsTrendingResult {
-        comparisons,
-        status: status.into(),
-    })
+    MetricsService::new()
+        .trending()
+        .map_err(NounVerbError::execution_error)
 }
 
 #[derive(Serialize)]

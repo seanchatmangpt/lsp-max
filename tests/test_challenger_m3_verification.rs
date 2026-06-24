@@ -1,11 +1,11 @@
 use lsp_max_protocol::custom_methods::*;
+use lsp_max_protocol::lsp_3_18::LspRequest;
 use lsp_max_protocol::{
     ChainDescriptor, ConformanceVector, HookDescriptor, HookGraphNode, LawAxis, ManifoldSnapshot,
     MaxDiagnostic, Receipt, SnapshotId,
 };
 use lsp_max_runtime::sha256;
 use lsp_max_runtime::MaxMethod;
-use lsp_types::request::Request;
 use lsp_types_max as lsp_types;
 
 #[test]

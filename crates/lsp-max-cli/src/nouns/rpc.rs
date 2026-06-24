@@ -32,7 +32,8 @@ impl RpcService {
         method: &str,
         params_json: &str,
     ) -> std::result::Result<serde_json::Value, String> {
-        let mut mesh = AutonomicMesh::load_from_file(&self.state_path).map_err(|e| e.to_string())?;
+        let mut mesh =
+            AutonomicMesh::load_from_file(&self.state_path).map_err(|e| e.to_string())?;
 
         let params: serde_json::Value =
             serde_json::from_str(params_json).map_err(|e| format!("Invalid params JSON: {}", e))?;

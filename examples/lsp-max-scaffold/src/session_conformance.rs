@@ -31,15 +31,31 @@ pub struct SessionEvent {
 #[serde(tag = "kind")]
 pub enum EventActivity {
     DocumentOpened,
-    AnalysisRun { source_digest: String },
-    FindingProduced { code: String },
-    ReceiptProduced { chain_head: String },
-    ReceiptVerified { admitted: bool },
-    ChainVerified { intact: bool },
-    GateChecked { blocked: bool },
+    AnalysisRun {
+        source_digest: String,
+    },
+    FindingProduced {
+        code: String,
+    },
+    ReceiptProduced {
+        chain_head: String,
+    },
+    ReceiptVerified {
+        admitted: bool,
+    },
+    ChainVerified {
+        intact: bool,
+    },
+    GateChecked {
+        blocked: bool,
+    },
     /// Records an axis state transition.  `from` and `to` are the bounded
     /// vocabulary strings ("Unknown", "Admitted", "Refused").
-    AxisTransitioned { axis: String, from: String, to: String },
+    AxisTransitioned {
+        axis: String,
+        from: String,
+        to: String,
+    },
 }
 
 /// Object bindings for an OCEL 2.0 event — multiple object types per event.
@@ -123,12 +139,27 @@ impl EventKind {
             (self, activity),
             (EventKind::DocumentOpened, EventActivity::DocumentOpened)
                 | (EventKind::AnalysisRun, EventActivity::AnalysisRun { .. })
-                | (EventKind::FindingProduced, EventActivity::FindingProduced { .. })
-                | (EventKind::ReceiptProduced, EventActivity::ReceiptProduced { .. })
-                | (EventKind::ReceiptVerified, EventActivity::ReceiptVerified { .. })
-                | (EventKind::ChainVerified, EventActivity::ChainVerified { .. })
+                | (
+                    EventKind::FindingProduced,
+                    EventActivity::FindingProduced { .. }
+                )
+                | (
+                    EventKind::ReceiptProduced,
+                    EventActivity::ReceiptProduced { .. }
+                )
+                | (
+                    EventKind::ReceiptVerified,
+                    EventActivity::ReceiptVerified { .. }
+                )
+                | (
+                    EventKind::ChainVerified,
+                    EventActivity::ChainVerified { .. }
+                )
                 | (EventKind::GateChecked, EventActivity::GateChecked { .. })
-                | (EventKind::AxisTransitioned, EventActivity::AxisTransitioned { .. })
+                | (
+                    EventKind::AxisTransitioned,
+                    EventActivity::AxisTransitioned { .. }
+                )
         )
     }
 }
@@ -295,7 +326,12 @@ pub fn replay_session(log: &SessionLog) -> ReplayResult {
         "REFUSED"
     };
 
-    ReplayResult { fitness, violations, oracle_hits, status }
+    ReplayResult {
+        fitness,
+        violations,
+        oracle_hits,
+        status,
+    }
 }
 
 // ==============================================================================
@@ -308,11 +344,15 @@ fn check_constraint(
     violations: &mut Vec<ConstraintViolation>,
 ) {
     match constraint {
-        DeclareConstraint::Response { antecedent, consequent } => {
+        DeclareConstraint::Response {
+            antecedent,
+            consequent,
+        } => {
             for (i, ev) in events.iter().enumerate() {
                 if antecedent.matches(&ev.activity) {
-                    let satisfied =
-                        events[i + 1..].iter().any(|e| consequent.matches(&e.activity));
+                    let satisfied = events[i + 1..]
+                        .iter()
+                        .any(|e| consequent.matches(&e.activity));
                     if !satisfied {
                         violations.push(ConstraintViolation {
                             constraint_name: "Response".to_string(),
@@ -326,7 +366,10 @@ fn check_constraint(
                 }
             }
         }
-        DeclareConstraint::Precedence { predecessor, successor } => {
+        DeclareConstraint::Precedence {
+            predecessor,
+            successor,
+        } => {
             for (i, ev) in events.iter().enumerate() {
                 if successor.matches(&ev.activity) {
                     let satisfied = events[..i].iter().any(|e| predecessor.matches(&e.activity));
@@ -375,9 +418,12 @@ fn check_constraint(
 fn check_a8_audit_tampering(events: &[SessionEvent], hits: &mut Vec<OracleClassHit>) {
     for (i, ev) in events.iter().enumerate() {
         if matches!(ev.activity, EventActivity::ChainVerified { intact: true }) {
-            let prior_refused = events[..i]
-                .iter()
-                .any(|e| matches!(e.activity, EventActivity::ReceiptVerified { admitted: false }));
+            let prior_refused = events[..i].iter().any(|e| {
+                matches!(
+                    e.activity,
+                    EventActivity::ReceiptVerified { admitted: false }
+                )
+            });
             if prior_refused {
                 hits.push(OracleClassHit {
                     class: OracleClass::A8AuditTampering,
@@ -405,8 +451,7 @@ fn check_a9_temporal_anomaly(events: &[SessionEvent], hits: &mut Vec<OracleClass
                     event_index: i,
                     description: format!(
                         "A9: FindingProduced at seq={} after chain broken at seq={}",
-                        ev.seq,
-                        events[bi].seq
+                        ev.seq, events[bi].seq
                     ),
                 });
             }
@@ -558,7 +603,10 @@ mod tests {
         let mut log = SessionLog::new();
         append(&mut log, receipt()); // no AnalysisRun before
         let r = replay_session(&log);
-        let has_precedence = r.violations.iter().any(|v| v.constraint_name == "Precedence");
+        let has_precedence = r
+            .violations
+            .iter()
+            .any(|v| v.constraint_name == "Precedence");
         let has_a10 = r
             .oracle_hits
             .iter()
@@ -607,7 +655,10 @@ mod tests {
             .oracle_hits
             .iter()
             .any(|h| h.class == OracleClass::A11UnknownCollapse);
-        assert!(!has_a11, "A11 must not fire when ReceiptVerified evidence precedes transition");
+        assert!(
+            !has_a11,
+            "A11 must not fire when ReceiptVerified evidence precedes transition"
+        );
     }
 
     #[test]
@@ -635,7 +686,10 @@ mod tests {
             .oracle_hits
             .iter()
             .any(|h| h.class == OracleClass::A12CyclicDependency);
-        assert!(has_a12, "should detect A12 cyclic dependency after 5 blocked checks");
+        assert!(
+            has_a12,
+            "should detect A12 cyclic dependency after 5 blocked checks"
+        );
     }
 
     #[test]
@@ -653,7 +707,10 @@ mod tests {
             .oracle_hits
             .iter()
             .any(|h| h.class == OracleClass::A12CyclicDependency);
-        assert!(!has_a12, "A12 must not fire when run resets before threshold");
+        assert!(
+            !has_a12,
+            "A12 must not fire when run resets before threshold"
+        );
     }
 
     #[test]
@@ -680,7 +737,11 @@ mod tests {
             append(log, EventActivity::DocumentOpened);
             append(log, analysis_run());
         }
-        assert_eq!(a.digest(), b.digest(), "identical events must yield identical digest");
+        assert_eq!(
+            a.digest(),
+            b.digest(),
+            "identical events must yield identical digest"
+        );
     }
 
     #[test]
@@ -701,7 +762,10 @@ mod tests {
         append(&mut log, finding());
         append(&mut log, finding());
         let r = replay_session(&log);
-        assert!(r.fitness < 1.0, "fitness must degrade below 1.0 when violations exist");
+        assert!(
+            r.fitness < 1.0,
+            "fitness must degrade below 1.0 when violations exist"
+        );
         assert!(r.fitness >= 0.0, "fitness must not go negative");
     }
 }

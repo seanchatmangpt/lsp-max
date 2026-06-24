@@ -90,10 +90,8 @@ impl TaskService {
         };
         Ok(Self::load_all_tasks(&mesh)
             .into_iter()
-            .filter(|(iid, _)| instance_id.map_or(true, |f| iid == f))
-            .filter(|(_, t)| {
-                status_filter.map_or(true, |sf| Self::task_field(t, "status") == sf)
-            })
+            .filter(|(iid, _)| instance_id.is_none_or(|f| iid == f))
+            .filter(|(_, t)| status_filter.is_none_or(|sf| Self::task_field(t, "status") == sf))
             .map(|(iid, t)| TaskSummary {
                 task_id: Self::task_field(&t, "task_id").to_string(),
                 instance_id: iid,
@@ -372,7 +370,9 @@ mod tests {
         let path = tmp.path().to_str().unwrap().to_string();
         let prev = env::var("LSP_MAX_STATE_PATH").ok();
         // SAFETY: test-only, guarded by TEST_ENV_LOCK
-        unsafe { env::set_var("LSP_MAX_STATE_PATH", &path); }
+        unsafe {
+            env::set_var("LSP_MAX_STATE_PATH", &path);
+        }
         let _ = std::fs::remove_file(&path);
         f(path.clone());
         let _ = std::fs::remove_file(&path);
@@ -412,7 +412,10 @@ mod tests {
     #[test]
     fn list_all_tasks_and_filter_by_status() {
         isolated_state(|path| {
-            write_mesh_with_tasks(&path, vec![task_json("t1", "OPEN"), task_json("t2", "ADMITTED")]);
+            write_mesh_with_tasks(
+                &path,
+                vec![task_json("t1", "OPEN"), task_json("t2", "ADMITTED")],
+            );
             let svc = TaskService::new();
             assert_eq!(svc.list(None, None).unwrap().len(), 2);
             let open = svc.list(None, Some("OPEN")).unwrap();
@@ -458,7 +461,10 @@ mod tests {
         isolated_state(|path| {
             write_mesh_with_tasks(&path, vec![task_json("t-adm", "ADMITTED")]);
             let svc = TaskService::new();
-            assert!(svc.cancel("t-adm").unwrap_err().contains("TASK_NOT_CANCELLABLE"));
+            assert!(svc
+                .cancel("t-adm")
+                .unwrap_err()
+                .contains("TASK_NOT_CANCELLABLE"));
             assert!(svc.cancel("ghost").unwrap_err().contains("TASK_NOT_FOUND"));
         });
     }
@@ -468,7 +474,11 @@ mod tests {
         isolated_state(|path| {
             write_mesh_with_tasks(
                 &path,
-                vec![task_json("t1", "OPEN"), task_json("t2", "OPEN"), task_json("t3", "ADMITTED")],
+                vec![
+                    task_json("t1", "OPEN"),
+                    task_json("t2", "OPEN"),
+                    task_json("t3", "ADMITTED"),
+                ],
             );
             let data = TaskService::new().stats().unwrap();
             assert_eq!(data.total, 3);

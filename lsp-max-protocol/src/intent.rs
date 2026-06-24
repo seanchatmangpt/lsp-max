@@ -21,7 +21,10 @@ pub enum IntentKind {
     /// Agent intends to create a receipt artifact
     ReceiptGeneration { receipt_id: String },
     /// Custom intent for extension methods
-    Custom { kind: String, payload: serde_json::Value },
+    Custom {
+        kind: String,
+        payload: serde_json::Value,
+    },
 }
 
 /// Pre-flight validation outcome for a declared intent.

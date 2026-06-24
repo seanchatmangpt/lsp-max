@@ -99,6 +99,15 @@ impl EventLogEntry {
 // 2. Service Tier
 // ==============================================================================
 
+/// (total, by_type, by_instance, earliest_seq, latest_seq) returned by `stats`.
+type LogStatsData = (
+    usize,
+    HashMap<String, usize>,
+    HashMap<String, usize>,
+    Option<String>,
+    Option<String>,
+);
+
 pub struct LogsService {
     state_path: String,
 }
@@ -130,7 +139,6 @@ impl LogsService {
         event_type: Option<&str>,
     ) -> std::result::Result<(Vec<EventLogEntry>, usize), String> {
         let all = self.load_entries()?;
-        let total = all.len();
 
         let filtered: Vec<EventLogEntry> = all
             .into_iter()
@@ -180,18 +188,7 @@ impl LogsService {
         Ok(matches)
     }
 
-    pub fn stats(
-        &self,
-    ) -> std::result::Result<
-        (
-            usize,
-            HashMap<String, usize>,
-            HashMap<String, usize>,
-            Option<String>,
-            Option<String>,
-        ),
-        String,
-    > {
+    pub fn stats(&self) -> std::result::Result<LogStatsData, String> {
         let all = self.load_entries()?;
         let total = all.len();
         let mut by_type: HashMap<String, usize> = HashMap::new();
@@ -303,9 +300,7 @@ pub struct LogExportResult {
 #[verb("export")]
 pub fn export(format: Option<String>) -> Result<LogExportResult> {
     let svc = LogsService::new();
-    let entries = svc
-        .load_entries()
-        .map_err(NounVerbError::execution_error)?;
+    let entries = svc.load_entries().map_err(NounVerbError::execution_error)?;
     let entry_count = entries.len();
     let fmt = format.as_deref().unwrap_or("json");
 

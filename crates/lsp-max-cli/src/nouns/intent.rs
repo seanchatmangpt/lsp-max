@@ -109,7 +109,10 @@ impl IntentService {
         } else {
             "REFUSED".into()
         };
-        let mut intents = Self::load_intents().as_object().cloned().unwrap_or_default();
+        let mut intents = Self::load_intents()
+            .as_object()
+            .cloned()
+            .unwrap_or_default();
         intents.insert(
             id.to_string(),
             serde_json::json!({
@@ -122,7 +125,7 @@ impl IntentService {
             }),
         );
         Self::save_intents(serde_json::Value::Object(intents))
-            .map_err(|e| clap_noun_verb::error::NounVerbError::execution_error(e))?;
+            .map_err(clap_noun_verb::error::NounVerbError::execution_error)?;
         Ok(IntentDeclareOutput {
             intent_id: id.to_string(),
             outcome,
@@ -164,10 +167,13 @@ impl IntentService {
     }
 
     pub fn revoke(&self, id: &str) -> Result<IntentRevokeOutput> {
-        let mut intents = Self::load_intents().as_object().cloned().unwrap_or_default();
+        let mut intents = Self::load_intents()
+            .as_object()
+            .cloned()
+            .unwrap_or_default();
         intents.remove(id);
         Self::save_intents(serde_json::Value::Object(intents))
-            .map_err(|e| clap_noun_verb::error::NounVerbError::execution_error(e))?;
+            .map_err(clap_noun_verb::error::NounVerbError::execution_error)?;
         Ok(IntentRevokeOutput {
             intent_id: id.to_string(),
             status: "REVOKED".into(),
@@ -255,7 +261,7 @@ mod tests {
 
     #[test]
     fn declare_cleared_for_clean_target() {
-        let _guard = TEST_ENV_LOCK.lock().unwrap();
+        let _guard = TEST_ENV_LOCK.lock().unwrap_or_else(|p| p.into_inner());
         let tmp = tempfile::NamedTempFile::new().unwrap();
         let path = tmp.path().to_str().unwrap().to_string();
         std::env::set_var("LSP_MAX_STATE_PATH", &path);
@@ -274,7 +280,7 @@ mod tests {
 
     #[test]
     fn declare_blocked_for_tower_lsp_uri() {
-        let _guard = TEST_ENV_LOCK.lock().unwrap();
+        let _guard = TEST_ENV_LOCK.lock().unwrap_or_else(|p| p.into_inner());
         let tmp = tempfile::NamedTempFile::new().unwrap();
         let path = tmp.path().to_str().unwrap().to_string();
         std::env::set_var("LSP_MAX_STATE_PATH", &path);
@@ -292,7 +298,7 @@ mod tests {
 
     #[test]
     fn declare_blocked_for_no_verify_shell() {
-        let _guard = TEST_ENV_LOCK.lock().unwrap();
+        let _guard = TEST_ENV_LOCK.lock().unwrap_or_else(|p| p.into_inner());
         let tmp = tempfile::NamedTempFile::new().unwrap();
         let path = tmp.path().to_str().unwrap().to_string();
         std::env::set_var("LSP_MAX_STATE_PATH", &path);
@@ -314,7 +320,7 @@ mod tests {
 
     #[test]
     fn list_and_revoke_roundtrip() {
-        let _guard = TEST_ENV_LOCK.lock().unwrap();
+        let _guard = TEST_ENV_LOCK.lock().unwrap_or_else(|p| p.into_inner());
         let tmp = tempfile::NamedTempFile::new().unwrap();
         let path = tmp.path().to_str().unwrap().to_string();
         std::env::set_var("LSP_MAX_STATE_PATH", &path);
@@ -340,7 +346,7 @@ mod tests {
 
     #[test]
     fn check_returns_unknown_for_missing_intent() {
-        let _guard = TEST_ENV_LOCK.lock().unwrap();
+        let _guard = TEST_ENV_LOCK.lock().unwrap_or_else(|p| p.into_inner());
         let tmp = tempfile::NamedTempFile::new().unwrap();
         let path = tmp.path().to_str().unwrap().to_string();
         std::env::set_var("LSP_MAX_STATE_PATH", &path);

@@ -142,11 +142,19 @@ impl DoctorService {
                         status: "PARTIAL".to_string(),
                         detail: format!(
                             "active={active} pin={}",
-                            if pin_str.is_empty() { "(unreadable)" } else { pin_str }
+                            if pin_str.is_empty() {
+                                "(unreadable)"
+                            } else {
+                                pin_str
+                            }
                         ),
                         fix: format!(
                             "rustup toolchain install {}",
-                            if pin_str.is_empty() { "<channel>" } else { pin_str }
+                            if pin_str.is_empty() {
+                                "<channel>"
+                            } else {
+                                pin_str
+                            }
                         ),
                     }
                 }
@@ -257,9 +265,24 @@ mod tests {
     #[test]
     fn compute_overall_blocked_dominates() {
         let checks = vec![
-            DoctorCheck { id: "a".into(), status: "ADMITTED".into(), detail: String::new(), fix: String::new() },
-            DoctorCheck { id: "b".into(), status: "BLOCKED".into(), detail: String::new(), fix: String::new() },
-            DoctorCheck { id: "c".into(), status: "PARTIAL".into(), detail: String::new(), fix: String::new() },
+            DoctorCheck {
+                id: "a".into(),
+                status: "ADMITTED".into(),
+                detail: String::new(),
+                fix: String::new(),
+            },
+            DoctorCheck {
+                id: "b".into(),
+                status: "BLOCKED".into(),
+                detail: String::new(),
+                fix: String::new(),
+            },
+            DoctorCheck {
+                id: "c".into(),
+                status: "PARTIAL".into(),
+                detail: String::new(),
+                fix: String::new(),
+            },
         ];
         assert_eq!(compute_overall(&checks), "BLOCKED");
     }
@@ -267,17 +290,30 @@ mod tests {
     #[test]
     fn compute_overall_partial_demotes_admitted() {
         let checks = vec![
-            DoctorCheck { id: "a".into(), status: "ADMITTED".into(), detail: String::new(), fix: String::new() },
-            DoctorCheck { id: "b".into(), status: "PARTIAL".into(), detail: String::new(), fix: String::new() },
+            DoctorCheck {
+                id: "a".into(),
+                status: "ADMITTED".into(),
+                detail: String::new(),
+                fix: String::new(),
+            },
+            DoctorCheck {
+                id: "b".into(),
+                status: "PARTIAL".into(),
+                detail: String::new(),
+                fix: String::new(),
+            },
         ];
         assert_eq!(compute_overall(&checks), "PARTIAL");
     }
 
     #[test]
     fn compute_overall_all_admitted() {
-        let checks = vec![
-            DoctorCheck { id: "a".into(), status: "ADMITTED".into(), detail: String::new(), fix: String::new() },
-        ];
+        let checks = vec![DoctorCheck {
+            id: "a".into(),
+            status: "ADMITTED".into(),
+            detail: String::new(),
+            fix: String::new(),
+        }];
         assert_eq!(compute_overall(&checks), "ADMITTED");
     }
 

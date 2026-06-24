@@ -80,8 +80,7 @@ impl PackService {
                         .map(|e| {
                             e.flatten()
                                 .filter(|f| {
-                                    f.path().extension().and_then(|x| x.to_str())
-                                        == Some("tera")
+                                    f.path().extension().and_then(|x| x.to_str()) == Some("tera")
                                 })
                                 .count()
                         })
@@ -201,9 +200,8 @@ impl PackService {
 
     pub fn init(&self, name: &str, base: &str) -> Result<PackInitResult> {
         let pack_dir = Self::templates_root(base).join(name);
-        fs::create_dir_all(&pack_dir).map_err(|e| {
-            clap_noun_verb::error::NounVerbError::execution_error(e.to_string())
-        })?;
+        fs::create_dir_all(&pack_dir)
+            .map_err(|e| clap_noun_verb::error::NounVerbError::execution_error(e.to_string()))?;
 
         let pack_toml = format!(
             "[pack]\nname = \"{name}\"\nversion = \"0.1.0\"\ndescription = \"ggen template pack — CANDIDATE\"\n"
@@ -221,9 +219,7 @@ impl PackService {
                 &readme_path,
                 format!("# {name} ggen pack\n\nStatus: CANDIDATE\n"),
             )
-            .map_err(|e| {
-                clap_noun_verb::error::NounVerbError::execution_error(e.to_string())
-            })?;
+            .map_err(|e| clap_noun_verb::error::NounVerbError::execution_error(e.to_string()))?;
         }
 
         Ok(PackInitResult {

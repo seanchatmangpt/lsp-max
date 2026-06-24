@@ -44,10 +44,7 @@ impl lsp_max::LanguageServer for WasmLspBackend {
     }
 
     // CANDIDATE: hover — law:CANDIDATE in domain.ttl; receipt chain OPEN
-    async fn hover(
-        &self,
-        _params: HoverParams,
-    ) -> lsp_max::jsonrpc::Result<Option<Hover>> {
+    async fn hover(&self, _params: HoverParams) -> lsp_max::jsonrpc::Result<Option<Hover>> {
         Ok(Default::default())
     }
 

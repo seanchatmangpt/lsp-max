@@ -32,7 +32,7 @@ lsp-max = { path = "../.." }
 lsp-max-client = { path = "../../crates/lsp-max-client" }
 lsp-max-protocol = { path = "../../lsp-max-protocol" }
 lsp-max-runtime = { path = "../../lsp-max-runtime" }
-wasm4pm = { path = "../../../wasm4pm/wasm4pm" }
+wasm4pm = { path = "/home/user/wasm4pm/wasm4pm" }
 async-trait = "0.1"
 tokio = { version = "1", features = ["full"] }
 serde = { version = "1", features = ["derive"] }
@@ -41,10 +41,11 @@ toml = "0.8"
 tracing = "0.1"
 dashmap.workspace = true
 anyhow = "1"
+blake3 = "1"
 daachorse = "3.0.2"
 kanal = { version = "0.1", features = ["async"] }
 papaya = "0.2.4"
+uuid = { version = "1.0", features = ["v4"] }
 
 [dev-dependencies]
 criterion = { version = "0.5", features = ["html_reports"] }
-uuid = { version = "1.0", features = ["v4"] }

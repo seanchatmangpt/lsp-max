@@ -1,7 +1,7 @@
 use clap_noun_verb::error::NounVerbError;
 use clap_noun_verb::Result;
 use clap_noun_verb_macros::verb;
-use lsp_max_runtime::{AutonomicMesh, LspInstance, PolicyState};
+use lsp_max_runtime::{AutonomicMesh, PolicyState};
 use serde::Serialize;
 use std::collections::HashMap;
 
@@ -92,10 +92,7 @@ impl SwarmService {
     ///
     /// Each swarm role proposes a strategy; strategies are scored by projected
     /// conformance gain and confidence.  The highest-weighted vote wins.
-    pub fn consensus(
-        &self,
-        instance_id: &str,
-    ) -> std::result::Result<SwarmConsensus, String> {
+    pub fn consensus(&self, instance_id: &str) -> std::result::Result<SwarmConsensus, String> {
         let mesh = AutonomicMesh::load_from_file(&self.state_path).map_err(|e| e.to_string())?;
         let inst = mesh
             .instances
@@ -120,7 +117,9 @@ impl SwarmService {
             AgentVote {
                 role: format!("{:?}", SwarmRole::ProbeAgent),
                 strategy: "clear-error-diagnostics".to_string(),
-                projected_gain: (error_count as f64) * 10.0_f64.min(100.0 - current_score),
+                // Cap the aggregate gain at the remaining headroom (100 - score);
+                // method calls bind tighter than `*`, so the cap must wrap the product.
+                projected_gain: ((error_count as f64) * 10.0).min(100.0 - current_score),
                 confidence: 0.85,
             },
             AgentVote {
@@ -144,7 +143,7 @@ impl SwarmService {
                     "emit-repair-receipts"
                 }
                 .to_string(),
-                projected_gain: (warning_count as f64) * 5.0_f64.min(100.0 - current_score),
+                projected_gain: ((warning_count as f64) * 5.0).min(100.0 - current_score),
                 confidence: 0.60,
             },
         ];
@@ -175,7 +174,8 @@ impl SwarmService {
         target_score: f64,
         max_iterations: usize,
     ) -> std::result::Result<ConvergenceReport, String> {
-        let mut mesh = AutonomicMesh::load_from_file(&self.state_path).map_err(|e| e.to_string())?;
+        let mut mesh =
+            AutonomicMesh::load_from_file(&self.state_path).map_err(|e| e.to_string())?;
         let mut history = Vec::new();
 
         for iteration in 0..=max_iterations {
@@ -206,7 +206,8 @@ impl SwarmService {
             if below.is_empty() || iteration == max_iterations {
                 let admitted = scores.iter().filter(|&&s| s >= target_score).count();
                 let open = total.saturating_sub(admitted);
-                mesh.save_to_file(&self.state_path).map_err(|e| e.to_string())?;
+                mesh.save_to_file(&self.state_path)
+                    .map_err(|e| e.to_string())?;
                 return Ok(ConvergenceReport {
                     target_score,
                     iterations_run: iteration,
@@ -444,6 +445,23 @@ mod tests {
         assert!(svc.consensus("no-such").is_err());
     }
 
+    #[test]
+    fn projected_gain_never_exceeds_remaining_headroom() {
+        // ProbeAgent gain formula: the aggregate gain is capped at the remaining
+        // conformance headroom (100 - score). Under the previous operator
+        // precedence the cap bound only the per-error term, so the product could
+        // exceed the headroom (e.g. 20 errors → 200 at score 50). This asserts the
+        // corrected cap.
+        let gain = |errors: usize, score: f64| ((errors as f64) * 10.0).min(100.0 - score);
+        assert_eq!(
+            gain(20, 50.0),
+            50.0,
+            "200 raw gain must clamp to 50 headroom"
+        );
+        assert_eq!(gain(2, 50.0), 20.0, "below-headroom gain is uncapped");
+        assert_eq!(gain(99, 100.0), 0.0, "no headroom yields zero gain");
+    }
+
     // --- converge ---
 
     #[test]
@@ -466,8 +484,10 @@ mod tests {
 
     #[test]
     fn converge_fails_on_missing_state_file() {
+        // Route through a non-existent directory: load_from_file bootstraps when
+        // the parent dir is writable, so /tmp/<file> would return Ok, not Err.
         let svc = SwarmService {
-            state_path: "/tmp/nonexistent-swarm-test.json".to_string(),
+            state_path: "/tmp/no-such-dir-lsp-max/swarm-converge/state.json".to_string(),
         };
         assert!(svc.converge(80.0, 3).is_err());
     }
@@ -492,7 +512,7 @@ mod tests {
     #[test]
     fn emerge_fails_on_missing_state_file() {
         let svc = SwarmService {
-            state_path: "/tmp/nonexistent-swarm-emerge.json".to_string(),
+            state_path: "/tmp/no-such-dir-lsp-max/swarm-emerge/state.json".to_string(),
         };
         assert!(svc.emerge().is_err());
     }

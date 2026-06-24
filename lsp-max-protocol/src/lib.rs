@@ -13,11 +13,11 @@ pub mod custom_methods;
 pub mod diagnostics;
 pub mod explain;
 pub mod hooks;
+pub mod intent;
 pub mod phase;
 pub mod pipeline;
 pub mod policy;
 pub mod repair;
-pub mod intent;
 pub mod stream;
 
 // Re-export all types so they are visible at the crate root level exactly as before.
@@ -91,3 +91,4 @@ pub use stream::{
 // LspRequest is implemented for FoldingRangeRefreshRequest and
 // TextDocumentContentRefreshRequest directly in lsp_3_18.rs.
 // The impls are available via `lsp_3_18::LspRequest`.
+

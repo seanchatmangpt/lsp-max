@@ -232,13 +232,18 @@ pub struct HistoryRecordResult {
 }
 
 /// Append a new invocation record to the history file.
+/// `args_json` is an optional JSON array of strings, e.g. `'["--flag","value"]'`.
 #[verb("record")]
 pub fn record(
     noun: String,
     verb: String,
-    args: Vec<String>,
+    args_json: Option<String>,
     status: String,
 ) -> Result<HistoryRecordResult> {
+    let args: Vec<String> = args_json
+        .as_deref()
+        .and_then(|s| serde_json::from_str(s).ok())
+        .unwrap_or_default();
     let svc = HistoryService::new();
     let entry = svc
         .record(noun, verb, args, status)
