@@ -1,0 +1,128 @@
+@prefix rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl:  <http://www.w3.org/2002/07/owl#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+@prefix ag:   <https://lsp-max.rs/ontology/agent-layers#> .
+
+# ── Ontology declaration ──────────────────────────────────────────────────────
+ag:AgentLayersOntology a owl:Ontology ;
+    rdfs:label "Agent Layers Ontology" ;
+    rdfs:comment "Describes 5-layer Claude Code subagent hierarchies for ggen generation." .
+
+# ── Core classes ─────────────────────────────────────────────────────────────
+
+ag:AgentDefinition a owl:Class ;
+    rdfs:label "AgentDefinition" ;
+    rdfs:comment "A Claude Code subagent defined by YAML frontmatter + system prompt." .
+
+ag:AgentRole a owl:Class ;
+    rdfs:label "AgentRole" ;
+    rdfs:comment "The functional role of an agent within the hierarchy." .
+
+ag:ToolConstraint a owl:Class ;
+    rdfs:label "ToolConstraint" ;
+    rdfs:comment "A tool name or MCP pattern that an agent may use." .
+
+# ── Role individuals ─────────────────────────────────────────────────────────
+
+ag:Coordinator a ag:AgentRole ;
+    rdfs:label "coordinator" ;
+    rdfs:comment "Layer 1. Orchestrates the full hierarchy. Spawns specialists." .
+
+ag:Specialist a ag:AgentRole ;
+    rdfs:label "specialist" ;
+    rdfs:comment "Layer 2. Domain expert. Spawns analysts." .
+
+ag:Analyst a ag:AgentRole ;
+    rdfs:label "analyst" ;
+    rdfs:comment "Layer 3. Investigation and analysis. Spawns workers." .
+
+ag:Worker a ag:AgentRole ;
+    rdfs:label "worker" ;
+    rdfs:comment "Layer 4. Execution layer. Spawns leaves." .
+
+ag:Leaf a ag:AgentRole ;
+    rdfs:label "leaf" ;
+    rdfs:comment "Layer 5. Read-only terminal node. Cannot spawn." .
+
+# ── Properties ───────────────────────────────────────────────────────────────
+
+ag:layerDepth a owl:DatatypeProperty ;
+    rdfs:domain ag:AgentDefinition ;
+    rdfs:range  xsd:integer ;
+    rdfs:label  "layer depth (1–5)" .
+
+ag:agentName a owl:DatatypeProperty ;
+    rdfs:domain ag:AgentDefinition ;
+    rdfs:range  xsd:string ;
+    rdfs:label  "agent name (used as frontmatter name:)" .
+
+ag:agentDescription a owl:DatatypeProperty ;
+    rdfs:domain ag:AgentDefinition ;
+    rdfs:range  xsd:string ;
+    rdfs:label  "agent description (used for Claude dispatch)" .
+
+ag:agentModel a owl:DatatypeProperty ;
+    rdfs:domain ag:AgentDefinition ;
+    rdfs:range  xsd:string ;
+    rdfs:label  "model alias: sonnet | opus | haiku | fable | inherit" .
+
+ag:agentTools a owl:DatatypeProperty ;
+    rdfs:domain ag:AgentDefinition ;
+    rdfs:range  xsd:string ;
+    rdfs:label  "comma-separated tool allowlist" .
+
+ag:disallowedTools a owl:DatatypeProperty ;
+    rdfs:domain ag:AgentDefinition ;
+    rdfs:range  xsd:string ;
+    rdfs:label  "comma-separated tool denylist" .
+
+ag:permissionMode a owl:DatatypeProperty ;
+    rdfs:domain ag:AgentDefinition ;
+    rdfs:range  xsd:string ;
+    rdfs:label  "default | acceptEdits | auto | dontAsk | bypassPermissions | plan" .
+
+ag:agentColor a owl:DatatypeProperty ;
+    rdfs:domain ag:AgentDefinition ;
+    rdfs:range  xsd:string ;
+    rdfs:label  "display color: red|blue|green|yellow|purple|orange|pink|cyan" .
+
+ag:canSpawnType a owl:DatatypeProperty ;
+    rdfs:domain ag:AgentDefinition ;
+    rdfs:range  xsd:string ;
+    rdfs:label  "agent name(s) this agent is allowed to spawn via Agent(name)" .
+
+ag:maxTurns a owl:DatatypeProperty ;
+    rdfs:domain ag:AgentDefinition ;
+    rdfs:range  xsd:integer ;
+    rdfs:label  "maximum agentic turns" .
+
+ag:background a owl:DatatypeProperty ;
+    rdfs:domain ag:AgentDefinition ;
+    rdfs:range  xsd:boolean ;
+    rdfs:label  "always run as background task" .
+
+ag:memoryScope a owl:DatatypeProperty ;
+    rdfs:domain ag:AgentDefinition ;
+    rdfs:range  xsd:string ;
+    rdfs:label  "user | project | local" .
+
+ag:isolation a owl:DatatypeProperty ;
+    rdfs:domain ag:AgentDefinition ;
+    rdfs:range  xsd:string ;
+    rdfs:label  "worktree (isolated git worktree) or omit" .
+
+ag:hasRole a owl:ObjectProperty ;
+    rdfs:domain ag:AgentDefinition ;
+    rdfs:range  ag:AgentRole ;
+    rdfs:label  "role in the layer hierarchy" .
+
+ag:systemPrompt a owl:DatatypeProperty ;
+    rdfs:domain ag:AgentDefinition ;
+    rdfs:range  xsd:string ;
+    rdfs:label  "system prompt body (markdown after frontmatter)" .
+
+ag:lawStatus a owl:DatatypeProperty ;
+    rdfs:domain ag:AgentDefinition ;
+    rdfs:range  xsd:string ;
+    rdfs:label  "ADMITTED | CANDIDATE | BLOCKED | REFUSED | UNKNOWN" .

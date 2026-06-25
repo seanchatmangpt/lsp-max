@@ -3,6 +3,8 @@ name = "lsp-max"
 version = "26.6.24"
 
 [pack.outputs]
-queries   = "queries/lsp-max"
-templates = "templates/lsp-max"
-ontology  = "ontology"
+queries         = "queries/lsp-max"
+templates       = "templates/lsp-max"
+ontology        = "ontology"
+agent-queries   = "queries/agent-layers"
+agent-templates = "templates/agent-layers"
