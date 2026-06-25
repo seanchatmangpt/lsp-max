@@ -1,0 +1,17 @@
+PREFIX lsp: <https://lsp-max.rs/ontology/>
+PREFIX law: <https://lsp-max.rs/law/>
+PREFIX diag: <https://lsp-max.rs/diagnostic/>
+
+SELECT ?rule_code ?rule_name ?severity ?law_axis ?law_status ?message_template
+WHERE {
+    ?rule a diag:DiagnosticRule ;
+          diag:code ?rule_code ;
+          diag:name ?rule_name ;
+          diag:severity ?severity ;
+          law:axis ?law_axis ;
+          law:status ?status_iri ;
+          diag:messageTemplate ?message_template .
+    BIND(STRAFTER(STR(?status_iri), "https://lsp-max.rs/law/") AS ?law_status)
+    FILTER(?law_status IN ("CANDIDATE", "ADMITTED", "REFUSED"))
+}
+ORDER BY ?law_axis ?rule_code

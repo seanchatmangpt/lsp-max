@@ -1,0 +1,348 @@
+@prefix owl:  <http://www.w3.org/2002/07/owl#> .
+@prefix rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+@prefix lsp:  <https://lsp-max.rs/ontology/> .
+@prefix law:  <https://lsp-max.rs/law/> .
+@prefix lsif: <https://lsp-max.rs/ontology/lsif/> .
+
+# ── Ontology declaration ──────────────────────────────────────────────────────
+
+<https://lsp-max.rs/ontology/lsif/> a owl:Ontology ;
+    rdfs:label   "LSIF 0.6 Schema Ontology" ;
+    rdfs:comment "Language Server Index Format 0.6 schema vocabulary for semantic code indexing, symbol cross-referencing, and definition/reference tracking." ;
+    owl:imports  <https://lsp-max.rs/ontology/> ;
+    owl:versionInfo "0.6.0" .
+
+# ── Core LSIF Document Types ──────────────────────────────────────────────────
+
+lsif:Document a owl:Class ;
+    rdfs:label "Document" ;
+    rdfs:comment "A source code document indexed by LSIF." .
+
+lsif:Element a owl:Class ;
+    rdfs:label "Element" ;
+    rdfs:comment "Base class for all LSIF elements (vertices and edges)." .
+
+lsif:Vertex a owl:Class ;
+    rdfs:subClassOf lsif:Element ;
+    rdfs:label "Vertex" ;
+    rdfs:comment "A vertex in the LSIF graph (data element)." .
+
+lsif:Edge a owl:Class ;
+    rdfs:subClassOf lsif:Element ;
+    rdfs:label "Edge" ;
+    rdfs:comment "An edge in the LSIF graph (relationship between vertices)." .
+
+# ── Vertex Types ─────────────────────────────────────────────────────────────
+
+lsif:Range a owl:Class ;
+    rdfs:subClassOf lsif:Vertex ;
+    rdfs:label "Range" ;
+    rdfs:comment "A source code range (line, character positions)." .
+
+lsif:Location a owl:Class ;
+    rdfs:subClassOf lsif:Vertex ;
+    rdfs:label "Location" ;
+    rdfs:comment "A location within a document." .
+
+lsif:DocumentSymbol a owl:Class ;
+    rdfs:subClassOf lsif:Vertex ;
+    rdfs:label "DocumentSymbol" ;
+    rdfs:comment "A symbol declaration or definition in a document." .
+
+lsif:DefinitionResult a owl:Class ;
+    rdfs:subClassOf lsif:Vertex ;
+    rdfs:label "DefinitionResult" ;
+    rdfs:comment "Result of a definition query." .
+
+lsif:ReferenceResult a owl:Class ;
+    rdfs:subClassOf lsif:Vertex ;
+    rdfs:label "ReferenceResult" ;
+    rdfs:comment "Result of a reference query." .
+
+lsif:HoverResult a owl:Class ;
+    rdfs:subClassOf lsif:Vertex ;
+    rdfs:label "HoverResult" ;
+    rdfs:comment "Result of a hover query." .
+
+lsif:DocumentLink a owl:Class ;
+    rdfs:subClassOf lsif:Vertex ;
+    rdfs:label "DocumentLink" ;
+    rdfs:comment "A hyperlink within a document." .
+
+lsif:DiagnosticResult a owl:Class ;
+    rdfs:subClassOf lsif:Vertex ;
+    rdfs:label "DiagnosticResult" ;
+    rdfs:comment "Diagnostic information for a document." .
+
+lsif:Implementation a owl:Class ;
+    rdfs:subClassOf lsif:Vertex ;
+    rdfs:label "Implementation" ;
+    rdfs:comment "An implementation of a symbol (e.g., concrete impl, overrides)." .
+
+lsif:TypeDefinition a owl:Class ;
+    rdfs:subClassOf lsif:Vertex ;
+    rdfs:label "TypeDefinition" ;
+    rdfs:comment "The type definition associated with a symbol." .
+
+# ── Edge Types ────────────────────────────────────────────────────────────────
+
+lsif:contains a owl:Class ;
+    rdfs:subClassOf lsif:Edge ;
+    rdfs:label "contains" ;
+    rdfs:comment "Document contains Range vertices." .
+
+lsif:next a owl:Class ;
+    rdfs:subClassOf lsif:Edge ;
+    rdfs:label "next" ;
+    rdfs:comment "Chaining edge for storing multiple results (e.g., all references)." .
+
+lsif:definition a owl:Class ;
+    rdfs:subClassOf lsif:Edge ;
+    rdfs:label "definition" ;
+    rdfs:comment "Range points to its definition." .
+
+lsif:references a owl:Class ;
+    rdfs:subClassOf lsif:Edge ;
+    rdfs:label "references" ;
+    rdfs:comment "Range has references via ReferenceResult." .
+
+lsif:hover a owl:Class ;
+    rdfs:subClassOf lsif:Edge ;
+    rdfs:label "hover" ;
+    rdfs:comment "Range has hover information." .
+
+lsif:diagnostic a owl:Class ;
+    rdfs:subClassOf lsif:Edge ;
+    rdfs:label "diagnostic" ;
+    rdfs:comment "Document has diagnostic results." .
+
+lsif:documentLink a owl:Class ;
+    rdfs:subClassOf lsif:Edge ;
+    rdfs:label "documentLink" ;
+    rdfs:comment "Document contains document links." .
+
+lsif:implementation a owl:Class ;
+    rdfs:subClassOf lsif:Edge ;
+    rdfs:label "implementation" ;
+    rdfs:comment "Range has implementation references." .
+
+lsif:typeDefinition a owl:Class ;
+    rdfs:subClassOf lsif:Edge ;
+    rdfs:label "typeDefinition" ;
+    rdfs:comment "Range has a type definition." .
+
+# ── Properties ────────────────────────────────────────────────────────────────
+
+lsif:id a owl:DatatypeProperty ;
+    rdfs:label "id" ;
+    rdfs:comment "Unique identifier for an LSIF element." ;
+    rdfs:range xsd:string .
+
+lsif:uri a owl:DatatypeProperty ;
+    rdfs:label "uri" ;
+    rdfs:comment "Document URI." ;
+    rdfs:range xsd:string .
+
+lsif:languageId a owl:DatatypeProperty ;
+    rdfs:label "languageId" ;
+    rdfs:comment "Language identifier (e.g., 'rust', 'java', 'typescript')." ;
+    rdfs:range xsd:string .
+
+lsif:start a owl:DatatypeProperty ;
+    rdfs:label "start" ;
+    rdfs:comment "Starting position (line and character)." ;
+    rdfs:range xsd:string .
+
+lsif:end a owl:DatatypeProperty ;
+    rdfs:label "end" ;
+    rdfs:comment "Ending position (line and character)." ;
+    rdfs:range xsd:string .
+
+lsif:contents a owl:DatatypeProperty ;
+    rdfs:label "contents" ;
+    rdfs:comment "Hover or documentation contents." ;
+    rdfs:range xsd:string .
+
+lsif:kind a owl:DatatypeProperty ;
+    rdfs:label "kind" ;
+    rdfs:comment "Kind of symbol (e.g., 'Class', 'Method', 'Variable')." ;
+    rdfs:range xsd:string .
+
+lsif:detail a owl:DatatypeProperty ;
+    rdfs:label "detail" ;
+    rdfs:comment "Additional detail about a symbol." ;
+    rdfs:range xsd:string .
+
+lsif:deprecated a owl:DatatypeProperty ;
+    rdfs:label "deprecated" ;
+    rdfs:comment "Whether the symbol is deprecated." ;
+    rdfs:range xsd:boolean .
+
+lsif:outV a owl:ObjectProperty ;
+    rdfs:label "outV" ;
+    rdfs:domain lsif:Edge ;
+    rdfs:comment "Source vertex of an edge." .
+
+lsif:inV a owl:ObjectProperty ;
+    rdfs:label "inV" ;
+    rdfs:domain lsif:Edge ;
+    rdfs:comment "Target vertex of an edge." .
+
+lsif:outVs a owl:ObjectProperty ;
+    rdfs:label "outVs" ;
+    rdfs:domain lsif:Edge ;
+    rdfs:comment "Multiple source vertices (for multi-vertex edges)." .
+
+lsif:inVs a owl:ObjectProperty ;
+    rdfs:label "inVs" ;
+    rdfs:domain lsif:Edge ;
+    rdfs:comment "Multiple target vertices (for multi-vertex edges)." .
+
+lsif:fromRanges a owl:ObjectProperty ;
+    rdfs:label "fromRanges" ;
+    rdfs:comment "Reference source ranges." .
+
+lsif:toRanges a owl:ObjectProperty ;
+    rdfs:label "toRanges" ;
+    rdfs:comment "Reference target ranges." .
+
+lsif:symbol a owl:DatatypeProperty ;
+    rdfs:label "symbol" ;
+    rdfs:comment "Fully qualified symbol name." ;
+    rdfs:range xsd:string .
+
+lsif:signature a owl:DatatypeProperty ;
+    rdfs:label "signature" ;
+    rdfs:comment "Symbol signature (e.g., method signature)." ;
+    rdfs:range xsd:string .
+
+# ── Query Types ───────────────────────────────────────────────────────────────
+
+lsif:Query a owl:Class ;
+    rdfs:label "Query" ;
+    rdfs:comment "LSIF-supported query type." .
+
+lsif:query_definition a lsif:Query ;
+    rdfs:label "definition query" ;
+    rdfs:comment "Go-to-definition query." .
+
+lsif:query_references a lsif:Query ;
+    rdfs:label "references query" ;
+    rdfs:comment "Find-references query." .
+
+lsif:query_hover a lsif:Query ;
+    rdfs:label "hover query" ;
+    rdfs:comment "Hover information query." .
+
+lsif:query_documentSymbol a lsif:Query ;
+    rdfs:label "documentSymbol query" ;
+    rdfs:comment "Document symbols query." .
+
+lsif:query_workspaceSymbol a lsif:Query ;
+    rdfs:label "workspaceSymbol query" ;
+    rdfs:comment "Workspace symbols query." .
+
+lsif:query_typeDefinition a lsif:Query ;
+    rdfs:label "typeDefinition query" ;
+    rdfs:comment "Type definition query." .
+
+lsif:query_implementation a lsif:Query ;
+    rdfs:label "implementation query" ;
+    rdfs:comment "Implementation references query." .
+
+# ── Moniker Types ─────────────────────────────────────────────────────────────
+
+lsif:Moniker a owl:Class ;
+    rdfs:subClassOf lsif:Vertex ;
+    rdfs:label "Moniker" ;
+    rdfs:comment "A qualified name (moniker) that can be used for cross-repository references." .
+
+lsif:monikerKind a owl:DatatypeProperty ;
+    rdfs:label "monikerKind" ;
+    rdfs:comment "Moniker kind: 'import' or 'export'." ;
+    rdfs:range xsd:string .
+
+lsif:identifier a owl:DatatypeProperty ;
+    rdfs:label "identifier" ;
+    rdfs:comment "The actual moniker identifier." ;
+    rdfs:range xsd:string .
+
+lsif:packageInformation a owl:Class ;
+    rdfs:subClassOf lsif:Vertex ;
+    rdfs:label "PackageInformation" ;
+    rdfs:comment "Package or project metadata." .
+
+lsif:name a owl:DatatypeProperty ;
+    rdfs:label "name" ;
+    rdfs:comment "Package or symbol name." ;
+    rdfs:range xsd:string .
+
+lsif:version a owl:DatatypeProperty ;
+    rdfs:label "version" ;
+    rdfs:comment "Package version." ;
+    rdfs:range xsd:string .
+
+lsif:moniker a owl:Class ;
+    rdfs:subClassOf lsif:Edge ;
+    rdfs:label "moniker" ;
+    rdfs:comment "Relates a Range to its Moniker." .
+
+lsif:monikerEdges a owl:Class ;
+    rdfs:subClassOf lsif:Edge ;
+    rdfs:label "monikerEdges" ;
+    rdfs:comment "Links monikers for cross-repository reference." .
+
+# ── Index Information ─────────────────────────────────────────────────────────
+
+lsif:IndexInformation a owl:Class ;
+    rdfs:subClassOf lsif:Vertex ;
+    rdfs:label "IndexInformation" ;
+    rdfs:comment "Metadata about an LSIF index." .
+
+lsif:projectRoot a owl:DatatypeProperty ;
+    rdfs:label "projectRoot" ;
+    rdfs:comment "Root directory of the indexed project." ;
+    rdfs:range xsd:string .
+
+lsif:indexedLanguages a owl:DatatypeProperty ;
+    rdfs:label "indexedLanguages" ;
+    rdfs:comment "Languages indexed in this LSIF file." ;
+    rdfs:range xsd:string .
+
+lsif:toolInfo a owl:DatatypeProperty ;
+    rdfs:label "toolInfo" ;
+    rdfs:comment "Information about the indexing tool." ;
+    rdfs:range xsd:string .
+
+lsif:toolVersion a owl:DatatypeProperty ;
+    rdfs:label "toolVersion" ;
+    rdfs:comment "Version of the indexing tool." ;
+    rdfs:range xsd:string .
+
+# ── Compliance ────────────────────────────────────────────────────────────────
+
+lsif:lsif06_supported a lsp:MaxExtension ;
+    lsp:methodName "lsif/export" ;
+    lsp:snakeName  "lsif_export" ;
+    lsp:paramType  "LsifExportParams" ;
+    lsp:returnType "LsifIndex" ;
+    rdfs:comment   "Export workspace or symbol index in LSIF 0.6 format." ;
+    law:status     law:CANDIDATE .
+
+lsif:lsif06_import a lsp:MaxExtension ;
+    lsp:methodName "lsif/import" ;
+    lsp:snakeName  "lsif_import" ;
+    lsp:paramType  "LsifImportParams" ;
+    lsp:returnType "LsifImportResult" ;
+    rdfs:comment   "Load and parse an LSIF 0.6 index file." ;
+    law:status     law:CANDIDATE .
+
+lsif:lsif06_query a lsp:MaxExtension ;
+    lsp:methodName "lsif/query" ;
+    lsp:snakeName  "lsif_query" ;
+    lsp:paramType  "LsifQueryParams" ;
+    lsp:returnType "LsifQueryResult" ;
+    rdfs:comment   "Query an indexed LSIF database." ;
+    law:status     law:CANDIDATE .

@@ -1,0 +1,16 @@
+PREFIX lsp: <https://lsp-max.rs/ontology/>
+PREFIX law: <https://lsp-max.rs/law/>
+PREFIX config: <https://lsp-max.rs/config/>
+
+SELECT ?surface_name ?config_uri ?requires_restart ?law_status ?description
+WHERE {
+    ?surface a config:ConfigurationSurface ;
+             config:name ?surface_name ;
+             config:uri ?config_uri ;
+             config:requiresRestart ?requires_restart ;
+             law:status ?status_iri ;
+             config:description ?description .
+    BIND(STRAFTER(STR(?status_iri), "https://lsp-max.rs/law/") AS ?law_status)
+    FILTER(?law_status IN ("CANDIDATE", "ADMITTED", "REFUSED"))
+}
+ORDER BY ?law_status ?surface_name

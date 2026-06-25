@@ -1,0 +1,19 @@
+PREFIX lsp: <https://lsp-max.rs/ontology/>
+PREFIX law: <https://lsp-max.rs/law/>
+PREFIX declare: <https://lsp-max.rs/declare/>
+
+SELECT ?constraint_type ?antecedent ?consequent ?law_status ?description ?violation_count
+WHERE {
+    ?constraint a declare:DeclareConstraint ;
+                declare:type ?constraint_type ;
+                declare:antecedent ?antecedent ;
+                declare:consequent ?consequent ;
+                law:status ?status_iri ;
+                declare:description ?description .
+    OPTIONAL {
+        ?constraint declare:violationCount ?violation_count .
+    }
+    BIND(STRAFTER(STR(?status_iri), "https://lsp-max.rs/law/") AS ?law_status)
+    FILTER(?law_status IN ("CANDIDATE", "ADMITTED", "REFUSED"))
+}
+ORDER BY ?law_status ?constraint_type

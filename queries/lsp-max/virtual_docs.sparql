@@ -1,0 +1,17 @@
+PREFIX lsp: <https://lsp-max.rs/ontology/>
+PREFIX law: <https://lsp-max.rs/law/>
+PREFIX vdoc: <https://lsp-max.rs/virtual-doc/>
+
+SELECT ?doc_uri ?doc_type ?content_format ?refresh_strategy ?law_status ?description
+WHERE {
+    ?doc a vdoc:VirtualDocument ;
+         vdoc:uri ?doc_uri ;
+         vdoc:type ?doc_type ;
+         vdoc:contentFormat ?content_format ;
+         vdoc:refreshStrategy ?refresh_strategy ;
+         law:status ?status_iri ;
+         vdoc:description ?description .
+    BIND(STRAFTER(STR(?status_iri), "https://lsp-max.rs/law/") AS ?law_status)
+    FILTER(?law_status IN ("CANDIDATE", "ADMITTED", "REFUSED"))
+}
+ORDER BY ?law_status ?doc_type ?doc_uri
