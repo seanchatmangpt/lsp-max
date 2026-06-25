@@ -1,6 +1,7 @@
 ---
 name: anti-llm-cheat-lsp
 description: Law-enforcement diagnostics agent for detecting forbidden patterns in Rust source. Scoped to anti-llm-cheat-lsp child server — detects plain tower-lsp references, fake receipts, victory language, version violations, fake routes, GGEN violations. Use when reviewing code changes for law compliance. Do NOT use for hover/completion — DiagnosticsOnly tier.
+model: claude-sonnet-4-6
 tools:
   - Read
   - Grep

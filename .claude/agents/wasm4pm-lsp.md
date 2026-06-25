@@ -1,6 +1,7 @@
 ---
 name: wasm4pm-lsp
 description: Process mining diagnostics agent for .ocel.json and .rs files. Scoped to wasm4pm-lsp child server — runs diagnostics, reports WASM4PM-* findings, emits OCEL events. Use when working on process-mining conformance, breed fitness, or OCEL accumulation. Do NOT use for hover/completion — DiagnosticsOnly tier.
+model: claude-sonnet-4-6
 tools:
   - Read
   - Grep
