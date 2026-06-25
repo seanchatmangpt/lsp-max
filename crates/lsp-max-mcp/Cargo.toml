@@ -10,5 +10,6 @@ path = "src/main.rs"
 
 [dependencies]
 lsp-max-compositor-routing = { path = "../lsp-max-compositor-routing" }
+lsp-max-protocol = { path = "../../lsp-max-protocol" }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"

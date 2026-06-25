@@ -64,7 +64,6 @@ tracing-subscriber = "0.3"
 tokio = { version = "1", features = ["io-util", "io-std", "macros", "rt-multi-thread", "time"] }
 tokio-util = { version = "0.7", features = ["compat"] }
 ws_stream_tungstenite = { version = "0.15", features = ["tokio_io"] }
-lsp-max-playground = { path = "crates/playground" }
 tempfile = "3"
 ropey = "1"
 oxigraph = { version = "0.5.8", default-features = false, features = ["rdf-12"] }
