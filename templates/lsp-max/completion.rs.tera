@@ -22,6 +22,7 @@ pub async fn {{ snake_method }}(params: CompletionParams) -> Result<Option<Compl
     Ok(Some(CompletionResponse::List(CompletionList {
         is_incomplete: false,
         items: completions,
+        ..Default::default()
     })))
 {% else %}
     // CANDIDATE — stub returns empty completion list
@@ -29,6 +30,7 @@ pub async fn {{ snake_method }}(params: CompletionParams) -> Result<Option<Compl
     Ok(Some(CompletionResponse::List(CompletionList {
         is_incomplete: false,
         items: vec![],
+        ..Default::default()
     })))
 {% endif %}
 }
