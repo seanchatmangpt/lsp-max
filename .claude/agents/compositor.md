@@ -1,6 +1,7 @@
 ---
 name: compositor
 description: Orchestrating fan-out agent that mirrors the lsp-max-compositor pattern. Spawns per-server subagents in parallel, collects diagnostic receipts, merges results via ConformanceVector-aware dedup. Use when a request must be fanned out to all LSP servers simultaneously (e.g., workspace-wide diagnostic sweep, capability audit). Requires lsp-max-mcp to be running.
+model: claude-sonnet-4-6
 tools:
   - Read
   - Grep

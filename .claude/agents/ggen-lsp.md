@@ -1,6 +1,7 @@
 ---
 name: ggen-lsp
 description: Primary-tier LSP agent for .ttl, .rq, and .tera files. Scoped to ggen-lsp child server — provides hover, completion, definition, and diagnostics for RDF/SPARQL/Tera templates. Use when working on ontology files, SPARQL queries, or Tera code generation templates. Full Primary tier — supports hover and completion requests.
+model: claude-sonnet-4-6
 tools:
   - Read
   - Grep
