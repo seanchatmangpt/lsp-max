@@ -6,19 +6,32 @@ use lsp_max_protocol::ConformanceVector;
 
 pub fn conformance_vector() -> ConformanceVector {
     ConformanceVector {
+{% set grouped = results | group_by(attribute='law_status') %}
         admitted: vec![
-{% for m in admitted %}
-            "{{ m }}",
+{% for group in grouped %}
+{% if group.name == "ADMITTED" %}
+{% for m in group.items %}
+            "{{ m.method_name }}",
+{% endfor %}
+{% endif %}
 {% endfor %}
         ],
         refused: vec![
-{% for m in refused %}
-            "{{ m }}",
+{% for group in grouped %}
+{% if group.name == "REFUSED" %}
+{% for m in group.items %}
+            "{{ m.method_name }}",
+{% endfor %}
+{% endif %}
 {% endfor %}
         ],
         unknown: vec![
-{% for m in unknown %}
-            "{{ m }}",
+{% for group in grouped %}
+{% if group.name == "UNKNOWN" %}
+{% for m in group.items %}
+            "{{ m.method_name }}",
+{% endfor %}
+{% endif %}
 {% endfor %}
         ],
         ..Default::default()

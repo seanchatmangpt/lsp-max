@@ -10,6 +10,7 @@
 
 use lsp_max_compositor::declare::{DeclareModel, DeclareTemplate, DeclareConstraint, ActivityName};
 use lsp_max_compositor::declare::{Support, Confidence};
+use std::str::FromStr;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helper Functions
@@ -36,27 +37,27 @@ fn constraint(template: DeclareTemplate, activities: Vec<ActivityName>) -> Decla
 // Factory Methods
 // ─────────────────────────────────────────────────────────────────────────────
 
-{% if models %}
-{% for model in models %}
-/// Declare model: {{ model.name }}
+{% if results %}
+/// Declare model: Provisioned Constraints
 ///
-/// Constraint set: {{ model.constraints | length }} constraint(s)
+/// Constraint set: {{ results | length }} constraint(s)
 ///
-/// Normative activities:
-{% for activity in model.activities %}
-///  - {{ activity }}
+/// Normative activities extracted from constraint antecedents and consequents.
+/// Law status distribution by conformance status.
+///
+/// Law statuses:
+{% for row in results %}
+///  - {{ row.constraint_type }}: {{ row.law_status }}
 {% endfor %}
 ///
-/// Law status: {{ model.law_status }}
-pub fn {{ model.function_name }}() -> DeclareModel {
+pub fn declare_model() -> DeclareModel {
     let constraints = vec![
-{% for c in model.constraints %}
+{% for row in results %}
         constraint(
-            DeclareTemplate::{{ c.template }},
+            DeclareTemplate::{{ row.constraint_type }},
             vec![
-{% for activity in c.activities %}
-                act("{{ activity }}"),
-{% endfor %}
+                act("{{ row.antecedent }}"),
+                act("{{ row.consequent }}"),
             ],
         ),
 {% endfor %}
@@ -67,12 +68,11 @@ pub fn {{ model.function_name }}() -> DeclareModel {
         .flat_map(|c| c.activities.iter().cloned())
         .collect();
 
-    DeclareModel::new("{{ model.name }}", activities, constraints)
+    DeclareModel::new("provisioned_constraints", activities, constraints)
 }
 
-{% endfor %}
 {% else %}
-// No models generated. Add constraint definitions to schema/domain.ttl
+// No constraints generated. Add constraint definitions to schema/domain.ttl
 // then run `ggen sync` to populate this module.
 {% endif %}
 
@@ -84,22 +84,25 @@ pub fn {{ model.function_name }}() -> DeclareModel {
 mod tests {
     use super::*;
 
-{% if models %}
-{% for model in models %}
+{% if results %}
     #[test]
-    fn test_{{ model.function_name }}_loads() {
-        let model = {{ model.function_name }}();
-        assert_eq!(model.name, "{{ model.name }}");
+    fn test_declare_model_loads() {
+        let model = declare_model();
+        assert_eq!(model.name, "provisioned_constraints");
         assert!(!model.constraints.is_empty(), "model must have at least one constraint");
         // Verify activities extracted from constraints
         assert!(!model.activities.is_empty(), "model must define at least one activity");
     }
 
-{% endfor %}
+    #[test]
+    fn test_constraint_count() {
+        let model = declare_model();
+        assert_eq!(model.constraints.len(), {{ results | length }}, "expected {{ results | length }} constraint(s)");
+    }
 {% else %}
     #[test]
-    fn test_no_models_generated() {
-        // Placeholder: models will be populated by ggen sync
+    fn test_no_constraints_generated() {
+        // Placeholder: constraints will be populated by ggen sync
     }
 {% endif %}
 }

@@ -6,13 +6,19 @@ use lsp_types_max::*;
 
 pub fn server_capabilities() -> ServerCapabilities {
     ServerCapabilities {
-{% for cap in admitted_capabilities %}
+{% set grouped = results | group_by(attribute='law_status') %}
+{% for group in grouped %}
+{% if group.name == "ADMITTED" %}
+{% for cap in group.items %}
         // ADMITTED
-        {{ cap.field }}: Some({{ cap.value }}),
+        {{ cap.capability_field }}: Some(/* TODO: constructor from method_name */),
 {% endfor %}
-{% for cap in candidate_capabilities %}
+{% elif group.name == "CANDIDATE" %}
+{% for cap in group.items %}
         // CANDIDATE — receipt OPEN
-        {{ cap.field }}: Some({{ cap.value }}),
+        {{ cap.capability_field }}: Some(/* TODO: constructor from method_name */),
+{% endfor %}
+{% endif %}
 {% endfor %}
         ..Default::default()
     }
