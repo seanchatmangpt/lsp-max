@@ -1,0 +1,39 @@
+PREFIX ag:   <https://lsp-max.rs/ontology/agent-layers#>
+PREFIX xsd:  <http://www.w3.org/2001/XMLSchema#>
+
+SELECT
+    ?agent_name
+    ?agent_description
+    ?layer_depth
+    ?agent_model
+    ?agent_tools
+    ?disallowed_tools
+    ?permission_mode
+    ?agent_color
+    ?can_spawn_type
+    ?max_turns
+    ?background
+    ?memory_scope
+    ?isolation
+    ?system_prompt
+    ?law_status
+WHERE {
+    ?agent a ag:AgentDefinition ;
+        ag:agentName        ?agent_name ;
+        ag:agentDescription ?agent_description ;
+        ag:layerDepth       ?layer_depth ;
+        ag:agentModel       ?agent_model .
+
+    OPTIONAL { ?agent ag:agentTools      ?agent_tools }
+    OPTIONAL { ?agent ag:disallowedTools ?disallowed_tools }
+    OPTIONAL { ?agent ag:permissionMode  ?permission_mode }
+    OPTIONAL { ?agent ag:agentColor      ?agent_color }
+    OPTIONAL { ?agent ag:canSpawnType    ?can_spawn_type }
+    OPTIONAL { ?agent ag:maxTurns        ?max_turns }
+    OPTIONAL { ?agent ag:background      ?background }
+    OPTIONAL { ?agent ag:memoryScope     ?memory_scope }
+    OPTIONAL { ?agent ag:isolation       ?isolation }
+    OPTIONAL { ?agent ag:systemPrompt    ?system_prompt }
+    OPTIONAL { ?agent ag:lawStatus       ?law_status }
+}
+ORDER BY ?layer_depth ?agent_name

@@ -1,0 +1,23 @@
+PREFIX ag:   <https://lsp-max.rs/ontology/agent-layers#>
+PREFIX xsd:  <http://www.w3.org/2001/XMLSchema#>
+
+# Projects the spawn-tree edges for validation:
+# each (parent, child) pair at adjacent depths.
+SELECT
+    ?parent_name
+    ?parent_depth
+    ?child_name
+    ?child_depth
+WHERE {
+    ?parent a ag:AgentDefinition ;
+        ag:agentName    ?parent_name ;
+        ag:layerDepth   ?parent_depth ;
+        ag:canSpawnType ?child_name .
+
+    ?child a ag:AgentDefinition ;
+        ag:agentName  ?child_name ;
+        ag:layerDepth ?child_depth .
+
+    FILTER(?child_depth = ?parent_depth + 1)
+}
+ORDER BY ?parent_depth ?parent_name ?child_name
