@@ -38,9 +38,9 @@ impl lsp_max::LanguageServer for {{ server_name }}Backend {
         Ok(())
     }
 
-{% for method in methods %}
-    // {{ method.law_status }}: {{ method.method_name }}
-{% if method.law_status == "ADMITTED" %}
+{% for row in results %}
+    // {{ row.law_status }}: {{ row.method_name }}
+{% if row.law_status == "ADMITTED" %}
     // ADMITTED — receipt attached in domain.ttl
 {% else %}
     // CANDIDATE — transcript required for ADMITTED
