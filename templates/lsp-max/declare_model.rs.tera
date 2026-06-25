@@ -43,11 +43,11 @@ fn constraint(template: DeclareTemplate, activities: Vec<ActivityName>) -> Decla
 /// Constraint set: {{ results | length }} constraint(s)
 ///
 /// Normative activities extracted from constraint antecedents and consequents.
-/// Law status distribution by conformance status.
+/// Constraints generated from domain ontology.
 ///
-/// Law statuses:
+/// Constraint types:
 {% for row in results %}
-///  - {{ row.constraint_type }}: {{ row.law_status }}
+///  - {{ row.constraint_type }}
 {% endfor %}
 ///
 pub fn declare_model() -> DeclareModel {
