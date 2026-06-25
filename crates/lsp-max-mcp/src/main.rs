@@ -91,6 +91,26 @@ fn tool_list() -> Value {
                     "properties": {},
                     "required": []
                 }
+            },
+            {
+                "name": "lsp_violations",
+                "description": "Return the full Declare constraint violation list from the last flush cycle. Use after lsp_route shows law_status != ADMITTED to identify exactly which constraints were violated.",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {},
+                    "required": []
+                }
+            },
+            {
+                "name": "lsp_repair_plan",
+                "description": "Given a Declare constraint string (from lsp_violations), return an ordered repair plan with bounded status and clap-noun-verb actuation hints.",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "constraint": { "type": "string", "description": "The constraint string from a lsp_violations entry, e.g. 'response(CompositorFlush, CompositorFlushAdmitted)'" }
+                    },
+                    "required": ["constraint"]
+                }
             }
         ]
     })
@@ -135,11 +155,19 @@ fn handle_lsp_route(uri: &str, method: &str) -> Value {
         "tier": format!("{:?}", s.tier),
         "extensions": s.extensions
     })).collect();
+    let fitness = read_fitness_status();
+    let law_status = if servers.is_empty() {
+        json!("UNROUTABLE")
+    } else {
+        fitness["law_status"].clone()
+    };
     json!({
         "uri": uri,
         "method": method,
         "strategy": strategy_str,
-        "servers": results
+        "servers": results,
+        "law_status": law_status,
+        "fitness_snapshot": fitness
     })
 }
 
@@ -183,6 +211,54 @@ fn handle_lsp_reload_config() -> Value {
             json!({ "status": "CANDIDATE", "server_count": servers.len(), "servers": servers })
         }
     }
+}
+
+fn handle_lsp_violations() -> Value {
+    let fitness = read_fitness_status();
+    let violations = fitness.get("violations").cloned().unwrap_or_else(|| json!([]));
+    let count = violations.as_array().map(|a| a.len()).unwrap_or(0);
+    json!({
+        "law_status": fitness["law_status"],
+        "declare_violations": count,
+        "violations": violations
+    })
+}
+
+fn constraint_to_diag_id(constraint: &str) -> &'static str {
+    if constraint.contains("CompositorFlush") || constraint.contains("AndonCodePresent") {
+        "WASM4PM-ANDON"
+    } else if constraint.contains("GGEN") {
+        "GGEN-GATE"
+    } else {
+        "UNKNOWN"
+    }
+}
+
+fn handle_lsp_repair_plan(constraint: &str) -> Value {
+    use lsp_max_protocol::repair::repair_plan_for;
+    let diag_id = constraint_to_diag_id(constraint);
+    let plan = repair_plan_for(diag_id);
+    json!({
+        "constraint": constraint,
+        "diagnostic_id": diag_id,
+        "status": plan.status,
+        "summary": plan.summary,
+        "steps": plan.steps.iter().map(|s| json!({
+            "order": s.order,
+            "action": s.action,
+            "rationale": s.rationale,
+            "verb": s.verb
+        })).collect::<Vec<_>>()
+    })
+}
+
+fn read_fitness_status() -> Value {
+    let workspace = std::env::current_dir().unwrap_or_default();
+    let path = workspace.join(".claude/lsp-max-fitness.json");
+    std::fs::read_to_string(&path)
+        .ok()
+        .and_then(|s| serde_json::from_str::<Value>(&s).ok())
+        .unwrap_or_else(|| json!({"law_status": "UNKNOWN"}))
 }
 
 // ── Router builder ────────────────────────────────────────────────────────────
@@ -242,6 +318,11 @@ fn dispatch(req: Request) -> Response {
                     handle_lsp_health(sid)
                 }
                 "lsp_reload_config" => handle_lsp_reload_config(),
+                "lsp_violations" => handle_lsp_violations(),
+                "lsp_repair_plan" => {
+                    let constraint = args.get("constraint").and_then(Value::as_str).unwrap_or("");
+                    handle_lsp_repair_plan(constraint)
+                }
                 _ => return Response::err(id, -32601, format!("unknown tool: {name}")),
             };
             Response::ok(id, json!({
