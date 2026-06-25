@@ -1,0 +1,8 @@
+[pack]
+name = "lsp-max"
+version = "26.6.24"
+
+[pack.outputs]
+queries   = "queries/lsp-max"
+templates = "templates/lsp-max"
+ontology  = "ontology"

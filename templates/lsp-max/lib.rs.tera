@@ -2,7 +2,8 @@
 //! CANDIDATE
 
 pub mod backend;
-pub mod capabilities;
-pub mod conformance;
+{% for row in results %}
+pub mod {{ row.module_name }};
+{% endfor %}
 
 pub use backend::{{ server_name }}Backend as Backend;
