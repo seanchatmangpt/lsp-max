@@ -1,0 +1,23 @@
+{
+  "lsp-max-compositor": {
+    "command": "target/debug/lsp-max-compositor",
+    "args": [],
+    "transport": "stdio",
+    "extensionToLanguage": {
+      ".rs": "rust",
+      ".ts": "typescript",
+      ".tsx": "typescriptreact",
+      ".json": "json",
+      ".jsonl": "jsonlines",
+      ".md": "markdown",
+      ".ttl": "turtle",
+      ".rq": "sparql",
+      ".tera": "tera",
+      ".toml": "toml"
+    },
+    "diagnostics": true,
+    "initializationOptions": {
+      "configFile": "lsp-max.toml"
+    }
+  }
+}

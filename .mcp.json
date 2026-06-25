@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "lsp-max": {
+      "command": "target/debug/lsp-max-mcp",
+      "args": [],
+      "type": "stdio"
+    }
+  }
+}
