@@ -1,0 +1,18 @@
+PREFIX lsp: <https://lsp-max.rs/ontology/>
+PREFIX law: <https://lsp-max.rs/law/>
+PREFIX schema: <https://lsp-max.rs/schema/>
+
+SELECT ?class_name ?field_name ?field_type ?optional ?law_status ?stability
+WHERE {
+    ?class a schema:LSPClass ;
+           schema:className ?class_name ;
+           schema:hasField ?field .
+    ?field schema:fieldName ?field_name ;
+           schema:fieldType ?field_type ;
+           schema:isOptional ?optional ;
+           law:status ?status_iri ;
+           schema:stability ?stability .
+    BIND(STRAFTER(STR(?status_iri), "https://lsp-max.rs/law/") AS ?law_status)
+    FILTER(?law_status IN ("CANDIDATE", "ADMITTED", "REFUSED"))
+}
+ORDER BY ?class_name ?field_name

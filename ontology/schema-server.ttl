@@ -1,0 +1,437 @@
+@prefix owl:  <http://www.w3.org/2002/07/owl#> .
+@prefix rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+@prefix lsp:  <https://lsp-max.rs/ontology/> .
+@prefix law:  <https://lsp-max.rs/law/> .
+@prefix schema: <https://lsp-max.rs/ontology/schema-server/> .
+
+# ── Ontology declaration ──────────────────────────────────────────────────────
+
+<https://lsp-max.rs/ontology/schema-server/> a owl:Ontology ;
+    rdfs:label   "Schema Server Vocabulary" ;
+    rdfs:comment "Generic schema vocabulary for type definitions, code structure analysis, and semantic metadata about program schemas." ;
+    owl:imports  <https://lsp-max.rs/ontology/> ;
+    owl:versionInfo "1.0.0" .
+
+# ── Core Schema Concepts ──────────────────────────────────────────────────────
+
+schema:Schema a owl:Class ;
+    rdfs:label "Schema" ;
+    rdfs:comment "A type system or structural definition for code." .
+
+schema:Type a owl:Class ;
+    rdfs:label "Type" ;
+    rdfs:comment "A data type in a type system." .
+
+schema:Struct a owl:Class ;
+    rdfs:subClassOf schema:Type ;
+    rdfs:label "Struct" ;
+    rdfs:comment "A struct/record/data class type." .
+
+schema:Enum a owl:Class ;
+    rdfs:subClassOf schema:Type ;
+    rdfs:label "Enum" ;
+    rdfs:comment "An enumeration type." .
+
+schema:Interface a owl:Class ;
+    rdfs:subClassOf schema:Type ;
+    rdfs:label "Interface" ;
+    rdfs:comment "An interface/trait/protocol type." .
+
+schema:Class a owl:Class ;
+    rdfs:subClassOf schema:Type ;
+    rdfs:label "Class" ;
+    rdfs:comment "A class type (OO)." .
+
+schema:Union a owl:Class ;
+    rdfs:subClassOf schema:Type ;
+    rdfs:label "Union" ;
+    rdfs:comment "A union type (tagged or untagged)." .
+
+schema:TypeAlias a owl:Class ;
+    rdfs:subClassOf schema:Type ;
+    rdfs:label "TypeAlias" ;
+    rdfs:comment "A type alias." .
+
+schema:Generic a owl:Class ;
+    rdfs:label "Generic" ;
+    rdfs:comment "A generic type parameter." .
+
+schema:Constraint a owl:Class ;
+    rdfs:label "Constraint" ;
+    rdfs:comment "A type constraint (bound, where clause, etc.)." .
+
+# ── Type Members ──────────────────────────────────────────────────────────────
+
+schema:Member a owl:Class ;
+    rdfs:label "Member" ;
+    rdfs:comment "A member of a struct, class, or interface." .
+
+schema:Field a owl:Class ;
+    rdfs:subClassOf schema:Member ;
+    rdfs:label "Field" ;
+    rdfs:comment "A field/property of a struct or class." .
+
+schema:Method a owl:Class ;
+    rdfs:subClassOf schema:Member ;
+    rdfs:label "Method" ;
+    rdfs:comment "A method of a class, struct, or interface." .
+
+schema:Parameter a owl:Class ;
+    rdfs:label "Parameter" ;
+    rdfs:comment "A parameter of a function or method." .
+
+schema:ReturnType a owl:Class ;
+    rdfs:label "ReturnType" ;
+    rdfs:comment "The return type of a function or method." .
+
+schema:Trait a owl:Class ;
+    rdfs:subClassOf schema:Type ;
+    rdfs:label "Trait" ;
+    rdfs:comment "A trait or protocol definition." .
+
+schema:Implementation a owl:Class ;
+    rdfs:label "Implementation" ;
+    rdfs:comment "An implementation of a type or trait." .
+
+# ── Properties ────────────────────────────────────────────────────────────────
+
+schema:name a owl:DatatypeProperty ;
+    rdfs:label "name" ;
+    rdfs:comment "Name of a type, member, or parameter." ;
+    rdfs:range xsd:string .
+
+schema:description a owl:DatatypeProperty ;
+    rdfs:label "description" ;
+    rdfs:comment "Documentation or description." ;
+    rdfs:range xsd:string .
+
+schema:visibility a owl:DatatypeProperty ;
+    rdfs:label "visibility" ;
+    rdfs:comment "Visibility modifier (public, private, protected, internal, etc.)." ;
+    rdfs:range xsd:string .
+
+schema:isAbstract a owl:DatatypeProperty ;
+    rdfs:label "isAbstract" ;
+    rdfs:comment "Whether the type is abstract." ;
+    rdfs:range xsd:boolean .
+
+schema:isGeneric a owl:DatatypeProperty ;
+    rdfs:label "isGeneric" ;
+    rdfs:comment "Whether the type is generic." ;
+    rdfs:range xsd:boolean .
+
+schema:typeParameters a owl:DatatypeProperty ;
+    rdfs:label "typeParameters" ;
+    rdfs:comment "Type parameters (generics)." ;
+    rdfs:range xsd:string .
+
+schema:extends a owl:ObjectProperty ;
+    rdfs:label "extends" ;
+    rdfs:comment "Supertype (parent class, implemented interface, etc.)." .
+
+schema:implements a owl:ObjectProperty ;
+    rdfs:label "implements" ;
+    rdfs:comment "Interface or trait implementation." .
+
+schema:hasMember a owl:ObjectProperty ;
+    rdfs:label "hasMember" ;
+    rdfs:comment "Contains a member (field or method)." ;
+    rdfs:domain schema:Type ;
+    rdfs:range schema:Member .
+
+schema:hasParameter a owl:ObjectProperty ;
+    rdfs:label "hasParameter" ;
+    rdfs:comment "Has a parameter." ;
+    rdfs:domain schema:Method ;
+    rdfs:range schema:Parameter .
+
+schema:hasReturnType a owl:ObjectProperty ;
+    rdfs:label "hasReturnType" ;
+    rdfs:comment "Has a return type." ;
+    rdfs:domain schema:Method ;
+    rdfs:range schema:Type .
+
+schema:fieldType a owl:ObjectProperty ;
+    rdfs:label "fieldType" ;
+    rdfs:comment "The type of a field." ;
+    rdfs:domain schema:Field ;
+    rdfs:range schema:Type .
+
+schema:parameterType a owl:ObjectProperty ;
+    rdfs:label "parameterType" ;
+    rdfs:comment "The type of a parameter." ;
+    rdfs:domain schema:Parameter ;
+    rdfs:range schema:Type .
+
+schema:isOptional a owl:DatatypeProperty ;
+    rdfs:label "isOptional" ;
+    rdfs:comment "Whether a field or parameter is optional." ;
+    rdfs:range xsd:boolean .
+
+schema:defaultValue a owl:DatatypeProperty ;
+    rdfs:label "defaultValue" ;
+    rdfs:comment "Default value of a field or parameter." ;
+    rdfs:range xsd:string .
+
+schema:isMutable a owl:DatatypeProperty ;
+    rdfs:label "isMutable" ;
+    rdfs:comment "Whether a field is mutable." ;
+    rdfs:range xsd:boolean .
+
+schema:isStatic a owl:DatatypeProperty ;
+    rdfs:label "isStatic" ;
+    rdfs:comment "Whether a member is static." ;
+    rdfs:range xsd:boolean .
+
+schema:isAsync a owl:DatatypeProperty ;
+    rdfs:label "isAsync" ;
+    rdfs:comment "Whether a method is async." ;
+    rdfs:range xsd:boolean .
+
+schema:isConst a owl:DatatypeProperty ;
+    rdfs:label "isConst" ;
+    rdfs:comment "Whether a field or method is const." ;
+    rdfs:range xsd:boolean .
+
+# ── Type Relationships ────────────────────────────────────────────────────────
+
+schema:BaseType a owl:Class ;
+    rdfs:label "BaseType" ;
+    rdfs:comment "Primitive or built-in type." .
+
+schema:PrimitiveType a owl:Class ;
+    rdfs:subClassOf schema:BaseType ;
+    rdfs:label "PrimitiveType" ;
+    rdfs:comment "A primitive type (int, string, bool, etc.)." .
+
+schema:CollectionType a owl:Class ;
+    rdfs:subClassOf schema:Type ;
+    rdfs:label "CollectionType" ;
+    rdfs:comment "A collection type (List, Set, Map, etc.)." .
+
+schema:elementType a owl:ObjectProperty ;
+    rdfs:label "elementType" ;
+    rdfs:comment "Element type of a collection." ;
+    rdfs:domain schema:CollectionType ;
+    rdfs:range schema:Type .
+
+schema:keyType a owl:ObjectProperty ;
+    rdfs:label "keyType" ;
+    rdfs:comment "Key type of a map." ;
+    rdfs:domain schema:CollectionType ;
+    rdfs:range schema:Type .
+
+schema:valueType a owl:ObjectProperty ;
+    rdfs:label "valueType" ;
+    rdfs:comment "Value type of a map." ;
+    rdfs:domain schema:CollectionType ;
+    rdfs:range schema:Type .
+
+schema:FunctionType a owl:Class ;
+    rdfs:subClassOf schema:Type ;
+    rdfs:label "FunctionType" ;
+    rdfs:comment "A function type signature." .
+
+schema:PointerType a owl:Class ;
+    rdfs:subClassOf schema:Type ;
+    rdfs:label "PointerType" ;
+    rdfs:comment "A pointer/reference type." .
+
+schema:pointsTo a owl:ObjectProperty ;
+    rdfs:label "pointsTo" ;
+    rdfs:comment "The type being pointed to." ;
+    rdfs:domain schema:PointerType ;
+    rdfs:range schema:Type .
+
+# ── Enum and Union Support ────────────────────────────────────────────────────
+
+schema:EnumVariant a owl:Class ;
+    rdfs:label "EnumVariant" ;
+    rdfs:comment "A variant of an enumeration." .
+
+schema:hasVariant a owl:ObjectProperty ;
+    rdfs:label "hasVariant" ;
+    rdfs:comment "Contains an enum variant." ;
+    rdfs:domain schema:Enum ;
+    rdfs:range schema:EnumVariant .
+
+schema:variantValue a owl:DatatypeProperty ;
+    rdfs:label "variantValue" ;
+    rdfs:comment "The value of an enum variant." ;
+    rdfs:range xsd:string .
+
+schema:UnionMember a owl:Class ;
+    rdfs:label "UnionMember" ;
+    rdfs:comment "A member of a union type." .
+
+schema:hasUnionMember a owl:ObjectProperty ;
+    rdfs:label "hasUnionMember" ;
+    rdfs:comment "Contains a union member." ;
+    rdfs:domain schema:Union ;
+    rdfs:range schema:UnionMember .
+
+schema:memberType a owl:ObjectProperty ;
+    rdfs:label "memberType" ;
+    rdfs:comment "The type of a union member." ;
+    rdfs:domain schema:UnionMember ;
+    rdfs:range schema:Type .
+
+# ── Module and Namespace Support ──────────────────────────────────────────────
+
+schema:Module a owl:Class ;
+    rdfs:label "Module" ;
+    rdfs:comment "A module or namespace." .
+
+schema:Namespace a owl:Class ;
+    rdfs:label "Namespace" ;
+    rdfs:comment "A namespace grouping." .
+
+schema:Package a owl:Class ;
+    rdfs:label "Package" ;
+    rdfs:comment "A package or crate." .
+
+schema:hasModule a owl:ObjectProperty ;
+    rdfs:label "hasModule" ;
+    rdfs:comment "Contains a module." .
+
+schema:hasNamespace a owl:ObjectProperty ;
+    rdfs:label "hasNamespace" ;
+    rdfs:comment "Contains a namespace." .
+
+schema:hasType a owl:ObjectProperty ;
+    rdfs:label "hasType" ;
+    rdfs:comment "Defines or contains a type." .
+
+schema:imports a owl:ObjectProperty ;
+    rdfs:label "imports" ;
+    rdfs:comment "Imports a module or type." .
+
+schema:exportedSymbols a owl:DatatypeProperty ;
+    rdfs:label "exportedSymbols" ;
+    rdfs:comment "List of exported symbols." ;
+    rdfs:range xsd:string .
+
+# ── Semantic Metadata ─────────────────────────────────────────────────────────
+
+schema:Annotation a owl:Class ;
+    rdfs:label "Annotation" ;
+    rdfs:comment "An annotation/attribute/decorator on a type or member." .
+
+schema:hasAnnotation a owl:ObjectProperty ;
+    rdfs:label "hasAnnotation" ;
+    rdfs:comment "Has an annotation." .
+
+schema:annotationName a owl:DatatypeProperty ;
+    rdfs:label "annotationName" ;
+    rdfs:comment "The name of the annotation." ;
+    rdfs:range xsd:string .
+
+schema:annotationValue a owl:DatatypeProperty ;
+    rdfs:label "annotationValue" ;
+    rdfs:comment "The value or parameters of the annotation." ;
+    rdfs:range xsd:string .
+
+schema:deprecated a owl:DatatypeProperty ;
+    rdfs:label "deprecated" ;
+    rdfs:comment "Whether a type or member is deprecated." ;
+    rdfs:range xsd:boolean .
+
+schema:deprecationReason a owl:DatatypeProperty ;
+    rdfs:label "deprecationReason" ;
+    rdfs:comment "Reason for deprecation." ;
+    rdfs:range xsd:string .
+
+schema:since a owl:DatatypeProperty ;
+    rdfs:label "since" ;
+    rdfs:comment "Version when introduced." ;
+    rdfs:range xsd:string .
+
+schema:until a owl:DatatypeProperty ;
+    rdfs:label "until" ;
+    rdfs:comment "Version when removed/deprecated." ;
+    rdfs:range xsd:string .
+
+# ── Generic Type Support ──────────────────────────────────────────────────────
+
+schema:TypeParameter a owl:Class ;
+    rdfs:label "TypeParameter" ;
+    rdfs:comment "A generic type parameter." .
+
+schema:hasTypeParameter a owl:ObjectProperty ;
+    rdfs:label "hasTypeParameter" ;
+    rdfs:comment "Has a type parameter." .
+
+schema:parameterName a owl:DatatypeProperty ;
+    rdfs:label "parameterName" ;
+    rdfs:comment "Name of a type parameter." ;
+    rdfs:range xsd:string .
+
+schema:upperBound a owl:ObjectProperty ;
+    rdfs:label "upperBound" ;
+    rdfs:comment "Upper bound of a type parameter." ;
+    rdfs:range schema:Type .
+
+schema:variance a owl:DatatypeProperty ;
+    rdfs:label "variance" ;
+    rdfs:comment "Variance of a type parameter (covariant, contravariant, invariant)." ;
+    rdfs:range xsd:string .
+
+# ── Schema Query Support ──────────────────────────────────────────────────────
+
+schema:schema_lookup a lsp:MaxExtension ;
+    lsp:methodName "schema/lookup" ;
+    lsp:snakeName  "schema_lookup" ;
+    lsp:paramType  "SchemaLookupParams" ;
+    lsp:returnType "SchemaDef" ;
+    rdfs:comment   "Look up a type definition by name or symbol in the schema." ;
+    law:status     law:CANDIDATE .
+
+schema:schema_members a lsp:MaxExtension ;
+    lsp:methodName "schema/members" ;
+    lsp:snakeName  "schema_members" ;
+    lsp:paramType  "SchemaTypeParams" ;
+    lsp:returnType "Vec<SchemaMember>" ;
+    rdfs:comment   "List all members (fields, methods) of a type." ;
+    law:status     law:CANDIDATE .
+
+schema:schema_hierarchy a lsp:MaxExtension ;
+    lsp:methodName "schema/hierarchy" ;
+    lsp:snakeName  "schema_hierarchy" ;
+    lsp:paramType  "SchemaTypeParams" ;
+    lsp:returnType "TypeHierarchy" ;
+    rdfs:comment   "Get the type hierarchy (supertypes, implementations)." ;
+    law:status     law:CANDIDATE .
+
+schema:schema_resolve a lsp:MaxExtension ;
+    lsp:methodName "schema/resolve" ;
+    lsp:snakeName  "schema_resolve" ;
+    lsp:paramType  "SchemaResolveParams" ;
+    lsp:returnType "ResolvedType" ;
+    rdfs:comment   "Resolve a type expression to its concrete definition." ;
+    law:status     law:CANDIDATE .
+
+schema:schema_format a lsp:MaxExtension ;
+    lsp:methodName "schema/format" ;
+    lsp:snakeName  "schema_format" ;
+    lsp:paramType  "SchemaFormatParams" ;
+    lsp:returnType "FormattedSchema" ;
+    rdfs:comment   "Format a type or schema for display." ;
+    law:status     law:CANDIDATE .
+
+schema:schema_search a lsp:MaxExtension ;
+    lsp:methodName "schema/search" ;
+    lsp:snakeName  "schema_search" ;
+    lsp:paramType  "SchemaSearchParams" ;
+    lsp:returnType "Vec<SearchResult>" ;
+    rdfs:comment   "Search for types or members by name or pattern." ;
+    law:status     law:CANDIDATE .
+
+schema:schema_export a lsp:MaxExtension ;
+    lsp:methodName "schema/export" ;
+    lsp:snakeName  "schema_export" ;
+    lsp:paramType  "SchemaExportParams" ;
+    lsp:returnType "SchemaExport" ;
+    rdfs:comment   "Export schema in various formats (JSON, YAML, Protobuf, etc.)." ;
+    law:status     law:CANDIDATE .

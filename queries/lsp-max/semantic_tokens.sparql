@@ -1,0 +1,20 @@
+PREFIX lsp: <https://lsp-max.rs/ontology/>
+PREFIX law: <https://lsp-max.rs/law/>
+PREFIX tokens: <https://lsp-max.rs/semantic-tokens/>
+
+SELECT ?token_type ?token_modifier ?css_class ?law_status ?supported_languages
+WHERE {
+    ?token_def a tokens:SemanticTokenType ;
+               tokens:tokenType ?token_type ;
+               law:status ?status_iri ;
+               tokens:cssClass ?css_class .
+    OPTIONAL {
+        ?token_def tokens:modifier ?token_modifier .
+    }
+    OPTIONAL {
+        ?token_def tokens:supportedLanguages ?supported_languages .
+    }
+    BIND(STRAFTER(STR(?status_iri), "https://lsp-max.rs/law/") AS ?law_status)
+    FILTER(?law_status IN ("CANDIDATE", "ADMITTED", "REFUSED"))
+}
+ORDER BY ?law_status ?token_type
