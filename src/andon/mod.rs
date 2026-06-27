@@ -6,3 +6,4 @@ pub mod test;
 pub mod analysis;
 pub mod counterfactuals;
 pub mod dt;
+pub mod lsif_invariant;
