@@ -1,0 +1,76 @@
+crates/lsp-max-adapters/lsp-max-ast
+├── Cargo.toml
+└── src
+    ├── codegen
+    │   ├── ir.rs
+    │   ├── json.rs
+    │   ├── mod.rs
+    │   ├── output.rs
+    │   ├── supertypes.rs
+    │   ├── tests
+    │   │   ├── codegen.rs
+    │   │   └── mod.rs
+    │   └── utils.rs
+    ├── core
+    │   ├── ast
+    │   │   ├── builder.rs
+    │   │   ├── mod.rs
+    │   │   └── node.rs
+    │   ├── document
+    │   │   ├── mod.rs
+    │   │   └── texter_impl
+    │   │       ├── change.rs
+    │   │       ├── mod.rs
+    │   │       └── updateable.rs
+    │   ├── document_symbols_builder.rs
+    │   ├── errors.rs
+    │   ├── mod.rs
+    │   ├── parsers.rs
+    │   ├── regex.rs
+    │   ├── semantic_tokens_builder.rs
+    │   └── utils.rs
+    ├── db.rs
+    └── lib.rs
+crates/lsp-max-lsif
+├── Cargo.toml
+├── src
+│   ├── bin
+│   │   └── lsif_cli.rs
+│   ├── coverage.rs
+│   ├── db.rs
+│   ├── indexer_rust
+│   │   ├── emit.rs
+│   │   ├── generated.rs
+│   │   └── mod.rs
+│   ├── indexer_typescript
+│   │   ├── emit.rs
+│   │   ├── generated.rs
+│   │   └── mod.rs
+│   ├── lib.rs
+│   ├── linker
+│   │   └── mod.rs
+│   ├── lsif
+│   │   └── tests.rs
+│   ├── lsif_0_6_0.rs
+│   ├── lsif_builder
+│   │   └── extended.rs
+│   ├── lsif_builder.rs
+│   ├── lsif_indexer.rs
+│   ├── lsif_reader.rs
+│   ├── lsif_types.rs
+│   └── lsif.rs
+└── tests
+    ├── emitter_witness.rs
+    ├── lsif_conformance_tests.rs
+    └── tests
+        ├── coverage.rs
+        ├── export.rs
+        ├── general.rs
+        └── validate.rs
+src/runtime/control_plane/semantic_graph
+├── lsif_import.rs
+├── mod.rs
+├── snapshot.rs
+└── store.rs
+
+19 directories, 55 files

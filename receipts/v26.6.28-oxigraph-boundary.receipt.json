@@ -1,0 +1,15 @@
+{
+  "release": "v26.6.28",
+  "component": "oxigraph-boundary",
+  "command": "cargo test -p lsp-max-lsif oxigraph_imports_confined_to_semantic_graph",
+  "exit_code": 0,
+  "stdout_digest": "4d1bf8b82850a8dca147e850bb36b1db9e4ef0882602782d3ad58e55695ec7ef",
+  "stderr_digest": "31ab99d1fb82ccc46b77c65b30bf246172b6b9d7bde3e38572d2493f50c6c8dc",
+  "source_boundary": "src/runtime/control_plane/semantic_graph",
+  "source_digest": "02b87b84eac0e30fe8c8ee62b3e24da1ef5e42e97ba9bce3ba5553f3f72e7977",
+  "artifact_paths": [],
+  "artifact_digests": {},
+  "timestamp": "2026-06-27T08:31:46.457113Z",
+  "status": "ADMITTED",
+  "failset": []
+}

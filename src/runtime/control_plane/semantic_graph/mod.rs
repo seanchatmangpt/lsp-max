@@ -102,4 +102,29 @@ mod tests {
         let repairs = store.query_repairs("LSPMAX-ANDON-001").unwrap();
         assert!(repairs.is_empty(), "empty store must return no repairs");
     }
+
+    // ------------------------------------------------------------------
+    // INVARIANT: OXIGRAPH_NOT_ON_HOT_PATH
+    // ------------------------------------------------------------------
+    #[test]
+    fn oxigraph_not_on_hot_path() {
+        let sync_rs_path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("src")
+            .join("language_server")
+            .join("impls")
+            .join("sync.rs");
+        
+        let sync_rs = std::fs::read_to_string(&sync_rs_path).expect("Could not read sync.rs");
+        
+        for (i, line) in sync_rs.lines().enumerate() {
+            let line = line.trim();
+            // Ignore comments
+            if line.starts_with("//") || line.is_empty() {
+                continue;
+            }
+            if line.contains("SemanticLawGraph") || line.contains("import_lsif_snapshot") || line.contains("oxigraph") {
+                panic!("OXIGRAPH_NOT_ON_HOT_PATH violated in sync.rs at line {}: {}", i + 1, line);
+            }
+        }
+    }
 }

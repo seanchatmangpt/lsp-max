@@ -1,0 +1,12 @@
+{
+  "operation": "CREATE_JIRA_DOD_DOCS",
+  "R_B": "Chatman Equation (R_B ⊢ A = μ(O*_B))",
+  "A": [
+    "/Users/sac/lsp-max/docs/dod/v26.6.28/JIRA_SALSA_AST_01.md",
+    "/Users/sac/lsp-max/docs/dod/v26.6.28/JIRA_SALSA_LSIF_02.md"
+  ],
+  "O_B": "v26_6_28_spec.md",
+  "status": "ADMITTED",
+  "timestamp": "2026-06-27T01:14:41-07:00",
+  "description": "Generated JIRA-style documentation for the v26.6.28 release Definition of Done covering Step 1 (Salsa AST Slice) and Step 2 (Salsa LSIF Document Index)."
+}

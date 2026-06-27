@@ -1,0 +1,707 @@
+/Users/sac/lsp-max/crates
+├── anti-llm-cheat-lsp
+│   ├── admissibility_report.md
+│   ├── anti.toml
+│   ├── benches
+│   │   └── perf_refactors.rs
+│   ├── Cargo.toml
+│   ├── CLAUDE.md
+│   ├── docs
+│   │   └── COVERAGE_LSP318_LSIF06.md
+│   ├── fixtures
+│   │   ├── negative_controls
+│   │   │   ├── allow_cheat_and_unsafe.rs
+│   │   │   ├── authority_mutation_snippets.rs
+│   │   │   ├── bad_version
+│   │   │   │   └── Cargo.toml
+│   │   │   ├── calver_path_dep_violation
+│   │   │   │   └── Cargo.toml
+│   │   │   ├── calver_workspace_violation
+│   │   │   │   └── Cargo.toml
+│   │   │   ├── changelog_laundering.md
+│   │   │   ├── debug_diagnostic_leak.rs
+│   │   │   ├── debug_log_as_diagnostic.rs
+│   │   │   ├── fake_alignment.rs
+│   │   │   ├── fake_clap_report.md
+│   │   │   ├── global_pattern_scope.rs
+│   │   │   ├── hardcoded_metrics.rs
+│   │   │   ├── hollow_implementation.rs
+│   │   │   ├── invalid_non_null_parameter.rs
+│   │   │   ├── invalid_virtual_uri.txt
+│   │   │   ├── narrative_receipt_as_law_receipt.json
+│   │   │   ├── no_apply_kind_completion.rs
+│   │   │   ├── no_refresh_trigger.txt
+│   │   │   ├── no_tooltip_command.rs
+│   │   │   ├── no_victory_language.rs
+│   │   │   ├── ocel_full_wasm4pm.rs
+│   │   │   ├── ocel_no_binding.md
+│   │   │   ├── ocel_no_compat.json
+│   │   │   ├── ocel_no_event.md
+│   │   │   ├── production_snippet_mutation.rs
+│   │   │   ├── receipt_bad_status.json
+│   │   │   ├── refgraph_negative
+│   │   │   │   └── independent.rs
+│   │   │   ├── route_log_not_route_proof.md
+│   │   │   ├── seeded_rng_oracle.rs
+│   │   │   ├── single_range_formatting.rs
+│   │   │   ├── static_scan_as_route_proof.md
+│   │   │   ├── string_authority.rs
+│   │   │   ├── test_stdout_not_receipt.md
+│   │   │   ├── tower_lsp_dependency
+│   │   │   │   └── Cargo.toml
+│   │   │   ├── undocumented_code_action.rs
+│   │   │   ├── unresolvable_properties.rs
+│   │   │   ├── victory_language_extended.md
+│   │   │   ├── victory_language_in_comments.rs
+│   │   │   ├── victory_language_with_failset.md
+│   │   │   ├── workspace_edit_no_metadata.rs
+│   │   │   └── workspace_edit_receipt_binding.rs
+│   │   └── positive_controls
+│   │       ├── calver_external_dep_ok
+│   │       │   └── Cargo.toml
+│   │       ├── refgraph_positive
+│   │       │   └── chain.rs
+│   │       └── victory_language_safe_usage.rs
+│   ├── generated
+│   │   ├── lsp318_capability_inventory.json
+│   │   ├── lsp318_combinatorial_matrix.json
+│   │   ├── lsp318_gap_report.md
+│   │   ├── lsp318_message_inventory.json
+│   │   ├── lsp318_spec_graph.json
+│   │   └── lsp318_type_field_inventory.json
+│   ├── ocel
+│   │   ├── anti_llm_lsp_ocel.json
+│   │   ├── anti_llm_lsp_ocel.receipt.json
+│   │   ├── ocel_event_inventory.json
+│   │   ├── ocel_gap_report.md
+│   │   ├── ocel_object_inventory.json
+│   │   └── ocel_relation_inventory.json
+│   ├── PATH_C_ANALYSIS.md
+│   ├── README.md
+│   ├── receipts
+│   │   ├── _cancelRequest_receipt.json
+│   │   ├── _logTrace_receipt.json
+│   │   ├── _progress_receipt.json
+│   │   ├── _setTrace_receipt.json
+│   │   ├── callHierarchy_incomingCalls_receipt.json
+│   │   ├── callHierarchy_outgoingCalls_receipt.json
+│   │   ├── client_unregisterCapability_receipt.json
+│   │   ├── code_action_kind_doc_receipt.json
+│   │   ├── code_lens_resolve_receipt.json
+│   │   ├── codeAction_resolve_receipt.json
+│   │   ├── command_tooltips_receipt.json
+│   │   ├── completion_list_apply_kind_receipt.json
+│   │   ├── completionItem_resolve_receipt.json
+│   │   ├── debug_message_kind_receipt.json
+│   │   ├── documentLink_resolve_receipt.json
+│   │   ├── exit_receipt.json
+│   │   ├── folding_range_refresh_receipt.json
+│   │   ├── initialize_receipt.json
+│   │   ├── initialized_receipt.json
+│   │   ├── inlayHint_resolve_receipt.json
+│   │   ├── inline_completion_receipt.json
+│   │   ├── lsp318_combinatorial_maximalism_receipt.json
+│   │   ├── notebook_refusal_receipt.json
+│   │   ├── notebookDocument_didChange_refusal_receipt.json
+│   │   ├── notebookDocument_didClose_refusal_receipt.json
+│   │   ├── notebookDocument_didOpen_refusal_receipt.json
+│   │   ├── notebookDocument_didSave_refusal_receipt.json
+│   │   ├── nullable_active_parameter_receipt.json
+│   │   ├── process_model_receipt.json
+│   │   ├── ranges_formatting_receipt.json
+│   │   ├── relative_patterns_receipt.json
+│   │   ├── shutdown_receipt.json
+│   │   ├── telemetry_event_receipt.json
+│   │   ├── text_document_content_receipt.json
+│   │   ├── text_document_edit_snippets_receipt.json
+│   │   ├── textDocument_codeAction_receipt.json
+│   │   ├── textDocument_codeLens_receipt.json
+│   │   ├── textDocument_colorPresentation_receipt.json
+│   │   ├── textDocument_declaration_receipt.json
+│   │   ├── textDocument_definition_receipt.json
+│   │   ├── textDocument_diagnostic_receipt.json
+│   │   ├── textDocument_didChange_receipt.json
+│   │   ├── textDocument_didClose_receipt.json
+│   │   ├── textDocument_didOpen_receipt.json
+│   │   ├── textDocument_didSave_receipt.json
+│   │   ├── textDocument_documentColor_receipt.json
+│   │   ├── textDocument_documentHighlight_receipt.json
+│   │   ├── textDocument_documentLink_receipt.json
+│   │   ├── textDocument_documentSymbol_receipt.json
+│   │   ├── textDocument_foldingRange_receipt.json
+│   │   ├── textDocument_formatting_receipt.json
+│   │   ├── textDocument_hover_receipt.json
+│   │   ├── textDocument_implementation_receipt.json
+│   │   ├── textDocument_inlayHint_receipt.json
+│   │   ├── textDocument_inlineValue_receipt.json
+│   │   ├── textDocument_linkedEditingRange_receipt.json
+│   │   ├── textDocument_moniker_receipt.json
+│   │   ├── textDocument_onTypeFormatting_receipt.json
+│   │   ├── textDocument_prepareCallHierarchy_receipt.json
+│   │   ├── textDocument_prepareRename_receipt.json
+│   │   ├── textDocument_prepareTypeHierarchy_receipt.json
+│   │   ├── textDocument_publishDiagnostics_receipt.json
+│   │   ├── textDocument_rangeFormatting_receipt.json
+│   │   ├── textDocument_rangesFormatting_receipt.json
+│   │   ├── textDocument_references_receipt.json
+│   │   ├── textDocument_rename_receipt.json
+│   │   ├── textDocument_selectionRange_receipt.json
+│   │   ├── textDocument_semanticTokens_full_delta_receipt.json
+│   │   ├── textDocument_semanticTokens_full_receipt.json
+│   │   ├── textDocument_semanticTokens_range_receipt.json
+│   │   ├── textDocument_typeDefinition_receipt.json
+│   │   ├── textDocument_willSave_receipt.json
+│   │   ├── textDocument_willSaveWaitUntil_receipt.json
+│   │   ├── typeHierarchy_subtypes_receipt.json
+│   │   ├── typeHierarchy_supertypes_receipt.json
+│   │   ├── window_showDocument_receipt.json
+│   │   ├── window_showMessage_receipt.json
+│   │   ├── window_showMessageRequest_receipt.json
+│   │   ├── window_workDoneProgress_cancel_receipt.json
+│   │   ├── window_workDoneProgress_create_receipt.json
+│   │   ├── workspace_applyEdit_receipt.json
+│   │   ├── workspace_codeLens_refresh_receipt.json
+│   │   ├── workspace_configuration_receipt.json
+│   │   ├── workspace_diagnostic_receipt.json
+│   │   ├── workspace_diagnostic_refresh_receipt.json
+│   │   ├── workspace_didChangeConfiguration_receipt.json
+│   │   ├── workspace_didChangeWatchedFiles_receipt.json
+│   │   ├── workspace_didChangeWorkspaceFolders_receipt.json
+│   │   ├── workspace_didCreateFiles_receipt.json
+│   │   ├── workspace_didDeleteFiles_receipt.json
+│   │   ├── workspace_didRenameFiles_receipt.json
+│   │   ├── workspace_edit_metadata_receipt.json
+│   │   ├── workspace_edit_snippets_receipt.json
+│   │   ├── workspace_executeCommand_receipt.json
+│   │   ├── workspace_foldingRange_refresh_receipt.json
+│   │   ├── workspace_inlayHint_refresh_receipt.json
+│   │   ├── workspace_inlineValue_refresh_receipt.json
+│   │   ├── workspace_semanticTokens_refresh_receipt.json
+│   │   ├── workspace_symbol_receipt.json
+│   │   ├── workspace_textDocumentContent_refresh_receipt.json
+│   │   ├── workspace_willCreateFiles_receipt.json
+│   │   ├── workspace_willDeleteFiles_receipt.json
+│   │   ├── workspace_willRenameFiles_receipt.json
+│   │   ├── workspace_workspaceFolders_receipt.json
+│   │   └── workspaceSymbol_resolve_receipt.json
+│   ├── src
+│   │   ├── ast_adapter.rs
+│   │   ├── bin
+│   │   │   └── gen_receipts.rs
+│   │   ├── capabilities.rs
+│   │   ├── config.rs
+│   │   ├── diagnostics.rs
+│   │   ├── engine.rs
+│   │   ├── innovations.rs
+│   │   ├── lib.rs
+│   │   ├── main.rs
+│   │   ├── observations.rs
+│   │   ├── ocel.rs
+│   │   ├── parsers
+│   │   │   ├── cargo_lock.rs
+│   │   │   ├── cargo_toml.rs
+│   │   │   ├── contract.rs
+│   │   │   ├── fitness_report.rs
+│   │   │   ├── ggen_toml.rs
+│   │   │   ├── json_rpc.rs
+│   │   │   ├── markdown_claims.rs
+│   │   │   ├── mod.rs
+│   │   │   ├── receipt_json.rs
+│   │   │   ├── refgraph.rs
+│   │   │   ├── rust_tree_sitter.rs
+│   │   │   ├── tera_template.rs
+│   │   │   ├── typescript_ast.rs
+│   │   │   └── typescript.rs
+│   │   ├── rules
+│   │   │   ├── authority.rs
+│   │   │   ├── claims.rs
+│   │   │   ├── complexity.rs
+│   │   │   ├── contract.rs
+│   │   │   ├── declare_laws.rs
+│   │   │   ├── determinism.rs
+│   │   │   ├── ggen.rs
+│   │   │   ├── hollow.rs
+│   │   │   ├── lsif06.rs
+│   │   │   ├── lsp318_coverage.rs
+│   │   │   ├── lsp318.rs
+│   │   │   ├── mod.rs
+│   │   │   ├── mutation.rs
+│   │   │   ├── ocel_rules.rs
+│   │   │   ├── oracle.rs
+│   │   │   ├── placeholder.rs
+│   │   │   ├── receipts.rs
+│   │   │   ├── refgraph.rs
+│   │   │   ├── routes.rs
+│   │   │   ├── rust_smells.rs
+│   │   │   ├── surface.rs
+│   │   │   ├── test.rs
+│   │   │   ├── trace.rs
+│   │   │   ├── typescript_ast.rs
+│   │   │   ├── typescript.rs
+│   │   │   └── version.rs
+│   │   ├── semantic.rs
+│   │   ├── server
+│   │   │   └── recommend.rs
+│   │   ├── server.rs
+│   │   └── virtual_docs
+│   │       ├── checkpoint_status.rs
+│   │       ├── failset.rs
+│   │       ├── forbidden_implications.rs
+│   │       ├── ggen_render.rs
+│   │       ├── lsif06_matrix.rs
+│   │       ├── lsp318_full_matrix.rs
+│   │       ├── lsp318_matrix.rs
+│   │       ├── mod.rs
+│   │       ├── ocel_export.rs
+│   │       ├── process_model.rs
+│   │       └── receipt_ledger.rs
+│   ├── tests
+│   │   ├── api_reconciliation_test.rs
+│   │   ├── dogfood.rs
+│   │   └── innovations_test.rs
+│   └── transcripts
+│       ├── _cancelRequest_positive.jsonl
+│       ├── _logTrace_positive.jsonl
+│       ├── _progress_positive.jsonl
+│       ├── _setTrace_positive.jsonl
+│       ├── callHierarchy_incomingCalls_positive.jsonl
+│       ├── callHierarchy_outgoingCalls_positive.jsonl
+│       ├── client_unregisterCapability_positive.jsonl
+│       ├── code_action_kind_doc_positive.jsonl
+│       ├── code_lens_resolve_positive.jsonl
+│       ├── codeAction_resolve_positive.jsonl
+│       ├── command_tooltips_positive.jsonl
+│       ├── completion_list_apply_kind_positive.jsonl
+│       ├── completionItem_resolve_positive.jsonl
+│       ├── debug_message_kind_positive.jsonl
+│       ├── documentLink_resolve_positive.jsonl
+│       ├── exit_positive.jsonl
+│       ├── folding_range_refresh_positive.jsonl
+│       ├── initialize_positive.jsonl
+│       ├── initialized_positive.jsonl
+│       ├── inlayHint_resolve_positive.jsonl
+│       ├── inline_completion_positive.jsonl
+│       ├── nullable_active_parameter_positive.jsonl
+│       ├── ranges_formatting_positive.jsonl
+│       ├── relative_patterns_positive.jsonl
+│       ├── shutdown_positive.jsonl
+│       ├── telemetry_event_positive.jsonl
+│       ├── text_document_content_positive.jsonl
+│       ├── text_document_edit_snippets_positive.jsonl
+│       ├── textDocument_codeAction_positive.jsonl
+│       ├── textDocument_codeLens_positive.jsonl
+│       ├── textDocument_colorPresentation_positive.jsonl
+│       ├── textDocument_declaration_positive.jsonl
+│       ├── textDocument_definition_positive.jsonl
+│       ├── textDocument_diagnostic_positive.jsonl
+│       ├── textDocument_didChange_positive.jsonl
+│       ├── textDocument_didClose_positive.jsonl
+│       ├── textDocument_didOpen_positive.jsonl
+│       ├── textDocument_didSave_positive.jsonl
+│       ├── textDocument_documentColor_positive.jsonl
+│       ├── textDocument_documentHighlight_positive.jsonl
+│       ├── textDocument_documentLink_positive.jsonl
+│       ├── textDocument_documentSymbol_positive.jsonl
+│       ├── textDocument_foldingRange_positive.jsonl
+│       ├── textDocument_formatting_positive.jsonl
+│       ├── textDocument_hover_positive.jsonl
+│       ├── textDocument_implementation_positive.jsonl
+│       ├── textDocument_inlayHint_positive.jsonl
+│       ├── textDocument_inlineValue_positive.jsonl
+│       ├── textDocument_linkedEditingRange_positive.jsonl
+│       ├── textDocument_moniker_positive.jsonl
+│       ├── textDocument_onTypeFormatting_positive.jsonl
+│       ├── textDocument_prepareCallHierarchy_positive.jsonl
+│       ├── textDocument_prepareRename_positive.jsonl
+│       ├── textDocument_prepareTypeHierarchy_positive.jsonl
+│       ├── textDocument_publishDiagnostics_positive.jsonl
+│       ├── textDocument_rangeFormatting_positive.jsonl
+│       ├── textDocument_rangesFormatting_positive.jsonl
+│       ├── textDocument_references_positive.jsonl
+│       ├── textDocument_rename_positive.jsonl
+│       ├── textDocument_selectionRange_positive.jsonl
+│       ├── textDocument_semanticTokens_full_delta_positive.jsonl
+│       ├── textDocument_semanticTokens_full_positive.jsonl
+│       ├── textDocument_semanticTokens_range_positive.jsonl
+│       ├── textDocument_typeDefinition_positive.jsonl
+│       ├── textDocument_willSave_positive.jsonl
+│       ├── textDocument_willSaveWaitUntil_positive.jsonl
+│       ├── typeHierarchy_subtypes_positive.jsonl
+│       ├── typeHierarchy_supertypes_positive.jsonl
+│       ├── window_showDocument_positive.jsonl
+│       ├── window_showMessage_positive.jsonl
+│       ├── window_showMessageRequest_positive.jsonl
+│       ├── window_workDoneProgress_cancel_positive.jsonl
+│       ├── window_workDoneProgress_create_positive.jsonl
+│       ├── workspace_applyEdit_positive.jsonl
+│       ├── workspace_codeLens_refresh_positive.jsonl
+│       ├── workspace_configuration_positive.jsonl
+│       ├── workspace_diagnostic_positive.jsonl
+│       ├── workspace_diagnostic_refresh_positive.jsonl
+│       ├── workspace_didChangeConfiguration_positive.jsonl
+│       ├── workspace_didChangeWatchedFiles_positive.jsonl
+│       ├── workspace_didChangeWorkspaceFolders_positive.jsonl
+│       ├── workspace_didCreateFiles_positive.jsonl
+│       ├── workspace_didDeleteFiles_positive.jsonl
+│       ├── workspace_didRenameFiles_positive.jsonl
+│       ├── workspace_edit_metadata_positive.jsonl
+│       ├── workspace_edit_snippets_positive.jsonl
+│       ├── workspace_executeCommand_positive.jsonl
+│       ├── workspace_foldingRange_refresh_positive.jsonl
+│       ├── workspace_inlayHint_refresh_positive.jsonl
+│       ├── workspace_inlineValue_refresh_positive.jsonl
+│       ├── workspace_semanticTokens_refresh_positive.jsonl
+│       ├── workspace_symbol_positive.jsonl
+│       ├── workspace_textDocumentContent_refresh_positive.jsonl
+│       ├── workspace_willCreateFiles_positive.jsonl
+│       ├── workspace_willDeleteFiles_positive.jsonl
+│       ├── workspace_willRenameFiles_positive.jsonl
+│       ├── workspace_workspaceFolders_positive.jsonl
+│       └── workspaceSymbol_resolve_positive.jsonl
+├── claude-code-config-lsp
+│   ├── Cargo.lock
+│   ├── Cargo.toml
+│   ├── Cargo.toml.backup
+│   ├── docs
+│   │   ├── explanation.md
+│   │   ├── how-to.md
+│   │   ├── reference.md
+│   │   └── tutorial.md
+│   ├── ggen.toml
+│   ├── schema
+│   │   └── claude-code-config.ttl
+│   ├── sparql
+│   │   ├── completion.rq
+│   │   ├── config_surfaces.rq
+│   │   ├── declare_constraints.rq
+│   │   ├── diagnostic_rules.rq
+│   │   ├── file_types.rq
+│   │   ├── handlers.rq
+│   │   ├── hover.rq
+│   │   ├── lsp-max
+│   │   ├── modules.rq
+│   │   ├── schema_fields.rq
+│   │   ├── semantic_tokens.rq
+│   │   └── virtual_docs.rq
+│   ├── src
+│   │   ├── analyzers
+│   │   │   ├── claude_md.rs
+│   │   │   ├── claude_md.rs.backup
+│   │   │   ├── frontmatter.rs
+│   │   │   ├── frontmatter.rs.backup
+│   │   │   ├── hook.rs
+│   │   │   ├── hook.rs.backup
+│   │   │   ├── json.rs
+│   │   │   ├── json.rs.backup
+│   │   │   ├── mod.rs
+│   │   │   ├── mod.rs.backup
+│   │   │   ├── toml.rs
+│   │   │   └── toml.rs.backup
+│   │   ├── backend.rs
+│   │   ├── backend.rs.backup
+│   │   ├── capabilities.rs
+│   │   ├── capabilities.rs.backup
+│   │   ├── completion.rs
+│   │   ├── completion.rs.backup
+│   │   ├── conformance.rs
+│   │   ├── conformance.rs.backup
+│   │   ├── declare_model.rs
+│   │   ├── declare_model.rs.backup
+│   │   ├── file_types.rs
+│   │   ├── file_types.rs.backup
+│   │   ├── hover.rs
+│   │   ├── hover.rs.backup
+│   │   ├── lib.rs
+│   │   ├── lib.rs.backup
+│   │   ├── main.rs
+│   │   ├── main.rs.backup
+│   │   ├── ocel_accumulator.rs
+│   │   ├── ocel_accumulator.rs.backup
+│   │   ├── schema.rs
+│   │   ├── schema.rs.backup
+│   │   ├── semantic_tokens.rs
+│   │   ├── semantic_tokens.rs.backup
+│   │   ├── virtual_docs.rs
+│   │   └── virtual_docs.rs.backup
+│   └── templates
+│       └── claude-code-config
+├── lsp-max-adapters
+│   └── lsp-max-ast
+│       ├── Cargo.toml
+│       └── src
+│           ├── codegen
+│           │   ├── ir.rs
+│           │   ├── json.rs
+│           │   ├── mod.rs
+│           │   ├── output.rs
+│           │   ├── supertypes.rs
+│           │   ├── tests
+│           │   │   ├── codegen.rs
+│           │   │   └── mod.rs
+│           │   └── utils.rs
+│           ├── core
+│           │   ├── ast
+│           │   │   ├── builder.rs
+│           │   │   ├── mod.rs
+│           │   │   └── node.rs
+│           │   ├── document
+│           │   │   ├── mod.rs
+│           │   │   └── texter_impl
+│           │   │       ├── change.rs
+│           │   │       ├── mod.rs
+│           │   │       └── updateable.rs
+│           │   ├── document_symbols_builder.rs
+│           │   ├── errors.rs
+│           │   ├── mod.rs
+│           │   ├── parsers.rs
+│           │   ├── regex.rs
+│           │   ├── semantic_tokens_builder.rs
+│           │   └── utils.rs
+│           ├── db.rs
+│           └── lib.rs
+├── lsp-max-cli
+│   ├── Cargo.lock
+│   ├── Cargo.toml
+│   ├── CLAUDE.md
+│   ├── refund_receipt.txt
+│   └── src
+│       ├── bin
+│       │   ├── lsp-coverage.rs
+│       │   ├── lsp-max-mcp.rs
+│       │   ├── lsp-max-meta
+│       │   │   ├── backend.rs
+│       │   │   ├── diagnostics.rs
+│       │   │   ├── main.rs
+│       │   │   └── scanner.rs
+│       │   └── lsp-max-specgen
+│       │       ├── emit
+│       │       │   ├── message_inventory.rs
+│       │       │   ├── mod.rs
+│       │       │   └── spec_graph.rs
+│       │       ├── main.rs
+│       │       ├── metamodel.rs
+│       │       └── render
+│       │           ├── enums.rs
+│       │           ├── helpers.rs
+│       │           ├── mod.rs
+│       │           ├── requests.rs
+│       │           ├── serde_helpers.rs
+│       │           ├── structures.rs
+│       │           └── type_resolver.rs
+│       ├── gen
+│       │   ├── context.rs
+│       │   ├── engine.rs
+│       │   ├── error.rs
+│       │   ├── generator.rs
+│       │   ├── generators
+│       │   │   ├── capability.rs
+│       │   │   ├── handler.rs
+│       │   │   ├── mod.rs
+│       │   │   ├── protocol.rs
+│       │   │   ├── scaffold.rs
+│       │   │   ├── server.rs
+│       │   │   └── sync.rs
+│       │   ├── ggen_adapter.rs
+│       │   ├── manifest.rs
+│       │   ├── mod.rs
+│       │   ├── receipt_generator.rs
+│       │   ├── registry.rs
+│       │   └── testmatrix_generator.rs
+│       ├── lib.rs
+│       ├── main.rs
+│       └── nouns
+│           ├── admission.rs
+│           ├── admit.rs
+│           ├── agent.rs
+│           ├── alias.rs
+│           ├── batch.rs
+│           ├── client.rs
+│           ├── config.rs
+│           ├── conformance.rs
+│           ├── diagnostics.rs
+│           ├── doctor.rs
+│           ├── event.rs
+│           ├── explain.rs
+│           ├── export.rs
+│           ├── gate.rs
+│           ├── generate.rs
+│           ├── ggen.rs
+│           ├── history.rs
+│           ├── hook.rs
+│           ├── import.rs
+│           ├── insight.rs
+│           ├── intent.rs
+│           ├── logs.rs
+│           ├── mesh.rs
+│           ├── metamodel.rs
+│           ├── metrics.rs
+│           ├── mod.rs
+│           ├── ocel.rs
+│           ├── ontology.rs
+│           ├── pack.rs
+│           ├── pipeline.rs
+│           ├── plugin.rs
+│           ├── process.rs
+│           ├── receipt.rs
+│           ├── repair.rs
+│           ├── rpc.rs
+│           ├── server.rs
+│           ├── snapshot.rs
+│           ├── state.rs
+│           ├── stream.rs
+│           ├── swarm.rs
+│           ├── task.rs
+│           ├── telemetry.rs
+│           ├── template.rs
+│           ├── testmatrix.rs
+│           └── workspace.rs
+├── lsp-max-compositor
+│   ├── benches
+│   │   ├── compositor_backpressure.rs
+│   │   ├── compositor_fanout.rs
+│   │   ├── compositor_micro.rs
+│   │   └── process_mining.rs
+│   ├── Cargo.toml
+│   ├── CLAUDE.md
+│   ├── compositor.ttl
+│   ├── ggen.toml
+│   ├── marketplace.json
+│   ├── receipts
+│   │   └── multi_lsp_per_extension_receipt.json
+│   ├── registry_init.tera
+│   ├── src
+│   │   ├── andon_snapshot.rs
+│   │   ├── bin
+│   │   │   └── lsp_echo_server.rs
+│   │   ├── capability_merge.rs
+│   │   ├── child_process.rs
+│   │   ├── compositor_client.rs
+│   │   ├── config.rs
+│   │   ├── connections.rs
+│   │   ├── declare.rs
+│   │   ├── dfg.rs
+│   │   ├── diagnostic_ack.rs
+│   │   ├── diagnostic_buffer.rs
+│   │   ├── dt_context.rs
+│   │   ├── fanout.rs
+│   │   ├── flush_coordinator.rs
+│   │   ├── gate_cli_compat.rs
+│   │   ├── gate_file.rs
+│   │   ├── health_response.rs
+│   │   ├── lib.rs
+│   │   ├── main.rs
+│   │   ├── merge
+│   │   │   └── witness_isolation.rs
+│   │   ├── merge.rs
+│   │   ├── mesh.rs
+│   │   ├── receipt_chain.rs
+│   │   ├── receipt.rs
+│   │   ├── registry_init.rs
+│   │   ├── registry.rs
+│   │   ├── routing.rs
+│   │   ├── server.rs
+│   │   └── state_response.rs
+│   ├── tests
+│   │   ├── e2e.rs
+│   │   ├── fanout_latency.rs
+│   │   ├── gate_path_roundtrip_witness.rs
+│   │   ├── integration.rs
+│   │   ├── routing_integration.rs
+│   │   └── speciation.rs
+│   └── transcripts
+│       └── multi_lsp_per_extension.txt
+├── lsp-max-lsif
+│   ├── Cargo.toml
+│   ├── src
+│   │   ├── bin
+│   │   │   └── lsif_cli.rs
+│   │   ├── coverage.rs
+│   │   ├── db.rs
+│   │   ├── indexer_rust
+│   │   │   ├── emit.rs
+│   │   │   ├── generated.rs
+│   │   │   └── mod.rs
+│   │   ├── indexer_typescript
+│   │   │   ├── emit.rs
+│   │   │   ├── generated.rs
+│   │   │   └── mod.rs
+│   │   ├── lib.rs
+│   │   ├── linker
+│   │   │   └── mod.rs
+│   │   ├── lsif
+│   │   │   └── tests.rs
+│   │   ├── lsif_0_6_0.rs
+│   │   ├── lsif_builder
+│   │   │   └── extended.rs
+│   │   ├── lsif_builder.rs
+│   │   ├── lsif_indexer.rs
+│   │   ├── lsif_reader.rs
+│   │   ├── lsif_types.rs
+│   │   └── lsif.rs
+│   └── tests
+│       ├── emitter_witness.rs
+│       ├── lsif_conformance_tests.rs
+│       └── tests
+│           ├── coverage.rs
+│           ├── export.rs
+│           ├── general.rs
+│           └── validate.rs
+└── playground
+    ├── Cargo.lock
+    ├── Cargo.toml
+    ├── lsif_dump.json
+    ├── ocel
+    │   ├── admitted_evidence.ocel.json
+    │   ├── digests.jsonl
+    │   ├── events.jsonl
+    │   ├── objects.jsonl
+    │   └── verdicts.jsonl
+    ├── receipts
+    │   ├── 1780771043.jsonl
+    │   ├── 1780771092.jsonl
+    │   ├── 1780771359.jsonl
+    │   ├── 1780952798.jsonl
+    │   ├── authority_surface.toml
+    │   ├── GALL-CHECKPOINT-001.txt
+    │   ├── GALL-CHECKPOINT-002.txt
+    │   ├── GALL-CHECKPOINT-003.receipt.json
+    │   ├── GALL-CHECKPOINT-003.txt
+    │   ├── GALL-CHECKPOINT-004.receipt.json
+    │   ├── GALL-CHECKPOINT-004.txt
+    │   ├── GALL-CHECKPOINT-005.txt
+    │   ├── GALL-CHECKPOINT-006.receipt.json
+    │   ├── GALL-CHECKPOINT-006.txt
+    │   ├── GALL-CHECKPOINT-007.receipt.json
+    │   ├── GALL-CHECKPOINT-007.txt
+    │   ├── GALL-CHECKPOINT-008.receipt.json
+    │   ├── GALL-CHECKPOINT-008.txt
+    │   └── GALL-MACRO-SPR.md
+    └── src
+        ├── bin
+        │   ├── dogfood_harness.rs
+        │   ├── gc005_wasm4pm_adapter.rs
+        │   └── lsif_demo.rs
+        ├── capabilities.rs
+        ├── handlers
+        │   ├── completions
+        │   │   ├── context.rs
+        │   │   ├── mod.rs
+        │   │   └── table
+        │   │       ├── capability_fields.rs
+        │   │       ├── editing_diagnostics.rs
+        │   │       ├── lifecycle_sync.rs
+        │   │       ├── mod.rs
+        │   │       ├── navigation.rs
+        │   │       ├── symbols_codelens.rs
+        │   │       └── workspace_window.rs
+        │   ├── diagnostics
+        │   │   ├── actions.rs
+        │   │   ├── analysis.rs
+        │   │   ├── mod.rs
+        │   │   └── rules.rs
+        │   ├── hover.rs
+        │   └── mod.rs
+        ├── lib.rs
+        └── main.rs
+
+80 directories, 625 files

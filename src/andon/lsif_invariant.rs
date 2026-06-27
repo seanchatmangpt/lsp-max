@@ -33,6 +33,18 @@ pub enum LsifIndexState {
     StaleSourceDigest { expected: String, actual: String },
 }
 
+impl LsifIndexState {
+    /// Returns the severity of the given state. Stale or Missing LSIF is STOP.
+    pub fn severity(&self) -> crate::andon::core::Severity {
+        match self {
+            LsifIndexState::Admitted => crate::andon::core::Severity::Info,
+            LsifIndexState::Missing => crate::andon::core::Severity::Stop,
+            LsifIndexState::StaleLsifDigest { .. } => crate::andon::core::Severity::Stop,
+            LsifIndexState::StaleSourceDigest { .. } => crate::andon::core::Severity::Stop,
+        }
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Invariant struct
 // ---------------------------------------------------------------------------
@@ -301,5 +313,32 @@ mod tests {
             }
             other => panic!("expected StaleLsifDigest for corrupt receipt, got {other:?}"),
         }
+    }
+
+    // ------------------------------------------------------------------
+    // ANDON TRIGGER: STALE_LSIF_INDEX = STOP
+    // ------------------------------------------------------------------
+    #[test]
+    fn lsif_invariant_stale_index_is_stop() {
+        assert_eq!(
+            LsifIndexState::Missing.severity(),
+            crate::andon::core::Severity::Stop,
+            "Missing must map to Stop"
+        );
+        assert_eq!(
+            LsifIndexState::StaleLsifDigest { expected: "".into(), actual: "".into() }.severity(),
+            crate::andon::core::Severity::Stop,
+            "StaleLsifDigest must map to Stop"
+        );
+        assert_eq!(
+            LsifIndexState::StaleSourceDigest { expected: "".into(), actual: "".into() }.severity(),
+            crate::andon::core::Severity::Stop,
+            "StaleSourceDigest must map to Stop"
+        );
+        assert_eq!(
+            LsifIndexState::Admitted.severity(),
+            crate::andon::core::Severity::Info,
+            "Admitted must not be Stop"
+        );
     }
 }

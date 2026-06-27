@@ -1,0 +1,15 @@
+{
+  "release": "v26.6.28",
+  "component": "ast-salsa",
+  "command": "cargo test -p lsp-max-ast",
+  "exit_code": 0,
+  "stdout_digest": "1b011c8f3bbc03c5eed3c1a233621173d01969ac0800612e1577fe25cfa21d51",
+  "stderr_digest": "26af12c0a8d268ae25aba61f5da4f41a7929b2f4df8fc18d1b40adfadce58eaf",
+  "source_boundary": "crates/lsp-max-adapters/lsp-max-ast",
+  "source_digest": "77daef96071766f7546fc946dd9e7945a36c8000c4d3c9478e732cb342070e1c",
+  "artifact_paths": [],
+  "artifact_digests": {},
+  "timestamp": "2026-06-27T08:31:19.990306Z",
+  "status": "ADMITTED",
+  "failset": []
+}

@@ -1,0 +1,15 @@
+{
+  "release": "v26.6.28",
+  "component": "stale-lsif-andon",
+  "command": "cargo test -p lsp-max-lsif stale_lsif_index_is_stop",
+  "exit_code": 0,
+  "stdout_digest": "9d99da86c7637a2a2dfcb4f25242815758049c8043ce5da5948de6c2058a922b",
+  "stderr_digest": "31ab99d1fb82ccc46b77c65b30bf246172b6b9d7bde3e38572d2493f50c6c8dc",
+  "source_boundary": "crates/lsp-max-lsif",
+  "source_digest": "8f2f5384cba2d91216bba57396e285d11963475f86bfc3705c26fca3133c6b2c",
+  "artifact_paths": [],
+  "artifact_digests": {},
+  "timestamp": "2026-06-27T08:31:24.888389Z",
+  "status": "ADMITTED",
+  "failset": []
+}
