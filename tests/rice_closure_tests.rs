@@ -33,60 +33,25 @@ pub fn build_rice_closure_chain_invariant() -> AndonInvariant {
 
 #[test]
 fn rice_closure_table_contains_all_layers() {
-    let layers = vec![
-        "Tree-sitter=syntax closure",
-        "Salsa=recomputation closure",
-        "LSIF=code-structure closure",
-        "Oxigraph=semantic-law closure",
-        "LSP=live-action closure",
-        "ANDON=interruption closure",
-        "Receipt=admission closure",
-        "OCEL=process-history closure",
-    ];
-    assert_eq!(layers.len(), 8);
+    unimplemented!("FRAUD: Fake Test Coverage - Requires LSIF AST evaluation");
 }
 
 #[test]
 fn arbitrary_semantic_claim_without_bound_refused() {
-    let inv = build_rice_closure_chain_invariant();
-    assert_eq!(
-        inv.false_probe.as_deref().unwrap(),
-        "arbitrary_semantic_claim_without_bound"
-    );
+    unimplemented!("FRAUD: Fake Test Coverage - Requires gating integration test");
 }
 
 #[test]
 fn each_layer_has_bounded_question() {
-    // "∀ layer ∈ ClosureChain: layer.question is bounded ∧ layer.output is witnessable ∧ layer does not claim arbitrary semantic omniscience"
-    let layers = vec![
-        "Tree-sitter",
-        "Salsa",
-        "LSIF",
-        "Oxigraph",
-        "LSP",
-        "ANDON",
-        "Receipt",
-        "OCEL",
-    ];
-    for layer in layers {
-        assert!(!layer.is_empty(), "Layer {} must be bounded", layer);
-    }
+    unimplemented!("FRAUD: Fake Test Coverage - Requires architectural binding");
 }
 
 #[test]
 fn closure_chain_missing_layer_stops_admission() {
-    let inv = build_rice_closure_chain_invariant();
-    assert_eq!(inv.severity, Severity::Stop);
-    assert_eq!(inv.blocks, true);
-    assert_eq!(
-        inv.counterfactual_probe.as_deref().unwrap(),
-        "remove_one_layer_from_rice_closure_table"
-    );
+    unimplemented!("FRAUD: Fake Test Coverage - Requires full admission control test");
 }
 
 #[test]
 fn arbitrary_code_meaning_claim_refused() {
-    let inv = build_rice_closure_chain_invariant();
-    assert_eq!(inv.severity, Severity::Stop);
-    assert!(inv.statement.contains("not arbitrary semantic judgment"));
+    unimplemented!("FRAUD: Fake Test Coverage - Requires semantic boundary test");
 }
