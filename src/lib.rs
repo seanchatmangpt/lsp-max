@@ -86,6 +86,10 @@
 // codec, not a print macro, so it is unaffected.
 #![deny(clippy::print_stdout)]
 #![allow(clippy::mutable_key_type)]
+#![allow(clippy::new_without_default)]
+#![allow(clippy::module_inception)]
+#![allow(deprecated)]
+#![allow(unused_imports)]
 
 pub extern crate lsp_types_max;
 pub use lsp_types_max as lsp_types;

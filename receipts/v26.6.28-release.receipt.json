@@ -1,0 +1,30 @@
+{
+  "release": "v26.6.28",
+  "status": "STOP",
+  "component_receipts": [
+    "receipts/v26.6.28-ast-salsa.receipt.json",
+    "receipts/v26.6.28-disclaimer-gap.receipt.json",
+    "receipts/v26.6.28-docs-alignment.receipt.json",
+    "receipts/v26.6.28-file-tree.receipt.json",
+    "receipts/v26.6.28-jira-1.receipt.json",
+    "receipts/v26.6.28-jira-2.receipt.json",
+    "receipts/v26.6.28-jira-3.receipt.json",
+    "receipts/v26.6.28-lsif-salsa.receipt.json",
+    "receipts/v26.6.28-lsif.receipt.json",
+    "receipts/v26.6.28-oxigraph-boundary.receipt.json",
+    "receipts/v26.6.28-rice-closure.receipt.json",
+    "receipts/v26.6.28-stale-lsif-andon.receipt.json",
+    "receipts/v26.6.28-wip.receipt.json"
+  ],
+  "commands": {
+    "cargo_test_all": "success",
+    "cargo_clippy": "success",
+    "cargo_publish_dry_run": "failed"
+  },
+  "crates_io_publish_executed": false,
+  "failset": [
+    "WIP_RECEIPT_PARTIAL",
+    "CARGO_PUBLISH_DRY_RUN_FAILED"
+  ],
+  "timestamp": "2026-06-27T08:38:24Z"
+}

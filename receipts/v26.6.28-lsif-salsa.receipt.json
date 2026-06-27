@@ -1,0 +1,15 @@
+{
+  "release": "v26.6.28",
+  "component": "lsif-salsa",
+  "command": "cargo test -p lsp-max-lsif",
+  "exit_code": 0,
+  "stdout_digest": "a496842cc218a31c86e252f71d82e8ce8f3dd1db0111e4f60366b1f475267a38",
+  "stderr_digest": "384f8823053cb9cfcad797c633bcabc0bdce794f1377daee5ab4d6b6a9c8a1c4",
+  "source_boundary": "crates/lsp-max-lsif",
+  "source_digest": "8f2f5384cba2d91216bba57396e285d11963475f86bfc3705c26fca3133c6b2c",
+  "artifact_paths": [],
+  "artifact_digests": {},
+  "timestamp": "2026-06-27T08:31:20.859503Z",
+  "status": "ADMITTED",
+  "failset": []
+}

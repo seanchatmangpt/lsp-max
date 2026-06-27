@@ -1823,7 +1823,7 @@ The agent does not understand the repo. The repo provides an admitted semantic i
 
 ---
 
-## Rice's Theorem and the BRCE Response (admitted 2026-06-27)
+## The Rice Closure Model (BRCE) (admitted 2026-06-27)
 
 ### The Rice boundary
 
@@ -1872,7 +1872,7 @@ Each question is smaller, bounded, and mechanically checkable.
 | Receipt | "Is it really done?" | "Does this bounded proof bind artifact, command, digest, status?" |
 | OCEL | "What happened?" | "Here is the event trace." |
 
-### The BRCE response to Rice
+### The Rice Closure Model (BRCE)
 
 ```
 ArbitraryMeaning

@@ -1,0 +1,11 @@
+{
+  "command": "wip-observation",
+  "exit_code": 0,
+  "stdout_digest": "none",
+  "stderr_digest": "none",
+  "source_boundary": "git log 4c883b1..HEAD",
+  "source_digest": "c4994b38ea77fb0a63aa64ceb2f59feda9798ddb1dcbf19b4e2e1c613f4251df",
+  "artifact_digest": "68a47e17a9388bcec428e4586c02576bb7290dd94eafdaef2616ab33110dd180",
+  "timestamp": "2026-06-27T08:16:24Z",
+  "status": "PARTIAL"
+}

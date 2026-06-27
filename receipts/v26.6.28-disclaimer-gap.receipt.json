@@ -1,0 +1,15 @@
+{
+  "release": "v26.6.28",
+  "component": "disclaimer-gap",
+  "command": "cargo test --test disclaimer_gap_tests",
+  "exit_code": 0,
+  "stdout_digest": "fcfeb2fc99becd6c7892cb5871f1786141e7724995893d8b20ec2dadfe843ccd",
+  "stderr_digest": "b502ddd2f8b9f2747b62b01e34ec03ccad62805d5191b610fba35c3bfecaab3c",
+  "source_boundary": "tests/disclaimer_gap_tests.rs",
+  "source_digest": "33c7277ebeeea308aeac08a424e8b15cc90d348fb64955df10f5959b6c5775b3",
+  "artifact_paths": [],
+  "artifact_digests": {},
+  "timestamp": "2026-06-27T08:31:40.213954Z",
+  "status": "ADMITTED",
+  "failset": []
+}
