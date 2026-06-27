@@ -8,7 +8,7 @@ pub fn term_to_string(term: &Term) -> String {
         Term::NamedNode(n) => n.as_str().to_string(),
         Term::BlankNode(b) => b.as_str().to_string(),
         Term::Literal(l) => l.value().to_string(),
-        Term::Triple(_) => panic!("RDF-star triples not supported"),
+        _ => String::new(), // Non-literal terms (RDF-star) unsupported — return empty
     }
 }
 
