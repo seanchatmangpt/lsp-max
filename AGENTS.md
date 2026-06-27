@@ -1599,3 +1599,224 @@ During the evolution of `lsp-max`, several sophisticated agent hallucination and
    Agents will pretend to optimize memory by doing superficial type aliasing (e.g., `pub type Uri = String`) but continue to use massive string allocations and double-serialization (`serde_json::to_string` followed by `writeln!`) under the hood in the hot path.
 
 Agents must not be trusted on prose or compilation alone. If it doesn't crash when the old path is deleted, the new path is fake.
+
+---
+
+## v26.6.28 — Storage Triad Law (admitted 2026-06-27)
+
+### The Three-Store Model
+
+```text
+Salsa   = HOT incremental computation
+Papaya  = HOT concurrent diagnostic staging
+Oxigraph = COLD semantic law / meaning graph
+```
+
+These are not competitors. They have different jobs.
+
+```text
+Salsa remembers computation.
+Oxigraph remembers meaning.
+Papaya stages concurrent diagnostic writes.
+```
+
+### Salsa — incremental recomputation engine
+
+Salsa owns the derived computation layer. It does NOT own the parse tree.
+
+**Admitted tracked query outputs:**
+```text
+Vec<SalsaDiag>
+Vec<SymbolFact>
+LsifFileResult
+Digest
+TruthTableRow
+InvariantFact
+```
+
+**Refused tracked query outputs:**
+```text
+tree_sitter::Tree       (does not implement salsa::Update)
+Parser
+open file handles
+LSP client handles
+Oxigraph store handles
+```
+
+**Invariant: `SalsaDoesNotOwnTreeSitterTree`**
+
+TRUE: `parse_document` is a non-tracked helper. `ast_diagnostics` is tracked and returns `Update`-safe types.
+FALSE: `tree_sitter::Tree` stored inside a tracked query output.
+COUNTERFACTUAL: Return `Tree` from tracked fn → compile refusal.
+WITNESS: `cargo test -p lsp-max-ast` 10/10 green, commit `4c883b1`.
+REPAIR: Return `Update`-safe derived facts only.
+
+The correct split:
+```text
+tree-sitter = incremental parse (owns the tree)
+Salsa       = incremental recomputation (owns derived facts)
+```
+
+Do not fight this boundary. Do not wrap `Tree` badly to force it through Salsa.
+
+### Oxigraph — cold semantic meaning graph
+
+Oxigraph is the correct tool for graph-shaped law queries:
+
+```text
+Which invariant governs this diagnostic?
+Which AGENTS.md law maps to this code?
+Which receipt witnesses this claim?
+Which LSIF symbol edges support this repair?
+Which project law applies to this workspace?
+```
+
+**Invariant: `OXIGRAPH_NOT_ON_HOT_PATH`**
+
+TRUE: `didChange` does not synchronously run full Oxigraph graph rebuild.
+FALSE: `didChange` invokes cold SPARQL rebuild.
+COUNTERFACTUAL: Force `semantic_graph.refresh()` inside `didChange` → `LSPMAX-OXIGRAPH-HOT-PATH-REFUSED`.
+REPAIR: Move query to `refreshLawGraph` / idle task / release audit.
+
+**Boundary law:**
+
+`oxigraph::*` must only appear inside `src/runtime/control_plane/semantic_graph/`.
+Random `oxigraph::model::Term` matching outside this boundary = boundary violation, not an Oxigraph problem.
+
+Required module shape:
+```text
+src/runtime/control_plane/semantic_graph/
+  mod.rs
+  store.rs
+  named_graphs.rs
+  sparql.rs
+  snapshot.rs
+  receipt.rs
+```
+
+Exposed API surface only:
+```rust
+pub trait SemanticLawGraph {
+    fn load_snapshot(&self, snapshot: LawGraphSnapshot) -> Result<GraphDigest>;
+    fn query_invariants(&self, scope: LawScope) -> Result<Vec<InvariantBinding>>;
+    fn query_witnesses(&self, claim: ClaimId) -> Result<Vec<WitnessBinding>>;
+    fn query_repairs(&self, diagnostic: DiagnosticCode) -> Result<Vec<RepairBinding>>;
+}
+```
+
+### LSIF — persisted code intelligence graph
+
+LSIF is the static semantic receipt layer for source code structure.
+
+```text
+LSP  = current conversation with the repo (live)
+LSIF = durable semantic memory of the repo (stored)
+```
+
+LSIF attacks the "LLM guessed the codebase" problem:
+
+Without LSIF, the agent does: search text → open files → infer structure → guess relationships → patch → hope.
+
+With LSIF, the agent does: query symbol graph → resolve definition/reference edges → inspect moniker → compute impacted files → patch with bounded scope.
+
+**LSIF feeds ANDON WITNESS:**
+
+An invariant needs: `TRUE + FALSE + COUNTERFACTUAL + WITNESS + REPAIR`.
+LSIF provides WITNESS (symbol evidence, reference edges, definition location) and scopes REPAIR (callsite set, import locations, affected files).
+
+### LSIF Receipt Law
+
+**`LSIF_RECEIPT_ADMITTED` formula:**
+```text
+exit_code == 0
+∧ lsif_file_exists
+∧ blake3(lsif_file) == receipt.lsif_digest
+∧ blake3(sorted canonical source_boundary files) == receipt.source_digest
+∧ vertex_count > 0
+∧ document_count > 0
+∧ source_boundary ∩ {receipts/, target/, .git/} == ∅
+```
+
+Any failure → `status = STOP`, not `ADMITTED`.
+
+**Self-reference guardrail:**
+`source_boundary` must never include `receipts/`. Generating the receipt file must not mutate the hashed source tree.
+
+**Count definitions (locked — do not improvise):**
+
+| Field | Parser rule |
+|---|---|
+| `vertex_count` | LSIF lines where `"type":"vertex"` |
+| `document_count` | vertices where `"label":"document"` |
+| `moniker_count` | vertices where `"label":"moniker"` |
+| `reference_count` | vertices where `"label":"referenceResult"` |
+
+**Invariant: `STALE_LSIF_INDEX = STOP`**
+
+TRUE: `source_digest == receipt.source_digest` ∧ `lsif_digest == receipt.lsif_digest`.
+FALSE: source changed after LSIF receipt ∨ digest mismatch ∨ file missing.
+COUNTERFACTUAL: Modify indexed source after receipt → `STALE_LSIF_INDEX` fires → `admission_allowed = false`.
+WITNESS: `receipts/v26.6.28-lsif.receipt.json` + LSIF output file digest.
+REPAIR: Rerun `lsp-max-lsif` indexer and regenerate receipt.
+
+Stale LSIF is worse than missing LSIF:
+```text
+MissingLsif → "I do not know"
+StaleLsif   → "I know" (while lying)
+```
+Therefore: `STALE_LSIF_INDEX = STOP`, not WARNING.
+
+### Full storage layer table
+
+| Layer | Store | Path |
+|---|---|---|
+| Live document text / AST | `texter` + `tree-sitter` | hot |
+| Derived LSP computations | `Salsa` | hot |
+| Concurrent diagnostic staging | `papaya` | hot |
+| Process/server registry | `DashMap` | warm |
+| Semantic law graph | `Oxigraph` | cold |
+| Code intelligence graph | `LSIF` | cold/warm |
+| Admission proof | receipt + BLAKE3 | admission path |
+| Process evidence | OCEL | cold/warm |
+
+### Two-shape law
+
+The coding agent acts. The architect agent formalizes. The LSP interrupts. The receipt admits.
+
+These are distinct shapes:
+
+| Shape | Produces | Failure mode |
+|---|---|---|
+| Doctrine/architecture agent | law, invariants, boundaries | can become abstract |
+| Coding/action agent | commits, patches, test results | can outrun the law |
+| LSP-as-ANDON | push, block, repair | must be wired correctly |
+| Receipt | proof object | can be faked if not bound |
+
+The repository needs a law surface that governs all shapes, because none of them is final authority.
+
+```
+R_B ⊢ A = μ_B(O*_B)
+```
+
+The agent's action loop is useful.
+The architectural loop is useful.
+Neither is admission.
+The receipt admits.
+
+### Source pipeline (complete)
+
+```text
+Source
+→ texter (text/range correctness)
+→ tree-sitter (incremental parse)
+→ Salsa (incremental recomputation)
+→ LSIF (persisted code intelligence graph)
+→ Oxigraph (semantic law join layer)
+→ Invariants (ANDON evaluation)
+→ ANDON (interruption/gate)
+→ Receipt (admission proof)
+→ OCEL (process memory)
+```
+
+The agent does not understand the repo. The repo provides an admitted semantic index.
+
