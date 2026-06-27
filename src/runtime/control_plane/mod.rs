@@ -7,6 +7,7 @@ pub mod powl_conformance;
 pub mod powl_model;
 pub mod receipts;
 pub mod replay;
+pub mod semantic_graph;
 pub mod views;
 pub mod wasm4pm_admission;
 pub mod wasm4pm_evidence;
