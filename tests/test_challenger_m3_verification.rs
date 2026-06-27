@@ -4,8 +4,8 @@ use lsp_max_protocol::{
     ChainDescriptor, ConformanceVector, HookDescriptor, HookGraphNode, LawAxis, ManifoldSnapshot,
     MaxDiagnostic, Receipt, SnapshotId,
 };
-use lsp_max_runtime::sha256;
-use lsp_max_runtime::MaxMethod;
+use lsp_max::runtime::sha256;
+use lsp_max::runtime::MaxMethod;
 use lsp_types_max as lsp_types;
 
 #[test]
@@ -290,7 +290,7 @@ fn test_update_wasm4pm_compat_baseline() {
     manifest.digest = None;
 
     let serialized = serde_json::to_string(&manifest).unwrap();
-    let actual_digest = lsp_max_runtime::sha256::sha256(serialized.as_bytes());
+    let actual_digest = lsp_max::runtime::sha256::sha256(serialized.as_bytes());
 
     manifest.digest = Some(actual_digest);
     let final_json = serde_json::to_string_pretty(&manifest).unwrap();

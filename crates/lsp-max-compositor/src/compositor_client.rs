@@ -7,7 +7,7 @@ use std::sync::Arc;
 
 use async_trait::async_trait;
 use lsp_max::lsp_types::{DiagnosticSeverity, NumberOrString, PublishDiagnosticsParams};
-use lsp_max_client::LanguageClient;
+use lsp_max::client::LanguageClient;
 
 use crate::diagnostic_buffer::DiagnosticBuffer;
 use crate::flush_coordinator::FlushCoordinator;

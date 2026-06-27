@@ -1,7 +1,7 @@
 use clap_noun_verb::error::NounVerbError;
 use clap_noun_verb::Result;
 use clap_noun_verb_macros::verb;
-use lsp_max_runtime::{AutonomicMesh, LspInstance};
+use lsp_max::max_runtime::{AutonomicMesh, LspInstance};
 use serde::{Deserialize, Serialize};
 
 // ==============================================================================
@@ -37,7 +37,7 @@ impl ImportService {
     pub fn merge_state(&self, src: &str) -> std::result::Result<MergeSummary, String> {
         // Parse the import file first so we can report a clean error.
         let raw = std::fs::read_to_string(src).map_err(|e| e.to_string())?;
-        let import_state: lsp_max_runtime::AutonomicMeshState =
+        let import_state: lsp_max::max_runtime::AutonomicMeshState =
             serde_json::from_str(&raw).map_err(|e| format!("parse error: {}", e))?;
 
         // Load (or bootstrap) the live mesh.
@@ -174,7 +174,7 @@ pub fn diagnostics(src: String, instance_id: String) -> Result<ImportDiagnostics
 #[cfg(test)]
 mod tests {
     use super::*;
-    use lsp_max_runtime::{AutonomicMesh, LspInstance};
+    use lsp_max::max_runtime::{AutonomicMesh, LspInstance};
 
     fn make_live_mesh_svc() -> (tempfile::NamedTempFile, ImportService) {
         let mut mesh = AutonomicMesh::new();

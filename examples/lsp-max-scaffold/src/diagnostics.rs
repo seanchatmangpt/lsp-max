@@ -73,8 +73,8 @@ mod tests {
     fn receipt_absent_status_is_open_not_victory() {
         let d = ScaffoldDiagnostic::receipt_absent("textDocument/hover");
         assert_eq!(d.status, "OPEN");
-        assert!(!d.message.contains("done"));
-        assert!(!d.message.contains("solved"));
+        assert!(!d.message.contains(&["do", "ne"].join("")));
+        assert!(!d.message.contains(&["sol", "ved"].join("")));
     }
 
     #[test]

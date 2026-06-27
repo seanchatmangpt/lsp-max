@@ -1,7 +1,7 @@
 use clap_noun_verb::error::NounVerbError;
 use clap_noun_verb::Result;
 use clap_noun_verb_macros::verb;
-use lsp_max_runtime::AutonomicMesh;
+use lsp_max::max_runtime::AutonomicMesh;
 use serde::Serialize;
 
 // ==============================================================================
@@ -124,7 +124,7 @@ impl ExportService {
                 vec!["instance_id,score,admitted_count,refused_count,unknown_count".to_string()];
             for (id, inst) in &mesh.instances {
                 let score = inst.conformance_score();
-                let cv = lsp_max_runtime::build_conformance_vector(&inst.diagnostics);
+                let cv = lsp_max::max_runtime::build_conformance_vector(&inst.diagnostics);
                 rows.push(format!(
                     "{},{},{},{},{}",
                     id,
@@ -141,7 +141,7 @@ impl ExportService {
                 .iter()
                 .map(|(id, inst)| {
                     let score = inst.conformance_score();
-                    let cv = lsp_max_runtime::build_conformance_vector(&inst.diagnostics);
+                    let cv = lsp_max::max_runtime::build_conformance_vector(&inst.diagnostics);
                     serde_json::json!({
                         "instance_id": id,
                         "score": score,
@@ -346,7 +346,7 @@ pub fn conformance(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use lsp_max_runtime::{AutonomicMesh, LspInstance};
+    use lsp_max::max_runtime::{AutonomicMesh, LspInstance};
 
     fn make_temp_mesh_with_instance() -> (tempfile::NamedTempFile, ExportService) {
         let mut mesh = AutonomicMesh::new();

@@ -15,6 +15,30 @@ keywords.workspace = true
 all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
 
+[lib]
+name = "lsp_max_cli"
+path = "src/lib.rs"
+
+[[bin]]
+name = "lsp-max-cli"
+path = "src/main.rs"
+
+[[bin]]
+name = "lsp-coverage"
+path = "src/bin/lsp-coverage.rs"
+
+[[bin]]
+name = "lsp-max-specgen"
+path = "src/bin/lsp-max-specgen/main.rs"
+
+[[bin]]
+name = "lsp-max-meta"
+path = "src/bin/lsp-max-meta/main.rs"
+
+[[bin]]
+name = "lsp-max-mcp"
+path = "src/bin/lsp-max-mcp.rs"
+
 [dependencies]
 anyhow = "1"
 colored = "2"
@@ -28,17 +52,40 @@ linkme = "0.3.36"
 lsp-max = { path = "../..", version = "26.6.24" }
 lsp-max-protocol = { path = "../../lsp-max-protocol", version = "26.6.24" }
 lsp-types-max = { version = "26.6.24" }
-lsp-max-agent = { path = "../../lsp-max-agent", version = "26.6.24" }
-lsp-max-gen = { path = "../../crates/lsp-max-gen", version = "26.6.24" }
-lsp-max-runtime = { path = "../../lsp-max-runtime", version = "26.6.24" }
+thiserror = "1"
 heck = "0.5"
 tera = "1.20"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
 
-[[bin]]
-name = "lsp-coverage"
-path = "src/bin/lsp-coverage.rs"
+# Absorbed from lsp-max-gen
+toml = "0.8"
+walkdir = { workspace = true }
+
+# Absorbed from lsp-max-client
+lsp-max-macros = { path = "../../lsp-max-macros", version = "26.6.24" }
+tower = { version = "0.4", features = ["util"] }
+async-trait = "0.1"
+futures = "0.3"
+
+# Absorbed from lsp-max-specgen
+clap = { version = "4", features = ["derive"] }
+indexmap = { version = "2", features = ["serde"] }
+prettyplease = "0.2"
+proc-macro2 = "1"
+quote = "1"
+syn = { version = "2", features = ["full"] }
+
+# Absorbed from lsp-max-meta
+dashmap = { workspace = true }
+
+# Absorbed from lsp-max-mcp
+lsp-max-compositor = { path = "../lsp-max-compositor" }
+
+[features]
+default = ["gen", "client"]
+gen = []
+client = []
 
 [dev-dependencies]
 tempfile = "3"

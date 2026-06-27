@@ -90,9 +90,32 @@
 pub extern crate lsp_types_max;
 pub use lsp_types_max as lsp_types;
 
-pub extern crate lsp_max_agent as max_agent;
+#[allow(missing_docs)]
+#[allow(missing_debug_implementations)]
+pub mod agent;
+
+#[allow(missing_docs)]
+#[allow(missing_debug_implementations)]
+pub mod runtime;
+
+#[allow(missing_docs)]
+#[allow(missing_debug_implementations)]
+pub mod andon;
+
+#[allow(missing_docs)]
+#[allow(missing_debug_implementations)]
+pub mod live;
+
+#[allow(missing_docs)]
+#[allow(missing_debug_implementations)]
+pub mod client;
+
+pub use agent as max_agent;
+pub use runtime as max_runtime;
+pub use andon as max_andon;
+pub use live as max_live;
+
 pub extern crate lsp_max_protocol as max_protocol;
-pub extern crate lsp_max_runtime as max_runtime;
 
 /// A re-export of [`async-trait`](https://docs.rs/async-trait) for convenience.
 pub use async_trait::async_trait;
@@ -119,7 +142,6 @@ mod codec;
 pub mod language_server;
 pub mod service;
 mod transport;
-pub(crate) use language_server::generated;
 pub use language_server::LanguageServer;
 
 pub use lsp_max_lsif as lsif;
@@ -258,14 +280,14 @@ pub struct ServerRegistry {
     /// Ring-buffer of recent conformance score changes keyed by sequence number.
     /// The single authoritative conformance-delta store; replaces the former MESH global.
     #[serde(default)]
-    pub conformance_delta_log: std::collections::VecDeque<max_runtime::ConformanceDeltaEntry>,
+    pub conformance_delta_log: std::collections::VecDeque<crate::max_runtime::ConformanceDeltaEntry>,
 }
 
 /// Global static instance of the server registry.
 pub static REGISTRY: OnceLock<Mutex<ServerRegistry>> = OnceLock::new();
 
 /// Global static instance of the autonomic mesh, used by RPC bridge methods.
-pub static MESH: OnceLock<Mutex<max_runtime::AutonomicMesh>> = OnceLock::new();
+pub static MESH: OnceLock<Mutex<crate::max_runtime::AutonomicMesh>> = OnceLock::new();
 
 /// Retrieves a reference to the global server registry.
 pub fn get_registry() -> &'static Mutex<ServerRegistry> {
@@ -297,17 +319,17 @@ pub(crate) fn lock_registry() -> Result<std::sync::MutexGuard<'static, ServerReg
     get_registry().lock().map_err(|_| Error::internal_error())
 }
 
-fn build_standard_mesh() -> max_runtime::AutonomicMesh {
-    let mut mesh = max_runtime::AutonomicMesh::new();
-    mesh.register_hook(Box::new(max_runtime::IntakeDiagnosticHook));
-    mesh.register_hook(Box::new(max_runtime::IntakeClearHook));
-    mesh.register_hook(Box::new(max_runtime::CustomerRequestClassifierHook::new()));
-    mesh.register_hook(Box::new(max_runtime::PolicyEvaluationHook::new()));
-    mesh.register_hook(Box::new(max_runtime::ReceiptRoutingHook::new()));
+fn build_standard_mesh() -> crate::max_runtime::AutonomicMesh {
+    let mut mesh = crate::max_runtime::AutonomicMesh::new();
+    mesh.register_hook(Box::new(crate::max_runtime::IntakeDiagnosticHook));
+    mesh.register_hook(Box::new(crate::max_runtime::IntakeClearHook));
+    mesh.register_hook(Box::new(crate::max_runtime::CustomerRequestClassifierHook::new()));
+    mesh.register_hook(Box::new(crate::max_runtime::PolicyEvaluationHook::new()));
+    mesh.register_hook(Box::new(crate::max_runtime::ReceiptRoutingHook::new()));
     mesh
 }
 
-pub(crate) fn lock_mesh() -> Result<std::sync::MutexGuard<'static, max_runtime::AutonomicMesh>> {
+pub(crate) fn lock_mesh() -> Result<std::sync::MutexGuard<'static, crate::max_runtime::AutonomicMesh>> {
     MESH.get_or_init(|| Mutex::new(build_standard_mesh()))
         .lock()
         .map_err(|_| Error::internal_error())

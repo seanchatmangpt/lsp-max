@@ -3,7 +3,7 @@ fn main() {
     let tokens = std::collections::HashMap::from([("`", "Backtick")]);
 
     let token_stream =
-        lsp_max_ast_codegen::generate(source, &tree_sitter_latex::LANGUAGE.into(), Some(tokens));
+        lsp_max_ast::codegen::generate(source, &tree_sitter_latex::LANGUAGE.into(), Some(tokens));
 
     let out_dir = std::env::var_os("OUT_DIR").unwrap();
     let dest_path = std::path::Path::new(&out_dir).join("generated_ast.rs");

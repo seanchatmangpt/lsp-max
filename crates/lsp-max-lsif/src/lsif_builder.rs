@@ -10,7 +10,6 @@ pub struct LsifBuilder<W: Write> {
     open_documents: std::collections::HashSet<i64>,
     open_projects: std::collections::HashSet<i64>,
     has_emitted_metadata: bool,
-    pub store: Option<crate::lsif_store::LsifStore>,
 }
 
 impl<W: Write> LsifBuilder<W> {
@@ -21,13 +20,7 @@ impl<W: Write> LsifBuilder<W> {
             open_documents: std::collections::HashSet::new(),
             open_projects: std::collections::HashSet::new(),
             has_emitted_metadata: false,
-            store: None,
         }
-    }
-
-    pub fn with_store(mut self) -> io::Result<Self> {
-        self.store = Some(crate::lsif_store::LsifStore::new()?);
-        Ok(self)
     }
 
     pub fn next_id(&mut self) -> Id {
@@ -44,11 +37,8 @@ impl<W: Write> LsifBuilder<W> {
                 panic!("MetaData MUST be the first element emitted in an LSIF graph.");
             }
         }
-        if let Some(store) = &mut self.store {
-            store.insert_element(&element)?;
-        }
-        let json = serde_json::to_string(&element)?;
-        writeln!(self.writer, "{}", json)
+        serde_json::to_writer(&mut self.writer, &element)?;
+        writeln!(self.writer)
     }
 
     pub fn emit_metadata(
@@ -69,14 +59,12 @@ impl<W: Write> LsifBuilder<W> {
         Ok(id)
     }
 
-    pub fn emit_project(&mut self, kind: Option<&str>, resource: Option<String>) -> io::Result<Id> {
+    pub fn emit_project(&mut self, kind: &str) -> io::Result<Id> {
         let project_id = self.next_id();
         self.emit(Element::Vertex(Vertex::Project {
             id: project_id.clone(),
             type_: VertexType::Vertex,
-            kind: kind.map(|s| s.to_string()),
-            resource,
-            contents: None,
+            kind: kind.to_string(),
         }))?;
         self.begin_project(project_id.clone())?;
         Ok(project_id)
@@ -340,7 +328,7 @@ impl<W: Write> LsifBuilder<W> {
                 args: None,
             },
         )?;
-        self.emit_project(Some(lang), Some(root.to_string()))
+        self.emit_project(lang)
     }
 
     pub fn end_project(&mut self, project_id: Id) -> io::Result<()> {

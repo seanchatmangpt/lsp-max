@@ -234,9 +234,9 @@ pub async fn goto_declaration(
 ) -> Result<Option<request::GotoDeclarationResponse>> {
     let uri = &params.text_document_position_params.text_document.uri;
     let pos = params.text_document_position_params.position;
-    let views = lsp_max_runtime::control_plane::views::get_views();
+    let views = crate::runtime::control_plane::views::get_views();
     let url = Url::parse(uri.as_str()).map_err(|_| Error::internal_error())?;
-    if let Some(loc) = lsp_max_runtime::control_plane::views::lookup_definition(views, &url, pos) {
+    if let Some(loc) = crate::runtime::control_plane::views::lookup_definition(views, &url, pos) {
         Ok(Some(request::GotoDeclarationResponse::Scalar(loc)))
     } else {
         Ok(None)
@@ -249,11 +249,11 @@ pub async fn goto_type_definition(
 ) -> Result<Option<request::GotoTypeDefinitionResponse>> {
     let uri = &params.text_document_position_params.text_document.uri;
     let pos = params.text_document_position_params.position;
-    let views = lsp_max_runtime::control_plane::views::get_views();
+    let views = crate::runtime::control_plane::views::get_views();
     let url = Url::parse(uri.as_str()).map_err(|_| Error::internal_error())?;
 
     if let Some(items) =
-        lsp_max_runtime::control_plane::views::lookup_type_hierarchy_supertypes(views, &url, pos)
+        crate::runtime::control_plane::views::lookup_type_hierarchy_supertypes(views, &url, pos)
     {
         let locs: Vec<Location> = items
             .into_iter()
@@ -280,11 +280,11 @@ pub async fn goto_implementation(
 ) -> Result<Option<request::GotoImplementationResponse>> {
     let uri = &params.text_document_position_params.text_document.uri;
     let pos = params.text_document_position_params.position;
-    let views = lsp_max_runtime::control_plane::views::get_views();
+    let views = crate::runtime::control_plane::views::get_views();
     let url = Url::parse(uri.as_str()).map_err(|_| Error::internal_error())?;
 
     if let Some(items) =
-        lsp_max_runtime::control_plane::views::lookup_type_hierarchy_subtypes(views, &url, pos)
+        crate::runtime::control_plane::views::lookup_type_hierarchy_subtypes(views, &url, pos)
     {
         let locs: Vec<Location> = items
             .into_iter()

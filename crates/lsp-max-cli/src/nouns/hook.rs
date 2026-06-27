@@ -1,7 +1,7 @@
 use clap_noun_verb::error::NounVerbError;
 use clap_noun_verb::Result;
 use clap_noun_verb_macros::verb;
-use lsp_max_runtime::AutonomicMesh;
+use lsp_max::max_runtime::AutonomicMesh;
 use serde::Serialize;
 
 // ==============================================================================
@@ -153,10 +153,10 @@ pub fn propagate(
         .and_then(|inst| inst.receipts.last())
         .map(|r| r.hash.clone());
     let hash = match &prev_receipt_hash {
-        Some(prev) => lsp_max_runtime::sha256(format!("{prev}:{receipt_id}").as_bytes()),
-        None => lsp_max_runtime::sha256(receipt_id.as_bytes()),
+        Some(prev) => lsp_max::max_runtime::sha256(format!("{prev}:{receipt_id}").as_bytes()),
+        None => lsp_max::max_runtime::sha256(receipt_id.as_bytes()),
     };
-    let receipt = lsp_max_runtime::Receipt {
+    let receipt = lsp_max::max_runtime::Receipt {
         receipt_id,
         hash,
         prev_receipt_hash,
@@ -211,7 +211,7 @@ pub fn chain(instance_id: String, chain_id: Option<String>) -> clap_noun_verb::R
 #[cfg(test)]
 mod tests {
     use super::*;
-    use lsp_max_runtime::{AutonomicMesh, LspInstance};
+    use lsp_max::max_runtime::{AutonomicMesh, LspInstance};
 
     fn make_temp_mesh() -> (tempfile::NamedTempFile, HookService) {
         let mut mesh = AutonomicMesh::new();

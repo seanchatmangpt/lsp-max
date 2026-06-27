@@ -153,5 +153,6 @@ pub fn server_capabilities() -> ServerCapabilities {
         })),
         #[cfg(not(feature = "proposed"))]
         inline_completion_provider: None,
+        ..Default::default()
     }
 }

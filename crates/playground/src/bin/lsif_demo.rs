@@ -4,7 +4,9 @@ use lsp_max::lsp_types_max::Position;
 
 fn main() {
     let mut buffer = Vec::new();
-    let mut builder = LsifBuilder::new(&mut buffer);
+    {
+        let mut writer = std::io::BufWriter::new(&mut buffer);
+        let mut builder = LsifBuilder::new(&mut writer);
 
     builder
         .emit_metadata(
@@ -36,5 +38,6 @@ fn main() {
         )
         .unwrap();
 
+    }
     println!("{}", String::from_utf8(buffer).unwrap());
 }

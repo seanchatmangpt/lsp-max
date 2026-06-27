@@ -6,7 +6,7 @@ use lsp_max::lsp_types::{
     ClientCapabilities, ClientInfo, DocumentUri, InitializeParams, InitializeResult,
     InitializedParams, ServerCapabilities,
 };
-use lsp_max_client::{ClientBuilder, ClientError, LanguageClient, ServerHandle};
+use lsp_max::client::{ClientBuilder, ClientError, LanguageClient, ServerHandle};
 use std::process::Stdio;
 use tokio::process::Command;
 

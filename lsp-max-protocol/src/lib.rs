@@ -19,6 +19,8 @@ pub mod pipeline;
 pub mod policy;
 pub mod repair;
 pub mod stream;
+pub mod abstractions;
+pub mod base_protocol;
 
 // Re-export all types so they are visible at the crate root level exactly as before.
 

@@ -1,8 +1,8 @@
 use clap_noun_verb::error::NounVerbError;
 use clap_noun_verb::Result;
 use clap_noun_verb_macros::verb;
-use lsp_max_runtime::AutonomicMesh;
-use lsp_max_runtime::HookEvent;
+use lsp_max::max_runtime::AutonomicMesh;
+use lsp_max::max_runtime::HookEvent;
 use serde::Serialize;
 use std::collections::HashMap;
 
@@ -331,7 +331,7 @@ pub fn export(format: Option<String>) -> Result<LogExportResult> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use lsp_max_runtime::{AutonomicMesh, LspInstance, MeshAction};
+    use lsp_max::max_runtime::{AutonomicMesh, LspInstance, MeshAction};
     use std::env;
 
     fn with_mesh_state<F: FnOnce(&str)>(f: F) {
@@ -387,7 +387,7 @@ mod tests {
             let inst = LspInstance::new("export-test");
             mesh.add_instance(inst);
             mesh.execute_action(MeshAction::ExecuteBoundedAction {
-                instance_id: lsp_max_runtime::InstanceId::from("export-test".to_string()),
+                instance_id: lsp_max::max_runtime::InstanceId::from("export-test".to_string()),
                 action_id: "test-action-1".into(),
                 description: "test export action".into(),
             });
@@ -404,7 +404,7 @@ mod tests {
     #[test]
     fn from_hook_event_bounded_action_includes_details() {
         let ev = HookEvent::BoundedActionExecuted {
-            instance_id: lsp_max_runtime::InstanceId::from("inst-1".to_string()),
+            instance_id: lsp_max::max_runtime::InstanceId::from("inst-1".to_string()),
             action_id: "act-001".into(),
             description: "ran an action".into(),
         };

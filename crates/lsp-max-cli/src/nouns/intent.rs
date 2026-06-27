@@ -279,7 +279,7 @@ mod tests {
     }
 
     #[test]
-    fn declare_blocked_for_tower_lsp_uri() {
+    fn test_declare_blocked_for_tower_lsp_uri() {
         let _guard = TEST_ENV_LOCK.lock().unwrap_or_else(|p| p.into_inner());
         let tmp = tempfile::NamedTempFile::new().unwrap();
         let path = tmp.path().to_str().unwrap().to_string();

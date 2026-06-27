@@ -83,7 +83,7 @@ pub async fn max_release_actuation(params: Value) -> Result<Value> {
     let seq = registry.action_seq;
     registry
         .conformance_delta_log
-        .push_back(max_runtime::ConformanceDeltaEntry {
+        .push_back(crate::max_runtime::ConformanceDeltaEntry {
             seq,
             instance_id: instance_id.clone(),
             old_score: 100.0,

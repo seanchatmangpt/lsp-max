@@ -16,9 +16,40 @@ all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
-lsp-max-ast-core = { path = "../lsp-max-ast-core", version = "26.6.24" }
 lsp-types-max = { workspace = true }
 texter = { workspace = true }
 tree-sitter = { workspace = true }
 dashmap = { workspace = true }
 parking_lot = { workspace = true }
+
+# Core dependencies (absorbed from lsp-max-ast-core)
+downcast-rs = { workspace = true }
+streaming-iterator = { workspace = true }
+anyhow = { workspace = true }
+regex = { workspace = true }
+salsa = { workspace = true }
+log = { workspace = true }
+thiserror = { workspace = true }
+ariadne = { workspace = true, features = ["auto-color"] }
+
+# Optional Codegen dependencies (absorbed from lsp-max-ast-codegen)
+serde = { version = "1.0.219", features = ["derive"], optional = true }
+serde_json = { version = "1.0.140", features = ["preserve_order"], optional = true }
+phf = { version = "0.11", features = ["macros"], optional = true }
+quote = { version = "1.0", optional = true }
+proc-macro2 = { version = "1.0", optional = true }
+
+[features]
+default = []
+codegen = ["dep:serde", "dep:serde_json", "dep:phf", "dep:quote", "dep:proc-macro2"]
+wasm = ["parking_lot/nightly"]
+
+[dev-dependencies]
+tree-sitter-html = "0.23.2"
+tree-sitter-python = "0.23.6"
+tree-sitter-javascript = "0.23.1"
+tree-sitter-c = "0.24.2"
+tree-sitter-c-sharp = "0.23.5"
+tree-sitter-haskell = "0.23.1"
+tree-sitter-typescript = "0.23.2"
+rstest = { workspace = true }

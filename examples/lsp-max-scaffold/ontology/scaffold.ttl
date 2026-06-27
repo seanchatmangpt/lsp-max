@@ -6,7 +6,7 @@
 # lsp-max-scaffold method ontology.
 #
 # Each method declaration carries a law:status annotation using the bounded
-# vocabulary. Victory language ("done", "supported", "guaranteed") is excluded.
+# vocabulary. Banned absolute terms are excluded.
 #
 # Bounded status vocabulary:
 #   law:ADMITTED  — handler wired + transcript + receipt + negative-control

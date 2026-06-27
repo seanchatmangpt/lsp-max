@@ -1,6 +1,6 @@
 use clap_noun_verb::Result;
 use clap_noun_verb_macros::verb;
-use serde::Serialize;
+use serde::{Serialize, Deserialize};
 use std::path::PathBuf;
 
 // ==============================================================================
@@ -16,10 +16,6 @@ pub struct GateCheckResult {
 }
 
 /// Result of the `gate list` verb.
-///
-/// Reports the gate state and any active WASM4PM-* / GGEN-* code prefixes
-/// currently known to block the gate.  `agent_scope` is always `"global"` until
-/// per-agent gate partitioning is implemented (RFC A — OPEN).
 #[derive(Debug, Serialize)]
 pub struct GateListResult {
     pub andon_blocked: bool,
@@ -27,23 +23,35 @@ pub struct GateListResult {
     pub compositor_active: bool,
     /// Diagnostic code prefixes that are currently active (if gate is blocked).
     pub active_codes: Vec<String>,
+    pub active_invariant_ids: Vec<String>,
+    pub governing_axes: GoverningAxes,
+    pub available_repairs: Vec<AvailableRepair>,
+    pub required_commands: Vec<String>,
+    pub virtual_doc_uris: Vec<String>,
     /// Scope of this gate read.  Currently always `"global"`.
     pub agent_scope: String,
+    pub since_seq: Option<u64>,
 }
 
 /// Law-axis sets carried in the agent-context output.
 /// Axes are enumerated per `ConformanceVector` law: refused/unknown are disjoint.
-#[derive(Debug, Serialize)]
+#[derive(Debug, Clone, Serialize)]
 pub struct GoverningAxes {
     pub refused: Vec<String>,
     pub unknown: Vec<String>,
 }
 
 /// A single available repair action surfaced to agents under RFC-1 D_t PUSH.
-#[derive(Debug, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AvailableRepair {
-    pub action_id: String,
-    pub verb: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub action_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub verb: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub next_lawful_step: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub required_command: Option<String>,
 }
 
 /// Structured output emitted when `--format=agent-context` is requested.
@@ -52,6 +60,7 @@ pub struct AvailableRepair {
 /// dead error string.  The `status` field carries the bounded state.
 #[derive(Debug, Serialize)]
 pub struct AgentContextResult {
+    pub admission_allowed: bool,
     pub andon_blocked: bool,
     /// Bounded status: "BLOCKED" or "ADMITTED". Never victory language.
     pub status: String,
@@ -60,8 +69,11 @@ pub struct AgentContextResult {
     /// ANDON codes parsed from the gate file JSON, or empty when the gate
     /// file is a single byte (`1`) rather than a structured payload.
     pub active_andon_codes: Vec<String>,
+    pub active_invariant_ids: Vec<String>,
     pub governing_axes: GoverningAxes,
     pub available_repairs: Vec<AvailableRepair>,
+    pub required_commands: Vec<String>,
+    pub virtual_doc_uris: Vec<String>,
     pub compositor_active: bool,
     pub gate_file: String,
 }
@@ -113,27 +125,24 @@ impl GateService {
         }
     }
 
-    /// List the gate state with active diagnostic code prefixes.
-    ///
-    /// When the gate is blocked, returns the WASM4PM-* and GGEN-* code
-    /// categories known to trigger an ANDON signal.  `agent_scope` is `"global"`
-    /// until RFC A per-agent partitioning is wired.
     pub fn list(&self) -> GateListResult {
-        let check = self.check();
-        let active_codes = if check.andon_blocked {
-            // These are the two code-prefix families that the PreToolUse hook
-            // enforces.  Specific code IDs require a running diagnostic server;
-            // the CLI can only report the blocking families.
-            vec!["WASM4PM-*".to_string(), "GGEN-*".to_string()]
-        } else {
-            vec![]
-        };
+        let ctx = self.check_agent_context();
+        let mut active_codes = ctx.active_andon_codes;
+        if active_codes.is_empty() && ctx.andon_blocked {
+            active_codes = vec!["WASM4PM-*".to_string(), "GGEN-*".to_string()];
+        }
         GateListResult {
-            andon_blocked: check.andon_blocked,
-            gate_file: check.gate_file,
-            compositor_active: check.compositor_active,
+            andon_blocked: ctx.andon_blocked,
+            gate_file: ctx.gate_file,
+            compositor_active: ctx.compositor_active,
             active_codes,
+            active_invariant_ids: ctx.active_invariant_ids,
+            governing_axes: ctx.governing_axes,
+            available_repairs: ctx.available_repairs,
+            required_commands: ctx.required_commands,
+            virtual_doc_uris: ctx.virtual_doc_uris,
             agent_scope: "global".to_string(),
+            since_seq: ctx.since_seq,
         }
     }
 
@@ -153,17 +162,14 @@ impl GateService {
         };
 
         // Structured JSON payload takes precedence over the legacy single-byte format.
-        // Legacy: first byte is `'1'` = blocked, `'0'` = clear.
-        // Structured: `{"blocked":true,"codes":[...],"seq":N}`.
-        let (andon_blocked, active_andon_codes, since_seq) =
-            if raw.first().copied() == Some(b'{') {
-                parse_gate_json(&raw)
-            } else {
-                let blocked = raw.first().copied().map(|b| b == b'1').unwrap_or(false);
-                (blocked, vec![], None)
-            };
+        let parsed = if raw.first().copied() == Some(b'{') {
+            parse_gate_json(&raw)
+        } else {
+            let blocked = raw.first().copied().map(|b| b == b'1').unwrap_or(false);
+            ParsedGate { blocked, codes: vec![], seq: None, invariant_ids: vec![], required_commands: vec![], virtual_doc_uris: vec![], repairs: vec![] }
+        };
 
-        let status = if andon_blocked {
+        let status = if parsed.blocked {
             "BLOCKED".to_string()
         } else {
             "ADMITTED".to_string()
@@ -171,67 +177,110 @@ impl GateService {
 
         // Governing axes: refused carries active ANDON codes; unknown is empty
         // unless the gate file could not be parsed (codes absent but gate set).
-        let (refused, unknown) = if andon_blocked && active_andon_codes.is_empty() {
-            (vec![], vec!["ANDON-GATE-CODES".to_string()])
+        let (refused, unknown) = if parsed.blocked && parsed.codes.is_empty() {
+            (vec![], vec!["LSPMAX-AGENT-CONTEXT-MISSING".to_string()])
         } else {
-            (active_andon_codes.clone(), vec![])
+            (parsed.codes.clone(), vec![])
+        };
+
+        let mut available_repairs = parsed.repairs;
+        if available_repairs.is_empty() {
+            available_repairs.push(AvailableRepair {
+                action_id: Some("emit-receipt".to_string()),
+                verb: Some("diagnostics repair-plan emit".to_string()),
+                next_lawful_step: None,
+                required_command: None,
+            });
+        }
+        let virtual_doc_uris = if parsed.virtual_doc_uris.is_empty() {
+            vec!["lsp-max://truth/andon".to_string(), "lsp-max://gate/context".to_string()]
+        } else {
+            parsed.virtual_doc_uris
         };
 
         AgentContextResult {
-            andon_blocked,
+            admission_allowed: !parsed.blocked,
+            andon_blocked: parsed.blocked,
             status,
-            since_seq,
-            active_andon_codes,
+            since_seq: parsed.seq,
+            active_andon_codes: parsed.codes,
+            active_invariant_ids: parsed.invariant_ids,
             governing_axes: GoverningAxes { refused, unknown },
-            available_repairs: vec![AvailableRepair {
-                action_id: "emit-receipt".to_string(),
-                verb: "diagnostics repair-plan emit".to_string(),
-            }],
+            available_repairs,
+            required_commands: parsed.required_commands,
+            virtual_doc_uris,
             compositor_active,
             gate_file: path.display().to_string(),
         }
     }
 }
 
+struct ParsedGate {
+    blocked: bool,
+    codes: Vec<String>,
+    seq: Option<u64>,
+    invariant_ids: Vec<String>,
+    required_commands: Vec<String>,
+    virtual_doc_uris: Vec<String>,
+    repairs: Vec<AvailableRepair>,
+}
+
+fn extract_string_array(v: &serde_json::Value) -> Vec<String> {
+    v.as_array()
+        .map(|arr| arr.iter().filter_map(|c| c.as_str().map(str::to_string)).collect())
+        .unwrap_or_default()
+}
+
 /// Extract blocked flag, ANDON codes, and optional `seq` from a structured gate file payload.
 ///
 /// Expected shape: `{"blocked":true,"codes":["WASM4PM-001"],"seq":42}`.
 /// Unknown fields are ignored; missing fields yield defaults (false / empty / None).
-fn parse_gate_json(raw: &[u8]) -> (bool, Vec<String>, Option<u64>) {
+fn parse_gate_json(raw: &[u8]) -> ParsedGate {
     let v: serde_json::Value = match serde_json::from_slice(raw) {
         Ok(v) => v,
-        Err(_) => return (false, vec![], None),
+        Err(_) => return ParsedGate { blocked: false, codes: vec![], seq: None, invariant_ids: vec![], required_commands: vec![], virtual_doc_uris: vec![], repairs: vec![] },
     };
     let blocked = v["blocked"].as_bool().unwrap_or(false);
-    let codes = v["codes"]
+    let codes = extract_string_array(&v["codes"]);
+    let seq = v["seq"].as_u64();
+    let invariant_ids = extract_string_array(&v["active_invariant_ids"]);
+    let required_commands = extract_string_array(&v["required_commands"]);
+    let virtual_doc_uris = extract_string_array(&v["virtual_doc_uris"]);
+    let repairs = v["available_repairs"]
         .as_array()
         .map(|arr| {
             arr.iter()
-                .filter_map(|c| c.as_str().map(str::to_string))
+                .filter_map(|r| serde_json::from_value(r.clone()).ok())
                 .collect()
         })
         .unwrap_or_default();
-    let seq = v["seq"].as_u64();
-    (blocked, codes, seq)
+    ParsedGate { blocked, codes, seq, invariant_ids, required_commands, virtual_doc_uris, repairs }
 }
 
 // ==============================================================================
 // 3. Verb Tier
 // ==============================================================================
 
-/// Check the compositor ANDON gate file. Exits 2 if ANDON is set; 0 if clear.
+/// Check the compositor ANDON gate file. Exits 1 if ANDON is set; 0 if clear.
 /// Reads a single byte — no IPC, no subprocess — safe for PreToolUse hooks.
 ///
-/// With `--format=agent-context`: emits structured JSON and always returns Ok,
-/// even when BLOCKED, so agents receive machine-readable context (RFC-1 D_t PUSH).
+/// With `--format=agent-context`: when BLOCKED, prints `<gate-context>` JSON block to stdout,
+/// human summary to stderr, and exits 1 (RFC-1 D_t PUSH).
 #[verb("check")]
 pub fn check(format: Option<String>) -> Result<serde_json::Value> {
     let svc = GateService::new();
 
     if format.as_deref() == Some("agent-context") {
         let ctx = svc.check_agent_context();
+        let andon_blocked = ctx.andon_blocked;
         let v = serde_json::to_value(&ctx)
             .map_err(|e| clap_noun_verb::error::NounVerbError::execution_error(e.to_string()))?;
+        if andon_blocked {
+            let serialized = serde_json::to_string_pretty(&ctx).unwrap_or_default();
+            println!("<gate-context>\n{}\n</gate-context>", serialized);
+            eprintln!("STOP/REFUSE: ANDON BLOCKED — law violations active");
+            std::process::exit(1);
+        }
         return Ok(v);
     }
 
@@ -241,7 +290,7 @@ pub fn check(format: Option<String>) -> Result<serde_json::Value> {
             "ANDON BLOCKED — law violations active\ngate: {}\nResolve all WASM4PM-* and GGEN-* diagnostics to clear.",
             status.gate_file
         );
-        std::process::exit(2);
+        std::process::exit(1);
     }
     let v = serde_json::to_value(&status)
         .map_err(|e| clap_noun_verb::error::NounVerbError::execution_error(e.to_string()))?;
@@ -324,6 +373,9 @@ mod tests {
 
     #[test]
     fn gate_path_is_deterministic() {
+        let _lock = crate::nouns::TEST_ENV_LOCK
+            .lock()
+            .unwrap_or_else(|p| p.into_inner());
         let p1 = GateService::gate_file_path();
         let p2 = GateService::gate_file_path();
         assert_eq!(p1, p2);
@@ -331,6 +383,9 @@ mod tests {
 
     #[test]
     fn gate_path_checks_agent_id() {
+        let _lock = crate::nouns::TEST_ENV_LOCK
+            .lock()
+            .unwrap_or_else(|p| p.into_inner());
         std::env::set_var("LSP_MAX_AGENT_ID", "test-agent-123");
         let p1 = GateService::gate_file_path();
         std::env::remove_var("LSP_MAX_AGENT_ID");
@@ -378,26 +433,26 @@ mod tests {
     #[test]
     fn parse_gate_json_extracts_codes_and_seq() {
         let raw = br#"{"blocked":true,"codes":["WASM4PM-001","GGEN-042"],"seq":7}"#;
-        let (blocked, codes, seq) = parse_gate_json(raw);
-        assert!(blocked);
-        assert_eq!(codes, vec!["WASM4PM-001", "GGEN-042"]);
-        assert_eq!(seq, Some(7));
+        let parsed = parse_gate_json(raw);
+        assert!(parsed.blocked);
+        assert_eq!(parsed.codes, vec!["WASM4PM-001", "GGEN-042"]);
+        assert_eq!(parsed.seq, Some(7));
     }
 
     #[test]
     fn parse_gate_json_tolerates_missing_fields() {
         let raw = br#"{"blocked":true}"#;
-        let (blocked, codes, seq) = parse_gate_json(raw);
-        assert!(blocked);
-        assert!(codes.is_empty());
-        assert!(seq.is_none());
+        let parsed = parse_gate_json(raw);
+        assert!(parsed.blocked);
+        assert!(parsed.codes.is_empty());
+        assert!(parsed.seq.is_none());
     }
 
     #[test]
     fn parse_gate_json_returns_empty_on_invalid_json() {
-        let (_blocked, codes, seq) = parse_gate_json(b"not-json");
-        assert!(codes.is_empty());
-        assert!(seq.is_none());
+        let parsed = parse_gate_json(b"not-json");
+        assert!(parsed.codes.is_empty());
+        assert!(parsed.seq.is_none());
     }
 
     #[test]
@@ -432,15 +487,25 @@ mod tests {
     where
         F: FnOnce(&GateService),
     {
+        let _lock = crate::nouns::TEST_ENV_LOCK
+            .lock()
+            .unwrap_or_else(|p| p.into_inner());
+
+        let prev_agent_id = std::env::var("LSP_MAX_AGENT_ID").ok();
+        let pid = std::process::id();
+        std::env::set_var("LSP_MAX_AGENT_ID", format!("test-{}", pid));
+
         let path = GateService::gate_file_path();
-        if path.exists() {
-            // compositor active; skip to avoid corrupting a live gate.
-            return;
-        }
         std::fs::write(&path, content).expect("write synthetic gate");
         let svc = GateService::new();
         f(&svc);
         let _ = std::fs::remove_file(&path);
+
+        if let Some(val) = prev_agent_id {
+            std::env::set_var("LSP_MAX_AGENT_ID", val);
+        } else {
+            std::env::remove_var("LSP_MAX_AGENT_ID");
+        }
     }
 
     // check — success + falsification (blocked byte)

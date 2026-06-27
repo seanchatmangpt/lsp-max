@@ -1,6 +1,7 @@
 use crate::lsif::*;
 use crate::lsif_builder::LsifBuilder;
 use crate::lsif_types::{EdgeType, HoverContents, MonikerKind, UniquenessLevel, VertexType};
+use crate::lsif::{ItemEdgeProperty, Vertex, Edge};
 use lsp_types_max::{MarkupContent, MarkupKind, Position, SymbolKind};
 use std::collections::HashMap;
 use std::io::Write;
@@ -14,10 +15,10 @@ pub struct LsifContext<'b, W: Write> {
     pub module_path: String,
     /// Optional package name for npm-style monikers.
     pub package_name: Option<String>,
-    /// Maps a symbol name to the resultSet vertex id created for its definition.
-    /// Reference sites (`CallExpression`, `Identifier` usages) look up this map
-    /// to wire the `next` edge without a second pass.
-    pub result_sets: HashMap<String, Id>,
+    /// Lexical scope stack mapping a symbol name to the resultSet vertex id created for its definition.
+    pub result_sets: Vec<HashMap<String, Id>>,
+    /// Maps a resultSet ID to its associated ReferenceResult ID.
+    pub reference_results: HashMap<Id, Id>,
 }
 
 impl<'b, W: Write> LsifContext<'b, W> {
@@ -31,8 +32,32 @@ impl<'b, W: Write> LsifContext<'b, W> {
             doc_id,
             module_path: module_path.into(),
             package_name: None,
-            result_sets: HashMap::new(),
+            result_sets: vec![HashMap::new()],
+            reference_results: HashMap::new(),
         }
+    }
+
+    pub fn push_scope(&mut self) {
+        self.result_sets.push(HashMap::new());
+    }
+
+    pub fn pop_scope(&mut self) {
+        self.result_sets.pop();
+    }
+
+    pub fn insert_symbol(&mut self, name: String, rs_id: Id) {
+        if let Some(map) = self.result_sets.last_mut() {
+            map.insert(name, rs_id);
+        }
+    }
+
+    pub fn lookup_symbol(&self, name: &str) -> Option<Id> {
+        for map in self.result_sets.iter().rev() {
+            if let Some(id) = map.get(name) {
+                return Some(id.clone());
+            }
+        }
+        None
     }
 
     /// Emit a fresh resultSet vertex and return its id.
@@ -70,8 +95,70 @@ impl<'b, W: Write> LsifContext<'b, W> {
 
     /// Emit a definitionResult and Item edge linking `result_set_id` → `range_id`.
     pub fn emit_definition(&mut self, result_set_id: Id, range_id: Id) -> std::io::Result<Id> {
-        self.builder
-            .bind_definition(result_set_id, vec![range_id], self.doc_id.clone())
+        let def_res = self.builder
+            .bind_definition(result_set_id.clone(), vec![range_id.clone()], self.doc_id.clone())?;
+
+        let ref_res_id = self.builder.next_id();
+        self.builder.emit(crate::lsif::Element::Vertex(Vertex::ReferenceResult {
+            id: ref_res_id.clone(),
+            type_: VertexType::Vertex,
+        }))?;
+
+        let edge_id = self.builder.next_id();
+        self.builder.emit(crate::lsif::Element::Edge(Edge::TextDocumentReferences {
+            id: edge_id,
+            type_: EdgeType::Edge,
+            out_v: result_set_id.clone(),
+            in_v: ref_res_id.clone(),
+        }))?;
+
+        let item_edge_id = self.builder.next_id();
+        self.builder.emit(crate::lsif::Element::Edge(Edge::Item {
+            id: item_edge_id,
+            type_: EdgeType::Edge,
+            out_v: ref_res_id.clone(),
+            in_vs: vec![range_id],
+            document: self.doc_id.clone(),
+            property: Some(ItemEdgeProperty::Definitions),
+        }))?;
+
+        self.reference_results.insert(result_set_id, ref_res_id);
+        Ok(def_res)
+    }
+
+    pub fn emit_reference(&mut self, result_set_id: Id, range_id: Id) -> std::io::Result<()> {
+        let ref_res_id = if let Some(id) = self.reference_results.get(&result_set_id) {
+            id.clone()
+        } else {
+            let id = self.builder.next_id();
+            self.builder.emit(crate::lsif::Element::Vertex(Vertex::ReferenceResult {
+                id: id.clone(),
+                type_: VertexType::Vertex,
+            }))?;
+
+            let edge_id = self.builder.next_id();
+            self.builder.emit(crate::lsif::Element::Edge(Edge::TextDocumentReferences {
+                id: edge_id,
+                type_: EdgeType::Edge,
+                out_v: result_set_id.clone(),
+                in_v: id.clone(),
+            }))?;
+
+            self.reference_results.insert(result_set_id.clone(), id.clone());
+            id
+        };
+
+        let item_edge_id = self.builder.next_id();
+        self.builder.emit(crate::lsif::Element::Edge(Edge::Item {
+            id: item_edge_id,
+            type_: EdgeType::Edge,
+            out_v: ref_res_id,
+            in_vs: vec![range_id],
+            document: self.doc_id.clone(),
+            property: Some(ItemEdgeProperty::References),
+        }))?;
+
+        Ok(())
     }
 
     /// Emit a moniker vertex and wire it to `result_set_id`.
@@ -129,6 +216,27 @@ pub fn definition_tag(
 }
 
 /// Helper: build a `Reference` range tag.
-pub fn reference_tag(text: impl Into<String>) -> RangeTag {
-    RangeTag::Reference { text: text.into() }
+pub fn reference_tag(
+    text: impl Into<String>,
+    kind: SymbolKind,
+    full_range: lsp_types_max::Range,
+) -> RangeTag {
+    RangeTag::Reference {
+        text: text.into(),
+        kind,
+        full_range,
+    }
+}
+
+/// Helper: build an `Unknown` range tag.
+pub fn unknown_tag(
+    text: impl Into<String>,
+    kind: SymbolKind,
+    full_range: lsp_types_max::Range,
+) -> RangeTag {
+    RangeTag::Unknown {
+        text: text.into(),
+        kind,
+        full_range,
+    }
 }

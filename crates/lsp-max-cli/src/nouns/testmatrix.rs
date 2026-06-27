@@ -1,6 +1,6 @@
 use clap_noun_verb::Result;
 use clap_noun_verb_macros::verb;
-use lsp_max_gen::{GeneratorContext, GeneratorEngine, TestMatrixGenerator};
+use lsp_max_cli::gen::{GeneratorContext, GeneratorEngine, TestMatrixGenerator};
 use serde::Serialize;
 
 // ==========================================

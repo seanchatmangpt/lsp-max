@@ -66,7 +66,7 @@ fn missing_server_id_is_explicit_union_last_resort() {
 fn merged_verdict_traces_to_per_child_evidence() {
     use crate::receipt::CompositorReceipt;
     use crate::receipt_chain::ChildEvidence;
-    use lsp_max_runtime::control_plane::receipts::{Blake3Hash, CryptographicReceipt, Keystore};
+    use lsp_max::max_runtime::control_plane::receipts::{Blake3Hash, CryptographicReceipt, Keystore};
     use uuid::Uuid;
 
     let ctx = two_server_ctx();

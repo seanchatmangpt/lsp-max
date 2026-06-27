@@ -241,7 +241,7 @@ mod tests {
     #[test]
     fn compositor_receipt_ocel_event_with_child_evidence() {
         use crate::receipt_chain::ChildEvidence;
-        use lsp_max_runtime::control_plane::receipts::{
+        use lsp_max::max_runtime::control_plane::receipts::{
             Blake3Hash, CryptographicReceipt, Keystore,
         };
         use uuid::Uuid;

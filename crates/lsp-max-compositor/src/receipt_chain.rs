@@ -19,7 +19,7 @@
 // the `consequence_hash` so the link is attributable to THAT flush, not a generic
 // stub. Full crypto (ed25519) is CANDIDATE; signing via compositor Keystore is wired.
 
-use lsp_max_runtime::control_plane::receipts::{
+use lsp_max::max_runtime::control_plane::receipts::{
     moniker_object_id, Blake3Hash, CryptographicReceipt, Keystore,
 };
 use uuid::Uuid;
@@ -177,7 +177,7 @@ impl ChildEvidence {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use lsp_max_runtime::control_plane::receipts::{Blake3Hash, Keystore};
+    use lsp_max::max_runtime::control_plane::receipts::{Blake3Hash, Keystore};
     use uuid::Uuid;
 
     fn sample_receipt(seq: u64) -> CryptographicReceipt {

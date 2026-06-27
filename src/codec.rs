@@ -11,7 +11,7 @@ use async_codec_lite::{Decoder, Encoder};
 #[cfg(feature = "runtime-tokio")]
 use tokio_util::codec::{Decoder, Encoder};
 
-pub use lsp_max_base::protocol::ParseError;
+pub use lsp_max_protocol::base_protocol::ParseError;
 
 /// Encodes and decodes Language Server Protocol messages.
 pub struct LanguageServerCodec<T> {
@@ -36,7 +36,7 @@ impl<T: Serialize> Encoder for LanguageServerCodec<T> {
     fn encode(&mut self, item: Self::Item, dst: &mut BytesMut) -> Result<(), Self::Error> {
         let msg = serde_json::to_string(&item).unwrap_or_default();
         trace!("-> {}", msg);
-        lsp_max_base::protocol::encode_message(item, dst)
+        lsp_max_protocol::base_protocol::encode_message(item, dst)
     }
 }
 
@@ -47,7 +47,7 @@ impl<T: Serialize> Encoder<T> for LanguageServerCodec<T> {
     fn encode(&mut self, item: T, dst: &mut BytesMut) -> Result<(), Self::Error> {
         let msg = serde_json::to_string(&item).unwrap_or_default();
         trace!("-> {}", msg);
-        lsp_max_base::protocol::encode_message(item, dst)
+        lsp_max_protocol::base_protocol::encode_message(item, dst)
     }
 }
 
@@ -56,7 +56,7 @@ impl<T: DeserializeOwned> Decoder for LanguageServerCodec<T> {
     type Error = ParseError;
 
     fn decode(&mut self, src: &mut BytesMut) -> Result<Option<Self::Item>, Self::Error> {
-        lsp_max_base::protocol::decode_message(src, &mut self.content_len)
+        lsp_max_protocol::base_protocol::decode_message(src, &mut self.content_len)
     }
 }
 

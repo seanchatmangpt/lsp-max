@@ -2,7 +2,7 @@ use serde_json::Value;
 use std::fs;
 use std::path::Path;
 
-const EXPECTED_COUNT: usize = 9;
+const EXPECTED_COUNT: usize = 10;
 const EXPECTED_IDS: &[&str] = &[
     "asp",
     "bayesian_network",
@@ -13,6 +13,7 @@ const EXPECTED_IDS: &[&str] = &[
     "meta_reasoning",
     "mycin",
     "pomdp",
+    "llm",
 ];
 
 fn load_registry() -> Value {
