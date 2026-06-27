@@ -162,10 +162,7 @@ impl ConfigService {
         Ok((name.to_string(), key_count))
     }
 
-    pub fn profile_load(
-        &self,
-        name: &str,
-    ) -> std::result::Result<(String, usize), String> {
+    pub fn profile_load(&self, name: &str) -> std::result::Result<(String, usize), String> {
         let profiles = self.load_profiles();
         let profile = profiles
             .get(name)
@@ -257,12 +254,14 @@ impl ConfigService {
         let (valid, unknown_keys) = self.validate();
         let mut keys: Vec<ConfigDoctorKey> = valid
             .into_iter()
-            .map(|k| ConfigDoctorKey { key: k, status: "ADMITTED".to_string() })
-            .chain(
-                unknown_keys
-                    .iter()
-                    .map(|k| ConfigDoctorKey { key: k.clone(), status: "UNKNOWN".to_string() }),
-            )
+            .map(|k| ConfigDoctorKey {
+                key: k,
+                status: "ADMITTED".to_string(),
+            })
+            .chain(unknown_keys.iter().map(|k| ConfigDoctorKey {
+                key: k.clone(),
+                status: "UNKNOWN".to_string(),
+            }))
             .collect();
         keys.sort_by(|a, b| a.key.cmp(&b.key));
         let overall = if unknown_keys.is_empty() {
@@ -548,7 +547,10 @@ mod tests {
         let svc = ConfigService::new();
         svc.set("gate_timeout", "30").unwrap();
         svc.reset("gate_timeout").unwrap();
-        assert!(svc.view("gate_timeout").is_none(), "reset must delete the key");
+        assert!(
+            svc.view("gate_timeout").is_none(),
+            "reset must delete the key"
+        );
     }
 
     // --- list ---

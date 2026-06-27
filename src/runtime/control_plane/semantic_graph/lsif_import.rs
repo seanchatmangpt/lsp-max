@@ -238,8 +238,7 @@ mod tests {
     fn real_lsif_path() -> std::path::PathBuf {
         // CARGO_MANIFEST_DIR for the root lsp-max crate = /Users/sac/lsp-max
         // receipts/ lives directly under the workspace root.
-        std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-            .join("receipts/v26.6.28-lsif.lsif")
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("receipts/v26.6.28-lsif.lsif")
     }
 
     const GRAPH: &str = "https://lsp-max.dev/graphs/v26.6.28";

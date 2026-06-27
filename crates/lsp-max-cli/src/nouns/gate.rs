@@ -1,6 +1,6 @@
 use clap_noun_verb::Result;
 use clap_noun_verb_macros::verb;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
 // ==============================================================================
@@ -166,7 +166,15 @@ impl GateService {
             parse_gate_json(&raw)
         } else {
             let blocked = raw.first().copied().map(|b| b == b'1').unwrap_or(false);
-            ParsedGate { blocked, codes: vec![], seq: None, invariant_ids: vec![], required_commands: vec![], virtual_doc_uris: vec![], repairs: vec![] }
+            ParsedGate {
+                blocked,
+                codes: vec![],
+                seq: None,
+                invariant_ids: vec![],
+                required_commands: vec![],
+                virtual_doc_uris: vec![],
+                repairs: vec![],
+            }
         };
 
         let status = if parsed.blocked {
@@ -193,7 +201,10 @@ impl GateService {
             });
         }
         let virtual_doc_uris = if parsed.virtual_doc_uris.is_empty() {
-            vec!["lsp-max://truth/andon".to_string(), "lsp-max://gate/context".to_string()]
+            vec![
+                "lsp-max://truth/andon".to_string(),
+                "lsp-max://gate/context".to_string(),
+            ]
         } else {
             parsed.virtual_doc_uris
         };
@@ -227,7 +238,11 @@ struct ParsedGate {
 
 fn extract_string_array(v: &serde_json::Value) -> Vec<String> {
     v.as_array()
-        .map(|arr| arr.iter().filter_map(|c| c.as_str().map(str::to_string)).collect())
+        .map(|arr| {
+            arr.iter()
+                .filter_map(|c| c.as_str().map(str::to_string))
+                .collect()
+        })
         .unwrap_or_default()
 }
 
@@ -238,7 +253,17 @@ fn extract_string_array(v: &serde_json::Value) -> Vec<String> {
 fn parse_gate_json(raw: &[u8]) -> ParsedGate {
     let v: serde_json::Value = match serde_json::from_slice(raw) {
         Ok(v) => v,
-        Err(_) => return ParsedGate { blocked: false, codes: vec![], seq: None, invariant_ids: vec![], required_commands: vec![], virtual_doc_uris: vec![], repairs: vec![] },
+        Err(_) => {
+            return ParsedGate {
+                blocked: false,
+                codes: vec![],
+                seq: None,
+                invariant_ids: vec![],
+                required_commands: vec![],
+                virtual_doc_uris: vec![],
+                repairs: vec![],
+            }
+        }
     };
     let blocked = v["blocked"].as_bool().unwrap_or(false);
     let codes = extract_string_array(&v["codes"]);
@@ -254,7 +279,15 @@ fn parse_gate_json(raw: &[u8]) -> ParsedGate {
                 .collect()
         })
         .unwrap_or_default();
-    ParsedGate { blocked, codes, seq, invariant_ids, required_commands, virtual_doc_uris, repairs }
+    ParsedGate {
+        blocked,
+        codes,
+        seq,
+        invariant_ids,
+        required_commands,
+        virtual_doc_uris,
+        repairs,
+    }
 }
 
 // ==============================================================================
@@ -651,7 +684,10 @@ mod tests {
             status: "OPEN".to_string(),
         };
         // Falsification: was_active must reflect the pre-clear blocked state.
-        assert!(result.was_active, "was_active must be true when gate was set to '1'");
+        assert!(
+            result.was_active,
+            "was_active must be true when gate was set to '1'"
+        );
         // Falsification: post-clear status is bounded "OPEN".
         assert_eq!(result.status, "OPEN");
         let _ = std::fs::remove_file(&path);

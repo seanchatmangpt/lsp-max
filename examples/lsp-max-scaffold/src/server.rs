@@ -1,9 +1,7 @@
 use crate::analyzer::DefaultAnalyzer;
 use crate::diagnostics::ScaffoldDiagnostic;
 use crate::law::ScaffoldConformanceVector;
-use crate::session_conformance::{
-    replay_session, EventActivity, EventObjects, SessionLog,
-};
+use crate::session_conformance::{replay_session, EventActivity, EventObjects, SessionLog};
 use crate::verifiable::{VerifiableDiagnostic, VerifiableEngine};
 use lsp_max::jsonrpc;
 use lsp_max::lsp_types::*;
@@ -240,20 +238,29 @@ impl LanguageServer for ScaffoldServer {
         let uri_str = uri.to_string();
         self.record_and_check(
             EventActivity::DocumentOpened,
-            EventObjects { document: Some(uri_str.clone()), ..Default::default() },
+            EventObjects {
+                document: Some(uri_str.clone()),
+                ..Default::default()
+            },
         )
         .await;
         let (diags, source_digest) = Self::diagnostics_for(&params.text_document.text);
         self.record_and_check(
             EventActivity::AnalysisRun { source_digest },
-            EventObjects { document: Some(uri_str.clone()), ..Default::default() },
+            EventObjects {
+                document: Some(uri_str.clone()),
+                ..Default::default()
+            },
         )
         .await;
         for d in &diags {
             if let Some(NumberOrString::String(code)) = &d.code {
                 self.record_and_check(
                     EventActivity::FindingProduced { code: code.clone() },
-                    EventObjects { document: Some(uri_str.clone()), ..Default::default() },
+                    EventObjects {
+                        document: Some(uri_str.clone()),
+                        ..Default::default()
+                    },
                 )
                 .await;
             }
@@ -273,14 +280,20 @@ impl LanguageServer for ScaffoldServer {
         let (diags, source_digest) = Self::diagnostics_for(&text);
         self.record_and_check(
             EventActivity::AnalysisRun { source_digest },
-            EventObjects { document: Some(uri_str.clone()), ..Default::default() },
+            EventObjects {
+                document: Some(uri_str.clone()),
+                ..Default::default()
+            },
         )
         .await;
         for d in &diags {
             if let Some(NumberOrString::String(code)) = &d.code {
                 self.record_and_check(
                     EventActivity::FindingProduced { code: code.clone() },
-                    EventObjects { document: Some(uri_str.clone()), ..Default::default() },
+                    EventObjects {
+                        document: Some(uri_str.clone()),
+                        ..Default::default()
+                    },
                 )
                 .await;
             }
@@ -295,14 +308,20 @@ impl LanguageServer for ScaffoldServer {
         let (diags, source_digest) = Self::diagnostics_for(&text);
         self.record_and_check(
             EventActivity::AnalysisRun { source_digest },
-            EventObjects { document: Some(uri_str.clone()), ..Default::default() },
+            EventObjects {
+                document: Some(uri_str.clone()),
+                ..Default::default()
+            },
         )
         .await;
         for d in &diags {
             if let Some(NumberOrString::String(code)) = &d.code {
                 self.record_and_check(
                     EventActivity::FindingProduced { code: code.clone() },
-                    EventObjects { document: Some(uri_str.clone()), ..Default::default() },
+                    EventObjects {
+                        document: Some(uri_str.clone()),
+                        ..Default::default()
+                    },
                 )
                 .await;
             }

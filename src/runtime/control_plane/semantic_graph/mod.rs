@@ -87,7 +87,10 @@ mod tests {
         let snapshot = LawGraphSnapshot::new(nquads, "test");
         let expected_digest = snapshot.digest();
         let actual_digest = store.load_snapshot(snapshot).unwrap();
-        assert_eq!(expected_digest, actual_digest, "digest must match snapshot content");
+        assert_eq!(
+            expected_digest, actual_digest,
+            "digest must match snapshot content"
+        );
     }
 
     // ------------------------------------------------------------------
@@ -113,17 +116,24 @@ mod tests {
             .join("language_server")
             .join("impls")
             .join("sync.rs");
-        
+
         let sync_rs = std::fs::read_to_string(&sync_rs_path).expect("Could not read sync.rs");
-        
+
         for (i, line) in sync_rs.lines().enumerate() {
             let line = line.trim();
             // Ignore comments
             if line.starts_with("//") || line.is_empty() {
                 continue;
             }
-            if line.contains("SemanticLawGraph") || line.contains("import_lsif_snapshot") || line.contains("oxigraph") {
-                panic!("OXIGRAPH_NOT_ON_HOT_PATH violated in sync.rs at line {}: {}", i + 1, line);
+            if line.contains("SemanticLawGraph")
+                || line.contains("import_lsif_snapshot")
+                || line.contains("oxigraph")
+            {
+                panic!(
+                    "OXIGRAPH_NOT_ON_HOT_PATH violated in sync.rs at line {}: {}",
+                    i + 1,
+                    line
+                );
             }
         }
     }

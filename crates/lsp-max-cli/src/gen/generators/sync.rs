@@ -2,7 +2,9 @@ use std::path::PathBuf;
 
 use tera::{Context as TeraContext, Tera};
 
-use crate::gen::{GenManifest, GeneratedFile, Generator, GeneratorContext, GeneratorError, WriteMode};
+use crate::gen::{
+    GenManifest, GeneratedFile, Generator, GeneratorContext, GeneratorError, WriteMode,
+};
 
 /// Read `gen.toml` from `ctx.output_dir` and emit a `SYNC_PLAN.md` describing
 /// what each `[[generate]]` entry would produce.

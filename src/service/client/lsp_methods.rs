@@ -357,13 +357,13 @@ impl Client {
         version: Option<i32>,
     ) {
         use lsp_types_max::notification::PublishDiagnostics;
-        
+
         let mut missing_push = false;
-        
+
         // Track the pushes we made in the inner state, or simply assume that
         // any ERROR diagnostic should be flagged if not generated via Andon event.
         // For now, if there is a blocking diagnostic but no push was tracked...
-        
+
         // Let's check if the diagnostic has an ANDON code
         for diag in &diags {
             if let Some(severity) = diag.severity {
@@ -379,21 +379,25 @@ impl Client {
                 }
             }
         }
-        
+
         if missing_push {
             diags.push(Diagnostic {
                 range: Default::default(),
                 severity: Some(DiagnosticSeverity::ERROR),
-                code: Some(lsp_types_max::NumberOrString::String("LSPMAX-ANDON-PUSH-MISSING".to_string())),
+                code: Some(lsp_types_max::NumberOrString::String(
+                    "LSPMAX-ANDON-PUSH-MISSING".to_string(),
+                )),
                 source: Some("lsp-max-andon".to_string()),
-                message: "A blocking diagnostic was emitted without a corresponding ANDON push event.".to_string(),
+                message:
+                    "A blocking diagnostic was emitted without a corresponding ANDON push event."
+                        .to_string(),
                 related_information: None,
                 tags: None,
                 code_description: None,
                 data: None,
             });
         }
-        
+
         self.send_notification_unchecked::<PublishDiagnostics>(PublishDiagnosticsParams::new(
             uri, diags, version,
         ))
@@ -403,31 +407,44 @@ impl Client {
     /// `lspMax/andonRaised` notification
     pub async fn andon_raised(&self, event: crate::andon::andon::AndonEvent) {
         use crate::andon::lsp::LspMaxAndonRaised;
-        self.send_notification_unchecked::<LspMaxAndonRaised>(event).await;
+        self.send_notification_unchecked::<LspMaxAndonRaised>(event)
+            .await;
     }
 
     /// `lspMax/admissionChanged` notification
     pub async fn admission_changed(&self, status: String) {
-        use crate::andon::lsp::{LspMaxAdmissionChanged, AdmissionChangedParams};
-        self.send_notification_unchecked::<LspMaxAdmissionChanged>(AdmissionChangedParams { status }).await;
+        use crate::andon::lsp::{AdmissionChangedParams, LspMaxAdmissionChanged};
+        self.send_notification_unchecked::<LspMaxAdmissionChanged>(AdmissionChangedParams {
+            status,
+        })
+        .await;
     }
 
     /// `lspMax/truthTableChanged` notification
     pub async fn truth_table_changed(&self, uri: String) {
         use crate::andon::lsp::{LspMaxTruthTableChanged, TruthTableChangedParams};
-        self.send_notification_unchecked::<LspMaxTruthTableChanged>(TruthTableChangedParams { uri }).await;
+        self.send_notification_unchecked::<LspMaxTruthTableChanged>(TruthTableChangedParams {
+            uri,
+        })
+        .await;
     }
 
     /// `lspMax/counterfactualFailed` notification
     pub async fn counterfactual_failed(&self, invariant_id: String) {
-        use crate::andon::lsp::{LspMaxCounterfactualFailed, CounterfactualFailedParams};
-        self.send_notification_unchecked::<LspMaxCounterfactualFailed>(CounterfactualFailedParams { invariant_id }).await;
+        use crate::andon::lsp::{CounterfactualFailedParams, LspMaxCounterfactualFailed};
+        self.send_notification_unchecked::<LspMaxCounterfactualFailed>(
+            CounterfactualFailedParams { invariant_id },
+        )
+        .await;
     }
 
     /// `lspMax/nextLawfulStepChanged` notification
     pub async fn next_lawful_step_changed(&self, step: String) {
         use crate::andon::lsp::{LspMaxNextLawfulStepChanged, NextLawfulStepChangedParams};
-        self.send_notification_unchecked::<LspMaxNextLawfulStepChanged>(NextLawfulStepChangedParams { step }).await;
+        self.send_notification_unchecked::<LspMaxNextLawfulStepChanged>(
+            NextLawfulStepChangedParams { step },
+        )
+        .await;
     }
 
     // Workspace Features

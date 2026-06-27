@@ -73,7 +73,7 @@ fn build_node(v: &Value, builder: &mut PowlBuilder) -> Result<String, String> {
                 .ok_or_else(|| "loop missing 'do' field".to_string())
                 .and_then(|n| build_node(n, builder))?;
             let redo_label = v.get("redo").map(|n| build_node(n, builder)).transpose()?;
-            
+
             let start_lbl = format!("{}_start", label);
             let end_lbl = format!("{}_end", label);
             let mut cg_nodes = vec![start_lbl.clone(), do_label.clone()];
@@ -89,12 +89,17 @@ fn build_node(v: &Value, builder: &mut PowlBuilder) -> Result<String, String> {
             cg_nodes.push(end_lbl.clone());
 
             let cg_node_refs: Vec<&str> = cg_nodes.iter().map(String::as_str).collect();
-            let edge_refs: Vec<(&str, &str)> = edges.iter().map(|(a, b)| (a.as_str(), b.as_str())).collect();
+            let edge_refs: Vec<(&str, &str)> = edges
+                .iter()
+                .map(|(a, b)| (a.as_str(), b.as_str()))
+                .collect();
 
             replace_builder(builder, |b| {
-                b.start_node(&start_lbl)
-                    .end_node(&end_lbl)
-                    .choice_graph(&label, &cg_node_refs, &edge_refs)
+                b.start_node(&start_lbl).end_node(&end_lbl).choice_graph(
+                    &label,
+                    &cg_node_refs,
+                    &edge_refs,
+                )
             });
         }
         "choice_graph" => {

@@ -1,5 +1,4 @@
 use crate::config::{AntiLlmConfig, ForbiddenPattern};
-use regex::Regex;
 use crate::diagnostics::AntiLlmDiagnostic;
 use crate::observations::Observation;
 use crate::parsers::{
@@ -13,6 +12,7 @@ use crate::rules::{
     typescript_ast as ts_ast_rules, version,
 };
 use aho_corasick::AhoCorasick;
+use regex::Regex;
 use std::fs;
 use std::path::Path;
 use std::sync::OnceLock;
@@ -257,7 +257,8 @@ pub fn scan_file(filepath: &str) -> Vec<Observation> {
             // Proves absence of panic, not correctness of return value.
             // Heuristic: the assertion is on its own line and ends with .is_ok())
             // (single expression — no chained .unwrap(), .map(), etc.).
-            if trimmed.starts_with("assert!(") && trimmed.contains(".is_ok())")
+            if trimmed.starts_with("assert!(")
+                && trimmed.contains(".is_ok())")
                 && !trimmed.contains(".unwrap()")
                 && !trimmed.contains(".map(")
                 && !trimmed.contains(".and_then(")
@@ -549,11 +550,7 @@ pub fn evaluate_diagnostics_with_config(
                 fp.blocking.unwrap_or(true),
             )
         } else {
-            (
-                "ANTI-LLM-CONFIG-001".to_string(),
-                o.message.clone(),
-                true,
-            )
+            ("ANTI-LLM-CONFIG-001".to_string(), o.message.clone(), true)
         };
         diags.push(AntiLlmDiagnostic {
             code,
@@ -564,7 +561,8 @@ pub fn evaluate_diagnostics_with_config(
             message: format!("[CONFIG] {}", message),
             forbidden_implication: format!("ConfigPattern({}) => Blocked", o.construct),
             blocking,
-            required_correction: "Remove or replace the forbidden pattern per anti.toml".to_string(),
+            required_correction: "Remove or replace the forbidden pattern per anti.toml"
+                .to_string(),
             required_next_proof: "Verify pattern no longer appears in matched files".to_string(),
         });
     }

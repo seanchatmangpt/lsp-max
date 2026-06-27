@@ -83,14 +83,14 @@ fn build_dfg(traces: &HashMap<String, Vec<String>>) -> Dfg {
             continue;
         }
         *start_activities.entry(trace[0].clone()).or_insert(0) += 1;
-        *end_activities.entry(trace[trace.len() - 1].clone()).or_insert(0) += 1;
+        *end_activities
+            .entry(trace[trace.len() - 1].clone())
+            .or_insert(0) += 1;
         for act in trace {
             *nodes.entry(act.clone()).or_insert(0) += 1;
         }
         for pair in trace.windows(2) {
-            *edges
-                .entry((pair[0].clone(), pair[1].clone()))
-                .or_insert(0) += 1;
+            *edges.entry((pair[0].clone(), pair[1].clone())).or_insert(0) += 1;
         }
     }
     Dfg {
@@ -144,7 +144,13 @@ fn check_conformance(traces: &HashMap<String, Vec<String>>) -> Vec<Violation> {
 
 fn mermaid_id(name: &str) -> String {
     name.chars()
-        .map(|c| if c.is_alphanumeric() || c == '_' { c } else { '_' })
+        .map(|c| {
+            if c.is_alphanumeric() || c == '_' {
+                c
+            } else {
+                '_'
+            }
+        })
         .collect()
 }
 
@@ -268,7 +274,9 @@ pub fn render(diagnostics: &[AntiLlmDiagnostic]) -> String {
     md.push_str("|---|---|---|\n");
     md.push_str("| 1 | `responded_existence(Detected, ScanComplete)` | Every detection must co-occur with a ScanComplete in the case |\n");
     md.push_str("| 2 | `absence(VictoryLanguageEmitted)` | Victory language is forbidden in all detection output |\n");
-    md.push_str("| 3 | `init(ScanComplete)` | ScanComplete is the canonical terminal activity per case |\n");
+    md.push_str(
+        "| 3 | `init(ScanComplete)` | ScanComplete is the canonical terminal activity per case |\n",
+    );
     md.push('\n');
 
     md.push_str("## Activity Legend\n\n");
@@ -406,7 +414,11 @@ mod tests {
             make_diag("GGEN-001", "src/b.rs", 3),
         ];
         let traces = build_traces(&diags);
-        assert_eq!(traces.len(), 2, "two distinct file paths must produce two cases");
+        assert_eq!(
+            traces.len(),
+            2,
+            "two distinct file paths must produce two cases"
+        );
         let a_trace = &traces["src/a.rs"];
         // two detection activities plus the appended ScanComplete
         assert_eq!(a_trace.len(), 3);
@@ -431,12 +443,18 @@ mod tests {
         let mut traces = HashMap::new();
         traces.insert(
             "case1".to_string(),
-            vec!["VictoryLanguageDetected".to_string(), "ScanComplete".to_string()],
+            vec![
+                "VictoryLanguageDetected".to_string(),
+                "ScanComplete".to_string(),
+            ],
         );
         let dfg = build_dfg(&traces);
         assert_eq!(dfg.nodes.len(), 2);
         assert_eq!(dfg.edges.len(), 1);
-        let key = ("VictoryLanguageDetected".to_string(), "ScanComplete".to_string());
+        let key = (
+            "VictoryLanguageDetected".to_string(),
+            "ScanComplete".to_string(),
+        );
         assert_eq!(dfg.edges.get(&key), Some(&1));
     }
 
@@ -446,7 +464,10 @@ mod tests {
     fn check_conformance_empty_traces_no_violations() {
         let traces = build_traces(&[]);
         let violations = check_conformance(&traces);
-        assert!(violations.is_empty(), "synthetic _workspace case must be conformant");
+        assert!(
+            violations.is_empty(),
+            "synthetic _workspace case must be conformant"
+        );
     }
 
     #[test]
@@ -490,13 +511,22 @@ mod tests {
     #[test]
     fn render_empty_state_contains_required_sections() {
         let doc = render(&[]);
-        assert!(doc.contains("# Anti-LLM Detection Process Model"), "missing H1");
-        assert!(doc.contains("## Directly-Follows Graph"), "missing DFG section");
+        assert!(
+            doc.contains("# Anti-LLM Detection Process Model"),
+            "missing H1"
+        );
+        assert!(
+            doc.contains("## Directly-Follows Graph"),
+            "missing DFG section"
+        );
         assert!(
             doc.contains("## Declare Conformance Report"),
             "missing Declare section"
         );
-        assert!(doc.contains("## Activity Legend"), "missing Activity Legend section");
+        assert!(
+            doc.contains("## Activity Legend"),
+            "missing Activity Legend section"
+        );
     }
 
     #[test]
@@ -511,10 +541,19 @@ mod tests {
     #[test]
     fn render_mermaid_block_is_well_formed() {
         let doc = render(&[]);
-        assert!(doc.contains("```mermaid"), "Mermaid opening fence must be present");
-        assert!(doc.contains("flowchart LR"), "flowchart LR declaration must be present");
+        assert!(
+            doc.contains("```mermaid"),
+            "Mermaid opening fence must be present"
+        );
+        assert!(
+            doc.contains("flowchart LR"),
+            "flowchart LR declaration must be present"
+        );
         // The closing fence ends the mermaid block
-        assert!(doc.contains("```\n"), "Mermaid closing fence must be present");
+        assert!(
+            doc.contains("```\n"),
+            "Mermaid closing fence must be present"
+        );
     }
 
     #[test]

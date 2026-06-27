@@ -1,0 +1,454 @@
+warning: unused import: `Deserialize`
+ --> crates/lsp-max-compositor/src/gate_cli_compat.rs:1:13
+  |
+1 | use serde::{Deserialize, Serialize};
+  |             ^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `lsp_max::max_andon::analysis::AnalysisPipeline`
+  --> crates/lsp-max-compositor/src/server.rs:14:5
+   |
+14 | use lsp_max::max_andon::analysis::AnalysisPipeline;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `AndonEvent`
+  --> crates/lsp-max-compositor/src/server.rs:15:43
+   |
+15 | use lsp_max::max_andon::andon::{AndonBus, AndonEvent};
+   |                                           ^^^^^^^^^^
+
+warning: unused imports: `LspMaxAndonRaised` and `LspPushAdapter`
+  --> crates/lsp-max-compositor/src/server.rs:17:31
+   |
+17 | use lsp_max::max_andon::lsp::{LspMaxAndonRaised, LspPushAdapter};
+   |                               ^^^^^^^^^^^^^^^^^  ^^^^^^^^^^^^^^
+
+warning: function `decode_hex` is never used
+   --> crates/lsp-max-compositor/src/flush_coordinator.rs:550:4
+    |
+550 | fn decode_hex(s: &str) -> Result<[u8; 32], String> {
+    |    ^^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `lsp-max-compositor` (lib) generated 5 warnings (run `cargo fix --lib -p lsp-max-compositor` to apply 4 suggestions)
+warning: unknown lint: `removed`
+  --> /Users/sac/wasm4pm/crates/wasm4pm-cognition/src/autosystems/candidates.rs:45:9
+   |
+45 | #[allow(removed)]
+   |         ^^^^^^^
+   |
+   = note: `#[warn(unknown_lints)]` on by default
+
+warning: unused import: `Candidate`
+ --> /Users/sac/wasm4pm/crates/wasm4pm-cognition/src/breeds/abductive_ibe.rs:2:51
+  |
+2 |     BreedError, BreedId, BreedInput, BreedOutput, Candidate, CognitionBreed, Fact, TraceStep,
+  |                                                   ^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `Candidate`
+ --> /Users/sac/wasm4pm/crates/wasm4pm-cognition/src/breeds/abductive_lp.rs:2:51
+  |
+2 |     BreedError, BreedId, BreedInput, BreedOutput, Candidate, CognitionBreed, Fact, TraceStep,
+  |                                                   ^^^^^^^^^
+
+warning: unused import: `Candidate`
+ --> /Users/sac/wasm4pm/crates/wasm4pm-cognition/src/breeds/asp.rs:2:51
+  |
+2 |     BreedError, BreedId, BreedInput, BreedOutput, Candidate, CognitionBreed, Fact, TraceStep,
+  |                                                   ^^^^^^^^^
+
+warning: unused import: `Rule`
+  --> /Users/sac/wasm4pm/crates/wasm4pm-cognition/src/breeds/autoinstinct_semantics.rs:14:73
+   |
+14 |     BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, Rule, TraceStep,
+   |                                                                         ^^^^
+
+warning: unused import: `Candidate`
+ --> /Users/sac/wasm4pm/crates/wasm4pm-cognition/src/breeds/bayesian_network.rs:3:51
+  |
+3 |     BreedError, BreedId, BreedInput, BreedOutput, Candidate, CognitionBreed, CognitionError, Fact,
+  |                                                   ^^^^^^^^^
+
+warning: unused import: `std::fmt::Write as _`
+  --> /Users/sac/wasm4pm/crates/wasm4pm-cognition/src/breeds/csp_ac3.rs:13:5
+   |
+13 | use std::fmt::Write as _;
+   |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `crate::breeds::support::trace_query::TraceQuery`
+ --> /Users/sac/wasm4pm/crates/wasm4pm-cognition/src/breeds/dempster_shafer.rs:5:5
+  |
+5 | use crate::breeds::support::trace_query::TraceQuery;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `Candidate`
+ --> /Users/sac/wasm4pm/crates/wasm4pm-cognition/src/breeds/description_logic.rs:2:51
+  |
+2 |     BreedError, BreedId, BreedInput, BreedOutput, Candidate, CognitionBreed, Fact, TraceStep,
+  |                                                   ^^^^^^^^^
+
+warning: unused import: `HashMap`
+ --> /Users/sac/wasm4pm/crates/wasm4pm-cognition/src/breeds/description_logic.rs:4:34
+  |
+4 | use std::collections::{BTreeSet, HashMap};
+  |                                  ^^^^^^^
+
+warning: unused import: `crate::breeds::support::trace_query::TraceQuery`
+  --> /Users/sac/wasm4pm/crates/wasm4pm-cognition/src/breeds/ebl.rs:12:5
+   |
+12 | use crate::breeds::support::trace_query::TraceQuery;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `crate::breeds::support::trace_query::TraceQuery`
+ --> /Users/sac/wasm4pm/crates/wasm4pm-cognition/src/breeds/fuzzy_logic.rs:8:5
+  |
+8 | use crate::breeds::support::trace_query::TraceQuery;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `HashSet`
+  --> /Users/sac/wasm4pm/crates/wasm4pm-cognition/src/breeds/gps.rs:18:34
+   |
+18 | use std::collections::{BTreeSet, HashSet};
+   |                                  ^^^^^^^
+
+warning: unused import: `HashSet`
+ --> /Users/sac/wasm4pm/crates/wasm4pm-cognition/src/breeds/htn_planning.rs:5:34
+  |
+5 | use std::collections::{BTreeSet, HashSet};
+  |                                  ^^^^^^^
+
+warning: unused import: `HashSet`
+ --> /Users/sac/wasm4pm/crates/wasm4pm-cognition/src/breeds/ltl_monitor.rs:5:34
+  |
+5 | use std::collections::{BTreeSet, HashSet};
+  |                                  ^^^^^^^
+
+warning: unused import: `Fact`
+ --> /Users/sac/wasm4pm/crates/wasm4pm-cognition/src/breeds/mdp.rs:8:67
+  |
+8 |     BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep,
+  |                                                                   ^^^^
+
+warning: unused import: `TraceStep`
+  --> /Users/sac/wasm4pm/crates/wasm4pm-cognition/src/breeds/morphological.rs:38:73
+   |
+38 |     BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep,
+   |                                                                         ^^^^^^^^^
+
+warning: unused import: `BTreeSet`
+  --> /Users/sac/wasm4pm/crates/wasm4pm-cognition/src/breeds/ocpm_route_discoverer.rs:13:34
+   |
+13 | use std::collections::{BTreeMap, BTreeSet};
+   |                                  ^^^^^^^^
+
+warning: unused import: `tracing`
+  --> /Users/sac/wasm4pm/crates/wasm4pm-cognition/src/breeds/ocpm_route_discoverer.rs:14:5
+   |
+14 | use tracing;
+   |     ^^^^^^^
+
+warning: unused import: `HashMap`
+ --> /Users/sac/wasm4pm/crates/wasm4pm-cognition/src/breeds/partial_order_plan.rs:9:34
+  |
+9 | use std::collections::{BTreeSet, HashMap, HashSet};
+  |                                  ^^^^^^^
+
+warning: unused import: `HashSet`
+  --> /Users/sac/wasm4pm/crates/wasm4pm-cognition/src/breeds/soar.rs:31:34
+   |
+31 | use std::collections::{BTreeSet, HashSet};
+   |                                  ^^^^^^^
+
+warning: unused import: `HashSet`
+  --> /Users/sac/wasm4pm/crates/wasm4pm-cognition/src/breeds/strips.rs:22:44
+   |
+22 | use std::collections::{BTreeMap, BTreeSet, HashSet};
+   |                                            ^^^^^^^
+
+warning: unused imports: `BoundedBreed` and `DomainBound`
+ --> /Users/sac/wasm4pm/crates/wasm4pm-cognition/src/breeds/version_space.rs:6:44
+  |
+6 | use crate::breeds::support::domain_bound::{BoundedBreed, DomainBound};
+  |                                            ^^^^^^^^^^^^  ^^^^^^^^^^^
+
+warning: unused import: `crate::breeds::support::trace_query::TraceQuery`
+ --> /Users/sac/wasm4pm/crates/wasm4pm-cognition/src/breeds/version_space.rs:7:5
+  |
+7 | use crate::breeds::support::trace_query::TraceQuery;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `CognitionError`
+ --> /Users/sac/wasm4pm/crates/wasm4pm-cognition/src/breeds/version_space.rs:9:67
+  |
+9 |     BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, CognitionError, Fact, TraceStep,
+  |                                                                   ^^^^^^^^^^^^^^
+
+warning: variable does not need to be mutable
+  --> /Users/sac/wasm4pm/crates/wasm4pm-cognition/src/breeds/act_r.rs:74:13
+   |
+74 |         let mut push = |trace: &mut Vec<TraceStep>, kind: &str, detail: String| {
+   |             ----^^^^
+   |             |
+   |             help: remove this `mut`
+   |
+   = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `id`
+   --> /Users/sac/wasm4pm/crates/wasm4pm-cognition/src/breeds/allen_temporal.rs:251:29
+    |
+251 |                         let id = get_id!(parts[0]);
+    |                             ^^ help: if this is intentional, prefix it with an underscore: `_id`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: variable does not need to be mutable
+   --> /Users/sac/wasm4pm/crates/wasm4pm-cognition/src/breeds/analogy_sme.rs:156:13
+    |
+156 |         let mut push = |trace: &mut Vec<TraceStep>, kind: &str, detail: String| {
+    |             ----^^^^
+    |             |
+    |             help: remove this `mut`
+
+warning: variable does not need to be mutable
+   --> /Users/sac/wasm4pm/crates/wasm4pm-cognition/src/breeds/asp.rs:106:21
+    |
+106 |                 let mut rule_ok = true;
+    |                     ----^^^^^^^
+    |                     |
+    |                     help: remove this `mut`
+
+warning: unused variable: `rule_ok`
+   --> /Users/sac/wasm4pm/crates/wasm4pm-cognition/src/breeds/asp.rs:106:21
+    |
+106 |                 let mut rule_ok = true;
+    |                     ^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_rule_ok`
+
+warning: variable `node_count` is assigned to, but never used
+  --> /Users/sac/wasm4pm/crates/wasm4pm-cognition/src/breeds/bayesian_network.rs:57:13
+   |
+57 |         let mut node_count = 0;
+   |             ^^^^^^^^^^^^^^
+   |
+   = note: consider using `_node_count` instead
+
+warning: value assigned to `node_count` is never read
+  --> /Users/sac/wasm4pm/crates/wasm4pm-cognition/src/breeds/bayesian_network.rs:61:17
+   |
+61 |                 node_count += 1;
+   |                 ^^^^^^^^^^^^^^^
+   |
+   = help: maybe it is overwritten before being read?
+   = note: `#[warn(unused_assignments)]` (part of `#[warn(unused)]`) on by default
+
+warning: variable does not need to be mutable
+   --> /Users/sac/wasm4pm/crates/wasm4pm-cognition/src/breeds/bayesian_network.rs:459:17
+    |
+459 |             let mut start_nodes = vec![node_id(ends[0])];
+    |                 ----^^^^^^^^^^^
+    |                 |
+    |                 help: remove this `mut`
+
+warning: variable does not need to be mutable
+   --> /Users/sac/wasm4pm/crates/wasm4pm-cognition/src/breeds/bayesian_network.rs:460:17
+    |
+460 |             let mut end_nodes = vec![node_id(ends[1])];
+    |                 ----^^^^^^^^^
+    |                 |
+    |                 help: remove this `mut`
+
+warning: variable does not need to be mutable
+   --> /Users/sac/wasm4pm/crates/wasm4pm-cognition/src/breeds/circumscription.rs:162:13
+    |
+162 |         let mut push = |trace: &mut Vec<TraceStep>, kind: &str, detail: String| {
+    |             ----^^^^
+    |             |
+    |             help: remove this `mut`
+
+warning: variable does not need to be mutable
+   --> /Users/sac/wasm4pm/crates/wasm4pm-cognition/src/breeds/construction_grammar.rs:161:13
+    |
+161 |         let mut push = |kind: &str, detail: String, trace: &mut Vec<TraceStep>| {
+    |             ----^^^^
+    |             |
+    |             help: remove this `mut`
+
+warning: unused variable: `inverse_mapping`
+  --> /Users/sac/wasm4pm/crates/wasm4pm-cognition/src/breeds/dempster_shafer.rs:47:5
+   |
+47 |     inverse_mapping: &BTreeMap<u8, String>,
+   |     ^^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_inverse_mapping`
+
+warning: variable does not need to be mutable
+   --> /Users/sac/wasm4pm/crates/wasm4pm-cognition/src/breeds/episodic_memory.rs:118:13
+    |
+118 |         let mut push = |trace: &mut Vec<TraceStep>, kind: &str, detail: String| {
+    |             ----^^^^
+    |             |
+    |             help: remove this `mut`
+
+warning: variable does not need to be mutable
+   --> /Users/sac/wasm4pm/crates/wasm4pm-cognition/src/breeds/ilp.rs:202:13
+    |
+202 |         let mut push = |trace: &mut Vec<TraceStep>, kind: &str, detail: String| {
+    |             ----^^^^
+    |             |
+    |             help: remove this `mut`
+
+warning: variable does not need to be mutable
+   --> /Users/sac/wasm4pm/crates/wasm4pm-cognition/src/breeds/markov_logic.rs:166:13
+    |
+166 |         let mut push = |kind: &str, detail: String, trace: &mut Vec<TraceStep>| {
+    |             ----^^^^
+    |             |
+    |             help: remove this `mut`
+
+warning: variable does not need to be mutable
+  --> /Users/sac/wasm4pm/crates/wasm4pm-cognition/src/breeds/mdp.rs:59:13
+   |
+59 |         let mut register_state = |s: &str, states: &mut Vec<String>| {
+   |             ----^^^^^^^^^^^^^^
+   |             |
+   |             help: remove this `mut`
+
+warning: variable does not need to be mutable
+   --> /Users/sac/wasm4pm/crates/wasm4pm-cognition/src/breeds/meta_reasoning.rs:128:13
+    |
+128 |         let mut push = |kind: &str, detail: String, trace: &mut Vec<TraceStep>| {
+    |             ----^^^^
+    |             |
+    |             help: remove this `mut`
+
+warning: variable does not need to be mutable
+   --> /Users/sac/wasm4pm/crates/wasm4pm-cognition/src/breeds/naive_physics.rs:129:13
+    |
+129 |         let mut push = |trace: &mut Vec<TraceStep>, kind: &str, detail: String| {
+    |             ----^^^^
+    |             |
+    |             help: remove this `mut`
+
+warning: variable does not need to be mutable
+   --> /Users/sac/wasm4pm/crates/wasm4pm-cognition/src/breeds/partial_order_plan.rs:192:25
+    |
+192 |                     let mut orderings_backup = orderings.clone();
+    |                         ----^^^^^^^^^^^^^^^^
+    |                         |
+    |                         help: remove this `mut`
+
+warning: variable does not need to be mutable
+   --> /Users/sac/wasm4pm/crates/wasm4pm-cognition/src/breeds/partial_order_plan.rs:211:25
+    |
+211 |                     let mut orderings_backup = orderings.clone();
+    |                         ----^^^^^^^^^^^^^^^^
+    |                         |
+    |                         help: remove this `mut`
+
+warning: variable does not need to be mutable
+   --> /Users/sac/wasm4pm/crates/wasm4pm-cognition/src/breeds/pomdp.rs:381:13
+    |
+381 |         let mut push = |kind: &str, detail: String, trace: &mut Vec<TraceStep>| {
+    |             ----^^^^
+    |             |
+    |             help: remove this `mut`
+
+warning: variable does not need to be mutable
+   --> /Users/sac/wasm4pm/crates/wasm4pm-cognition/src/breeds/pomdp.rs:420:13
+    |
+420 |         let mut add_point = |b: &[f64], points: &mut Vec<Vec<f64>>| {
+    |             ----^^^^^^^^^
+    |             |
+    |             help: remove this `mut`
+
+warning: variable does not need to be mutable
+   --> /Users/sac/wasm4pm/crates/wasm4pm-cognition/src/breeds/problog.rs:127:13
+    |
+127 |         let mut push = |trace: &mut Vec<TraceStep>, kind: &str, detail: String| {
+    |             ----^^^^
+    |             |
+    |             help: remove this `mut`
+
+warning: variable does not need to be mutable
+   --> /Users/sac/wasm4pm/crates/wasm4pm-cognition/src/breeds/rl_symbolic.rs:160:13
+    |
+160 |         let mut push = |trace: &mut Vec<TraceStep>, kind: &str, detail: String| {
+    |             ----^^^^
+    |             |
+    |             help: remove this `mut`
+
+warning: variable does not need to be mutable
+   --> /Users/sac/wasm4pm/crates/wasm4pm-cognition/src/breeds/sat_cdcl.rs:148:13
+    |
+148 |         let mut push = |trace: &mut Vec<TraceStep>, kind: &str, detail: String| {
+    |             ----^^^^
+    |             |
+    |             help: remove this `mut`
+
+warning: variable does not need to be mutable
+   --> /Users/sac/wasm4pm/crates/wasm4pm-cognition/src/breeds/sat_cdcl.rs:174:13
+    |
+174 |         let mut assign = |lit: Lit,
+    |             ----^^^^^^
+    |             |
+    |             help: remove this `mut`
+
+warning: variable does not need to be mutable
+   --> /Users/sac/wasm4pm/crates/wasm4pm-cognition/src/breeds/situation_calculus.rs:159:13
+    |
+159 |         let mut push = |trace: &mut Vec<TraceStep>, kind: &str, detail: String| {
+    |             ----^^^^
+    |             |
+    |             help: remove this `mut`
+
+warning: variable does not need to be mutable
+   --> /Users/sac/wasm4pm/crates/wasm4pm-cognition/src/breeds/tableaux.rs:183:13
+    |
+183 |         let mut push = |kind: &str, detail: String, depth: u32, trace: &mut Vec<TraceStep>| {
+    |             ----^^^^
+    |             |
+    |             help: remove this `mut`
+
+warning: field `0` is never read
+   --> /Users/sac/wasm4pm/crates/wasm4pm-cognition/src/breeds/ebl.rs:118:10
+    |
+118 |     Fact(Term),
+    |     ---- ^^^^
+    |     |
+    |     field in this variant
+    |
+    = note: `ProofNode` has derived impls for the traits `Debug` and `Clone`, but these are intentionally ignored during dead code analysis
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+help: consider changing the field to be of unit type to suppress this warning while preserving the field numbering, or remove the field
+    |
+118 -     Fact(Term),
+118 +     Fact(()),
+    |
+
+warning: field `id` is never read
+  --> /Users/sac/wasm4pm/crates/wasm4pm-cognition/src/breeds/qualitative_reason.rs:61:5
+   |
+60 | struct Confluence {
+   |        ---------- field in this struct
+61 |     id: String,
+   |     ^^
+   |
+   = note: `Confluence` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+warning: field `breed` is never read
+  --> /Users/sac/wasm4pm/crates/wasm4pm-cognition/src/breeds/support/pipeline.rs:29:5
+   |
+28 | pub struct BreedPipeline<S> {
+   |            ------------- field in this struct
+29 |     breed: BreedId,
+   |     ^^^^^
+
+warning: `wasm4pm-cognition` (lib) generated 56 warnings (run `cargo fix --lib -p wasm4pm-cognition` to apply 50 suggestions)
+   Compiling bevy-lsp v26.6.28 (/Users/sac/lsp-max/examples/bevy-lsp)
+   Compiling tex-lsp v26.6.28 (/Users/sac/lsp-max/examples/tex-lsp)
+   Compiling claude-code-config-lsp v26.6.24 (/Users/sac/lsp-max/crates/claude-code-config-lsp)
+   Compiling lsp-max-cli v26.6.28 (/Users/sac/lsp-max/crates/lsp-max-cli)
+   Compiling wasm4pm-lsp v26.6.28 (/Users/sac/lsp-max/examples/wasm4pm-lsp)
+   Compiling lsp-max-compositor v26.6.28 (/Users/sac/lsp-max/crates/lsp-max-compositor)
+   Compiling clap-noun-verb-lsp v26.6.28 (/Users/sac/lsp-max/examples/clap-noun-verb-lsp)

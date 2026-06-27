@@ -199,7 +199,10 @@ fn walk<W: Write>(
     }
 
     let has_scope = match node.kind() {
-        "statement_block" | "function_declaration" | "class_declaration" | "interface_declaration" => {
+        "statement_block"
+        | "function_declaration"
+        | "class_declaration"
+        | "interface_declaration" => {
             ctx.push_scope();
             true
         }
@@ -298,15 +301,17 @@ fn extract_doc_comments(node: tree_sitter::Node<'_>, source: &[u8]) -> String {
         }
     }
     comments.reverse();
-    
+
     let mut doc_lines = Vec::new();
     for comment in comments {
         for line in comment.lines() {
             let trimmed = line.trim();
             if trimmed.starts_with("/**") || trimmed.ends_with("*/") {
                 let clean = trimmed
-                    .strip_prefix("/**").unwrap_or(trimmed)
-                    .strip_suffix("*/").unwrap_or(trimmed)
+                    .strip_prefix("/**")
+                    .unwrap_or(trimmed)
+                    .strip_suffix("*/")
+                    .unwrap_or(trimmed)
                     .trim_start_matches('*')
                     .trim();
                 if !clean.is_empty() {
@@ -436,7 +441,11 @@ fn emit_call_expression<W: Write>(
     };
 
     let lsp_range = ts_range_to_lsp(name_range);
-    let range_id = ctx.link_range(lsp_range.start, lsp_range.end, Some(reference_tag(name, SymbolKind::FUNCTION, lsp_range)))?;
+    let range_id = ctx.link_range(
+        lsp_range.start,
+        lsp_range.end,
+        Some(reference_tag(name, SymbolKind::FUNCTION, lsp_range)),
+    )?;
 
     let mut obj_name: Option<String> = None;
     if callee_node.kind() == "member_expression" {
@@ -536,11 +545,10 @@ fn extract_callee_name<'a>(
                 Some((t, node.range()))
             }
         }
-        "member_expression" => {
-            node.child_by_field_name("property")
-                .map(|n| (node_text(n, source), n.range()))
-                .filter(|(t, _)| !t.is_empty())
-        }
+        "member_expression" => node
+            .child_by_field_name("property")
+            .map(|n| (node_text(n, source), n.range()))
+            .filter(|(t, _)| !t.is_empty()),
         _ => None,
     }
 }

@@ -49,14 +49,24 @@ fn rice_closure_table_contains_all_layers() {
 #[test]
 fn arbitrary_semantic_claim_without_bound_refused() {
     let inv = build_rice_closure_chain_invariant();
-    assert_eq!(inv.false_probe.as_deref().unwrap(), "arbitrary_semantic_claim_without_bound");
+    assert_eq!(
+        inv.false_probe.as_deref().unwrap(),
+        "arbitrary_semantic_claim_without_bound"
+    );
 }
 
 #[test]
 fn each_layer_has_bounded_question() {
     // "∀ layer ∈ ClosureChain: layer.question is bounded ∧ layer.output is witnessable ∧ layer does not claim arbitrary semantic omniscience"
     let layers = vec![
-        "Tree-sitter", "Salsa", "LSIF", "Oxigraph", "LSP", "ANDON", "Receipt", "OCEL"
+        "Tree-sitter",
+        "Salsa",
+        "LSIF",
+        "Oxigraph",
+        "LSP",
+        "ANDON",
+        "Receipt",
+        "OCEL",
     ];
     for layer in layers {
         assert!(!layer.is_empty(), "Layer {} must be bounded", layer);
@@ -68,7 +78,10 @@ fn closure_chain_missing_layer_stops_admission() {
     let inv = build_rice_closure_chain_invariant();
     assert_eq!(inv.severity, Severity::Stop);
     assert_eq!(inv.blocks, true);
-    assert_eq!(inv.counterfactual_probe.as_deref().unwrap(), "remove_one_layer_from_rice_closure_table");
+    assert_eq!(
+        inv.counterfactual_probe.as_deref().unwrap(),
+        "remove_one_layer_from_rice_closure_table"
+    );
 }
 
 #[test]

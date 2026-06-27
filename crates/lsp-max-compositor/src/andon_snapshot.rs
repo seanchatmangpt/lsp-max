@@ -1,7 +1,7 @@
 use crate::dt_context::{AndonEvent, DtContext, RepairAction};
+use chrono::Utc;
 use parking_lot::RwLock;
 use std::sync::Arc;
-use chrono::Utc;
 
 /// Active event store tracking live ANDON states.
 #[derive(Debug, Clone, Default)]
@@ -44,16 +44,16 @@ impl AndonSnapshot {
         repairs: Vec<RepairAction>,
     ) {
         let mut ctx = self.inner.write();
-        
+
         let mut seq = ctx.seq.unwrap_or(0);
         seq += 1;
-        
+
         ctx.seq = Some(seq);
         ctx.timestamp = Utc::now().to_rfc3339();
-        
+
         let has_blocking = events.iter().any(|e| e.blocking);
         ctx.admission_allowed = Some(!has_blocking);
-        
+
         ctx.active_andon_codes = active_andon_codes;
         ctx.governing_axes = governing_axes;
         ctx.events = events;

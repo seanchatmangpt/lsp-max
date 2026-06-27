@@ -44,11 +44,14 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
                 column: o.column,
                 message: "assert!(expr.is_ok()) proves absence of panic, not correctness. \
                     Couple with a structural check on the Ok payload or post-call state \
-                    (e.g. assert_eq!(engine.current_zone(), Zone::X)).".to_string(),
+                    (e.g. assert_eq!(engine.current_zone(), Zone::X))."
+                    .to_string(),
                 forbidden_implication: "NoErrorRaised => BehaviorCorrect".to_string(),
                 blocking: false,
-                required_correction: "Extract the Ok value and assert a structural property on it, \
-                    OR assert state change on the system under test after the call.".to_string(),
+                required_correction:
+                    "Extract the Ok value and assert a structural property on it, \
+                    OR assert state change on the system under test after the call."
+                        .to_string(),
                 required_next_proof: "Test still passes after removing the is_ok() and replacing \
                     with a check that would fail if the SUT returned a wrong-but-Ok value."
                     .to_string(),
@@ -65,11 +68,13 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
                 column: o.column,
                 message: "unwrap_or_default() / unwrap_or() in test helper silently converts \
                     SUT errors into empty/zero values — downstream assertions pass \
-                    vacuously when the SUT actually failed.".to_string(),
+                    vacuously when the SUT actually failed."
+                    .to_string(),
                 forbidden_implication: "HelperReturnsDefault => SUTSucceeded".to_string(),
                 blocking: true,
                 required_correction: "Use .expect(\"descriptive message\") or propagate the \
-                    error with ?. The test must fail loudly when the SUT returns Err.".to_string(),
+                    error with ?. The test must fail loudly when the SUT returns Err."
+                    .to_string(),
                 required_next_proof: "Replace unwrap_or_default() with expect(); cargo test \
                     still passes for the passing case and fails for injected error case."
                     .to_string(),

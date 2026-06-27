@@ -1,7 +1,7 @@
 use crate::jsonrpc::{Error, Result};
-use lsp_types_max::{Hover, HoverParams, HoverContents, MarkupContent, MarkupKind};
-use url::Url;
+use lsp_types_max::{Hover, HoverContents, HoverParams, MarkupContent, MarkupKind};
 use std::process::Command;
+use url::Url;
 
 /// Asks the server for hover information of a symbol.
 pub async fn hover(params: HoverParams) -> Result<Option<Hover>> {
@@ -21,29 +21,52 @@ pub async fn hover(params: HoverParams) -> Result<Option<Hover>> {
             {
                 let stdout_str = String::from_utf8_lossy(&output.stdout);
                 let stderr_str = String::from_utf8_lossy(&output.stderr);
-                
-                let status_icon = if output.status.success() { "✅ **ACCEPT**" } else { "❌ **REJECT**" };
-                let mut hover_text = format!("### Affidavit 7-Stage Verification\n\n**Verdict:** {}\n\n", status_icon);
-                
+
+                let status_icon = if output.status.success() {
+                    "✅ **ACCEPT**"
+                } else {
+                    "❌ **REJECT**"
+                };
+                let mut hover_text = format!(
+                    "### Affidavit 7-Stage Verification\n\n**Verdict:** {}\n\n",
+                    status_icon
+                );
+
                 if !stdout_str.is_empty() {
                     let mut clean_out = String::new();
                     let mut in_esc = false;
                     for c in stdout_str.chars() {
-                        if c == '\x1B' { in_esc = true; continue; }
-                        if in_esc { if c.is_ascii_alphabetic() { in_esc = false; } continue; }
+                        if c == '\x1B' {
+                            in_esc = true;
+                            continue;
+                        }
+                        if in_esc {
+                            if c.is_ascii_alphabetic() {
+                                in_esc = false;
+                            }
+                            continue;
+                        }
                         clean_out.push(c);
                     }
                     hover_text.push_str("```text\n");
                     hover_text.push_str(clean_out.trim());
                     hover_text.push_str("\n```\n");
                 }
-                
+
                 if !stderr_str.is_empty() {
                     let mut clean_err = String::new();
                     let mut in_esc = false;
                     for c in stderr_str.chars() {
-                        if c == '\x1B' { in_esc = true; continue; }
-                        if in_esc { if c.is_ascii_alphabetic() { in_esc = false; } continue; }
+                        if c == '\x1B' {
+                            in_esc = true;
+                            continue;
+                        }
+                        if in_esc {
+                            if c.is_ascii_alphabetic() {
+                                in_esc = false;
+                            }
+                            continue;
+                        }
                         clean_err.push(c);
                     }
                     hover_text.push_str("```text\n");

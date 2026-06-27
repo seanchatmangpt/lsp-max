@@ -216,7 +216,10 @@ impl MetricsService {
                     trend: "UNKNOWN".into(),
                 })
                 .collect();
-            return Ok(MetricsTrendingResult { comparisons, status: "UNKNOWN".into() });
+            return Ok(MetricsTrendingResult {
+                comparisons,
+                status: "UNKNOWN".into(),
+            });
         }
         let baseline = baseline_opt.unwrap();
         let baseline_map: HashMap<String, f64> =
@@ -230,9 +233,19 @@ impl MetricsService {
             let trend = if delta.abs() < f64::EPSILON {
                 "STABLE"
             } else if m.name.contains("conformance") {
-                if delta < 0.0 { degrading += 1; "DEGRADING" } else { "IMPROVING" }
+                if delta < 0.0 {
+                    degrading += 1;
+                    "DEGRADING"
+                } else {
+                    "IMPROVING"
+                }
             } else if m.name.contains("diagnostics") || m.name.contains("repairs.open") {
-                if delta > 0.0 { degrading += 1; "DEGRADING" } else { "IMPROVING" }
+                if delta > 0.0 {
+                    degrading += 1;
+                    "DEGRADING"
+                } else {
+                    "IMPROVING"
+                }
             } else {
                 "STABLE"
             };
@@ -252,7 +265,10 @@ impl MetricsService {
         } else {
             "PARTIAL"
         };
-        Ok(MetricsTrendingResult { comparisons, status: status.into() })
+        Ok(MetricsTrendingResult {
+            comparisons,
+            status: status.into(),
+        })
     }
 }
 

@@ -1,19 +1,16 @@
 {
   "release": "v26.6.28",
-  "component": "lsif",
-  "command": "cargo run -p lsp-max-lsif -- --root src/ --out receipts/v26.6.28-lsif.lsif",
   "exit_code": 0,
-  "stdout_digest": "af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
-  "stderr_digest": "2bec0762231d3dd44f101ad163878d3da1bbc4763614ffcdb0f17f8e42f2541f",
-  "source_boundary": "src",
-  "source_digest": "c29908dad293b4d858f4ae5a93c9346d8d0b84fb066936b2ae047690b1156cfe",
-  "artifact_paths": [
-    "receipts/v26.6.28-lsif.lsif"
-  ],
-  "artifact_digests": {
-    "receipts/v26.6.28-lsif.lsif": "18e0324aafb65500b40e972b6a2d5fedb4adff96721905f33bbb413289f6f04b"
-  },
-  "timestamp": "2026-06-27T08:31:24.725563Z",
-  "status": "ADMITTED",
-  "failset": []
+  "stdout_digest": "a9a3",
+  "stderr_digest": "b3b4",
+  "source_boundary": "/Users/sac/lsp-max",
+  "artifact_paths": [],
+  "artifact_digests": {},
+  "q": 1,
+  "failset_cardinality": 0,
+  "closure_prose_used": false,
+  "crates_io_publish_executed": false,
+  "component": "lsif",
+  "command": "just lsif",
+  "timestamp": "2026-06-27T09:30:42.366272"
 }

@@ -54,9 +54,15 @@ fn dotted_rs_routes_to_anti_llm_and_wasm4pm_not_ggen() {
     let router = ExtensionRouter::new();
     router.register(".rs", diag_server("anti-llm-cheat-lsp", &[".rs"]));
     router.register(".rs", diag_server("wasm4pm-lsp", &[".rs"]));
-    router.register(".ttl", primary_server("ggen-lsp", &[".ttl", ".rq", ".tera"]));
+    router.register(
+        ".ttl",
+        primary_server("ggen-lsp", &[".ttl", ".rq", ".tera"]),
+    );
     router.register(".rq", primary_server("ggen-lsp", &[".ttl", ".rq", ".tera"]));
-    router.register(".tera", primary_server("ggen-lsp", &[".ttl", ".rq", ".tera"]));
+    router.register(
+        ".tera",
+        primary_server("ggen-lsp", &[".ttl", ".rq", ".tera"]),
+    );
 
     let servers = servers_for_uri(&router, "file:///workspace/main.rs");
     let ids: Vec<&str> = servers.iter().map(|s| s.id.as_str()).collect();
@@ -620,7 +626,10 @@ fn same_key_duplicate_registration_deduplicates() {
     router.register(".rs", diag_server("anti-llm-cheat-lsp", &[".rs"])); // duplicate
 
     let servers = servers_for_uri(&router, "file:///workspace/main.rs");
-    let count = servers.iter().filter(|s| s.id == "anti-llm-cheat-lsp").count();
+    let count = servers
+        .iter()
+        .filter(|s| s.id == "anti-llm-cheat-lsp")
+        .count();
     assert_eq!(
         count, 1,
         "same server registered under same key twice must appear exactly once; got {} entries",
@@ -639,12 +648,17 @@ fn uri_with_query_and_fragment_routes_by_base_extension() {
     let servers_f = servers_for_uri(&router, "file:///workspace/main.rs#L42");
     let servers_qf = servers_for_uri(&router, "file:///workspace/main.rs?v=1#L10");
 
-    for (label, servers) in [("query", &servers_q), ("fragment", &servers_f), ("both", &servers_qf)] {
+    for (label, servers) in [
+        ("query", &servers_q),
+        ("fragment", &servers_f),
+        ("both", &servers_qf),
+    ] {
         let ids: Vec<&str> = servers.iter().map(|s| s.id.as_str()).collect();
         assert!(
             ids.contains(&"anti-llm-cheat-lsp"),
             "URI with {} must still route by base .rs extension, got: {:?}",
-            label, ids
+            label,
+            ids
         );
     }
 }

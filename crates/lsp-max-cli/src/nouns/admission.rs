@@ -215,7 +215,10 @@ mod tests {
         let (_f, svc) = make_temp_mesh();
         let value = svc.refuse("test-inst", "law-boundary").unwrap();
         let serialised = serde_json::to_string(&value).unwrap();
-        assert!(!serialised.is_empty(), "refuse response serialised to empty");
+        assert!(
+            !serialised.is_empty(),
+            "refuse response serialised to empty"
+        );
     }
 
     #[test]
@@ -249,7 +252,10 @@ mod tests {
         let (_f, svc) = make_temp_mesh();
         let value = svc.replay("test-inst").unwrap();
         let serialised = serde_json::to_string(&value).unwrap();
-        assert!(!serialised.is_empty(), "replay response serialised to empty");
+        assert!(
+            !serialised.is_empty(),
+            "replay response serialised to empty"
+        );
     }
 
     #[test]

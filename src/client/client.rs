@@ -1,5 +1,5 @@
-use async_trait::async_trait;
 use crate::lsp_types::*;
+use async_trait::async_trait;
 use serde_json::Value;
 
 /// Error type for client operations.

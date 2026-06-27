@@ -21,7 +21,10 @@ fn stale_dt_context_is_stop() {
     let admission_allowed = false;
 
     assert_eq!(diagnostic_code, "LSPMAX-DT-CONTEXT-STALE");
-    assert!(!admission_allowed, "Admission must not be allowed when D_t is stale");
+    assert!(
+        !admission_allowed,
+        "Admission must not be allowed when D_t is stale"
+    );
 }
 
 #[test]
@@ -33,7 +36,10 @@ fn repair_required_for_blocking_andon() {
     let admission_allowed = false;
 
     assert_eq!(diagnostic_code, "LSPMAX-REPAIR-MISSING");
-    assert!(!admission_allowed, "Admission must not be allowed when repair is missing");
+    assert!(
+        !admission_allowed,
+        "Admission must not be allowed when repair is missing"
+    );
 }
 
 #[test]

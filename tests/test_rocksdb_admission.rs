@@ -1,6 +1,6 @@
-use lsp_max_protocol::abstractions::RelationAdmitter;
-use lsp_max_lsif::lsif::{Edge, Element, PositionEncoding, Vertex, VertexType};
 use lsp_max::runtime::control_plane::admission::{resolve_db_path, AdmittedGraph, StoreFactory};
+use lsp_max_lsif::lsif::{Edge, Element, PositionEncoding, Vertex, VertexType};
+use lsp_max_protocol::abstractions::RelationAdmitter;
 use lsp_types_max as lsp_types;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Barrier, Mutex};

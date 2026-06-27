@@ -57,7 +57,9 @@ fn parse_method_calls(lang_server_trait: &ItemTrait) -> Result<Vec<MethodCall<'_
             .attrs
             .iter()
             .find(|attr| attr.meta.path().is_ident("rpc"))
-            .ok_or_else(|| syn::Error::new_spanned(method, "expected `#[rpc(name = \"foo\")]` attribute"))?;
+            .ok_or_else(|| {
+                syn::Error::new_spanned(method, "expected `#[rpc(name = \"foo\")]` attribute")
+            })?;
 
         let mut rpc_name = String::new();
         let mut layer = None;
@@ -97,14 +99,18 @@ fn parse_method_calls(lang_server_trait: &ItemTrait) -> Result<Vec<MethodCall<'_
     Ok(calls)
 }
 
-fn gen_server_router(trait_name: &syn::Ident, methods: &[MethodCall]) -> Result<proc_macro2::TokenStream, syn::Error> {
+fn gen_server_router(
+    trait_name: &syn::Ident,
+    methods: &[MethodCall],
+) -> Result<proc_macro2::TokenStream, syn::Error> {
     let mut route_registrations = Vec::new();
     for method in methods {
         let rpc_name = &method.rpc_name;
         let handler = &method.handler_name;
 
         let layer = if let Some(ref l) = method.layer {
-            let l: syn::Path = syn::parse_str(l).map_err(|e| syn::Error::new(e.span(), "invalid layer path"))?;
+            let l: syn::Path =
+                syn::parse_str(l).map_err(|e| syn::Error::new(e.span(), "invalid layer path"))?;
             quote! { #l::new(state.clone(), pending.clone()) }
         } else {
             match &rpc_name[..] {
@@ -210,4 +216,3 @@ fn gen_server_router(trait_name: &syn::Ident, methods: &[MethodCall]) -> Result<
         };
     })
 }
-

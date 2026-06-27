@@ -170,10 +170,11 @@ fn test_materialized_views_definition_references_hover_diagnostics() {
 
     // Map live diag to store
     for diag in &live_diags {
-        let quads = crate::runtime::control_plane::admission::mapping_helpers::map_diagnostic_to_quads(
-            diag,
-            &active_graph,
-        );
+        let quads =
+            crate::runtime::control_plane::admission::mapping_helpers::map_diagnostic_to_quads(
+                diag,
+                &active_graph,
+            );
         for quad in quads {
             store.insert(&quad).unwrap();
         }
@@ -365,10 +366,11 @@ fn test_materialized_view_store_lookups() {
     }];
 
     for diag in &live_diags {
-        let quads = crate::runtime::control_plane::admission::mapping_helpers::map_diagnostic_to_quads(
-            diag,
-            &active_graph,
-        );
+        let quads =
+            crate::runtime::control_plane::admission::mapping_helpers::map_diagnostic_to_quads(
+                diag,
+                &active_graph,
+            );
         for quad in quads {
             store.insert(&quad).unwrap();
         }

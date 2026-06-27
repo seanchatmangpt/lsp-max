@@ -1,8 +1,8 @@
 use clap_noun_verb::error::NounVerbError;
 use clap_noun_verb::Result;
 use clap_noun_verb_macros::verb;
-use lsp_max_protocol::InstanceId;
 use lsp_max::max_runtime::{AutonomicMesh, MeshAction, PolicyState};
+use lsp_max_protocol::InstanceId;
 use serde::Serialize;
 
 // ==============================================================================

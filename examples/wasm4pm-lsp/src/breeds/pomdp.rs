@@ -83,7 +83,11 @@ fn best_action(belief: &[f64; STATES], v: &[f64; STATES]) -> &'static str {
     let mut best_q = f64::NEG_INFINITY;
 
     for a in 0..ACTIONS {
-        let r_b: f64 = belief.iter().enumerate().map(|(s, &b)| b * reward(s, a)).sum();
+        let r_b: f64 = belief
+            .iter()
+            .enumerate()
+            .map(|(s, &b)| b * reward(s, a))
+            .sum();
         let mut future = 0.0;
         for (s, &b_s) in belief.iter().enumerate() {
             for (s_next, &vi) in v.iter().enumerate() {

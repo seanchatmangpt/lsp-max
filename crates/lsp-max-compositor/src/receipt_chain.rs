@@ -255,8 +255,7 @@ mod tests {
         let prev = Blake3Hash([0u8; 32]);
         let ev_clear =
             ChildEvidence::from_flush_contribution("wasm4pm-lsp", 3, false, 7, prev, &ks);
-        let ev_andon =
-            ChildEvidence::from_flush_contribution("wasm4pm-lsp", 3, true, 7, prev, &ks);
+        let ev_andon = ChildEvidence::from_flush_contribution("wasm4pm-lsp", 3, true, 7, prev, &ks);
         assert_ne!(
             ev_clear.receipt.consequence_hash,
             ev_andon.receipt.consequence_hash

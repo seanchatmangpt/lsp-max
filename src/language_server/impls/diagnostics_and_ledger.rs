@@ -61,14 +61,18 @@ pub async fn max_release_actuation(params: Value) -> Result<Value> {
         seq: registry.action_seq,
         event_type: "release_actuation".to_string(),
         objects: vec![],
-        payload_commitment: affidavit::types::Blake3Hash::from_bytes(b"release approved by autonomic loop"),
+        payload_commitment: affidavit::types::Blake3Hash::from_bytes(
+            b"release approved by autonomic loop",
+        ),
     };
     // Append the event
-    assembler.append(event).map_err(|_| Error::internal_error())?;
-    
+    assembler
+        .append(event)
+        .map_err(|_| Error::internal_error())?;
+
     // Finalize the receipt to obtain the sealed BLAKE3 hash.
     let affidavit_receipt = assembler.finalize();
-    
+
     let receipt_id = format!("rcpt-release-{}", instance_id);
     let receipt = max_protocol::Receipt {
         receipt_id: receipt_id.clone(),

@@ -81,7 +81,11 @@ pub fn scan_dir<P: AsRef<Path>>(dir: P) -> std::io::Result<Vec<(String, Vec<Viol
         for entry in fs::read_dir(dir)? {
             let entry = entry?;
             let path = entry.path();
-            if path.is_file() && path.extension().map_or(false, |ext| ext == "ttl" || ext == "rs") {
+            if path.is_file()
+                && path
+                    .extension()
+                    .map_or(false, |ext| ext == "ttl" || ext == "rs")
+            {
                 let content = fs::read_to_string(&path)?;
                 let file_violations = scan(&content);
                 if !file_violations.is_empty() {

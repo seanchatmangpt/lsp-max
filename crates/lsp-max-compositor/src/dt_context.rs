@@ -97,8 +97,12 @@ impl DtContext {
     }
 
     pub fn render_gate_context(&self) -> Result<String, String> {
-        let seq = self.seq.ok_or_else(|| "LSPMAX-GATE-CONTEXT-MISSING".to_string())?;
-        let admission_allowed = self.admission_allowed.ok_or_else(|| "LSPMAX-GATE-CHECK-FORMAT-MISSING".to_string())?;
+        let seq = self
+            .seq
+            .ok_or_else(|| "LSPMAX-GATE-CONTEXT-MISSING".to_string())?;
+        let admission_allowed = self
+            .admission_allowed
+            .ok_or_else(|| "LSPMAX-GATE-CHECK-FORMAT-MISSING".to_string())?;
 
         let gate_ctx = GateContext {
             admission_allowed,

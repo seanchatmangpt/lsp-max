@@ -26,7 +26,9 @@ fn main() -> anyhow::Result<()> {
                     &mut builder,
                 )?,
                 Lang::Both => match path.extension().and_then(|e| e.to_str()) {
-                    Some("rs") => lsp_max_lsif::indexer_rust::index_file(&source, &uri, &mut builder)?,
+                    Some("rs") => {
+                        lsp_max_lsif::indexer_rust::index_file(&source, &uri, &mut builder)?
+                    }
                     Some("ts") | Some("tsx") => lsp_max_lsif::indexer_typescript::index_file(
                         &source,
                         &uri,

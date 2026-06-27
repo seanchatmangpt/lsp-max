@@ -1,9 +1,9 @@
-use lsp_max_lsif::lsif::{Edge, EdgeType, Element, HoverResultData, RangeTag, Vertex, VertexType};
-use lsp_max_protocol::MaxDiagnostic;
 use lsp_max::runtime::control_plane::views::{
     lookup_definition, lookup_diagnostics, lookup_hover, lookup_references, update_views,
     MaterializedViewStore,
 };
+use lsp_max_lsif::lsif::{Edge, EdgeType, Element, HoverResultData, RangeTag, Vertex, VertexType};
+use lsp_max_protocol::MaxDiagnostic;
 use lsp_types::{Diagnostic, Position, Range, SymbolKind};
 use lsp_types_max as lsp_types;
 use oxigraph::model::GraphName;
@@ -150,8 +150,10 @@ fn test_integration_materialized_views_flow() {
     }];
 
     for diag in &live_diags {
-        let quads =
-            lsp_max::runtime::control_plane::admission::map_diagnostic_to_quads(diag, &active_graph);
+        let quads = lsp_max::runtime::control_plane::admission::map_diagnostic_to_quads(
+            diag,
+            &active_graph,
+        );
         for quad in quads {
             store.insert(&quad).unwrap();
         }

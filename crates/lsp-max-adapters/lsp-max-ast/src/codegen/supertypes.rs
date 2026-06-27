@@ -16,8 +16,8 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>
 */
 
-use crate::codegen::json::TypeInfo;
 use crate::codegen::json::NodeType;
+use crate::codegen::json::TypeInfo;
 
 #[derive(Clone, Default)]
 pub(crate) struct SuperType {

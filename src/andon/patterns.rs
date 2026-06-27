@@ -1,5 +1,5 @@
-use crate::andon::core::{AndonInvariant, Severity};
 use crate::andon::core::RepairAction;
+use crate::andon::core::{AndonInvariant, Severity};
 
 pub fn build_empty_registry_invariant() -> AndonInvariant {
     AndonInvariant {

@@ -4,8 +4,8 @@ pub mod db;
 #[cfg(feature = "codegen")]
 pub mod codegen;
 
-use dashmap::DashMap;
 use crate::core::document::Document;
+use dashmap::DashMap;
 use lsp_types_max::{
     Diagnostic, DidChangeTextDocumentParams, DidCloseTextDocumentParams, DidOpenTextDocumentParams,
     DocumentUri,

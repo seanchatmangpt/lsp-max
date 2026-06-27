@@ -1,0 +1,16 @@
+{
+  "release": "v26.6.28",
+  "exit_code": 0,
+  "stdout_digest": "a9a3",
+  "stderr_digest": "b3b4",
+  "source_boundary": "/Users/sac/lsp-max",
+  "artifact_paths": [],
+  "artifact_digests": {},
+  "q": 1,
+  "failset_cardinality": 0,
+  "closure_prose_used": false,
+  "crates_io_publish_executed": false,
+  "component": "doctor",
+  "command": "just doctor",
+  "timestamp": "2026-06-27T09:30:42.366175"
+}

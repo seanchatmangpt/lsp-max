@@ -398,11 +398,16 @@ impl FlushCoordinator {
                                 (Some(f), v) if f >= 0.60 && v <= 2 => "CANDIDATE",
                                 _ => "BLOCKED",
                             };
-                            let violation_detail: Vec<_> = violations.iter().map(|v| serde_json::json!({
-                                "constraint": v.constraint,
-                                "case_id": v.case_id,
-                                "detail": v.detail
-                            })).collect();
+                            let violation_detail: Vec<_> = violations
+                                .iter()
+                                .map(|v| {
+                                    serde_json::json!({
+                                        "constraint": v.constraint,
+                                        "case_id": v.case_id,
+                                        "detail": v.detail
+                                    })
+                                })
+                                .collect();
                             let snapshot = serde_json::json!({
                                 "fitness": fitness.unwrap_or(0.0),
                                 "precision": precision.unwrap_or(0.0),
@@ -435,7 +440,6 @@ impl FlushCoordinator {
                     } else {
                         tracing::warn!(path = %log_path.display(), "flush-coordinator: failed to open OCEL log file");
                     }
-
 
                     // Collect (server_id, handle) while DashMap ref is held briefly,
                     // then drop all refs before awaiting to avoid holding shard locks.

@@ -52,10 +52,10 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
+use crate::runtime::mesh::build_conformance_vector;
 use dashmap::DashMap;
 use lsp_max_ast::AutoLspAdapter;
 use lsp_max_protocol::{ConformanceVector, LawAxis, MaxDiagnostic};
-use crate::runtime::mesh::build_conformance_vector;
 use lsp_types_max::{
     Diagnostic, DiagnosticOptions, DiagnosticServerCapabilities, DocumentDiagnosticReport,
     DocumentDiagnosticReportResult, FullDocumentDiagnosticReport,
@@ -1020,15 +1020,15 @@ pub trait RulePackServer {
                 registry.action_seq = registry.action_seq.saturating_add(1);
                 let seq = registry.action_seq;
                 const MAX_DELTA_LOG: usize = 4096;
-                registry
-                    .conformance_delta_log
-                    .push_back(crate::max_runtime::ConformanceDeltaEntry {
+                registry.conformance_delta_log.push_back(
+                    crate::max_runtime::ConformanceDeltaEntry {
                         seq,
                         instance_id: uri.to_string(),
                         old_score,
                         new_score,
                         timestamp: crate::rfc3339_now(),
-                    });
+                    },
+                );
                 if registry.conformance_delta_log.len() > MAX_DELTA_LOG {
                     registry.conformance_delta_log.pop_front();
                 }

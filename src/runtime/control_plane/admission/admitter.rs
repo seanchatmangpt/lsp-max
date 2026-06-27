@@ -2,8 +2,8 @@ use super::super::invariants::{verify_invariants, VerificationReport};
 use super::super::receipts::{Blake3Hash, CryptographicReceipt};
 use super::types::{RawData, RAW};
 use crate::runtime::Machine;
-use lsp_max_protocol::abstractions::RelationAdmitter;
 use lsp_max_lsif::lsif::Element;
+use lsp_max_protocol::abstractions::RelationAdmitter;
 use lsp_max_protocol::MaxDiagnostic;
 
 pub struct AdmittedGraph {

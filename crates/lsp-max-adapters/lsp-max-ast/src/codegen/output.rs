@@ -17,8 +17,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>
 */
 
 use crate::codegen::json::{NodeType, TypeInfo};
-use crate::codegen::utils::sanitize_string_to_pascal;
 use crate::codegen::utils::sanitize_string;
+use crate::codegen::utils::sanitize_string_to_pascal;
 use crate::codegen::SUPER_TYPES;
 use crate::codegen::{NODE_ID_FOR_NAMED_NODE, NODE_ID_FOR_UNNAMED_NODE};
 use proc_macro2::{Ident, TokenStream};

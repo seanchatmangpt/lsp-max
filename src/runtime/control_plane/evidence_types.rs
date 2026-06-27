@@ -118,7 +118,9 @@ impl From<&CryptographicReceipt> for CryptographicReceiptEvidencePayload {
             prev_hash: crate::runtime::control_plane::receipts::to_hex(&r.prev_hash.0),
             discipline_id: r.discipline_id.to_string(),
             law_id: r.law_id.to_string(),
-            consequence_hash: crate::runtime::control_plane::receipts::to_hex(&r.consequence_hash.0),
+            consequence_hash: crate::runtime::control_plane::receipts::to_hex(
+                &r.consequence_hash.0,
+            ),
             sequence: r.sequence,
             signature: crate::runtime::control_plane::receipts::to_hex(&r.signature),
         }

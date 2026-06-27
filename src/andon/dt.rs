@@ -1,6 +1,6 @@
-use serde::{Deserialize, Serialize};
-use crate::andon::core::RepairAction;
 use crate::andon::andon::AndonEvent;
+use crate::andon::core::RepairAction;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct DtContext {
