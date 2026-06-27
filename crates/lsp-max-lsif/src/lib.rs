@@ -1,5 +1,6 @@
 /// LSIF 0.6.0 protocol coverage matrix for `LsifBuilder`.
 pub mod coverage;
+pub mod db;
 pub mod lsif;
 pub mod lsif_builder;
 pub mod lsif_indexer;
