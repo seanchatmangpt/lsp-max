@@ -7,18 +7,17 @@ cd "$ROOT"
 GATE_JSON="scripts/v26-gate.json"
 
 if [ ! -f "$GATE_JSON" ]; then
-    echo "\["
-    echo "q_{release}=0"
-    echo "reason=v26-gate.json missing"
-    echo "\]"
+    cat <<EOF
+{
+  "release": "v26.6.28",
+  "q_release": 0,
+  "failset_cardinality": 1,
+  "counterexamples": ["v26-gate.json missing"],
+  "components": {}
+}
+EOF
     exit 1
 fi
-
-MISSING=0
-total_detectors=$(python3 -c 'import json; print(len(json.load(open("scripts/v26-gate.json"))["detectors"]))')
-checked=0
-
-echo "Evaluating v26-gate JSON..."
 
 python3 -c '
 import json, os, sys
@@ -28,19 +27,19 @@ for d in data.get("detectors", []):
     receipt = d.get("receipt_file")
     if not os.path.exists(receipt):
         missing.append(d["name"])
-if missing:
-    print("Missing receipts for:", ", ".join(missing))
-    sys.exit(1)
-' || MISSING=1
+        
+q_release = 1 if not missing else 0
+failset = len(missing)
 
-if [ "$MISSING" -eq 1 ]; then
-    echo "\["
-    echo "q_{release}=0"
-    echo "\]"
-    exit 1
-else
-    echo "\["
-    echo "q_{release}=1"
-    echo "\]"
-    exit 0
-fi
+out = {
+  "release": "v26.6.28",
+  "q_release": q_release,
+  "failset_cardinality": failset,
+  "counterexamples": missing,
+  "components": {}
+}
+
+print(json.dumps(out, indent=2))
+if missing:
+    sys.exit(1)
+'
