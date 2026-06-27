@@ -1,4 +1,5 @@
 pub mod core;
+pub mod db;
 
 #[cfg(feature = "codegen")]
 pub mod codegen;
