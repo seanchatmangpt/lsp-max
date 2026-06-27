@@ -71,7 +71,9 @@ pub struct InvariantRegistry {
 
 impl InvariantRegistry {
     pub fn new() -> Self {
-        Self { invariants: Vec::new() }
+        Self {
+            invariants: Vec::new(),
+        }
     }
 
     pub fn empty() -> Self {
@@ -85,7 +87,7 @@ impl InvariantRegistry {
     pub fn get_all(&self) -> &[AndonInvariant] {
         &self.invariants
     }
-    
+
     pub fn is_empty(&self) -> bool {
         self.invariants.is_empty()
     }

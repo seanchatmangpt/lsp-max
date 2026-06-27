@@ -1,9 +1,9 @@
 use lsp_max_compositor::{
+    fanout::{dispatch_strategy, servers_for_uri, DispatchStrategy},
     CompositorConfig, ExtensionRouter,
-    fanout::{DispatchStrategy, dispatch_strategy, servers_for_uri},
 };
 use serde::{Deserialize, Serialize};
-use serde_json::{Value, json};
+use serde_json::{json, Value};
 use std::io::{BufRead, Write};
 
 // ── JSON-RPC 2.0 wire types ───────────────────────────────────────────────────
@@ -34,14 +34,22 @@ struct JsonRpcError {
 
 impl Response {
     fn ok(id: Option<Value>, result: Value) -> Self {
-        Self { jsonrpc: "2.0", id, result: Some(result), error: None }
+        Self {
+            jsonrpc: "2.0",
+            id,
+            result: Some(result),
+            error: None,
+        }
     }
     fn err(id: Option<Value>, code: i32, message: impl Into<String>) -> Self {
         Self {
             jsonrpc: "2.0",
             id,
             result: None,
-            error: Some(JsonRpcError { code, message: message.into() }),
+            error: Some(JsonRpcError {
+                code,
+                message: message.into(),
+            }),
         }
     }
 }
@@ -120,17 +128,23 @@ fn tool_list() -> Value {
 
 fn handle_lsp_discover() -> Value {
     match CompositorConfig::load_with_auto() {
-        None => json!({ "status": "OPEN", "servers": [], "note": "no lsp-max.toml or .claude/lsp-max-auto.toml found" }),
+        None => {
+            json!({ "status": "OPEN", "servers": [], "note": "no lsp-max.toml or .claude/lsp-max-auto.toml found" })
+        }
         Some(cfg) => {
-            let servers: Vec<Value> = cfg.server.iter().map(|s| {
-                json!({
-                    "id": s.id,
-                    "priority": s.priority,
-                    "primary_extensions": s.primary_extensions,
-                    "secondary_extensions": s.secondary_extensions,
-                    "command": s.command
+            let servers: Vec<Value> = cfg
+                .server
+                .iter()
+                .map(|s| {
+                    json!({
+                        "id": s.id,
+                        "priority": s.priority,
+                        "primary_extensions": s.primary_extensions,
+                        "secondary_extensions": s.secondary_extensions,
+                        "command": s.command
+                    })
                 })
-            }).collect();
+                .collect();
             json!({ "status": "ADMITTED", "servers": servers })
         }
     }
@@ -150,11 +164,16 @@ fn handle_lsp_route(uri: &str, method: &str) -> Value {
         DispatchStrategy::Notify => "Notify",
         DispatchStrategy::PrimaryOnly => "PrimaryOnly",
     };
-    let results: Vec<Value> = servers.iter().map(|s| json!({
-        "id": s.id,
-        "tier": format!("{:?}", s.tier),
-        "extensions": s.extensions
-    })).collect();
+    let results: Vec<Value> = servers
+        .iter()
+        .map(|s| {
+            json!({
+                "id": s.id,
+                "tier": format!("{:?}", s.tier),
+                "extensions": s.extensions
+            })
+        })
+        .collect();
     let fitness = read_fitness_status();
     let law_status = if servers.is_empty() {
         json!("UNROUTABLE")
@@ -181,7 +200,9 @@ fn handle_lsp_health(server_id: &str) -> Value {
         None => json!({ "id": server_id, "status": "OPEN", "note": "server not in config" }),
         Some(s) => {
             let cmd = match &s.command {
-                None => return json!({ "id": server_id, "status": "UNKNOWN", "note": "no command configured; manual spawn" }),
+                None => {
+                    return json!({ "id": server_id, "status": "UNKNOWN", "note": "no command configured; manual spawn" })
+                }
                 Some(c) => c,
             };
             let reachable = std::process::Command::new("which")
@@ -203,11 +224,17 @@ fn handle_lsp_reload_config() -> Value {
     match CompositorConfig::load_with_auto() {
         None => json!({ "status": "OPEN", "note": "no config found after reload" }),
         Some(cfg) => {
-            let servers: Vec<Value> = cfg.server.iter().map(|s| json!({
-                "id": s.id,
-                "priority": s.priority,
-                "primary_extensions": s.primary_extensions
-            })).collect();
+            let servers: Vec<Value> = cfg
+                .server
+                .iter()
+                .map(|s| {
+                    json!({
+                        "id": s.id,
+                        "priority": s.priority,
+                        "primary_extensions": s.primary_extensions
+                    })
+                })
+                .collect();
             json!({ "status": "CANDIDATE", "server_count": servers.len(), "servers": servers })
         }
     }
@@ -215,7 +242,10 @@ fn handle_lsp_reload_config() -> Value {
 
 fn handle_lsp_violations() -> Value {
     let fitness = read_fitness_status();
-    let violations = fitness.get("violations").cloned().unwrap_or_else(|| json!([]));
+    let violations = fitness
+        .get("violations")
+        .cloned()
+        .unwrap_or_else(|| json!([]));
     let count = violations.as_array().map(|a| a.len()).unwrap_or(0);
     json!({
         "law_status": fitness["law_status"],
@@ -273,18 +303,24 @@ fn build_router(cfg: &CompositorConfig) -> ExtensionRouter {
             _ => ChildTier::Primary,
         };
         for ext in &entry.primary_extensions {
-            router.register(ext, ChildServer {
-                id: entry.id.clone(),
-                tier: tier.clone(),
-                extensions: entry.primary_extensions.clone(),
-            });
+            router.register(
+                ext,
+                ChildServer {
+                    id: entry.id.clone(),
+                    tier: tier.clone(),
+                    extensions: entry.primary_extensions.clone(),
+                },
+            );
         }
         for ext in &entry.secondary_extensions {
-            router.register(ext, ChildServer {
-                id: entry.id.clone(),
-                tier: ChildTier::Secondary,
-                extensions: entry.secondary_extensions.clone(),
-            });
+            router.register(
+                ext,
+                ChildServer {
+                    id: entry.id.clone(),
+                    tier: ChildTier::Secondary,
+                    extensions: entry.secondary_extensions.clone(),
+                },
+            );
         }
     }
     router
@@ -295,11 +331,14 @@ fn build_router(cfg: &CompositorConfig) -> ExtensionRouter {
 fn dispatch(req: Request) -> Response {
     let id = req.id.clone();
     match req.method.as_str() {
-        "initialize" => Response::ok(id, json!({
-            "protocolVersion": "2024-11-05",
-            "capabilities": { "tools": {} },
-            "serverInfo": { "name": "lsp-max-mcp", "version": env!("CARGO_PKG_VERSION") }
-        })),
+        "initialize" => Response::ok(
+            id,
+            json!({
+                "protocolVersion": "2024-11-05",
+                "capabilities": { "tools": {} },
+                "serverInfo": { "name": "lsp-max-mcp", "version": env!("CARGO_PKG_VERSION") }
+            }),
+        ),
         "notifications/initialized" => return Response::ok(None, json!({})),
         "tools/list" => Response::ok(id, tool_list()),
         "tools/call" => {
@@ -325,9 +364,12 @@ fn dispatch(req: Request) -> Response {
                 }
                 _ => return Response::err(id, -32601, format!("unknown tool: {name}")),
             };
-            Response::ok(id, json!({
-                "content": [{ "type": "text", "text": result.to_string() }]
-            }))
+            Response::ok(
+                id,
+                json!({
+                    "content": [{ "type": "text", "text": result.to_string() }]
+                }),
+            )
         }
         "ping" => Response::ok(id, json!({})),
         _ => Response::err(id, -32601, format!("method not found: {}", req.method)),

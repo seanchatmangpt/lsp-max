@@ -76,7 +76,10 @@ fn traverse(node: Node, source: &[u8], filepath: &str, is_test: bool, obs: &mut 
             kind: "ast_ts_sha256".to_string(),
             construct: "sha256_literal".to_string(),
             context: text.chars().take(120).collect(),
-            message: format!("SHA-256 algorithm literal '{}' — must migrate to BLAKE3", text),
+            message: format!(
+                "SHA-256 algorithm literal '{}' — must migrate to BLAKE3",
+                text
+            ),
         });
     }
 
@@ -248,6 +251,12 @@ pub fn parse_typescript_ast(filepath: &str, content: &str) -> Vec<Observation> {
     };
 
     let is_test = is_test_file(filepath);
-    traverse(tree.root_node(), content.as_bytes(), filepath, is_test, &mut obs);
+    traverse(
+        tree.root_node(),
+        content.as_bytes(),
+        filepath,
+        is_test,
+        &mut obs,
+    );
     obs
 }

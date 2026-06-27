@@ -127,8 +127,8 @@ impl AgentService {
 
     pub fn reset(&self, instance_id: String) -> std::result::Result<serde_json::Value, String> {
         let path = crate::nouns::get_state_path();
-        let mut mesh =
-            lsp_max::max_runtime::AutonomicMesh::load_from_file(&path).map_err(|e| e.to_string())?;
+        let mut mesh = lsp_max::max_runtime::AutonomicMesh::load_from_file(&path)
+            .map_err(|e| e.to_string())?;
         let result = mesh.dispatch_rpc(&instance_id, "max/reset", serde_json::Value::Null)?;
         mesh.save_to_file(&path).map_err(|e| e.to_string())?;
         Ok(result)

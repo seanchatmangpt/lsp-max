@@ -96,6 +96,10 @@ pub use lsp_types_max as lsp_types;
 
 #[allow(missing_docs)]
 #[allow(missing_debug_implementations)]
+pub mod closure_channel;
+
+#[allow(missing_docs)]
+#[allow(missing_debug_implementations)]
 pub mod agent;
 
 #[allow(missing_docs)]
@@ -115,9 +119,9 @@ pub mod live;
 pub mod client;
 
 pub use agent as max_agent;
-pub use runtime as max_runtime;
 pub use andon as max_andon;
 pub use live as max_live;
+pub use runtime as max_runtime;
 
 pub extern crate lsp_max_protocol as max_protocol;
 
@@ -284,7 +288,8 @@ pub struct ServerRegistry {
     /// Ring-buffer of recent conformance score changes keyed by sequence number.
     /// The single authoritative conformance-delta store; replaces the former MESH global.
     #[serde(default)]
-    pub conformance_delta_log: std::collections::VecDeque<crate::max_runtime::ConformanceDeltaEntry>,
+    pub conformance_delta_log:
+        std::collections::VecDeque<crate::max_runtime::ConformanceDeltaEntry>,
 }
 
 /// Global static instance of the server registry.
@@ -327,13 +332,16 @@ fn build_standard_mesh() -> crate::max_runtime::AutonomicMesh {
     let mut mesh = crate::max_runtime::AutonomicMesh::new();
     mesh.register_hook(Box::new(crate::max_runtime::IntakeDiagnosticHook));
     mesh.register_hook(Box::new(crate::max_runtime::IntakeClearHook));
-    mesh.register_hook(Box::new(crate::max_runtime::CustomerRequestClassifierHook::new()));
+    mesh.register_hook(Box::new(
+        crate::max_runtime::CustomerRequestClassifierHook::new(),
+    ));
     mesh.register_hook(Box::new(crate::max_runtime::PolicyEvaluationHook::new()));
     mesh.register_hook(Box::new(crate::max_runtime::ReceiptRoutingHook::new()));
     mesh
 }
 
-pub(crate) fn lock_mesh() -> Result<std::sync::MutexGuard<'static, crate::max_runtime::AutonomicMesh>> {
+pub(crate) fn lock_mesh(
+) -> Result<std::sync::MutexGuard<'static, crate::max_runtime::AutonomicMesh>> {
     MESH.get_or_init(|| Mutex::new(build_standard_mesh()))
         .lock()
         .map_err(|_| Error::internal_error())

@@ -32,7 +32,10 @@ pub fn validate_powl(powl: &Powl) -> Vec<Diagnostic> {
     // Walk every node and validate its kind-specific invariants.
     for node in &powl.nodes {
         match &node.kind {
-            PowlNodeKind::Start | PowlNodeKind::End | PowlNodeKind::Atom(_) | PowlNodeKind::Silent => {}
+            PowlNodeKind::Start
+            | PowlNodeKind::End
+            | PowlNodeKind::Atom(_)
+            | PowlNodeKind::Silent => {}
             PowlNodeKind::PartialOrder(children) => {
                 diags.extend(validate_partial_order(children, powl));
             }

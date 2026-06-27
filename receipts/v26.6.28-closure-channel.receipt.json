@@ -1,0 +1,15 @@
+{
+  "release": "v26.6.28",
+  "component": "closure-channel",
+  "command": "cargo test --test closure_channel_tests",
+  "exit_code": 0,
+  "stdout_digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stderr_digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "source_boundary": "tests/closure_channel_tests.rs",
+  "source_digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "artifact_paths": [],
+  "artifact_digests": {},
+  "timestamp": "2026-06-27T08:44:14Z",
+  "status": "ADMITTED",
+  "failset": []
+}

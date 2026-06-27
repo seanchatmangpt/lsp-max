@@ -4,20 +4,21 @@ use crate::diagnostic_buffer::DiagnosticBuffer;
 use crate::flush_coordinator::FlushCoordinator;
 use crate::gate_file::GateFile;
 use crate::{CompositorConfig, ExtensionRouter, MergeContext};
+use lsp_max::client::ServerHandle as ChildServerHandle;
 use lsp_max::jsonrpc::Result;
 use lsp_max::lsp_types::*;
 use lsp_max::{Client, LspService, Server};
-use lsp_max::client::ServerHandle as ChildServerHandle;
-use std::sync::{Arc, RwLock};
 use std::sync::Mutex as StdMutex;
+use std::sync::{Arc, RwLock};
 
-use lsp_max::max_andon::core::InvariantRegistry;
-use lsp_max::max_andon::andon::{AndonBus, AndonEvent};
 use lsp_max::max_andon::analysis::AnalysisPipeline;
-use lsp_max::max_andon::lsp::{LspPushAdapter, LspMaxAndonRaised};
+use lsp_max::max_andon::andon::{AndonBus, AndonEvent};
+use lsp_max::max_andon::core::InvariantRegistry;
+use lsp_max::max_andon::lsp::{LspMaxAndonRaised, LspPushAdapter};
 use lsp_max::max_andon::patterns::{
-    build_empty_registry_invariant, build_required_artifact_invariant, build_marker_admission,
-    build_need_n_invariant, build_non_empty_check_set, build_brokered_command, build_receipt_required,
+    build_brokered_command, build_empty_registry_invariant, build_marker_admission,
+    build_need_n_invariant, build_non_empty_check_set, build_receipt_required,
+    build_required_artifact_invariant,
 };
 
 pub struct CompositorServer {
@@ -333,12 +334,16 @@ impl lsp_max::LanguageServer for CompositorServer {
             let ctx = crate::gate_cli_compat::check_agent_context();
             let serialized = serde_json::to_string_pretty(&ctx).unwrap_or_default();
             let content = format!("<gate-context>\n{}\n</gate-context>", serialized);
-            return Ok(lsp_max::max_protocol::lsp_3_18::TextDocumentContentResult { text: content });
+            return Ok(lsp_max::max_protocol::lsp_3_18::TextDocumentContentResult {
+                text: content,
+            });
         }
         if uri == "lsp-max://gate/list" {
             let list = crate::gate_cli_compat::list();
             let serialized = serde_json::to_string_pretty(&list).unwrap_or_default();
-            return Ok(lsp_max::max_protocol::lsp_3_18::TextDocumentContentResult { text: serialized });
+            return Ok(lsp_max::max_protocol::lsp_3_18::TextDocumentContentResult {
+                text: serialized,
+            });
         }
         Err(lsp_max::jsonrpc::Error::method_not_found())
     }

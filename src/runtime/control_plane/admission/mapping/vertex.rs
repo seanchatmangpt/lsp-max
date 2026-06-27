@@ -76,10 +76,7 @@ pub(super) fn map_vertex(
                 graph_name.clone(),
             ));
         }
-        Vertex::Project {
-            kind,
-            ..
-        } => {
+        Vertex::Project { kind, .. } => {
             quads.push(oxigraph::model::Quad::new(
                 subject.clone(),
                 oxigraph::model::NamedNode::new("urn:lsp-max:core:kind").unwrap(),

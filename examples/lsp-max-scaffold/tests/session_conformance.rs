@@ -328,7 +328,9 @@ fn server_did_open_event_sequence_is_conformant() {
     append(&mut log, EventActivity::DocumentOpened);
     append(
         &mut log,
-        EventActivity::AnalysisRun { source_digest: "abc".into() },
+        EventActivity::AnalysisRun {
+            source_digest: "abc".into(),
+        },
     );
     // No findings for a clean document.
     let r = replay_session(&log);
@@ -349,11 +351,15 @@ fn server_finding_without_receipt_is_partial() {
     append(&mut log, EventActivity::DocumentOpened);
     append(
         &mut log,
-        EventActivity::AnalysisRun { source_digest: "xyz".into() },
+        EventActivity::AnalysisRun {
+            source_digest: "xyz".into(),
+        },
     );
     append(
         &mut log,
-        EventActivity::FindingProduced { code: "RVD-TEST-001".into() },
+        EventActivity::FindingProduced {
+            code: "RVD-TEST-001".into(),
+        },
     );
     // No ReceiptProduced follows -- Declare Response constraint fires.
     let r = replay_session(&log);
@@ -376,15 +382,21 @@ fn server_finding_with_receipt_is_conformant() {
     append(&mut log, EventActivity::DocumentOpened);
     append(
         &mut log,
-        EventActivity::AnalysisRun { source_digest: "d8e8fca".into() },
+        EventActivity::AnalysisRun {
+            source_digest: "d8e8fca".into(),
+        },
     );
     append(
         &mut log,
-        EventActivity::FindingProduced { code: "RVD-FORK-001".into() },
+        EventActivity::FindingProduced {
+            code: "RVD-FORK-001".into(),
+        },
     );
     append(
         &mut log,
-        EventActivity::ReceiptProduced { chain_head: "genesis".into() },
+        EventActivity::ReceiptProduced {
+            chain_head: "genesis".into(),
+        },
     );
     append(&mut log, EventActivity::ReceiptVerified { admitted: true });
     append(&mut log, EventActivity::ChainVerified { intact: true });
@@ -392,8 +404,7 @@ fn server_finding_with_receipt_is_conformant() {
     assert_eq!(
         r.status, "ADMITTED",
         "full honest cycle must be ADMITTED; fitness={}, violations={:?}",
-        r.fitness,
-        r.violations
+        r.fitness, r.violations
     );
 }
 
@@ -412,7 +423,9 @@ fn incremental_conformance_check_detects_first_violation() {
     // Step 2: after AnalysisRun, still no violations.
     append(
         &mut log,
-        EventActivity::AnalysisRun { source_digest: "step2".into() },
+        EventActivity::AnalysisRun {
+            source_digest: "step2".into(),
+        },
     );
     assert!(
         replay_session(&log).violations.is_empty(),
@@ -422,7 +435,9 @@ fn incremental_conformance_check_detects_first_violation() {
     // will appear when we check after this append (Response constraint).
     append(
         &mut log,
-        EventActivity::FindingProduced { code: "RVD-VICTORY-001".into() },
+        EventActivity::FindingProduced {
+            code: "RVD-VICTORY-001".into(),
+        },
     );
     let r = replay_session(&log);
     assert!(

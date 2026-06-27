@@ -4,8 +4,8 @@ use super::admitter::*;
 use super::mapping_helpers::*;
 use super::types::*;
 use crate::runtime::Machine;
-use lsp_max_protocol::abstractions::RelationAdmitter;
 use lsp_max_lsif::lsif::{Edge, EdgeType, Element, PositionEncoding, Vertex, VertexType};
+use lsp_max_protocol::abstractions::RelationAdmitter;
 use lsp_max_protocol::MaxDiagnostic;
 use oxigraph::store::Store;
 

@@ -2,11 +2,11 @@
 // Spawns the server via tokio::process::Command, wires stdin/stdout through
 // lsp-max-client::ClientBuilder, and exposes a ServerHandle for request dispatch.
 
+use lsp_max::client::{ClientBuilder, ClientError, LanguageClient, ServerHandle};
 use lsp_max::lsp_types::{
     ClientCapabilities, ClientInfo, DocumentUri, InitializeParams, InitializeResult,
     InitializedParams, ServerCapabilities,
 };
-use lsp_max::client::{ClientBuilder, ClientError, LanguageClient, ServerHandle};
 use std::process::Stdio;
 use tokio::process::Command;
 

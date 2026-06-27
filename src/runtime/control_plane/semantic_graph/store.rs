@@ -12,7 +12,10 @@ use oxigraph::model::Term;
 use oxigraph::sparql::{QueryResults, SparqlEvaluator};
 use oxigraph::store::Store;
 
-use super::{SemanticLawGraph, snapshot::{GraphDigest, LawGraphSnapshot}};
+use super::{
+    snapshot::{GraphDigest, LawGraphSnapshot},
+    SemanticLawGraph,
+};
 
 /// Oxigraph-backed implementation of `SemanticLawGraph`.
 ///
@@ -41,10 +44,7 @@ impl SemanticLawGraph for OxigraphStore {
     fn load_snapshot(&self, snapshot: LawGraphSnapshot) -> Result<GraphDigest, String> {
         let digest = snapshot.digest();
         self.store
-            .load_from_reader(
-                oxigraph::io::RdfFormat::NQuads,
-                snapshot.nquads.as_bytes(),
-            )
+            .load_from_reader(oxigraph::io::RdfFormat::NQuads, snapshot.nquads.as_bytes())
             .map_err(|e| e.to_string())?;
         Ok(digest)
     }
@@ -94,13 +94,8 @@ impl SemanticLawGraph for OxigraphStore {
 
 fn run_select_first_binding(store: &Store, sparql: &str) -> Result<Vec<String>, String> {
     let evaluator = SparqlEvaluator::new();
-    let query = evaluator
-        .parse_query(sparql)
-        .map_err(|e| e.to_string())?;
-    let results = query
-        .on_store(store)
-        .execute()
-        .map_err(|e| e.to_string())?;
+    let query = evaluator.parse_query(sparql).map_err(|e| e.to_string())?;
+    let results = query.on_store(store).execute().map_err(|e| e.to_string())?;
 
     match results {
         QueryResults::Solutions(sols) => {

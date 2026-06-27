@@ -263,13 +263,19 @@ mod tests {
     use super::*;
     use std::env;
 
-    fn temp_history_service() -> (std::sync::MutexGuard<'static, ()>, tempfile::TempDir, HistoryService) {
+    fn temp_history_service() -> (
+        std::sync::MutexGuard<'static, ()>,
+        tempfile::TempDir,
+        HistoryService,
+    ) {
         let guard = crate::nouns::TEST_ENV_LOCK
             .lock()
             .unwrap_or_else(|e| e.into_inner());
         let dir = tempfile::TempDir::new().unwrap();
         // SAFETY: test-only, guarded by TEST_ENV_LOCK
-        unsafe { env::set_var("HOME", dir.path()); }
+        unsafe {
+            env::set_var("HOME", dir.path());
+        }
         (guard, dir, HistoryService::new())
     }
 

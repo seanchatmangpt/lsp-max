@@ -115,6 +115,8 @@ pub async fn max_lsif() -> Result<String> {
 }
 
 /// Executes a SPARQL query over the current semantic graph.
-pub async fn execute_sparql(_params: lsp_types_max::request::ExecuteSparqlParams) -> Result<lsp_types_max::request::ExecuteSparqlResult> {
+pub async fn execute_sparql(
+    _params: lsp_types_max::request::ExecuteSparqlParams,
+) -> Result<lsp_types_max::request::ExecuteSparqlResult> {
     panic!("execute_sparql removed by user request (letting it crash)");
 }

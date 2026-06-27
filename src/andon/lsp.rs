@@ -1,9 +1,9 @@
+use crate::andon::andon::AndonEvent;
+use crate::andon::core::Severity;
 use dashmap::DashMap;
 use lsp_types_max::notification::Notification;
 use lsp_types_max::{Diagnostic, DiagnosticSeverity};
 use serde::{Deserialize, Serialize};
-use crate::andon::andon::AndonEvent;
-use crate::andon::core::Severity;
 
 pub struct LspMaxAndonRaised;
 impl Notification for LspMaxAndonRaised {
@@ -64,16 +64,36 @@ impl VirtualDocRegistry {
         let registry = Self {
             docs: DashMap::new(),
         };
-        registry.docs.insert("lsp-max://truth/table".to_string(), String::new());
-        registry.docs.insert("lsp-max://truth/true".to_string(), String::new());
-        registry.docs.insert("lsp-max://truth/false".to_string(), String::new());
-        registry.docs.insert("lsp-max://truth/counterfactuals".to_string(), String::new());
-        registry.docs.insert("lsp-max://truth/andon".to_string(), String::new());
-        registry.docs.insert("lsp-max://invariants".to_string(), String::new());
-        registry.docs.insert("lsp-max://admission/gate".to_string(), String::new());
-        registry.docs.insert("lsp-max://agent/next-step".to_string(), String::new());
-        registry.docs.insert("lsp-max://gate/context".to_string(), String::new());
-        registry.docs.insert("lsp-max://gate/list".to_string(), String::new());
+        registry
+            .docs
+            .insert("lsp-max://truth/table".to_string(), String::new());
+        registry
+            .docs
+            .insert("lsp-max://truth/true".to_string(), String::new());
+        registry
+            .docs
+            .insert("lsp-max://truth/false".to_string(), String::new());
+        registry
+            .docs
+            .insert("lsp-max://truth/counterfactuals".to_string(), String::new());
+        registry
+            .docs
+            .insert("lsp-max://truth/andon".to_string(), String::new());
+        registry
+            .docs
+            .insert("lsp-max://invariants".to_string(), String::new());
+        registry
+            .docs
+            .insert("lsp-max://admission/gate".to_string(), String::new());
+        registry
+            .docs
+            .insert("lsp-max://agent/next-step".to_string(), String::new());
+        registry
+            .docs
+            .insert("lsp-max://gate/context".to_string(), String::new());
+        registry
+            .docs
+            .insert("lsp-max://gate/list".to_string(), String::new());
         registry
     }
 

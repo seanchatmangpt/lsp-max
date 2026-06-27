@@ -326,7 +326,10 @@ mod tests {
         });
 
         // After open, the URI must be tracked.
-        assert!(adapter.inputs.contains_key(&uri), "SourceFile not registered after did_open");
+        assert!(
+            adapter.inputs.contains_key(&uri),
+            "SourceFile not registered after did_open"
+        );
 
         // Text is readable from the db.
         let source = *adapter.inputs.get(&uri).unwrap();
@@ -375,7 +378,10 @@ mod tests {
                 text: "<p>hello</p>".to_string(),
             },
         });
-        assert!(adapter.pull_diagnostics(&uri).is_empty(), "should be clean initially");
+        assert!(
+            adapter.pull_diagnostics(&uri).is_empty(),
+            "should be clean initially"
+        );
 
         // Replace entire document with broken HTML.
         adapter.handle_did_change(DidChangeTextDocumentParams {
@@ -391,7 +397,10 @@ mod tests {
         });
 
         let diags = adapter.pull_diagnostics(&uri);
-        assert!(!diags.is_empty(), "broken HTML must produce AST_ERROR diagnostics; got none");
+        assert!(
+            !diags.is_empty(),
+            "broken HTML must produce AST_ERROR diagnostics; got none"
+        );
     }
 
     // ------------------------------------------------------------------
@@ -440,7 +449,10 @@ mod tests {
         let a_diags = adapter.pull_diagnostics(&uri_a);
         let b_diags_after = adapter.pull_diagnostics(&uri_b);
 
-        assert!(!a_diags.is_empty(), "file A must have errors after corrupt change");
+        assert!(
+            !a_diags.is_empty(),
+            "file A must have errors after corrupt change"
+        );
         assert_eq!(b_diags_before, b_diags_after, "file B must be unaffected");
     }
 
@@ -457,7 +469,10 @@ mod tests {
 
         // Never opened — pull must return empty.
         let diags = adapter.pull_diagnostics(&uri);
-        assert!(diags.is_empty(), "unknown URI must return no diagnostics; got {diags:?}");
+        assert!(
+            diags.is_empty(),
+            "unknown URI must return no diagnostics; got {diags:?}"
+        );
 
         // Open, then close.
         adapter.handle_did_open(DidOpenTextDocumentParams {

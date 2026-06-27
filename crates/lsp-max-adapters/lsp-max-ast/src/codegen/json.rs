@@ -18,7 +18,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 use crate::codegen::ir::{Child, Field, FieldOrChildren, Kind};
 use crate::codegen::utils::sanitize_string_to_pascal;
-use crate::codegen::{OperatorList, ANONYMOUS_TYPES, INLINE_MULTIPLE_RULES, NAMED_RULES, OPERATORS_RULES};
+use crate::codegen::{
+    OperatorList, ANONYMOUS_TYPES, INLINE_MULTIPLE_RULES, NAMED_RULES, OPERATORS_RULES,
+};
 use quote::{format_ident, quote};
 use serde::Deserialize;
 use std::collections::BTreeMap;

@@ -62,8 +62,6 @@ impl Builder {
         self.nodes
     }
 
-
-
     /// Creates a new AST node of type `T` from the current cursor position.
     ///
     /// The node is built using the [`AstNode`] try_from implementation for `T`.
@@ -76,10 +74,10 @@ impl Builder {
         let node = cursor.node();
         let start_len = self.nodes.len();
         let start_id_ctr = self.id_ctr;
-        
+
         let id = self.id_ctr + 1;
         self.id_ctr = id;
-        
+
         match T::try_from((&node, db, self, id, parent_id)).map(Box::new) {
             Ok(result) => {
                 self.nodes.push(result);

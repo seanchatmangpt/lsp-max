@@ -702,11 +702,11 @@ fn flush_uri_returns_merge_result_with_andon_block() {
 
 #[tokio::test]
 async fn compositor_client_deposits_on_publish_diagnostics() {
+    use lsp_max::client::LanguageClient;
     use lsp_max::lsp_types::{
         Diagnostic, DiagnosticSeverity, NumberOrString, Position, PublishDiagnosticsParams, Range,
         Uri,
     };
-    use lsp_max::client::LanguageClient;
     use std::str::FromStr;
     use std::sync::Arc;
 

@@ -83,10 +83,7 @@ impl StaleLsifIndexInvariant {
         };
 
         // 3. Verify LSIF file digest against receipt.lsif_digest.
-        let expected_lsif = receipt["lsif_digest"]
-            .as_str()
-            .unwrap_or("")
-            .to_string();
+        let expected_lsif = receipt["lsif_digest"].as_str().unwrap_or("").to_string();
         let actual_lsif = blake3_file(&self.lsif_path);
         if expected_lsif != actual_lsif {
             return LsifIndexState::StaleLsifDigest {
@@ -152,9 +149,7 @@ fn collect_rs_files(dir: &Path, out: &mut Vec<std::path::PathBuf>) {
             if !matches!(name, "target" | ".git" | "node_modules") {
                 collect_rs_files(&path, out);
             }
-        } else if path.is_file()
-            && path.extension().and_then(|e| e.to_str()) == Some("rs")
-        {
+        } else if path.is_file() && path.extension().and_then(|e| e.to_str()) == Some("rs") {
             out.push(path);
         }
     }
@@ -256,8 +251,11 @@ mod tests {
 
         // Write receipt with the ORIGINAL digest.
         let original_digest = blake3::hash(original_content).to_hex().to_string();
-        let receipt_path =
-            write_file(&dir, "test.receipt.json", make_receipt(&original_digest).as_bytes());
+        let receipt_path = write_file(
+            &dir,
+            "test.receipt.json",
+            make_receipt(&original_digest).as_bytes(),
+        );
 
         // Confirm it's Admitted before mutation.
         let invariant = StaleLsifIndexInvariant {
@@ -274,11 +272,11 @@ mod tests {
         let state = invariant.evaluate();
         match state {
             LsifIndexState::StaleLsifDigest { expected, actual } => {
-                assert_eq!(expected, original_digest, "expected must be original digest");
-                assert_ne!(
-                    actual, original_digest,
-                    "actual must differ after mutation"
+                assert_eq!(
+                    expected, original_digest,
+                    "expected must be original digest"
                 );
+                assert_ne!(actual, original_digest, "actual must differ after mutation");
             }
             other => panic!(
                 "COUNTERFACTUAL FAILED: expected StaleLsifDigest after mutation, got {other:?}"
@@ -298,8 +296,11 @@ mod tests {
 
         // Write receipt with a WRONG digest.
         let wrong_digest = "0000000000000000000000000000000000000000000000000000000000000000";
-        let receipt_path =
-            write_file(&dir, "test.receipt.json", make_receipt(wrong_digest).as_bytes());
+        let receipt_path = write_file(
+            &dir,
+            "test.receipt.json",
+            make_receipt(wrong_digest).as_bytes(),
+        );
 
         let invariant = StaleLsifIndexInvariant {
             receipt_path,
@@ -309,7 +310,10 @@ mod tests {
 
         match invariant.evaluate() {
             LsifIndexState::StaleLsifDigest { expected, .. } => {
-                assert_eq!(expected, wrong_digest, "expected must be the wrong digest from receipt");
+                assert_eq!(
+                    expected, wrong_digest,
+                    "expected must be the wrong digest from receipt"
+                );
             }
             other => panic!("expected StaleLsifDigest for corrupt receipt, got {other:?}"),
         }
@@ -326,12 +330,20 @@ mod tests {
             "Missing must map to Stop"
         );
         assert_eq!(
-            LsifIndexState::StaleLsifDigest { expected: "".into(), actual: "".into() }.severity(),
+            LsifIndexState::StaleLsifDigest {
+                expected: "".into(),
+                actual: "".into()
+            }
+            .severity(),
             crate::andon::core::Severity::Stop,
             "StaleLsifDigest must map to Stop"
         );
         assert_eq!(
-            LsifIndexState::StaleSourceDigest { expected: "".into(), actual: "".into() }.severity(),
+            LsifIndexState::StaleSourceDigest {
+                expected: "".into(),
+                actual: "".into()
+            }
+            .severity(),
             crate::andon::core::Severity::Stop,
             "StaleSourceDigest must map to Stop"
         );

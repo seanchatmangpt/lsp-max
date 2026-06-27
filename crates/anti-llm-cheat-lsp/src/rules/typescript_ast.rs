@@ -23,9 +23,11 @@ pub fn evaluate(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
                     forbidden_implication: "SHA256Call => Blake3Required".to_string(),
                     blocking: true,
                     required_correction:
-                        "Replace SHA-256 algorithm string with BLAKE3 via @noble/hashes/blake3.js".to_string(),
+                        "Replace SHA-256 algorithm string with BLAKE3 via @noble/hashes/blake3.js"
+                            .to_string(),
                     required_next_proof:
-                        "Verify all hash calls use blake3() from @noble/hashes/blake3.js".to_string(),
+                        "Verify all hash calls use blake3() from @noble/hashes/blake3.js"
+                            .to_string(),
                 });
             }
 

@@ -169,10 +169,7 @@ impl OcelService {
     /// If `instance_id` is given only events whose `ocel:omap` includes that id
     /// are counted.  Returns an empty list when there are no events — an object
     /// with no events has no traceable case.
-    pub fn cases(
-        &self,
-        instance_id: Option<&str>,
-    ) -> std::result::Result<Vec<OcelCase>, String> {
+    pub fn cases(&self, instance_id: Option<&str>) -> std::result::Result<Vec<OcelCase>, String> {
         let log = self.export()?;
         let mut case_map: HashMap<String, (String, Vec<String>)> = HashMap::new();
 
@@ -345,9 +342,7 @@ pub struct OcelObjectTypesResult {
 #[verb("object-types")]
 pub fn object_types() -> Result<OcelObjectTypesResult> {
     let svc = OcelService::new();
-    let types = svc
-        .object_types()
-        .map_err(NounVerbError::execution_error)?;
+    let types = svc.object_types().map_err(NounVerbError::execution_error)?;
     Ok(OcelObjectTypesResult { types })
 }
 

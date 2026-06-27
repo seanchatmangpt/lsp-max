@@ -1,7 +1,7 @@
 use crate::lsif::*;
+use crate::lsif::{Edge, ItemEdgeProperty, Vertex};
 use crate::lsif_builder::LsifBuilder;
 use crate::lsif_types::{EdgeType, HoverContents, MonikerKind, UniquenessLevel, VertexType};
-use crate::lsif::{ItemEdgeProperty, Vertex, Edge};
 use lsp_types_max::{MarkupContent, MarkupKind, Position, SymbolKind};
 use std::collections::HashMap;
 use std::io::Write;
@@ -95,22 +95,27 @@ impl<'b, W: Write> LsifContext<'b, W> {
 
     /// Emit a definitionResult and Item edge linking `result_set_id` → `range_id`.
     pub fn emit_definition(&mut self, result_set_id: Id, range_id: Id) -> std::io::Result<Id> {
-        let def_res = self.builder
-            .bind_definition(result_set_id.clone(), vec![range_id.clone()], self.doc_id.clone())?;
+        let def_res = self.builder.bind_definition(
+            result_set_id.clone(),
+            vec![range_id.clone()],
+            self.doc_id.clone(),
+        )?;
 
         let ref_res_id = self.builder.next_id();
-        self.builder.emit(crate::lsif::Element::Vertex(Vertex::ReferenceResult {
-            id: ref_res_id.clone(),
-            type_: VertexType::Vertex,
-        }))?;
+        self.builder
+            .emit(crate::lsif::Element::Vertex(Vertex::ReferenceResult {
+                id: ref_res_id.clone(),
+                type_: VertexType::Vertex,
+            }))?;
 
         let edge_id = self.builder.next_id();
-        self.builder.emit(crate::lsif::Element::Edge(Edge::TextDocumentReferences {
-            id: edge_id,
-            type_: EdgeType::Edge,
-            out_v: result_set_id.clone(),
-            in_v: ref_res_id.clone(),
-        }))?;
+        self.builder
+            .emit(crate::lsif::Element::Edge(Edge::TextDocumentReferences {
+                id: edge_id,
+                type_: EdgeType::Edge,
+                out_v: result_set_id.clone(),
+                in_v: ref_res_id.clone(),
+            }))?;
 
         let item_edge_id = self.builder.next_id();
         self.builder.emit(crate::lsif::Element::Edge(Edge::Item {
@@ -131,20 +136,23 @@ impl<'b, W: Write> LsifContext<'b, W> {
             id.clone()
         } else {
             let id = self.builder.next_id();
-            self.builder.emit(crate::lsif::Element::Vertex(Vertex::ReferenceResult {
-                id: id.clone(),
-                type_: VertexType::Vertex,
-            }))?;
+            self.builder
+                .emit(crate::lsif::Element::Vertex(Vertex::ReferenceResult {
+                    id: id.clone(),
+                    type_: VertexType::Vertex,
+                }))?;
 
             let edge_id = self.builder.next_id();
-            self.builder.emit(crate::lsif::Element::Edge(Edge::TextDocumentReferences {
-                id: edge_id,
-                type_: EdgeType::Edge,
-                out_v: result_set_id.clone(),
-                in_v: id.clone(),
-            }))?;
+            self.builder
+                .emit(crate::lsif::Element::Edge(Edge::TextDocumentReferences {
+                    id: edge_id,
+                    type_: EdgeType::Edge,
+                    out_v: result_set_id.clone(),
+                    in_v: id.clone(),
+                }))?;
 
-            self.reference_results.insert(result_set_id.clone(), id.clone());
+            self.reference_results
+                .insert(result_set_id.clone(), id.clone());
             id
         };
 

@@ -413,7 +413,10 @@ mod tests {
 
     /// Re-implements the walk verb's core logic for service-layer testing
     /// without routing through the env-var verb entrypoint.
-    fn run_walk_logic(instance_id: &str, receipts: Vec<lsp_max::max_runtime::Receipt>) -> ReceiptWalkResult {
+    fn run_walk_logic(
+        instance_id: &str,
+        receipts: Vec<lsp_max::max_runtime::Receipt>,
+    ) -> ReceiptWalkResult {
         let total = receipts.len();
         let mut entries = Vec::new();
         let mut overall = if total == 0 { "UNKNOWN" } else { "ADMITTED" }.to_string();
@@ -427,7 +430,11 @@ mod tests {
             } else {
                 (
                     "ADMITTED".to_string(),
-                    format!("id={} hash={}...", r.receipt_id, &r.hash[..8.min(r.hash.len())]),
+                    format!(
+                        "id={} hash={}...",
+                        r.receipt_id,
+                        &r.hash[..8.min(r.hash.len())]
+                    ),
                 )
             };
             entries.push(ReceiptWalkEntry {

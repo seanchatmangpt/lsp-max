@@ -58,9 +58,18 @@ pub trait LsifDb: salsa::Database {}
 /// Language-specific definition keywords used for moniker counting.
 fn definition_keywords(language_id: &str) -> &'static [&'static str] {
     match language_id {
-        "rust" => &["fn ", "struct ", "enum ", "trait ", "type ", "const ", "static ", "impl "],
+        "rust" => &[
+            "fn ", "struct ", "enum ", "trait ", "type ", "const ", "static ", "impl ",
+        ],
         "typescript" | "javascript" => &[
-            "function ", "class ", "interface ", "type ", "const ", "let ", "var ", "export ",
+            "function ",
+            "class ",
+            "interface ",
+            "type ",
+            "const ",
+            "let ",
+            "var ",
+            "export ",
         ],
         _ => &["fn ", "def ", "class ", "function "],
     }
@@ -96,7 +105,14 @@ pub fn index_document(db: &dyn LsifDb, src: LsifSource) -> LsifFileResult {
     // beyond the definition sites themselves.
     let reference_count = text
         .split(|c: char| !c.is_alphanumeric() && c != '_')
-        .filter(|tok| tok.len() > 1 && tok.chars().next().map(|c| c.is_alphabetic()).unwrap_or(false))
+        .filter(|tok| {
+            tok.len() > 1
+                && tok
+                    .chars()
+                    .next()
+                    .map(|c| c.is_alphabetic())
+                    .unwrap_or(false)
+        })
         .count()
         .saturating_sub(moniker_count as usize) as u32;
 
@@ -180,7 +196,9 @@ impl IncrementalLsifIndexer {
         let src = if let Some(&existing) = self.sources.get(&path) {
             // Update text + language_id if they changed (Salsa tracks the revision).
             existing.set_text(&mut self.db).to(text.clone());
-            existing.set_language_id(&mut self.db).to(language_id.clone());
+            existing
+                .set_language_id(&mut self.db)
+                .to(language_id.clone());
             existing
         } else {
             let src = LsifSource::new(&self.db, path.clone(), text, language_id);

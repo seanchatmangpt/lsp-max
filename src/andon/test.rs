@@ -63,7 +63,10 @@ impl LspMaxHarness {
 
     pub fn assert_next_lawful_step(&self, step: &str) {
         assert!(
-            self.bus.get_events().iter().any(|e| e.next_lawful_step.as_deref() == Some(step)),
+            self.bus
+                .get_events()
+                .iter()
+                .any(|e| e.next_lawful_step.as_deref() == Some(step)),
             "Expected next lawful step {} not found in any event",
             step
         );
@@ -81,14 +84,22 @@ impl LspMaxHarness {
 
     pub fn assert_truth_table_row(&self, invariant_id: &str) {
         assert!(
-            self.truth_table.rows.iter().any(|r| r.invariant_id == invariant_id),
+            self.truth_table
+                .rows
+                .iter()
+                .any(|r| r.invariant_id == invariant_id),
             "Truth table row for {} not found",
             invariant_id
         );
     }
 
     pub fn assert_counterfactual_failed(&self, invariant_id: &str) {
-        let row = self.truth_table.rows.iter().find(|r| r.invariant_id == invariant_id).unwrap();
+        let row = self
+            .truth_table
+            .rows
+            .iter()
+            .find(|r| r.invariant_id == invariant_id)
+            .unwrap();
         assert_eq!(
             row.counterfactual_case,
             crate::andon::core::ProbeResult::Fail,
@@ -98,19 +109,40 @@ impl LspMaxHarness {
     }
 
     pub fn assert_witness_present(&self, invariant_id: &str) {
-        let row = self.truth_table.rows.iter().find(|r| r.invariant_id == invariant_id).unwrap();
-        assert!(row.witness.is_some(), "Witness for {} is missing", invariant_id);
+        let row = self
+            .truth_table
+            .rows
+            .iter()
+            .find(|r| r.invariant_id == invariant_id)
+            .unwrap();
+        assert!(
+            row.witness.is_some(),
+            "Witness for {} is missing",
+            invariant_id
+        );
     }
 
     pub fn assert_repair_present(&self, invariant_id: &str) {
-        let row = self.truth_table.rows.iter().find(|r| r.invariant_id == invariant_id).unwrap();
-        assert!(row.repair.is_some(), "Repair for {} is missing", invariant_id);
+        let row = self
+            .truth_table
+            .rows
+            .iter()
+            .find(|r| r.invariant_id == invariant_id)
+            .unwrap();
+        assert!(
+            row.repair.is_some(),
+            "Repair for {} is missing",
+            invariant_id
+        );
     }
 
     pub fn assert_no_vacuous_green(&self) {
         for row in &self.truth_table.rows {
             if row.verdict == crate::andon::core::ProbeResult::Pass {
-                assert!(row.witness.is_some(), "Vacuous green: passed without witness");
+                assert!(
+                    row.witness.is_some(),
+                    "Vacuous green: passed without witness"
+                );
                 assert_eq!(
                     row.counterfactual_case,
                     crate::andon::core::ProbeResult::Fail,

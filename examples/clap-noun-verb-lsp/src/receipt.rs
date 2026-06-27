@@ -9,7 +9,7 @@ pub fn cmd_show(latest: bool) -> Result<CommandResult> {
 }
 
 pub fn register_explicit() {
-    use clap_noun_verb::cli::registry::{CommandRegistry, ArgMetadata};
+    use clap_noun_verb::cli::registry::{ArgMetadata, CommandRegistry};
     use clap_noun_verb::logic::HandlerOutput;
 
     CommandRegistry::register_noun("receipt", "Manage and inspect receipts");
@@ -50,12 +50,14 @@ pub fn register_explicit() {
             global: false,
         }],
         |input| {
-            let latest = input.args.get("latest")
+            let latest = input
+                .args
+                .get("latest")
                 .or_else(|| input.opts.get("latest"))
                 .map(|v| v.parse::<bool>().unwrap_or(false))
                 .unwrap_or(false);
             let result = cmd_show(latest)?;
             HandlerOutput::from_data(result)
-        }
+        },
     );
 }
