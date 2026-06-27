@@ -27,7 +27,9 @@ use std::fs;
 use std::path::Path;
 use std::sync::OnceLock;
 use wasm4pm_compat::ocel::{OCELEvent, OCELEventAttribute, OCELObject, OCELRelationship, OCEL};
-
+use lsp_max_andon::core::{InvariantRegistry, TruthTable};
+use lsp_max_andon::andon::{AndonBus, AdmissionGate};
+use lsp_max_andon::patterns::*;
 // ── Line index — O(n) build, O(log n) lookup ──────────────────────────────────
 
 fn build_line_index(content: &[u8]) -> Vec<usize> {
@@ -352,6 +354,19 @@ pub fn observations_to_ocel(obs: &[Observation]) -> OCEL {
 pub fn evaluate_diagnostics(obs: &[Observation]) -> Vec<AntiLlmDiagnostic> {
     evaluate_diagnostics_with_config(obs, &AntiLlmConfig::default())
 }
+
+pub fn create_andon_registry() -> InvariantRegistry {
+    let mut registry = InvariantRegistry::new();
+    registry.register(build_empty_registry_invariant());
+    registry.register(build_required_artifact_invariant("docs/prd.md"));
+    registry.register(build_marker_admission("ADMITTED"));
+    registry.register(build_need_n_invariant(8));
+    registry.register(build_receipt_required());
+    registry.register(build_non_empty_check_set());
+    registry.register(build_brokered_command());
+    registry
+}
+
 
 pub fn evaluate_diagnostics_with_config(
     obs: &[Observation],

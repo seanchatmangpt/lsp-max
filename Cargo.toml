@@ -45,12 +45,12 @@ serde_json = "1.0"
 tokio = { version = "1", optional = true, features = ["time", "macros", "rt", "io-util", "net", "sync"] }
 parking_lot = { workspace = true }
 tokio-util = { version = "0.7", optional = true, features = ["codec"] }
-lsp-max-macros = { version = "26.6.24", path = "./lsp-max-macros" }
-lsp-max-protocol = { version = "26.6.24", path = "./lsp-max-protocol" }
-lsp-max-lsif = { path = "./crates/lsp-max-lsif", version = "26.6.24" }
-lsp-max-runtime = { version = "26.6.24", path = "./lsp-max-runtime" }
-lsp-max-agent = { version = "26.6.24", path = "./lsp-max-agent" }
-lsp-max-base = { path = "./crates/lsp-max-base", version = "26.6.24" }
+lsp-max-macros = { version = "26.6.26", path = "./lsp-max-macros" }
+lsp-max-protocol = { version = "26.6.26", path = "./lsp-max-protocol" }
+lsp-max-lsif = { path = "./crates/lsp-max-lsif", version = "26.6.26" }
+lsp-max-runtime = { version = "26.6.26", path = "./lsp-max-runtime" }
+lsp-max-agent = { version = "26.6.26", path = "./lsp-max-agent" }
+lsp-max-base = { path = "./crates/lsp-max-base", version = "26.6.26" }
 affidavit = "26.6.22"
 wasm4pm-cognition = "26.6.10"
 tower = { version = "0.4", default-features = false, features = ["util"] }
@@ -123,11 +123,11 @@ members = [
     "crates/lsp-max-compositor-routing",
     "crates/lsp-max-mcp",
     "crates/lsp-max-gen",
-    "crates/lsp-max-meta",
+    "crates/lsp-max-meta", "crates/lsp-max-andon",
 ]
 
 [workspace.package]
-version = "26.6.24"
+version = "26.6.26"
 authors = ["Eyal Kalderon <ebkalderon@gmail.com>"]
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/seanchatmangpt/lsp-max"
@@ -160,9 +160,9 @@ walkdir = "2.5.0"
 rayon-par-bridge = "0.1.0"
 bon = "3.6.4"
 rustc-hash = "2"
-lsp-max-ast-core = { path = "crates/lsp-max-adapters/lsp-max-ast-core", version = "26.6.24" }
-lsp-max-ast-codegen = { path = "crates/lsp-max-adapters/lsp-max-ast-codegen", version = "26.6.24" }
-lsp-max-ast = { path = "crates/lsp-max-adapters/lsp-max-ast", version = "26.6.24" }
+lsp-max-ast-core = { path = "crates/lsp-max-adapters/lsp-max-ast-core", version = "26.6.26" }
+lsp-max-ast-codegen = { path = "crates/lsp-max-adapters/lsp-max-ast-codegen", version = "26.6.26" }
+lsp-max-ast = { path = "crates/lsp-max-adapters/lsp-max-ast", version = "26.6.26" }
 
 [patch.crates-io]
 # wasm4pm and wasm4pm-compat patches removed — use crates.io versions

@@ -28,6 +28,7 @@ memchr = "2.5"
 rustc-hash = { workspace = true }
 parking_lot = { workspace = true }
 lsp-max = { path = "../.." }
+lsp-max-andon = { path = "../lsp-max-andon", version = "26.6.24" }
 chrono = { version = "0.4", features = ["serde"] }
 blake3 = "1"
 url = "2.5"

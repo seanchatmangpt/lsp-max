@@ -1,0 +1,22 @@
+[package]
+name = "lsp-max-andon"
+version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+categories.workspace = true
+keywords.workspace = true
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+lsp-types-max = { workspace = true }
+thiserror = { workspace = true }
+url = { version = "2.5", features = ["serde"] }
+dashmap = { workspace = true }
+async-trait = "0.1"
+tokio = { version = "1", features = ["rt", "macros", "sync"] }
+tower = { version = "0.4", default-features = false, features = ["util"] }
