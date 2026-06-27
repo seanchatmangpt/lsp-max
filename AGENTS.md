@@ -1820,3 +1820,97 @@ Source
 
 The agent does not understand the repo. The repo provides an admitted semantic index.
 
+
+---
+
+## Rice's Theorem and the BRCE Response (admitted 2026-06-27)
+
+### The Rice boundary
+
+Rice's theorem:
+
+> There is no general machine that decides nontrivial semantic properties of arbitrary programs.
+
+When an LLM says "Here is the code. Check that it works." — Rice says the hidden problem is:
+"works" is a semantic property of an arbitrary program. There is no universal checker for that.
+
+The disclaimer "Check it." is not a safety mechanism. It pushes an undecidable semantic burden back onto the human. That is the counterfeit-solution problem.
+
+### What lsp-max does differently
+
+This system does not try to beat Rice. It changes the question.
+
+Instead of:
+```
+What does this arbitrary Rust program mean?
+```
+
+Ask bounded questions:
+```
+Did Tree-sitter parse this syntax?
+Did Salsa recompute the affected facts?
+Did LSIF index the definitions/references?
+Did Oxigraph find the governing law facts?
+Did the LSP push the failed invariant?
+Did ANDON block admission?
+Did the receipt bind the command/output/digest?
+Did OCEL record what happened?
+```
+
+Each question is smaller, bounded, and mechanically checkable.
+
+### Rice's explanation of each layer
+
+| Layer | Rice-impossible question | Bounded replacement |
+|---|---|---|
+| Tree-sitter | "What does the program mean?" | "What syntax tree exists?" |
+| Salsa | "What all changed semantically?" | "Which tracked query results are stale?" |
+| LSIF | "How does the whole codebase behave?" | "What symbols, definitions, references, monikers exist?" |
+| Oxigraph | "What does the project mean?" | "What law-graph facts are queryable?" |
+| LSP | "Should the agent continue?" | "What diagnostics/ANDON states are active?" |
+| ANDON | "Will the agent notice?" | "The defect is pushed; admission is blocked." |
+| Receipt | "Is it really done?" | "Does this bounded proof bind artifact, command, digest, status?" |
+| OCEL | "What happened?" | "Here is the event trace." |
+
+### The BRCE response to Rice
+
+```
+ArbitraryMeaning
+→ BoundedObservation
+→ BoundedTransformation
+→ Receipt
+→ Standing
+```
+
+You are not crossing the Rice boundary. You are approaching practical semantic certainty by
+narrowing the frame until the system can actually decide something.
+
+### Rice and the Hello World paradox
+
+The inability to manually author arbitrary correct code does not invalidate the claim.
+It exposes the correct insight:
+
+> Manual code authorship was never a sufficient proof model.
+
+The answer is not "I personally understand every line."
+
+The answer is:
+> The line does not matter until it passes through bounded observation, transformation,
+> counterfactual rejection, witness, repair, receipt, and admission.
+
+That is Rice-aware programming.
+
+### Sharpest formulation
+
+> **Rice says arbitrary code meaning cannot be generally decided. BRCE says: then stop making
+> arbitrary code meaning the authority. Make bounded observations, bounded transformations,
+> counterfactuals, witnesses, repairs, receipts, and process traces the authority.**
+
+### Invariant: `RICE_BOUNDARY_NOT_CROSSED`
+
+TRUE: Every admitted claim is backed by a bounded mechanical check, not arbitrary semantic judgment.
+FALSE: A proof claim rests on "the code looks right" or "tests mostly pass" or LLM prose assertion.
+COUNTERFACTUAL: Remove the receipt from an ADMITTED claim → claim collapses to CANDIDATE.
+WITNESS: The receipt chain — digest + command + counts + exit_code + timestamp.
+REPAIR: Add the missing bounded check. Do not widen the semantic assertion.
+
