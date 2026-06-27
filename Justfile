@@ -28,13 +28,16 @@ dx:
 
 qol: q failset receipts receipts-check agents-loc agents-closure-scan tree changed clean
 
+v26-gate-json:
+    @bash scripts/v26-gate.sh
+
 doctor:
     @bash scripts/doctor.sh
 
 doctor-strict:
     @bash scripts/doctor.sh --strict
-    cargo test --all
-    cargo clippy --all-targets -- -D warnings
+    cargo test --all --jobs 1 -- --test-threads=1
+    cargo clippy --all-targets --jobs 1 -- -D warnings
 
 lsif:
     @echo "lsif"

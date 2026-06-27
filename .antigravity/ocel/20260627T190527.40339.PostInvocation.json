@@ -1,0 +1,234 @@
+{
+  "activity": "PostInvocation",
+  "attributes": {
+    "anti_cheat": {
+      "delta_stats_source": "git diff --numstat",
+      "files_changed_source": "git",
+      "llm_file_accounting_allowed": false
+    },
+    "git": {
+      "branch": "master",
+      "changed_file_count": 21,
+      "changed_files": [
+        ".antigravity/keep-running",
+        ".antigravity/ocel/20260627T190527.40282.PreInvocation.json",
+        ".antigravity/ocel/20260627T190527.40301.PreToolUse.json",
+        ".antigravity/ocel/20260627T190527.40320.PostToolUse.json",
+        ".antigravity/ocel/events.jsonl",
+        ".antigravity/payloads/20260627T190527.40282.PreInvocation.stdin",
+        ".antigravity/payloads/20260627T190527.40301.PreToolUse.stdin",
+        ".antigravity/payloads/20260627T190527.40320.PostToolUse.stdin",
+        ".antigravity/payloads/20260627T190527.40339.PostInvocation.stdin",
+        "Cargo.toml",
+        "Justfile",
+        "crates/claude-code-config-lsp",
+        "receipts/v26.6.28-doctor.receipt.json",
+        "receipts/v26.6.28-dx-qol-doctor-release.receipt.json",
+        "receipts/v26.6.28-dx.receipt.json",
+        "receipts/v26.6.28-justfile.receipt.json",
+        "receipts/v26.6.28-lsif.receipt.json",
+        "receipts/v26.6.28-qol.receipt.json",
+        "receipts/v26.6.28-release.receipt.json",
+        "scripts/ag-ocel-hook.sh",
+        "scripts/ag-stop-guard.sh"
+      ],
+      "dirty": true,
+      "head": "4dddd6dd0f963bccc57f6a73e25b3d57e5058ed7",
+      "lines_added": 13,
+      "lines_deleted": 9,
+      "staged_files": [],
+      "staged_numstat": [],
+      "status_porcelain": [
+        " M Cargo.toml",
+        " M Justfile",
+        " M crates/claude-code-config-lsp",
+        " M receipts/v26.6.28-doctor.receipt.json",
+        " M receipts/v26.6.28-dx-qol-doctor-release.receipt.json",
+        " M receipts/v26.6.28-dx.receipt.json",
+        " M receipts/v26.6.28-justfile.receipt.json",
+        " M receipts/v26.6.28-lsif.receipt.json",
+        " M receipts/v26.6.28-qol.receipt.json",
+        " M receipts/v26.6.28-release.receipt.json",
+        "?? .antigravity/",
+        "?? scripts/ag-ocel-hook.sh",
+        "?? scripts/ag-stop-guard.sh"
+      ],
+      "unstaged_files": [
+        "Cargo.toml",
+        "Justfile",
+        "crates/claude-code-config-lsp",
+        "receipts/v26.6.28-doctor.receipt.json",
+        "receipts/v26.6.28-dx-qol-doctor-release.receipt.json",
+        "receipts/v26.6.28-dx.receipt.json",
+        "receipts/v26.6.28-justfile.receipt.json",
+        "receipts/v26.6.28-lsif.receipt.json",
+        "receipts/v26.6.28-qol.receipt.json",
+        "receipts/v26.6.28-release.receipt.json"
+      ],
+      "unstaged_numstat": [
+        {
+          "added": 4,
+          "deleted": 0,
+          "file": "Cargo.toml"
+        },
+        {
+          "added": 2,
+          "deleted": 2,
+          "file": "Justfile"
+        },
+        {
+          "added": 0,
+          "deleted": 0,
+          "file": "crates/claude-code-config-lsp"
+        },
+        {
+          "added": 1,
+          "deleted": 1,
+          "file": "receipts/v26.6.28-doctor.receipt.json"
+        },
+        {
+          "added": 1,
+          "deleted": 1,
+          "file": "receipts/v26.6.28-dx-qol-doctor-release.receipt.json"
+        },
+        {
+          "added": 1,
+          "deleted": 1,
+          "file": "receipts/v26.6.28-dx.receipt.json"
+        },
+        {
+          "added": 1,
+          "deleted": 1,
+          "file": "receipts/v26.6.28-justfile.receipt.json"
+        },
+        {
+          "added": 1,
+          "deleted": 1,
+          "file": "receipts/v26.6.28-lsif.receipt.json"
+        },
+        {
+          "added": 1,
+          "deleted": 1,
+          "file": "receipts/v26.6.28-qol.receipt.json"
+        },
+        {
+          "added": 1,
+          "deleted": 1,
+          "file": "receipts/v26.6.28-release.receipt.json"
+        }
+      ],
+      "untracked_files": [
+        ".antigravity/keep-running",
+        ".antigravity/ocel/20260627T190527.40282.PreInvocation.json",
+        ".antigravity/ocel/20260627T190527.40301.PreToolUse.json",
+        ".antigravity/ocel/20260627T190527.40320.PostToolUse.json",
+        ".antigravity/ocel/events.jsonl",
+        ".antigravity/payloads/20260627T190527.40282.PreInvocation.stdin",
+        ".antigravity/payloads/20260627T190527.40301.PreToolUse.stdin",
+        ".antigravity/payloads/20260627T190527.40320.PostToolUse.stdin",
+        ".antigravity/payloads/20260627T190527.40339.PostInvocation.stdin",
+        "scripts/ag-ocel-hook.sh",
+        "scripts/ag-stop-guard.sh"
+      ]
+    },
+    "hook": {
+      "name": "PostInvocation",
+      "payload_path": ".antigravity/payloads/20260627T190527.40339.PostInvocation.stdin",
+      "payload_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  "event_id": "20260627T190527.40339.PostInvocation",
+  "event_type": "PostInvocation",
+  "objects": [
+    {
+      "id": "lsp-max",
+      "type": "repository"
+    },
+    {
+      "id": ".antigravity/keep-running",
+      "type": "file"
+    },
+    {
+      "id": ".antigravity/ocel/20260627T190527.40282.PreInvocation.json",
+      "type": "file"
+    },
+    {
+      "id": ".antigravity/ocel/20260627T190527.40301.PreToolUse.json",
+      "type": "file"
+    },
+    {
+      "id": ".antigravity/ocel/20260627T190527.40320.PostToolUse.json",
+      "type": "file"
+    },
+    {
+      "id": ".antigravity/ocel/events.jsonl",
+      "type": "file"
+    },
+    {
+      "id": ".antigravity/payloads/20260627T190527.40282.PreInvocation.stdin",
+      "type": "file"
+    },
+    {
+      "id": ".antigravity/payloads/20260627T190527.40301.PreToolUse.stdin",
+      "type": "file"
+    },
+    {
+      "id": ".antigravity/payloads/20260627T190527.40320.PostToolUse.stdin",
+      "type": "file"
+    },
+    {
+      "id": ".antigravity/payloads/20260627T190527.40339.PostInvocation.stdin",
+      "type": "file"
+    },
+    {
+      "id": "Cargo.toml",
+      "type": "file"
+    },
+    {
+      "id": "Justfile",
+      "type": "file"
+    },
+    {
+      "id": "crates/claude-code-config-lsp",
+      "type": "file"
+    },
+    {
+      "id": "receipts/v26.6.28-doctor.receipt.json",
+      "type": "file"
+    },
+    {
+      "id": "receipts/v26.6.28-dx-qol-doctor-release.receipt.json",
+      "type": "file"
+    },
+    {
+      "id": "receipts/v26.6.28-dx.receipt.json",
+      "type": "file"
+    },
+    {
+      "id": "receipts/v26.6.28-justfile.receipt.json",
+      "type": "file"
+    },
+    {
+      "id": "receipts/v26.6.28-lsif.receipt.json",
+      "type": "file"
+    },
+    {
+      "id": "receipts/v26.6.28-qol.receipt.json",
+      "type": "file"
+    },
+    {
+      "id": "receipts/v26.6.28-release.receipt.json",
+      "type": "file"
+    },
+    {
+      "id": "scripts/ag-ocel-hook.sh",
+      "type": "file"
+    },
+    {
+      "id": "scripts/ag-stop-guard.sh",
+      "type": "file"
+    }
+  ],
+  "ocel:version": "2.0",
+  "timestamp": "2026-06-27T19:05:27Z"
+}

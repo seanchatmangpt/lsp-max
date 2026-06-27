@@ -1,0 +1,54 @@
+{
+  "detectors": [
+    {
+      "name": "zero_hash_genesis",
+      "detector_command": "cargo test -p lsp-max-compositor persistent_chain_head_survives_restart -- --nocapture",
+      "exact_file_or_module": "crates/lsp-max-compositor/src/receipt_chain.rs",
+      "fail_condition": "second genesis == ZERO_HASH",
+      "pass_condition": "chain head persists across restarts",
+      "witness_file": "receipts/v26.6.28-persistent-chain-head.receipt.json",
+      "receipt_file": "receipts/v26.6.28-persistent-chain-head.receipt.json",
+      "repair_action": "persist chain head under .lsp-max/chain/head.json or equivalent"
+    },
+    {
+      "name": "volatile_event_buffer",
+      "detector_command": "cargo test -p lsp-max-compositor ocel_events_survive_restart -- --nocapture",
+      "exact_file_or_module": "crates/lsp-max-compositor/src/ocel_export.rs",
+      "fail_condition": "replay_count == 0",
+      "pass_condition": "events survive restart",
+      "witness_file": "receipts/v26.6.28-append-only-ocel.receipt.json",
+      "receipt_file": "receipts/v26.6.28-append-only-ocel.receipt.json",
+      "repair_action": "append OCEL event to WAL before in-memory drain"
+    },
+    {
+      "name": "missing_mutation_events",
+      "detector_command": "cargo test -p lsp-max-compositor ocel_captures_external_mutation -- --nocapture",
+      "exact_file_or_module": "crates/lsp-max-compositor/src/hooks.rs",
+      "fail_condition": "FileWrite absent",
+      "pass_condition": "mutation events captured",
+      "witness_file": "receipts/v26.6.28-mutation-events.receipt.json",
+      "receipt_file": "receipts/v26.6.28-mutation-events.receipt.json",
+      "repair_action": "hook/tool wrapper emits mutation event with git delta stats"
+    },
+    {
+      "name": "fitness_not_gated",
+      "detector_command": "cargo test -p lsp-max-compositor low_fitness_blocks_gate -- --nocapture",
+      "exact_file_or_module": "crates/lsp-max-compositor/src/conformance.rs",
+      "fail_condition": "has_andon_block != true",
+      "pass_condition": "low fitness blocks gate",
+      "witness_file": "receipts/v26.6.28-fitness-gate.receipt.json",
+      "receipt_file": "receipts/v26.6.28-fitness-gate.receipt.json",
+      "repair_action": "route conformance failure into ANDON gate"
+    },
+    {
+      "name": "ephemeral_keystore",
+      "detector_command": "cargo test -p lsp-max-compositor keystore_persists_across_restart -- --nocapture",
+      "exact_file_or_module": "crates/lsp-max-compositor/src/keystore.rs",
+      "fail_condition": "key_id_before != key_id_after",
+      "pass_condition": "key identity continuous across restarts",
+      "witness_file": "receipts/v26.6.28-persistent-keystore.receipt.json",
+      "receipt_file": "receipts/v26.6.28-persistent-keystore.receipt.json",
+      "repair_action": "persist compositor keystore under deterministic repo-local config path"
+    }
+  ]
+}

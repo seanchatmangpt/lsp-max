@@ -154,3 +154,7 @@ lsp-max-ast = { path = "crates/lsp-max-adapters/lsp-max-ast", version = "26.6.28
 wasm4pm = { path = "../wasm4pm/wasm4pm" }
 wasm4pm-compat = { path = "../wasm4pm-compat" }
 lsp-types-max = { path = "../lsp-types-max" }
+
+[profile.test]
+debug = 0
+codegen-units = 1
