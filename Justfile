@@ -31,6 +31,16 @@ qol: q failset receipts receipts-check agents-loc agents-closure-scan tree chang
 v26-gate-json:
     @bash scripts/v26-gate.sh
 
+v26-verify:
+    @echo "Verifying v26.6.28 components..."
+    just v26-gate-json
+    just doctor
+    just doctor-strict
+    just dx
+    cargo test --all
+    cargo clippy --all-targets -- -D warnings
+    cargo publish --dry-run
+
 doctor:
     @bash scripts/doctor.sh
 
