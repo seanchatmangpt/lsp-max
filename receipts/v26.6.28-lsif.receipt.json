@@ -1,0 +1,16 @@
+{
+  "command": "cargo run -p lsp-max-lsif -- --root src/ --out receipts/v26.6.28-lsif.lsif",
+  "exit_code": 0,
+  "source_boundary": "src/",
+  "source_digest_algorithm": "blake3",
+  "source_digest": "86f656618dd40d910405426e9a30ca15c6b54077f257f967a44cce1ec56aae11",
+  "lsif_output_path": "receipts/v26.6.28-lsif.lsif",
+  "lsif_digest_algorithm": "blake3",
+  "lsif_digest": "b0c5226440ecb352600928709a56a5f9f234ab89385f36c568a566eff587b65f",
+  "vertex_count": 23556,
+  "document_count": 163,
+  "moniker_count": 2294,
+  "reference_count": 2329,
+  "timestamp": "2026-06-27T07:49:50Z",
+  "status": "ADMITTED"
+}
