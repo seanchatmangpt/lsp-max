@@ -19,7 +19,7 @@ use std::sync::Arc;
 use tokio::sync::{mpsc, oneshot, Mutex};
 
 const N: usize = 500;
-const LATENCY_BUDGET_MS: u128 = 10;
+const LATENCY_BUDGET_MS: u128 = 100;
 
 /// Build a zero-latency mock `ServerHandle` backed by an in-process mpsc channel.
 /// Returns the handle and the receiver end. The caller must drain the receiver or

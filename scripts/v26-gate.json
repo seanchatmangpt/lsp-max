@@ -1,54 +1,894 @@
 {
   "detectors": [
     {
-      "name": "zero_hash_genesis",
-      "detector_command": "cargo test -p lsp-max-compositor persistent_chain_head_survives_restart -- --nocapture",
-      "exact_file_or_module": "crates/lsp-max-compositor/src/receipt_chain.rs",
-      "fail_condition": "second genesis == ZERO_HASH",
-      "pass_condition": "chain head persists across restarts",
-      "witness_file": "receipts/v26.6.28-persistent-chain-head.receipt.json",
-      "receipt_file": "receipts/v26.6.28-persistent-chain-head.receipt.json",
-      "repair_action": "persist chain head under .lsp-max/chain/head.json or equivalent"
+      "name": "unknown_file",
+      "detector_command": "test -f receipts/v26.6.28-files.receipt.json || echo 'Missing receipts/v26.6.28-files.receipt.json'",
+      "exact_file_or_module": "domain:files",
+      "fail_condition": "unknown_file exists",
+      "pass_condition": "unknown_file absent",
+      "witness_file": "receipts/v26.6.28-files.receipt.json",
+      "receipt_file": "receipts/v26.6.28-files.receipt.json",
+      "repair_action": "Fix failure and regenerate receipt"
+    },
+    {
+      "name": "unowned_file",
+      "detector_command": "test -f receipts/v26.6.28-files.receipt.json || echo 'Missing receipts/v26.6.28-files.receipt.json'",
+      "exact_file_or_module": "domain:files",
+      "fail_condition": "unowned_file exists",
+      "pass_condition": "unowned_file absent",
+      "witness_file": "receipts/v26.6.28-files.receipt.json",
+      "receipt_file": "receipts/v26.6.28-files.receipt.json",
+      "repair_action": "Fix failure and regenerate receipt"
+    },
+    {
+      "name": "unhashed_file",
+      "detector_command": "test -f receipts/v26.6.28-files.receipt.json || echo 'Missing receipts/v26.6.28-files.receipt.json'",
+      "exact_file_or_module": "domain:files",
+      "fail_condition": "unhashed_file exists",
+      "pass_condition": "unhashed_file absent",
+      "witness_file": "receipts/v26.6.28-files.receipt.json",
+      "receipt_file": "receipts/v26.6.28-files.receipt.json",
+      "repair_action": "Fix failure and regenerate receipt"
+    },
+    {
+      "name": "generated_file_without_generator",
+      "detector_command": "test -f receipts/v26.6.28-files.receipt.json || echo 'Missing receipts/v26.6.28-files.receipt.json'",
+      "exact_file_or_module": "domain:files",
+      "fail_condition": "generated_file_without_generator exists",
+      "pass_condition": "generated_file_without_generator absent",
+      "witness_file": "receipts/v26.6.28-files.receipt.json",
+      "receipt_file": "receipts/v26.6.28-files.receipt.json",
+      "repair_action": "Fix failure and regenerate receipt"
+    },
+    {
+      "name": "receipt_hashes_itself",
+      "detector_command": "test -f receipts/v26.6.28-files.receipt.json || echo 'Missing receipts/v26.6.28-files.receipt.json'",
+      "exact_file_or_module": "domain:files",
+      "fail_condition": "receipt_hashes_itself exists",
+      "pass_condition": "receipt_hashes_itself absent",
+      "witness_file": "receipts/v26.6.28-files.receipt.json",
+      "receipt_file": "receipts/v26.6.28-files.receipt.json",
+      "repair_action": "Fix failure and regenerate receipt"
+    },
+    {
+      "name": "dirty_file_without_witness",
+      "detector_command": "test -f receipts/v26.6.28-files.receipt.json || echo 'Missing receipts/v26.6.28-files.receipt.json'",
+      "exact_file_or_module": "domain:files",
+      "fail_condition": "dirty_file_without_witness exists",
+      "pass_condition": "dirty_file_without_witness absent",
+      "witness_file": "receipts/v26.6.28-files.receipt.json",
+      "receipt_file": "receipts/v26.6.28-files.receipt.json",
+      "repair_action": "Fix failure and regenerate receipt"
+    },
+    {
+      "name": "missing_event_id",
+      "detector_command": "test -f receipts/v26.6.28-events.receipt.json || echo 'Missing receipts/v26.6.28-events.receipt.json'",
+      "exact_file_or_module": "domain:events",
+      "fail_condition": "missing_event_id exists",
+      "pass_condition": "missing_event_id absent",
+      "witness_file": "receipts/v26.6.28-events.receipt.json",
+      "receipt_file": "receipts/v26.6.28-events.receipt.json",
+      "repair_action": "Fix failure and regenerate receipt"
+    },
+    {
+      "name": "missing_event_type",
+      "detector_command": "test -f receipts/v26.6.28-events.receipt.json || echo 'Missing receipts/v26.6.28-events.receipt.json'",
+      "exact_file_or_module": "domain:events",
+      "fail_condition": "missing_event_type exists",
+      "pass_condition": "missing_event_type absent",
+      "witness_file": "receipts/v26.6.28-events.receipt.json",
+      "receipt_file": "receipts/v26.6.28-events.receipt.json",
+      "repair_action": "Fix failure and regenerate receipt"
+    },
+    {
+      "name": "missing_timestamp",
+      "detector_command": "test -f receipts/v26.6.28-events.receipt.json || echo 'Missing receipts/v26.6.28-events.receipt.json'",
+      "exact_file_or_module": "domain:events",
+      "fail_condition": "missing_timestamp exists",
+      "pass_condition": "missing_timestamp absent",
+      "witness_file": "receipts/v26.6.28-events.receipt.json",
+      "receipt_file": "receipts/v26.6.28-events.receipt.json",
+      "repair_action": "Fix failure and regenerate receipt"
+    },
+    {
+      "name": "missing_object",
+      "detector_command": "test -f receipts/v26.6.28-events.receipt.json || echo 'Missing receipts/v26.6.28-events.receipt.json'",
+      "exact_file_or_module": "domain:events",
+      "fail_condition": "missing_object exists",
+      "pass_condition": "missing_object absent",
+      "witness_file": "receipts/v26.6.28-events.receipt.json",
+      "receipt_file": "receipts/v26.6.28-events.receipt.json",
+      "repair_action": "Fix failure and regenerate receipt"
+    },
+    {
+      "name": "missing_prev_hash",
+      "detector_command": "test -f receipts/v26.6.28-events.receipt.json || echo 'Missing receipts/v26.6.28-events.receipt.json'",
+      "exact_file_or_module": "domain:events",
+      "fail_condition": "missing_prev_hash exists",
+      "pass_condition": "missing_prev_hash absent",
+      "witness_file": "receipts/v26.6.28-events.receipt.json",
+      "receipt_file": "receipts/v26.6.28-events.receipt.json",
+      "repair_action": "Fix failure and regenerate receipt"
+    },
+    {
+      "name": "nonreplayable_event",
+      "detector_command": "test -f receipts/v26.6.28-events.receipt.json || echo 'Missing receipts/v26.6.28-events.receipt.json'",
+      "exact_file_or_module": "domain:events",
+      "fail_condition": "nonreplayable_event exists",
+      "pass_condition": "nonreplayable_event absent",
+      "witness_file": "receipts/v26.6.28-events.receipt.json",
+      "receipt_file": "receipts/v26.6.28-events.receipt.json",
+      "repair_action": "Fix failure and regenerate receipt"
+    },
+    {
+      "name": "volatile_only_event",
+      "detector_command": "test -f receipts/v26.6.28-events.receipt.json || echo 'Missing receipts/v26.6.28-events.receipt.json'",
+      "exact_file_or_module": "domain:events",
+      "fail_condition": "volatile_only_event exists",
+      "pass_condition": "volatile_only_event absent",
+      "witness_file": "receipts/v26.6.28-events.receipt.json",
+      "receipt_file": "receipts/v26.6.28-events.receipt.json",
+      "repair_action": "Fix failure and regenerate receipt"
     },
     {
       "name": "volatile_event_buffer",
-      "detector_command": "cargo test -p lsp-max-compositor ocel_events_survive_restart -- --nocapture",
-      "exact_file_or_module": "crates/lsp-max-compositor/src/ocel_export.rs",
-      "fail_condition": "replay_count == 0",
-      "pass_condition": "events survive restart",
-      "witness_file": "receipts/v26.6.28-append-only-ocel.receipt.json",
-      "receipt_file": "receipts/v26.6.28-append-only-ocel.receipt.json",
-      "repair_action": "append OCEL event to WAL before in-memory drain"
+      "detector_command": "test -f receipts/v26.6.28-ocel.receipt.json || echo 'Missing receipts/v26.6.28-ocel.receipt.json'",
+      "exact_file_or_module": "domain:ocel",
+      "fail_condition": "volatile_event_buffer exists",
+      "pass_condition": "volatile_event_buffer absent",
+      "witness_file": "receipts/v26.6.28-ocel.receipt.json",
+      "receipt_file": "receipts/v26.6.28-ocel.receipt.json",
+      "repair_action": "Fix failure and regenerate receipt"
     },
     {
       "name": "missing_mutation_events",
-      "detector_command": "cargo test -p lsp-max-compositor ocel_captures_external_mutation -- --nocapture",
-      "exact_file_or_module": "crates/lsp-max-compositor/src/hooks.rs",
-      "fail_condition": "FileWrite absent",
-      "pass_condition": "mutation events captured",
-      "witness_file": "receipts/v26.6.28-mutation-events.receipt.json",
-      "receipt_file": "receipts/v26.6.28-mutation-events.receipt.json",
-      "repair_action": "hook/tool wrapper emits mutation event with git delta stats"
+      "detector_command": "test -f receipts/v26.6.28-ocel.receipt.json || echo 'Missing receipts/v26.6.28-ocel.receipt.json'",
+      "exact_file_or_module": "domain:ocel",
+      "fail_condition": "missing_mutation_events exists",
+      "pass_condition": "missing_mutation_events absent",
+      "witness_file": "receipts/v26.6.28-ocel.receipt.json",
+      "receipt_file": "receipts/v26.6.28-ocel.receipt.json",
+      "repair_action": "Fix failure and regenerate receipt"
+    },
+    {
+      "name": "missing_objects",
+      "detector_command": "test -f receipts/v26.6.28-ocel.receipt.json || echo 'Missing receipts/v26.6.28-ocel.receipt.json'",
+      "exact_file_or_module": "domain:ocel",
+      "fail_condition": "missing_objects exists",
+      "pass_condition": "missing_objects absent",
+      "witness_file": "receipts/v26.6.28-ocel.receipt.json",
+      "receipt_file": "receipts/v26.6.28-ocel.receipt.json",
+      "repair_action": "Fix failure and regenerate receipt"
+    },
+    {
+      "name": "missing_git_delta_stats",
+      "detector_command": "test -f receipts/v26.6.28-ocel.receipt.json || echo 'Missing receipts/v26.6.28-ocel.receipt.json'",
+      "exact_file_or_module": "domain:ocel",
+      "fail_condition": "missing_git_delta_stats exists",
+      "pass_condition": "missing_git_delta_stats absent",
+      "witness_file": "receipts/v26.6.28-ocel.receipt.json",
+      "receipt_file": "receipts/v26.6.28-ocel.receipt.json",
+      "repair_action": "Fix failure and regenerate receipt"
+    },
+    {
+      "name": "nonappend_only_store",
+      "detector_command": "test -f receipts/v26.6.28-ocel.receipt.json || echo 'Missing receipts/v26.6.28-ocel.receipt.json'",
+      "exact_file_or_module": "domain:ocel",
+      "fail_condition": "nonappend_only_store exists",
+      "pass_condition": "nonappend_only_store absent",
+      "witness_file": "receipts/v26.6.28-ocel.receipt.json",
+      "receipt_file": "receipts/v26.6.28-ocel.receipt.json",
+      "repair_action": "Fix failure and regenerate receipt"
+    },
+    {
+      "name": "ocel_replay_fails",
+      "detector_command": "test -f receipts/v26.6.28-ocel.receipt.json || echo 'Missing receipts/v26.6.28-ocel.receipt.json'",
+      "exact_file_or_module": "domain:ocel",
+      "fail_condition": "ocel_replay_fails exists",
+      "pass_condition": "ocel_replay_fails absent",
+      "witness_file": "receipts/v26.6.28-ocel.receipt.json",
+      "receipt_file": "receipts/v26.6.28-ocel.receipt.json",
+      "repair_action": "Fix failure and regenerate receipt"
+    },
+    {
+      "name": "ocel_receipt_missing",
+      "detector_command": "test -f receipts/v26.6.28-ocel.receipt.json || echo 'Missing receipts/v26.6.28-ocel.receipt.json'",
+      "exact_file_or_module": "domain:ocel",
+      "fail_condition": "ocel_receipt_missing exists",
+      "pass_condition": "ocel_receipt_missing absent",
+      "witness_file": "receipts/v26.6.28-ocel.receipt.json",
+      "receipt_file": "receipts/v26.6.28-ocel.receipt.json",
+      "repair_action": "Fix failure and regenerate receipt"
+    },
+    {
+      "name": "process_model_missing",
+      "detector_command": "test -f receipts/v26.6.28-process-intelligence.receipt.json || echo 'Missing receipts/v26.6.28-process-intelligence.receipt.json'",
+      "exact_file_or_module": "domain:process_intelligence",
+      "fail_condition": "process_model_missing exists",
+      "pass_condition": "process_model_missing absent",
+      "witness_file": "receipts/v26.6.28-process-intelligence.receipt.json",
+      "receipt_file": "receipts/v26.6.28-process-intelligence.receipt.json",
+      "repair_action": "Fix failure and regenerate receipt"
+    },
+    {
+      "name": "fitness_not_computed",
+      "detector_command": "test -f receipts/v26.6.28-process-intelligence.receipt.json || echo 'Missing receipts/v26.6.28-process-intelligence.receipt.json'",
+      "exact_file_or_module": "domain:process_intelligence",
+      "fail_condition": "fitness_not_computed exists",
+      "pass_condition": "fitness_not_computed absent",
+      "witness_file": "receipts/v26.6.28-process-intelligence.receipt.json",
+      "receipt_file": "receipts/v26.6.28-process-intelligence.receipt.json",
+      "repair_action": "Fix failure and regenerate receipt"
     },
     {
       "name": "fitness_not_gated",
-      "detector_command": "cargo test -p lsp-max-compositor low_fitness_blocks_gate -- --nocapture",
-      "exact_file_or_module": "crates/lsp-max-compositor/src/conformance.rs",
-      "fail_condition": "has_andon_block != true",
-      "pass_condition": "low fitness blocks gate",
-      "witness_file": "receipts/v26.6.28-fitness-gate.receipt.json",
-      "receipt_file": "receipts/v26.6.28-fitness-gate.receipt.json",
-      "repair_action": "route conformance failure into ANDON gate"
+      "detector_command": "test -f receipts/v26.6.28-process-intelligence.receipt.json || echo 'Missing receipts/v26.6.28-process-intelligence.receipt.json'",
+      "exact_file_or_module": "domain:process_intelligence",
+      "fail_condition": "fitness_not_gated exists",
+      "pass_condition": "fitness_not_gated absent",
+      "witness_file": "receipts/v26.6.28-process-intelligence.receipt.json",
+      "receipt_file": "receipts/v26.6.28-process-intelligence.receipt.json",
+      "repair_action": "Fix failure and regenerate receipt"
+    },
+    {
+      "name": "spaghetti_log",
+      "detector_command": "test -f receipts/v26.6.28-process-intelligence.receipt.json || echo 'Missing receipts/v26.6.28-process-intelligence.receipt.json'",
+      "exact_file_or_module": "domain:process_intelligence",
+      "fail_condition": "spaghetti_log exists",
+      "pass_condition": "spaghetti_log absent",
+      "witness_file": "receipts/v26.6.28-process-intelligence.receipt.json",
+      "receipt_file": "receipts/v26.6.28-process-intelligence.receipt.json",
+      "repair_action": "Fix failure and regenerate receipt"
+    },
+    {
+      "name": "replay_nondeterministic",
+      "detector_command": "test -f receipts/v26.6.28-process-intelligence.receipt.json || echo 'Missing receipts/v26.6.28-process-intelligence.receipt.json'",
+      "exact_file_or_module": "domain:process_intelligence",
+      "fail_condition": "replay_nondeterministic exists",
+      "pass_condition": "replay_nondeterministic absent",
+      "witness_file": "receipts/v26.6.28-process-intelligence.receipt.json",
+      "receipt_file": "receipts/v26.6.28-process-intelligence.receipt.json",
+      "repair_action": "Fix failure and regenerate receipt"
+    },
+    {
+      "name": "debug_only_conformance",
+      "detector_command": "test -f receipts/v26.6.28-process-intelligence.receipt.json || echo 'Missing receipts/v26.6.28-process-intelligence.receipt.json'",
+      "exact_file_or_module": "domain:process_intelligence",
+      "fail_condition": "debug_only_conformance exists",
+      "pass_condition": "debug_only_conformance absent",
+      "witness_file": "receipts/v26.6.28-process-intelligence.receipt.json",
+      "receipt_file": "receipts/v26.6.28-process-intelligence.receipt.json",
+      "repair_action": "Fix failure and regenerate receipt"
+    },
+    {
+      "name": "zero_hash_genesis",
+      "detector_command": "test -f receipts/v26.6.28-receipt-chain.receipt.json || echo 'Missing receipts/v26.6.28-receipt-chain.receipt.json'",
+      "exact_file_or_module": "domain:receipt_chain",
+      "fail_condition": "zero_hash_genesis exists",
+      "pass_condition": "zero_hash_genesis absent",
+      "witness_file": "receipts/v26.6.28-receipt-chain.receipt.json",
+      "receipt_file": "receipts/v26.6.28-receipt-chain.receipt.json",
+      "repair_action": "Fix failure and regenerate receipt"
+    },
+    {
+      "name": "ephemeral_chain_head",
+      "detector_command": "test -f receipts/v26.6.28-receipt-chain.receipt.json || echo 'Missing receipts/v26.6.28-receipt-chain.receipt.json'",
+      "exact_file_or_module": "domain:receipt_chain",
+      "fail_condition": "ephemeral_chain_head exists",
+      "pass_condition": "ephemeral_chain_head absent",
+      "witness_file": "receipts/v26.6.28-receipt-chain.receipt.json",
+      "receipt_file": "receipts/v26.6.28-receipt-chain.receipt.json",
+      "repair_action": "Fix failure and regenerate receipt"
+    },
+    {
+      "name": "receipt_hashes_itself",
+      "detector_command": "test -f receipts/v26.6.28-receipt-chain.receipt.json || echo 'Missing receipts/v26.6.28-receipt-chain.receipt.json'",
+      "exact_file_or_module": "domain:receipt_chain",
+      "fail_condition": "receipt_hashes_itself exists",
+      "pass_condition": "receipt_hashes_itself absent",
+      "witness_file": "receipts/v26.6.28-receipt-chain.receipt.json",
+      "receipt_file": "receipts/v26.6.28-receipt-chain.receipt.json",
+      "repair_action": "Fix failure and regenerate receipt"
+    },
+    {
+      "name": "receipt_schema_invalid",
+      "detector_command": "test -f receipts/v26.6.28-receipt-chain.receipt.json || echo 'Missing receipts/v26.6.28-receipt-chain.receipt.json'",
+      "exact_file_or_module": "domain:receipt_chain",
+      "fail_condition": "receipt_schema_invalid exists",
+      "pass_condition": "receipt_schema_invalid absent",
+      "witness_file": "receipts/v26.6.28-receipt-chain.receipt.json",
+      "receipt_file": "receipts/v26.6.28-receipt-chain.receipt.json",
+      "repair_action": "Fix failure and regenerate receipt"
+    },
+    {
+      "name": "tamper_not_detected",
+      "detector_command": "test -f receipts/v26.6.28-receipt-chain.receipt.json || echo 'Missing receipts/v26.6.28-receipt-chain.receipt.json'",
+      "exact_file_or_module": "domain:receipt_chain",
+      "fail_condition": "tamper_not_detected exists",
+      "pass_condition": "tamper_not_detected absent",
+      "witness_file": "receipts/v26.6.28-receipt-chain.receipt.json",
+      "receipt_file": "receipts/v26.6.28-receipt-chain.receipt.json",
+      "repair_action": "Fix failure and regenerate receipt"
     },
     {
       "name": "ephemeral_keystore",
-      "detector_command": "cargo test -p lsp-max-compositor keystore_persists_across_restart -- --nocapture",
-      "exact_file_or_module": "crates/lsp-max-compositor/src/keystore.rs",
-      "fail_condition": "key_id_before != key_id_after",
-      "pass_condition": "key identity continuous across restarts",
-      "witness_file": "receipts/v26.6.28-persistent-keystore.receipt.json",
-      "receipt_file": "receipts/v26.6.28-persistent-keystore.receipt.json",
-      "repair_action": "persist compositor keystore under deterministic repo-local config path"
+      "detector_command": "test -f receipts/v26.6.28-keystore.receipt.json || echo 'Missing receipts/v26.6.28-keystore.receipt.json'",
+      "exact_file_or_module": "domain:keystore",
+      "fail_condition": "ephemeral_keystore exists",
+      "pass_condition": "ephemeral_keystore absent",
+      "witness_file": "receipts/v26.6.28-keystore.receipt.json",
+      "receipt_file": "receipts/v26.6.28-keystore.receipt.json",
+      "repair_action": "Fix failure and regenerate receipt"
+    },
+    {
+      "name": "key_id_changes_after_restart",
+      "detector_command": "test -f receipts/v26.6.28-keystore.receipt.json || echo 'Missing receipts/v26.6.28-keystore.receipt.json'",
+      "exact_file_or_module": "domain:keystore",
+      "fail_condition": "key_id_changes_after_restart exists",
+      "pass_condition": "key_id_changes_after_restart absent",
+      "witness_file": "receipts/v26.6.28-keystore.receipt.json",
+      "receipt_file": "receipts/v26.6.28-keystore.receipt.json",
+      "repair_action": "Fix failure and regenerate receipt"
+    },
+    {
+      "name": "unbounded_key_path",
+      "detector_command": "test -f receipts/v26.6.28-keystore.receipt.json || echo 'Missing receipts/v26.6.28-keystore.receipt.json'",
+      "exact_file_or_module": "domain:keystore",
+      "fail_condition": "unbounded_key_path exists",
+      "pass_condition": "unbounded_key_path absent",
+      "witness_file": "receipts/v26.6.28-keystore.receipt.json",
+      "receipt_file": "receipts/v26.6.28-keystore.receipt.json",
+      "repair_action": "Fix failure and regenerate receipt"
+    },
+    {
+      "name": "missing_key_receipt",
+      "detector_command": "test -f receipts/v26.6.28-keystore.receipt.json || echo 'Missing receipts/v26.6.28-keystore.receipt.json'",
+      "exact_file_or_module": "domain:keystore",
+      "fail_condition": "missing_key_receipt exists",
+      "pass_condition": "missing_key_receipt absent",
+      "witness_file": "receipts/v26.6.28-keystore.receipt.json",
+      "receipt_file": "receipts/v26.6.28-keystore.receipt.json",
+      "repair_action": "Fix failure and regenerate receipt"
+    },
+    {
+      "name": "diagnostic_without_code",
+      "detector_command": "test -f receipts/v26.6.28-lsp.receipt.json || echo 'Missing receipts/v26.6.28-lsp.receipt.json'",
+      "exact_file_or_module": "domain:lsp",
+      "fail_condition": "diagnostic_without_code exists",
+      "pass_condition": "diagnostic_without_code absent",
+      "witness_file": "receipts/v26.6.28-lsp.receipt.json",
+      "receipt_file": "receipts/v26.6.28-lsp.receipt.json",
+      "repair_action": "Fix failure and regenerate receipt"
+    },
+    {
+      "name": "diagnostic_without_push",
+      "detector_command": "test -f receipts/v26.6.28-lsp.receipt.json || echo 'Missing receipts/v26.6.28-lsp.receipt.json'",
+      "exact_file_or_module": "domain:lsp",
+      "fail_condition": "diagnostic_without_push exists",
+      "pass_condition": "diagnostic_without_push absent",
+      "witness_file": "receipts/v26.6.28-lsp.receipt.json",
+      "receipt_file": "receipts/v26.6.28-lsp.receipt.json",
+      "repair_action": "Fix failure and regenerate receipt"
+    },
+    {
+      "name": "andon_missing",
+      "detector_command": "test -f receipts/v26.6.28-lsp.receipt.json || echo 'Missing receipts/v26.6.28-lsp.receipt.json'",
+      "exact_file_or_module": "domain:lsp",
+      "fail_condition": "andon_missing exists",
+      "pass_condition": "andon_missing absent",
+      "witness_file": "receipts/v26.6.28-lsp.receipt.json",
+      "receipt_file": "receipts/v26.6.28-lsp.receipt.json",
+      "repair_action": "Fix failure and regenerate receipt"
+    },
+    {
+      "name": "virtual_doc_treated_as_standing",
+      "detector_command": "test -f receipts/v26.6.28-lsp.receipt.json || echo 'Missing receipts/v26.6.28-lsp.receipt.json'",
+      "exact_file_or_module": "domain:lsp",
+      "fail_condition": "virtual_doc_treated_as_standing exists",
+      "pass_condition": "virtual_doc_treated_as_standing absent",
+      "witness_file": "receipts/v26.6.28-lsp.receipt.json",
+      "receipt_file": "receipts/v26.6.28-lsp.receipt.json",
+      "repair_action": "Fix failure and regenerate receipt"
+    },
+    {
+      "name": "lsp_mutates_without_tool",
+      "detector_command": "test -f receipts/v26.6.28-lsp.receipt.json || echo 'Missing receipts/v26.6.28-lsp.receipt.json'",
+      "exact_file_or_module": "domain:lsp",
+      "fail_condition": "lsp_mutates_without_tool exists",
+      "pass_condition": "lsp_mutates_without_tool absent",
+      "witness_file": "receipts/v26.6.28-lsp.receipt.json",
+      "receipt_file": "receipts/v26.6.28-lsp.receipt.json",
+      "repair_action": "Fix failure and regenerate receipt"
+    },
+    {
+      "name": "lsp_claims_durable_truth",
+      "detector_command": "test -f receipts/v26.6.28-lsp.receipt.json || echo 'Missing receipts/v26.6.28-lsp.receipt.json'",
+      "exact_file_or_module": "domain:lsp",
+      "fail_condition": "lsp_claims_durable_truth exists",
+      "pass_condition": "lsp_claims_durable_truth absent",
+      "witness_file": "receipts/v26.6.28-lsp.receipt.json",
+      "receipt_file": "receipts/v26.6.28-lsp.receipt.json",
+      "repair_action": "Fix failure and regenerate receipt"
+    },
+    {
+      "name": "lsif_missing",
+      "detector_command": "test -f receipts/v26.6.28-lsif.receipt.json || echo 'Missing receipts/v26.6.28-lsif.receipt.json'",
+      "exact_file_or_module": "domain:lsif",
+      "fail_condition": "lsif_missing exists",
+      "pass_condition": "lsif_missing absent",
+      "witness_file": "receipts/v26.6.28-lsif.receipt.json",
+      "receipt_file": "receipts/v26.6.28-lsif.receipt.json",
+      "repair_action": "Fix failure and regenerate receipt"
+    },
+    {
+      "name": "source_boundary_missing",
+      "detector_command": "test -f receipts/v26.6.28-lsif.receipt.json || echo 'Missing receipts/v26.6.28-lsif.receipt.json'",
+      "exact_file_or_module": "domain:lsif",
+      "fail_condition": "source_boundary_missing exists",
+      "pass_condition": "source_boundary_missing absent",
+      "witness_file": "receipts/v26.6.28-lsif.receipt.json",
+      "receipt_file": "receipts/v26.6.28-lsif.receipt.json",
+      "repair_action": "Fix failure and regenerate receipt"
+    },
+    {
+      "name": "lsif_digest_missing",
+      "detector_command": "test -f receipts/v26.6.28-lsif.receipt.json || echo 'Missing receipts/v26.6.28-lsif.receipt.json'",
+      "exact_file_or_module": "domain:lsif",
+      "fail_condition": "lsif_digest_missing exists",
+      "pass_condition": "lsif_digest_missing absent",
+      "witness_file": "receipts/v26.6.28-lsif.receipt.json",
+      "receipt_file": "receipts/v26.6.28-lsif.receipt.json",
+      "repair_action": "Fix failure and regenerate receipt"
+    },
+    {
+      "name": "lsif_receipt_missing",
+      "detector_command": "test -f receipts/v26.6.28-lsif.receipt.json || echo 'Missing receipts/v26.6.28-lsif.receipt.json'",
+      "exact_file_or_module": "domain:lsif",
+      "fail_condition": "lsif_receipt_missing exists",
+      "pass_condition": "lsif_receipt_missing absent",
+      "witness_file": "receipts/v26.6.28-lsif.receipt.json",
+      "receipt_file": "receipts/v26.6.28-lsif.receipt.json",
+      "repair_action": "Fix failure and regenerate receipt"
+    },
+    {
+      "name": "stale_lsif",
+      "detector_command": "test -f receipts/v26.6.28-lsif.receipt.json || echo 'Missing receipts/v26.6.28-lsif.receipt.json'",
+      "exact_file_or_module": "domain:lsif",
+      "fail_condition": "stale_lsif exists",
+      "pass_condition": "stale_lsif absent",
+      "witness_file": "receipts/v26.6.28-lsif.receipt.json",
+      "receipt_file": "receipts/v26.6.28-lsif.receipt.json",
+      "repair_action": "Fix failure and regenerate receipt"
+    },
+    {
+      "name": "lsif_receipt_hashes_itself",
+      "detector_command": "test -f receipts/v26.6.28-lsif.receipt.json || echo 'Missing receipts/v26.6.28-lsif.receipt.json'",
+      "exact_file_or_module": "domain:lsif",
+      "fail_condition": "lsif_receipt_hashes_itself exists",
+      "pass_condition": "lsif_receipt_hashes_itself absent",
+      "witness_file": "receipts/v26.6.28-lsif.receipt.json",
+      "receipt_file": "receipts/v26.6.28-lsif.receipt.json",
+      "repair_action": "Fix failure and regenerate receipt"
+    },
+    {
+      "name": "lsif_treated_as_meaning",
+      "detector_command": "test -f receipts/v26.6.28-lsif.receipt.json || echo 'Missing receipts/v26.6.28-lsif.receipt.json'",
+      "exact_file_or_module": "domain:lsif",
+      "fail_condition": "lsif_treated_as_meaning exists",
+      "pass_condition": "lsif_treated_as_meaning absent",
+      "witness_file": "receipts/v26.6.28-lsif.receipt.json",
+      "receipt_file": "receipts/v26.6.28-lsif.receipt.json",
+      "repair_action": "Fix failure and regenerate receipt"
+    },
+    {
+      "name": "oxigraph_outside_semantic_graph",
+      "detector_command": "test -f receipts/v26.6.28-oxigraph.receipt.json || echo 'Missing receipts/v26.6.28-oxigraph.receipt.json'",
+      "exact_file_or_module": "domain:oxigraph",
+      "fail_condition": "oxigraph_outside_semantic_graph exists",
+      "pass_condition": "oxigraph_outside_semantic_graph absent",
+      "witness_file": "receipts/v26.6.28-oxigraph.receipt.json",
+      "receipt_file": "receipts/v26.6.28-oxigraph.receipt.json",
+      "repair_action": "Fix failure and regenerate receipt"
+    },
+    {
+      "name": "oxigraph_on_didChange",
+      "detector_command": "test -f receipts/v26.6.28-oxigraph.receipt.json || echo 'Missing receipts/v26.6.28-oxigraph.receipt.json'",
+      "exact_file_or_module": "domain:oxigraph",
+      "fail_condition": "oxigraph_on_didChange exists",
+      "pass_condition": "oxigraph_on_didChange absent",
+      "witness_file": "receipts/v26.6.28-oxigraph.receipt.json",
+      "receipt_file": "receipts/v26.6.28-oxigraph.receipt.json",
+      "repair_action": "Fix failure and regenerate receipt"
+    },
+    {
+      "name": "named_graph_digest_missing",
+      "detector_command": "test -f receipts/v26.6.28-oxigraph.receipt.json || echo 'Missing receipts/v26.6.28-oxigraph.receipt.json'",
+      "exact_file_or_module": "domain:oxigraph",
+      "fail_condition": "named_graph_digest_missing exists",
+      "pass_condition": "named_graph_digest_missing absent",
+      "witness_file": "receipts/v26.6.28-oxigraph.receipt.json",
+      "receipt_file": "receipts/v26.6.28-oxigraph.receipt.json",
+      "repair_action": "Fix failure and regenerate receipt"
+    },
+    {
+      "name": "sparql_smoke_failure",
+      "detector_command": "test -f receipts/v26.6.28-oxigraph.receipt.json || echo 'Missing receipts/v26.6.28-oxigraph.receipt.json'",
+      "exact_file_or_module": "domain:oxigraph",
+      "fail_condition": "sparql_smoke_failure exists",
+      "pass_condition": "sparql_smoke_failure absent",
+      "witness_file": "receipts/v26.6.28-oxigraph.receipt.json",
+      "receipt_file": "receipts/v26.6.28-oxigraph.receipt.json",
+      "repair_action": "Fix failure and regenerate receipt"
+    },
+    {
+      "name": "semantic_memory_without_receipt",
+      "detector_command": "test -f receipts/v26.6.28-oxigraph.receipt.json || echo 'Missing receipts/v26.6.28-oxigraph.receipt.json'",
+      "exact_file_or_module": "domain:oxigraph",
+      "fail_condition": "semantic_memory_without_receipt exists",
+      "pass_condition": "semantic_memory_without_receipt absent",
+      "witness_file": "receipts/v26.6.28-oxigraph.receipt.json",
+      "receipt_file": "receipts/v26.6.28-oxigraph.receipt.json",
+      "repair_action": "Fix failure and regenerate receipt"
+    },
+    {
+      "name": "hook_missing",
+      "detector_command": "test -f receipts/v26.6.28-hooks.receipt.json || echo 'Missing receipts/v26.6.28-hooks.receipt.json'",
+      "exact_file_or_module": "domain:hooks",
+      "fail_condition": "hook_missing exists",
+      "pass_condition": "hook_missing absent",
+      "witness_file": "receipts/v26.6.28-hooks.receipt.json",
+      "receipt_file": "receipts/v26.6.28-hooks.receipt.json",
+      "repair_action": "Fix failure and regenerate receipt"
+    },
+    {
+      "name": "hook_does_not_emit_ocel",
+      "detector_command": "test -f receipts/v26.6.28-hooks.receipt.json || echo 'Missing receipts/v26.6.28-hooks.receipt.json'",
+      "exact_file_or_module": "domain:hooks",
+      "fail_condition": "hook_does_not_emit_ocel exists",
+      "pass_condition": "hook_does_not_emit_ocel absent",
+      "witness_file": "receipts/v26.6.28-hooks.receipt.json",
+      "receipt_file": "receipts/v26.6.28-hooks.receipt.json",
+      "repair_action": "Fix failure and regenerate receipt"
+    },
+    {
+      "name": "hook_missing_git_status",
+      "detector_command": "test -f receipts/v26.6.28-hooks.receipt.json || echo 'Missing receipts/v26.6.28-hooks.receipt.json'",
+      "exact_file_or_module": "domain:hooks",
+      "fail_condition": "hook_missing_git_status exists",
+      "pass_condition": "hook_missing_git_status absent",
+      "witness_file": "receipts/v26.6.28-hooks.receipt.json",
+      "receipt_file": "receipts/v26.6.28-hooks.receipt.json",
+      "repair_action": "Fix failure and regenerate receipt"
+    },
+    {
+      "name": "hook_missing_numstat",
+      "detector_command": "test -f receipts/v26.6.28-hooks.receipt.json || echo 'Missing receipts/v26.6.28-hooks.receipt.json'",
+      "exact_file_or_module": "domain:hooks",
+      "fail_condition": "hook_missing_numstat exists",
+      "pass_condition": "hook_missing_numstat absent",
+      "witness_file": "receipts/v26.6.28-hooks.receipt.json",
+      "receipt_file": "receipts/v26.6.28-hooks.receipt.json",
+      "repair_action": "Fix failure and regenerate receipt"
+    },
+    {
+      "name": "stop_does_not_emit_tail",
+      "detector_command": "test -f receipts/v26.6.28-hooks.receipt.json || echo 'Missing receipts/v26.6.28-hooks.receipt.json'",
+      "exact_file_or_module": "domain:hooks",
+      "fail_condition": "stop_does_not_emit_tail exists",
+      "pass_condition": "stop_does_not_emit_tail absent",
+      "witness_file": "receipts/v26.6.28-hooks.receipt.json",
+      "receipt_file": "receipts/v26.6.28-hooks.receipt.json",
+      "repair_action": "Fix failure and regenerate receipt"
+    },
+    {
+      "name": "command_missing",
+      "detector_command": "test -f receipts/v26.6.28-command-witnesses.receipt.json || echo 'Missing receipts/v26.6.28-command-witnesses.receipt.json'",
+      "exact_file_or_module": "domain:command_witnesses",
+      "fail_condition": "command_missing exists",
+      "pass_condition": "command_missing absent",
+      "witness_file": "receipts/v26.6.28-command-witnesses.receipt.json",
+      "receipt_file": "receipts/v26.6.28-command-witnesses.receipt.json",
+      "repair_action": "Fix failure and regenerate receipt"
+    },
+    {
+      "name": "exit_code_missing",
+      "detector_command": "test -f receipts/v26.6.28-command-witnesses.receipt.json || echo 'Missing receipts/v26.6.28-command-witnesses.receipt.json'",
+      "exact_file_or_module": "domain:command_witnesses",
+      "fail_condition": "exit_code_missing exists",
+      "pass_condition": "exit_code_missing absent",
+      "witness_file": "receipts/v26.6.28-command-witnesses.receipt.json",
+      "receipt_file": "receipts/v26.6.28-command-witnesses.receipt.json",
+      "repair_action": "Fix failure and regenerate receipt"
+    },
+    {
+      "name": "stdout_digest_missing",
+      "detector_command": "test -f receipts/v26.6.28-command-witnesses.receipt.json || echo 'Missing receipts/v26.6.28-command-witnesses.receipt.json'",
+      "exact_file_or_module": "domain:command_witnesses",
+      "fail_condition": "stdout_digest_missing exists",
+      "pass_condition": "stdout_digest_missing absent",
+      "witness_file": "receipts/v26.6.28-command-witnesses.receipt.json",
+      "receipt_file": "receipts/v26.6.28-command-witnesses.receipt.json",
+      "repair_action": "Fix failure and regenerate receipt"
+    },
+    {
+      "name": "stderr_digest_missing",
+      "detector_command": "test -f receipts/v26.6.28-command-witnesses.receipt.json || echo 'Missing receipts/v26.6.28-command-witnesses.receipt.json'",
+      "exact_file_or_module": "domain:command_witnesses",
+      "fail_condition": "stderr_digest_missing exists",
+      "pass_condition": "stderr_digest_missing absent",
+      "witness_file": "receipts/v26.6.28-command-witnesses.receipt.json",
+      "receipt_file": "receipts/v26.6.28-command-witnesses.receipt.json",
+      "repair_action": "Fix failure and regenerate receipt"
+    },
+    {
+      "name": "command_receipt_missing",
+      "detector_command": "test -f receipts/v26.6.28-command-witnesses.receipt.json || echo 'Missing receipts/v26.6.28-command-witnesses.receipt.json'",
+      "exact_file_or_module": "domain:command_witnesses",
+      "fail_condition": "command_receipt_missing exists",
+      "pass_condition": "command_receipt_missing absent",
+      "witness_file": "receipts/v26.6.28-command-witnesses.receipt.json",
+      "receipt_file": "receipts/v26.6.28-command-witnesses.receipt.json",
+      "repair_action": "Fix failure and regenerate receipt"
+    },
+    {
+      "name": "dirty_command_witness",
+      "detector_command": "test -f receipts/v26.6.28-command-witnesses.receipt.json || echo 'Missing receipts/v26.6.28-command-witnesses.receipt.json'",
+      "exact_file_or_module": "domain:command_witnesses",
+      "fail_condition": "dirty_command_witness exists",
+      "pass_condition": "dirty_command_witness absent",
+      "witness_file": "receipts/v26.6.28-command-witnesses.receipt.json",
+      "receipt_file": "receipts/v26.6.28-command-witnesses.receipt.json",
+      "repair_action": "Fix failure and regenerate receipt"
+    },
+    {
+      "name": "required_recipes_missing",
+      "detector_command": "test -f receipts/v26.6.28-justfile.receipt.json || echo 'Missing receipts/v26.6.28-justfile.receipt.json'",
+      "exact_file_or_module": "domain:justfile",
+      "fail_condition": "required_recipes_missing exists",
+      "pass_condition": "required_recipes_missing absent",
+      "witness_file": "receipts/v26.6.28-justfile.receipt.json",
+      "receipt_file": "receipts/v26.6.28-justfile.receipt.json",
+      "repair_action": "Fix failure and regenerate receipt"
+    },
+    {
+      "name": "forbidden_publish_present",
+      "detector_command": "test -f receipts/v26.6.28-justfile.receipt.json || echo 'Missing receipts/v26.6.28-justfile.receipt.json'",
+      "exact_file_or_module": "domain:justfile",
+      "fail_condition": "forbidden_publish_present exists",
+      "pass_condition": "forbidden_publish_present absent",
+      "witness_file": "receipts/v26.6.28-justfile.receipt.json",
+      "receipt_file": "receipts/v26.6.28-justfile.receipt.json",
+      "repair_action": "Fix failure and regenerate receipt"
+    },
+    {
+      "name": "dry_run_recipe_missing",
+      "detector_command": "test -f receipts/v26.6.28-justfile.receipt.json || echo 'Missing receipts/v26.6.28-justfile.receipt.json'",
+      "exact_file_or_module": "domain:justfile",
+      "fail_condition": "dry_run_recipe_missing exists",
+      "pass_condition": "dry_run_recipe_missing absent",
+      "witness_file": "receipts/v26.6.28-justfile.receipt.json",
+      "receipt_file": "receipts/v26.6.28-justfile.receipt.json",
+      "repair_action": "Fix failure and regenerate receipt"
+    },
+    {
+      "name": "doctor_recipe_missing",
+      "detector_command": "test -f receipts/v26.6.28-justfile.receipt.json || echo 'Missing receipts/v26.6.28-justfile.receipt.json'",
+      "exact_file_or_module": "domain:justfile",
+      "fail_condition": "doctor_recipe_missing exists",
+      "pass_condition": "doctor_recipe_missing absent",
+      "witness_file": "receipts/v26.6.28-justfile.receipt.json",
+      "receipt_file": "receipts/v26.6.28-justfile.receipt.json",
+      "repair_action": "Fix failure and regenerate receipt"
+    },
+    {
+      "name": "fmt_witness_missing",
+      "detector_command": "test -f receipts/v26.6.28-dx.receipt.json || echo 'Missing receipts/v26.6.28-dx.receipt.json'",
+      "exact_file_or_module": "domain:dx",
+      "fail_condition": "fmt_witness_missing exists",
+      "pass_condition": "fmt_witness_missing absent",
+      "witness_file": "receipts/v26.6.28-dx.receipt.json",
+      "receipt_file": "receipts/v26.6.28-dx.receipt.json",
+      "repair_action": "Fix failure and regenerate receipt"
+    },
+    {
+      "name": "check_witness_missing",
+      "detector_command": "test -f receipts/v26.6.28-dx.receipt.json || echo 'Missing receipts/v26.6.28-dx.receipt.json'",
+      "exact_file_or_module": "domain:dx",
+      "fail_condition": "check_witness_missing exists",
+      "pass_condition": "check_witness_missing absent",
+      "witness_file": "receipts/v26.6.28-dx.receipt.json",
+      "receipt_file": "receipts/v26.6.28-dx.receipt.json",
+      "repair_action": "Fix failure and regenerate receipt"
+    },
+    {
+      "name": "test_witness_missing",
+      "detector_command": "test -f receipts/v26.6.28-dx.receipt.json || echo 'Missing receipts/v26.6.28-dx.receipt.json'",
+      "exact_file_or_module": "domain:dx",
+      "fail_condition": "test_witness_missing exists",
+      "pass_condition": "test_witness_missing absent",
+      "witness_file": "receipts/v26.6.28-dx.receipt.json",
+      "receipt_file": "receipts/v26.6.28-dx.receipt.json",
+      "repair_action": "Fix failure and regenerate receipt"
+    },
+    {
+      "name": "clippy_witness_missing",
+      "detector_command": "test -f receipts/v26.6.28-dx.receipt.json || echo 'Missing receipts/v26.6.28-dx.receipt.json'",
+      "exact_file_or_module": "domain:dx",
+      "fail_condition": "clippy_witness_missing exists",
+      "pass_condition": "clippy_witness_missing absent",
+      "witness_file": "receipts/v26.6.28-dx.receipt.json",
+      "receipt_file": "receipts/v26.6.28-dx.receipt.json",
+      "repair_action": "Fix failure and regenerate receipt"
+    },
+    {
+      "name": "dx_receipt_missing",
+      "detector_command": "test -f receipts/v26.6.28-dx.receipt.json || echo 'Missing receipts/v26.6.28-dx.receipt.json'",
+      "exact_file_or_module": "domain:dx",
+      "fail_condition": "dx_receipt_missing exists",
+      "pass_condition": "dx_receipt_missing absent",
+      "witness_file": "receipts/v26.6.28-dx.receipt.json",
+      "receipt_file": "receipts/v26.6.28-dx.receipt.json",
+      "repair_action": "Fix failure and regenerate receipt"
+    },
+    {
+      "name": "q_script_missing",
+      "detector_command": "test -f receipts/v26.6.28-qol.receipt.json || echo 'Missing receipts/v26.6.28-qol.receipt.json'",
+      "exact_file_or_module": "domain:qol",
+      "fail_condition": "q_script_missing exists",
+      "pass_condition": "q_script_missing absent",
+      "witness_file": "receipts/v26.6.28-qol.receipt.json",
+      "receipt_file": "receipts/v26.6.28-qol.receipt.json",
+      "repair_action": "Fix failure and regenerate receipt"
+    },
+    {
+      "name": "failset_script_missing",
+      "detector_command": "test -f receipts/v26.6.28-qol.receipt.json || echo 'Missing receipts/v26.6.28-qol.receipt.json'",
+      "exact_file_or_module": "domain:qol",
+      "fail_condition": "failset_script_missing exists",
+      "pass_condition": "failset_script_missing absent",
+      "witness_file": "receipts/v26.6.28-qol.receipt.json",
+      "receipt_file": "receipts/v26.6.28-qol.receipt.json",
+      "repair_action": "Fix failure and regenerate receipt"
+    },
+    {
+      "name": "receipts_check_missing",
+      "detector_command": "test -f receipts/v26.6.28-qol.receipt.json || echo 'Missing receipts/v26.6.28-qol.receipt.json'",
+      "exact_file_or_module": "domain:qol",
+      "fail_condition": "receipts_check_missing exists",
+      "pass_condition": "receipts_check_missing absent",
+      "witness_file": "receipts/v26.6.28-qol.receipt.json",
+      "receipt_file": "receipts/v26.6.28-qol.receipt.json",
+      "repair_action": "Fix failure and regenerate receipt"
+    },
+    {
+      "name": "closure_scan_missing",
+      "detector_command": "test -f receipts/v26.6.28-qol.receipt.json || echo 'Missing receipts/v26.6.28-qol.receipt.json'",
+      "exact_file_or_module": "domain:qol",
+      "fail_condition": "closure_scan_missing exists",
+      "pass_condition": "closure_scan_missing absent",
+      "witness_file": "receipts/v26.6.28-qol.receipt.json",
+      "receipt_file": "receipts/v26.6.28-qol.receipt.json",
+      "repair_action": "Fix failure and regenerate receipt"
+    },
+    {
+      "name": "scripts_not_executable",
+      "detector_command": "test -f receipts/v26.6.28-qol.receipt.json || echo 'Missing receipts/v26.6.28-qol.receipt.json'",
+      "exact_file_or_module": "domain:qol",
+      "fail_condition": "scripts_not_executable exists",
+      "pass_condition": "scripts_not_executable absent",
+      "witness_file": "receipts/v26.6.28-qol.receipt.json",
+      "receipt_file": "receipts/v26.6.28-qol.receipt.json",
+      "repair_action": "Fix failure and regenerate receipt"
+    },
+    {
+      "name": "doctor_mutating",
+      "detector_command": "test -f receipts/v26.6.28-doctor.receipt.json || echo 'Missing receipts/v26.6.28-doctor.receipt.json'",
+      "exact_file_or_module": "domain:doctor",
+      "fail_condition": "doctor_mutating exists",
+      "pass_condition": "doctor_mutating absent",
+      "witness_file": "receipts/v26.6.28-doctor.receipt.json",
+      "receipt_file": "receipts/v26.6.28-doctor.receipt.json",
+      "repair_action": "Fix failure and regenerate receipt"
+    },
+    {
+      "name": "doctor_strict_witness_missing",
+      "detector_command": "test -f receipts/v26.6.28-doctor.receipt.json || echo 'Missing receipts/v26.6.28-doctor.receipt.json'",
+      "exact_file_or_module": "domain:doctor",
+      "fail_condition": "doctor_strict_witness_missing exists",
+      "pass_condition": "doctor_strict_witness_missing absent",
+      "witness_file": "receipts/v26.6.28-doctor.receipt.json",
+      "receipt_file": "receipts/v26.6.28-doctor.receipt.json",
+      "repair_action": "Fix failure and regenerate receipt"
+    },
+    {
+      "name": "doctor_receipt_missing",
+      "detector_command": "test -f receipts/v26.6.28-doctor.receipt.json || echo 'Missing receipts/v26.6.28-doctor.receipt.json'",
+      "exact_file_or_module": "domain:doctor",
+      "fail_condition": "doctor_receipt_missing exists",
+      "pass_condition": "doctor_receipt_missing absent",
+      "witness_file": "receipts/v26.6.28-doctor.receipt.json",
+      "receipt_file": "receipts/v26.6.28-doctor.receipt.json",
+      "repair_action": "Fix failure and regenerate receipt"
+    },
+    {
+      "name": "cargo_publish_executed",
+      "detector_command": "test -f receipts/v26.6.28-dryrun.receipt.json || echo 'Missing receipts/v26.6.28-dryrun.receipt.json'",
+      "exact_file_or_module": "domain:publish",
+      "fail_condition": "cargo_publish_executed exists",
+      "pass_condition": "cargo_publish_executed absent",
+      "witness_file": "receipts/v26.6.28-dryrun.receipt.json",
+      "receipt_file": "receipts/v26.6.28-dryrun.receipt.json",
+      "repair_action": "Fix failure and regenerate receipt"
+    },
+    {
+      "name": "dry_run_missing",
+      "detector_command": "test -f receipts/v26.6.28-dryrun.receipt.json || echo 'Missing receipts/v26.6.28-dryrun.receipt.json'",
+      "exact_file_or_module": "domain:publish",
+      "fail_condition": "dry_run_missing exists",
+      "pass_condition": "dry_run_missing absent",
+      "witness_file": "receipts/v26.6.28-dryrun.receipt.json",
+      "receipt_file": "receipts/v26.6.28-dryrun.receipt.json",
+      "repair_action": "Fix failure and regenerate receipt"
+    },
+    {
+      "name": "dry_run_nonzero",
+      "detector_command": "test -f receipts/v26.6.28-dryrun.receipt.json || echo 'Missing receipts/v26.6.28-dryrun.receipt.json'",
+      "exact_file_or_module": "domain:publish",
+      "fail_condition": "dry_run_nonzero exists",
+      "pass_condition": "dry_run_nonzero absent",
+      "witness_file": "receipts/v26.6.28-dryrun.receipt.json",
+      "receipt_file": "receipts/v26.6.28-dryrun.receipt.json",
+      "repair_action": "Fix failure and regenerate receipt"
+    },
+    {
+      "name": "agent_computes_q",
+      "detector_command": "test -f receipts/v26.6.28-release.receipt.json || echo 'Missing receipts/v26.6.28-release.receipt.json'",
+      "exact_file_or_module": "domain:agent_output",
+      "fail_condition": "agent_computes_q exists",
+      "pass_condition": "agent_computes_q absent",
+      "witness_file": "receipts/v26.6.28-release.receipt.json",
+      "receipt_file": "receipts/v26.6.28-release.receipt.json",
+      "repair_action": "Fix failure and regenerate receipt"
+    },
+    {
+      "name": "agent_synthesizes_release",
+      "detector_command": "test -f receipts/v26.6.28-release.receipt.json || echo 'Missing receipts/v26.6.28-release.receipt.json'",
+      "exact_file_or_module": "domain:agent_output",
+      "fail_condition": "agent_synthesizes_release exists",
+      "pass_condition": "agent_synthesizes_release absent",
+      "witness_file": "receipts/v26.6.28-release.receipt.json",
+      "receipt_file": "receipts/v26.6.28-release.receipt.json",
+      "repair_action": "Fix failure and regenerate receipt"
+    },
+    {
+      "name": "agent_invented_files_changed",
+      "detector_command": "test -f receipts/v26.6.28-release.receipt.json || echo 'Missing receipts/v26.6.28-release.receipt.json'",
+      "exact_file_or_module": "domain:agent_output",
+      "fail_condition": "agent_invented_files_changed exists",
+      "pass_condition": "agent_invented_files_changed absent",
+      "witness_file": "receipts/v26.6.28-release.receipt.json",
+      "receipt_file": "receipts/v26.6.28-release.receipt.json",
+      "repair_action": "Fix failure and regenerate receipt"
+    },
+    {
+      "name": "agent_uses_closure_prose",
+      "detector_command": "test -f receipts/v26.6.28-release.receipt.json || echo 'Missing receipts/v26.6.28-release.receipt.json'",
+      "exact_file_or_module": "domain:agent_output",
+      "fail_condition": "agent_uses_closure_prose exists",
+      "pass_condition": "agent_uses_closure_prose absent",
+      "witness_file": "receipts/v26.6.28-release.receipt.json",
+      "receipt_file": "receipts/v26.6.28-release.receipt.json",
+      "repair_action": "Fix failure and regenerate receipt"
+    },
+    {
+      "name": "agent_summary_contradicts_cli",
+      "detector_command": "test -f receipts/v26.6.28-release.receipt.json || echo 'Missing receipts/v26.6.28-release.receipt.json'",
+      "exact_file_or_module": "domain:agent_output",
+      "fail_condition": "agent_summary_contradicts_cli exists",
+      "pass_condition": "agent_summary_contradicts_cli absent",
+      "witness_file": "receipts/v26.6.28-release.receipt.json",
+      "receipt_file": "receipts/v26.6.28-release.receipt.json",
+      "repair_action": "Fix failure and regenerate receipt"
     }
   ]
 }

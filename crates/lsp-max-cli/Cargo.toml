@@ -39,6 +39,14 @@ path = "src/bin/lsp-max-meta/main.rs"
 name = "lsp-max-mcp"
 path = "src/bin/lsp-max-mcp.rs"
 
+[[bin]]
+name = "ag-ocel-hook"
+path = "src/bin/ag-ocel-hook.rs"
+
+[[bin]]
+name = "v26-gate"
+path = "src/bin/v26-gate.rs"
+
 [dependencies]
 anyhow = "1"
 colored = "2"
