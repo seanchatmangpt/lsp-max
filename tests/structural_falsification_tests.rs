@@ -2,10 +2,10 @@
 
 #[test]
 fn virtual_doc_without_push_refused() {
-    assert!(true, "REFUSED: LSPMAX-VIRTUAL-DOC-PRESENTED-AS-PUSH");
+    unimplemented!("FRAUD: Fake Test Coverage - virtual_doc_without_push_refused requires actual architectural test");
 }
 
 #[test]
 fn diagnostic_without_andon_push_refused() {
-    assert!(true, "REFUSED: LSPMAX-ANDON-PUSH-MISSING");
+    unimplemented!("FRAUD: Fake Test Coverage - diagnostic_without_andon_push_refused requires actual architectural test");
 }

@@ -1,7 +1,0 @@
-{
-  "command": "Document the current file tree architecture of lsp-max, focusing on the v26.6.28 changes (Salsa integration in lsp-max-ast/lsp-max-lsif, LSIF artifacts, Oxigraph boundary in semantic_graph/).",
-  "observation_bound": "/Users/sac/lsp-max/artifacts/v26.6.28-observation.txt",
-  "artifact": "/Users/sac/lsp-max/artifacts/v26.6.28_architecture.md",
-  "status": "ADMITTED",
-  "receipt_path": "/Users/sac/lsp-max/receipts/v26.6.28-file-tree.receipt.json"
-}
