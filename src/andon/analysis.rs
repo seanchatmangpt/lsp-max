@@ -1,5 +1,5 @@
 use crate::andon::andon::AndonEvent;
-use crate::andon::core::{InvariantRegistry, ProbeResult, Severity};
+use crate::andon::core::{InvariantRegistry, Severity};
 
 pub struct AnalysisPipeline;
 
