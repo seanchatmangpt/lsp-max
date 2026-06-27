@@ -7,8 +7,18 @@ use crate::{CompositorConfig, ExtensionRouter, MergeContext};
 use lsp_max::jsonrpc::Result;
 use lsp_max::lsp_types::*;
 use lsp_max::{Client, LspService, Server};
-use lsp_max_client::ServerHandle as ChildServerHandle;
+use lsp_max::client::ServerHandle as ChildServerHandle;
 use std::sync::{Arc, RwLock};
+use std::sync::Mutex as StdMutex;
+
+use lsp_max::max_andon::core::InvariantRegistry;
+use lsp_max::max_andon::andon::{AndonBus, AndonEvent};
+use lsp_max::max_andon::analysis::AnalysisPipeline;
+use lsp_max::max_andon::lsp::{LspPushAdapter, LspMaxAndonRaised};
+use lsp_max::max_andon::patterns::{
+    build_empty_registry_invariant, build_required_artifact_invariant, build_marker_admission,
+    build_need_n_invariant, build_non_empty_check_set, build_brokered_command, build_receipt_required,
+};
 
 pub struct CompositorServer {
     client: Client,
@@ -28,6 +38,9 @@ pub struct CompositorServer {
     /// Merged ServerCapabilities stored after initialize() completes.
     /// None until the first initialize() call returns.
     merged_capabilities: Arc<RwLock<Option<lsp_max::lsp_types::ServerCapabilities>>>,
+    pub registry: Arc<StdMutex<InvariantRegistry>>,
+    pub andon_bus: Arc<StdMutex<AndonBus>>,
+    pub andon_snapshot: Arc<crate::andon_snapshot::AndonSnapshot>,
 }
 
 #[lsp_max::async_trait]
@@ -310,6 +323,25 @@ impl lsp_max::LanguageServer for CompositorServer {
         }
         Ok(None)
     }
+
+    async fn text_document_content(
+        &self,
+        params: lsp_max::max_protocol::lsp_3_18::TextDocumentContentParams,
+    ) -> Result<lsp_max::max_protocol::lsp_3_18::TextDocumentContentResult> {
+        let uri = params.text_document.uri.as_str();
+        if uri == "lsp-max://gate/context" {
+            let ctx = crate::gate_cli_compat::check_agent_context();
+            let serialized = serde_json::to_string_pretty(&ctx).unwrap_or_default();
+            let content = format!("<gate-context>\n{}\n</gate-context>", serialized);
+            return Ok(lsp_max::max_protocol::lsp_3_18::TextDocumentContentResult { text: content });
+        }
+        if uri == "lsp-max://gate/list" {
+            let list = crate::gate_cli_compat::list();
+            let serialized = serde_json::to_string_pretty(&list).unwrap_or_default();
+            return Ok(lsp_max::max_protocol::lsp_3_18::TextDocumentContentResult { text: serialized });
+        }
+        Err(lsp_max::jsonrpc::Error::method_not_found())
+    }
 }
 
 impl CompositorServer {
@@ -572,6 +604,15 @@ pub async fn run_stdio(
     });
 
     let (service, socket) = LspService::new(|client: Client| {
+        let mut registry = InvariantRegistry::new();
+        registry.register(build_empty_registry_invariant());
+        registry.register(build_required_artifact_invariant("docs/prd.md"));
+        registry.register(build_marker_admission("ADMITTED"));
+        registry.register(build_need_n_invariant(8));
+        registry.register(build_non_empty_check_set());
+        registry.register(build_brokered_command());
+        registry.register(build_receipt_required());
+
         let flush_coord = Arc::new(FlushCoordinator::spawn(
             Arc::clone(&buffer_for_coord),
             Arc::clone(&merge_ctx_for_coord),
@@ -591,6 +632,9 @@ pub async fn run_stdio(
             gate: Arc::clone(&gate),
             flush_coord,
             merged_capabilities: Arc::new(RwLock::new(None)),
+            registry: Arc::new(StdMutex::new(registry)),
+            andon_bus: Arc::new(StdMutex::new(AndonBus::new())),
+            andon_snapshot: Arc::new(crate::andon_snapshot::AndonSnapshot::new()),
         }
     });
     let _ = Server::new(stdin, stdout, socket).serve(service).await;

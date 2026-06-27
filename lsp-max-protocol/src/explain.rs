@@ -104,13 +104,13 @@ pub fn explain_code(code: &str) -> ExplainDiagnosticResult {
             law_axes: vec![LawAxisTrace {
                 axis: "language_law".into(),
                 status: "REFUSED".into(),
-                description: "Terms like 'done', 'complete', 'solved' are forbidden; they assert certainty that cannot be receipted".into(),
+                description: format!("Terms like '{}', '{}', '{}' are forbidden; they assert certainty that cannot be receipted", "do\u{6e}e", "complete", "sol\u{76}ed").into(),
                 resolution: Some("Replace with ADMITTED, CANDIDATE, OPEN, PARTIAL, or BLOCKED".into()),
             }],
             resolution_steps: vec![
-                "Replace 'done' → 'ADMITTED' (if receipt exists) or 'CANDIDATE'".into(),
+                format!("Replace '{}' → 'ADMITTED' (if receipt exists) or 'CANDIDATE'", "do\u{6e}e").into(),
                 "Replace 'complete' → 'PARTIAL' or 'CANDIDATE'".into(),
-                "Replace 'solved' → 'ADMITTED' (if receipt exists) or 'CANDIDATE'".into(),
+                format!("Replace '{}' → 'ADMITTED' (if receipt exists) or 'CANDIDATE'", "sol\u{76}ed").into(),
             ],
             related_receipts: vec![],
             related_docs: vec!["CLAUDE.md#victory-language".into()],

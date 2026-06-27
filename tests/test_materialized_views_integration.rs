@@ -1,6 +1,6 @@
 use lsp_max_lsif::lsif::{Edge, EdgeType, Element, HoverResultData, RangeTag, Vertex, VertexType};
 use lsp_max_protocol::MaxDiagnostic;
-use lsp_max_runtime::control_plane::views::{
+use lsp_max::runtime::control_plane::views::{
     lookup_definition, lookup_diagnostics, lookup_hover, lookup_references, update_views,
     MaterializedViewStore,
 };
@@ -33,6 +33,8 @@ fn test_integration_materialized_views_flow() {
             end: Position::new(10, 10),
             tag: Some(RangeTag::Reference {
                 text: "foo".to_string(),
+                kind: SymbolKind::FUNCTION,
+                full_range: Range::new(Position::new(10, 0), Position::new(10, 20)),
             }),
         }),
         Element::Vertex(Vertex::ResultSet {
@@ -122,7 +124,7 @@ fn test_integration_materialized_views_flow() {
 
     for el in &elements {
         let mut quads = Vec::new();
-        lsp_max_runtime::control_plane::admission::map_element_to_quads(
+        lsp_max::runtime::control_plane::admission::map_element_to_quads(
             el,
             &active_graph,
             &mut quads,
@@ -149,7 +151,7 @@ fn test_integration_materialized_views_flow() {
 
     for diag in &live_diags {
         let quads =
-            lsp_max_runtime::control_plane::admission::map_diagnostic_to_quads(diag, &active_graph);
+            lsp_max::runtime::control_plane::admission::map_diagnostic_to_quads(diag, &active_graph);
         for quad in quads {
             store.insert(&quad).unwrap();
         }
@@ -204,8 +206,8 @@ fn test_integration_materialized_views_flow() {
 #[test]
 fn test_integration_verify_replay_flow() {
     use ed25519_dalek::{Signer, SigningKey};
-    use lsp_max_runtime::control_plane::receipts::{Blake3Hash, CryptographicReceipt};
-    use lsp_max_runtime::control_plane::replay::verify_replay;
+    use lsp_max::runtime::control_plane::receipts::{Blake3Hash, CryptographicReceipt};
+    use lsp_max::runtime::control_plane::replay::verify_replay;
     use uuid::Uuid;
 
     let seed = [0u8; 32];

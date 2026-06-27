@@ -1,6 +1,6 @@
 /// Customer service autonomic mesh workflow test.
-use lsp_max_runtime::sha256;
-use lsp_max_runtime::{
+use lsp_max::runtime::sha256;
+use lsp_max::runtime::{
     AutonomicMesh, CustomerRequestClassifierHook, FailureMode, Hook, HookDescriptor, HookEvent,
     InstanceId, LspInstance, LspPhase, MeshAction, PolicyEvaluationHook, PolicyState, Receipt,
     ReceiptRoutingHook,

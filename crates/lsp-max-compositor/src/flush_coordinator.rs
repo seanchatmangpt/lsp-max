@@ -13,7 +13,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 
 use lsp_max::lsp_types::{Diagnostic, DiagnosticSeverity, NumberOrString, Position, Range};
-use lsp_max_runtime::control_plane::receipts::{Blake3Hash, Keystore};
+use lsp_max::max_runtime::control_plane::receipts::{Blake3Hash, Keystore};
 use tokio::time::{Duration, Instant};
 
 use crate::child_process::ChildProcessPool;
@@ -439,7 +439,7 @@ impl FlushCoordinator {
 
                     // Collect (server_id, handle) while DashMap ref is held briefly,
                     // then drop all refs before awaiting to avoid holding shard locks.
-                    let mut ack_targets: Vec<(String, lsp_max_client::ServerHandle)> =
+                    let mut ack_targets: Vec<(String, lsp_max::client::ServerHandle)> =
                         Vec::with_capacity(per_server.len());
                     for sid in per_server.keys() {
                         if let Some(proc_ref) = pool.get(sid) {

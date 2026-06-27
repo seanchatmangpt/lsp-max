@@ -706,7 +706,7 @@ async fn compositor_client_deposits_on_publish_diagnostics() {
         Diagnostic, DiagnosticSeverity, NumberOrString, Position, PublishDiagnosticsParams, Range,
         Uri,
     };
-    use lsp_max_client::LanguageClient;
+    use lsp_max::client::LanguageClient;
     use std::str::FromStr;
     use std::sync::Arc;
 

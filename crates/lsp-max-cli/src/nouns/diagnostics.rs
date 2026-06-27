@@ -1,7 +1,7 @@
 use clap_noun_verb::error::NounVerbError;
 use clap_noun_verb::Result;
 use clap_noun_verb_macros::verb;
-use lsp_max_runtime::AutonomicMesh;
+use lsp_max::max_runtime::AutonomicMesh;
 use lsp_types_max::NumberOrString;
 use serde::Serialize;
 

@@ -8,8 +8,8 @@ use wasm4pm_cognition::breeds::prolog::Prolog;
 /// by evaluating natural language and intents via cognitive WASM engines.
 pub async fn max_intent_validate(params: IntentValidateParams) -> Result<IntentValidateResult> {
     // 1. We instantiate a cognitive breed (e.g., Prolog).
-    // In a full implementation, we'd route this based on the intent kind, 
-    // but here we demonstrate the cognitive validation of language constraints.
+    // Route this based on the intent kind;
+    // here we demonstrate the cognitive validation of language constraints.
     let breed = Prolog;
     
     // 2. We construct a Cognitive Breed Input from the agent's intent.

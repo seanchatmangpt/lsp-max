@@ -1,7 +1,7 @@
 use clap_noun_verb::error::NounVerbError;
 use clap_noun_verb::Result;
 use clap_noun_verb_macros::verb;
-use lsp_max_runtime::{AutonomicMesh, PolicyState};
+use lsp_max::max_runtime::{AutonomicMesh, PolicyState};
 use serde::Serialize;
 use std::collections::HashMap;
 
@@ -404,7 +404,7 @@ pub fn emerge() -> Result<EmergenceResult> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use lsp_max_runtime::LspInstance;
+    use lsp_max::max_runtime::LspInstance;
 
     fn make_temp_svc() -> (tempfile::NamedTempFile, SwarmService) {
         let mut mesh = AutonomicMesh::new();

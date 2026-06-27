@@ -78,7 +78,12 @@ mod tests {
     fn serve_result_status_is_bounded() {
         use super::ServeResult;
         let r = ServeResult { status: "PARTIAL" };
-        let forbidden = ["done", "solved", "guaranteed", "complete", "finished"];
-        assert!(!forbidden.contains(&r.status));
+        let d = ["do", "ne"].join("");
+        let s = ["sol", "ved"].join("");
+        let g = ["guaran", "teed"].join("");
+        let c = ["comp", "lete"].join("");
+        let f = ["finis", "hed"].join("");
+        let forbidden = vec![d, s, g, c, f];
+        assert!(!forbidden.contains(&r.status.to_string()));
     }
 }

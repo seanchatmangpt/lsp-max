@@ -138,7 +138,17 @@ pub enum RangeTag {
         detail: Option<String>,
     },
     #[serde(rename = "reference")]
-    Reference { text: String },
+    Reference {
+        text: String,
+        kind: lsp_types_max::SymbolKind,
+        #[serde(rename = "fullRange")]
+        full_range: Range,
+    },
     #[serde(rename = "unknown")]
-    Unknown { text: String },
+    Unknown {
+        text: String,
+        kind: lsp_types_max::SymbolKind,
+        #[serde(rename = "fullRange")]
+        full_range: Range,
+    },
 }

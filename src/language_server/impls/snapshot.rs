@@ -10,7 +10,7 @@ pub async fn max_snapshot() -> Result<max_protocol::SnapshotId> {
     let mut registry = lock_registry()?;
     update_diagnostics(&mut registry);
 
-    let snapshot = max_runtime::DeterministicSnapshot::new();
+    let snapshot = crate::max_runtime::DeterministicSnapshot::new();
     let snapshot_id = snapshot.id.clone();
 
     let capability_vector = max_protocol::MaxCapabilityVector {
@@ -151,7 +151,7 @@ pub async fn max_conformance_delta(params: Value) -> Result<Value> {
         .and_then(|v| v.as_u64())
         .unwrap_or(0);
     let registry = lock_registry()?;
-    let deltas: Vec<&max_runtime::ConformanceDeltaEntry> = registry
+    let deltas: Vec<&crate::max_runtime::ConformanceDeltaEntry> = registry
         .conformance_delta_log
         .iter()
         .filter(|e| e.seq > since_seq)
@@ -226,7 +226,7 @@ pub async fn max_rule_pack_status(pack_id: String) -> Result<max_protocol::RuleP
         }
     }
 
-    let conformance = lsp_max_runtime::mesh::build_conformance_vector(&max_diags);
+    let conformance = crate::runtime::mesh::build_conformance_vector(&max_diags);
 
     Ok(max_protocol::RulePackStatusResult {
         pack_id,

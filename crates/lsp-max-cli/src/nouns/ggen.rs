@@ -1,6 +1,6 @@
 use clap_noun_verb::Result;
 use clap_noun_verb_macros::verb;
-use lsp_max_gen::GgenAdapter;
+use lsp_max_cli::gen::GgenAdapter;
 use serde::Serialize;
 use std::path::PathBuf;
 

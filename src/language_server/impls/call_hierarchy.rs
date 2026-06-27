@@ -11,11 +11,11 @@ pub async fn prepare_call_hierarchy(
 ) -> Result<Option<Vec<CallHierarchyItem>>> {
     let uri = &params.text_document_position_params.text_document.uri;
     let pos = params.text_document_position_params.position;
-    let views = lsp_max_runtime::control_plane::views::get_views();
+    let views = crate::runtime::control_plane::views::get_views();
     let url = Url::parse(uri.as_str()).map_err(|_| Error::internal_error())?;
 
     if let Some(items) =
-        lsp_max_runtime::control_plane::views::lookup_call_hierarchy_prepare(views, &url, pos)
+        crate::runtime::control_plane::views::lookup_call_hierarchy_prepare(views, &url, pos)
     {
         Ok(Some(items))
     } else {
@@ -29,11 +29,11 @@ pub async fn incoming_calls(
 ) -> Result<Option<Vec<CallHierarchyIncomingCall>>> {
     let uri = &params.item.uri;
     let pos = params.item.selection_range.start;
-    let views = lsp_max_runtime::control_plane::views::get_views();
+    let views = crate::runtime::control_plane::views::get_views();
     let url = Url::parse(uri.as_str()).map_err(|_| Error::internal_error())?;
 
     if let Some(calls) =
-        lsp_max_runtime::control_plane::views::lookup_call_hierarchy_incoming(views, &url, pos)
+        crate::runtime::control_plane::views::lookup_call_hierarchy_incoming(views, &url, pos)
     {
         Ok(Some(calls))
     } else {
@@ -47,11 +47,11 @@ pub async fn outgoing_calls(
 ) -> Result<Option<Vec<CallHierarchyOutgoingCall>>> {
     let uri = &params.item.uri;
     let pos = params.item.selection_range.start;
-    let views = lsp_max_runtime::control_plane::views::get_views();
+    let views = crate::runtime::control_plane::views::get_views();
     let url = Url::parse(uri.as_str()).map_err(|_| Error::internal_error())?;
 
     if let Some(calls) =
-        lsp_max_runtime::control_plane::views::lookup_call_hierarchy_outgoing(views, &url, pos)
+        crate::runtime::control_plane::views::lookup_call_hierarchy_outgoing(views, &url, pos)
     {
         Ok(Some(calls))
     } else {

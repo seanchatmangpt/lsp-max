@@ -55,13 +55,7 @@ pub enum Vertex {
         id: Id,
         #[serde(rename = "type")]
         type_: VertexType,
-        #[serde(skip_serializing_if = "Option::is_none")]
-        #[serde(default)]
-        kind: Option<String>,
-        #[serde(skip_serializing_if = "Option::is_none")]
-        resource: Option<Uri>,
-        #[serde(skip_serializing_if = "Option::is_none")]
-        contents: Option<String>,
+        kind: String,
     },
     #[serde(rename = "document")]
     Document {

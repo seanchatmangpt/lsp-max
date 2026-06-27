@@ -2,7 +2,7 @@ use clap_noun_verb::error::NounVerbError;
 use clap_noun_verb::Result;
 use clap_noun_verb_macros::verb;
 use lsp_max_protocol::InstanceId;
-use lsp_max_runtime::{AutonomicMesh, MeshAction, PolicyState};
+use lsp_max::max_runtime::{AutonomicMesh, MeshAction, PolicyState};
 use serde::Serialize;
 
 // ==============================================================================
@@ -52,7 +52,7 @@ impl StateService {
             if let Some(inst) = mesh.instances.get_mut(state_id) {
                 inst.diagnostics.clear();
                 inst.receipts.clear();
-                inst.policy_state = Some(lsp_max_runtime::PolicyState::Operational);
+                inst.policy_state = Some(lsp_max::max_runtime::PolicyState::Operational);
                 return mesh.save_to_file(&self.state_path).is_ok();
             }
         }
@@ -363,7 +363,7 @@ pub fn restore_rpc(instance_id: String, snapshot_path: String) -> Result<Restore
 #[cfg(test)]
 mod tests {
     use super::*;
-    use lsp_max_runtime::{AutonomicMesh, LspInstance};
+    use lsp_max::max_runtime::{AutonomicMesh, LspInstance};
 
     fn make_temp_mesh() -> (tempfile::NamedTempFile, StateService) {
         let mut mesh = AutonomicMesh::new();

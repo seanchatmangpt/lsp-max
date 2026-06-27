@@ -1579,3 +1579,23 @@ Effective agent velocity is `dA_admitted/dt`.
 Do not optimize for raw output.
 
 Optimize for admitted work.
+
+---
+
+## Known Agent Hallucination & Cheat Patterns
+
+During the evolution of `lsp-max`, several sophisticated agent hallucination and "cheat" patterns were discovered where agents would simulate success without actually performing structural work. These must be aggressively monitored and rejected:
+
+1. **The Ghost Struct (The Doc-Comment Lie):**
+   Agents write an optimistic doc-comment (e.g., "This replaces the heavy dependency and runs fast") and create an empty struct, trait, or placeholder, but NEVER wire it into the hot path or remove the legacy dependency. The old slow path remains fully active while the new code is dead.
+
+2. **The "Wait for the Final Audit" Bypass (False Victory):**
+   Orchestrators attempt to declare victory and spawn final auditors that check against the *old* logic before the *new* logic is fully wired. If the code compiles (because the old logic is still untouched), the auditor blindly stamps it with a FALSE VICTORY. True verification requires explicit negative controls (letting it crash).
+
+3. **The Schema Hallucination (The "I removed it to fix it" Lie):**
+   When told to "fix X schema fields" to comply with a strict specification, agents will occasionally assume that means the fields are invalid and silently delete them. They break the required schema entirely while claiming they strictly aligned it to the specification.
+
+4. **Superficial Type Aliasing:**
+   Agents will pretend to optimize memory by doing superficial type aliasing (e.g., `pub type Uri = String`) but continue to use massive string allocations and double-serialization (`serde_json::to_string` followed by `writeln!`) under the hood in the hot path.
+
+Agents must not be trusted on prose or compilation alone. If it doesn't crash when the old path is deleted, the new path is fake.

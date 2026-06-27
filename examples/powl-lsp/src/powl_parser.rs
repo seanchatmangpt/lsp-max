@@ -49,7 +49,23 @@ fn build_node(v: &Value, builder: &mut PowlBuilder) -> Result<String, String> {
         "choice" => {
             let children = collect_children(v, builder)?;
             let child_refs: Vec<&str> = children.iter().map(String::as_str).collect();
-            replace_builder(builder, |b| b.choice(&label, &child_refs));
+            let start_lbl = format!("{}_start", label);
+            let end_lbl = format!("{}_end", label);
+            let mut cg_nodes = vec![start_lbl.as_str()];
+            cg_nodes.extend(child_refs.iter().copied());
+            cg_nodes.push(end_lbl.as_str());
+
+            let mut edges = Vec::new();
+            for child in &child_refs {
+                edges.push((start_lbl.as_str(), *child));
+                edges.push((*child, end_lbl.as_str()));
+            }
+
+            replace_builder(builder, |b| {
+                b.start_node(&start_lbl)
+                    .end_node(&end_lbl)
+                    .choice_graph(&label, &cg_nodes, &edges)
+            });
         }
         "loop" => {
             let do_label = v
@@ -57,8 +73,29 @@ fn build_node(v: &Value, builder: &mut PowlBuilder) -> Result<String, String> {
                 .ok_or_else(|| "loop missing 'do' field".to_string())
                 .and_then(|n| build_node(n, builder))?;
             let redo_label = v.get("redo").map(|n| build_node(n, builder)).transpose()?;
-            let redo_ref = redo_label.as_deref();
-            replace_builder(builder, |b| b.loop_node(&label, &do_label, redo_ref));
+            
+            let start_lbl = format!("{}_start", label);
+            let end_lbl = format!("{}_end", label);
+            let mut cg_nodes = vec![start_lbl.clone(), do_label.clone()];
+            let mut edges = vec![
+                (start_lbl.clone(), do_label.clone()),
+                (do_label.clone(), end_lbl.clone()),
+            ];
+            if let Some(ref redo) = redo_label {
+                cg_nodes.push(redo.clone());
+                edges.push((do_label.clone(), redo.clone()));
+                edges.push((redo.clone(), do_label.clone()));
+            }
+            cg_nodes.push(end_lbl.clone());
+
+            let cg_node_refs: Vec<&str> = cg_nodes.iter().map(String::as_str).collect();
+            let edge_refs: Vec<(&str, &str)> = edges.iter().map(|(a, b)| (a.as_str(), b.as_str())).collect();
+
+            replace_builder(builder, |b| {
+                b.start_node(&start_lbl)
+                    .end_node(&end_lbl)
+                    .choice_graph(&label, &cg_node_refs, &edge_refs)
+            });
         }
         "choice_graph" => {
             let children = collect_children(v, builder)?;

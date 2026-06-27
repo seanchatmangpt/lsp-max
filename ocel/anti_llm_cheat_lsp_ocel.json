@@ -1,0 +1,354 @@
+{
+  "eventTypes": [
+    {
+      "name": "RepositoryScanned",
+      "attributes": []
+    },
+    {
+      "name": "FileObserved",
+      "attributes": []
+    },
+    {
+      "name": "DiagnosticEmitted",
+      "attributes": []
+    },
+    {
+      "name": "ReceiptValidated",
+      "attributes": []
+    },
+    {
+      "name": "Lsp318FeatureExercised",
+      "attributes": []
+    },
+    {
+      "name": "NegativeControlExecuted",
+      "attributes": []
+    },
+    {
+      "name": "FailsetUpdated",
+      "attributes": []
+    }
+  ],
+  "objectTypes": [
+    {
+      "name": "Repository",
+      "attributes": []
+    },
+    {
+      "name": "Crate",
+      "attributes": []
+    },
+    {
+      "name": "File",
+      "attributes": []
+    },
+    {
+      "name": "FileRange",
+      "attributes": []
+    },
+    {
+      "name": "Checkpoint",
+      "attributes": []
+    },
+    {
+      "name": "DiagnosticCode",
+      "attributes": []
+    },
+    {
+      "name": "ForbiddenImplication",
+      "attributes": []
+    },
+    {
+      "name": "Diagnostic",
+      "attributes": []
+    },
+    {
+      "name": "Receipt",
+      "attributes": []
+    },
+    {
+      "name": "Digest",
+      "attributes": []
+    },
+    {
+      "name": "Lsp318FeatureRow",
+      "attributes": []
+    },
+    {
+      "name": "NegativeControlFixture",
+      "attributes": []
+    }
+  ],
+  "events": [
+    {
+      "id": "ev_repo_scan",
+      "type": "RepositoryScanned",
+      "time": "2026-06-27T03:48:32.872191Z",
+      "attributes": [],
+      "relationships": [
+        {
+          "objectId": "repo_lsp_max",
+          "qualifier": "repository"
+        }
+      ]
+    },
+    {
+      "id": "ev_file_obs",
+      "type": "FileObserved",
+      "time": "2026-06-27T03:48:32.872192Z",
+      "attributes": [],
+      "relationships": [
+        {
+          "objectId": "file_server_rs",
+          "qualifier": "observed_file"
+        }
+      ]
+    },
+    {
+      "id": "ev_diag_emit",
+      "type": "DiagnosticEmitted",
+      "time": "2026-06-27T03:48:32.872193Z",
+      "attributes": [],
+      "relationships": [
+        {
+          "objectId": "range_server_rs_1",
+          "qualifier": "range"
+        },
+        {
+          "objectId": "diag_code_ocel_001",
+          "qualifier": "code"
+        },
+        {
+          "objectId": "forbidden_imp_ocel_001",
+          "qualifier": "forbidden_implication"
+        },
+        {
+          "objectId": "cp_ocel_compat_001",
+          "qualifier": "checkpoint"
+        }
+      ]
+    },
+    {
+      "id": "ev_receipt_val",
+      "type": "ReceiptValidated",
+      "time": "2026-06-27T03:48:32.872196Z",
+      "attributes": [],
+      "relationships": [
+        {
+          "objectId": "receipt_ocel_json",
+          "qualifier": "receipt"
+        },
+        {
+          "objectId": "digest_ocel_json",
+          "qualifier": "digest"
+        },
+        {
+          "objectId": "cp_ocel_compat_001",
+          "qualifier": "checkpoint"
+        }
+      ]
+    },
+    {
+      "id": "ev_lsp318",
+      "type": "Lsp318FeatureExercised",
+      "time": "2026-06-27T03:48:32.872197Z",
+      "attributes": [],
+      "relationships": [
+        {
+          "objectId": "feature_row_001",
+          "qualifier": "feature_row"
+        }
+      ]
+    },
+    {
+      "id": "ev_neg_control",
+      "type": "NegativeControlExecuted",
+      "time": "2026-06-27T03:48:32.872198Z",
+      "attributes": [],
+      "relationships": [
+        {
+          "objectId": "fixture_changelog_laundering",
+          "qualifier": "fixture"
+        }
+      ]
+    },
+    {
+      "id": "ev_failset",
+      "type": "FailsetUpdated",
+      "time": "2026-06-27T03:48:32.872200Z",
+      "attributes": [],
+      "relationships": []
+    }
+  ],
+  "objects": [
+    {
+      "id": "repo_lsp_max",
+      "type": "Repository",
+      "attributes": [
+        {
+          "name": "name",
+          "value": "lsp-max",
+          "time": "2026-06-27T03:48:32.872127Z"
+        },
+        {
+          "name": "path",
+          "value": "/Users/sac/lsp-max",
+          "time": "2026-06-27T03:48:32.872181Z"
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "crate_anti_llm_cheat_lsp",
+      "type": "Crate",
+      "attributes": [
+        {
+          "name": "name",
+          "value": "anti-llm-cheat-lsp",
+          "time": "2026-06-27T03:48:32.872182Z"
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "file_server_rs",
+      "type": "File",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "crates/anti-llm-cheat-lsp/src/server.rs",
+          "time": "2026-06-27T03:48:32.872182Z"
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "range_server_rs_1",
+      "type": "FileRange",
+      "attributes": [
+        {
+          "name": "file",
+          "value": "crates/anti-llm-cheat-lsp/src/server.rs",
+          "time": "2026-06-27T03:48:32.872183Z"
+        },
+        {
+          "name": "line",
+          "value": 42,
+          "time": "2026-06-27T03:48:32.872183Z"
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "cp_ocel_compat_001",
+      "type": "Checkpoint",
+      "attributes": [
+        {
+          "name": "name",
+          "value": "OCEL-COMPAT-001",
+          "time": "2026-06-27T03:48:32.872184Z"
+        },
+        {
+          "name": "status",
+          "value": "PROCESS_EVIDENCE_COMPLETE",
+          "time": "2026-06-27T03:48:32.872184Z"
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "diag_code_ocel_001",
+      "type": "DiagnosticCode",
+      "attributes": [
+        {
+          "name": "code",
+          "value": "ANTI-LLM-OCEL-001",
+          "time": "2026-06-27T03:48:32.872184Z"
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "forbidden_imp_ocel_001",
+      "type": "ForbiddenImplication",
+      "attributes": [
+        {
+          "name": "implication",
+          "value": "DiagnosticEmitted => ProcessEvidenceRecorded",
+          "time": "2026-06-27T03:48:32.872185Z"
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "diag_instance_1",
+      "type": "Diagnostic",
+      "attributes": [
+        {
+          "name": "code",
+          "value": "ANTI-LLM-OCEL-001",
+          "time": "2026-06-27T03:48:32.872188Z"
+        },
+        {
+          "name": "message",
+          "value": "Diagnostic emitted without corresponding OCEL process event",
+          "time": "2026-06-27T03:48:32.872188Z"
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "receipt_ocel_json",
+      "type": "Receipt",
+      "attributes": [
+        {
+          "name": "path",
+          "value": "crates/anti-llm-cheat-lsp/ocel/anti_llm_cheat_lsp_ocel.receipt.json",
+          "time": "2026-06-27T03:48:32.872189Z"
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "digest_ocel_json",
+      "type": "Digest",
+      "attributes": [
+        {
+          "name": "algorithm",
+          "value": "BLAKE3",
+          "time": "2026-06-27T03:48:32.872189Z"
+        },
+        {
+          "name": "value",
+          "value": "temp_val",
+          "time": "2026-06-27T03:48:32.872190Z"
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "feature_row_001",
+      "type": "Lsp318FeatureRow",
+      "attributes": [
+        {
+          "name": "name",
+          "value": "lsp318-feature-row-001",
+          "time": "2026-06-27T03:48:32.872190Z"
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "fixture_changelog_laundering",
+      "type": "NegativeControlFixture",
+      "attributes": [
+        {
+          "name": "name",
+          "value": "fixture-changelog-laundering",
+          "time": "2026-06-27T03:48:32.872191Z"
+        }
+      ],
+      "relationships": []
+    }
+  ]
+}

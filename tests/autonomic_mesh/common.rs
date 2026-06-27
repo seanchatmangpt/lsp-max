@@ -1,4 +1,4 @@
-use lsp_max_runtime::MaxDiagnostic;
+use lsp_max::runtime::MaxDiagnostic;
 /// Shared helpers for autonomic_mesh tests.
 use lsp_types_max as lsp_types;
 

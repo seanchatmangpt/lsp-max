@@ -11,7 +11,7 @@
 //
 // Status vocabulary: ADMITTED / CANDIDATE / BLOCKED / REFUSED / UNKNOWN / PARTIAL / OPEN
 
-use lsp_max_client::ServerHandle;
+use lsp_max::client::ServerHandle;
 use serde_json::Value;
 use std::collections::HashMap;
 use std::sync::atomic::AtomicU64;

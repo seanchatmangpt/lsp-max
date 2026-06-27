@@ -24,3 +24,6 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 tokio = { version = "1", features = ["sync"] }
 wasm4pm-compat = { workspace = true }
+bytes = "1.0"
+httparse = "1.8"
+memchr = "2.5"

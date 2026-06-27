@@ -1,7 +1,7 @@
 use clap_noun_verb::error::NounVerbError;
 use clap_noun_verb::Result;
 use clap_noun_verb_macros::verb;
-use lsp_max_agent::LspAgent;
+use lsp_max::max_agent::LspAgent;
 use serde::{Deserialize, Serialize};
 
 // --- Domain Tier ---
@@ -128,7 +128,7 @@ impl AgentService {
     pub fn reset(&self, instance_id: String) -> std::result::Result<serde_json::Value, String> {
         let path = crate::nouns::get_state_path();
         let mut mesh =
-            lsp_max_runtime::AutonomicMesh::load_from_file(&path).map_err(|e| e.to_string())?;
+            lsp_max::max_runtime::AutonomicMesh::load_from_file(&path).map_err(|e| e.to_string())?;
         let result = mesh.dispatch_rpc(&instance_id, "max/reset", serde_json::Value::Null)?;
         mesh.save_to_file(&path).map_err(|e| e.to_string())?;
         Ok(result)
@@ -311,7 +311,7 @@ pub struct AgentListResult {
 pub fn list() -> Result<AgentListResult> {
     // Use max/instanceList RPC for efficient polling — avoids loading full mesh state.
     let path = crate::nouns::get_state_path();
-    let mut mesh = lsp_max_runtime::AutonomicMesh::load_from_file(&path).unwrap_or_default();
+    let mut mesh = lsp_max::max_runtime::AutonomicMesh::load_from_file(&path).unwrap_or_default();
     // Pick any instance_id that exists, or fall back to full load if mesh is empty.
     let first_id = mesh.instances.keys().next().cloned();
     let agents: Vec<AgentSummary> = if let Some(ref id) = first_id {
@@ -387,7 +387,7 @@ pub struct ReleaseResult {
 #[verb("release")]
 pub fn release(instance_id: String) -> Result<ReleaseResult> {
     let path = crate::nouns::get_state_path();
-    let mut mesh = lsp_max_runtime::AutonomicMesh::load_from_file(&path)
+    let mut mesh = lsp_max::max_runtime::AutonomicMesh::load_from_file(&path)
         .map_err(|e| NounVerbError::execution_error(e.to_string()))?;
     let resp = mesh
         .dispatch_rpc(
@@ -428,7 +428,7 @@ pub struct AutonomicLoopResult {
 #[verb("loop")]
 pub fn autonomic_loop() -> clap_noun_verb::Result<AutonomicLoopResult> {
     let path = crate::nouns::get_state_path();
-    let mut mesh = lsp_max_runtime::AutonomicMesh::load_from_file(&path).unwrap_or_default();
+    let mut mesh = lsp_max::max_runtime::AutonomicMesh::load_from_file(&path).unwrap_or_default();
     let first_id = mesh.instances.keys().next().cloned();
     let result = if let Some(ref id) = first_id {
         mesh.dispatch_rpc(id, "max/autonomicLoop", serde_json::Value::Null)

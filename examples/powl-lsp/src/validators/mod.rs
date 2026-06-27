@@ -32,25 +32,9 @@ pub fn validate_powl(powl: &Powl) -> Vec<Diagnostic> {
     // Walk every node and validate its kind-specific invariants.
     for node in &powl.nodes {
         match &node.kind {
-            PowlNodeKind::Atom(_) | PowlNodeKind::Silent => {}
+            PowlNodeKind::Start | PowlNodeKind::End | PowlNodeKind::Atom(_) | PowlNodeKind::Silent => {}
             PowlNodeKind::PartialOrder(children) => {
                 diags.extend(validate_partial_order(children, powl));
-            }
-            PowlNodeKind::Choice(children) => {
-                if children.is_empty() {
-                    diags.push(error_diag(format!(
-                        "Choice node {:?} has no branches.",
-                        node.id
-                    )));
-                }
-            }
-            PowlNodeKind::Loop { body, redo: _ } => {
-                if !node_exists(*body, powl) {
-                    diags.push(error_diag(format!(
-                        "Loop node {:?}: 'do' body {:?} does not exist.",
-                        node.id, body
-                    )));
-                }
             }
             PowlNodeKind::ChoiceGraph { nodes, edges } => {
                 diags.extend(validate_choice_graph(nodes, edges, powl));

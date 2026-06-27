@@ -1,4 +1,3 @@
-pub mod auto_generated;
 /// LSIF 0.6.0 protocol coverage matrix for `LsifBuilder`.
 pub mod coverage;
 pub mod lsif;
@@ -6,8 +5,13 @@ pub mod lsif_builder;
 pub mod lsif_indexer;
 pub mod lsif_reader;
 pub mod lsif_types;
-pub mod lsif_store;
-// salsa_db uses salsa 0.17-era API (query_group/database macros) which is incompatible with salsa 0.26+
-// #[cfg(feature = "legacy-salsa")]
-// pub mod salsa_db;
+
 pub use coverage::{lsif_coverage, LsifCoverageReport};
+
+pub mod linker;
+
+#[cfg(feature = "rust")]
+pub mod indexer_rust;
+
+#[cfg(feature = "typescript")]
+pub mod indexer_typescript;

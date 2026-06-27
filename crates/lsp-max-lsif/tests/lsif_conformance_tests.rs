@@ -25,32 +25,18 @@ fn test_metadata_conformance() {
 }
 
 #[test]
-fn test_project_optional_kind_conformance() {
-    // 1. Project with kind Some
-    let proj_some = Element::Vertex(Vertex::Project {
+fn test_project_kind_conformance() {
+    let proj = Element::Vertex(Vertex::Project {
         id: NumberOrString::Number(1),
         type_: VertexType::Vertex,
-        kind: Some("rust".to_string()),
-        resource: Some("file:///proj".to_string()),
-        contents: None,
+        kind: "rust".to_string(),
     });
-    let json_some = serde_json::to_string(&proj_some).unwrap();
-    assert!(json_some.contains(r#""kind":"rust""#));
+    let json_str = serde_json::to_string(&proj).unwrap();
+    assert!(json_str.contains(r#""kind":"rust""#));
 
-    // 2. Project with kind None (verifies it serializes and deserializes without error)
-    let proj_none = Element::Vertex(Vertex::Project {
-        id: NumberOrString::Number(2),
-        type_: VertexType::Vertex,
-        kind: None,
-        resource: Some("file:///proj".to_string()),
-        contents: None,
-    });
-    let json_none = serde_json::to_string(&proj_none).unwrap();
-    assert!(!json_none.contains(r#""kind""#));
-
-    let deserialized: Element = serde_json::from_str(&json_none).unwrap();
+    let deserialized: Element = serde_json::from_str(&json_str).unwrap();
     if let Element::Vertex(Vertex::Project { kind, .. }) = deserialized {
-        assert!(kind.is_none());
+        assert_eq!(kind, "rust");
     } else {
         panic!("Expected Project variant");
     }

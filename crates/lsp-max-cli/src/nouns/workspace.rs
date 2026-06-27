@@ -1,6 +1,6 @@
 use clap_noun_verb::Result;
 use clap_noun_verb_macros::verb;
-use lsp_max_runtime::AutonomicMesh;
+use lsp_max::max_runtime::AutonomicMesh;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use std::fs;
@@ -491,7 +491,7 @@ pub fn diff_baseline() -> Result<WorkspaceDiffBaselineResult> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use lsp_max_runtime::{AutonomicMesh, LspInstance};
+    use lsp_max::max_runtime::{AutonomicMesh, LspInstance};
 
     fn make_temp_svc() -> (tempfile::NamedTempFile, WorkspaceService) {
         let mut mesh = AutonomicMesh::new();

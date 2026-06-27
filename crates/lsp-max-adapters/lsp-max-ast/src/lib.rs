@@ -1,5 +1,10 @@
+pub mod core;
+
+#[cfg(feature = "codegen")]
+pub mod codegen;
+
 use dashmap::DashMap;
-use lsp_max_ast_core::document::Document;
+use crate::core::document::Document;
 use lsp_types_max::{
     Diagnostic, DidChangeTextDocumentParams, DidCloseTextDocumentParams, DidOpenTextDocumentParams,
     DocumentUri,

@@ -97,7 +97,7 @@ impl<S: LanguageServer> LspService<S> {
         let doc_sync = layers::DocumentSync::new();
 
         LspServiceBuilder {
-            inner: crate::generated::register_lsp_methods(
+            inner: crate::language_server::RegisterLspMethods::register_lsp_methods(
                 inner,
                 state.clone(),
                 pending.clone(),

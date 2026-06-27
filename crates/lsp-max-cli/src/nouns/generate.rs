@@ -1,7 +1,7 @@
 use clap_noun_verb::Result;
 use clap_noun_verb_macros::verb;
 use heck::ToKebabCase;
-use lsp_max_gen::{
+use lsp_max_cli::gen::{
     generators::{
         capability::CapabilityGenerator, handler::HandlerGenerator, protocol::ProtocolGenerator,
         scaffold::ScaffoldGenerator, server::ServerGenerator, sync::SyncGenerator,
@@ -44,7 +44,7 @@ impl GenerateService {
         Self
     }
 
-    fn all_generators() -> Vec<Box<dyn lsp_max_gen::Generator>> {
+    fn all_generators() -> Vec<Box<dyn lsp_max_cli::gen::Generator>> {
         vec![
             Box::new(CapabilityGenerator),
             Box::new(HandlerGenerator),

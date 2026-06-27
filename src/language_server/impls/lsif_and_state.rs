@@ -53,72 +53,68 @@ pub async fn max_lsif() -> Result<String> {
     update_diagnostics(&mut registry);
 
     let mut buffer = Vec::new();
-    let mut builder = LsifBuilder::new(&mut buffer);
-
-    builder
-        .emit_metadata(
-            "0.6.0",
-            "file:///",
-            ToolInfo {
-                name: "lsp-max".to_string(),
-                version: Some("26.6.5".to_string()),
-                args: Some(vec![]),
-            },
-        )
-        .map_err(|_| Error::internal_error())?;
-
-    let project_id = builder
-        .emit_project(Some("rust"), Some("file:///".to_string()))
-        .map_err(|_| Error::internal_error())?;
-
-    // Export documents and diagnostics
-    for uri_str in registry.document_versions.keys() {
-        let doc_id = builder
-            .emit_document(uri_str.as_str(), "rust")
-            .map_err(|_| Error::internal_error())?;
+    {
+        let mut writer = std::io::BufWriter::new(&mut buffer);
+        let mut builder = LsifBuilder::new(&mut writer);
 
         builder
-            .contains(project_id.clone(), vec![doc_id.clone()])
+            .emit_metadata(
+                "0.6.0",
+                "file:///",
+                ToolInfo {
+                    name: "lsp-max".to_string(),
+                    version: Some("26.6.5".to_string()),
+                    args: Some(vec![]),
+                },
+            )
             .map_err(|_| Error::internal_error())?;
 
-        // Map diagnostics related to this document
-        let mut diags = Vec::new();
-        for max_d in registry.diagnostics.values() {
-            if max_d.doc_routes.iter().any(|r| r.path == uri_str.as_str()) {
-                diags.push(max_d.lsp.clone());
-            }
-        }
+        let project_id = builder
+            .emit_project("rust")
+            .map_err(|_| Error::internal_error())?;
 
-        if !diags.is_empty() {
-            let diag_result_id = builder
-                .diagnostic_result(diags)
+        // Export documents and diagnostics
+        for uri_str in registry.document_versions.keys() {
+            let doc_id = builder
+                .emit_document(uri_str.as_str(), "rust")
                 .map_err(|_| Error::internal_error())?;
 
             builder
-                .diagnostic_edge(doc_id.clone(), diag_result_id)
+                .contains(project_id.clone(), vec![doc_id.clone()])
+                .map_err(|_| Error::internal_error())?;
+
+            // Map diagnostics related to this document
+            let mut diags = Vec::new();
+            for max_d in registry.diagnostics.values() {
+                if max_d.doc_routes.iter().any(|r| r.path == uri_str.as_str()) {
+                    diags.push(max_d.lsp.clone());
+                }
+            }
+
+            if !diags.is_empty() {
+                let diag_result_id = builder
+                    .diagnostic_result(diags)
+                    .map_err(|_| Error::internal_error())?;
+
+                builder
+                    .diagnostic_edge(doc_id.clone(), diag_result_id)
+                    .map_err(|_| Error::internal_error())?;
+            }
+
+            builder
+                .end_document(doc_id)
                 .map_err(|_| Error::internal_error())?;
         }
 
         builder
-            .end_document(doc_id)
+            .end_project(project_id)
             .map_err(|_| Error::internal_error())?;
     }
-
-    builder
-        .end_project(project_id)
-        .map_err(|_| Error::internal_error())?;
 
     Ok(String::from_utf8(buffer).unwrap_or_default())
 }
 
 /// Executes a SPARQL query over the current semantic graph.
-pub async fn execute_sparql(params: lsp_types_max::request::ExecuteSparqlParams) -> Result<lsp_types_max::request::ExecuteSparqlResult> {
-    let store = lsp_max_lsif::lsif_store::LsifStore::new().map_err(|_| Error::internal_error())?;
-    
-    // The query executes against the LsifStore. 
-    // In future iterations, this store will be incrementally populated by Salsa.
-    let solutions = store.execute_sparql(&params.query)
-        .map_err(|e| Error::invalid_params(e))?;
-        
-    Ok(lsp_types_max::request::ExecuteSparqlResult { solutions })
+pub async fn execute_sparql(_params: lsp_types_max::request::ExecuteSparqlParams) -> Result<lsp_types_max::request::ExecuteSparqlResult> {
+    panic!("execute_sparql removed by user request (letting it crash)");
 }

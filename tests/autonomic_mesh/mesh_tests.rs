@@ -1,6 +1,6 @@
 /// Additional autonomic mesh tests: save/load, hooks, RPC, unicode, concurrency.
-use lsp_max_runtime::sha256;
-use lsp_max_runtime::{
+use lsp_max::runtime::sha256;
+use lsp_max::runtime::{
     AutonomicMesh, HookEvent, InstanceId, LspInstance, LspPhase, MeshAction, PolicyState, Receipt,
     ReceiptRoutingHook,
 };

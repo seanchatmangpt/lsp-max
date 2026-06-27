@@ -55,7 +55,7 @@ use std::sync::Arc;
 use dashmap::DashMap;
 use lsp_max_ast::AutoLspAdapter;
 use lsp_max_protocol::{ConformanceVector, LawAxis, MaxDiagnostic};
-use lsp_max_runtime::mesh::build_conformance_vector;
+use crate::runtime::mesh::build_conformance_vector;
 use lsp_types_max::{
     Diagnostic, DiagnosticOptions, DiagnosticServerCapabilities, DocumentDiagnosticReport,
     DocumentDiagnosticReportResult, FullDocumentDiagnosticReport,
@@ -1022,7 +1022,7 @@ pub trait RulePackServer {
                 const MAX_DELTA_LOG: usize = 4096;
                 registry
                     .conformance_delta_log
-                    .push_back(max_runtime::ConformanceDeltaEntry {
+                    .push_back(crate::max_runtime::ConformanceDeltaEntry {
                         seq,
                         instance_id: uri.to_string(),
                         old_score,

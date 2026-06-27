@@ -1,7 +1,7 @@
 use clap_noun_verb::error::NounVerbError;
 use clap_noun_verb::Result;
 use clap_noun_verb_macros::verb;
-use lsp_max_gen::{GeneratorContext, GeneratorEngine, ReceiptGenerator};
+use lsp_max_cli::gen::{GeneratorContext, GeneratorEngine, ReceiptGenerator};
 use serde::Serialize;
 use std::fs;
 use std::path::PathBuf;

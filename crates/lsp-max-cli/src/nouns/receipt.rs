@@ -1,7 +1,7 @@
 use clap_noun_verb::error::NounVerbError;
 use clap_noun_verb::Result;
 use clap_noun_verb_macros::verb;
-use lsp_max_runtime::{AutonomicMesh, Receipt};
+use lsp_max::max_runtime::{AutonomicMesh, Receipt};
 use serde::Serialize;
 
 // ==============================================================================
@@ -197,7 +197,7 @@ pub fn walk(instance_id: String) -> Result<ReceiptWalkResult> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use lsp_max_runtime::{AutonomicMesh, LspInstance};
+    use lsp_max::max_runtime::{AutonomicMesh, LspInstance};
 
     fn make_temp_mesh() -> (tempfile::NamedTempFile, ReceiptService) {
         let mut mesh = AutonomicMesh::new();
@@ -262,6 +262,7 @@ mod tests {
             .unwrap_or_else(|p| p.into_inner());
         let mut mesh = AutonomicMesh::new();
         mesh.add_instance(LspInstance::new("inst-1"));
+        mesh.add_instance(LspInstance::new("inst-empty"));
         // Seed a genesis receipt: a non-LSP_1 ledger verifies once it is non-empty
         // and every receipt carries a non-empty id and hash.
         if let Some(inst) = mesh.instances.get_mut("inst-1") {
@@ -292,7 +293,7 @@ mod tests {
         // Counterfactual: verify_instance_ledger returns Err("Ledger is empty") for a
         // freshly-created instance that has no receipts.  The verb must propagate that Err.
         with_mesh_state(|| {
-            let result = verify_ledger("inst-1".to_string());
+            let result = verify_ledger("inst-empty".to_string());
             assert!(result.is_err(), "expected Err for empty receipt chain");
         });
     }
@@ -358,7 +359,7 @@ mod tests {
         let mut mesh = AutonomicMesh::new();
         mesh.add_instance(LspInstance::new("inst-r"));
         if let Some(inst) = mesh.instances.get_mut("inst-r") {
-            inst.receipts.push(lsp_max_runtime::Receipt {
+            inst.receipts.push(lsp_max::max_runtime::Receipt {
                 receipt_id: "rcpt-001".to_string(),
                 hash: "abc123hash".to_string(),
                 prev_receipt_hash: None,
@@ -385,7 +386,7 @@ mod tests {
         let mut mesh = AutonomicMesh::new();
         mesh.add_instance(LspInstance::new("inst-bad"));
         if let Some(inst) = mesh.instances.get_mut("inst-bad") {
-            inst.receipts.push(lsp_max_runtime::Receipt {
+            inst.receipts.push(lsp_max::max_runtime::Receipt {
                 receipt_id: "rcpt-bad".to_string(),
                 hash: "".to_string(), // intentionally empty to trigger REFUSED
                 prev_receipt_hash: None,
@@ -412,7 +413,7 @@ mod tests {
 
     /// Re-implements the walk verb's core logic for service-layer testing
     /// without routing through the env-var verb entrypoint.
-    fn run_walk_logic(instance_id: &str, receipts: Vec<lsp_max_runtime::Receipt>) -> ReceiptWalkResult {
+    fn run_walk_logic(instance_id: &str, receipts: Vec<lsp_max::max_runtime::Receipt>) -> ReceiptWalkResult {
         let total = receipts.len();
         let mut entries = Vec::new();
         let mut overall = if total == 0 { "UNKNOWN" } else { "ADMITTED" }.to_string();
