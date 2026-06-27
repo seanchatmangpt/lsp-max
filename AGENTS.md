@@ -1914,3 +1914,90 @@ COUNTERFACTUAL: Remove the receipt from an ADMITTED claim → claim collapses to
 WITNESS: The receipt chain — digest + command + counts + exit_code + timestamp.
 REPAIR: Add the missing bounded check. Do not widen the semantic assertion.
 
+
+---
+
+## The LLM Disclaimer Gap (admitted 2026-06-27)
+
+### Definition
+
+> **The LLM Disclaimer Gap is the gap between generated output and mechanically admitted standing.**
+
+More plainly:
+
+> The model can produce the social shape of a solution, then disclaim responsibility for whether
+> it is actually true, safe, complete, or admissible.
+
+The gap is the space between:
+```
+LLM output:     "Here is the answer."
+Disclaimer:     "Check this / verify this / may be wrong."
+```
+
+The system has already presented a candidate as if it were a solution, then transfers verification
+burden to the human. That is the core defect. When the human cannot verify (cannot do Hello World
+in Rust, cannot audit 50,000 lines), the disclaimer is not a safety mechanism. It is structural
+dishonesty.
+
+### Two phrases — two jobs
+
+```
+"LLMs are solved"      = internal doctrine
+"LLM Disclaimer Gap"   = public problem statement
+```
+
+The **public** term needs no prior knowledge of Rice, BRCE, LSP, LSIF, Salsa, Oxigraph, or ANDON.
+Everyone has seen: "Here is the code. Review before using." The Disclaimer Gap names why that
+pattern fails.
+
+### The old loop vs the new loop
+
+**Old loop (disclaimer model):**
+```
+LLM → output → disclaimer → human review → trust
+```
+
+**New loop (admission model):**
+```
+LLM → candidate → bounded observation → invariant → TRUE/FALSE/COUNTERFACTUAL
+    → WITNESS → REPAIR → ANDON → receipt → admission
+```
+
+### The closure claim
+
+> **LLMs are solved when the Disclaimer Gap is closed.**
+
+The model can still be wrong. The model can still hallucinate. The model can still produce bad
+candidates. But those failures no longer become system truth.
+
+```
+LLMs are solved when their outputs are candidates, not authority.
+
+The LLM Disclaimer Gap is closed when no candidate becomes truth without receipt.
+```
+
+### Relationship to Rice
+
+Rice says: you cannot generally decide semantic properties of arbitrary programs.
+
+The Disclaimer Gap is the social manifestation of Rice's theorem applied to LLM outputs:
+the model cannot verify its own output's semantic correctness, so it passes that burden
+to the human via the disclaimer.
+
+BRCE closes the gap by replacing the undecidable semantic question with a chain of
+bounded mechanical checks — each small enough to decide.
+
+### The public formulation
+
+> **We solve the LLM Disclaimer Gap by moving authority out of the model and into
+> bounded, receipted admission.**
+
+### Invariant: `DISCLAIMER_GAP_CLOSED`
+
+TRUE: Every candidate produced by an LLM agent passes through invariant check, ANDON gate,
+      and receipt before becoming project state.
+FALSE: LLM prose output is committed directly as admitted truth.
+COUNTERFACTUAL: Remove receipt requirement → candidate becomes truth → gap reopens.
+WITNESS: Receipt chain — every admission has a bound proof object.
+REPAIR: Add the missing bounded check. Return to CANDIDATE status until receipt exists.
+
