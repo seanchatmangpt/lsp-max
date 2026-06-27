@@ -77,6 +77,15 @@ impl SemanticLawGraph for OxigraphStore {
         );
         run_select_first_binding(&self.store, &sparql)
     }
+
+    /// # INVARIANT: OXIGRAPH_NOT_ON_HOT_PATH — lsif_import is cold-path only.
+    fn import_lsif_snapshot(
+        &self,
+        lsif_path: &std::path::Path,
+        graph_name: &str,
+    ) -> anyhow::Result<super::lsif_import::LsifImportStats> {
+        super::lsif_import::import_lsif_into_graph(&self.store, lsif_path, graph_name)
+    }
 }
 
 // ---------------------------------------------------------------------------

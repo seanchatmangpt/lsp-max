@@ -3,7 +3,7 @@
 //! # Architecture invariants
 //!
 //! ## INVARIANT: OXIGRAPH_BOUNDARY_HELD
-//! `oxigraph::*` MUST only appear inside `store.rs`.
+//! `oxigraph::*` MUST only appear inside `store.rs` and `lsif_import.rs`.
 //! No other module in `src/` may import `oxigraph` for semantic-graph purposes.
 //!
 //! ## INVARIANT: OXIGRAPH_NOT_ON_HOT_PATH
@@ -15,9 +15,11 @@
 //! ## INVARIANT: STALE_LSIF_INDEX = STOP
 //! See `src/andon/lsif_invariant.rs`.
 
+pub mod lsif_import;
 pub mod snapshot;
 pub mod store;
 
+pub use lsif_import::LsifImportStats;
 pub use snapshot::{GraphDigest, LawGraphSnapshot};
 
 // ---------------------------------------------------------------------------
@@ -44,6 +46,16 @@ pub trait SemanticLawGraph: Send + Sync {
 
     /// Query all repair action URIs applicable to a diagnostic code.
     fn query_repairs(&self, diagnostic_code: &str) -> Result<Vec<String>, String>;
+
+    /// Import an LSIF JSONL file into a named graph within the store.
+    ///
+    /// # INVARIANT: OXIGRAPH_NOT_ON_HOT_PATH — lsif_import is cold-path only.
+    /// MUST NOT be called from `did_change` or any LSP notification handler.
+    fn import_lsif_snapshot(
+        &self,
+        lsif_path: &std::path::Path,
+        graph_name: &str,
+    ) -> anyhow::Result<LsifImportStats>;
 }
 
 // ---------------------------------------------------------------------------
@@ -58,8 +70,7 @@ mod tests {
     // INVARIANT: OXIGRAPH_BOUNDARY_HELD
     // ------------------------------------------------------------------
     /// Verify that `OxigraphStore` implements `SemanticLawGraph`.
-    /// This is a compile-time assertion — if the boundary breaks,
-    /// this test will fail to compile.
+    /// Compile-time assertion — if the boundary breaks, this won't compile.
     #[test]
     fn oxigraph_boundary_held() {
         fn _assert_impl<T: SemanticLawGraph>() {}
@@ -67,7 +78,7 @@ mod tests {
     }
 
     // ------------------------------------------------------------------
-    // TRUE: snapshot load + query round-trip
+    // TRUE: snapshot load + digest round-trip
     // ------------------------------------------------------------------
     #[test]
     fn snapshot_load_returns_digest() {
