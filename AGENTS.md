@@ -82,3 +82,13 @@ cargo publish --dry-run
 ```
 [cargo\ publish\notin\mu_{allowed}]
 [cargo\ publish\ --dry-run\in\mu_{allowed}]
+
+## TPS & DfLSS WORK LAWS
+[Gemba = Codebase\_Mutation]
+[Muda = Synthesized\_Receipts \lor \Sigma_{prose}]
+[Jidoka = \mathcal{A}_{push} \iff Receipt \not\leftarrow Execution\_Trace]
+[Value\_Stream = \Delta(Architecture) \Rightarrow R_B]
+[Poka\_Yoke: M_{LLM} \not\vdash R_B]
+[CTQ: |\mathbf{f}_t|_0 = 0 \iff Actual\_Tests\_Run]
+[ReceiptSynthesis = FRAUD]
+[Agent_t \text{ must } WRITE\_CODE \text{ to earn } R_B]
