@@ -28,6 +28,7 @@ vendors/
 !/crates/anti-llm-cheat-lsp/receipts/
 !/crates/lsp-max-compositor/receipts/
 !/examples/lsp-max-scaffold/receipts/
+!/receipts/
 scratch/
 /doc/
 libstdin.rlib
