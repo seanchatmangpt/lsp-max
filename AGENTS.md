@@ -41,6 +41,753 @@ Agent output is admitted only when bounded receipts prove that the action equals
 
 ---
 
+## LSP-as-ANDON Doctrine
+
+`lsp-max` is not merely an LSP transport framework.
+
+`lsp-max` is the ANDON framework for LLM coding agents.
+
+Normal LSP exposes diagnostics.
+
+ANDON LSP interrupts invalid work before it becomes project truth.
+
+The governing law:
+
+> If the agent has to remember to check, the system has already failed.
+
+Therefore, governed defects must be pushed into the agent's world.
+
+The LSP must not merely provide passive surfaces such as diagnostics, virtual documents, logs, or reports. Those are evidence surfaces. They are not sufficient discovery surfaces.
+
+Required behavior:
+
+```text
+ProblemDetected
+  ⇒ DiagnosticPublished
+  ∧ AndonPushed
+  ∧ AdmissionGateUpdated
+```
+
+Blocking behavior:
+
+```text
+BlockingAndon ⇒ ¬AdmissionAllowed
+RefuseAndon  ⇒ ¬AdmissionAllowed
+```
+
+The LSP is the factory cord.
+
+### ANDON Invariant Model
+
+Every admissible rule must be represented as an invariant with five components:
+
+`TRUE + FALSE + COUNTERFACTUAL + WITNESS + REPAIR`
+
+Meaning:
+
+- `TRUE`           — valid state is recognized
+- `FALSE`          — invalid state is rejected
+- `COUNTERFACTUAL` — minimally corrupted valid state fails
+- `WITNESS`        — evidence proves the outcome
+- `REPAIR`         — next lawful step is explicit
+
+An invariant is not real until all five exist.
+
+Forbidden implications:
+
+```text
+Positive case passes ⇒ law holds
+No violations        ⇒ checks executed
+Diagnostic exists    ⇒ agent saw it
+Virtual doc exists   ⇒ agent inspected it
+LLM can reason       ⇒ LLM will check
+```
+
+Required implication:
+
+```text
+Invariant failure ⇒ pushed ANDON event
+```
+
+### Truth / False / Counterfactual Power
+
+The three proof cases prevent vacuous green.
+
+- `TRUE` proves recognition.
+- `FALSE` proves rejection.
+- `COUNTERFACTUAL` proves sensitivity.
+
+Examples:
+
+```text
+8-task work unit      → PASS
+9-task work unit      → WORK_UNIT_NEED9
+8-task work unit + 9th task mutation → WORK_UNIT_NEED9
+valid receipt         → publish may be admitted
+missing receipt       → RECEIPT_MISSING
+delete valid receipt  → RECEIPT_MISSING
+bound checks executed → PASS
+checks_run=[]         → BOUND_CHECKS_NOT_EXECUTED
+disabled checker      → BOUND_CHECKS_NOT_EXECUTED
+```
+
+Critical law:
+
+- UNKNOWN is not PASS.
+- STOP is not PASS.
+- No witness is not PASS.
+- No repair for a blocking failure is not PASS.
+- Empty violations are not a pass unless `checks_run` proves checks executed.
+
+### ANDON Status Model
+
+Use TPS-style states, not vague success language.
+
+- `INFO`     — state changed; non-blocking
+- `WARNING`  — degraded; may remain admissible depending on policy
+- `STOP`     — missing proof or blind spot; admission disabled
+- `REFUSE`   — known invalid state; admission disabled
+
+Examples:
+
+```text
+BOUND_CHECKS_NOT_EXECUTED       = STOP
+COUNTERFACTUAL_MISSING          = STOP
+RECEIPT_MISSING                 = STOP
+OCEL_TRACE_MISSING              = STOP
+
+WORK_UNIT_NEED9                 = REFUSE
+COUNTERFACTUAL_DID_NOT_FAIL     = REFUSE
+DIRECT_HEAVY_COMMAND_BLOCKED    = REFUSE
+GOAL_REACHED_FALSE              = REFUSE
+```
+
+### ANDON Event Contract
+
+Every pushed ANDON event must contain enough information that the LLM agent does zero discovery reasoning.
+
+Required payload shape:
+
+```rust
+AndonEvent {
+  id
+  severity
+  code
+  title
+  message
+
+  invariant_id
+  observed_state
+  expected_state
+
+  blocking
+  requires_ack
+  admission_allowed
+
+  next_lawful_step
+  required_command
+
+  evidence_uri
+  virtual_doc_uri
+  receipt_required
+}
+```
+
+Required fields for blocking events:
+
+```text
+blocking = true
+admission_allowed = false
+next_lawful_step = Some(...)
+virtual_doc_uri = Some(...)
+```
+
+If a blocking event has no repair path:
+
+```text
+REPAIR_MISSING = STOP
+```
+
+### LSP Push Channels
+
+`lsp-max` must support three ANDON push surfaces.
+
+1. **Standard diagnostics**
+   `textDocument/publishDiagnostics`
+   Diagnostics make the workspace visibly red.
+
+2. **Human interruption**
+   `window/showMessage`
+   `window/showMessageRequest`
+   Use `showMessageRequest` for STOP or REFUSE conditions requiring explicit acknowledgement.
+
+3. **Machine push notifications**
+   Generic `lsp-max` notifications:
+
+```text
+lspMax/andonRaised
+lspMax/admissionChanged
+lspMax/truthTableChanged
+lspMax/counterfactualFailed
+lspMax/nextLawfulStepChanged
+```
+
+Domain LSPs may alias these:
+
+```text
+bcinrPddl/andonRaised
+antiLlm/andonRaised
+ggen/andonRaised
+```
+
+but the payload must remain compatible with `AndonEvent`.
+
+### Agent Contract Under ANDON
+
+The agent is not responsible for discovering governed failures.
+
+Correct agent loop:
+
+1. Receive pushed ANDON event
+2. Read `admission_allowed`
+3. If false, stop current action
+4. Execute `required_command` or `next_lawful_step`
+5. Wait for updated LSP state
+6. Do not continue until gate clears
+
+Forbidden agent loop:
+
+- Notice diagnostic
+- Reason that it might be okay
+- Continue editing
+- Run build anyway
+- Summarize as green
+
+The agent must not think around ANDON.
+
+### lsp-max Framework Obligations
+
+`lsp-max` must provide reusable high-level abstractions so every project LSP does not hand-roll the same law machinery.
+
+Required framework capabilities:
+
+- `AndonInvariant`
+- `InvariantRegistry`
+- `TruthTable`
+- `CounterfactualProbe`
+- `Witness`
+- `RepairAction`
+- `AndonEvent`
+- `AndonBus`
+- `AdmissionGate`
+- `VirtualDocRegistry`
+- `AnalysisPipeline`
+- `PatternLibrary`
+- `LspPushAdapter`
+- `AgentNotificationProtocol`
+- `LspMaxHarness`
+
+Domain LSPs declare laws.
+
+`lsp-max` turns those laws into:
+
+- diagnostics
+- push notifications
+- truth-table rows
+- counterfactual probes
+- witnesses
+- repair actions
+- virtual docs
+- admission gates
+- test harness assertions
+
+Sharp rule:
+
+> Project LSPs declare invariants.
+> `lsp-max` enforces invariant lifecycle.
+
+### Core Abstraction: AndonInvariant
+
+Canonical shape:
+
+```rust
+AndonInvariant {
+  id
+  statement
+  scope
+
+  true_probe
+  false_probe
+  counterfactual_probe
+
+  witness_rule
+  repair_rule
+
+  severity
+  blocks
+}
+```
+
+Every invariant must answer:
+
+1. Can valid state pass?
+2. Can invalid state fail?
+3. Can corrupted valid state fail?
+4. What proves it?
+5. What repairs it?
+6. What admission does it block?
+
+Missing probes are not allowed.
+
+```text
+true_probe missing           ⇒ TRUE_CASE_MISSING
+false_probe missing          ⇒ FALSE_CASE_MISSING
+counterfactual_probe missing ⇒ COUNTERFACTUAL_MISSING
+witness missing              ⇒ WITNESS_MISSING
+repair missing on block      ⇒ REPAIR_MISSING
+```
+
+### Invariant Registry
+
+The registry prevents invisible rules.
+
+Required law:
+
+```text
+InvariantRegistry.empty() ⇒ ANDON
+```
+
+Required behavior:
+
+- register invariants
+- evaluate all invariants
+- detect missing true/false/counterfactual probes
+- detect missing witnesses
+- detect missing repairs
+- produce TruthTable
+- produce AndonEvents
+
+A project with no invariants is not green.
+
+It is blind.
+
+### Truth Table Virtual Documents
+
+Every ANDON-capable server must expose truth state.
+
+Generic URIs:
+
+```text
+lsp-max://truth/table
+lsp-max://truth/true
+lsp-max://truth/false
+lsp-max://truth/counterfactuals
+lsp-max://truth/andon
+lsp-max://invariants
+lsp-max://admission/gate
+lsp-max://agent/next-step
+```
+
+Domain aliases may exist:
+
+```text
+anti-llm://truth/table
+bcinr-pddl://truth/table
+ggen://truth/table
+```
+
+These documents are evidence surfaces.
+
+They must not be the only way a failure is discovered.
+
+### Witness Model
+
+A pass requires evidence.
+
+Permitted witness kinds:
+
+- File
+- Receipt
+- OCEL event
+- Diagnostic
+- Command output
+- Virtual document
+- Raw JSON-RPC transcript
+- Digest
+- Process-model conformance result
+
+Required law:
+
+```text
+PassWithoutWitness ⇒ STOP
+```
+
+The system must not say PASS without pointing to the evidence.
+
+### Repair Model
+
+A blocking ANDON must name the next lawful step.
+
+Canonical shape:
+
+```rust
+RepairAction {
+  id
+  title
+  next_lawful_step
+  command
+  code_action
+  virtual_doc_uri
+}
+```
+
+Examples:
+
+```text
+WORK_UNIT_NEED9
+  → bcinrPddl.splitNeed9
+
+BOUND_CHECKS_NOT_EXECUTED
+  → implement_check_lifecycle_domain
+
+DIRECT_HEAVY_COMMAND_BLOCKED
+  → lspMax.requestBuildSlot
+
+RECEIPT_MISSING
+  → executeTape or emitReceipt through admitted route
+```
+
+If the LSP cannot identify the repair:
+
+```text
+REPAIR_MISSING = STOP
+```
+
+### Counterfactual Probe Families
+
+Counterfactuals should be cheap, local, and specific.
+
+Required reusable mutation patterns:
+
+- `RemoveFile`
+- `RemoveMarker`
+- `CorruptJsonField`
+- `AddNthItem`
+- `DisableChecker`
+- `SwapAuthority`
+- `HideReceipt`
+- `HideOCEL`
+- `DoubleAcquireBuildSlot`
+- `DirectHeavyCommandWithoutSlot`
+
+Examples:
+
+```text
+remove ADMITTED marker       → PRD_NOT_ADMITTED
+add 9th work-unit task       → WORK_UNIT_NEED9
+delete receipt               → RECEIPT_MISSING
+flip goal_reached true→false → GOAL_REACHED_FALSE
+set checks_run=[]            → BOUND_CHECKS_NOT_EXECUTED
+```
+
+A counterfactual that does not fail is a refusal:
+
+```text
+COUNTERFACTUAL_DID_NOT_FAIL = REFUSE
+```
+
+### Pattern Library
+
+`lsp-max` should provide reusable invariant patterns.
+
+Required patterns:
+
+- `RequiredArtifact`
+- `MarkerAdmission`
+- `NeedN`
+- `CandidateNotAdmission`
+- `ReceiptRequired`
+- `OcelRequired`
+- `BrokeredCommand`
+- `NonEmptyCheckSet`
+- `RouteEvidenceRequired`
+- `TranscriptRequired`
+- `NoForbiddenDependency`
+- `NoVictoryLanguage`
+
+**RequiredArtifact**
+Use for files that must exist.
+`docs/prd.md`, `docs/ard.md`, `docs/adr/*.md`, `.bcinr/test-report.json`, `.bcinr/receipts/latest.json`, `.bcinr/ocel/latest.json`
+
+**MarkerAdmission**
+Use for marker-based local admission.
+`ADMITTED`, `REVIEWED`, `PUBLISHED`
+
+**NeedN**
+Use for bounded decomposition.
+Need9 means split.
+
+**CandidateNotAdmission**
+Canonical law:
+`Candidate ≠ Admitted`
+
+**ReceiptRequired**
+Canonical law:
+`Test output is not a receipt.`
+
+**OcelRequired**
+Canonical law:
+`Execution without OCEL is not process evidence.`
+
+**BrokeredCommand**
+Canonical law:
+`Heavy command requires build slot.`
+
+**NonEmptyCheckSet**
+Canonical law:
+`Empty checks_run is ANDON.`
+
+### Analysis Pipeline
+
+Every `lsp-max` server should follow the same high-level analysis cycle.
+
+- observe workspace
+- evaluate invariants
+- compute truth table
+- run cheap counterfactual probes
+- derive ANDON events
+- publish diagnostics
+- push ANDON notifications
+- update virtual docs
+- update admission gate
+
+Required implication:
+
+```text
+didOpen/didChange/didSave
+  ⇒ TruthTableUpdated
+  ∧ CounterfactualsEvaluated
+  ∧ AndonEventsPushedWhenNeeded
+```
+
+Projection events may not perform admission unless explicitly authorized.
+
+### Admission Gate
+
+`lsp-max` owns generic admission blocking.
+
+Canonical statuses:
+
+- `OPEN`
+- `CANDIDATE`
+- `BLOCKED`
+- `STOPPED`
+- `REFUSED`
+- `ADMITTED`
+- `PUBLISHED`
+- `UNKNOWN`
+
+Required rule:
+
+```text
+admission_allowed(events) =
+  events.all(|e| e.admission_allowed)
+```
+
+If any active event has `blocking = true` then `admission_allowed = false`. The LLM cannot override this with prose.
+
+### LspMaxHarness
+
+`lsp-max` must provide an in-memory test harness for ANDON behavior.
+
+Required assertions:
+
+- `assert_diagnostic(code)`
+- `assert_andon(code)`
+- `assert_admission_disabled()`
+- `assert_next_lawful_step(step)`
+- `assert_virtual_doc_contains(uri, text)`
+- `assert_truth_table_row(invariant_id)`
+- `assert_counterfactual_failed(invariant_id)`
+- `assert_witness_present(invariant_id)`
+- `assert_repair_present(invariant_id)`
+- `assert_no_vacuous_green()`
+
+Every rejection test must assert both:
+- diagnostic emitted
+- ANDON pushed
+
+A function-level rejection that does not surface through LSP is not admitted.
+
+### New Diagnostic Families for ANDON Framework
+
+Add framework-level diagnostics:
+
+- `LSPMAX-ANDON-*`
+- `LSPMAX-INVARIANT-*`
+- `LSPMAX-TRUTH-*`
+- `LSPMAX-WITNESS-*`
+- `LSPMAX-REPAIR-*`
+- `LSPMAX-COUNTERFACTUAL-*`
+- `LSPMAX-ADMISSION-*`
+
+Required codes:
+
+- `LSPMAX-INVARIANT-EMPTY-REGISTRY`
+- `LSPMAX-INVARIANT-TRUE-CASE-MISSING`
+- `LSPMAX-INVARIANT-FALSE-CASE-MISSING`
+- `LSPMAX-INVARIANT-COUNTERFACTUAL-MISSING`
+- `LSPMAX-TRUTH-TABLE-INCOMPLETE`
+- `LSPMAX-WITNESS-MISSING`
+- `LSPMAX-REPAIR-MISSING`
+- `LSPMAX-COUNTERFACTUAL-DID-NOT-FAIL`
+- `LSPMAX-ADMISSION-DISABLED`
+- `LSPMAX-ANDON-PUSH-MISSING`
+
+Forbidden implication:
+
+```text
+DiagnosticOnly ⇒ AgentInterrupted
+```
+
+So any blocking diagnostic without a corresponding ANDON push is itself a framework violation:
+`LSPMAX-ANDON-PUSH-MISSING`
+
+### Relationship to Λ_CD
+
+The current gate file is the SELECT side (agent or hook reads gate state).
+ANDON push is the PUSH side (diagnostic context is injected into the agent's world).
+
+Full runtime law requires both:
+`Λ_CD^runtime = SELECT ∧ PUSH`
+
+SELECT alone is insufficient for subagents that do not know to check.
+PUSH alone is insufficient for synchronous tool blocking.
+
+Required direction:
+- gate check remains canonical synchronous block
+- ANDON event becomes canonical context injection
+
+### D_t PUSH Requirement
+
+`D_t` is the active diagnostic context at time `t`.
+
+The agent should receive `D_t` as structured context, not infer it from logs.
+
+Minimum pushed context:
+
+- active_andon_codes
+- governing_axes
+- available_repairs
+- admission_allowed
+- since_seq
+- truth_table_uri
+- gate_file
+
+Candidate CLI surface:
+
+```bash
+lsp-max-cli gate check --format=agent-context
+```
+
+When BLOCKED, stdout must emit a structured block suitable for injection into agent context.
+
+Required fields:
+
+- active_andon_codes
+- active_invariant_ids
+- severity
+- blocking
+- available_repairs
+- required_commands
+- virtual_doc_uris
+- admission_allowed
+
+### Subagent Propagation Update
+
+The existing subagent gap remains OPEN.
+
+The helper preamble is mitigation, not enforcement.
+
+Required updated language:
+
+> Subagent prompt preambles are CANDIDATE mitigation.
+> D_t PUSH is the path toward structural enforcement.
+> Until PUSH is ADMITTED, subagent propagation remains OPEN.
+
+Do not collapse this gap into ADMITTED.
+
+### Framework Crate Shape
+
+Target split:
+
+```text
+lsp-max-core
+  invariant model
+  truth table
+  witness
+  repair
+  admission gate
+
+lsp-max-andon
+  AndonEvent
+  AndonBus
+  severity
+  push mapping
+
+lsp-max-patterns
+  RequiredArtifact
+  MarkerAdmission
+  NeedN
+  ReceiptRequired
+  OcelRequired
+  BrokeredCommand
+  NonEmptyCheckSet
+
+lsp-max-lsp
+  Tower integration
+  diagnostics
+  showMessage/showMessageRequest
+  custom notifications
+  virtual docs
+
+lsp-max-test
+  in-memory harness
+  fake client
+  assertion helpers
+```
+
+If implemented as one crate first, keep these module boundaries.
+
+### Final ANDON Prime
+
+`lsp-max` does not ask agents to be careful.
+
+`lsp-max` makes governed carelessness operationally visible and blocks admission.
+
+The repository is not passive text.
+
+The LSP is not passive diagnostics.
+
+The agent is not trusted to remember every law.
+
+The framework must push law violations into the agent's world.
+
+Final law:
+
+> A state does not exist operationally unless the LSP can represent it.
+> A failure is not governed unless the LSP can push it.
+> An invariant is not real unless it has TRUE, FALSE, COUNTERFACTUAL, WITNESS, and REPAIR.
+> Green without counterfactual rejection is not green.
+> A disclaimer is not an ANDON.
+> A diagnostic without push is not interruption.
+> A candidate is not admission.
+> A test is not a receipt.
+> A log is not route proof.
+> A receipt decides admissibility.
+
+---
+
 ## Operating Metaphor
 
 This project is an F1 race team for agents.
@@ -822,7 +1569,7 @@ Repo state is the manifold.
 Agent edits are trajectories.  
 Failsets are curvature.  
 Receipts are proof measure.  
-LSP is the differential operator.  
+LSP is the differential operator and the ANDON cord: it computes gradients, exposes curvature, and interrupts agents when the trajectory leaves admitted law.  
 Diagnostics are gradients.  
 Code actions are constrained control vectors.  
 LSP 3.18 is the enforcement basis.  

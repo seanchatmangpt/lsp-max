@@ -43,6 +43,70 @@ pub enum StreamEventKind {
     GateChange,
     ReceiptAdmission,
     LawViolation,
+    /// Admission gate outcome for an agent operation request.
+    /// Payload: BrokerDecisionPayload
+    BrokerDecision,
+    /// Agent's position in the admission queue changed.
+    /// Payload: QueuePositionPayload
+    QueuePositionChange,
+}
+
+/// Admission decision variants pushed via BrokerDecision events.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(tag = "kind", rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum AdmissionDecision {
+    Admitted,
+    Refused,
+    Queued { position: u32 },
+}
+
+/// Payload for StreamEventKind::BrokerDecision.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BrokerDecisionPayload {
+    /// Operation ID, e.g. "ggen.sync", "ggen.build.workspace"
+    pub op: String,
+    pub decision: AdmissionDecision,
+    /// BLAKE3 receipt hash if admitted
+    pub receipt_hash: Option<String>,
+    /// DefectClass name if refused
+    pub refusal_reason: Option<String>,
+}
+
+impl BrokerDecisionPayload {
+    pub fn admitted(op: impl Into<String>, receipt_hash: impl Into<String>) -> Self {
+        Self {
+            op: op.into(),
+            decision: AdmissionDecision::Admitted,
+            receipt_hash: Some(receipt_hash.into()),
+            refusal_reason: None,
+        }
+    }
+
+    pub fn refused(op: impl Into<String>, reason: impl Into<String>) -> Self {
+        Self {
+            op: op.into(),
+            decision: AdmissionDecision::Refused,
+            receipt_hash: None,
+            refusal_reason: Some(reason.into()),
+        }
+    }
+
+    pub fn queued(op: impl Into<String>, position: u32) -> Self {
+        Self {
+            op: op.into(),
+            decision: AdmissionDecision::Queued { position },
+            receipt_hash: None,
+            refusal_reason: None,
+        }
+    }
+}
+
+/// Payload for StreamEventKind::QueuePositionChange.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct QueuePositionPayload {
+    pub op: String,
+    pub position: u32,
+    pub queue_depth: u32,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
