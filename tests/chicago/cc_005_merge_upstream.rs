@@ -3,7 +3,7 @@
 //! Ticket: docs/jira/v26.6.30/CC-005-diagnostic-merge-claude-code.md
 
 use chicago_tdd_tools::chicago_test;
-use lsp_types::{Diagnostic, DiagnosticSeverity, NumberOrString, Position, Range};
+use lsp_max::lsp_types::{Diagnostic, DiagnosticSeverity, NumberOrString, Position, Range};
 
 fn diag(start: (u32, u32), end: (u32, u32), code: &str, severity: DiagnosticSeverity) -> Diagnostic {
     Diagnostic {
