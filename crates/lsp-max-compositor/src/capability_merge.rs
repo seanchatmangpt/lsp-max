@@ -15,6 +15,12 @@ use lsp_max::lsp_types::ServerCapabilities;
 ///
 /// Inputs are `(tier, caps)` pairs in any order.  Primary caps take precedence;
 /// Secondary caps fill gaps.  DiagnosticsOnly entries are ignored entirely.
+///
+/// Union semantics for boolean-or-complex provider fields:
+/// - For fields that accept `OneOf<bool, Options>`: true if ANY child reports true or options.
+///   Primary-tier Options take precedence over Secondary-tier Options.  `Simple(false)` is only
+///   returned when every participating child explicitly reports `false`.
+/// - For purely complex (non-boolean) providers: first-non-None in tier order (Primary first).
 pub fn merge_capabilities(inputs: &[(ChildTier, ServerCapabilities)]) -> ServerCapabilities {
     // Build ordered list: Primary first (rank 0), Secondary second (rank 1).
     // DiagnosticsOnly (rank 2) is filtered out.
@@ -29,6 +35,13 @@ pub fn merge_capabilities(inputs: &[(ChildTier, ServerCapabilities)]) -> ServerC
     for (_, caps) in &ordered {
         merge_into(&mut merged, caps);
     }
+
+    // Second pass: apply boolean-union for fields where `Simple(false)` from a higher-priority
+    // server should not mask `Simple(true)` from a lower-priority server.
+    // Fields named in the ticket: completionProvider, hoverProvider, definitionProvider,
+    // referencesProvider, documentSymbolProvider, workspaceSymbolProvider.
+    apply_boolean_union(&mut merged, inputs);
+
     merged
 }
 
@@ -133,6 +146,80 @@ fn merge_into(dst: &mut ServerCapabilities, src: &ServerCapabilities) {
     }
 }
 
+/// Returns true when a `HoverProviderCapability` actively advertises hover support.
+/// `Simple(false)` is the only "inactive" variant; options or `Simple(true)` are active.
+fn hover_is_active(v: &lsp_max::lsp_types::HoverProviderCapability) -> bool {
+    !matches!(v, lsp_max::lsp_types::HoverProviderCapability::Simple(false))
+}
+
+/// Returns true when an `OneOf<bool, T>` actively advertises the feature.
+/// `Left(false)` is the only "inactive" variant.
+fn one_of_is_active<T>(v: &lsp_max::lsp_types::OneOf<bool, T>) -> bool {
+    !matches!(v, lsp_max::lsp_types::OneOf::Left(false))
+}
+
+/// Apply boolean-union for provider fields that can carry a `false` sentinel.
+///
+/// If the merged result shows `false` (from the highest-priority server) but ANY
+/// participating server advertises the feature as active (true or options), override
+/// to `true` — the compositor must not mask a child capability.
+fn apply_boolean_union(merged: &mut ServerCapabilities, inputs: &[(ChildTier, ServerCapabilities)]) {
+    use lsp_max::lsp_types::HoverProviderCapability;
+
+    let participating: Vec<&ServerCapabilities> = inputs
+        .iter()
+        .filter(|(tier, _)| !matches!(tier, ChildTier::DiagnosticsOnly))
+        .map(|(_, caps)| caps)
+        .collect();
+
+    // hoverProvider
+    if let Some(v) = &merged.hover_provider {
+        if !hover_is_active(v)
+            && participating.iter().any(|c| c.hover_provider.as_ref().is_some_and(hover_is_active))
+        {
+            merged.hover_provider = Some(HoverProviderCapability::Simple(true));
+        }
+    }
+
+    // definitionProvider — Option<OneOf<bool, DefinitionOptions>>
+    if let Some(v) = &merged.definition_provider {
+        if !one_of_is_active(v)
+            && participating.iter().any(|c| c.definition_provider.as_ref().is_some_and(one_of_is_active))
+        {
+            merged.definition_provider = Some(lsp_max::lsp_types::OneOf::Left(true));
+        }
+    }
+
+    // referencesProvider — Option<OneOf<bool, ReferencesOptions>>
+    if let Some(v) = &merged.references_provider {
+        if !one_of_is_active(v)
+            && participating.iter().any(|c| c.references_provider.as_ref().is_some_and(one_of_is_active))
+        {
+            merged.references_provider = Some(lsp_max::lsp_types::OneOf::Left(true));
+        }
+    }
+
+    // documentSymbolProvider — Option<OneOf<bool, DocumentSymbolOptions>>
+    if let Some(v) = &merged.document_symbol_provider {
+        if !one_of_is_active(v)
+            && participating.iter().any(|c| c.document_symbol_provider.as_ref().is_some_and(one_of_is_active))
+        {
+            merged.document_symbol_provider = Some(lsp_max::lsp_types::OneOf::Left(true));
+        }
+    }
+
+    // workspaceSymbolProvider — Option<OneOf<bool, WorkspaceSymbolOptions>>
+    if let Some(v) = &merged.workspace_symbol_provider {
+        if !one_of_is_active(v)
+            && participating.iter().any(|c| c.workspace_symbol_provider.as_ref().is_some_and(one_of_is_active))
+        {
+            merged.workspace_symbol_provider = Some(lsp_max::lsp_types::OneOf::Left(true));
+        }
+    }
+
+    // completionProvider: no `Simple(false)` sentinel — the merge_into pass is sufficient.
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -213,5 +300,52 @@ mod tests {
         // Primary is Simple(true); Secondary is Simple(false).
         // Since Primary is ranked lower (comes first after sort), its value wins.
         assert!(merged.hover_provider.is_some());
+    }
+
+    #[test]
+    fn boolean_union_secondary_true_overrides_primary_false() {
+        // Primary says Simple(false) — feature disabled.
+        // Secondary says Simple(true) — feature enabled.
+        // Boolean-union must return true (any-child-wins).
+        let primary_caps = ServerCapabilities {
+            hover_provider: Some(HoverProviderCapability::Simple(false)),
+            ..Default::default()
+        };
+        let secondary_caps = ServerCapabilities {
+            hover_provider: Some(HoverProviderCapability::Simple(true)),
+            ..Default::default()
+        };
+
+        let merged = merge_capabilities(&[
+            (ChildTier::Primary, primary_caps),
+            (ChildTier::Secondary, secondary_caps),
+        ]);
+        assert!(
+            matches!(merged.hover_provider, Some(HoverProviderCapability::Simple(true))),
+            "boolean-union must return true when any child advertises true"
+        );
+    }
+
+    #[test]
+    fn boolean_union_references_secondary_true_overrides_primary_false() {
+        use lsp_max::lsp_types::OneOf;
+
+        let primary_caps = ServerCapabilities {
+            references_provider: Some(OneOf::Left(false)),
+            ..Default::default()
+        };
+        let secondary_caps = ServerCapabilities {
+            references_provider: Some(OneOf::Left(true)),
+            ..Default::default()
+        };
+
+        let merged = merge_capabilities(&[
+            (ChildTier::Primary, primary_caps),
+            (ChildTier::Secondary, secondary_caps),
+        ]);
+        assert!(
+            matches!(merged.references_provider, Some(OneOf::Left(true))),
+            "boolean-union must return true for referencesProvider when secondary advertises true"
+        );
     }
 }

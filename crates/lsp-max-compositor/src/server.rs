@@ -350,6 +350,22 @@ impl lsp_max::LanguageServer for CompositorServer {
 }
 
 impl CompositorServer {
+    /// Return the handle for the first Primary-tier server in the pool regardless of URI.
+    /// Used by the unknown-method proxy to find a forwarding target when there is no
+    /// document URI in the request context.  Lsif-tier servers are excluded per spec.
+    pub fn primary_server_handle(&self) -> Option<(String, ChildServerHandle)> {
+        // Determine primary IDs from config (ordered as declared in lsp-max.toml).
+        for entry in &self.config.server {
+            let tier = crate::registry::ChildTier::from_priority(&entry.priority);
+            if matches!(tier, crate::registry::ChildTier::Primary) {
+                if let Some(proc_ref) = self.pool.get(&entry.id) {
+                    return Some((entry.id.clone(), proc_ref.handle.clone()));
+                }
+            }
+        }
+        None
+    }
+
     /// Cloned handles for the Primary-tier children registered for `uri`, in
     /// tier order. Used by FirstSuccess request dispatch. DashMap refs are
     /// dropped before the caller's first await: handles are cloned out eagerly.
@@ -608,7 +624,15 @@ pub async fn run_stdio(
         }
     });
 
-    let (service, socket) = LspService::new(|client: Client| {
+    // Write the compositor endpoint descriptor so Claude Code and discover-lsp-chains.sh
+    // can wire the compositor as the LSP binding target rather than individual child servers.
+    crate::endpoint_descriptor::write_endpoint_descriptor();
+
+    // Shared pool Arc used both in the LspService closure and in the transparent proxy fallback.
+    let pool_for_fallback = Arc::clone(&pool);
+    let config_for_fallback = Arc::clone(&config);
+
+    let (service, socket) = LspService::build(|client: Client| -> CompositorServer {
         let mut registry = InvariantRegistry::new();
         registry.register(build_empty_registry_invariant());
         registry.register(build_required_artifact_invariant("docs/prd.md"));
@@ -641,6 +665,63 @@ pub async fn run_stdio(
             andon_bus: Arc::new(StdMutex::new(AndonBus::new())),
             andon_snapshot: Arc::new(crate::andon_snapshot::AndonSnapshot::new()),
         }
-    });
+    })
+    .fallback_method(move |req| {
+        // Transparent proxy: forward unknown LSP methods to the first Primary-tier
+        // child server.  Lsif-tier servers are never targeted.
+        let pool = Arc::clone(&pool_for_fallback);
+        let config = Arc::clone(&config_for_fallback);
+        Box::pin(async move {
+            let (method, id, params) = req.into_parts();
+
+            // Resolve the first Primary-tier child server from the pool.
+            let primary_handle: Option<(String, ChildServerHandle)> = {
+                let mut found = None;
+                for entry in &config.server {
+                    let tier = crate::registry::ChildTier::from_priority(&entry.priority);
+                    if matches!(tier, crate::registry::ChildTier::Primary) {
+                        if let Some(proc_ref) = pool.get(&entry.id) {
+                            found = Some((entry.id.clone(), proc_ref.handle.clone()));
+                            break;
+                        }
+                    }
+                }
+                found
+            };
+
+            let Some((server_id, handle)) = primary_handle else {
+                tracing::debug!(method = %method, "compositor: no primary child for unknown method — dropping");
+                // No id → notification; return None silently.
+                // Has id → return method_not_found so the editor doesn't hang.
+                return Ok(id.map(|id| {
+                    let mut err = lsp_max::jsonrpc::Error::method_not_found();
+                    err.data = Some(serde_json::Value::from(method.as_ref()));
+                    lsp_max::jsonrpc::Response::from_parts(id, Err(err))
+                }));
+            };
+
+            tracing::debug!(
+                method = %method,
+                server_id = %server_id,
+                "compositor: forwarding unknown method to primary child"
+            );
+
+            let result = handle
+                .request::<serde_json::Value>(method.as_ref(), params.unwrap_or(serde_json::Value::Null))
+                .await;
+
+            Ok(id.map(|id| match result {
+                Ok(Some(val)) => lsp_max::jsonrpc::Response::from_parts(id, Ok(val)),
+                Ok(None) => lsp_max::jsonrpc::Response::from_parts(id, Ok(serde_json::Value::Null)),
+                Err(_) => {
+                    lsp_max::jsonrpc::Response::from_parts(
+                        id,
+                        Err(lsp_max::jsonrpc::Error::internal_error()),
+                    )
+                }
+            }))
+        })
+    })
+    .finish();
     let _ = Server::new(stdin, stdout, socket).serve(service).await;
 }
