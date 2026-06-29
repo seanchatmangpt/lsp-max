@@ -1,3 +1,4 @@
+use crate::registry::ChildTier;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -132,8 +133,12 @@ pub enum RoutingDecision {
     Unroutable {
         method: String,
     },
-    /// CANDIDATE: route to LSIF fallback tier for read-only navigation methods.
+    /// Try Primary tier first; fall back to LSIF tier when Primary returns null/error.
     FallbackToLsif {
+        method: String,
+    },
+    /// Method is excluded from this tier (e.g. write methods on LSIF snapshot servers).
+    Excluded {
         method: String,
     },
 }
@@ -145,29 +150,54 @@ impl RoutingDecision {
             Self::Fanout { .. } => "CANDIDATE",
             Self::Unroutable { .. } => "REFUSED",
             Self::FallbackToLsif { .. } => "CANDIDATE",
+            Self::Excluded { .. } => "REFUSED",
         }
     }
 }
 
-/// CANDIDATE: determine whether a method should be routed to the LSIF fallback tier.
-/// Returns FallbackToLsif for navigation methods (definition/references/hover);
-/// excludes didOpen/didChange/didClose and publishDiagnostics (LSIF is read-only).
-/// CC-007: docs/jira/v26.6.30/CC-007-lsif-tier.md
-pub fn route_lsif_fallback(
-    method: &str,
-    tier: &crate::registry::ChildTier,
-) -> RoutingDecision {
-    chicago_tdd_tools::scaffold!(
-        ticket = "docs/jira/v26.6.30/CC-007-lsif-tier.md",
-        test   = "tests/chicago/cc_007_lsif_routing.rs",
-    )
+/// Navigation methods that an LSIF snapshot server can serve.
+const LSIF_NAV_METHODS: &[&str] = &[
+    "textDocument/definition",
+    "textDocument/references",
+    "textDocument/hover",
+    "textDocument/documentSymbol",
+    "textDocument/implementation",
+    "textDocument/typeDefinition",
+];
+
+/// Route a navigation method for LSIF tier fallback.
+///
+/// Returns `FallbackToLsif` for read-only navigation methods when the tier is `Lsif`.
+/// Returns `Excluded` for write/notification methods on any tier, and for all methods
+/// when the tier is not `Lsif` (LSIF semantics only apply to the snapshot tier).
+pub fn route_lsif_fallback(method: &str, tier: &ChildTier) -> RoutingDecision {
+    if tier != &ChildTier::Lsif {
+        return RoutingDecision::Excluded {
+            method: method.to_string(),
+        };
+    }
+    if LSIF_NAV_METHODS.contains(&method) {
+        return RoutingDecision::FallbackToLsif {
+            method: method.to_string(),
+        };
+    }
+    // Write/notification methods and everything else are excluded from LSIF servers.
+    RoutingDecision::Excluded {
+        method: method.to_string(),
+    }
 }
 
-/// CANDIDATE: whether a notification method should be forwarded to the given tier.
-/// For LSIF tier: didOpen/didChange/didClose return false (read-only snapshot).
-pub fn should_forward_notification(method: &str, tier: &crate::registry::ChildTier) -> bool {
-    chicago_tdd_tools::scaffold!(
-        ticket = "docs/jira/v26.6.30/CC-007-lsif-tier.md",
-        test   = "tests/chicago/cc_007_lsif_routing.rs",
-    )
+/// Whether a notification should be forwarded to the given tier.
+///
+/// LSIF servers are read-only snapshots and never receive state-mutating notifications.
+/// DiagnosticsOnly tier skips document lifecycle notifications but accepts diagnostic-related ones.
+pub fn should_forward_notification(method: &str, tier: &ChildTier) -> bool {
+    match tier {
+        ChildTier::Lsif => false,
+        ChildTier::Primary | ChildTier::Secondary => true,
+        ChildTier::DiagnosticsOnly => !matches!(
+            method,
+            "textDocument/didChange" | "textDocument/didOpen" | "textDocument/didClose"
+        ),
+    }
 }

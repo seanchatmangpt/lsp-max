@@ -3,12 +3,14 @@
 // For generated initialization boilerplate, see ggen.toml (Phase 4 scaffold).
 // Adding a new domain-specific server: add a [[server]] entry to lsp-max.toml — no Rust changes needed once the ggen template is implemented.
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum ChildTier {
     Primary,
     Secondary,
     DiagnosticsOnly,
-    Lsif,  // read-only snapshot; fallback navigation only; never receives didChange
+    /// Read-only snapshot tier; fallback navigation (definition/references/hover) only.
+    /// Never receives state-mutating notifications (didOpen/didChange/didClose).
+    Lsif,
 }
 
 impl ChildTier {
