@@ -81,6 +81,13 @@ walkdir.workspace = true
 tree-sitter-rust = "0.23"
 blake3 = "1"
 criterion = { version = "0.5", features = ["html_reports"] }
+chicago-tdd-tools = { workspace = true }
+chicago-tdd-tools-proc-macros = { workspace = true }
+lsp-max-compositor = { path = "crates/lsp-max-compositor", features = ["full"] }
+
+[[test]]
+name = "cc_004_fanout"
+path = "tests/chicago/cc_004_fanout.rs"
 
 [[bench]]
 name = "pipeline_search"
@@ -149,6 +156,8 @@ rayon-par-bridge = "0.1.0"
 bon = "3.6.4"
 rustc-hash = "2"
 lsp-max-ast = { path = "crates/lsp-max-adapters/lsp-max-ast", version = "26.6.26" }
+chicago-tdd-tools = { path = "/Users/sac/chicago-tdd-tools" }
+chicago-tdd-tools-proc-macros = { path = "/Users/sac/chicago-tdd-tools/proc_macros", package = "chicago-tdd-tools-proc-macros" }
 
 [patch.crates-io]
 wasm4pm = { path = "../wasm4pm/wasm4pm" }
