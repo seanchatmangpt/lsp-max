@@ -36,6 +36,8 @@ pub mod receipt_chain;
 #[cfg(feature = "full")]
 pub mod routing;
 #[cfg(feature = "full")]
+pub mod endpoint_descriptor;
+#[cfg(feature = "full")]
 pub mod server;
 
 // Re-exports from routing-safe modules (always available).

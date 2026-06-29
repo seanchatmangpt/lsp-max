@@ -21,6 +21,9 @@ use super::{Error, Id, Request, Response};
 pub struct Router<S, E = Infallible> {
     server: Arc<S>,
     methods: FxHashMap<&'static str, BoxService<Request, Option<Response>, E>>,
+    /// Optional catch-all invoked when no registered method matches the incoming request.
+    /// When absent, unrecognised requests receive a `MethodNotFound` error response.
+    fallback: Option<Arc<dyn Fn(Request) -> BoxFuture<'static, Result<Option<Response>, E>> + Send + Sync>>,
 }
 
 impl<S: Send + Sync + 'static, E> Router<S, E> {
@@ -29,7 +32,20 @@ impl<S: Send + Sync + 'static, E> Router<S, E> {
         Router {
             server: Arc::new(server),
             methods: FxHashMap::default(),
+            fallback: None,
         }
+    }
+
+    /// Registers a catch-all handler invoked for any method not in the routing table.
+    ///
+    /// The compositor uses this to forward unknown LSP requests to the primary child server
+    /// rather than returning `MethodNotFound` to the editor client.
+    pub fn set_fallback<F>(&mut self, f: F) -> &mut Self
+    where
+        F: Fn(Request) -> BoxFuture<'static, Result<Option<Response>, E>> + Send + Sync + 'static,
+    {
+        self.fallback = Some(Arc::new(f));
+        self
     }
 
     /// Returns a reference to the inner server.
@@ -70,7 +86,7 @@ impl<S: Debug, E> Debug for Router<S, E> {
         f.debug_struct("Router")
             .field("server", &self.server)
             .field("methods", &self.methods.keys())
-            .finish()
+            .finish_non_exhaustive()
     }
 }
 
@@ -86,6 +102,8 @@ impl<S, E: Send + 'static> Service<Request> for Router<S, E> {
     fn call(&mut self, req: Request) -> Self::Future {
         if let Some(handler) = self.methods.get_mut(req.method()) {
             handler.call(req)
+        } else if let Some(fallback) = &self.fallback {
+            fallback(req)
         } else {
             let (method, id, _) = req.into_parts();
             future::ok(id.map(|id| {

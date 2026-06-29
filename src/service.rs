@@ -259,6 +259,23 @@ impl<S: LanguageServer> LspServiceBuilder<S> {
         self
     }
 
+    /// Registers a catch-all handler for any JSON-RPC method not handled by registered routes.
+    ///
+    /// Used by the compositor to forward unknown LSP requests to the primary child server
+    /// so that the editor never receives a `MethodNotFound` response for methods the compositor
+    /// does not explicitly implement but a child server does.
+    ///
+    /// The closure receives the full `Request` and must return an `Option<Response>`:
+    /// - `Some(response)` to send a response back to the editor
+    /// - `None` to silently drop the request (appropriate for notifications)
+    pub fn fallback_method<F>(mut self, f: F) -> Self
+    where
+        F: Fn(crate::jsonrpc::Request) -> futures::future::BoxFuture<'static, Result<Option<crate::jsonrpc::Response>, ExitedError>> + Send + Sync + 'static,
+    {
+        self.inner.set_fallback(f);
+        self
+    }
+
     /// Constructs the `LspService` and returns it, along with a channel for server-to-client
     /// communication.
     pub fn finish(self) -> (LspService<S>, ClientSocket) {
