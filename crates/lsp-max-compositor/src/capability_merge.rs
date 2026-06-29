@@ -149,7 +149,10 @@ fn merge_into(dst: &mut ServerCapabilities, src: &ServerCapabilities) {
 /// Returns true when a `HoverProviderCapability` actively advertises hover support.
 /// `Simple(false)` is the only "inactive" variant; options or `Simple(true)` are active.
 fn hover_is_active(v: &lsp_max::lsp_types::HoverProviderCapability) -> bool {
-    !matches!(v, lsp_max::lsp_types::HoverProviderCapability::Simple(false))
+    !matches!(
+        v,
+        lsp_max::lsp_types::HoverProviderCapability::Simple(false)
+    )
 }
 
 /// Returns true when an `OneOf<bool, T>` actively advertises the feature.
@@ -163,7 +166,10 @@ fn one_of_is_active<T>(v: &lsp_max::lsp_types::OneOf<bool, T>) -> bool {
 /// If the merged result shows `false` (from the highest-priority server) but ANY
 /// participating server advertises the feature as active (true or options), override
 /// to `true` — the compositor must not mask a child capability.
-fn apply_boolean_union(merged: &mut ServerCapabilities, inputs: &[(ChildTier, ServerCapabilities)]) {
+fn apply_boolean_union(
+    merged: &mut ServerCapabilities,
+    inputs: &[(ChildTier, ServerCapabilities)],
+) {
     use lsp_max::lsp_types::HoverProviderCapability;
 
     let participating: Vec<&ServerCapabilities> = inputs
@@ -175,7 +181,9 @@ fn apply_boolean_union(merged: &mut ServerCapabilities, inputs: &[(ChildTier, Se
     // hoverProvider
     if let Some(v) = &merged.hover_provider {
         if !hover_is_active(v)
-            && participating.iter().any(|c| c.hover_provider.as_ref().is_some_and(hover_is_active))
+            && participating
+                .iter()
+                .any(|c| c.hover_provider.as_ref().is_some_and(hover_is_active))
         {
             merged.hover_provider = Some(HoverProviderCapability::Simple(true));
         }
@@ -184,7 +192,9 @@ fn apply_boolean_union(merged: &mut ServerCapabilities, inputs: &[(ChildTier, Se
     // definitionProvider — Option<OneOf<bool, DefinitionOptions>>
     if let Some(v) = &merged.definition_provider {
         if !one_of_is_active(v)
-            && participating.iter().any(|c| c.definition_provider.as_ref().is_some_and(one_of_is_active))
+            && participating
+                .iter()
+                .any(|c| c.definition_provider.as_ref().is_some_and(one_of_is_active))
         {
             merged.definition_provider = Some(lsp_max::lsp_types::OneOf::Left(true));
         }
@@ -193,7 +203,9 @@ fn apply_boolean_union(merged: &mut ServerCapabilities, inputs: &[(ChildTier, Se
     // referencesProvider — Option<OneOf<bool, ReferencesOptions>>
     if let Some(v) = &merged.references_provider {
         if !one_of_is_active(v)
-            && participating.iter().any(|c| c.references_provider.as_ref().is_some_and(one_of_is_active))
+            && participating
+                .iter()
+                .any(|c| c.references_provider.as_ref().is_some_and(one_of_is_active))
         {
             merged.references_provider = Some(lsp_max::lsp_types::OneOf::Left(true));
         }
@@ -202,7 +214,11 @@ fn apply_boolean_union(merged: &mut ServerCapabilities, inputs: &[(ChildTier, Se
     // documentSymbolProvider — Option<OneOf<bool, DocumentSymbolOptions>>
     if let Some(v) = &merged.document_symbol_provider {
         if !one_of_is_active(v)
-            && participating.iter().any(|c| c.document_symbol_provider.as_ref().is_some_and(one_of_is_active))
+            && participating.iter().any(|c| {
+                c.document_symbol_provider
+                    .as_ref()
+                    .is_some_and(one_of_is_active)
+            })
         {
             merged.document_symbol_provider = Some(lsp_max::lsp_types::OneOf::Left(true));
         }
@@ -211,7 +227,11 @@ fn apply_boolean_union(merged: &mut ServerCapabilities, inputs: &[(ChildTier, Se
     // workspaceSymbolProvider — Option<OneOf<bool, WorkspaceSymbolOptions>>
     if let Some(v) = &merged.workspace_symbol_provider {
         if !one_of_is_active(v)
-            && participating.iter().any(|c| c.workspace_symbol_provider.as_ref().is_some_and(one_of_is_active))
+            && participating.iter().any(|c| {
+                c.workspace_symbol_provider
+                    .as_ref()
+                    .is_some_and(one_of_is_active)
+            })
         {
             merged.workspace_symbol_provider = Some(lsp_max::lsp_types::OneOf::Left(true));
         }
@@ -321,7 +341,10 @@ mod tests {
             (ChildTier::Secondary, secondary_caps),
         ]);
         assert!(
-            matches!(merged.hover_provider, Some(HoverProviderCapability::Simple(true))),
+            matches!(
+                merged.hover_provider,
+                Some(HoverProviderCapability::Simple(true))
+            ),
             "boolean-union must return true when any child advertises true"
         );
     }

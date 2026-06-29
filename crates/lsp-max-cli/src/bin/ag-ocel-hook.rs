@@ -1,12 +1,16 @@
+use serde_json::{json, Value};
 use std::env;
 use std::fs;
 use std::io::Write;
 use std::path::Path;
 use std::process::Command;
-use serde_json::{json, Value};
 
 fn sh(cmd: &str) -> Vec<String> {
-    let output = Command::new("sh").arg("-c").arg(cmd).output().unwrap_or_else(|_| panic!("Failed to execute {}", cmd));
+    let output = Command::new("sh")
+        .arg("-c")
+        .arg(cmd)
+        .output()
+        .unwrap_or_else(|_| panic!("Failed to execute {}", cmd));
     String::from_utf8_lossy(&output.stdout)
         .lines()
         .map(|s| s.to_string())
@@ -21,9 +25,19 @@ fn parse_numstat(lines: &[String]) -> (Vec<Value>, u64, u64) {
 
     for line in lines {
         let parts: Vec<&str> = line.split('\t').collect();
-        if parts.len() < 3 { continue; }
-        let added = if parts[0] == "-" { 0 } else { parts[0].parse().unwrap_or(0) };
-        let deleted = if parts[1] == "-" { 0 } else { parts[1].parse().unwrap_or(0) };
+        if parts.len() < 3 {
+            continue;
+        }
+        let added = if parts[0] == "-" {
+            0
+        } else {
+            parts[0].parse().unwrap_or(0)
+        };
+        let deleted = if parts[1] == "-" {
+            0
+        } else {
+            parts[1].parse().unwrap_or(0)
+        };
         total_added += added;
         total_deleted += deleted;
         out.push(json!({
@@ -38,10 +52,12 @@ fn parse_numstat(lines: &[String]) -> (Vec<Value>, u64, u64) {
 fn main() {
     let args: Vec<String> = env::args().collect();
     if args.len() < 7 {
-        eprintln!("Usage: ag-ocel-hook <hook> <ts> <event_id> <payload_path> <event_path> <jsonl_path>");
+        eprintln!(
+            "Usage: ag-ocel-hook <hook> <ts> <event_id> <payload_path> <event_path> <jsonl_path>"
+        );
         std::process::exit(1);
     }
-    
+
     let hook = &args[1];
     let ts = &args[2];
     let event_id = &args[3];
@@ -69,9 +85,20 @@ fn main() {
     let branch = sh("git branch --show-current").into_iter().next();
 
     let payload_sha256 = if Path::new(payload_path).exists() {
-        let output = Command::new("sh").arg("-c").arg(format!("shasum -a 256 {} | awk '{{print $1}}'", payload_path)).output().unwrap();
+        let output = Command::new("sh")
+            .arg("-c")
+            .arg(format!(
+                "shasum -a 256 {} | awk '{{print $1}}'",
+                payload_path
+            ))
+            .output()
+            .unwrap();
         let hash = String::from_utf8_lossy(&output.stdout).trim().to_string();
-        if hash.is_empty() { None } else { Some(hash) }
+        if hash.is_empty() {
+            None
+        } else {
+            Some(hash)
+        }
     } else {
         None
     };

@@ -23,7 +23,9 @@ pub struct Router<S, E = Infallible> {
     methods: FxHashMap<&'static str, BoxService<Request, Option<Response>, E>>,
     /// Optional catch-all invoked when no registered method matches the incoming request.
     /// When absent, unrecognised requests receive a `MethodNotFound` error response.
-    fallback: Option<Arc<dyn Fn(Request) -> BoxFuture<'static, Result<Option<Response>, E>> + Send + Sync>>,
+    fallback: Option<
+        Arc<dyn Fn(Request) -> BoxFuture<'static, Result<Option<Response>, E>> + Send + Sync>,
+    >,
 }
 
 impl<S: Send + Sync + 'static, E> Router<S, E> {

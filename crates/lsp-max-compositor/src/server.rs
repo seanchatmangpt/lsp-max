@@ -1,7 +1,7 @@
-pub use crate::fanout_coordinator::FanoutCoordinator;
 use crate::child_process::ChildProcessPool;
 use crate::connections::ChildConnections;
 use crate::diagnostic_buffer::DiagnosticBuffer;
+pub use crate::fanout_coordinator::FanoutCoordinator;
 use crate::flush_coordinator::FlushCoordinator;
 use crate::gate_file::GateFile;
 use crate::{CompositorConfig, ExtensionRouter, MergeContext};
@@ -12,10 +12,8 @@ use lsp_max::{Client, LspService, Server};
 use std::sync::Mutex as StdMutex;
 use std::sync::{Arc, RwLock};
 
-use lsp_max::max_andon::analysis::AnalysisPipeline;
-use lsp_max::max_andon::andon::{AndonBus, AndonEvent};
+use lsp_max::max_andon::andon::AndonBus;
 use lsp_max::max_andon::core::InvariantRegistry;
-use lsp_max::max_andon::lsp::{LspMaxAndonRaised, LspPushAdapter};
 use lsp_max::max_andon::patterns::{
     build_brokered_command, build_empty_registry_invariant, build_marker_admission,
     build_need_n_invariant, build_non_empty_check_set, build_receipt_required,

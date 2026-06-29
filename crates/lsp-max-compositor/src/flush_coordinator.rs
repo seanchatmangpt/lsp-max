@@ -547,6 +547,7 @@ impl FlushCoordinator {
     }
 }
 
+#[allow(dead_code)]
 fn decode_hex(s: &str) -> Result<[u8; 32], String> {
     if s.len() != 64 {
         return Err(format!("Invalid hex string length: {}", s.len()));

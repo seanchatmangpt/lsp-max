@@ -270,7 +270,14 @@ impl<S: LanguageServer> LspServiceBuilder<S> {
     /// - `None` to silently drop the request (appropriate for notifications)
     pub fn fallback_method<F>(mut self, f: F) -> Self
     where
-        F: Fn(crate::jsonrpc::Request) -> futures::future::BoxFuture<'static, Result<Option<crate::jsonrpc::Response>, ExitedError>> + Send + Sync + 'static,
+        F: Fn(
+                crate::jsonrpc::Request,
+            ) -> futures::future::BoxFuture<
+                'static,
+                Result<Option<crate::jsonrpc::Response>, ExitedError>,
+            > + Send
+            + Sync
+            + 'static,
     {
         self.inner.set_fallback(f);
         self

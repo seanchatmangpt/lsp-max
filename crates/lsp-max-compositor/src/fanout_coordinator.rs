@@ -1,5 +1,4 @@
-//! CANDIDATE: FanoutCoordinator — per-URI serialized notification fan-out.
-//! Status: CANDIDATE
+//! CC-004: FanoutCoordinator — per-URI serialized notification fan-out.
 //! Ticket: docs/jira/v26.6.30/CC-004-notification-routing.md
 
 use dashmap::DashMap;
@@ -15,7 +14,6 @@ pub struct FanoutCoordinator {
 }
 
 impl FanoutCoordinator {
-    /// Create a new FanoutCoordinator for the given set of child server IDs.
     pub fn new(server_ids: Vec<String>) -> Self {
         Self {
             server_ids,
@@ -24,38 +22,37 @@ impl FanoutCoordinator {
         }
     }
 
-    /// Record that didOpen was processed for a URI.
     pub fn record_did_open(&self, uri: &str) {
         self.open_uris.insert(uri.to_string(), ());
     }
 
-    /// Record that didClose was processed for a URI.
     pub fn record_did_close(&self, uri: &str) {
         self.open_uris.remove(uri);
         self.doc_versions.remove(uri);
     }
 
-    /// Returns true if the URI has been opened (didOpen recorded).
     pub fn is_open(&self, uri: &str) -> bool {
         self.open_uris.contains_key(uri)
     }
 
-    /// Returns true if a didChange can be dispatched for this URI
-    /// (i.e., didOpen has been confirmed for all children).
+    /// Returns true if didChange can be dispatched: URI must have been opened first.
     pub fn can_did_change(&self, uri: &str) -> bool {
         self.is_open(uri)
     }
 
-    /// Record the document version seen for a URI.
     pub fn record_version(&self, uri: &str, version: u32) {
         self.doc_versions.insert(uri.to_string(), version);
     }
 
-    /// Returns true if the incoming version is a regression (lower than recorded).
+    /// Returns true if incoming_version is lower than the last recorded version for this URI.
     pub fn check_version_regression(&self, uri: &str, incoming_version: u32) -> bool {
-        match self.doc_versions.get(uri) {
-            None => false,
-            Some(recorded) => *recorded > incoming_version,
-        }
+        self.doc_versions
+            .get(uri)
+            .map(|v| incoming_version < *v)
+            .unwrap_or(false)
+    }
+
+    pub fn server_ids(&self) -> &[String] {
+        &self.server_ids
     }
 }

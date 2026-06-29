@@ -1,5 +1,7 @@
 use lsp_max_compositor::registry::ChildTier;
-use lsp_max_compositor::routing::{route_lsif_fallback, should_forward_notification, RoutingDecision};
+use lsp_max_compositor::routing::{
+    route_lsif_fallback, should_forward_notification, RoutingDecision,
+};
 
 // --- route_lsif_fallback ---
 
@@ -36,8 +38,8 @@ fn lsif_write_methods_return_excluded() {
     for method in write_methods {
         let decision = route_lsif_fallback(method, &ChildTier::Lsif);
         assert!(
-            matches!(decision, RoutingDecision::Excluded { .. }),
-            "expected Excluded for {method}, got {decision:?}"
+            matches!(decision, RoutingDecision::Unroutable { .. }),
+            "expected Unroutable for {method}, got {decision:?}"
         );
     }
 }
@@ -45,17 +47,21 @@ fn lsif_write_methods_return_excluded() {
 #[test]
 fn lsif_unknown_method_returns_excluded() {
     let decision = route_lsif_fallback("textDocument/someCustomMethod", &ChildTier::Lsif);
-    assert!(matches!(decision, RoutingDecision::Excluded { .. }));
+    assert!(matches!(decision, RoutingDecision::Unroutable { .. }));
 }
 
 #[test]
 fn non_lsif_tier_returns_excluded_for_nav_methods() {
     // LSIF fallback logic only applies to the Lsif tier.
-    for tier in [ChildTier::Primary, ChildTier::Secondary, ChildTier::DiagnosticsOnly] {
+    for tier in [
+        ChildTier::Primary,
+        ChildTier::Secondary,
+        ChildTier::DiagnosticsOnly,
+    ] {
         let decision = route_lsif_fallback("textDocument/definition", &tier);
         assert!(
-            matches!(decision, RoutingDecision::Excluded { .. }),
-            "expected Excluded for non-Lsif tier {}, got {decision:?}",
+            matches!(decision, RoutingDecision::Unroutable { .. }),
+            "expected Unroutable for non-Lsif tier {}, got {decision:?}",
             tier.as_str()
         );
     }

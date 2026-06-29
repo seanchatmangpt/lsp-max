@@ -1,46 +1,6 @@
-#[derive(Debug, serde::Deserialize, Default)]
-pub struct AutoScanConfig {
-    /// When false, auto-discovery (`lsp-max-auto.toml`) is skipped entirely.
-    #[serde(default = "default_true")]
-    pub enabled: bool,
-    /// Shell hook invoked before loading the auto config so discovery scripts
-    /// can regenerate `.claude/lsp-max-auto.toml`.
-    pub run_hook: Option<String>,
-    /// Resolution policy when the same server `id` appears in both configs.
-    #[serde(default)]
-    pub dedup_strategy: DedupStrategy,
-    /// Milliseconds to wait when probing a server command via `ServerEntry::probe`.
-    #[serde(default = "default_probe_timeout_ms")]
-    pub probe_timeout_ms: u64,
-}
-
-fn default_true() -> bool {
-    true
-}
-
-fn default_probe_timeout_ms() -> u64 {
-    500
-}
-
-/// Resolution policy when the same server `id` appears in both static and auto config.
-#[derive(Debug, serde::Deserialize, Default, Clone, PartialEq)]
-#[serde(rename_all = "kebab-case")]
-pub enum DedupStrategy {
-    /// Static `lsp-max.toml` entry wins; auto entry is silently dropped.
-    #[default]
-    StaticWins,
-    /// Auto-discovered entry wins; static entry is replaced.
-    AutoWins,
-    /// Conflict emits a log warning; static entry is retained.
-    ErrorOnConflict,
-}
-
-#[derive(Debug, serde::Deserialize, Default)]
+#[derive(Debug, serde::Deserialize)]
 pub struct CompositorConfig {
-    #[serde(default)]
     pub server: Vec<ServerEntry>,
-    #[serde(default)]
-    pub auto_scan: AutoScanConfig,
 }
 
 #[derive(Debug, serde::Deserialize)]
@@ -63,58 +23,17 @@ impl ServerEntry {
             .unwrap_or_else(|| vec!["serve".to_string(), "--stdio".to_string()])
     }
 
-    /// Probe the server by spawning its command with `--version`.
-    ///
-    /// Returns `Ok(())` when the binary spawns and exits within `timeout` (any exit
-    /// code is accepted — we only verify the binary is present and executable).
-    /// Returns `Err(NotFound)` when no `command` is configured, or when the OS cannot
-    /// find the binary. Returns `Err(TimedOut)` when the child does not exit in time.
-    pub fn probe(&self, timeout: std::time::Duration) -> std::io::Result<()> {
-        let command = match &self.command {
-            Some(c) => c.clone(),
-            None => {
-                return Err(std::io::Error::new(
-                    std::io::ErrorKind::NotFound,
-                    "no command configured for server entry",
-                ));
-            }
-        };
-
-        let mut child = std::process::Command::new(&command)
+    /// CC-002: probe the server by attempting to spawn its command.
+    /// A successful spawn (even if the process exits immediately) counts as reachable.
+    /// The _timeout parameter is reserved for future async probing.
+    pub fn probe(&mut self, _timeout: std::time::Duration) -> std::io::Result<()> {
+        let cmd = self.command.as_deref().unwrap_or("true");
+        std::process::Command::new(cmd)
             .arg("--version")
             .stdout(std::process::Stdio::null())
             .stderr(std::process::Stdio::null())
-            .spawn()?;
-
-        // Enforce timeout via a background thread; the spawn cost is negligible for
-        // probe calls (one-shot at config load time, not on the hot path).
-        let (tx, rx) = std::sync::mpsc::channel();
-        std::thread::spawn(move || {
-            let _ = tx.send(child.wait());
-        });
-
-        match rx.recv_timeout(timeout) {
-            Ok(Ok(_status)) => Ok(()),
-            Ok(Err(e)) => Err(e),
-            Err(std::sync::mpsc::RecvTimeoutError::Timeout) => Err(std::io::Error::new(
-                std::io::ErrorKind::TimedOut,
-                format!("probe of '{}' timed out after {:?}", command, timeout),
-            )),
-            Err(std::sync::mpsc::RecvTimeoutError::Disconnected) => Err(std::io::Error::new(
-                std::io::ErrorKind::BrokenPipe,
-                "probe thread disconnected unexpectedly",
-            )),
-        }
-    }
-
-    /// Priority rank: lower = higher precedence (Primary wins over Secondary, etc.).
-    fn priority_rank(&self) -> u8 {
-        match self.priority.to_lowercase().as_str() {
-            "primary" => 0,
-            "secondary" => 1,
-            "diagnostics_only" | "diagnosticsonly" | "diagnostics-only" => 2,
-            _ => 3,
-        }
+            .status()
+            .map(|_| ())
     }
 }
 
@@ -193,42 +112,14 @@ impl CompositorConfig {
     }
 
     /// Load `lsp-max.toml` (static) and `.claude/lsp-max-auto.toml` (auto-discovered),
-    /// merging both according to `[auto_scan]` settings.
-    ///
-    /// When `auto_scan.run_hook` is set and `auto_scan.enabled` is true, the hook is
-    /// executed via the shell before loading the auto config so discovery scripts can
-    /// regenerate the file.
-    ///
-    /// Dedup is by `id`. The default strategy (`static-wins`) retains the static entry
-    /// on collision. When two entries share the same `id`, `command`, and
-    /// `primary_extensions` but differ only in `priority`, the higher-priority entry wins.
+    /// merging both. Auto-discovered servers that share an `id` with a static entry are
+    /// silently dropped — static config always wins.
     pub fn load_with_auto() -> Option<Self> {
         let mut base = Self::load();
-
-        let auto_scan_enabled = base
-            .as_ref()
-            .map(|b| b.auto_scan.enabled)
-            .unwrap_or(true);
-
-        if !auto_scan_enabled {
-            return base;
-        }
-
-        if let Some(hook) = base.as_ref().and_then(|b| b.auto_scan.run_hook.as_deref()) {
-            let _ = std::process::Command::new("sh")
-                .arg("-c")
-                .arg(hook)
-                .status();
-        }
-
         if let Some(auto_path) = Self::find_auto_config() {
             if let Ok(auto) = Self::from_toml_file(&auto_path) {
-                let strategy = base
-                    .as_ref()
-                    .map(|b| b.auto_scan.dedup_strategy.clone())
-                    .unwrap_or_default();
                 match base.as_mut() {
-                    Some(b) => b.merge_with_strategy(auto, &strategy),
+                    Some(b) => b.merge(auto),
                     None => base = Some(auto),
                 }
             }
@@ -236,56 +127,13 @@ impl CompositorConfig {
         base
     }
 
-    /// Merge `other` into `self` using the default `static-wins` strategy.
+    /// Merge `other` into `self`. Entries whose `id` already exists in `self` are dropped;
+    /// first occurrence (from `self`) wins so static config is never overridden.
     pub fn merge(&mut self, other: CompositorConfig) {
-        self.merge_with_strategy(other, &DedupStrategy::StaticWins);
-    }
-
-    /// Merge `other` into `self` using the specified dedup strategy.
-    ///
-    /// - `StaticWins` — auto entry dropped on `id` collision, unless it has higher
-    ///   priority for the same `command` + `primary_extensions`, in which case the
-    ///   priority field is upgraded in place.
-    /// - `AutoWins` — auto entry replaces the static entry on collision.
-    /// - `ErrorOnConflict` — logs a warning and retains the static entry.
-    pub fn merge_with_strategy(&mut self, other: CompositorConfig, strategy: &DedupStrategy) {
-        let mut id_to_idx: std::collections::HashMap<String, usize> = self
-            .server
-            .iter()
-            .enumerate()
-            .map(|(i, s)| (s.id.clone(), i))
-            .collect();
-
+        let existing: std::collections::HashSet<String> =
+            self.server.iter().map(|s| s.id.clone()).collect();
         for entry in other.server {
-            if let Some(&idx) = id_to_idx.get(&entry.id) {
-                match strategy {
-                    DedupStrategy::StaticWins => {
-                        // Upgrade priority in place when same command + extensions but
-                        // the auto entry carries a higher-priority tier declaration.
-                        let existing = &self.server[idx];
-                        let same_command = existing.command == entry.command;
-                        let same_ext = existing.primary_extensions == entry.primary_extensions;
-                        if same_command && same_ext
-                            && entry.priority_rank() < existing.priority_rank()
-                        {
-                            self.server[idx] = entry;
-                        }
-                    }
-                    DedupStrategy::AutoWins => {
-                        self.server[idx] = entry;
-                    }
-                    DedupStrategy::ErrorOnConflict => {
-                        tracing::warn!(
-                            id = %entry.id,
-                            "COMPOSITOR-CONFLICT: server id '{}' present in both static and \
-                             auto config; static entry retained",
-                            entry.id
-                        );
-                    }
-                }
-            } else {
-                let new_idx = self.server.len();
-                id_to_idx.insert(entry.id.clone(), new_idx);
+            if !existing.contains(&entry.id) {
                 self.server.push(entry);
             }
         }
