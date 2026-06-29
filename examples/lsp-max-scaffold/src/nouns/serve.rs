@@ -83,7 +83,7 @@ mod tests {
         let g = ["guaran", "teed"].join("");
         let c = ["comp", "lete"].join("");
         let f = ["finis", "hed"].join("");
-        let forbidden = vec![d, s, g, c, f];
+        let forbidden = [d, s, g, c, f];
         assert!(!forbidden.contains(&r.status.to_string()));
     }
 }

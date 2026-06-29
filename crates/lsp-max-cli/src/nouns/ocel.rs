@@ -3,6 +3,7 @@ use clap_noun_verb::Result;
 use clap_noun_verb_macros::verb;
 use lsp_max::max_runtime::AutonomicMesh;
 use serde::{Deserialize, Serialize};
+use std::cmp::Reverse;
 use std::collections::HashMap;
 
 /// An object in the OCEL 2.0 sense — one per LspInstance.
@@ -266,7 +267,7 @@ impl OcelService {
                 object_type: otype,
             })
             .collect();
-        arcs.sort_by(|a, b| b.frequency.cmp(&a.frequency));
+        arcs.sort_by_key(|a| Reverse(a.frequency));
 
         let activity_set: std::collections::HashSet<String> =
             log.events.values().map(|e| e.activity.clone()).collect();

@@ -86,7 +86,7 @@ impl HistoryService {
         let total = all.len();
         let filtered: Vec<HistoryEntry> = all
             .into_iter()
-            .filter(|e| noun_filter.map_or(true, |n| e.noun == n))
+            .filter(|e| noun_filter.is_none_or(|n| e.noun == n))
             .collect();
         let cap = limit.unwrap_or(20) as usize;
         let start = filtered.len().saturating_sub(cap);

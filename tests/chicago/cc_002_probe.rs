@@ -5,7 +5,7 @@
 use chicago_tdd_tools::chicago_test;
 
 #[chicago_test(
-    ticket      = "docs/jira/v26.6.30/CC-002-lsp-max-toml-auto-scan.md",
+    ticket = "docs/jira/v26.6.30/CC-002-lsp-max-toml-auto-scan.md",
     scaffold_fn = "lsp_max_compositor::config::ServerEntry::probe"
 )]
 fn probe_reachable_command_returns_ok() {
@@ -22,11 +22,14 @@ fn probe_reachable_command_returns_ok() {
     // When: probe is called with a 500ms timeout
     let result = entry.probe(std::time::Duration::from_millis(500));
     // Then: probe succeeds (echo exits 0)
-    assert!(result.is_ok(), "probe should succeed for reachable command, got: {result:?}");
+    assert!(
+        result.is_ok(),
+        "probe should succeed for reachable command, got: {result:?}"
+    );
 }
 
 #[chicago_test(
-    ticket      = "docs/jira/v26.6.30/CC-002-lsp-max-toml-auto-scan.md",
+    ticket = "docs/jira/v26.6.30/CC-002-lsp-max-toml-auto-scan.md",
     scaffold_fn = "lsp_max_compositor::config::ServerEntry::probe"
 )]
 fn probe_missing_command_returns_err() {

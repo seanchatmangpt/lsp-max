@@ -149,7 +149,7 @@ impl MetricsService {
     pub fn format_prometheus(metrics: &[MetricEntry]) -> String {
         let mut out = String::new();
         for m in metrics {
-            let prom_name = m.name.replace('.', "_").replace('-', "_");
+            let prom_name = m.name.replace(['.', '-'], "_");
             out.push_str(&format!("# TYPE {} gauge\n", prom_name));
             let label_str = if m.labels.is_empty() {
                 String::new()

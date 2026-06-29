@@ -91,6 +91,7 @@ fn raw_smell_ac() -> &'static AhoCorasick {
 ///
 /// - `"assert_contains"` — receiver cannot be classified from the line text.
 ///   Flagged conservatively as a potential cheat.
+///
 /// Extract the integer literal from an `assert_eq!(expr.len(), N)` or
 /// `assert_eq!(N, expr.len())` call. Returns `None` when no literal is found
 /// or the literal cannot be parsed as `u64`.

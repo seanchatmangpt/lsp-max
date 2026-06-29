@@ -17,15 +17,17 @@ use crate::jsonrpc::ErrorCode;
 
 use super::{Error, Id, Request, Response};
 
+/// Catch-all handler type for unrecognised JSON-RPC methods.
+type FallbackFn<E> =
+    Arc<dyn Fn(Request) -> BoxFuture<'static, Result<Option<Response>, E>> + Send + Sync>;
+
 /// A modular JSON-RPC 2.0 request router service.
 pub struct Router<S, E = Infallible> {
     server: Arc<S>,
     methods: FxHashMap<&'static str, BoxService<Request, Option<Response>, E>>,
     /// Optional catch-all invoked when no registered method matches the incoming request.
     /// When absent, unrecognised requests receive a `MethodNotFound` error response.
-    fallback: Option<
-        Arc<dyn Fn(Request) -> BoxFuture<'static, Result<Option<Response>, E>> + Send + Sync>,
-    >,
+    fallback: Option<FallbackFn<E>>,
 }
 
 impl<S: Send + Sync + 'static, E> Router<S, E> {
