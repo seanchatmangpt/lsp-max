@@ -1,0 +1,78 @@
+@prefix ctt: <https://chicago-tdd-tools.dev/ontology#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+# v26.6.30 — Full Claude Code LSP Client Support
+# One ctt:ScaffoldStub per function per ticket (CC-001 through CC-007)
+# Status CANDIDATE until function is implemented and chicago test passes.
+
+ctt:CC001_discover_lsp_chains a ctt:ScaffoldStub ;
+    ctt:ticketId    "CC-001" ;
+    ctt:ticketPath  "docs/jira/v26.6.30/CC-001-claude-code-lsp-discovery.md" ;
+    ctt:fnName      "discover_lsp_chains" ;
+    ctt:fnSignature "pub fn discover_lsp_chains() -> std::io::Result<Vec<ServerEntry>>" ;
+    ctt:testPath    "tests/chicago/cc_001_discover.rs" ;
+    ctt:modulePath  "crates::lsp_max_compositor::config" .
+
+ctt:CC001_probe_server a ctt:ScaffoldStub ;
+    ctt:ticketId    "CC-001" ;
+    ctt:ticketPath  "docs/jira/v26.6.30/CC-001-claude-code-lsp-discovery.md" ;
+    ctt:fnName      "probe" ;
+    ctt:fnSignature "pub fn probe(&mut self, timeout: std::time::Duration) -> std::io::Result<()>" ;
+    ctt:testPath    "tests/chicago/cc_001_probe.rs" ;
+    ctt:modulePath  "crates::lsp_max_compositor::config::ServerEntry" .
+
+ctt:CC002_load_with_auto a ctt:ScaffoldStub ;
+    ctt:ticketId    "CC-002" ;
+    ctt:ticketPath  "docs/jira/v26.6.30/CC-002-lsp-max-toml-auto-scan.md" ;
+    ctt:fnName      "load_with_auto" ;
+    ctt:fnSignature "pub fn load_with_auto(path: &std::path::Path) -> std::io::Result<CompositorConfig>" ;
+    ctt:testPath    "tests/chicago/cc_002_load_with_auto.rs" ;
+    ctt:modulePath  "crates::lsp_max_compositor::config" .
+
+ctt:CC002_merge a ctt:ScaffoldStub ;
+    ctt:ticketId    "CC-002" ;
+    ctt:ticketPath  "docs/jira/v26.6.30/CC-002-lsp-max-toml-auto-scan.md" ;
+    ctt:fnName      "merge" ;
+    ctt:fnSignature "pub fn merge(base: CompositorConfig, auto: CompositorConfig) -> CompositorConfig" ;
+    ctt:testPath    "tests/chicago/cc_002_merge.rs" ;
+    ctt:modulePath  "crates::lsp_max_compositor::config" .
+
+ctt:CC003_transparent_handshake a ctt:ScaffoldStub ;
+    ctt:ticketId    "CC-003" ;
+    ctt:ticketPath  "docs/jira/v26.6.30/CC-003-compositor-transparent-proxy.md" ;
+    ctt:fnName      "forward_initialize" ;
+    ctt:fnSignature "pub async fn forward_initialize(&self, params: InitializeParams) -> jsonrpc::Result<InitializeResult>" ;
+    ctt:testPath    "tests/chicago/cc_003_transparent_proxy.rs" ;
+    ctt:modulePath  "crates::lsp_max_compositor::server" .
+
+ctt:CC004_per_uri_serialize a ctt:ScaffoldStub ;
+    ctt:ticketId    "CC-004" ;
+    ctt:ticketPath  "docs/jira/v26.6.30/CC-004-notification-routing.md" ;
+    ctt:fnName      "serialize_did_change" ;
+    ctt:fnSignature "pub async fn serialize_did_change(&self, uri: &lsp_types::Url, params: DidChangeTextDocumentParams)" ;
+    ctt:testPath    "tests/chicago/cc_004_notification_routing.rs" ;
+    ctt:modulePath  "crates::lsp_max_compositor::flush_coordinator" .
+
+ctt:CC005_publish_upstream a ctt:ScaffoldStub ;
+    ctt:ticketId    "CC-005" ;
+    ctt:ticketPath  "docs/jira/v26.6.30/CC-005-diagnostic-merge-claude-code.md" ;
+    ctt:fnName      "publish_merged_upstream" ;
+    ctt:fnSignature "pub async fn publish_merged_upstream(&self, uri: &lsp_types::Url)" ;
+    ctt:testPath    "tests/chicago/cc_005_diagnostic_merge.rs" ;
+    ctt:modulePath  "crates::lsp_max_compositor::merge" .
+
+ctt:CC006_configure_hook a ctt:ScaffoldStub ;
+    ctt:ticketId    "CC-006" ;
+    ctt:ticketPath  "docs/jira/v26.6.30/CC-006-session-start-hook.md" ;
+    ctt:fnName      "write_compositor_endpoint" ;
+    ctt:fnSignature "pub fn write_compositor_endpoint(addr: &str, pid_path: &std::path::Path) -> std::io::Result<()>" ;
+    ctt:testPath    "tests/chicago/cc_006_session_hook.rs" ;
+    ctt:modulePath  "crates::lsp_max_compositor::config" .
+
+ctt:CC007_lsif_tier a ctt:ScaffoldStub ;
+    ctt:ticketId    "CC-007" ;
+    ctt:ticketPath  "docs/jira/v26.6.30/CC-007-lsif-tier.md" ;
+    ctt:fnName      "route_lsif_fallback" ;
+    ctt:fnSignature "pub fn route_lsif_fallback(method: &str, tier: &ChildTier) -> RoutingDecision" ;
+    ctt:testPath    "tests/chicago/cc_007_lsif_tier.rs" ;
+    ctt:modulePath  "crates::lsp_max_compositor::routing" .
