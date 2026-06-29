@@ -1,15 +1,31 @@
-# ggen.toml — compositor scaffold rule
-# Reads lsp-max.toml server entries and generates the ExtensionRouter initialization
-# Run: ggen sync (from the lsp-max workspace root)
-
-[meta]
+[project]
 name = "lsp-max-compositor"
-version = "26.6.24"
+language_id = "lsp"
+version = "26.6.30"
 
-[[rule]]
-name = "compositor-registry-init"
-description = "Generate ExtensionRouter::new_from_manifest() from lsp-max.toml server declarations"
-input = "lsp-max.toml"
-output = "crates/lsp-max-compositor/src/registry_init.rs"
-template = "crates/lsp-max-compositor/registry_init.tera"
-note = "Phase 4 scaffold — template not yet implemented. Adding a new server to the compositor is a single ServerEntry in lsp-max.toml."
+[ontology]
+source = "../../ontology/chicago_v26_6_30.ttl"
+
+[generation]
+output_dir = "."
+
+[[packs]]
+name     = "chicago-tdd-tools"
+registry = "local"
+path     = "../../../chicago-tdd-tools"
+
+[[generation.rules]]
+name        = "cc-scaffold-stubs"
+description = "Generate scaffold!() stubs from ctt:ScaffoldStub ontology instances"
+query       = { pack = "chicago-tdd-tools", output = "queries", file = "scaffold_stubs.rq" }
+template    = { pack = "chicago-tdd-tools", output = "templates", file = "scaffold_stubs.rs.tera" }
+output_file = "src/generated/{{ ticket_id | lower | replace(from='-', to='_') }}_{{ fn_name }}.rs"
+mode        = "Create"
+
+[[generation.rules]]
+name        = "cc-chicago-tests"
+description = "Generate #[chicago_test] acceptance tests from ctt:ScaffoldStub ontology instances"
+query       = { pack = "chicago-tdd-tools", output = "queries", file = "scaffold_stubs.rq" }
+template    = { pack = "chicago-tdd-tools", output = "templates", file = "chicago_test.rs.tera" }
+output_file = "../../tests/chicago/{{ ticket_id | lower | replace(from='-', to='_') }}_{{ fn_name }}.rs"
+mode        = "Create"

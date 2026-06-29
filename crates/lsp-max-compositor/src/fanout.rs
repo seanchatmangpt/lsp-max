@@ -61,6 +61,7 @@ pub fn servers_for_uri(router: &ExtensionRouter, uri: &str) -> Vec<ChildServer> 
         ChildTier::Primary => 0u8,
         ChildTier::Secondary => 1,
         ChildTier::DiagnosticsOnly => 2,
+        ChildTier::Lsif => 3,
     });
 
     servers
