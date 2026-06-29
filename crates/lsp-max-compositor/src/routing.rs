@@ -1,3 +1,4 @@
+use crate::registry::ChildTier;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -132,6 +133,14 @@ pub enum RoutingDecision {
     Unroutable {
         method: String,
     },
+    /// Try Primary tier first; fall back to LSIF tier when Primary returns null/error.
+    FallbackToLsif {
+        method: String,
+    },
+    /// Method is excluded from this tier (e.g. write methods on LSIF snapshot servers).
+    Excluded {
+        method: String,
+    },
 }
 
 impl RoutingDecision {
@@ -140,6 +149,55 @@ impl RoutingDecision {
             Self::Route { law_status, .. } => law_status,
             Self::Fanout { .. } => "CANDIDATE",
             Self::Unroutable { .. } => "REFUSED",
+            Self::FallbackToLsif { .. } => "CANDIDATE",
+            Self::Excluded { .. } => "REFUSED",
         }
+    }
+}
+
+/// Navigation methods that an LSIF snapshot server can serve.
+const LSIF_NAV_METHODS: &[&str] = &[
+    "textDocument/definition",
+    "textDocument/references",
+    "textDocument/hover",
+    "textDocument/documentSymbol",
+    "textDocument/implementation",
+    "textDocument/typeDefinition",
+];
+
+/// Route a navigation method for LSIF tier fallback.
+///
+/// Returns `FallbackToLsif` for read-only navigation methods when the tier is `Lsif`.
+/// Returns `Excluded` for write/notification methods on any tier, and for all methods
+/// when the tier is not `Lsif` (LSIF semantics only apply to the snapshot tier).
+pub fn route_lsif_fallback(method: &str, tier: &ChildTier) -> RoutingDecision {
+    if tier != &ChildTier::Lsif {
+        return RoutingDecision::Excluded {
+            method: method.to_string(),
+        };
+    }
+    if LSIF_NAV_METHODS.contains(&method) {
+        return RoutingDecision::FallbackToLsif {
+            method: method.to_string(),
+        };
+    }
+    // Write/notification methods and everything else are excluded from LSIF servers.
+    RoutingDecision::Excluded {
+        method: method.to_string(),
+    }
+}
+
+/// Whether a notification should be forwarded to the given tier.
+///
+/// LSIF servers are read-only snapshots and never receive state-mutating notifications.
+/// DiagnosticsOnly tier skips document lifecycle notifications but accepts diagnostic-related ones.
+pub fn should_forward_notification(method: &str, tier: &ChildTier) -> bool {
+    match tier {
+        ChildTier::Lsif => false,
+        ChildTier::Primary | ChildTier::Secondary => true,
+        ChildTier::DiagnosticsOnly => !matches!(
+            method,
+            "textDocument/didChange" | "textDocument/didOpen" | "textDocument/didClose"
+        ),
     }
 }

@@ -3,11 +3,14 @@
 // For generated initialization boilerplate, see ggen.toml (Phase 4 scaffold).
 // Adding a new domain-specific server: add a [[server]] entry to lsp-max.toml — no Rust changes needed once the ggen template is implemented.
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum ChildTier {
     Primary,
     Secondary,
     DiagnosticsOnly,
+    /// Read-only snapshot tier; fallback navigation (definition/references/hover) only.
+    /// Never receives state-mutating notifications (didOpen/didChange/didClose).
+    Lsif,
 }
 
 impl ChildTier {
@@ -16,16 +19,18 @@ impl ChildTier {
             ChildTier::Primary => "primary",
             ChildTier::Secondary => "secondary",
             ChildTier::DiagnosticsOnly => "diagnostics-only",
+            ChildTier::Lsif => "lsif",
         }
     }
 
     /// Map a priority string from `lsp-max.toml` to a `ChildTier`.
     /// `"full"` and `"semantic"` are Primary; `"secondary"` is Secondary;
-    /// everything else (including `"diagnostics-only"`) is DiagnosticsOnly.
+    /// `"lsif"` is Lsif; everything else (including `"diagnostics-only"`) is DiagnosticsOnly.
     pub fn from_priority(priority: &str) -> Self {
         match priority {
             "full" | "semantic" => ChildTier::Primary,
             "secondary" => ChildTier::Secondary,
+            "lsif" => ChildTier::Lsif,
             _ => ChildTier::DiagnosticsOnly,
         }
     }
