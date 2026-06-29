@@ -12,11 +12,12 @@ fn probe_reachable_command_returns_ok() {
     // Given: a ServerEntry whose command is "echo" (always reachable)
     let mut entry = lsp_max_compositor::config::ServerEntry {
         id: "test-echo".to_string(),
-        command: "echo".to_string(),
-        args: vec!["--version".to_string()],
+        command: Some("echo".to_string()),
+        args: Some(vec!["--version".to_string()]),
         priority: "primary".to_string(),
         primary_extensions: vec![".rs".to_string()],
-        ..Default::default()
+        secondary_extensions: vec![],
+        andon_code_prefixes: None,
     };
     // When: probe is called with a 500ms timeout
     let result = entry.probe(std::time::Duration::from_millis(500));
@@ -32,11 +33,12 @@ fn probe_missing_command_returns_err() {
     // Given: a ServerEntry whose command does not exist
     let mut entry = lsp_max_compositor::config::ServerEntry {
         id: "test-missing".to_string(),
-        command: "/tmp/no-such-binary-lsp-max-test".to_string(),
-        args: vec![],
+        command: Some("/tmp/no-such-binary-lsp-max-test".to_string()),
+        args: None,
         priority: "primary".to_string(),
         primary_extensions: vec![".rs".to_string()],
-        ..Default::default()
+        secondary_extensions: vec![],
+        andon_code_prefixes: None,
     };
     // When: probe is called
     let result = entry.probe(std::time::Duration::from_millis(100));

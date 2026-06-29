@@ -13,4 +13,3 @@ fn diagnostic_without_andon_push_refused() {
     let is_valid = true;
     assert!(is_valid);
 }
-

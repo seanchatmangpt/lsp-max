@@ -1,4 +1,4 @@
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct GoverningAxes {

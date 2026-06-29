@@ -86,8 +86,16 @@ chicago-tdd-tools-proc-macros = { workspace = true }
 lsp-max-compositor = { path = "crates/lsp-max-compositor", features = ["full"] }
 
 [[test]]
+name = "cc_002_probe"
+path = "tests/chicago/cc_002_probe.rs"
+
+[[test]]
 name = "cc_004_fanout"
 path = "tests/chicago/cc_004_fanout.rs"
+
+[[test]]
+name = "cc_005_merge_upstream"
+path = "tests/chicago/cc_005_merge_upstream.rs"
 
 [[bench]]
 name = "pipeline_search"
@@ -122,7 +130,7 @@ members = [
 ]
 
 [workspace.package]
-version = "26.6.26"
+version = "26.6.28"
 authors = ["Eyal Kalderon <ebkalderon@gmail.com>"]
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/seanchatmangpt/lsp-max"
@@ -155,7 +163,7 @@ walkdir = "2.5.0"
 rayon-par-bridge = "0.1.0"
 bon = "3.6.4"
 rustc-hash = "2"
-lsp-max-ast = { path = "crates/lsp-max-adapters/lsp-max-ast", version = "26.6.26" }
+lsp-max-ast = { path = "crates/lsp-max-adapters/lsp-max-ast", version = "26.6.28" }
 chicago-tdd-tools = { path = "/Users/sac/chicago-tdd-tools" }
 chicago-tdd-tools-proc-macros = { path = "/Users/sac/chicago-tdd-tools/proc_macros", package = "chicago-tdd-tools-proc-macros" }
 
