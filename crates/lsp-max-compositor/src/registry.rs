@@ -8,6 +8,7 @@ pub enum ChildTier {
     Primary,
     Secondary,
     DiagnosticsOnly,
+    Lsif,  // read-only snapshot; fallback navigation only; never receives didChange
 }
 
 impl ChildTier {
@@ -16,16 +17,18 @@ impl ChildTier {
             ChildTier::Primary => "primary",
             ChildTier::Secondary => "secondary",
             ChildTier::DiagnosticsOnly => "diagnostics-only",
+            ChildTier::Lsif => "lsif",
         }
     }
 
     /// Map a priority string from `lsp-max.toml` to a `ChildTier`.
     /// `"full"` and `"semantic"` are Primary; `"secondary"` is Secondary;
-    /// everything else (including `"diagnostics-only"`) is DiagnosticsOnly.
+    /// `"lsif"` is Lsif; everything else (including `"diagnostics-only"`) is DiagnosticsOnly.
     pub fn from_priority(priority: &str) -> Self {
         match priority {
             "full" | "semantic" => ChildTier::Primary,
             "secondary" => ChildTier::Secondary,
+            "lsif" => ChildTier::Lsif,
             _ => ChildTier::DiagnosticsOnly,
         }
     }

@@ -259,6 +259,7 @@ fn tier_rank(tier: &ChildTier) -> u8 {
         ChildTier::Primary => 0,
         ChildTier::Secondary => 1,
         ChildTier::DiagnosticsOnly => 2,
+        ChildTier::Lsif => 3,
     }
 }
 
@@ -493,6 +494,19 @@ pub fn merge_diagnostics_with_ctx_auto(
             .then(a.character.cmp(&b.character))
     });
     result
+}
+
+/// CANDIDATE: merge diagnostics from multiple child servers for upstream publishDiagnostics.
+/// Deduplicates by (range, code); REFUSED_BY_LAW codes (matching andon_prefixes) always survive.
+/// CC-005: docs/jira/v26.6.30/CC-005-diagnostic-merge-claude-code.md
+pub fn merge_for_upstream(
+    contributions: &[(String, Vec<lsp_max::lsp_types::Diagnostic>)],
+    andon_prefixes: &[String],
+) -> Vec<lsp_max::lsp_types::Diagnostic> {
+    chicago_tdd_tools::scaffold!(
+        ticket = "docs/jira/v26.6.30/CC-005-diagnostic-merge-claude-code.md",
+        test   = "tests/chicago/cc_005_merge_upstream.rs",
+    )
 }
 
 #[cfg(all(test, feature = "full"))]

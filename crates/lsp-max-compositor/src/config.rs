@@ -22,6 +22,15 @@ impl ServerEntry {
             .clone()
             .unwrap_or_else(|| vec!["serve".to_string(), "--stdio".to_string()])
     }
+
+    /// CANDIDATE: probe the server by spawning its command with a zero-second health check.
+    /// Called after merge to determine ADMITTED vs CANDIDATE status.
+    pub fn probe(&mut self, timeout: std::time::Duration) -> std::io::Result<()> {
+        chicago_tdd_tools::scaffold!(
+            ticket = "docs/jira/v26.6.30/CC-002-lsp-max-toml-auto-scan.md",
+            test   = "tests/chicago/cc_002_probe.rs",
+        )
+    }
 }
 
 const DEFAULT_ANDON_PREFIXES: &[&str] = &["WASM4PM-", "ANTI-LLM-", "GGEN-"];

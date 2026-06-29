@@ -132,6 +132,10 @@ pub enum RoutingDecision {
     Unroutable {
         method: String,
     },
+    /// CANDIDATE: route to LSIF fallback tier for read-only navigation methods.
+    FallbackToLsif {
+        method: String,
+    },
 }
 
 impl RoutingDecision {
@@ -140,6 +144,30 @@ impl RoutingDecision {
             Self::Route { law_status, .. } => law_status,
             Self::Fanout { .. } => "CANDIDATE",
             Self::Unroutable { .. } => "REFUSED",
+            Self::FallbackToLsif { .. } => "CANDIDATE",
         }
     }
+}
+
+/// CANDIDATE: determine whether a method should be routed to the LSIF fallback tier.
+/// Returns FallbackToLsif for navigation methods (definition/references/hover);
+/// excludes didOpen/didChange/didClose and publishDiagnostics (LSIF is read-only).
+/// CC-007: docs/jira/v26.6.30/CC-007-lsif-tier.md
+pub fn route_lsif_fallback(
+    method: &str,
+    tier: &crate::registry::ChildTier,
+) -> RoutingDecision {
+    chicago_tdd_tools::scaffold!(
+        ticket = "docs/jira/v26.6.30/CC-007-lsif-tier.md",
+        test   = "tests/chicago/cc_007_lsif_routing.rs",
+    )
+}
+
+/// CANDIDATE: whether a notification method should be forwarded to the given tier.
+/// For LSIF tier: didOpen/didChange/didClose return false (read-only snapshot).
+pub fn should_forward_notification(method: &str, tier: &crate::registry::ChildTier) -> bool {
+    chicago_tdd_tools::scaffold!(
+        ticket = "docs/jira/v26.6.30/CC-007-lsif-tier.md",
+        test   = "tests/chicago/cc_007_lsif_routing.rs",
+    )
 }

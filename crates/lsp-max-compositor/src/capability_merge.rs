@@ -37,6 +37,7 @@ fn tier_rank(tier: &ChildTier) -> u8 {
         ChildTier::Primary => 0,
         ChildTier::Secondary => 1,
         ChildTier::DiagnosticsOnly => 2,
+        ChildTier::Lsif => 3,
     }
 }
 
