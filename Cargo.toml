@@ -81,6 +81,12 @@ walkdir.workspace = true
 tree-sitter-rust = "0.23"
 blake3 = "1"
 criterion = { version = "0.5", features = ["html_reports"] }
+chicago-tdd-tools = { path = "../chicago-tdd-tools" }
+lsp-max-compositor = { path = "crates/lsp-max-compositor", features = ["full"] }
+
+[[test]]
+name = "cc_005_merge_upstream"
+path = "tests/chicago/cc_005_merge_upstream.rs"
 
 [[bench]]
 name = "pipeline_search"

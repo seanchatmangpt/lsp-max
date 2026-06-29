@@ -496,17 +496,84 @@ pub fn merge_diagnostics_with_ctx_auto(
     result
 }
 
-/// CANDIDATE: merge diagnostics from multiple child servers for upstream publishDiagnostics.
-/// Deduplicates by (range, code); REFUSED_BY_LAW codes (matching andon_prefixes) always survive.
+/// Merge diagnostics from multiple child servers for upstream publishDiagnostics.
+///
+/// Deduplicates by (range, code). When two entries share a key:
+/// - ANDON codes (matching any prefix in `andon_prefixes`) always survive over non-ANDON.
+/// - Between two entries of the same ANDON status, the one with higher severity
+///   (lower severity number: Error=1 beats Warning=2) wins.
+/// - First occurrence wins when severity is equal and both are non-ANDON.
+///
 /// CC-005: docs/jira/v26.6.30/CC-005-diagnostic-merge-claude-code.md
 pub fn merge_for_upstream(
     contributions: &[(String, Vec<lsp_max::lsp_types::Diagnostic>)],
     andon_prefixes: &[String],
 ) -> Vec<lsp_max::lsp_types::Diagnostic> {
-    chicago_tdd_tools::scaffold!(
-        ticket = "docs/jira/v26.6.30/CC-005-diagnostic-merge-claude-code.md",
-        test   = "tests/chicago/cc_005_merge_upstream.rs",
-    )
+    use lsp_max::lsp_types::{Diagnostic, DiagnosticSeverity, NumberOrString};
+    use std::collections::HashMap;
+
+    fn sev_rank(s: Option<DiagnosticSeverity>) -> u32 {
+        match s {
+            Some(DiagnosticSeverity::ERROR) => 1,
+            Some(DiagnosticSeverity::WARNING) => 2,
+            Some(DiagnosticSeverity::INFORMATION) => 3,
+            Some(DiagnosticSeverity::HINT) => 4,
+            _ => 5,
+        }
+    }
+
+    let is_andon = |code: &Option<NumberOrString>| -> bool {
+        let Some(c) = code else { return false };
+        let s = match c {
+            NumberOrString::String(s) => s.as_str(),
+            NumberOrString::Number(_) => return false,
+        };
+        andon_prefixes.iter().any(|p| s.starts_with(p.as_str()))
+    };
+
+    let code_key = |code: &Option<NumberOrString>| -> String {
+        match code {
+            Some(NumberOrString::String(s)) => s.clone(),
+            Some(NumberOrString::Number(n)) => n.to_string(),
+            None => String::new(),
+        }
+    };
+
+    // Vec preserves insertion order; HashMap maps key → index in Vec.
+    let mut result: Vec<Diagnostic> = Vec::new();
+    let mut seen: HashMap<([u32; 4], String), usize> = HashMap::new();
+
+    for (_server_id, diags) in contributions {
+        for diag in diags {
+            let r = diag.range;
+            let range_arr = [r.start.line, r.start.character, r.end.line, r.end.character];
+            let key = (range_arr, code_key(&diag.code));
+
+            match seen.get(&key).copied() {
+                None => {
+                    let idx = result.len();
+                    seen.insert(key, idx);
+                    result.push(diag.clone());
+                }
+                Some(idx) => {
+                    let existing = &result[idx];
+                    let new_andon = is_andon(&diag.code);
+                    let old_andon = is_andon(&existing.code);
+
+                    let replace = match (new_andon, old_andon) {
+                        (true, false) => true,
+                        (false, true) => false,
+                        _ => sev_rank(diag.severity) < sev_rank(existing.severity),
+                    };
+                    if replace {
+                        result[idx] = diag.clone();
+                    }
+                }
+            }
+        }
+    }
+
+    result
 }
 
 #[cfg(all(test, feature = "full"))]
