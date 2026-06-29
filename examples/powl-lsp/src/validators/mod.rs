@@ -48,6 +48,7 @@ pub fn validate_powl(powl: &Powl) -> Vec<Diagnostic> {
     diags
 }
 
+#[allow(dead_code)] // utility; used by future validators
 fn node_exists(id: PowlNodeId, powl: &Powl) -> bool {
     powl.nodes.iter().any(|n| n.id == id)
 }

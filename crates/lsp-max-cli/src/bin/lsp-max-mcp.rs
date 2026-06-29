@@ -339,7 +339,7 @@ fn dispatch(req: Request) -> Response {
                 "serverInfo": { "name": "lsp-max-mcp", "version": env!("CARGO_PKG_VERSION") }
             }),
         ),
-        "notifications/initialized" => return Response::ok(None, json!({})),
+        "notifications/initialized" => Response::ok(None, json!({})),
         "tools/list" => Response::ok(id, tool_list()),
         "tools/call" => {
             let params = req.params.unwrap_or_default();
@@ -379,11 +379,8 @@ fn dispatch(req: Request) -> Response {
 // ── stdio subcommand: reload-config (called from FileChanged hook) ────────────
 
 fn reload_config_subcommand() {
-    match handle_lsp_reload_config() {
-        v => {
-            println!("{}", v);
-        }
-    }
+    let v = handle_lsp_reload_config();
+    println!("{v}");
 }
 
 // ── Entry point ───────────────────────────────────────────────────────────────

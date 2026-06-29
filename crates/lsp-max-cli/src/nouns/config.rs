@@ -10,6 +10,9 @@ use std::path::PathBuf;
 // Tier 1: Domain Tier
 // ==========================================
 
+/// Added, removed, and changed key tuples from a config diff.
+type ConfigDiff = (Vec<String>, Vec<String>, Vec<(String, String, String)>);
+
 #[derive(Debug, Clone, Serialize)]
 pub struct ConfigEntity {
     pub key: String,
@@ -180,7 +183,7 @@ impl ConfigService {
     pub fn diff(
         &self,
         profile_name: &str,
-    ) -> std::result::Result<(Vec<String>, Vec<String>, Vec<(String, String, String)>), String>
+    ) -> std::result::Result<ConfigDiff, String>
     {
         let current = self.load_config();
         let profiles = self.load_profiles();

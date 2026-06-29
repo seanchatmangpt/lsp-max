@@ -21,7 +21,6 @@ pub struct Violation {
 
 pub fn scan(content: &str) -> Vec<Violation> {
     let mut violations = Vec::new();
-    let mut lnum = 0;
 
     let d_word = ["do", "ne"].join("");
     let c_word = ["comp", "lete"].join("");
@@ -30,8 +29,8 @@ pub fn scan(content: &str) -> Vec<Violation> {
     let ac_word = ["all", " ", "clean"].join("");
     let fa_word = ["fully", " ", "admitted"].join("");
 
-    for line in content.lines() {
-        lnum += 1;
+    for (lnum0, line) in content.lines().enumerate() {
+        let lnum = (lnum0 + 1) as u32;
 
         // ANTI-LLM-META-001: plain tower-lsp reference
         for kw in &["tower-lsp", "tower_lsp"] {
@@ -84,7 +83,7 @@ pub fn scan_dir<P: AsRef<Path>>(dir: P) -> std::io::Result<Vec<(String, Vec<Viol
             if path.is_file()
                 && path
                     .extension()
-                    .map_or(false, |ext| ext == "ttl" || ext == "rs")
+                    .is_some_and(|ext| ext == "ttl" || ext == "rs")
             {
                 let content = fs::read_to_string(&path)?;
                 let file_violations = scan(&content);
