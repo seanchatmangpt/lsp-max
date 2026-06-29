@@ -2,7 +2,7 @@
 //! Status: CANDIDATE — implement FanoutCoordinator to make this test pass.
 //! Ticket: docs/jira/v26.6.30/CC-004-notification-routing.md
 
-use chicago_tdd_tools::chicago_test;
+use chicago_tdd_tools_proc_macros::chicago_test;
 
 #[chicago_test(
     ticket      = "docs/jira/v26.6.30/CC-004-notification-routing.md",

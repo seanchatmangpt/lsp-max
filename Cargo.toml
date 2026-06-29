@@ -45,9 +45,9 @@ serde_json = "1.0"
 tokio = { version = "1", optional = true, features = ["time", "macros", "rt", "io-util", "net", "sync"] }
 parking_lot = { workspace = true }
 tokio-util = { version = "0.7", optional = true, features = ["codec"] }
-lsp-max-macros = { version = "26.6.28", path = "./lsp-max-macros" }
-lsp-max-protocol = { version = "26.6.28", path = "./lsp-max-protocol" }
-lsp-max-lsif = { path = "./crates/lsp-max-lsif", version = "26.6.28" }
+lsp-max-macros = { version = "26.6.26", path = "./lsp-max-macros" }
+lsp-max-protocol = { version = "26.6.26", path = "./lsp-max-protocol" }
+lsp-max-lsif = { path = "./crates/lsp-max-lsif", version = "26.6.26" }
 oxigraph = { version = "0.5.8", default-features = false, features = ["rdf-12"] }
 blake3 = "1.3"
 ed25519-dalek = { version = "2.0", features = ["rand_core"] }
@@ -81,12 +81,13 @@ walkdir.workspace = true
 tree-sitter-rust = "0.23"
 blake3 = "1"
 criterion = { version = "0.5", features = ["html_reports"] }
-chicago-tdd-tools = { path = "../chicago-tdd-tools" }
+chicago-tdd-tools = { workspace = true }
+chicago-tdd-tools-proc-macros = { workspace = true }
 lsp-max-compositor = { path = "crates/lsp-max-compositor", features = ["full"] }
 
 [[test]]
-name = "cc_005_merge_upstream"
-path = "tests/chicago/cc_005_merge_upstream.rs"
+name = "cc_004_fanout"
+path = "tests/chicago/cc_004_fanout.rs"
 
 [[bench]]
 name = "pipeline_search"
@@ -121,7 +122,7 @@ members = [
 ]
 
 [workspace.package]
-version = "26.6.28"
+version = "26.6.26"
 authors = ["Eyal Kalderon <ebkalderon@gmail.com>"]
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/seanchatmangpt/lsp-max"
@@ -154,15 +155,11 @@ walkdir = "2.5.0"
 rayon-par-bridge = "0.1.0"
 bon = "3.6.4"
 rustc-hash = "2"
-lsp-max-ast = { path = "crates/lsp-max-adapters/lsp-max-ast", version = "26.6.28" }
+lsp-max-ast = { path = "crates/lsp-max-adapters/lsp-max-ast", version = "26.6.26" }
+chicago-tdd-tools = { path = "/Users/sac/chicago-tdd-tools" }
+chicago-tdd-tools-proc-macros = { path = "/Users/sac/chicago-tdd-tools/proc_macros", package = "chicago-tdd-tools-proc-macros" }
 
 [patch.crates-io]
 wasm4pm = { path = "../wasm4pm/wasm4pm" }
 wasm4pm-compat = { path = "../wasm4pm-compat" }
 lsp-types-max = { path = "../lsp-types-max" }
-chicago-tdd-tools = { path = "../chicago-tdd-tools" }
-chicago-tdd-tools-proc-macros = { path = "../chicago-tdd-tools/proc_macros" }
-
-[profile.test]
-debug = 0
-codegen-units = 1

@@ -15,60 +15,47 @@ pub struct FanoutCoordinator {
 }
 
 impl FanoutCoordinator {
-    /// CANDIDATE: create a new FanoutCoordinator for the given set of child server IDs.
+    /// Create a new FanoutCoordinator for the given set of child server IDs.
     pub fn new(server_ids: Vec<String>) -> Self {
-        chicago_tdd_tools::scaffold!(
-            ticket = "docs/jira/v26.6.30/CC-004-notification-routing.md",
-            test   = "tests/chicago/cc_004_fanout.rs",
-        )
+        Self {
+            server_ids,
+            open_uris: Arc::new(DashMap::new()),
+            doc_versions: Arc::new(DashMap::new()),
+        }
     }
 
-    /// CANDIDATE: record that didOpen was processed for a URI.
+    /// Record that didOpen was processed for a URI.
     pub fn record_did_open(&self, uri: &str) {
-        chicago_tdd_tools::scaffold!(
-            ticket = "docs/jira/v26.6.30/CC-004-notification-routing.md",
-            test   = "tests/chicago/cc_004_fanout.rs",
-        )
+        self.open_uris.insert(uri.to_string(), ());
     }
 
-    /// CANDIDATE: record that didClose was processed for a URI.
+    /// Record that didClose was processed for a URI.
     pub fn record_did_close(&self, uri: &str) {
-        chicago_tdd_tools::scaffold!(
-            ticket = "docs/jira/v26.6.30/CC-004-notification-routing.md",
-            test   = "tests/chicago/cc_004_fanout.rs",
-        )
+        self.open_uris.remove(uri);
+        self.doc_versions.remove(uri);
     }
 
-    /// CANDIDATE: returns true if the URI has been opened (didOpen recorded).
+    /// Returns true if the URI has been opened (didOpen recorded).
     pub fn is_open(&self, uri: &str) -> bool {
-        chicago_tdd_tools::scaffold!(
-            ticket = "docs/jira/v26.6.30/CC-004-notification-routing.md",
-            test   = "tests/chicago/cc_004_fanout.rs",
-        )
+        self.open_uris.contains_key(uri)
     }
 
-    /// CANDIDATE: returns true if a didChange can be dispatched for this URI
+    /// Returns true if a didChange can be dispatched for this URI
     /// (i.e., didOpen has been confirmed for all children).
     pub fn can_did_change(&self, uri: &str) -> bool {
-        chicago_tdd_tools::scaffold!(
-            ticket = "docs/jira/v26.6.30/CC-004-notification-routing.md",
-            test   = "tests/chicago/cc_004_fanout.rs",
-        )
+        self.is_open(uri)
     }
 
-    /// CANDIDATE: record the document version seen for a URI.
+    /// Record the document version seen for a URI.
     pub fn record_version(&self, uri: &str, version: u32) {
-        chicago_tdd_tools::scaffold!(
-            ticket = "docs/jira/v26.6.30/CC-004-notification-routing.md",
-            test   = "tests/chicago/cc_004_fanout.rs",
-        )
+        self.doc_versions.insert(uri.to_string(), version);
     }
 
-    /// CANDIDATE: returns true if the incoming version is a regression (lower than recorded).
+    /// Returns true if the incoming version is a regression (lower than recorded).
     pub fn check_version_regression(&self, uri: &str, incoming_version: u32) -> bool {
-        chicago_tdd_tools::scaffold!(
-            ticket = "docs/jira/v26.6.30/CC-004-notification-routing.md",
-            test   = "tests/chicago/cc_004_fanout.rs",
-        )
+        match self.doc_versions.get(uri) {
+            None => false,
+            Some(recorded) => *recorded > incoming_version,
+        }
     }
 }

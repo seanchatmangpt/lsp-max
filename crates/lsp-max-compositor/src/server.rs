@@ -1,3 +1,4 @@
+pub use crate::fanout_coordinator::FanoutCoordinator;
 use crate::child_process::ChildProcessPool;
 use crate::connections::ChildConnections;
 use crate::diagnostic_buffer::DiagnosticBuffer;
