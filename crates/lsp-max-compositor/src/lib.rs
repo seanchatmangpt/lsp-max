@@ -5,6 +5,7 @@ pub mod connections;
 pub mod diagnostic_ack;
 pub mod diagnostic_buffer;
 pub mod fanout;
+pub mod fanout_coordinator;
 pub mod gate_file;
 pub mod gate_cli_compat;
 pub mod health_response;
@@ -50,6 +51,7 @@ pub use merge::{MergeContext, MergeResult};
 pub use registry::{ChildServer, ChildTier, ExtensionRouter};
 pub use dt_context::{DtContext, GateContext, DtContextStatus, AndonEvent, RepairAction};
 pub use andon_snapshot::AndonSnapshot;
+pub use fanout_coordinator::FanoutCoordinator;
 
 // Re-exports from heavy modules (only available with `full` feature).
 #[cfg(feature = "full")]
