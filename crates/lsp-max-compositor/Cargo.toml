@@ -60,8 +60,7 @@ papaya = "0.2.4"
 chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
 uuid = { version = "1.0", features = ["v4"] }
 parking_lot = { workspace = true }
-chicago-tdd-tools = "26.6.30"
 
 [dev-dependencies]
 criterion = { version = "0.5", features = ["html_reports"] }
-chicago-tdd-tools = "26.6"
+tempfile = "3"
