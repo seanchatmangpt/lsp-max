@@ -1,4 +1,5 @@
 // Routing-safe modules — no lsp_max, wasm4pm, or lsp_max_runtime imports; always compiled.
+pub mod endpoint;
 pub mod config;
 pub mod connections;
 pub mod diagnostic_ack;
@@ -38,6 +39,7 @@ pub mod routing;
 pub mod server;
 
 // Re-exports from routing-safe modules (always available).
+pub use endpoint::write_compositor_endpoint;
 pub use config::CompositorConfig;
 pub use connections::ChildConnections;
 pub use diagnostic_buffer::DiagnosticBuffer;
