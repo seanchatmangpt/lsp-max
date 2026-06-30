@@ -95,6 +95,7 @@ members = [
     "crates/lsp-max-cli",
     "crates/lsp-max-compositor",
     "crates/lsp-max-lsif",
+    "crates/test-analyzer",
     "crates/lsp-max-adapters/lsp-max-ast",
     "crates/claude-code-config-lsp",
     "crates/anti-llm-cheat-lsp",
@@ -112,6 +113,7 @@ members = [
     "examples/ggen-lsp",
     "examples/wasm-lsp",
     "examples/lsp-max-scaffold",
+    "crates/test-analyzer",
 ]
 
 [workspace.package]
