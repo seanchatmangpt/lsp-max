@@ -202,9 +202,20 @@ impl LspDb for LspMaxDb {
 /// `SourceFile` input handle.  On `handle_did_change`, only the `text`
 /// field is updated; Salsa automatically invalidates the memoised
 /// `ast_diagnostics` result.
+///
+/// A separate `documents` cache holds the live, tree-sitter-incremental
+/// `Document` (text + `Tree`) per URI. `SourceFile` cannot hold the `Tree`
+/// itself (it isn't `salsa::Update`), so without this cache there would be
+/// nowhere to keep the previous tree between edits — every
+/// `handle_did_change` would have to reparse the whole document from
+/// scratch before applying the incremental edit, defeating the point of
+/// `Tree::edit`. `ast_diagnostics`'s Salsa-level memoization (skip
+/// recompute when `text` is unchanged) is a separate, still-valid
+/// optimization layer and is untouched by this cache.
 pub struct SalsaLspAdapter {
     db: Mutex<LspMaxDb>,
     inputs: DashMap<DocumentUri, SourceFile>,
+    documents: DashMap<DocumentUri, Mutex<Document>>,
 }
 
 impl SalsaLspAdapter {
@@ -212,6 +223,7 @@ impl SalsaLspAdapter {
         Self {
             db: Mutex::new(LspMaxDb::new(language)),
             inputs: DashMap::new(),
+            documents: DashMap::new(),
         }
     }
 
@@ -221,16 +233,24 @@ impl SalsaLspAdapter {
         let text = params.text_document.text;
         let db = self.db.lock();
         let encoding = PositionEncodingKind::UTF16; // LSP default
-        let source = SourceFile::new(&*db, uri.to_string(), text, encoding);
+        let source = SourceFile::new(&*db, uri.to_string(), text.clone(), encoding.clone());
+        let language = db.language();
         drop(db);
+
+        if let Some(doc) = parse_doc_for_language(&language, &text, &encoding) {
+            self.documents.insert(uri.clone(), Mutex::new(doc));
+        }
         self.inputs.insert(uri, source);
     }
 
     /// Apply incremental edits and bump the `text` input in Salsa.
     ///
-    /// Applies the LSP content changes via a `Document` update (which
-    /// handles tree-sitter incremental edit bookkeeping), then calls
-    /// `set_text` to inform Salsa that the text has changed.
+    /// Applies the LSP content changes to the cached `Document` in place —
+    /// a real `Tree::edit` against the *previous* tree followed by an
+    /// incremental reparse — then calls `set_text` to inform Salsa that the
+    /// text has changed. Falls back to a from-scratch parse only if no
+    /// cached `Document` exists yet for this URI (e.g. a `didChange` that
+    /// raced ahead of `didOpen`).
     pub fn handle_did_change(&self, params: DidChangeTextDocumentParams) {
         let uri = params.text_document.uri;
 
@@ -240,31 +260,52 @@ impl SalsaLspAdapter {
         };
 
         let mut db = self.db.lock();
-        let current_text: String = source.text(&*db).clone();
-        let encoding: PositionEncodingKind = source.encoding(&*db);
         let language = db.language();
-
-        let enc_ref: Option<&PositionEncodingKind> = match encoding.as_str() {
-            "utf-8" => Some(&PositionEncodingKind::UTF8),
-            "utf-32" => Some(&PositionEncodingKind::UTF32),
-            _ => None,
-        };
 
         let mut parser = Parser::new();
         if parser.set_language(&language).is_err() {
             return;
         }
 
-        if let Some(tree) = parser.parse(current_text.as_bytes(), None) {
-            let mut doc = Document::new(current_text, tree, enc_ref);
-            let _ = doc.update(&mut parser, &params.content_changes);
-            source.set_text(&mut *db).to(doc.as_str().to_string());
-        }
+        let new_text = match self.documents.get(&uri) {
+            Some(entry) => {
+                let mut doc = entry.value().lock();
+                if doc.update(&mut parser, &params.content_changes).is_err() {
+                    return;
+                }
+                doc.as_str().to_string()
+            }
+            None => {
+                // No cached Document yet — fall back to a from-scratch parse
+                // of the current Salsa text, same as before this cache existed.
+                let current_text: String = source.text(&*db).clone();
+                let encoding: PositionEncodingKind = source.encoding(&*db);
+                let enc_ref: Option<&PositionEncodingKind> = match encoding.as_str() {
+                    "utf-8" => Some(&PositionEncodingKind::UTF8),
+                    "utf-32" => Some(&PositionEncodingKind::UTF32),
+                    _ => None,
+                };
+                let Some(tree) = parser.parse(current_text.as_bytes(), None) else {
+                    return;
+                };
+                let mut doc = Document::new(current_text, tree, enc_ref);
+                if doc.update(&mut parser, &params.content_changes).is_err() {
+                    return;
+                }
+                let text = doc.as_str().to_string();
+                self.documents.insert(uri.clone(), Mutex::new(doc));
+                text
+            }
+        };
+
+        source.set_text(&mut *db).to(new_text);
     }
 
     /// Remove a closed document from the incremental database.
     pub fn handle_did_close(&self, params: DidCloseTextDocumentParams) {
-        self.inputs.remove(&params.text_document.uri);
+        let uri = params.text_document.uri;
+        self.inputs.remove(&uri);
+        self.documents.remove(&uri);
     }
 
     /// Pull diagnostics for a URI as `lsp_types_max::Diagnostic`, using
@@ -282,10 +323,18 @@ impl SalsaLspAdapter {
     }
 
     /// Read-only access to the parsed `Document` for a URI.
+    ///
+    /// Reads the incrementally-maintained `documents` cache directly rather
+    /// than reparsing from scratch; falls back to a fresh parse of the
+    /// current Salsa text only if no cached `Document` exists yet.
     pub fn get_document<F, R>(&self, uri: &DocumentUri, f: F) -> Option<R>
     where
         F: FnOnce(&Document) -> R,
     {
+        if let Some(entry) = self.documents.get(uri) {
+            let doc = entry.value().lock();
+            return Some(f(&doc));
+        }
         let source = match self.inputs.get(uri) {
             Some(r) => *r,
             None => return None,
@@ -492,5 +541,79 @@ mod tests {
             diags_after_close.is_empty(),
             "closed URI must return no diagnostics; got {diags_after_close:?}"
         );
+    }
+
+    // ------------------------------------------------------------------
+    // TRUE: did_change_reuses_previous_tree_incrementally
+    //       Regression test for the bug where handle_did_change reparsed
+    //       the whole pre-edit document from scratch (`parser.parse(text,
+    //       None)`) before applying the incremental edit, defeating
+    //       `Tree::edit`'s entire purpose. A single-character, ranged edit
+    //       on a document large enough to have multiple top-level elements
+    //       should leave the tree's `changed_ranges` local to the edit
+    //       site, not the whole document — this can only happen if the
+    //       edit really was applied against the *previous* tree (which
+    //       `get_document` now serves from the `documents` cache) rather
+    //       than against a throwaway tree reparsed from `None`.
+    // ------------------------------------------------------------------
+    #[test]
+    fn did_change_reuses_previous_tree_incrementally() {
+        let adapter = SalsaLspAdapter::new(html_language());
+        let uri: DocumentUri = "file:///incremental.html".parse().unwrap();
+
+        let initial = "<div><p>one</p><p>two</p><p>three</p></div>";
+        adapter.handle_did_open(DidOpenTextDocumentParams {
+            text_document: lsp_types_max::TextDocumentItem {
+                uri: uri.clone(),
+                language_id: "html".to_string(),
+                version: 1,
+                text: initial.to_string(),
+            },
+        });
+
+        let old_tree = adapter
+            .get_document(&uri, |doc| doc.tree.clone())
+            .expect("document must be cached after did_open");
+
+        // Insert a single character inside the first <p>, well away from the
+        // second and third elements.
+        adapter.handle_did_change(DidChangeTextDocumentParams {
+            text_document: VersionedTextDocumentIdentifier {
+                uri: uri.clone(),
+                version: 2,
+            },
+            content_changes: vec![TextDocumentContentChangeEvent {
+                range: Some(lsp_types_max::Range {
+                    start: lsp_types_max::Position {
+                        line: 0,
+                        character: 9,
+                    },
+                    end: lsp_types_max::Position {
+                        line: 0,
+                        character: 9,
+                    },
+                }),
+                range_length: None,
+                text: "X".to_string(),
+            }],
+        });
+
+        let new_tree = adapter
+            .get_document(&uri, |doc| doc.tree.clone())
+            .expect("document must still be cached after did_change");
+
+        let changed = old_tree.changed_ranges(&new_tree).collect::<Vec<_>>();
+        assert!(
+            !changed.is_empty(),
+            "a real edit must report at least one changed range"
+        );
+        for range in &changed {
+            assert!(
+                range.end_byte <= initial.len() + 20,
+                "changed range {range:?} spans far more than the single-\
+                 character edit site — looks like a full-document reparse, \
+                 not an incremental one"
+            );
+        }
     }
 }

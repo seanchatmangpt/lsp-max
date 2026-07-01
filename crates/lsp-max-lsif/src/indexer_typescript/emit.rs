@@ -245,6 +245,17 @@ fn is_exported(node: tree_sitter::Node<'_>) -> bool {
         .unwrap_or(false)
 }
 
+/// A leading doc comment attaches before the outermost statement, which for
+/// an exported declaration is the wrapping `export_statement`, not the inner
+/// `function_declaration`/`class_declaration`/etc. Walk up to that wrapper
+/// first so `extract_doc_comments`'s `prev_sibling()` walk actually finds it.
+fn doc_comment_anchor(node: tree_sitter::Node<'_>) -> tree_sitter::Node<'_> {
+    match node.parent() {
+        Some(p) if p.kind() == "export_statement" => p,
+        _ => node,
+    }
+}
+
 fn emit_symbol_moniker<W: Write>(
     ctx: &mut LsifContext<'_, W>,
     rs_id: crate::lsif_types::Id,
@@ -368,7 +379,7 @@ fn emit_named_def<W: Write>(
     ctx.builder.bind_next(range_id.clone(), rs_id.clone())?;
 
     let sig = extract_signature(node, source);
-    let docs = extract_doc_comments(node, source);
+    let docs = extract_doc_comments(doc_comment_anchor(node), source);
     let hover_md = if docs.is_empty() {
         format!("```typescript\n{}\n```", sig)
     } else {
@@ -409,7 +420,7 @@ fn emit_lexical_declaration<W: Write>(
                 ctx.builder.bind_next(range_id.clone(), rs_id.clone())?;
 
                 let sig = extract_signature(child, source);
-                let docs = extract_doc_comments(node, source);
+                let docs = extract_doc_comments(doc_comment_anchor(node), source);
                 let hover_md = if docs.is_empty() {
                     format!("```typescript\n{}\n```", sig)
                 } else {
