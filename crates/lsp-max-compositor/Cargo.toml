@@ -2,6 +2,10 @@
 name = "lsp-max-compositor"
 version.workspace = true
 edition.workspace = true
+description = "Multi-server fan-out and merge layer for lsp-max"
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
 
 [[bin]]
 name = "lsp-max-compositor"
