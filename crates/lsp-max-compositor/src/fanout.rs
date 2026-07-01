@@ -99,7 +99,7 @@ mod tests {
         router.register(
             ".rs",
             ChildServer {
-                id: "anti-llm-cheat-lsp".into(),
+                id: "diagnostics-only-lsp".into(),
                 tier: ChildTier::DiagnosticsOnly,
                 extensions: vec![".rs".into()],
             },

@@ -45,6 +45,7 @@ full = [
 lsp-max = { path = "../..", optional = true }
 lsp-max-protocol = { path = "../../lsp-max-protocol", optional = true }
 wasm4pm = { version = "26.6.11", optional = true }
+wasm4pm-compat = { workspace = true }
 async-trait = "0.1"
 tokio = { version = "1", features = ["full"] }
 serde = { version = "1", features = ["derive"] }
@@ -60,7 +61,6 @@ papaya = "0.2.4"
 chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
 uuid = { version = "1.0", features = ["v4"] }
 parking_lot = { workspace = true }
-chicago-tdd-tools = { workspace = true }
 
 [dev-dependencies]
 criterion = { version = "0.5", features = ["html_reports"] }

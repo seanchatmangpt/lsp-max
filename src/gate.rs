@@ -53,6 +53,14 @@ pub const DEFAULT_GATES: &[LawGate] = &[
         name: "receipt-present",
         check: |r| !r.receipts.is_empty(),
     },
+    // The "clean slate" gate closes the most dangerous fake-completion loophole:
+    // an LLM that emits zero diagnostics while having no receipts is claiming
+    // completion without evidence. A clean diagnostic surface is only lawful
+    // when at least one receipt exists to back the claim.
+    LawGate {
+        name: "clean-slate-requires-receipt",
+        check: |r| !r.diagnostics.is_empty() || !r.receipts.is_empty(),
+    },
 ];
 
 // ---------------------------------------------------------------------------

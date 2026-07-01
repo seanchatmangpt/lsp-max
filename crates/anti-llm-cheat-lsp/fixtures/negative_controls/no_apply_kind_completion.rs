@@ -1,1 +1,0 @@
-// Completion without apply kind

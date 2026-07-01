@@ -3,8 +3,8 @@
 //!
 //! # Why this exists
 //!
-//! Every example (`pattern-lsp`, `axum-lsp`, `anti-llm-cheat-lsp`) independently
-//! duplicated the same four concerns:
+//! Every example (`pattern-lsp`, `axum-lsp`) independently duplicated the
+//! same four concerns:
 //!
 //! 1. **Scanner** — glob-walk the workspace, apply per-rule regex matches.
 //! 2. **Rules loader** — deserialise `rules/*.toml` files into `RulePack` structs.

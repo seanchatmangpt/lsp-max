@@ -26,6 +26,33 @@ dx:
     cargo test --all
     cargo clippy --all-targets -- -D warnings
 
+dx-verify:
+    @bash scripts/doctor.sh
+    @bash scripts/doctor-strict.sh
+
+dx-polish:
+    cargo fmt --all
+    cargo clippy --workspace --all-targets --all-features -- -D warnings
+
+test-pre-publish:
+    just dx-verify
+    just dx-polish
+    cargo test --workspace -- --include-ignored
+
+release-version-bump VERSION:
+    cargo +stable set-version {{VERSION}} --workspace
+
+release-validate:
+    just v26-gate-json
+    just doctor
+    just doctor-strict
+    just dx-verify
+    just dx-polish
+    just test-pre-publish
+
+release-dry-run:
+    just publish-dry-run
+
 qol: q failset receipts receipts-check agents-loc agents-closure-scan tree changed clean
 
 v26-gate-json:

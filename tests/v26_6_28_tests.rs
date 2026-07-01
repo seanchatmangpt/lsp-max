@@ -65,11 +65,6 @@ fn doctor_is_nonmutating() {
 }
 
 #[test]
-fn agents_closure_tokens_refused() {
-    // Ensuring this test passes as part of closure token check requirement
-}
-
-#[test]
 fn q_output_contains_packet_not_closure_prose() {
     let content = fs::read_to_string("scripts/q.sh").unwrap_or_default();
     assert!(content.contains("q"));

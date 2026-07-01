@@ -69,7 +69,7 @@ fn ggen_code_is_andon_for_server_b_no_override() {
 //
 // Mirrors the actual lsp-max.toml configuration:
 //   wasm4pm-lsp        → ["WASM4PM-", "GGEN-EVIDENCE-", "CLAP-PACK-HANDLER-UNBOUND", "COG-"]
-//   anti-llm-cheat-lsp → ["ANTI-LLM-"]
+//   diagnostics-only-lsp → ["ANTI-LLM-"]
 //   ggen-lsp           → ["GGEN-"]
 //
 // Isolation invariant: a code prefix declared only by server X must NOT set ANDON
@@ -98,7 +98,7 @@ fn production_ctx() -> lsp_max_compositor::MergeContext {
         ],
     );
     ctx.add_server_prefix_override(
-        "anti-llm-cheat-lsp".to_string(),
+        "diagnostics-only-lsp".to_string(),
         vec!["ANTI-LLM-".to_string()],
     );
     ctx.add_server_prefix_override("ggen-lsp".to_string(), vec!["GGEN-".to_string()]);
@@ -125,13 +125,13 @@ fn wasm4pm_ggen_evidence_prefix_is_andon() {
     );
 }
 
-// anti-llm-cheat-lsp emits ANTI-LLM-CHEAT-C001 → must be ANDON (own prefix).
+// diagnostics-only-lsp emits ANTI-LLM-CHEAT-C001 → must be ANDON (own prefix).
 #[test]
 fn anti_llm_own_prefix_is_andon() {
     let ctx = production_ctx();
     assert!(
-        ctx.is_andon_for_server("ANTI-LLM-CHEAT-C001", Some("anti-llm-cheat-lsp")),
-        "ANTI-LLM-CHEAT-C001 from anti-llm-cheat-lsp must be ANDON (declared ANTI-LLM-)"
+        ctx.is_andon_for_server("ANTI-LLM-CHEAT-C001", Some("diagnostics-only-lsp")),
+        "ANTI-LLM-CHEAT-C001 from diagnostics-only-lsp must be ANDON (declared ANTI-LLM-)"
     );
 }
 
@@ -145,15 +145,15 @@ fn ggen_lsp_own_prefix_is_andon() {
     );
 }
 
-// Cross-isolation: WASM4PM- code attributed to anti-llm-cheat-lsp must NOT be ANDON.
-// anti-llm-cheat-lsp only declared ANTI-LLM-; it must not inherit WASM4PM- from the union.
+// Cross-isolation: WASM4PM- code attributed to diagnostics-only-lsp must NOT be ANDON.
+// diagnostics-only-lsp only declared ANTI-LLM-; it must not inherit WASM4PM- from the union.
 #[test]
 fn wasm4pm_code_not_andon_for_anti_llm_server() {
     let ctx = production_ctx();
     assert!(
-        !ctx.is_andon_for_server("WASM4PM-CROWN-001", Some("anti-llm-cheat-lsp")),
-        "WASM4PM-CROWN-001 attributed to anti-llm-cheat-lsp must NOT be ANDON — \
-         anti-llm-cheat-lsp declared only ANTI-LLM-, union must not leak"
+        !ctx.is_andon_for_server("WASM4PM-CROWN-001", Some("diagnostics-only-lsp")),
+        "WASM4PM-CROWN-001 attributed to diagnostics-only-lsp must NOT be ANDON — \
+         diagnostics-only-lsp declared only ANTI-LLM-, union must not leak"
     );
 }
 

@@ -50,13 +50,20 @@ fn range_tags(ls: &[Value]) -> Vec<&Value> {
 
 #[test]
 fn exported_function_definition_is_emitted_with_correct_name_and_kind() {
-    let ls = index("export function add(a: number, b: number): number { return a + b; }", "file:///lib.ts");
+    let ls = index(
+        "export function add(a: number, b: number): number { return a + b; }",
+        "file:///lib.ts",
+    );
     let tags = range_tags(&ls);
     let def = tags
         .iter()
         .find(|t| t["type"] == "definition" && t["text"] == "add")
         .expect("expected a definition tag for `add`");
-    assert_eq!(def["kind"], serde_json::json!(12), "SymbolKind::FUNCTION == 12");
+    assert_eq!(
+        def["kind"],
+        serde_json::json!(12),
+        "SymbolKind::FUNCTION == 12"
+    );
 }
 
 #[test]

@@ -1,7 +1,0 @@
-[package]
-name = "mylib"
-version.workspace = true
-edition = "2021"
-
-[dependencies]
-my-internal-lib = { path = "../my-internal-lib", version = "1.2.3" }

@@ -1,30 +1,29 @@
-# docs/archive
+# Archive
 
-Point-in-time documents retained for provenance. **These make no current claim.**
-Each was accurate at its checkpoint; live status is carried by the top-level
-`ROADMAP.md`, `AGENTS.md`, `CHANGELOG.md`, and the living docs under `docs/`
-(`law/`, `adr/`, `research/`, and the theses/explorations in `docs/reports/`).
+This directory contains historical documentation, superseded design documents, and exploration notes. Content here is not actively maintained and may reference code or decisions that no longer exist.
 
-Nothing here should be cited as the current state of the runtime. If an archived
-report and a live doc disagree, the live doc governs; the archived report records
-only what was observed at its checkpoint.
+## What's here
 
-## Contents
+- **`adr/`:** Old ADR (Architecture Decision Record) files, now replaced by `/docs/rfcs/`. Kept for historical context.
+- **`law/`:** Theoretical foundations of the law-state runtime, now unified in `docs/book/01-architecture.md`.
+- **`reports/`:** Exploration and research documents (BASELINE_TYPE_AUTHORITY_THESIS, BLUE_OCEAN_INNOVATION_THESIS, WASM4PM_COMPAT_THESIS, etc.). These represent one-off investigations, not ongoing design decisions.
+- **`dod/`:** Definition of Done (DoD) tickets for completed v26.6.28 epic (Salsa+LSIF integration). Closed out; kept for audit trail.
+- **`max-001-rounds/`, `v26.6.5/`:** Older version-specific documentation directories; historical only.
 
-### `max-001-rounds/`
-The first multi-agent ("1000x") rounds against the lsp-max surface.
+## Migrated Content
 
-- `conformance/` — per-phase conformance snapshots `MAX-001`..`MAX-007`, plus
-  `SPECGEN-001-bootstrap-report.md`. Each is a checkpoint of admitted/refused/unknown
-  axes at the time of that round; superseded by the current `ROADMAP.md` and the
-  Λ_CD predicate audit in `AGENTS.md`.
-- `agents-reports/` — individual agent delivery/analysis reports from MAX-001.
-- `evidence/` — `GC005_HANDOFF.md` and `GC005_PROCESS_EVIDENCE.jsonl`: the raw
-  OCEL evidence and handoff for the GC005 authority-surface checkpoint.
+The following docs were consolidated into new sources:
 
-### `v26.6.5/`
-The v26.6.5 PRD/ARD release bundle (Oxigraph/SPARQL admitted graph control plane).
-Version-pinned to a release prior to the current workspace version (CalVer 26.6.9).
-The operative design record for that direction now lives in
-`docs/reports/ARD-OXIGRAPH-SPARQL.md` and `docs/reports/oxigraph_store_exploration.md`,
-with current status tracked as OPEN/CANDIDATE in `ROADMAP.md`.
+- **ARCHITECTURE.md, CHAIN-THEORY.md, explanation.md, docs/law/** → `docs/book/01-architecture.md` (unified narrative)
+- **docs/adr/** → `docs/rfcs/` (single-numbered RFC sequence)
+- **docs/FEATURES.md** → Consolidated into RFC 0001 and architecture narrative
+- **docs/00_READ_ME_FIRST.md** → Replaced by top-level `README.md`
+
+## Using Archive
+
+If you're looking for historical context or exploring why a decision was made, check here. But for current guidance, always refer to:
+
+- **Architecture:** `docs/book/01-architecture.md`
+- **Design decisions:** `docs/rfcs/README.md`
+- **Contributing:** `/CONTRIBUTING.md`
+- **Changelog:** `/CHANGELOG.md`
