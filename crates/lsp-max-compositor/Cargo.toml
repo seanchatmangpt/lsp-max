@@ -42,8 +42,8 @@ full = [
 ]
 
 [dependencies]
-lsp-max = { path = "../..", optional = true }
-lsp-max-protocol = { path = "../../lsp-max-protocol", optional = true }
+lsp-max = { path = "../..", version = "26.7.1", optional = true }
+lsp-max-protocol = { path = "../../lsp-max-protocol", version = "26.7.1", optional = true }
 wasm4pm = { version = "26.6.11", optional = true }
 wasm4pm-compat = { workspace = true }
 async-trait = "0.1"
