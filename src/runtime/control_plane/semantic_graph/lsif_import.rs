@@ -1,13 +1,23 @@
 //! LSIF → Oxigraph RDF named-graph import.
 //!
 //! Reads an LSIF JSONL file and loads a queryable RDF projection into an
-//! Oxigraph named graph.  Only three vertex labels are projected:
+//! Oxigraph named graph, using the same vocabulary
+//! `views::populate_defs_refs`'s SPARQL queries expect (the real LSIF 0.6.0
+//! spec namespace plus the `max:` position-property vocabulary), so that
+//! imported data is actually reachable via `textDocument/definition` and
+//! `textDocument/references` lookups:
 //!
-//! | LSIF label        | RDF type              | Properties             |
-//! |-------------------|-----------------------|------------------------|
-//! | `document`        | `lsif:document`       | `lsif:uri`             |
-//! | `moniker` (vertex)| `lsif:symbol`         | `lsif:identifier`, `lsif:kind` |
-//! | `referenceResult` | `lsif:referenceOf`    | (type triple only)     |
+//! | LSIF entry                        | RDF triple(s)                                  |
+//! |------------------------------------|------------------------------------------------|
+//! | `document` vertex                  | `lsif:document` type; `max:uri`                |
+//! | `moniker` vertex                   | `lsif:symbol` type; `lsif:identifier`/`lsif:kind` |
+//! | `referenceResult` vertex           | `lsif:referenceOf` type                        |
+//! | `range` vertex                     | `max:startLine`/`startCharacter`/`endLine`/`endCharacter` |
+//! | `contains` edge (outV, inVs)       | `lsif:contains` per id in `inVs`               |
+//! | `next` edge (outV, inV)            | `lsif:next`                                    |
+//! | `item` edge (outV, inVs)           | `lsif:item` per id in `inVs`                   |
+//! | `textDocument/definition` edge     | `lsif:textDocument_definition`                 |
+//! | `textDocument/references` edge     | `lsif:textDocument_references`                 |
 //!
 //! All other LSIF labels are skipped.
 //!
@@ -22,17 +32,34 @@ use oxigraph::model::{GraphNameRef, Literal, NamedNode, NamedNodeRef, Quad, Subj
 use oxigraph::store::Store;
 
 // ---------------------------------------------------------------------------
-// RDF namespace
+// RDF namespaces
 // ---------------------------------------------------------------------------
 
-const NS: &str = "https://lsp-max.dev/lsif/";
+/// Real LSIF 0.6.0 spec namespace — must match the `PREFIX lsif:` used in
+/// `views::populate_defs_refs`'s SPARQL queries.
+const NS: &str = "https://microsoft.github.io/language-server-protocol/specifications/lsif/0.6.0/specification/";
+
+/// `max:` position/uri vocabulary — must match the `PREFIX max:` used in
+/// `views::populate_defs_refs`'s SPARQL queries.
+const MAX_NS: &str = "urn:lsp-max:core:";
 
 fn ns(local: &str) -> NamedNode {
     NamedNode::new(format!("{NS}{local}")).expect("static LSIF namespace must be valid")
 }
 
+fn max_ns(local: &str) -> NamedNode {
+    NamedNode::new(format!("{MAX_NS}{local}")).expect("static max: namespace must be valid")
+}
+
 fn vertex_node(id: u64) -> NamedNode {
     NamedNode::new(format!("urn:lsif:v/{id}")).expect("LSIF vertex URN must be valid")
+}
+
+fn u64_literal(n: u64) -> Term {
+    // `views::helpers::term_to_u32` reads the literal's lexical value via
+    // `Literal::value()` regardless of datatype, so a simple literal (same
+    // pattern the rest of this file already uses) is sufficient here.
+    Term::Literal(Literal::new_simple_literal(n.to_string()))
 }
 
 // ---------------------------------------------------------------------------
@@ -49,6 +76,8 @@ pub struct LsifImportStats {
     pub document_triples: usize,
     pub moniker_triples: usize,
     pub reference_triples: usize,
+    pub range_triples: usize,
+    pub edge_triples: usize,
     pub total_triples: usize,
 }
 
@@ -78,15 +107,24 @@ pub fn import_lsif_into_graph(
 
     let mut stats = LsifImportStats::default();
 
-    // Pre-build type predicates.
+    // Pre-build type/property predicates.
     let rdf_type = NamedNode::new("http://www.w3.org/1999/02/22-rdf-syntax-ns#type")
         .expect("rdf:type must be valid");
     let lsif_document = ns("document");
     let lsif_symbol = ns("symbol");
     let lsif_reference_of = ns("referenceOf");
-    let lsif_uri_pred = ns("uri");
     let lsif_identifier_pred = ns("identifier");
     let lsif_kind_pred = ns("kind");
+    let max_uri_pred = max_ns("uri");
+    let max_start_line = max_ns("startLine");
+    let max_start_char = max_ns("startCharacter");
+    let max_end_line = max_ns("endLine");
+    let max_end_char = max_ns("endCharacter");
+    let lsif_contains = ns("contains");
+    let lsif_next = ns("next");
+    let lsif_item = ns("item");
+    let lsif_text_document_definition = ns("textDocument_definition");
+    let lsif_text_document_references = ns("textDocument_references");
 
     for (line_no, line) in reader.lines().enumerate() {
         let line = line.map_err(|e| anyhow::anyhow!("read error at line {line_no}: {e}"))?;
@@ -100,13 +138,8 @@ pub fn import_lsif_into_graph(
             Err(_) => continue, // skip malformed lines
         };
 
-        // Only process vertex entries.
-        if v.get("type").and_then(|t| t.as_str()) != Some("vertex") {
-            continue;
-        }
-
-        let id = match v.get("id").and_then(|i| i.as_u64()) {
-            Some(id) => id,
+        let entry_type = match v.get("type").and_then(|t| t.as_str()) {
+            Some(t) => t,
             None => continue,
         };
 
@@ -115,97 +148,249 @@ pub fn import_lsif_into_graph(
             None => continue,
         };
 
-        let subject = Subject::NamedNode(vertex_node(id));
+        match entry_type {
+            "vertex" => {
+                let id = match v.get("id").and_then(|i| i.as_u64()) {
+                    Some(id) => id,
+                    None => continue,
+                };
+                let subject = Subject::NamedNode(vertex_node(id));
 
-        match label {
-            "document" => {
-                let uri_val = v
-                    .get("uri")
-                    .and_then(|u| u.as_str())
-                    .unwrap_or("")
-                    .to_string();
+                match label {
+                    "document" => {
+                        let uri_val = v
+                            .get("uri")
+                            .and_then(|u| u.as_str())
+                            .unwrap_or("")
+                            .to_string();
 
-                // <vertex_node> rdf:type lsif:document
-                insert_quad(
-                    store,
-                    subject.clone(),
-                    rdf_type.clone(),
-                    Term::NamedNode(lsif_document.clone()),
-                    graph_ref,
-                );
-                stats.document_triples += 1;
+                        // <vertex_node> rdf:type lsif:document
+                        insert_quad(
+                            store,
+                            subject.clone(),
+                            rdf_type.clone(),
+                            Term::NamedNode(lsif_document.clone()),
+                            graph_ref,
+                        );
+                        stats.document_triples += 1;
 
-                // <vertex_node> lsif:uri "file:///..."
-                insert_quad(
-                    store,
-                    subject,
-                    lsif_uri_pred.clone(),
-                    Term::Literal(Literal::new_simple_literal(uri_val)),
-                    graph_ref,
-                );
-                stats.document_triples += 1;
+                        // <vertex_node> max:uri "file:///..." — the property
+                        // populate_defs_refs's SPARQL actually queries for.
+                        insert_quad(
+                            store,
+                            subject,
+                            max_uri_pred.clone(),
+                            Term::Literal(Literal::new_simple_literal(uri_val)),
+                            graph_ref,
+                        );
+                        stats.document_triples += 1;
+                    }
+
+                    "moniker" => {
+                        let identifier = v
+                            .get("identifier")
+                            .and_then(|i| i.as_str())
+                            .unwrap_or("")
+                            .to_string();
+                        let kind = v
+                            .get("kind")
+                            .and_then(|k| k.as_str())
+                            .unwrap_or("local")
+                            .to_string();
+
+                        // <vertex_node> rdf:type lsif:symbol
+                        insert_quad(
+                            store,
+                            subject.clone(),
+                            rdf_type.clone(),
+                            Term::NamedNode(lsif_symbol.clone()),
+                            graph_ref,
+                        );
+                        stats.moniker_triples += 1;
+
+                        // <vertex_node> lsif:identifier "crate::Symbol"
+                        insert_quad(
+                            store,
+                            subject.clone(),
+                            lsif_identifier_pred.clone(),
+                            Term::Literal(Literal::new_simple_literal(identifier)),
+                            graph_ref,
+                        );
+                        stats.moniker_triples += 1;
+
+                        // <vertex_node> lsif:kind "export"
+                        insert_quad(
+                            store,
+                            subject,
+                            lsif_kind_pred.clone(),
+                            Term::Literal(Literal::new_simple_literal(kind)),
+                            graph_ref,
+                        );
+                        stats.moniker_triples += 1;
+                    }
+
+                    "referenceResult" => {
+                        // <vertex_node> rdf:type lsif:referenceOf
+                        insert_quad(
+                            store,
+                            subject,
+                            rdf_type.clone(),
+                            Term::NamedNode(lsif_reference_of.clone()),
+                            graph_ref,
+                        );
+                        stats.reference_triples += 1;
+                    }
+
+                    "range" => {
+                        // <vertex_node> max:startLine/startCharacter/endLine/endCharacter — the
+                        // exact properties populate_defs_refs's SPARQL projects for both the
+                        // source and destination range of a definition/reference.
+                        let start = v.get("start");
+                        let end = v.get("end");
+                        let start_line = start.and_then(|s| s.get("line")).and_then(|n| n.as_u64());
+                        let start_char =
+                            start.and_then(|s| s.get("character")).and_then(|n| n.as_u64());
+                        let end_line = end.and_then(|e| e.get("line")).and_then(|n| n.as_u64());
+                        let end_char =
+                            end.and_then(|e| e.get("character")).and_then(|n| n.as_u64());
+
+                        if let (Some(sl), Some(sc), Some(el), Some(ec)) =
+                            (start_line, start_char, end_line, end_char)
+                        {
+                            insert_quad(
+                                store,
+                                subject.clone(),
+                                max_start_line.clone(),
+                                u64_literal(sl),
+                                graph_ref,
+                            );
+                            insert_quad(
+                                store,
+                                subject.clone(),
+                                max_start_char.clone(),
+                                u64_literal(sc),
+                                graph_ref,
+                            );
+                            insert_quad(
+                                store,
+                                subject.clone(),
+                                max_end_line.clone(),
+                                u64_literal(el),
+                                graph_ref,
+                            );
+                            insert_quad(
+                                store,
+                                subject,
+                                max_end_char.clone(),
+                                u64_literal(ec),
+                                graph_ref,
+                            );
+                            stats.range_triples += 4;
+                        }
+                    }
+
+                    _ => {} // skip all other vertex labels
+                }
             }
 
-            "moniker" => {
-                let identifier = v
-                    .get("identifier")
-                    .and_then(|i| i.as_str())
-                    .unwrap_or("")
-                    .to_string();
-                let kind = v
-                    .get("kind")
-                    .and_then(|k| k.as_str())
-                    .unwrap_or("local")
-                    .to_string();
+            "edge" => {
+                let out_v = match v.get("outV").and_then(|i| i.as_u64()) {
+                    Some(id) => id,
+                    None => continue,
+                };
+                let out_node = Subject::NamedNode(vertex_node(out_v));
 
-                // <vertex_node> rdf:type lsif:symbol
-                insert_quad(
-                    store,
-                    subject.clone(),
-                    rdf_type.clone(),
-                    Term::NamedNode(lsif_symbol.clone()),
-                    graph_ref,
-                );
-                stats.moniker_triples += 1;
+                match label {
+                    "contains" => {
+                        // <outV> lsif:contains <inV> for each id in inVs.
+                        if let Some(in_vs) = v.get("inVs").and_then(|a| a.as_array()) {
+                            for in_v in in_vs.iter().filter_map(|i| i.as_u64()) {
+                                insert_quad(
+                                    store,
+                                    out_node.clone(),
+                                    lsif_contains.clone(),
+                                    Term::NamedNode(vertex_node(in_v)),
+                                    graph_ref,
+                                );
+                                stats.edge_triples += 1;
+                            }
+                        }
+                    }
 
-                // <vertex_node> lsif:identifier "crate::Symbol"
-                insert_quad(
-                    store,
-                    subject.clone(),
-                    lsif_identifier_pred.clone(),
-                    Term::Literal(Literal::new_simple_literal(identifier)),
-                    graph_ref,
-                );
-                stats.moniker_triples += 1;
+                    "next" => {
+                        // <outV> lsif:next <inV>
+                        if let Some(in_v) = v.get("inV").and_then(|i| i.as_u64()) {
+                            insert_quad(
+                                store,
+                                out_node,
+                                lsif_next.clone(),
+                                Term::NamedNode(vertex_node(in_v)),
+                                graph_ref,
+                            );
+                            stats.edge_triples += 1;
+                        }
+                    }
 
-                // <vertex_node> lsif:kind "export"
-                insert_quad(
-                    store,
-                    subject,
-                    lsif_kind_pred.clone(),
-                    Term::Literal(Literal::new_simple_literal(kind)),
-                    graph_ref,
-                );
-                stats.moniker_triples += 1;
+                    "item" => {
+                        // <outV> lsif:item <inV> for each id in inVs.
+                        if let Some(in_vs) = v.get("inVs").and_then(|a| a.as_array()) {
+                            for in_v in in_vs.iter().filter_map(|i| i.as_u64()) {
+                                insert_quad(
+                                    store,
+                                    out_node.clone(),
+                                    lsif_item.clone(),
+                                    Term::NamedNode(vertex_node(in_v)),
+                                    graph_ref,
+                                );
+                                stats.edge_triples += 1;
+                            }
+                        }
+                    }
+
+                    "textDocument/definition" => {
+                        // <outV> lsif:textDocument_definition <inV> — note the
+                        // underscore: the SPARQL prefix concatenation expects
+                        // `lsif:textDocument_definition`, not a `/`-containing
+                        // local name (which isn't valid in a SPARQL PN_LOCAL
+                        // without escaping anyway).
+                        if let Some(in_v) = v.get("inV").and_then(|i| i.as_u64()) {
+                            insert_quad(
+                                store,
+                                out_node,
+                                lsif_text_document_definition.clone(),
+                                Term::NamedNode(vertex_node(in_v)),
+                                graph_ref,
+                            );
+                            stats.edge_triples += 1;
+                        }
+                    }
+
+                    "textDocument/references" => {
+                        if let Some(in_v) = v.get("inV").and_then(|i| i.as_u64()) {
+                            insert_quad(
+                                store,
+                                out_node,
+                                lsif_text_document_references.clone(),
+                                Term::NamedNode(vertex_node(in_v)),
+                                graph_ref,
+                            );
+                            stats.edge_triples += 1;
+                        }
+                    }
+
+                    _ => {} // skip all other edge labels
+                }
             }
 
-            "referenceResult" => {
-                // <vertex_node> rdf:type lsif:referenceOf
-                insert_quad(
-                    store,
-                    subject,
-                    rdf_type.clone(),
-                    Term::NamedNode(lsif_reference_of.clone()),
-                    graph_ref,
-                );
-                stats.reference_triples += 1;
-            }
-
-            _ => {} // skip all other labels
+            _ => {} // skip anything that's neither vertex nor edge
         }
     }
 
-    stats.total_triples = stats.document_triples + stats.moniker_triples + stats.reference_triples;
+    stats.total_triples = stats.document_triples
+        + stats.moniker_triples
+        + stats.reference_triples
+        + stats.range_triples
+        + stats.edge_triples;
     Ok(stats)
 }
 
@@ -242,6 +427,81 @@ mod tests {
     }
 
     const GRAPH: &str = "https://lsp-max.dev/graphs/v26.6.28";
+
+    // ------------------------------------------------------------------
+    // TRUE: an imported definition is actually reachable via
+    // `views::lookup_definition` — the concrete proof that this importer's
+    // vocabulary and `populate_defs_refs`'s SPARQL now agree. Before this
+    // fix, this test could not pass anywhere in the codebase: the importer
+    // dropped every edge and used a different RDF namespace than the SPARQL
+    // queries expect.
+    // ------------------------------------------------------------------
+    #[test]
+    fn imported_definition_is_reachable_via_lookup_definition() {
+        use crate::runtime::control_plane::views::{
+            lookup_definition, update_views, MaterializedViewStore,
+        };
+        use lsp_max_lsif::indexer_rust::index_rust_source;
+        use lsp_max_lsif::lsif::ToolInfo;
+        use lsp_max_lsif::lsif_builder::LsifBuilder;
+
+        let source = "fn helper() {}\nfn run() { helper(); }\n";
+        let uri = "file:///run.rs";
+
+        let mut buf = Vec::new();
+        {
+            let mut builder = LsifBuilder::new(&mut buf);
+            builder
+                .emit_metadata(
+                    "0.6.0",
+                    "file:///w",
+                    ToolInfo {
+                        name: "lsp-max-lsif".to_string(),
+                        version: None,
+                        args: None,
+                    },
+                )
+                .unwrap();
+            index_rust_source(source, uri, &mut builder).unwrap();
+        }
+
+        let tmp = std::env::temp_dir().join(format!(
+            "lsif_import_test_{}.lsif",
+            std::process::id()
+        ));
+        std::fs::write(&tmp, &buf).unwrap();
+
+        let store = Store::new().unwrap();
+        let stats =
+            import_lsif_into_graph(&store, &tmp, "https://lsp-max.dev/graphs/test-defs").unwrap();
+        std::fs::remove_file(&tmp).ok();
+
+        assert!(
+            stats.range_triples > 0,
+            "expected range vertices to be imported; got {stats:?}"
+        );
+        assert!(
+            stats.edge_triples > 0,
+            "expected edges (next/item/textDocument_definition/contains) to be imported; got {stats:?}"
+        );
+
+        let views = MaterializedViewStore::new();
+        update_views(&store, &views);
+
+        // The call site `helper()` on line 1 (0-indexed) starts right after
+        // "fn run() { " — column 11 lands inside the `helper` identifier.
+        let call_site_uri = url::Url::parse(uri).unwrap();
+        let call_site_pos = lsp_types_max::Position {
+            line: 1,
+            character: 11,
+        };
+
+        let location = lookup_definition(&views, &call_site_uri, call_site_pos);
+        assert!(
+            location.is_some(),
+            "expected a definition location for the call to `helper()`, got None"
+        );
+    }
 
     // ------------------------------------------------------------------
     // TRUE: document_triples > 0

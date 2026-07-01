@@ -47,8 +47,6 @@ pub fn token_types() -> Vec<SemanticTokenType> {
 {% for result in results %}
 const T_{{ result.token_type | upper }}: u32 = {{ loop.index0 }};
 {% endfor %}
-#[allow(dead_code)]
-const T_VARIABLE_FALLBACK: u32 = 0;
 
 /// The legend advertised in `SemanticTokensOptions`.
 pub fn legend() -> SemanticTokensLegend {
@@ -66,7 +64,7 @@ fn classify(node: &tree_sitter::Node) -> Option<u32> {
     // domain-specific parent_kind mappings from the ontology.
     // For now, all identifiers default to variable classification.
     if node.kind() == "identifier" {
-        return Some(T_VARIABLE_FALLBACK);
+        return token_type_for("variable");
     }
     token_type_for(node.kind())
 }
