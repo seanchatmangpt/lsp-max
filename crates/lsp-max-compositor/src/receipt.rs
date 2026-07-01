@@ -1,6 +1,8 @@
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 
+use wasm4pm_compat::ocel::{OcelAttribute, OcelEvent};
+
 /// Machine-readable emission status of a CompositorReceipt.
 ///
 /// BLOCKED: has_andon_block was true at construction — receipt must not be treated
@@ -140,6 +142,28 @@ impl CompositorReceipt {
             },
             "relationships": relationships
         })
+    }
+
+    /// Returns a typed OCEL 2.0 event using the wasm4pm_compat admission-boundary types.
+    ///
+    /// Activity is `"CompositorFlush"`. Key diagnostic attributes are attached.
+    /// The event carries `timestamp_ns` from `chrono::Utc::now()` when `timestamp_ns` is
+    /// `Some`; callers that need a stable timestamp should call `to_ocel_event` and pass
+    /// their own timestamp string.
+    pub fn to_ocel_event_typed(&self, event_id: &str) -> OcelEvent {
+        let ts_ns = chrono::Utc::now().timestamp_nanos_opt().unwrap_or(0);
+        OcelEvent::new(event_id, "CompositorFlush")
+            .at_ns(ts_ns as u64)
+            .with_attribute(OcelAttribute::string("uri", &self.uri))
+            .with_attribute(OcelAttribute::string("status", self.status().as_str()))
+            .with_attribute(OcelAttribute::integer(
+                "diagnostic_count",
+                self.diagnostic_count as i64,
+            ))
+            .with_attribute(OcelAttribute::boolean(
+                "has_andon_block",
+                self.has_andon_block,
+            ))
     }
 
     /// Returns true when ANDON law violations were present at flush time.

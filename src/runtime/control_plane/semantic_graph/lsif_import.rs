@@ -37,7 +37,8 @@ use oxigraph::store::Store;
 
 /// Real LSIF 0.6.0 spec namespace — must match the `PREFIX lsif:` used in
 /// `views::populate_defs_refs`'s SPARQL queries.
-const NS: &str = "https://microsoft.github.io/language-server-protocol/specifications/lsif/0.6.0/specification/";
+const NS: &str =
+    "https://microsoft.github.io/language-server-protocol/specifications/lsif/0.6.0/specification/";
 
 /// `max:` position/uri vocabulary — must match the `PREFIX max:` used in
 /// `views::populate_defs_refs`'s SPARQL queries.
@@ -248,11 +249,13 @@ pub fn import_lsif_into_graph(
                         let start = v.get("start");
                         let end = v.get("end");
                         let start_line = start.and_then(|s| s.get("line")).and_then(|n| n.as_u64());
-                        let start_char =
-                            start.and_then(|s| s.get("character")).and_then(|n| n.as_u64());
+                        let start_char = start
+                            .and_then(|s| s.get("character"))
+                            .and_then(|n| n.as_u64());
                         let end_line = end.and_then(|e| e.get("line")).and_then(|n| n.as_u64());
-                        let end_char =
-                            end.and_then(|e| e.get("character")).and_then(|n| n.as_u64());
+                        let end_char = end
+                            .and_then(|e| e.get("character"))
+                            .and_then(|n| n.as_u64());
 
                         if let (Some(sl), Some(sc), Some(el), Some(ec)) =
                             (start_line, start_char, end_line, end_char)
@@ -465,10 +468,8 @@ mod tests {
             index_rust_source(source, uri, &mut builder).unwrap();
         }
 
-        let tmp = std::env::temp_dir().join(format!(
-            "lsif_import_test_{}.lsif",
-            std::process::id()
-        ));
+        let tmp =
+            std::env::temp_dir().join(format!("lsif_import_test_{}.lsif", std::process::id()));
         std::fs::write(&tmp, &buf).unwrap();
 
         let store = Store::new().unwrap();

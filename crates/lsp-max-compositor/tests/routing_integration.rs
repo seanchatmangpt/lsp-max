@@ -6,7 +6,7 @@
 // in lsp-max.toml:
 //
 //   wasm4pm-lsp         priority=diagnostics-only  primary=[.ocel.json …]  secondary=[.rs …]
-//   anti-llm-cheat-lsp  priority=diagnostics-only  primary=[.rs …]
+//   diagnostics-only-lsp  priority=diagnostics-only  primary=[.rs …]
 //   ggen-lsp            priority=full              primary=[.ttl .rq .tera]
 //
 // None of these tests spawn real processes. They exercise the routing layer in
@@ -45,14 +45,14 @@ fn secondary_server(id: &str, exts: &[&str]) -> ChildServer {
 
 // ── 1. Dotted extension routing ───────────────────────────────────────────────
 //
-// `.rs` extension maps to anti-llm-cheat-lsp and wasm4pm-lsp (both DiagnosticsOnly
+// `.rs` extension maps to diagnostics-only-lsp and wasm4pm-lsp (both DiagnosticsOnly
 // per lsp-max.toml); ggen-lsp is NOT returned for .rs because it only registers
 // .ttl, .rq, .tera.
 
 #[test]
 fn dotted_rs_routes_to_anti_llm_and_wasm4pm_not_ggen() {
     let router = ExtensionRouter::new();
-    router.register(".rs", diag_server("anti-llm-cheat-lsp", &[".rs"]));
+    router.register(".rs", diag_server("diagnostics-only-lsp", &[".rs"]));
     router.register(".rs", diag_server("wasm4pm-lsp", &[".rs"]));
     router.register(
         ".ttl",
@@ -68,8 +68,8 @@ fn dotted_rs_routes_to_anti_llm_and_wasm4pm_not_ggen() {
     let ids: Vec<&str> = servers.iter().map(|s| s.id.as_str()).collect();
 
     assert!(
-        ids.contains(&"anti-llm-cheat-lsp"),
-        "anti-llm-cheat-lsp must serve .rs files, got: {:?}",
+        ids.contains(&"diagnostics-only-lsp"),
+        "diagnostics-only-lsp must serve .rs files, got: {:?}",
         ids
     );
     assert!(
@@ -88,15 +88,15 @@ fn dotted_rs_routes_to_anti_llm_and_wasm4pm_not_ggen() {
 //
 // `.ocel.json` is a primary extension for wasm4pm-lsp. When that server is
 // configured with priority="full" (not diagnostics-only), the primary_extensions
-// slot maps to ChildTier::Primary. ggen-lsp and anti-llm-cheat-lsp must not appear for .ocel.json.
+// slot maps to ChildTier::Primary. ggen-lsp and diagnostics-only-lsp must not appear for .ocel.json.
 
 #[test]
 fn compound_ocel_json_routes_to_primary_server() {
     let router = ExtensionRouter::new();
     // Simulate a "full"-priority wasm4pm-lsp for .ocel.json (Primary tier).
     router.register(".ocel.json", primary_server("wasm4pm-lsp", &[".ocel.json"]));
-    // anti-llm-cheat-lsp covers .json but NOT .ocel.json specifically.
-    router.register(".json", diag_server("anti-llm-cheat-lsp", &[".json"]));
+    // diagnostics-only-lsp covers .json but NOT .ocel.json specifically.
+    router.register(".json", diag_server("diagnostics-only-lsp", &[".json"]));
 
     let servers = servers_for_uri(&router, "file:///workspace/trace.ocel.json");
     let ids: Vec<&str> = servers.iter().map(|s| s.id.as_str()).collect();
@@ -106,7 +106,7 @@ fn compound_ocel_json_routes_to_primary_server() {
         "wasm4pm-lsp must serve .ocel.json files, got: {:?}",
         ids
     );
-    // anti-llm-cheat-lsp registers .json — trace.ocel.json ends with .json so it
+    // diagnostics-only-lsp registers .json — trace.ocel.json ends with .json so it
     // also matches. That is expected fan-out behavior: both serve.
     // The key invariant: wasm4pm-lsp is present and at Primary tier.
     let wasm4pm = servers.iter().find(|s| s.id == "wasm4pm-lsp").unwrap();
@@ -126,7 +126,7 @@ fn tier_ordering_primary_secondary_diag() {
     let router = ExtensionRouter::new();
     // Register deliberately out of order: DiagnosticsOnly first, then Secondary,
     // then Primary.
-    router.register(".rs", diag_server("anti-llm-cheat-lsp", &[".rs"]));
+    router.register(".rs", diag_server("diagnostics-only-lsp", &[".rs"]));
     router.register(".rs", secondary_server("wasm4pm-lsp", &[".rs"]));
     router.register(".rs", primary_server("ggen-lsp", &[".rs"]));
 
@@ -150,7 +150,7 @@ fn tier_ordering_primary_secondary_diag() {
     );
     assert_eq!(result[0].id, "ggen-lsp");
     assert_eq!(result[1].id, "wasm4pm-lsp");
-    assert_eq!(result[2].id, "anti-llm-cheat-lsp");
+    assert_eq!(result[2].id, "diagnostics-only-lsp");
 }
 
 // ── 4. FirstSuccess filter ───────────────────────────────────────────────────
@@ -163,7 +163,7 @@ fn tier_ordering_primary_secondary_diag() {
 fn first_success_filter_excludes_diag_only() {
     let router = ExtensionRouter::new();
     router.register(".rs", primary_server("ggen-lsp", &[".rs"]));
-    router.register(".rs", diag_server("anti-llm-cheat-lsp", &[".rs"]));
+    router.register(".rs", diag_server("diagnostics-only-lsp", &[".rs"]));
     router.register(".rs", diag_server("wasm4pm-lsp", &[".rs"]));
 
     assert_eq!(
@@ -203,8 +203,8 @@ fn no_double_registration_across_extension_keys() {
         ".json",
         diag_server("wasm4pm-lsp", &[".ocel.json", ".json"]),
     );
-    // anti-llm-cheat-lsp is registered under .json only.
-    router.register(".json", diag_server("anti-llm-cheat-lsp", &[".json"]));
+    // diagnostics-only-lsp is registered under .json only.
+    router.register(".json", diag_server("diagnostics-only-lsp", &[".json"]));
 
     let servers = servers_for_uri(&router, "file:///workspace/trace.ocel.json");
     let ids: Vec<&str> = servers.iter().map(|s| s.id.as_str()).collect();
@@ -233,7 +233,7 @@ secondary_extensions = [".rs", ".ts", ".json"]
 priority = "diagnostics-only"
 
 [[server]]
-id = "anti-llm-cheat-lsp"
+id = "diagnostics-only-lsp"
 primary_extensions = [".rs", ".ts", ".tsx", ".json", ".jsonl", ".md"]
 secondary_extensions = []
 priority = "diagnostics-only"
@@ -252,8 +252,8 @@ priority = "full"
     let ids: Vec<&str> = servers.iter().map(|s| s.id.as_str()).collect();
 
     assert!(
-        ids.contains(&"anti-llm-cheat-lsp"),
-        "from_config: anti-llm-cheat-lsp must serve .rs (primary_extensions slot), got: {:?}",
+        ids.contains(&"diagnostics-only-lsp"),
+        "from_config: diagnostics-only-lsp must serve .rs (primary_extensions slot), got: {:?}",
         ids
     );
     assert!(
@@ -285,7 +285,7 @@ secondary_extensions = [".rs", ".ts", ".json"]
 priority = "diagnostics-only"
 
 [[server]]
-id = "anti-llm-cheat-lsp"
+id = "diagnostics-only-lsp"
 primary_extensions = [".rs", ".ts", ".tsx", ".json", ".jsonl", ".md"]
 secondary_extensions = []
 priority = "diagnostics-only"
@@ -319,7 +319,7 @@ priority = "full"
 // ── 8. from_config routing — .ttl routes to ggen-lsp as Primary ──────────────
 //
 // ggen-lsp has priority="full", so its primary_extensions (.ttl/.rq/.tera) map
-// to ChildTier::Primary. wasm4pm-lsp and anti-llm-cheat-lsp must not appear for .ttl.
+// to ChildTier::Primary. wasm4pm-lsp and diagnostics-only-lsp must not appear for .ttl.
 
 #[test]
 fn from_config_ttl_routes_to_ggen_as_primary() {
@@ -331,7 +331,7 @@ secondary_extensions = [".rs", ".ts", ".json"]
 priority = "diagnostics-only"
 
 [[server]]
-id = "anti-llm-cheat-lsp"
+id = "diagnostics-only-lsp"
 primary_extensions = [".rs", ".ts", ".tsx", ".json", ".jsonl", ".md"]
 secondary_extensions = []
 priority = "diagnostics-only"
@@ -360,8 +360,8 @@ priority = "full"
         ids
     );
     assert!(
-        !ids.contains(&"anti-llm-cheat-lsp"),
-        "from_config: anti-llm-cheat-lsp must NOT serve .ttl files, got: {:?}",
+        !ids.contains(&"diagnostics-only-lsp"),
+        "from_config: diagnostics-only-lsp must NOT serve .ttl files, got: {:?}",
         ids
     );
 
@@ -388,7 +388,7 @@ secondary_extensions = [".rs", ".ts", ".json"]
 priority = "diagnostics-only"
 
 [[server]]
-id = "anti-llm-cheat-lsp"
+id = "diagnostics-only-lsp"
 primary_extensions = [".rs", ".ts", ".tsx", ".json", ".jsonl", ".md"]
 secondary_extensions = []
 priority = "diagnostics-only"
@@ -459,7 +459,7 @@ priority = "full"
 #[test]
 fn no_extension_filename_returns_empty() {
     let router = ExtensionRouter::new();
-    router.register(".rs", diag_server("anti-llm-cheat-lsp", &[".rs"]));
+    router.register(".rs", diag_server("diagnostics-only-lsp", &[".rs"]));
 
     let servers = servers_for_uri(&router, "file:///workspace/Makefile");
     assert!(
@@ -506,7 +506,7 @@ fn empty_registry_returns_empty_for_any_uri() {
 #[test]
 fn extension_matching_is_case_sensitive() {
     let router = ExtensionRouter::new();
-    router.register(".rs", diag_server("anti-llm-cheat-lsp", &[".rs"]));
+    router.register(".rs", diag_server("diagnostics-only-lsp", &[".rs"]));
 
     let servers = servers_for_uri(&router, "file:///workspace/MAIN.RS");
     assert!(
@@ -522,7 +522,7 @@ fn extension_matching_is_case_sensitive() {
 #[test]
 fn directory_uri_trailing_slash_returns_empty() {
     let router = ExtensionRouter::new();
-    router.register(".rs", diag_server("anti-llm-cheat-lsp", &[".rs"]));
+    router.register(".rs", diag_server("diagnostics-only-lsp", &[".rs"]));
 
     let servers = servers_for_uri(&router, "file:///workspace/");
     assert!(
@@ -622,13 +622,13 @@ fn lsp318_unmatched_methods_default_to_primary_only() {
 #[test]
 fn same_key_duplicate_registration_deduplicates() {
     let router = ExtensionRouter::new();
-    router.register(".rs", diag_server("anti-llm-cheat-lsp", &[".rs"]));
-    router.register(".rs", diag_server("anti-llm-cheat-lsp", &[".rs"])); // duplicate
+    router.register(".rs", diag_server("diagnostics-only-lsp", &[".rs"]));
+    router.register(".rs", diag_server("diagnostics-only-lsp", &[".rs"])); // duplicate
 
     let servers = servers_for_uri(&router, "file:///workspace/main.rs");
     let count = servers
         .iter()
-        .filter(|s| s.id == "anti-llm-cheat-lsp")
+        .filter(|s| s.id == "diagnostics-only-lsp")
         .count();
     assert_eq!(
         count, 1,
@@ -642,7 +642,7 @@ fn same_key_duplicate_registration_deduplicates() {
 #[test]
 fn uri_with_query_and_fragment_routes_by_base_extension() {
     let router = ExtensionRouter::new();
-    router.register(".rs", diag_server("anti-llm-cheat-lsp", &[".rs"]));
+    router.register(".rs", diag_server("diagnostics-only-lsp", &[".rs"]));
 
     let servers_q = servers_for_uri(&router, "file:///workspace/main.rs?version=2");
     let servers_f = servers_for_uri(&router, "file:///workspace/main.rs#L42");
@@ -655,7 +655,7 @@ fn uri_with_query_and_fragment_routes_by_base_extension() {
     ] {
         let ids: Vec<&str> = servers.iter().map(|s| s.id.as_str()).collect();
         assert!(
-            ids.contains(&"anti-llm-cheat-lsp"),
+            ids.contains(&"diagnostics-only-lsp"),
             "URI with {} must still route by base .rs extension, got: {:?}",
             label,
             ids

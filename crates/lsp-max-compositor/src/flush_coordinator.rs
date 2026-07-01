@@ -16,6 +16,11 @@ use lsp_max::lsp_types::{Diagnostic, DiagnosticSeverity, NumberOrString, Positio
 use lsp_max::max_runtime::control_plane::receipts::{Blake3Hash, Keystore};
 use tokio::time::{Duration, Instant};
 
+use wasm4pm_compat::admission::Admit;
+use wasm4pm_compat::evidence::Evidence;
+use wasm4pm_compat::ocel::{EventObjectLink, LinkedOcel, Object as OcelObject, OcelEvent, OcelLog};
+use wasm4pm_compat::witness::Ocel20;
+
 use crate::child_process::ChildProcessPool;
 use crate::declare::{extract_traces, DeclareModel};
 use crate::dfg::DirectlyFollowsGraph;
@@ -74,8 +79,9 @@ pub struct FlushCoordinator {
     /// Cumulative count of signals dropped due to a full channel.
     /// Incremented on each `try_send` failure; readable via `signal_drop_count()`.
     drop_counter: Arc<AtomicU64>,
-    /// RFC C: accumulated OCEL 2.0 events derived from `CompositorReceipt` flushes.
-    ocel_events: Arc<std::sync::Mutex<Vec<serde_json::Value>>>,
+    /// RFC C: accumulated typed OCEL 2.0 events derived from `CompositorReceipt` flushes.
+    /// Using wasm4pm_compat typed OcelEvent as the accumulator boundary.
+    ocel_events: Arc<std::sync::Mutex<Vec<OcelEvent>>>,
     /// Monotonic counter used as the OCEL event-id source.
     event_counter: Arc<AtomicU64>,
     /// RFC B: monotonic sequence counter for per-child `ChildEvidence` chain links.
@@ -102,7 +108,7 @@ impl FlushCoordinator {
         let (tx, rx) = kanal::bounded_async::<FlushSignal>(512);
         let drop_counter = Arc::new(AtomicU64::new(0));
         let _drop_counter_bg = Arc::clone(&drop_counter);
-        let ocel_events: Arc<std::sync::Mutex<Vec<serde_json::Value>>> =
+        let ocel_events: Arc<std::sync::Mutex<Vec<OcelEvent>>> =
             Arc::new(std::sync::Mutex::new(Vec::new()));
         let ocel_events_bg = Arc::clone(&ocel_events);
         let event_counter = Arc::new(AtomicU64::new(0));
@@ -328,8 +334,11 @@ impl FlushCoordinator {
                     let eid = event_counter_bg.fetch_add(1, Ordering::Relaxed);
                     let event_id = format!("cf-{eid}");
                     let timestamp = chrono::Utc::now().to_rfc3339();
-                    let compositor_event = receipt.to_ocel_event(&event_id, &timestamp);
-                    let mut events_to_log = vec![compositor_event.clone()];
+                    // Value-based event kept for JSONL file writing (backward-compat path).
+                    let compositor_event_val = receipt.to_ocel_event(&event_id, &timestamp);
+                    // Typed event accumulated through the wasm4pm_compat admission boundary.
+                    let compositor_event_typed = receipt.to_ocel_event_typed(&event_id);
+                    let mut events_to_log = vec![compositor_event_val.clone()];
                     for (idx, ev) in receipt.child_evidence.iter().enumerate() {
                         let child_event_id = format!("{}-child-{}", event_id, idx);
                         let child_event = ev.to_ocel_event(
@@ -341,12 +350,15 @@ impl FlushCoordinator {
                     }
 
                     if let Ok(mut guard) = ocel_events_bg.lock() {
-                        guard.push(compositor_event);
+                        guard.push(compositor_event_typed);
 
                         // RFC C + Van der Aalst: run Declare conformance + DFG on the
                         // accumulated log after every flush so violations are surfaced
                         // continuously rather than only at log-export time.
-                        let traces = extract_traces(&guard);
+                        // Convert typed events to Values for the existing mining helpers.
+                        let mining_values: Vec<serde_json::Value> =
+                            guard.iter().map(typed_ocel_event_to_mining_value).collect();
+                        let traces = extract_traces(&mining_values);
                         let model = DeclareModel::compositor();
                         let violations = model.check(&traces);
                         if !violations.is_empty() {
@@ -491,16 +503,52 @@ impl FlushCoordinator {
         }
     }
 
-    /// RFC C: drain the accumulated OCEL 2.0 events and return them.
+    /// RFC C: drain the accumulated OCEL 2.0 events and return them as `serde_json::Value`.
     ///
-    /// Each element is a `CompositorFlush` OCEL event produced by
-    /// `CompositorReceipt::to_ocel_event`.  The internal buffer is cleared on
+    /// Backward-compat serialization of the typed `OcelEvent` accumulator.
+    /// Each element is a `CompositorFlush` OCEL event. The internal buffer is cleared on
     /// each call, so callers own the drained slice.
     pub fn take_ocel_events(&self) -> Vec<serde_json::Value> {
-        self.ocel_events
+        let typed = self
+            .ocel_events
             .lock()
             .map(|mut g| std::mem::take(&mut *g))
-            .unwrap_or_default()
+            .unwrap_or_default();
+        typed.iter().map(typed_ocel_event_to_mining_value).collect()
+    }
+
+    /// RFC C: admit the accumulated OCEL log through the wasm4pm_compat boundary.
+    ///
+    /// Drains the typed `OcelEvent` accumulator, constructs an `OcelLog` with a
+    /// shared compositor object and one E2O link per event, then passes it through
+    /// `LinkedOcel::admit`. Returns `Ok(Admission<OcelLog, Ocel20>)` when the log
+    /// satisfies the two object-centricity laws; `Err(Refusal<OcelRefusal, Ocel20>)`
+    /// when the log is structurally non-conformant.
+    ///
+    /// Status: CANDIDATE — admit path wired; persistent object graph (O2O, changes)
+    /// and child-side E2O links are OPEN.
+    pub fn take_admitted_ocel(
+        &self,
+    ) -> Result<
+        wasm4pm_compat::admission::Admission<OcelLog, Ocel20>,
+        wasm4pm_compat::admission::Refusal<wasm4pm_compat::ocel::OcelRefusal, Ocel20>,
+    > {
+        let events = self
+            .ocel_events
+            .lock()
+            .map(|mut g| std::mem::take(&mut *g))
+            .unwrap_or_default();
+
+        // Each event links to the shared compositor process object.
+        let compositor_obj = OcelObject::new("compositor-process", "CompositorProcess");
+        let e2o_links: Vec<EventObjectLink> = events
+            .iter()
+            .map(|ev| EventObjectLink::new(ev.id(), "compositor-process"))
+            .collect();
+
+        let log = OcelLog::new([compositor_obj], events, e2o_links, [], []);
+        let raw = Evidence::<OcelLog, wasm4pm_compat::state::Raw, Ocel20>::raw(log);
+        LinkedOcel::admit(raw)
     }
 
     /// RFC C: snapshot the accumulated OCEL log without draining it.
@@ -545,6 +593,35 @@ impl FlushCoordinator {
     pub fn receipt_seq_count(&self) -> u64 {
         self.receipt_seq.load(Ordering::Relaxed)
     }
+}
+
+/// Convert a typed `OcelEvent` to the `serde_json::Value` shape expected by the
+/// internal process-mining helpers (`extract_traces`, `DirectlyFollowsGraph::from_events`).
+///
+/// The helpers key on `event["type"]` for the activity name and
+/// `event["attributes"]["uri"]` for the case-id. Attributes are stored as a
+/// flat JSON object rather than a typed attribute list so the existing helper
+/// logic requires no change.
+fn typed_ocel_event_to_mining_value(ev: &OcelEvent) -> serde_json::Value {
+    use wasm4pm_compat::ocel::OcelAttributeValue;
+    let mut attrs = serde_json::Map::new();
+    for attr in ev.attributes() {
+        let json_val = match &attr.value {
+            OcelAttributeValue::String(s) => serde_json::Value::String(s.clone()),
+            OcelAttributeValue::Integer(i) => serde_json::json!(i),
+            OcelAttributeValue::Float(f) => serde_json::json!(f),
+            OcelAttributeValue::Boolean(b) => serde_json::json!(b),
+            OcelAttributeValue::TimestampNs(ts) => serde_json::json!(ts),
+            OcelAttributeValue::Null => serde_json::Value::Null,
+            OcelAttributeValue::List(_) | OcelAttributeValue::Map(_) => serde_json::Value::Null,
+        };
+        attrs.insert(attr.key.clone(), json_val);
+    }
+    serde_json::json!({
+        "id": ev.id(),
+        "type": ev.activity(),
+        "attributes": attrs
+    })
 }
 
 #[allow(dead_code)]

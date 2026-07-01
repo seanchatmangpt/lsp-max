@@ -42,7 +42,7 @@ fn index(source: &str, uri: &str) -> Vec<Value> {
     lines(&buf)
 }
 
-fn range_tags<'a>(ls: &'a [Value]) -> Vec<&'a Value> {
+fn range_tags(ls: &[Value]) -> Vec<&Value> {
     ls.iter()
         .filter(|v| v["label"] == "range" && v.get("tag").is_some())
         .map(|v| &v["tag"])
@@ -51,13 +51,20 @@ fn range_tags<'a>(ls: &'a [Value]) -> Vec<&'a Value> {
 
 #[test]
 fn function_definition_is_emitted_with_correct_name_and_kind() {
-    let ls = index("pub fn add(a: i32, b: i32) -> i32 { a + b }", "file:///lib.rs");
+    let ls = index(
+        "pub fn add(a: i32, b: i32) -> i32 { a + b }",
+        "file:///lib.rs",
+    );
     let tags = range_tags(&ls);
     let def = tags
         .iter()
         .find(|t| t["type"] == "definition" && t["text"] == "add")
         .expect("expected a definition tag for `add`");
-    assert_eq!(def["kind"], serde_json::json!(12), "SymbolKind::FUNCTION == 12");
+    assert_eq!(
+        def["kind"],
+        serde_json::json!(12),
+        "SymbolKind::FUNCTION == 12"
+    );
 }
 
 #[test]

@@ -180,11 +180,7 @@ impl ConfigService {
         Ok((name.to_string(), keys_applied))
     }
 
-    pub fn diff(
-        &self,
-        profile_name: &str,
-    ) -> std::result::Result<ConfigDiff, String>
-    {
+    pub fn diff(&self, profile_name: &str) -> std::result::Result<ConfigDiff, String> {
         let current = self.load_config();
         let profiles = self.load_profiles();
         let profile = profiles

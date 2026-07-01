@@ -238,8 +238,8 @@ mod tests {
         let prev = Blake3Hash([0u8; 32]);
 
         let ev =
-            ChildEvidence::from_flush_contribution("anti-llm-cheat-lsp", 5, false, 1, prev, &ks);
-        assert_eq!(ev.server_id, "anti-llm-cheat-lsp");
+            ChildEvidence::from_flush_contribution("diagnostics-only-lsp", 5, false, 1, prev, &ks);
+        assert_eq!(ev.server_id, "diagnostics-only-lsp");
         assert!(!ev.has_andon_contribution);
         assert_eq!(ev.receipt.sequence, 1);
         assert_eq!(ev.receipt.discipline_id, compositor_discipline_id());

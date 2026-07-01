@@ -27,18 +27,6 @@ priority = "diagnostics-only"
 andon_code_prefixes = ["WASM4PM-", "GGEN-EVIDENCE-", "CLAP-PACK-HANDLER-UNBOUND", "COG-"]
 
 [[server]]
-id = "anti-llm-cheat-lsp"
-command = "target/debug/anti-llm-cheat-lsp"
-args = []
-primary_extensions = [".rs", ".ts", ".tsx", ".json", ".jsonl", ".md"]
-secondary_extensions = []
-priority = "diagnostics-only"
-# Cover the whole ANTI-LLM- namespace. `blocking: true` rules map to ERROR, and
-# many families (SURFACE/ROUTE/RECEIPT/AUTH/ORACLE/ADMIT/MUT/CLAIM/CONTRACT/...)
-# were self-isolating out of ANDON under the narrow CHEAT-C/VERSION- list.
-andon_code_prefixes = ["ANTI-LLM-"]
-
-[[server]]
 id = "ggen-lsp"
 command = "target/debug/ggen-lsp"
 args = []

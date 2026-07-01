@@ -195,7 +195,7 @@ mod tests {
         // The multi-LSP-per-extension case: two diagnostic servers share `.rs`.
         let router = ExtensionRouter::new();
         router.register(".rs", diag("wasm4pm-lsp", &[".rs"]));
-        router.register(".rs", diag("anti-llm-cheat-lsp", &[".rs"]));
+        router.register(".rs", diag("diagnostics-only-lsp", &[".rs"]));
 
         let mut ids: Vec<String> = router
             .servers_for_filename("main.rs")
@@ -203,7 +203,7 @@ mod tests {
             .map(|s| s.id)
             .collect();
         ids.sort();
-        assert_eq!(ids, vec!["anti-llm-cheat-lsp", "wasm4pm-lsp"]);
+        assert_eq!(ids, vec!["diagnostics-only-lsp", "wasm4pm-lsp"]);
     }
 
     #[test]
