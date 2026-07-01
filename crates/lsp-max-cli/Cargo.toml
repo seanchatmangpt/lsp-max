@@ -58,7 +58,7 @@ serde_json = "1.0"
 tokio = { version = "1", features = ["full"] }
 linkme = "0.3.36"
 lsp-max = { path = "../..", version = "26.7.1" }
-lsp-max-protocol = { path = "../../lsp-max-protocol", version = "26.6.24" }
+lsp-max-protocol = { path = "../../lsp-max-protocol", version = "26.7.1" }
 lsp-types-max = { version = "26.6.24" }
 thiserror = "1"
 heck = "0.5"
@@ -88,7 +88,7 @@ syn = { version = "2", features = ["full"] }
 dashmap = { workspace = true }
 
 # Absorbed from lsp-max-mcp
-lsp-max-compositor = { path = "../lsp-max-compositor" }
+lsp-max-compositor = { path = "../lsp-max-compositor", version = "26.7.1" }
 
 [features]
 default = ["gen", "client"]
