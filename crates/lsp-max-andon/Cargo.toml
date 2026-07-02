@@ -2,6 +2,7 @@
 name = "lsp-max-andon"
 version = "26.7.1"
 edition = "2021"
+repository = "https://github.com/seanchatmangpt/lsp-max"
 description = "ANDON layer for lsp-max: invariant registry, bus, analysis pipeline, LSP push adapter"
 license = "MIT OR Apache-2.0"
 publish = false
