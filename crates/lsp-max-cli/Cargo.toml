@@ -57,8 +57,8 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 tokio = { version = "1", features = ["full"] }
 linkme = "0.3.36"
-lsp-max = { path = "../..", version = "26.7.1" }
-lsp-max-protocol = { path = "../../lsp-max-protocol", version = "26.7.1" }
+lsp-max = { path = "../..", version = "26.7.3" }
+lsp-max-protocol = { path = "../../lsp-max-protocol", version = "26.7.3" }
 lsp-types-max = { version = "26.6.24" }
 thiserror = "1"
 heck = "0.5"
@@ -71,7 +71,7 @@ toml = "0.8"
 walkdir = { workspace = true }
 
 # Absorbed from lsp-max-client
-lsp-max-macros = { path = "../../lsp-max-macros", version = "26.7.1" }
+lsp-max-macros = { path = "../../lsp-max-macros", version = "26.7.3" }
 tower = { version = "0.4", features = ["util"] }
 async-trait = "0.1"
 futures = "0.3"
@@ -88,7 +88,7 @@ syn = { version = "2", features = ["full"] }
 dashmap = { workspace = true }
 
 # Absorbed from lsp-max-mcp
-lsp-max-compositor = { path = "../lsp-max-compositor", version = "26.7.1" }
+lsp-max-compositor = { path = "../lsp-max-compositor", version = "26.7.3" }
 
 [features]
 default = ["gen", "client"]

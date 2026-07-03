@@ -55,29 +55,25 @@ release-dry-run:
 
 release-publish VERSION:
     @echo "Publishing v{{VERSION}} to crates.io..."
-    @if [ -z "$CARGO_TOKEN" ]; then \
-        echo "Error: CARGO_TOKEN environment variable not set"; \
-        exit 1; \
-    fi
-    cargo publish -p lsp-max-protocol --token $CARGO_TOKEN
+    cargo publish -p lsp-max-protocol
     @echo "Waiting for lsp-max-protocol to index..."
     @sleep 15
-    cargo publish -p lsp-max-macros --token $CARGO_TOKEN
+    cargo publish -p lsp-max-macros
     @echo "Waiting for lsp-max-macros to index..."
     @sleep 15
-    cargo publish -p lsp-max-ast --token $CARGO_TOKEN
+    cargo publish -p lsp-max-ast
     @echo "Waiting for lsp-max-ast to index..."
     @sleep 15
-    cargo publish -p lsp-max-compositor --token $CARGO_TOKEN
+    cargo publish -p lsp-max-compositor
     @echo "Waiting for lsp-max-compositor to index..."
     @sleep 15
-    cargo publish -p lsp-max-lsif --token $CARGO_TOKEN
+    cargo publish -p lsp-max-lsif
     @echo "Waiting for lsp-max-lsif to index..."
     @sleep 15
-    cargo publish -p lsp-max-cli --token $CARGO_TOKEN
+    cargo publish -p lsp-max-cli
     @echo "Waiting for lsp-max-cli to index..."
     @sleep 15
-    cargo publish --token $CARGO_TOKEN
+    cargo publish
     @echo "✓ All crates published for v{{VERSION}}"
 
 qol: q failset receipts receipts-check agents-loc agents-closure-scan tree changed clean

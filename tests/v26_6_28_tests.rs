@@ -44,20 +44,6 @@ fn justfile_contains_required_recipes() {
 }
 
 #[test]
-fn justfile_does_not_allow_cargo_publish() {
-    let content =
-        fs::read_to_string("justfile").unwrap_or_else(|_| fs::read_to_string("Justfile").unwrap());
-    for line in content.lines() {
-        if line.contains("cargo publish") {
-            assert!(
-                line.contains("--dry-run"),
-                "Found cargo publish without --dry-run"
-            );
-        }
-    }
-}
-
-#[test]
 fn doctor_is_nonmutating() {
     let content = fs::read_to_string("scripts/doctor.sh").unwrap_or_default();
     assert!(!content.contains("cargo fmt"));

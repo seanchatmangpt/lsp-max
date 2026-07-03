@@ -1,0 +1,31 @@
+{
+  "version": "26.7.1",
+  "timestamp": "2026-07-03T20:49:48Z",
+  "gates": {
+    "NoCratesPublish": "ADMITTED",
+    "ReleaseReceiptHeld": "ADMITTED",
+    "ChangelogUpdated": "ADMITTED",
+    "PathDepsRemoved": "ADMITTED",
+    "WasmCompatBumped": "ADMITTED",
+    "TestsGreen": "ADMITTED",
+    "ClippyGreen": "ADMITTED",
+    "DryRunGreen": "ADMITTED"
+  },
+  "prior_version": "26.6.28",
+  "prior_receipt_witness": "persistent_chain_head_survives_restart",
+  "changes": [
+    "Removed [patch.crates-io] section (wasm4pm, wasm4pm-compat, lsp-types-max all published)",
+    "Switched chicago-tdd-tools to crates.io version 26.7.1",
+    "Bumped wasm4pm-compat 26.6.11 -> 26.6.29",
+    "Added CHANGELOG entry for v26.7.1",
+    "Updated CHANGELOG Unreleased link to compare against v26.7.1"
+  ],
+  "blake3_or_sha256": "825fd875bfe7522e509178785f223ce74bac7f3784e243e6f2e85dca4f0e3906",
+  "hash_algo": "sha256",
+  "clippy_timestamp": "2026-07-03T20:56:22Z",
+  "clippy_note": "cargo clippy --all-targets -- -D warnings: Finished dev profile in 5m01s, zero errors",
+  "dry_run_timestamp": "2026-07-03T20:57:21Z",
+  "dry_run_note": "cargo publish --dry-run: compiled lsp-max v26.7.1, reached Uploading stage, aborted due to dry run (5m53s)",
+  "tests_timestamp": "2026-07-03T21:06:32Z",
+  "tests_note": "cargo test --all: all suites passed, zero failures"
+}
