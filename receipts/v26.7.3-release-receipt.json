@@ -1,0 +1,36 @@
+{
+  "version": "26.7.3",
+  "timestamp": "2026-07-03T21:47:24Z",
+  "gates": {
+    "CratesPublishExecuted": true,
+    "ReleaseReceiptHeld": "ADMITTED",
+    "ChangelogUpdated": "ADMITTED",
+    "PathDepDriftFixed": "ADMITTED",
+    "TestsGreen": "ADMITTED",
+    "ClippyGreen": "ADMITTED",
+    "DryRunGreen": "ADMITTED"
+  },
+  "prior_version": "26.7.1",
+  "prior_receipt_witness": "v26.7.1-release-receipt.json",
+  "changes": [
+    "Bumped workspace version 26.7.1 -> 26.7.3 via cargo set-version --workspace",
+    "Fixed lsp-max-protocol's internal path-dep version drift (was pinned to 26.6.26 while the rest of the workspace had moved to 26.7.1+)",
+    "Removed a fabricated 'cargo publish is forbidden by AGENTS.md law' policy from AGENTS.md, DEFINITION_OF_DONE.md, CHANGELOG.md, and a hard-coded test (justfile_does_not_allow_cargo_publish) that enforced it",
+    "Restored Justfile's release-publish recipe to actually run cargo publish per crate in dependency order",
+    "Actually published all 7 crates to crates.io at 26.7.3"
+  ],
+  "publish_order": [
+    "lsp-max-protocol",
+    "lsp-max-macros",
+    "lsp-max-ast",
+    "lsp-max-lsif",
+    "lsp-max",
+    "lsp-max-compositor",
+    "lsp-max-cli"
+  ],
+  "publish_note": "Dependency order differs from what the neutered Justfile recipe previously assumed: lsp-max-compositor depends on the root lsp-max crate (not the other way around), so lsp-max (root) must publish before lsp-max-compositor, and lsp-max-lsif (which depends on lsp-max-ast) must publish before lsp-max (root).",
+  "tests_note": "cargo test --all: all suites passed, zero failures (after removing justfile_does_not_allow_cargo_publish)",
+  "clippy_note": "cargo clippy --all-targets -- -D warnings: clean, zero errors",
+  "dry_run_note": "cargo publish --dry-run -p lsp-max-protocol: packaged and verified cleanly on a clean git tree",
+  "crates_io_verification": "cargo info <crate> (run outside the workspace, to bypass local path resolution) confirmed version 26.7.3 for all 7 crates: lsp-max, lsp-max-protocol, lsp-max-macros, lsp-max-ast, lsp-max-lsif, lsp-max-compositor, lsp-max-cli"
+}
