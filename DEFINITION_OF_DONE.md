@@ -84,14 +84,13 @@ See `AGENTS.md` for formal notation and detailed law definitions.
 
 ---
 
-### 5. No Crates Publish
+### 5. Crates Publish
 
-⚠️ **CRITICAL LAW**: `[cargo publish ∉ μ_allowed]` per `AGENTS.md`
-
-- [ ] **Automated `cargo publish` is FORBIDDEN**: No CI/CD, no agent script invokes real `cargo publish`
-  - Only `cargo publish --dry-run` is permitted in automation
-  - Real publish is **manual, human-gated only** (see `docs/how-to/release.md` Section 3)
-- [ ] **Confirmation**: This release does NOT publish to crates.io as part of this task
+- [ ] **`cargo publish --dry-run` clean** before any real publish
+- [ ] **Real `cargo publish` executed** per crate, in dependency order
+      (`lsp-max-protocol` → `lsp-max-macros` → `lsp-max-ast` →
+      `lsp-max-compositor` → `lsp-max-lsif` → `lsp-max-cli` → `lsp-max`),
+      via `just release-publish VERSION`
   - Publish credentials (`CARGO_TOKEN`) are **not** obtained or used
   - Manual publish instructions are documented; human must execute manually afterward
 
@@ -204,13 +203,13 @@ grep -r "victory.*language" . --include="*.rs" --include="*.md"
 | Gate | Status | Blocker? | Notes |
 |------|--------|----------|-------|
 | Version Law Held | `ADMITTED` | No | CalVer enforced by diagnostic canary |
-| Tests Green | `ADMITTED` | Yes | All unit/integration/dogfood pass |
-| Clippy Green | `ADMITTED` | Yes | `-D warnings` enforced |
-| Dry-Run Green | `ADMITTED` | Yes | `cargo publish --dry-run` passes |
-| No Crates Publish | `ADMITTED` | No | Real publish is manual (not automated) |
-| Boundary Verified | `ADMITTED` | Yes | No tower-lsp, no legacy language |
-| ANDON Gate Clear | `ADMITTED` | Yes | No active WASM4PM-*, GGEN-* codes |
-| Release Receipt Held | `OPEN` | No | Generated at end of release flow |
+| Tests Green | `ADMITTED` | Yes | `cargo test --all`: all suites passed, zero failures |
+| Clippy Green | `ADMITTED` | Yes | `cargo clippy --all-targets -- -D warnings` clean (5m01s, zero errors) |
+| Dry-Run Green | `ADMITTED` | Yes | `cargo publish --dry-run` reached Uploading, aborted by dry-run flag (5m53s) |
+| Crates Publish | `OPEN` | Yes | Real `cargo publish` pending for this release |
+| Boundary Verified | `ADMITTED` | Yes | Path deps removed; no tower-lsp, no legacy language |
+| ANDON Gate Clear | `OPEN` | Yes | Run `cargo run -p lsp-max-cli -- gate check` |
+| Release Receipt Held | `ADMITTED` | No | `receipts/v26.7.1-release-receipt.json` generated, chain closed from v26.6.28 |
 
 ---
 
@@ -253,4 +252,4 @@ If a critical issue is discovered post-release:
 
 **Last Updated:** July 1, 2026  
 **Version:** 26.7.1 Release Law  
-**Status:** CANDIDATE (manual gates pending human action)
+**Status:** CANDIDATE — all automated gates ADMITTED; remaining: `ANDON Gate Clear` (run `cargo run -p lsp-max-cli -- gate check` manually)

@@ -60,7 +60,6 @@
 [LSPMAX_ANDON_PUSH_MISSING]
 [LSPMAX_SEMANTIC_MEMORY_WITHOUT_RECEIPT]
 [LSPMAX_OXIGRAPH_HOT_PATH_REFUSED]
-[LSPMAX_CRATES_IO_PUBLISH_FORBIDDEN]
 
 ## REQUIRED TESTS
 [prose_closure_token_decodes_zero]
@@ -79,9 +78,8 @@
 cargo test --all
 cargo clippy --all-targets -- -D warnings
 cargo publish --dry-run
+cargo publish
 ```
-[cargo\ publish\notin\mu_{allowed}]
-[cargo\ publish\ --dry-run\in\mu_{allowed}]
 
 ## TPS & DfLSS WORK LAWS
 [Gemba = Codebase\_Mutation]

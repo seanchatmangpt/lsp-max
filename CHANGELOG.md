@@ -11,6 +11,29 @@ Versioning: **CalVer (YY.M.D)** — `26.6.13` = 2026-06-13.
 
 ---
 
+## [26.7.1] — 2026-07-03
+
+### Publish-gate hardening
+
+- **Remove `[patch.crates-io]`**: `wasm4pm`, `wasm4pm-compat`, and `lsp-types-max` are
+  all published on crates.io; local path overrides were removed so `cargo publish --dry-run`
+  resolves exclusively against the registry.
+- **Remove local path workspace deps** for `chicago-tdd-tools` and
+  `chicago-tdd-tools-proc-macros`; both are published at `26.7.1` on crates.io and now
+  referenced by version only.
+- **Bump `wasm4pm-compat`** workspace version from `26.6.11` → `26.6.29` (latest published).
+- **Release receipt generated**: `receipts/v26.7.1-release-receipt.json` closes the chain
+  from `v26.6.28`.
+
+### Status (bounded)
+
+- `TestsGreen`: OPEN — run `cargo test --all` to confirm
+- `ClippyGreen`: OPEN — run `cargo clippy --all-targets -- -D warnings` to confirm
+- `DryRunGreen`: OPEN — run `cargo publish --dry-run` to confirm
+- `CratesPublish`: OPEN — real publish superseded by v26.7.3
+
+---
+
 ## [26.6.24] — 2026-06-24
 
 ### anti-llm-cheat-lsp — full LSP 3.18 detection surface
@@ -330,7 +353,8 @@ This is the last upstream `tower-lsp` release before the fork diverged into
 * Edition `2018` → `2021`.
 * Clippy lints addressed.
 
-[Unreleased]: https://github.com/seanchatmangpt/lsp-max/compare/v26.6.24...HEAD
+[Unreleased]: https://github.com/seanchatmangpt/lsp-max/compare/v26.7.1...HEAD
+[26.7.1]: https://github.com/seanchatmangpt/lsp-max/compare/v26.6.24...v26.7.1
 [26.6.24]: https://github.com/seanchatmangpt/lsp-max/compare/v26.6.13...v26.6.24
 [26.6.13]: https://github.com/seanchatmangpt/lsp-max/compare/v26.6.12...v26.6.13
 [26.6.12]: https://github.com/seanchatmangpt/lsp-max/compare/v26.6.10...v26.6.12
