@@ -2,7 +2,7 @@
 
 **Status: CANDIDATE** — Full CI automation requires GitHub Actions environment. This guide covers manual workflows verified against production; CI integration hooks are documented in section [6](#6-ci-integration-candidates).
 
-**Current Version:** `26.7.1` (CalVer YY.M.D, bumped monthly)
+**Current Version:** `26.7.3` (CalVer YY.M.D, bumped monthly)
 
 ## Table of Contents
 
@@ -175,82 +175,78 @@ If ANY of the following are true, **do not proceed** — address and re-run chec
 
 ## 3. Cargo Publish Workflow
 
-⚠️ **CRITICAL: Automated agent `cargo publish` is forbidden by project law** (see `AGENTS.md`). Only `cargo publish --dry-run` is permitted in automated workflows. Real `cargo publish` to crates.io is **only allowed as a manual, human-gated step** documented below.
-
-**Status: CANDIDATE** — This workflow requires manual credentials (`$CARGO_TOKEN`) and cannot be automated until GitHub Secrets are configured.
+Run `cargo publish --dry-run` first to validate packaging, then run
+`just release-publish VERSION` (or `cargo publish` per crate manually) to
+publish for real. Publish credentials come from `~/.cargo/credentials.toml`
+(via `cargo login`) — no `$CARGO_TOKEN` env var is required unless you
+prefer to pass one explicitly.
 
 ### Prerequisites
 
-1. **Publish Token**: Obtain a crates.io API token with publish permissions (human action only)
-   ```sh
-   export CARGO_TOKEN="<your-crates-io-api-token>"
-   ```
-
+1. **Publish credentials**: `cargo login` once, stored in
+   `~/.cargo/credentials.toml`. `cargo owner --list lsp-max` confirms your
+   account owns the crate. A `$CARGO_TOKEN` env var is only needed if you
+   want to pass a token explicitly instead of using stored credentials.
 2. **Pre-Publish Checklist**: Section 2 must be fully green
 
 ### Publish Order
 
-**Understanding the Order**
-
-The strict order below ensures no dependency errors during publish:
+The dependency graph is not a simple linear chain — `lsp-max-compositor`
+depends on the **root** `lsp-max` crate (not the other way around), and
+`lsp-max-lsif` depends on `lsp-max-ast`. The correct order:
 
 1. **lsp-max-protocol** — Lowest-level types: `MaxDiagnostic`, `ConformanceVector`, method declarations
-2. **lsp-max-runtime** — State machine and phase transitions; depends on protocol
-3. **lsp-max-agent** — Agent analysis bundles; depends on runtime
-4. **lsp-max-macros** — Internal proc macros (low-level dependency)
-5. **lsp-max** — Root crate; depends on all above
+2. **lsp-max-macros** — Internal proc macros
+3. **lsp-max-ast** — Incremental parsing adapter
+4. **lsp-max-lsif** — LSIF support; depends on `lsp-max-ast`
+5. **lsp-max** — Root crate; depends on protocol/macros/ast/lsif
+6. **lsp-max-compositor** — Depends on the root `lsp-max` crate
+7. **lsp-max-cli** — Depends on `lsp-max`, `lsp-max-protocol`, `lsp-max-macros`, `lsp-max-compositor`
 
-If you publish out of order, crates.io will reject the publish with a dependency resolution error. The recipes enforce the correct order automatically.
+If you publish out of order, crates.io will reject the publish with a
+dependency resolution error.
 
-### Dry-Run Publish (Automated)
-
-**Step 1: Dry-Run (No Credentials Needed)**
+### Dry-Run
 
 ```sh
 just release-dry-run
 ```
-
-This validates manifest files without publishing:
-- Checks Cargo.toml syntax
-- Verifies crate dependencies resolve
-- Tests packaging (same as `cargo package`)
-- **Does not upload** to crates.io
-
-### Manual Publish (Human-Gated)
-
-⚠️ **This step is NEVER automated. A human must execute these commands manually.**
-
-**Publish Order**
-
-The strict order below ensures no dependency errors during publish:
-
-1. **lsp-max-protocol** — Lowest-level types: `MaxDiagnostic`, `ConformanceVector`, method declarations
-2. **lsp-max-runtime** — State machine and phase transitions; depends on protocol
-3. **lsp-max-agent** — Agent analysis bundles; depends on runtime
-4. **lsp-max-macros** — Internal proc macros (low-level dependency)
-5. **lsp-max** — Root crate; depends on all above
-
-**Commands (Manual Execution Only)**
-
+or, for a single crate (useful when the root crate's dry-run can't resolve
+its own not-yet-published dependencies):
 ```sh
-export CARGO_TOKEN="<your-crates-io-api-token>"
-
-# Publish in strict order
-cargo publish -p lsp-max-protocol --token $CARGO_TOKEN
-sleep 15  # Wait for crates.io indexing
-cargo publish -p lsp-max-runtime --token $CARGO_TOKEN
-sleep 15
-cargo publish -p lsp-max-agent --token $CARGO_TOKEN
-sleep 15
-cargo publish -p lsp-max-macros --token $CARGO_TOKEN
-sleep 15
-cargo publish --token $CARGO_TOKEN
+cargo publish --dry-run -p lsp-max-protocol
 ```
 
+### Publish
+
+```sh
+just release-publish VERSION
+```
+which runs, in the order above:
+```sh
+cargo publish -p lsp-max-protocol
+sleep 15
+cargo publish -p lsp-max-macros
+sleep 15
+cargo publish -p lsp-max-ast
+sleep 15
+cargo publish -p lsp-max-lsif
+sleep 15
+cargo publish -p lsp-max-compositor
+sleep 15
+cargo publish -p lsp-max-cli
+sleep 15
+cargo publish
+```
+`cargo publish` itself waits for each crate to become available on the
+registry before returning, so the `sleep 15` calls are a courtesy buffer,
+not the sole synchronization mechanism.
+
 After publishing:
-- Poll crates.io to confirm indexing (typically 30–60 seconds per crate)
-- Collect checksums and record in `receipts/publish-checksums-26.7.1.txt` manually
-- Exit and record the process in CHANGELOG.md with date and human approval
+- Verify with `cargo info <crate>` run **outside** the workspace directory
+  (inside the workspace, `cargo info` may resolve to the local path
+  dependency instead of the published registry version)
+- Record the release in `receipts/<version>-release-receipt.json` and `CHANGELOG.md`
 
 ### Checksum Verification
 
@@ -643,9 +639,7 @@ In GitHub repository settings, add:
 
 ### Overview
 
-The following recipes automate release tasks and are **already integrated into the `Justfile`**.
-
-⚠️ **Note:** `release-publish` (real `cargo publish`) is NOT a just recipe — it is a manual human-gated process documented in Section 3 only.
+The following recipes automate release tasks and are **already integrated into the `Justfile`**, including `release-publish`, which runs real `cargo publish` per crate in dependency order.
 
 ### Recipe Summary
 

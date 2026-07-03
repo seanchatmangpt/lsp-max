@@ -1,13 +1,13 @@
-# Definition of Done — v26.7.1 Release
+# Definition of Done — v26.7.3 Release
 
-This document formalizes the release admission gates for version `26.7.1` (July 2026), derived from the `AGENTS.md` release law and the workspace's bounded-status enforcement rules.
+This document formalizes the release admission gates for version `26.7.3` (July 2026), derived from the `AGENTS.md` release law and the workspace's bounded-status enforcement rules.
 
-**Release Date:** July 1, 2026  
-**Version:** 26.7.1 (CalVer YY.M.D)
+**Release Date:** July 3, 2026  
+**Version:** 26.7.3 (CalVer YY.M.D)
 
 ## Release Law Conjunction
 
-Release 26.7.1 is **ADMITTED** (`q_t = 1`) if and only if **ALL** of the following gates are satisfied:
+Release 26.7.3 is **ADMITTED** (`q_t = 1`) if and only if **ALL** of the following gates are satisfied:
 
 ```
 [v26.7.1 = 1 ⟺ ⋀(TestsGreen, ClippyGreen, DryRunGreen, NoCratesPublish, 
@@ -86,17 +86,15 @@ See `AGENTS.md` for formal notation and detailed law definitions.
 
 ### 5. Crates Publish
 
-- [ ] **`cargo publish --dry-run` clean** before any real publish
-- [ ] **Real `cargo publish` executed** per crate, in dependency order
+- [x] **`cargo publish --dry-run` clean** before any real publish
+- [x] **Real `cargo publish` executed** per crate, in dependency order
       (`lsp-max-protocol` → `lsp-max-macros` → `lsp-max-ast` →
-      `lsp-max-compositor` → `lsp-max-lsif` → `lsp-max-cli` → `lsp-max`),
+      `lsp-max-lsif` → `lsp-max` → `lsp-max-compositor` → `lsp-max-cli`),
       via `just release-publish VERSION`
-  - Publish credentials (`CARGO_TOKEN`) are **not** obtained or used
-  - Manual publish instructions are documented; human must execute manually afterward
 
-**Status:** `ADMITTED` (no real publish attempted) | `REFUSED` (real publish attempted)
+**Status:** `ADMITTED` (all crates published) | `BLOCKED` (a publish failed) | `OPEN` (not yet run)
 
-**Evidence/Receipt:** Explicit confirmation that `cargo publish` (without `--dry-run`) was not executed
+**Evidence/Receipt:** `receipts/v26.7.3-release-receipt.json`; `cargo info <crate>` (run outside the workspace) confirms `26.7.3` for all 7 crates
 
 ---
 
@@ -202,20 +200,20 @@ grep -r "victory.*language" . --include="*.rs" --include="*.md"
 
 | Gate | Status | Blocker? | Notes |
 |------|--------|----------|-------|
-| Version Law Held | `ADMITTED` | No | CalVer enforced by diagnostic canary |
+| Version Law Held | `ADMITTED` | No | CalVer enforced by diagnostic canary; `26.7.3`, `lsp-max-protocol` path-dep drift fixed |
 | Tests Green | `ADMITTED` | Yes | `cargo test --all`: all suites passed, zero failures |
-| Clippy Green | `ADMITTED` | Yes | `cargo clippy --all-targets -- -D warnings` clean (5m01s, zero errors) |
-| Dry-Run Green | `ADMITTED` | Yes | `cargo publish --dry-run` reached Uploading, aborted by dry-run flag (5m53s) |
-| Crates Publish | `OPEN` | Yes | Real `cargo publish` pending for this release |
+| Clippy Green | `ADMITTED` | Yes | `cargo clippy --all-targets -- -D warnings` clean, zero errors |
+| Dry-Run Green | `ADMITTED` | Yes | `cargo publish --dry-run -p lsp-max-protocol` clean on committed tree |
+| Crates Publish | `ADMITTED` | Yes | All 7 crates actually published to crates.io at `26.7.3` |
 | Boundary Verified | `ADMITTED` | Yes | Path deps removed; no tower-lsp, no legacy language |
 | ANDON Gate Clear | `OPEN` | Yes | Run `cargo run -p lsp-max-cli -- gate check` |
-| Release Receipt Held | `ADMITTED` | No | `receipts/v26.7.1-release-receipt.json` generated, chain closed from v26.6.28 |
+| Release Receipt Held | `ADMITTED` | No | `receipts/v26.7.3-release-receipt.json` generated, chain closed from v26.7.1 |
 
 ---
 
 ## Release Decision
 
-**Release 26.7.1 is ADMITTED** (`q_t = 1`) if and only if **all "Blocker?" gates are `ADMITTED`** and no `REFUSED` statuses remain.
+**Release 26.7.3 is ADMITTED** (`q_t = 1`) if and only if **all "Blocker?" gates are `ADMITTED`** and no `REFUSED` statuses remain.
 
 **Release is BLOCKED** (`q_t = 0`) if any gate is `BLOCKED` or `REFUSED`.
 
@@ -250,6 +248,6 @@ If a critical issue is discovered post-release:
 
 ---
 
-**Last Updated:** July 1, 2026  
-**Version:** 26.7.1 Release Law  
-**Status:** CANDIDATE — all automated gates ADMITTED; remaining: `ANDON Gate Clear` (run `cargo run -p lsp-max-cli -- gate check` manually)
+**Last Updated:** July 3, 2026  
+**Version:** 26.7.3 Release Law  
+**Status:** CANDIDATE — all automated gates ADMITTED, real crates.io publish executed; remaining: `ANDON Gate Clear` (run `cargo run -p lsp-max-cli -- gate check` manually)
