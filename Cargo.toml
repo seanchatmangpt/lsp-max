@@ -86,6 +86,7 @@ members = [
     "examples/axum-lsp",
     "examples/bevy-lsp",
     "examples/tex-lsp",
+    "examples/powl-lsp",
     "examples/gc005-wasm4pm-adapter",
     "crates/lsp-max-adapters/lsp-max-ast-core",
     "crates/lsp-max-adapters/lsp-max-ast-codegen",
