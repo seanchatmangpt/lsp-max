@@ -150,6 +150,10 @@ pub mod primitives;
 /// TPOT2-style breed pipeline type system for automated wasm4pm cognitive breed search.
 pub mod pipeline;
 
+/// Static schema types for cognitive breed and pipeline metadata.
+pub mod schema_types;
+pub use schema_types::{SchemaNode, StaticSchema};
+
 pub(crate) use diagnostics::update_diagnostics;
 
 /// Returns current UTC time as an RFC-3339 string (seconds precision), using only std::time.
