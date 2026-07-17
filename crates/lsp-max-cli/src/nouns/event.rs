@@ -113,12 +113,6 @@ mod tests {
     // --- list ---
 
     #[test]
-    fn list_no_filter_returns_ok() {
-        let (_f, svc) = make_temp_mesh();
-        assert!(svc.list(None).is_ok());
-    }
-
-    #[test]
     fn list_new_mesh_has_empty_event_log() {
         let (_f, svc) = make_temp_mesh();
         let events = svc.list(None).unwrap();

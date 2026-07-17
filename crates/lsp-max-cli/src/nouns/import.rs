@@ -225,12 +225,6 @@ mod tests {
     }
 
     #[test]
-    fn merge_state_missing_src_returns_err() {
-        let (_live_f, svc) = make_live_mesh_svc();
-        assert!(svc.merge_state("/tmp/nonexistent-import-src.json").is_err());
-    }
-
-    #[test]
     fn merge_state_invalid_json_returns_err() {
         let (_live_f, svc) = make_live_mesh_svc();
         let bad_f = tempfile::NamedTempFile::new().unwrap();

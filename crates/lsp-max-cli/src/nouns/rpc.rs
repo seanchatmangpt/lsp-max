@@ -106,12 +106,6 @@ mod tests {
     // --- dispatch ---
 
     #[test]
-    fn dispatch_known_method_returns_ok() {
-        let (_f, svc) = make_temp_mesh();
-        assert!(svc.dispatch("inst-1", "max/dumpState", "null").is_ok());
-    }
-
-    #[test]
     fn dispatch_result_is_serialisable_json_value() {
         let (_f, svc) = make_temp_mesh();
         let val = svc.dispatch("inst-1", "max/dumpState", "null").unwrap();

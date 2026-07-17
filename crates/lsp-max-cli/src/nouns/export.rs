@@ -372,13 +372,6 @@ mod tests {
     // --- state_json ---
 
     #[test]
-    fn state_json_returns_ok_for_valid_mesh() {
-        let (_f, svc) = make_temp_mesh_with_instance();
-        assert!(svc.state_json(false).is_ok());
-        assert!(svc.state_json(true).is_ok());
-    }
-
-    #[test]
     fn state_json_output_contains_instances_key() {
         let (_f, svc) = make_temp_mesh_with_instance();
         let (json, count) = svc.state_json(true).unwrap();
@@ -418,12 +411,6 @@ mod tests {
     }
 
     #[test]
-    fn diagnostics_json_returns_ok() {
-        let (_f, svc) = make_temp_mesh_with_instance();
-        assert!(svc.diagnostics_json().is_ok());
-    }
-
-    #[test]
     fn diagnostics_json_output_is_valid_json_array() {
         let (_f, svc) = make_temp_mesh_with_instance();
         let (json, _) = svc.diagnostics_json().unwrap();
@@ -434,12 +421,6 @@ mod tests {
     // --- receipts ---
 
     #[test]
-    fn receipts_json_returns_ok() {
-        let (_f, svc) = make_temp_mesh_with_instance();
-        assert!(svc.receipts_json().is_ok());
-    }
-
-    #[test]
     fn receipts_json_empty_instance_has_zero_receipts() {
         let (_f, svc) = make_temp_mesh_with_instance();
         let (_json, receipt_count) = svc.receipts_json().unwrap();
@@ -447,12 +428,6 @@ mod tests {
     }
 
     // --- conformance ---
-
-    #[test]
-    fn conformance_json_format_returns_ok() {
-        let (_f, svc) = make_temp_mesh_with_instance();
-        assert!(svc.conformance("json").is_ok());
-    }
 
     #[test]
     fn conformance_csv_format_returns_ok() {

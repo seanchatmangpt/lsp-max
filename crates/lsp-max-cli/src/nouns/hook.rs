@@ -227,12 +227,6 @@ mod tests {
     // --- list ---
 
     #[test]
-    fn list_returns_ok_for_valid_mesh() {
-        let (_f, svc) = make_temp_mesh();
-        assert!(svc.list().is_ok());
-    }
-
-    #[test]
     fn list_returns_vec_of_strings() {
         let (_f, svc) = make_temp_mesh();
         // All hook names must be non-empty strings.

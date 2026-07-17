@@ -270,41 +270,4 @@ mod tests {
 
     // CLI-tier result structs: falsification of echoed fields ------------------
 
-    #[test]
-    fn admission_status_result_carries_instance_id() {
-        // Falsification: the CLI result struct must echo back the queried id.
-        let (_f, svc) = make_temp_mesh();
-        let response = svc.status("test-inst").unwrap();
-        let result = AdmissionStatusResult {
-            instance_id: "test-inst".to_string(),
-            response,
-        };
-        assert_eq!(result.instance_id, "test-inst");
-    }
-
-    #[test]
-    fn admission_refuse_result_carries_instance_id_and_reason() {
-        // Falsification: the CLI result struct must echo back both id and reason.
-        let (_f, svc) = make_temp_mesh();
-        let response = svc.refuse("test-inst", "boundary-breach").unwrap();
-        let result = AdmissionRefuseResult {
-            instance_id: "test-inst".to_string(),
-            reason: "boundary-breach".to_string(),
-            response,
-        };
-        assert_eq!(result.instance_id, "test-inst");
-        assert_eq!(result.reason, "boundary-breach");
-    }
-
-    #[test]
-    fn admission_replay_result_carries_instance_id() {
-        // Falsification: the CLI result struct must echo back the queried id.
-        let (_f, svc) = make_temp_mesh();
-        let response = svc.replay("test-inst").unwrap();
-        let result = AdmissionReplayResult {
-            instance_id: "test-inst".to_string(),
-            response,
-        };
-        assert_eq!(result.instance_id, "test-inst");
-    }
 }

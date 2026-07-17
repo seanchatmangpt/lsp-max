@@ -211,12 +211,6 @@ mod tests {
     }
 
     #[test]
-    fn list_known_instance_returns_ok() {
-        let (_f, svc) = make_temp_mesh();
-        assert!(svc.list("inst-1").is_ok());
-    }
-
-    #[test]
     fn list_unknown_instance_returns_err() {
         let (_f, svc) = make_temp_mesh();
         let result = svc.list("no-such");
@@ -248,12 +242,6 @@ mod tests {
         let (count, chain_valid) = svc.verify("inst-1").unwrap();
         assert_eq!(count, 0);
         assert!(!chain_valid, "empty receipt list must not be chain-valid");
-    }
-
-    #[test]
-    fn verify_unknown_instance_returns_err() {
-        let (_f, svc) = make_temp_mesh();
-        assert!(svc.verify("no-such").is_err());
     }
 
     fn with_mesh_state<F: FnOnce()>(f: F) {

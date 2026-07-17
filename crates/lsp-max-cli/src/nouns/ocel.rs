@@ -391,12 +391,6 @@ mod tests {
     // --- export ---
 
     #[test]
-    fn export_returns_ok_for_valid_mesh() {
-        let (_f, svc) = make_temp_svc();
-        assert!(svc.export().is_ok());
-    }
-
-    #[test]
     fn export_contains_one_object_per_instance() {
         let (_f, svc) = make_temp_svc();
         let log = svc.export().unwrap();

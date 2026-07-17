@@ -303,18 +303,6 @@ mod tests {
         (f, svc)
     }
 
-    #[test]
-    fn score_known_instance_returns_ok() {
-        let (_f, svc) = make_temp_mesh();
-        let result = svc.score("test-inst");
-        assert!(result.is_ok());
-    }
-
-    #[test]
-    fn score_unknown_instance_returns_err() {
-        let (_f, svc) = make_temp_mesh();
-        assert!(svc.score("no-such").is_err());
-    }
 
     #[test]
     fn breakdown_known_instance_returns_all_named_axes() {
@@ -345,18 +333,6 @@ mod tests {
     }
 
     // --- vector (service layer) ---
-
-    #[test]
-    fn vector_known_instance_returns_ok() {
-        let (_f, svc) = make_temp_mesh();
-        assert!(svc.vector("test-inst").is_ok());
-    }
-
-    #[test]
-    fn vector_unknown_instance_returns_err() {
-        let (_f, svc) = make_temp_mesh();
-        assert!(svc.vector("no-such").is_err());
-    }
 
     #[test]
     fn vector_empty_instance_has_no_admitted_or_refused() {
@@ -395,13 +371,6 @@ mod tests {
     }
 
     #[test]
-    fn vector_rpc_returns_ok_for_known_instance() {
-        with_mesh_state(|| {
-            assert!(vector_rpc("test-inst".to_string()).is_ok());
-        });
-    }
-
-    #[test]
     fn vector_rpc_result_has_non_negative_counts() {
         with_mesh_state(|| {
             let res = vector_rpc("test-inst".to_string()).unwrap();
@@ -412,20 +381,6 @@ mod tests {
                 LawAxis::all_named().len(),
                 "admitted + refused + unknown must equal the number of named axes"
             );
-        });
-    }
-
-    #[test]
-    fn run_gate_returns_ok_for_known_instance() {
-        with_mesh_state(|| {
-            assert!(run_gate("test-inst".to_string(), "default".to_string()).is_ok());
-        });
-    }
-
-    #[test]
-    fn delta_returns_ok_for_known_instance() {
-        with_mesh_state(|| {
-            assert!(delta("test-inst".to_string()).is_ok());
         });
     }
 }

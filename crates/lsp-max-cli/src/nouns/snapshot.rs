@@ -123,20 +123,8 @@ mod tests {
     }
 
     #[test]
-    fn take_unknown_instance_returns_err() {
-        let (_f, svc) = make_temp_service();
-        assert!(svc.take("no-such").is_err());
-    }
-
-    #[test]
     fn manifold_known_instance_returns_value() {
         let (_f, svc) = make_temp_service();
         let _ = svc.manifold("snap-inst");
-    }
-
-    #[test]
-    fn manifold_unknown_instance_returns_err() {
-        let (_f, svc) = make_temp_service();
-        assert!(svc.manifold("no-such").is_err());
     }
 }

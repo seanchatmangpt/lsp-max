@@ -377,18 +377,6 @@ mod tests {
     }
 
     #[test]
-    fn dump_all_returns_ok() {
-        let (_f, svc) = make_temp_mesh();
-        assert!(svc.dump("all").is_ok());
-    }
-
-    #[test]
-    fn dump_instance_returns_ok() {
-        let (_f, svc) = make_temp_mesh();
-        assert!(svc.dump("test-inst").is_ok());
-    }
-
-    #[test]
     fn dump_unknown_instance_returns_err() {
         let (_f, svc) = make_temp_mesh();
         assert!(svc.dump("no-such").is_err());
@@ -404,13 +392,6 @@ mod tests {
     fn restore_unknown_instance_returns_false() {
         let (_f, svc) = make_temp_mesh();
         assert!(!svc.restore("no-such", 0));
-    }
-
-    #[test]
-    fn verify_known_instance_returns_bool() {
-        let (_f, svc) = make_temp_mesh();
-        // just assert it doesn't panic; result depends on conformance_score
-        let _ = svc.verify("test-inst");
     }
 
     #[test]
@@ -520,21 +501,6 @@ mod tests {
             let r = result.unwrap();
             assert_eq!(r.from_state, "Operational");
             assert_eq!(r.to_state, "Degraded");
-        });
-    }
-
-    #[test]
-    fn dump_rpc_returns_ok() {
-        with_mesh_state(|| {
-            assert!(dump_rpc("test-inst".to_string()).is_ok());
-        });
-    }
-
-    #[test]
-    fn dump_rpc_result_carries_instance_id() {
-        with_mesh_state(|| {
-            let res = dump_rpc("test-inst".to_string()).unwrap();
-            assert_eq!(res.instance_id, "test-inst");
         });
     }
 

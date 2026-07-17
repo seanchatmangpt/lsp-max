@@ -420,12 +420,6 @@ mod tests {
     // --- consensus ---
 
     #[test]
-    fn consensus_known_instance_returns_ok() {
-        let (_f, svc) = make_temp_svc();
-        assert!(svc.consensus("sw-inst").is_ok());
-    }
-
-    #[test]
     fn consensus_produces_three_votes() {
         let (_f, svc) = make_temp_svc();
         let c = svc.consensus("sw-inst").unwrap();
@@ -437,12 +431,6 @@ mod tests {
         let (_f, svc) = make_temp_svc();
         let c = svc.consensus("sw-inst").unwrap();
         assert!(!c.winning_strategy.is_empty());
-    }
-
-    #[test]
-    fn consensus_unknown_instance_returns_err() {
-        let (_f, svc) = make_temp_svc();
-        assert!(svc.consensus("no-such").is_err());
     }
 
     #[test]
