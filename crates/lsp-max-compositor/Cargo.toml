@@ -45,6 +45,7 @@ full = [
 lsp-max = { path = "../..", optional = true }
 lsp-max-protocol = { path = "../../lsp-max-protocol", optional = true }
 wasm4pm = { version = "26.6.11", optional = true }
+wasm4pm-compat = { workspace = true }
 async-trait = "0.1"
 tokio = { version = "1", features = ["full"] }
 serde = { version = "1", features = ["derive"] }
