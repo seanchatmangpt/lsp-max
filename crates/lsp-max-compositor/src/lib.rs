@@ -59,4 +59,7 @@ pub use flush_coordinator::FlushCoordinator;
 #[cfg(feature = "full")]
 pub use mesh::{MeshNode, MeshTopology, MeshTransport};
 #[cfg(feature = "full")]
-pub use routing::{RoutingDecision, RoutingStrategy, RoutingTable, ServerCapabilityDecl};
+pub use routing::{
+    route_lsif_fallback, should_forward_notification, RoutingDecision, RoutingStrategy,
+    RoutingTable, ServerCapabilityDecl,
+};
