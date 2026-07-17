@@ -1,6 +1,7 @@
 use crate::config::{AntiLlmConfig, ForbiddenPattern};
 use regex::Regex;
 use crate::diagnostics::AntiLlmDiagnostic;
+use crate::lint_pass;
 use crate::observations::Observation;
 use crate::parsers::{
     cargo_lock, cargo_toml, contract, fitness_report, ggen_toml, json_rpc, markdown_claims,
@@ -441,6 +442,25 @@ pub fn apply_config_patterns(
     }
 
     obs
+}
+
+// ── LintPass runner ───────────────────────────────────────────────────────────
+
+/// Run all registered `LintPass` implementations against the file at `filepath`.
+///
+/// Returns `AntiLlmDiagnostic` values directly — these bypass the
+/// `Observation → evaluate_diagnostics` pipeline used by the AhoCorasick scanner.
+/// Callers that aggregate both pipelines are responsible for deduplication.
+pub fn run_lint_passes_on_file(filepath: &str) -> Vec<AntiLlmDiagnostic> {
+    let path = Path::new(filepath);
+    if !path.is_file() {
+        return vec![];
+    }
+    let content = match fs::read_to_string(path) {
+        Ok(c) => c,
+        Err(_) => return vec![],
+    };
+    lint_pass::run_lint_passes(&content, filepath)
 }
 
 // ── Directory scanner — ignore::Walk respects .gitignore ─────────────────────

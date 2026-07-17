@@ -4,6 +4,7 @@ pub mod config;
 pub mod diagnostics;
 pub mod engine;
 pub mod innovations;
+pub mod lint_pass;
 pub mod observations;
 pub mod ocel;
 pub mod parsers;
