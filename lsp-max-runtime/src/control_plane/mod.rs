@@ -9,3 +9,5 @@ pub mod views;
 pub mod wasm4pm_admission;
 pub mod wasm4pm_evidence;
 pub mod wasm4pm_graduation;
+pub mod powl_conformance;
+pub mod powl_model;
