@@ -105,3 +105,221 @@ lsp:max_receiptArrived a lsp:Notification ;
     lsp:paramType  "ReceiptArrivedParams" ;
     rdfs:comment   "Server-to-client push: a new receipt artifact has been committed and is queryable via max/receipt." ;
     law:status     law:CANDIDATE .
+
+# ─────────────────────────────────────────────────────────────────────────────
+# ADDITIONAL max/* EXTENSIONS (25 additional methods for comprehensive coverage)
+# ─────────────────────────────────────────────────────────────────────────────
+
+lsp:max_laxInvoke a lsp:MaxExtension ;
+    lsp:methodName "max/laxInvoke" ;
+    lsp:snakeName  "max_lax_invoke" ;
+    lsp:paramType  "LaxInvokeParams" ;
+    lsp:returnType "LaxInvokeResult" ;
+    rdfs:comment   "Invoke a method without strict type checking; returns relaxed results for protocol exploration." ;
+    law:status     law:CANDIDATE .
+
+lsp:max_conformanceTrace a lsp:MaxExtension ;
+    lsp:methodName "max/conformanceTrace" ;
+    lsp:snakeName  "max_conformance_trace" ;
+    lsp:paramType  "ConformanceTraceParams" ;
+    lsp:returnType "ConformanceTraceResult" ;
+    rdfs:comment   "Retrieve the full trace of conformance evaluations for a law axis." ;
+    law:status     law:CANDIDATE .
+
+lsp:max_lawAxisQuery a lsp:MaxExtension ;
+    lsp:methodName "max/lawAxisQuery" ;
+    lsp:snakeName  "max_law_axis_query" ;
+    lsp:paramType  "LawAxisQueryParams" ;
+    lsp:returnType "LawAxisQueryResult" ;
+    rdfs:comment   "Query the state of a specific law axis (Protocol, Type, Fixture, etc.)." ;
+    law:status     law:CANDIDATE .
+
+lsp:max_repairAnalysis a lsp:MaxExtension ;
+    lsp:methodName "max/repairAnalysis" ;
+    lsp:snakeName  "max_repair_analysis" ;
+    lsp:paramType  "RepairAnalysisParams" ;
+    lsp:returnType "RepairAnalysisResult" ;
+    rdfs:comment   "Analyze a BLOCKED or REFUSED law axis and provide detailed repair context." ;
+    law:status     law:CANDIDATE .
+
+lsp:max_receiptChain a lsp:MaxExtension ;
+    lsp:methodName "max/receiptChain" ;
+    lsp:snakeName  "max_receipt_chain" ;
+    lsp:paramType  "ReceiptChainParams" ;
+    lsp:returnType "ReceiptChainResult" ;
+    rdfs:comment   "Retrieve or verify a chain of receipt artifacts; enforces boundary markers and SHA256 integrity." ;
+    law:status     law:CANDIDATE .
+
+lsp:max_admissionTrace a lsp:MaxExtension ;
+    lsp:methodName "max/admissionTrace" ;
+    lsp:snakeName  "max_admission_trace" ;
+    lsp:paramType  "AdmissionTraceParams" ;
+    lsp:returnType "AdmissionTraceResult" ;
+    rdfs:comment   "Retrieve the full admission trace (law-axis evaluations) for a feature or method." ;
+    law:status     law:CANDIDATE .
+
+lsp:max_gateList a lsp:MaxExtension ;
+    lsp:methodName "max/gateList" ;
+    lsp:snakeName  "max_gate_list" ;
+    lsp:paramType  "GateListParams" ;
+    lsp:returnType "GateListResult" ;
+    rdfs:comment   "List all active ANDON gate signals; returns WASM4PM-* and GGEN-* diagnostic families." ;
+    law:status     law:CANDIDATE .
+
+lsp:max_processModel a lsp:MaxExtension ;
+    lsp:methodName "max/processModel" ;
+    lsp:snakeName  "max_process_model" ;
+    lsp:paramType  "ProcessModelParams" ;
+    lsp:returnType "ProcessModelResult" ;
+    rdfs:comment   "Retrieve the live Directly-Follows Graph and Declare conformance model from the compositor." ;
+    law:status     law:CANDIDATE .
+
+lsp:max_ocelEvents a lsp:MaxExtension ;
+    lsp:methodName "max/ocelEvents" ;
+    lsp:snakeName  "max_ocel_events" ;
+    lsp:paramType  "OcelEventsParams" ;
+    lsp:returnType "OcelEventsResult" ;
+    rdfs:comment   "Drain or snapshot OCEL 2.0 events accumulated by the FlushCoordinator." ;
+    law:status     law:CANDIDATE .
+
+lsp:max_complianceReport a lsp:MaxExtension ;
+    lsp:methodName "max/complianceReport" ;
+    lsp:snakeName  "max_compliance_report" ;
+    lsp:paramType  "ComplianceReportParams" ;
+    lsp:returnType "ComplianceReport" ;
+    rdfs:comment   "Generate a compliance report summarizing admitted/refused/unknown law axes across the workspace." ;
+    law:status     law:CANDIDATE .
+
+lsp:max_symbolIndex a lsp:MaxExtension ;
+    lsp:methodName "max/symbolIndex" ;
+    lsp:snakeName  "max_symbol_index" ;
+    lsp:paramType  "SymbolIndexParams" ;
+    lsp:returnType "SymbolIndexResult" ;
+    rdfs:comment   "Query the symbol index for types, methods, fields across the workspace." ;
+    law:status     law:CANDIDATE .
+
+lsp:max_typeResolver a lsp:MaxExtension ;
+    lsp:methodName "max/typeResolver" ;
+    lsp:snakeName  "max_type_resolver" ;
+    lsp:paramType  "TypeResolverParams" ;
+    lsp:returnType "TypeResolverResult" ;
+    rdfs:comment   "Resolve type expressions and unify generic parameters." ;
+    law:status     law:CANDIDATE .
+
+lsp:max_renderIntent a lsp:MaxExtension ;
+    lsp:methodName "max/renderIntent" ;
+    lsp:snakeName  "max_render_intent" ;
+    lsp:paramType  "RenderIntentParams" ;
+    lsp:returnType "RenderIntentResult" ;
+    rdfs:comment   "Render an intent or diagnostic in human-readable form with severity and context." ;
+    law:status     law:CANDIDATE .
+
+lsp:max_workspaceState a lsp:MaxExtension ;
+    lsp:methodName "max/workspaceState" ;
+    lsp:snakeName  "max_workspace_state" ;
+    lsp:paramType  "WorkspaceStateParams" ;
+    lsp:returnType "WorkspaceStateResult" ;
+    rdfs:comment   "Query the workspace state: open documents, active analyses, runtime phases." ;
+    law:status     law:CANDIDATE .
+
+lsp:max_federatedQuery a lsp:MaxExtension ;
+    lsp:methodName "max/federatedQuery" ;
+    lsp:snakeName  "max_federated_query" ;
+    lsp:paramType  "FederatedQueryParams" ;
+    lsp:returnType "FederatedQueryResult" ;
+    rdfs:comment   "Query across multiple LSP servers in the compositor mesh." ;
+    law:status     law:CANDIDATE .
+
+lsp:max_performanceMetrics a lsp:MaxExtension ;
+    lsp:methodName "max/performanceMetrics" ;
+    lsp:snakeName  "max_performance_metrics" ;
+    lsp:paramType  "PerformanceMetricsParams" ;
+    lsp:returnType "PerformanceMetrics" ;
+    rdfs:comment   "Retrieve performance metrics for the runtime: latency, throughput, gate transitions." ;
+    law:status     law:CANDIDATE .
+
+lsp:max_historyQuery a lsp:MaxExtension ;
+    lsp:methodName "max/historyQuery" ;
+    lsp:snakeName  "max_history_query" ;
+    lsp:paramType  "HistoryQueryParams" ;
+    lsp:returnType "HistoryQueryResult" ;
+    rdfs:comment   "Query the history of law-axis transitions, gate changes, and receipt arrivals." ;
+    law:status     law:CANDIDATE .
+
+lsp:max_rulePackValidation a lsp:MaxExtension ;
+    lsp:methodName "max/rulePackValidation" ;
+    lsp:snakeName  "max_rule_pack_validation" ;
+    lsp:paramType  "RulePackValidationParams" ;
+    lsp:returnType "RulePackValidationResult" ;
+    rdfs:comment   "Validate a rule pack manifest against the workspace schema." ;
+    law:status     law:CANDIDATE .
+
+lsp:max_reproducibilityCheck a lsp:MaxExtension ;
+    lsp:methodName "max/reproducibilityCheck" ;
+    lsp:snakeName  "max_reproducibility_check" ;
+    lsp:paramType  "ReproducibilityCheckParams" ;
+    lsp:returnType "ReproducibilityCheckResult" ;
+    rdfs:comment   "Verify that a feature or method is reproducible given a receipt and OCEL trace." ;
+    law:status     law:CANDIDATE .
+
+lsp:max_ontologyQuery a lsp:MaxExtension ;
+    lsp:methodName "max/ontologyQuery" ;
+    lsp:snakeName  "max_ontology_query" ;
+    lsp:paramType  "OntologyQueryParams" ;
+    lsp:returnType "OntologyQueryResult" ;
+    rdfs:comment   "Query the loaded ontologies (lsp318.ttl, law-axes.ttl, schema-server.ttl, lsif06.ttl)." ;
+    law:status     law:CANDIDATE .
+
+lsp:max_diagnosticFilter a lsp:MaxExtension ;
+    lsp:methodName "max/diagnosticFilter" ;
+    lsp:snakeName  "max_diagnostic_filter" ;
+    lsp:paramType  "DiagnosticFilterParams" ;
+    lsp:returnType "DiagnosticFilterResult" ;
+    rdfs:comment   "Filter and search diagnostics by code, law axis, severity, or document URI." ;
+    law:status     law:CANDIDATE .
+
+lsp:max_semanticAnalysis a lsp:MaxExtension ;
+    lsp:methodName "max/semanticAnalysis" ;
+    lsp:snakeName  "max_semantic_analysis" ;
+    lsp:paramType  "SemanticAnalysisParams" ;
+    lsp:returnType "SemanticAnalysisResult" ;
+    rdfs:comment   "Perform semantic analysis on a document or symbol: types, scopes, references." ;
+    law:status     law:CANDIDATE .
+
+lsp:max_refactorPlan a lsp:MaxExtension ;
+    lsp:methodName "max/refactorPlan" ;
+    lsp:snakeName  "max_refactor_plan" ;
+    lsp:paramType  "RefactorPlanParams" ;
+    lsp:returnType "RefactorPlanResult" ;
+    rdfs:comment   "Generate a refactoring plan that maintains conformance and law-axis admission." ;
+    law:status     law:CANDIDATE .
+
+lsp:max_networkDiagnostics a lsp:MaxExtension ;
+    lsp:methodName "max/networkDiagnostics" ;
+    lsp:snakeName  "max_network_diagnostics" ;
+    lsp:paramType  "NetworkDiagnosticsParams" ;
+    lsp:returnType "NetworkDiagnosticsResult" ;
+    rdfs:comment   "Diagnose LSP message flow and server communication in the compositor mesh." ;
+    law:status     law:CANDIDATE .
+
+lsp:max_securityAudit a lsp:MaxExtension ;
+    lsp:methodName "max/securityAudit" ;
+    lsp:snakeName  "max_security_audit" ;
+    lsp:paramType  "SecurityAuditParams" ;
+    lsp:returnType "SecurityAuditResult" ;
+    rdfs:comment   "Perform a security audit: verify receipt digests, check signature chains, detect injection." ;
+    law:status     law:CANDIDATE .
+
+lsp:max_diagnosticsChanged a lsp:Notification ;
+    lsp:methodName "max/diagnosticsChanged" ;
+    lsp:snakeName  "max_diagnostics_changed" ;
+    lsp:paramType  "DiagnosticsChangedParams" ;
+    rdfs:comment   "Server-to-client push: WASM4PM-* or GGEN-* diagnostics changed (added, removed, or modified)." ;
+    law:status     law:CANDIDATE .
+
+lsp:max_processModelUpdated a lsp:Notification ;
+    lsp:methodName "max/processModelUpdated" ;
+    lsp:snakeName  "max_process_model_updated" ;
+    lsp:paramType  "ProcessModelUpdatedParams" ;
+    rdfs:comment   "Server-to-client push: the Directly-Follows Graph or Declare model was updated." ;
+    law:status     law:CANDIDATE .
