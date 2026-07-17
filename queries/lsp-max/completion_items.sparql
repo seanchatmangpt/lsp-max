@@ -1,0 +1,22 @@
+PREFIX lsp: <https://lsp-max.rs/ontology/>
+PREFIX law: <https://lsp-max.rs/law/>
+PREFIX completion: <https://lsp-max.rs/completion/>
+
+SELECT ?item_label ?item_kind ?sort_text ?filter_text ?law_status ?documentation ?context_rules
+WHERE {
+    ?item a completion:CompletionItem ;
+          completion:label ?item_label ;
+          completion:kind ?item_kind ;
+          completion:sortText ?sort_text ;
+          completion:filterText ?filter_text ;
+          law:status ?status_iri .
+    OPTIONAL {
+        ?item completion:documentation ?documentation .
+    }
+    OPTIONAL {
+        ?item completion:contextRules ?context_rules .
+    }
+    BIND(STRAFTER(STR(?status_iri), "https://lsp-max.rs/law/") AS ?law_status)
+    FILTER(?law_status IN ("CANDIDATE", "ADMITTED", "REFUSED"))
+}
+ORDER BY ?law_status ?item_kind ?sort_text
