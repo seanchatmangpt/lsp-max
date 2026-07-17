@@ -154,3 +154,4 @@ lsp-max-ast = { path = "crates/lsp-max-adapters/lsp-max-ast", version = "26.6.26
 wasm4pm = { path = "../wasm4pm/wasm4pm" }
 wasm4pm-compat = { path = "../wasm4pm-compat" }
 lsp-types-max = { path = "../lsp-types-max" }
+chicago-tdd-tools = { path = "../chicago-tdd-tools" }
