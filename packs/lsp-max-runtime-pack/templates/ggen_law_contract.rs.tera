@@ -18,7 +18,7 @@ const REQUIRED_REFUSALS: &[(&str, &str)] = &[
 
 const GALL_CHECKPOINTS: &[(&str, usize, &str)] = &[
 {% for checkpoint in checkpoints -%}
-    ("{{ checkpoint.id }}", {{ checkpoint.order }}, "G{{ checkpoint.order - 1 }}"),
+    ("{{ checkpoint.id }}", {{ checkpoint.order }}, "G{{ loop.index0 }}"),
 {% endfor -%}
 ];
 
