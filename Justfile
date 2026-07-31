@@ -145,6 +145,27 @@ agents-loc:
 agents-closure-scan:
     @bash scripts/closure-token-scan.sh
 
+ggen-sync:
+    ${GGEN_BIN:-ggen} sync run
+
+ggen-semantic:
+    python3 scripts/verify-ggen-contract.py --check --negative-fixtures
+
+ggen-receipt:
+    python3 scripts/verify-ggen-contract.py --check --negative-fixtures --emit-receipt target/ggen/verification-receipt.json
+    python3 scripts/verify-ggen-contract.py --replay target/ggen/verification-receipt.json
+
+ggen-rust-contract:
+    cargo test --test ggen_law_contract
+
+ggen-drift:
+    ${GGEN_BIN:-ggen} sync run
+    git diff --exit-code -- docs/generated/GGEN_MANUFACTURING_CONTRACT.md docs/generated/STANDING_MODEL.md docs/generated/GALL_ROADMAP.md evidence/generated/verification-manifest.json tests/ggen_law_contract.rs .github/workflows/ggen-contract.yml
+
+ggen-contract: ggen-receipt ggen-rust-contract
+
+ggen-ci: ggen-contract ggen-drift
+
 tree:
     @tree .
 
