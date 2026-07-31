@@ -38,6 +38,7 @@ fn ggen_owned_surfaces_exist() {
         "docs/generated/STANDING_MODEL.md",
         "docs/generated/GALL_ROADMAP.md",
         "evidence/generated/verification-manifest.json",
+        "tests/ggen-contract/Cargo.toml",
         ".github/workflows/ggen-contract.yml",
     ] {
         assert!(Path::new(path).is_file(), "missing ggen-owned surface: {path}");
