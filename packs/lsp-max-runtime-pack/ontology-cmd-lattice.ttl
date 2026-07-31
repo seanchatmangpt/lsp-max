@@ -1,0 +1,69 @@
+@prefix lsp: <https://chatmangpt.com/ns/lsp-max#> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+lsp:OptRuntimeTokio a lsp:Option ; lsp:optionId "runtime:tokio" ; lsp:dimensionId "internal.runtime" ; lsp:scope "internal" ; lsp:standing "UNKNOWN" .
+lsp:OptRuntimeAgnostic a lsp:Option ; lsp:optionId "runtime:agnostic" ; lsp:dimensionId "internal.runtime" ; lsp:scope "internal" ; lsp:standing "UNKNOWN" .
+lsp:DimInternalRuntime a lsp:Dimension ; lsp:dimensionId "internal.runtime" ; lsp:scope "internal" ; lsp:selectionCardinality "exactly-one" ; lsp:coverageMode "risk-weighted-exhaustive" ; lsp:hasOption lsp:OptRuntimeTokio, lsp:OptRuntimeAgnostic .
+lsp:OptInvocationLibrary a lsp:Option ; lsp:optionId "invocation:library" ; lsp:dimensionId "internal.invocation" ; lsp:scope "internal" ; lsp:standing "UNKNOWN" .
+lsp:OptInvocationStdio a lsp:Option ; lsp:optionId "invocation:stdio" ; lsp:dimensionId "internal.invocation" ; lsp:scope "internal" ; lsp:standing "UNKNOWN" .
+lsp:OptInvocationWebsocket a lsp:Option ; lsp:optionId "invocation:websocket" ; lsp:dimensionId "internal.invocation" ; lsp:scope "internal" ; lsp:standing "UNKNOWN" .
+lsp:DimInternalInvocation a lsp:Dimension ; lsp:dimensionId "internal.invocation" ; lsp:scope "internal" ; lsp:selectionCardinality "exactly-one" ; lsp:coverageMode "risk-weighted-exhaustive" ; lsp:hasOption lsp:OptInvocationLibrary, lsp:OptInvocationStdio, lsp:OptInvocationWebsocket .
+lsp:OptSemanticLive a lsp:Option ; lsp:optionId "semantic:live" ; lsp:dimensionId "internal.semantic" ; lsp:scope "internal" ; lsp:standing "UNKNOWN" .
+lsp:OptSemanticLsif a lsp:Option ; lsp:optionId "semantic:lsif" ; lsp:dimensionId "internal.semantic" ; lsp:scope "internal" ; lsp:standing "UNKNOWN" .
+lsp:OptSemanticOxigraph a lsp:Option ; lsp:optionId "semantic:oxigraph" ; lsp:dimensionId "internal.semantic" ; lsp:scope "internal" ; lsp:standing "UNKNOWN" .
+lsp:DimInternalSemantic a lsp:Dimension ; lsp:dimensionId "internal.semantic" ; lsp:scope "internal" ; lsp:selectionCardinality "exactly-one" ; lsp:coverageMode "risk-weighted-exhaustive" ; lsp:hasOption lsp:OptSemanticLive, lsp:OptSemanticLsif, lsp:OptSemanticOxigraph .
+lsp:OptDiagnosticPull a lsp:Option ; lsp:optionId "diagnostic:pull" ; lsp:dimensionId "internal.diagnostics" ; lsp:scope "internal" ; lsp:standing "UNKNOWN" .
+lsp:OptDiagnosticPush a lsp:Option ; lsp:optionId "diagnostic:push" ; lsp:dimensionId "internal.diagnostics" ; lsp:scope "internal" ; lsp:standing "UNKNOWN" .
+lsp:DimInternalDiagnostics a lsp:Dimension ; lsp:dimensionId "internal.diagnostics" ; lsp:scope "internal" ; lsp:selectionCardinality "exactly-one" ; lsp:coverageMode "risk-weighted-exhaustive" ; lsp:hasOption lsp:OptDiagnosticPull, lsp:OptDiagnosticPush .
+lsp:OptHistoryNone a lsp:Option ; lsp:optionId "history:none" ; lsp:dimensionId "internal.history" ; lsp:scope "internal" ; lsp:standing "UNKNOWN" .
+lsp:OptHistoryOcel a lsp:Option ; lsp:optionId "history:ocel" ; lsp:dimensionId "internal.history" ; lsp:scope "internal" ; lsp:standing "UNKNOWN" .
+lsp:DimInternalHistory a lsp:Dimension ; lsp:dimensionId "internal.history" ; lsp:scope "internal" ; lsp:selectionCardinality "exactly-one" ; lsp:coverageMode "risk-weighted-exhaustive" ; lsp:hasOption lsp:OptHistoryNone, lsp:OptHistoryOcel .
+lsp:OptReceiptBlake3 a lsp:Option ; lsp:optionId "receipt:blake3" ; lsp:dimensionId "internal.receipt" ; lsp:scope "internal" ; lsp:standing "UNKNOWN" .
+lsp:DimInternalReceipt a lsp:Dimension ; lsp:dimensionId "internal.receipt" ; lsp:scope "internal" ; lsp:selectionCardinality "exactly-one" ; lsp:coverageMode "risk-weighted-exhaustive" ; lsp:hasOption lsp:OptReceiptBlake3 .
+lsp:OptProtocolStdio a lsp:Option ; lsp:optionId "protocol:stdio" ; lsp:dimensionId "external.protocol" ; lsp:scope "external" ; lsp:standing "UNKNOWN" .
+lsp:OptProtocolHttp a lsp:Option ; lsp:optionId "protocol:http" ; lsp:dimensionId "external.protocol" ; lsp:scope "external" ; lsp:standing "UNKNOWN" .
+lsp:OptProtocolWebsocket a lsp:Option ; lsp:optionId "protocol:websocket" ; lsp:dimensionId "external.protocol" ; lsp:scope "external" ; lsp:standing "UNKNOWN" .
+lsp:DimExternalProtocol a lsp:Dimension ; lsp:dimensionId "external.protocol" ; lsp:scope "external" ; lsp:selectionCardinality "exactly-one" ; lsp:coverageMode "risk-weighted-exhaustive" ; lsp:hasOption lsp:OptProtocolStdio, lsp:OptProtocolHttp, lsp:OptProtocolWebsocket .
+lsp:OptIdentityLocalProcess a lsp:Option ; lsp:optionId "identity:local-process" ; lsp:dimensionId "external.identity" ; lsp:scope "external" ; lsp:standing "UNKNOWN" .
+lsp:OptIdentityWorkloadToken a lsp:Option ; lsp:optionId "identity:workload-token" ; lsp:dimensionId "external.identity" ; lsp:scope "external" ; lsp:standing "UNKNOWN" .
+lsp:DimExternalIdentity a lsp:Dimension ; lsp:dimensionId "external.identity" ; lsp:scope "external" ; lsp:selectionCardinality "exactly-one" ; lsp:coverageMode "risk-weighted-exhaustive" ; lsp:hasOption lsp:OptIdentityLocalProcess, lsp:OptIdentityWorkloadToken .
+lsp:OptAuthorityRead a lsp:Option ; lsp:optionId "authority:read" ; lsp:dimensionId "external.authority" ; lsp:scope "external" ; lsp:standing "UNKNOWN" .
+lsp:OptAuthorityPropose a lsp:Option ; lsp:optionId "authority:propose" ; lsp:dimensionId "external.authority" ; lsp:scope "external" ; lsp:standing "UNKNOWN" .
+lsp:OptAuthorityActuate a lsp:Option ; lsp:optionId "authority:actuate" ; lsp:dimensionId "external.authority" ; lsp:scope "external" ; lsp:standing "UNKNOWN" .
+lsp:DimExternalAuthority a lsp:Dimension ; lsp:dimensionId "external.authority" ; lsp:scope "external" ; lsp:selectionCardinality "exactly-one" ; lsp:coverageMode "risk-weighted-exhaustive" ; lsp:hasOption lsp:OptAuthorityRead, lsp:OptAuthorityPropose, lsp:OptAuthorityActuate .
+lsp:OptConsentAbsent a lsp:Option ; lsp:optionId "consent:absent" ; lsp:dimensionId "external.consent" ; lsp:scope "external" ; lsp:standing "UNKNOWN" .
+lsp:OptConsentActionSpecific a lsp:Option ; lsp:optionId "consent:action-specific" ; lsp:dimensionId "external.consent" ; lsp:scope "external" ; lsp:standing "UNKNOWN" .
+lsp:OptConsentResourceSpecific a lsp:Option ; lsp:optionId "consent:resource-specific" ; lsp:dimensionId "external.consent" ; lsp:scope "external" ; lsp:standing "UNKNOWN" .
+lsp:DimExternalConsent a lsp:Dimension ; lsp:dimensionId "external.consent" ; lsp:scope "external" ; lsp:selectionCardinality "exactly-one" ; lsp:coverageMode "risk-weighted-exhaustive" ; lsp:hasOption lsp:OptConsentAbsent, lsp:OptConsentActionSpecific, lsp:OptConsentResourceSpecific .
+lsp:OptDataPublic a lsp:Option ; lsp:optionId "data:public" ; lsp:dimensionId "external.data" ; lsp:scope "external" ; lsp:standing "UNKNOWN" .
+lsp:OptDataInternal a lsp:Option ; lsp:optionId "data:internal" ; lsp:dimensionId "external.data" ; lsp:scope "external" ; lsp:standing "UNKNOWN" .
+lsp:OptDataConfidential a lsp:Option ; lsp:optionId "data:confidential" ; lsp:dimensionId "external.data" ; lsp:scope "external" ; lsp:standing "UNKNOWN" .
+lsp:DimExternalData a lsp:Dimension ; lsp:dimensionId "external.data" ; lsp:scope "external" ; lsp:selectionCardinality "exactly-one" ; lsp:coverageMode "risk-weighted-exhaustive" ; lsp:hasOption lsp:OptDataPublic, lsp:OptDataInternal, lsp:OptDataConfidential .
+lsp:OptJurisdictionLocal a lsp:Option ; lsp:optionId "jurisdiction:local" ; lsp:dimensionId "external.jurisdiction" ; lsp:scope "external" ; lsp:standing "UNKNOWN" .
+lsp:OptJurisdictionDeclaredRegion a lsp:Option ; lsp:optionId "jurisdiction:declared-region" ; lsp:dimensionId "external.jurisdiction" ; lsp:scope "external" ; lsp:standing "UNKNOWN" .
+lsp:DimExternalJurisdiction a lsp:Dimension ; lsp:dimensionId "external.jurisdiction" ; lsp:scope "external" ; lsp:selectionCardinality "exactly-one" ; lsp:coverageMode "risk-weighted-exhaustive" ; lsp:hasOption lsp:OptJurisdictionLocal, lsp:OptJurisdictionDeclaredRegion .
+lsp:OptTrustLocal a lsp:Option ; lsp:optionId "trust:local" ; lsp:dimensionId "external.trust" ; lsp:scope "external" ; lsp:standing "UNKNOWN" .
+lsp:OptTrustSigned a lsp:Option ; lsp:optionId "trust:signed" ; lsp:dimensionId "external.trust" ; lsp:scope "external" ; lsp:standing "UNKNOWN" .
+lsp:OptTrustIndependent a lsp:Option ; lsp:optionId "trust:independent" ; lsp:dimensionId "external.trust" ; lsp:scope "external" ; lsp:standing "UNKNOWN" .
+lsp:DimExternalTrust a lsp:Dimension ; lsp:dimensionId "external.trust" ; lsp:scope "external" ; lsp:selectionCardinality "exactly-one" ; lsp:coverageMode "risk-weighted-exhaustive" ; lsp:hasOption lsp:OptTrustLocal, lsp:OptTrustSigned, lsp:OptTrustIndependent .
+lsp:OptExternalRuntimeNative a lsp:Option ; lsp:optionId "external-runtime:native" ; lsp:dimensionId "external.runtime" ; lsp:scope "external" ; lsp:standing "UNKNOWN" .
+lsp:OptExternalRuntimeWasm a lsp:Option ; lsp:optionId "external-runtime:wasm" ; lsp:dimensionId "external.runtime" ; lsp:scope "external" ; lsp:standing "UNKNOWN" .
+lsp:DimExternalRuntime a lsp:Dimension ; lsp:dimensionId "external.runtime" ; lsp:scope "external" ; lsp:selectionCardinality "exactly-one" ; lsp:coverageMode "risk-weighted-exhaustive" ; lsp:hasOption lsp:OptExternalRuntimeNative, lsp:OptExternalRuntimeWasm .
+lsp:OptConsequenceResponseOnly a lsp:Option ; lsp:optionId "consequence:response-only" ; lsp:dimensionId "external.consequence" ; lsp:scope "external" ; lsp:standing "UNKNOWN" .
+lsp:OptConsequenceExternalMutation a lsp:Option ; lsp:optionId "consequence:external-mutation" ; lsp:dimensionId "external.consequence" ; lsp:scope "external" ; lsp:standing "UNKNOWN" .
+lsp:DimExternalConsequence a lsp:Dimension ; lsp:dimensionId "external.consequence" ; lsp:scope "external" ; lsp:selectionCardinality "exactly-one" ; lsp:coverageMode "risk-weighted-exhaustive" ; lsp:hasOption lsp:OptConsequenceResponseOnly, lsp:OptConsequenceExternalMutation .
+lsp:OptEvidenceExecutor a lsp:Option ; lsp:optionId "evidence:executor" ; lsp:dimensionId "external.evidence" ; lsp:scope "external" ; lsp:standing "UNKNOWN" .
+lsp:OptEvidenceIndependentVerifier a lsp:Option ; lsp:optionId "evidence:independent-verifier" ; lsp:dimensionId "external.evidence" ; lsp:scope "external" ; lsp:standing "UNKNOWN" .
+lsp:DimExternalEvidence a lsp:Dimension ; lsp:dimensionId "external.evidence" ; lsp:scope "external" ; lsp:selectionCardinality "exactly-one" ; lsp:coverageMode "risk-weighted-exhaustive" ; lsp:hasOption lsp:OptEvidenceExecutor, lsp:OptEvidenceIndependentVerifier .
+
+lsp:Constraint01 a lsp:Constraint ; lsp:constraintId "INT-001" ; lsp:scope "internal" ; lsp:refusalToken "CMD-CONSTRAINT-VIOLATION" ; lsp:whenOption lsp:OptRuntimeAgnostic ; lsp:forbidsOption lsp:OptInvocationWebsocket .
+lsp:Constraint02 a lsp:Constraint ; lsp:constraintId "INT-002" ; lsp:scope "internal" ; lsp:refusalToken "CMD-CONSTRAINT-VIOLATION" ; lsp:whenOption lsp:OptHistoryOcel ; lsp:requiresOption lsp:OptReceiptBlake3 .
+lsp:Constraint03 a lsp:Constraint ; lsp:constraintId "INT-003" ; lsp:scope "internal" ; lsp:refusalToken "CMD-CONSTRAINT-VIOLATION" ; lsp:whenOption lsp:OptDiagnosticPush ; lsp:requiresOption lsp:OptReceiptBlake3 .
+lsp:Constraint04 a lsp:Constraint ; lsp:constraintId "EXT-001" ; lsp:scope "external" ; lsp:refusalToken "EXT-IDENTITY" ; lsp:whenOption lsp:OptProtocolHttp ; lsp:requiresOption lsp:OptIdentityWorkloadToken .
+lsp:Constraint05 a lsp:Constraint ; lsp:constraintId "EXT-002" ; lsp:scope "external" ; lsp:refusalToken "EXT-BOUNDARY-INCOMPLETE" ; lsp:whenOption lsp:OptConsequenceExternalMutation ; lsp:requiresOption lsp:OptAuthorityActuate, lsp:OptConsentResourceSpecific, lsp:OptEvidenceIndependentVerifier, lsp:OptExternalRuntimeNative, lsp:OptIdentityWorkloadToken, lsp:OptJurisdictionDeclaredRegion, lsp:OptTrustIndependent .
+lsp:Constraint06 a lsp:Constraint ; lsp:constraintId "EXT-003" ; lsp:scope "external" ; lsp:refusalToken "AUTH-SCOPE-MISMATCH" ; lsp:whenOption lsp:OptAuthorityActuate ; lsp:requiresOption lsp:OptConsentResourceSpecific, lsp:OptConsequenceExternalMutation, lsp:OptEvidenceIndependentVerifier, lsp:OptTrustIndependent .
+lsp:Constraint07 a lsp:Constraint ; lsp:constraintId "EXT-004" ; lsp:scope "external" ; lsp:refusalToken "EXT-DATA-CLASS" ; lsp:whenOption lsp:OptDataConfidential ; lsp:requiresOption lsp:OptConsentResourceSpecific, lsp:OptIdentityWorkloadToken, lsp:OptJurisdictionDeclaredRegion, lsp:OptTrustIndependent .
+lsp:Constraint08 a lsp:Constraint ; lsp:constraintId "EXT-005" ; lsp:scope "external" ; lsp:refusalToken "EXT-RUNTIME-ACTUATION-REFUSED" ; lsp:whenOption lsp:OptExternalRuntimeWasm ; lsp:forbidsOption lsp:OptConsequenceExternalMutation .
+lsp:Constraint09 a lsp:Constraint ; lsp:constraintId "EXT-006" ; lsp:scope "external" ; lsp:refusalToken "RCP-SELF-PROMOTION" ; lsp:whenOption lsp:OptEvidenceExecutor ; lsp:forbidsOption lsp:OptAuthorityActuate .
+lsp:Constraint10 a lsp:Constraint ; lsp:constraintId "EXT-007" ; lsp:scope "external" ; lsp:refusalToken "EXT-CONSENT-MISSING" ; lsp:whenOption lsp:OptConsentAbsent ; lsp:forbidsOption lsp:OptAuthorityActuate, lsp:OptDataConfidential .
