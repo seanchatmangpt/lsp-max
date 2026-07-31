@@ -1,0 +1,66 @@
+{
+  "acceptance_criteria_count": 30,
+  "actuation": {
+    "broker": "BRCE",
+    "direct": false,
+    "external_intents_only": true
+  },
+  "candidate_products": {
+    "external_raw": 7776,
+    "internal_raw": 72
+  },
+  "evidence_obligations": [
+    "EVIDENCE-WITNESS",
+    "EVIDENCE-FALSIFIER",
+    "EVIDENCE-INDEPENDENT-VERIFIER",
+    "EVIDENCE-RECEIPT-VERIFIER",
+    "EVIDENCE-REPLAY"
+  ],
+  "exclusions": [
+    "no direct cloud/process/filesystem/network actuation",
+    "no executor self-promotion",
+    "no external ALIVE without external consequence evidence",
+    "no retirement or workflow consolidation in this checkpoint"
+  ],
+  "external_standing": "UNKNOWN",
+  "gall_checkpoints": [
+    "G0",
+    "G1",
+    "G2",
+    "G3",
+    "G4",
+    "G5",
+    "G6",
+    "G7",
+    "G8",
+    "G9"
+  ],
+  "gate_count": 12,
+  "generated": true,
+  "required_broker": "BRCE",
+  "resource_policy": {
+    "max_artifact_bytes": 10485760,
+    "max_benchmark_seconds": 5,
+    "max_candidate_product": 8192,
+    "max_mape_cycles": 8,
+    "max_outputs": 8192,
+    "max_query_rows": 4096,
+    "max_sync_bytes": 67108864
+  },
+  "schema": "chatmangpt.lsp-max.cmd-contract.v1",
+  "source": "packs/lsp-max-runtime-pack/ontology.ttl",
+  "standards_profile": "GGEN-STANDARDS-7D-2026-07-30",
+  "standing": "UNKNOWN",
+  "verification_ladder": [
+    "protocol/unit",
+    "property/fuzz",
+    "stdio+HTTP integration",
+    "black-box CLI E2E",
+    "security",
+    "chaos",
+    "stress",
+    "benchmark",
+    "replay",
+    "external verifier report"
+  ]
+}
