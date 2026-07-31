@@ -13,46 +13,73 @@ const REQUIRED_REFUSALS: &[(&str, &str)] = &[
     ("LAW-006", "LSPMAX_BASE_SHA_UNRESOLVED"),
     ("LAW-007", "LSPMAX_PRIVATE_SEMANTIC_AUTHORITY_REFUSED"),
     ("LAW-008", "LSPMAX_HOOK_ACTUATION_REFUSED"),
+    ("LAW-009", "AUTH_PREMATURE_PROMOTION"),
+    ("LAW-010", "OWN_MULTIPLE_EXCLUSIVE"),
+    ("LAW-011", "EXT_BOUNDARY_INCOMPLETE"),
+    ("LAW-012", "RCP_SELF_PROMOTION"),
 ];
 
-const GALL_CHECKPOINTS: &[(&str, usize)] = &[
-    ("GALL-001", 1),
-    ("GALL-002", 2),
-    ("GALL-003", 3),
-    ("GALL-004", 4),
-    ("GALL-005", 5),
-    ("GALL-006", 6),
-    ("GALL-007", 7),
-    ("GALL-008", 8),
-    ("GALL-009", 9),
-    ("GALL-010", 10),
+const GALL_CHECKPOINTS: &[(&str, usize, &str)] = &[
+    ("GALL-001", 1, "G0"),
+    ("GALL-002", 2, "G1"),
+    ("GALL-003", 3, "G2"),
+    ("GALL-004", 4, "G3"),
+    ("GALL-005", 5, "G4"),
+    ("GALL-006", 6, "G5"),
+    ("GALL-007", 7, "G6"),
+    ("GALL-008", 8, "G7"),
+    ("GALL-009", 9, "G8"),
+    ("GALL-010", 10, "G9"),
 ];
+
+const OWNED_SURFACES: &[&str] = &[
+    "ggen.toml",
+    "packs/lsp-max-runtime-pack/pack.toml",
+    "packs/lsp-max-runtime-pack/ontology.ttl",
+    "packs/lsp-max-runtime-pack/ontology-cmd-core.ttl",
+    "packs/lsp-max-runtime-pack/ontology-cmd-lattice.ttl",
+    "packs/lsp-max-runtime-pack/ontology-cmd-verification.ttl",
+    "docs/generated/GGEN_MANUFACTURING_CONTRACT.md",
+    "docs/generated/STANDING_MODEL.md",
+    "docs/generated/GALL_ROADMAP.md",
+    "docs/generated/CMD_PROFILE.md",
+    "evidence/generated/verification-manifest.json",
+    "evidence/generated/cmd-contract.json",
+    "scripts/verify-ggen-contract-closure.py",
+    "scripts/verify-cmd-profile-closure.py",
+    "tests/ggen-contract/Cargo.toml",
+    ".github/workflows/ggen-contract.yml",
+    ".github/workflows/cmd-contract.yml",
+];
+
+fn ontology_closure() -> String {
+    [
+        "packs/lsp-max-runtime-pack/ontology.ttl",
+        "packs/lsp-max-runtime-pack/ontology-cmd-core.ttl",
+        "packs/lsp-max-runtime-pack/ontology-cmd-lattice.ttl",
+        "packs/lsp-max-runtime-pack/ontology-cmd-verification.ttl",
+    ]
+    .into_iter()
+    .map(|path| fs::read_to_string(path).expect("read ontology partition"))
+    .collect::<Vec<_>>()
+    .join("\n")
+}
 
 #[test]
 fn ggen_owned_surfaces_exist() {
-    for path in [
-        "ggen.toml",
-        "packs/lsp-max-runtime-pack/pack.toml",
-        "packs/lsp-max-runtime-pack/ontology.ttl",
-        "docs/generated/GGEN_MANUFACTURING_CONTRACT.md",
-        "docs/generated/STANDING_MODEL.md",
-        "docs/generated/GALL_ROADMAP.md",
-        "evidence/generated/verification-manifest.json",
-        "tests/ggen-contract/Cargo.toml",
-        ".github/workflows/ggen-contract.yml",
-    ] {
+    for path in OWNED_SURFACES {
         assert!(Path::new(path).is_file(), "missing ggen-owned surface: {path}");
     }
 }
 
 #[test]
-fn refusal_tokens_are_unique_and_present_in_the_graph() {
-    let ontology = fs::read_to_string("packs/lsp-max-runtime-pack/ontology.ttl")
-        .expect("read canonical lsp-max ontology");
+fn refusal_tokens_are_unique_and_present_in_the_graph_closure() {
+    let ontology = ontology_closure();
     let mut tokens = REQUIRED_REFUSALS.iter().map(|(_, token)| *token).collect::<Vec<_>>();
     tokens.sort_unstable();
     tokens.dedup();
     assert_eq!(tokens.len(), REQUIRED_REFUSALS.len(), "duplicate refusal token");
+    assert_eq!(REQUIRED_REFUSALS.len(), 12, "standards law closure drifted");
     for (law, token) in REQUIRED_REFUSALS {
         assert!(ontology.contains(law), "missing law {law}");
         assert!(ontology.contains(token), "missing refusal token {token}");
@@ -60,18 +87,24 @@ fn refusal_tokens_are_unique_and_present_in_the_graph() {
 }
 
 #[test]
-fn gall_checkpoint_order_is_total_and_crown_is_last() {
-    for (index, (id, order)) in GALL_CHECKPOINTS.iter().enumerate() {
+fn gall_checkpoint_order_is_total_and_maps_to_g0_through_g9() {
+    for (index, (id, order, stage)) in GALL_CHECKPOINTS.iter().enumerate() {
         assert_eq!(*order, index + 1, "non-total Gall order at {id}");
+        assert_eq!(*stage, format!("G{index}"), "semantic Gall stage drift at {id}");
     }
-    assert_eq!(GALL_CHECKPOINTS.last(), Some(&("GALL-010", 10)));
+    assert_eq!(GALL_CHECKPOINTS.last(), Some(&("GALL-010", 10, "G9")));
 }
 
 #[test]
-fn generated_contract_preserves_zero_unreceipted_actuation() {
+fn generated_contract_preserves_cmd_boundaries() {
     let contract = fs::read_to_string("docs/generated/GGEN_MANUFACTURING_CONTRACT.md")
         .expect("read generated manufacturing contract");
+    let profile = fs::read_to_string("docs/generated/CMD_PROFILE.md")
+        .expect("read generated CMD profile");
     assert!(contract.contains("Zero unreceipted actuation"));
     assert!(contract.contains("BRCE is the exclusive lawful DO path"));
     assert!(contract.contains("receipt → replay"));
+    assert!(profile.contains("Internal candidate lattice"));
+    assert!(profile.contains("External candidate lattice"));
+    assert!(profile.contains("External standing:** `UNKNOWN`"));
 }
