@@ -95,7 +95,7 @@ mode = "Overwrite"
 name = "lsp-max-cmd-profile"
 query = { inline = """
 PREFIX lsp: <https://chatmangpt.com/ns/lsp-max#>
-SELECT ?id WHERE { ?program a lsp:Program ; lsp:standardsProfile ?id . } ORDER BY ?id
+SELECT ?id WHERE { ?program a lsp:Program ; lsp:programId ?id . } ORDER BY ?id
 """ }
 template = { file = "packs/lsp-max-runtime-pack/templates/cmd-profile.md.tera" }
 output_file = "docs/generated/CMD_PROFILE.md"
@@ -106,7 +106,7 @@ mode = "Overwrite"
 name = "lsp-max-cmd-contract"
 query = { inline = """
 PREFIX lsp: <https://chatmangpt.com/ns/lsp-max#>
-SELECT ?id WHERE { ?program a lsp:Program ; lsp:standardsProfile ?id . } ORDER BY ?id
+SELECT ?id WHERE { ?program a lsp:Program ; lsp:programId ?id . } ORDER BY ?id
 """ }
 template = { file = "packs/lsp-max-runtime-pack/templates/cmd-contract.json.tera" }
 output_file = "evidence/generated/cmd-contract.json"
@@ -117,7 +117,7 @@ mode = "Overwrite"
 name = "lsp-max-cmd-workflow"
 query = { inline = """
 PREFIX lsp: <https://chatmangpt.com/ns/lsp-max#>
-SELECT ?id WHERE { ?program a lsp:Program ; lsp:standardsProfile ?id . } ORDER BY ?id
+SELECT ?id WHERE { ?program a lsp:Program ; lsp:programId ?id . } ORDER BY ?id
 """ }
 template = { file = "packs/lsp-max-runtime-pack/templates/cmd-contract.yml.tera" }
 output_file = ".github/workflows/cmd-contract.yml"
