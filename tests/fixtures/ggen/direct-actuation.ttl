@@ -1,0 +1,8 @@
+@prefix lsp: <https://chatmangpt.com/ns/lsp-max#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+lsp:InvalidDirectActuation
+    a lsp:BuildingBlock ;
+    lsp:blockId "invalid-direct-actuation" ;
+    lsp:standing "UNKNOWN" ;
+    lsp:directActuation true .
