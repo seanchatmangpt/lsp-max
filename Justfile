@@ -149,22 +149,67 @@ ggen-sync:
     ${GGEN_BIN:-ggen} sync run
 
 ggen-semantic:
-    python3 scripts/verify-ggen-contract.py --check --negative-fixtures
+    python3 scripts/verify-ggen-contract-closure.py --check --negative-fixtures
 
 ggen-receipt:
-    python3 scripts/verify-ggen-contract.py --check --negative-fixtures --emit-receipt target/ggen/verification-receipt.json
-    python3 scripts/verify-ggen-contract.py --replay target/ggen/verification-receipt.json
+    python3 scripts/verify-ggen-contract-closure.py --check --negative-fixtures --emit-receipt target/ggen/verification-receipt.json
+    python3 scripts/verify-ggen-contract-closure.py --replay target/ggen/verification-receipt.json
 
 ggen-rust-contract:
     cargo test --manifest-path tests/ggen-contract/Cargo.toml --test ggen_law_contract
 
 ggen-drift:
     ${GGEN_BIN:-ggen} sync run
-    git diff --exit-code -- docs/generated/GGEN_MANUFACTURING_CONTRACT.md docs/generated/STANDING_MODEL.md docs/generated/GALL_ROADMAP.md evidence/generated/verification-manifest.json tests/ggen_law_contract.rs .github/workflows/ggen-contract.yml
+    git diff --exit-code -- docs/generated/GGEN_MANUFACTURING_CONTRACT.md docs/generated/STANDING_MODEL.md docs/generated/GALL_ROADMAP.md evidence/generated/verification-manifest.json tests/ggen_law_contract.rs .github/workflows/ggen-contract.yml docs/generated/CMD_PROFILE.md evidence/generated/cmd-contract.json .github/workflows/cmd-contract.yml
 
 ggen-contract: ggen-receipt ggen-rust-contract
 
 ggen-ci: ggen-contract ggen-drift
+
+cmd-observe:
+    python3 scripts/verify-cmd-profile-closure.py --suite all --output target/cmd
+    @cat target/cmd/repository-observation.json
+
+cmd-fence:
+    python3 scripts/verify-cmd-profile-closure.py --suite all --output target/cmd
+    @cat target/cmd/authority-map.json
+
+cmd-gates:
+    python3 scripts/verify-cmd-profile-closure.py --suite all --output target/cmd
+    @cat target/cmd/verifier-report.json
+
+cmd-coverage:
+    python3 scripts/verify-cmd-profile-closure.py --suite all --output target/cmd
+    @cat target/cmd/candidate-coverage.json
+
+cmd-unit:
+    python3 scripts/verify-cmd-profile-closure.py --suite all --output target/cmd
+
+cmd-property: cmd-unit
+
+cmd-integration: cmd-unit
+
+cmd-e2e: cmd-unit
+
+cmd-security: cmd-unit
+
+cmd-chaos: cmd-unit
+
+cmd-stress: cmd-unit
+
+cmd-benchmark: cmd-unit
+
+cmd-receipt:
+    python3 scripts/verify-cmd-profile-closure.py --suite all --output target/cmd --emit-receipt target/cmd/cmd-receipt.json
+
+cmd-replay: cmd-receipt
+    python3 scripts/verify-cmd-profile-closure.py --replay target/cmd/cmd-receipt.json --output target/cmd/replay
+
+cmd-report: cmd-replay
+    @cat target/cmd/verifier-report.json
+
+cmd-crown: ggen-ci cmd-report
+    @echo "CROWN UNKNOWN until exact-head CI, detached clean-tree replay, and external evidence close"
 
 tree:
     @tree .
