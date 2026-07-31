@@ -123,13 +123,37 @@ cargo publish --dry-run
 [zero\ unreceipted\ actuation]
 [Receipt \not\ni H(Receipt)]
 
-## GGEN COMMANDS
+## V26.7.30 COMBINATORIAL MAXIMALISM LAW
+[Profile = GGEN\text{-}STANDARDS\text{-}7D\text{-}2026\text{-}07\text{-}30]
+[O \to O^* \to C_{valid} \to Verified \to Authorized \to Intent \to BRCE \to Consequence \to Receipt \to Replay \to Standing]
+[InternalCMD = maximum\ lawful\ composition \land one\ pure\ kernel \land one\ ownership\ calculus]
+[ExternalCMD = maximum\ lawful\ interoperability \land identity \land consent \land trust \land jurisdiction \land authority \land consequence]
+[Candidate \ne Verified \ne Authorized \ne Actuated \ne ConsequenceVerified]
+[Planning \cap Actuation = \varnothing]
+[Kernel \cap \{filesystem,process,network,cloud,credentials\} = \varnothing]
+[ExternalMutation \to InertIntent \to ExactGrant \to BRCE]
+[Executor \not\to AggregateStanding]
+[ExactHeadReceipt \land DetachedReplay \land ExternalEvidence = CrownAdmission]
+
+## CMD REQUIRED CLOSURE
+[Dimensions = finite \land Constraints = total \land Coverage = independently\ recomputed]
+[AdmissionGates = 12]
+[GallCheckpoints = G0..G9]
+[VerifierLadder = unit\to property\to integration\to e2e\to security\to chaos\to stress\to benchmark\to replay\to external\_report]
+[AcceptanceCriteria = 30]
+[ExternalStanding = UNKNOWN\ until\ external\ consequence\ evidence]
+
+## GGEN AND CMD COMMANDS
 ```bash
 ggen sync run
 ggen receipt verify
-python3 scripts/verify-ggen-contract.py --check --negative-fixtures \
+python3 scripts/verify-ggen-contract-closure.py --check --negative-fixtures \
   --emit-receipt target/ggen/verification-receipt.json
-python3 scripts/verify-ggen-contract.py \
+python3 scripts/verify-ggen-contract-closure.py \
   --replay target/ggen/verification-receipt.json
+python3 scripts/verify-cmd-profile-closure.py --suite all \
+  --output target/cmd --emit-receipt target/cmd/cmd-receipt.json
+python3 scripts/verify-cmd-profile-closure.py \
+  --replay target/cmd/cmd-receipt.json --output target/cmd/replay
 cargo test --manifest-path tests/ggen-contract/Cargo.toml --test ggen_law_contract
 ```
