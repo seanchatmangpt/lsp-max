@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import importlib.util
+import json
 from pathlib import Path
 import sys
 
@@ -41,6 +42,26 @@ def sources() -> tuple[Path, ...]:
 
 
 core.sources = sources
+original_replay = core.replay
+
+
+def replay(path: Path, out: Path) -> dict[str, object]:
+    value = json.loads(path.read_text())
+    result = original_replay(path, out)
+    observed = {
+        name: core.b3((out / name).read_bytes())
+        for name in core.DET_ARTIFACTS
+    }
+    if observed != value.get("artifacts"):
+        raise core.Refusal(
+            "RPL-ARTIFACT-DIVERGENCE",
+            f"expected={value.get('artifacts')} observed={observed}",
+        )
+    result["artifact_digests_verified"] = True
+    return result
+
+
+core.replay = replay
 
 if __name__ == "__main__":
     raise SystemExit(core.main())
