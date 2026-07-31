@@ -1,0 +1,15 @@
+{
+  "schema": "chatmangpt.lsp-max.verification-manifest.v1",
+  "generated": true,
+  "program": "lsp-max",
+  "standard_version": "26.7.30",
+  "pinned_ggen": {
+    "version": "26.7.62",
+    "commit": "68952593c40214ac1a681073d65f3902a9cdfce4"
+  },
+  "standing": "UNKNOWN",
+  "required_broker": "BRCE",
+  "receipt_algorithm": "BLAKE3",
+  "evidence_obligations": ["EVIDENCE-FALSIFIER", "EVIDENCE-INDEPENDENT-VERIFIER", "EVIDENCE-RECEIPT-VERIFIER", "EVIDENCE-REPLAY", "EVIDENCE-WITNESS"],
+  "gall_checkpoints": ["GALL-001", "GALL-002", "GALL-003", "GALL-004", "GALL-005", "GALL-006", "GALL-007", "GALL-008", "GALL-009", "GALL-010"]
+}
