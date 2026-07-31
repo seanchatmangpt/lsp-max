@@ -1,0 +1,11 @@
+[package]
+name = "lsp-max-ggen-contract"
+version = "26.7.30"
+edition = "2021"
+publish = false
+
+[workspace]
+
+[[test]]
+name = "ggen_law_contract"
+path = "../ggen_law_contract.rs"
