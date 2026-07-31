@@ -37,6 +37,7 @@ const OWNED_SURFACES: &[&str] = &[
     "evidence/generated/cmd-contract.json",
     "scripts/verify-ggen-contract-closure.py",
     "scripts/verify-cmd-profile-closure.py",
+    "scripts/verify-cmd-suite.py",
     "tests/ggen-contract/Cargo.toml",
     ".github/workflows/ggen-contract.yml",
     ".github/workflows/cmd-contract.yml",
