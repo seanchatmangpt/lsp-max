@@ -92,3 +92,44 @@ cargo publish --dry-run
 [CTQ: |\mathbf{f}_t|_0 = 0 \iff Actual\_Tests\_Run]
 [ReceiptSynthesis = FRAUD]
 [Agent_t \text{ must } WRITE\_CODE \text{ to earn } R_B]
+
+## V26.7.30 GGEN-FIRST MANUFACTURING LAW
+[Authority = packs/lsp-max-runtime-pack/ontology.ttl]
+[Projection = ggen.toml]
+[GeneratedPath \to exactly\_one\ TemplateOwner]
+[SecondSyncBytes = FirstSyncBytes \lor TypedRefusal]
+[GeneratedOutputEdit \to REFUSED]
+[GraphOrTemplateEdit \to ggen\ sync\ run \to verify \to receipt \to replay]
+
+## BUILDING BLOCK LAW
+[GBB = \langle identity,architecture\_facet,realization\_set,contract,ports,dependencies,obligations,lifecycle,standing,exclusions,receipts \rangle]
+[Lifecycle \perp Standing]
+[RETIRED \notin Standing]
+[ALIVE \to witness\land falsifier\land independent\_verifier\land receipt\_verifier\land replay]
+[required\_broker = BRCE]
+[direct\_actuation = false]
+
+## GALL STANDING
+[States = \{UNKNOWN,UNSUPPORTED,BLOCKED,BUILD\_BROKEN,PARTIAL\_ALIVE,ALIVE\}]
+[UNKNOWN \ne ADMITTED]
+[UNSUPPORTED \ne REFUSED]
+[CheckpointStanding \ne CrownStanding]
+[ALIVE\ only\ from\ observed\ execution\ over\ one\ admitted\ input\ closure]
+
+## MANUFACTURING CHAIN
+[graph \to SPARQL \to ggen\ render \to generated\ test/workflow/docs \to execution \to receipt \to replay \to standing]
+[Hooks \to intent]
+[BRCE \to actuation]
+[zero\ unreceipted\ actuation]
+[Receipt \not\ni H(Receipt)]
+
+## GGEN COMMANDS
+```bash
+ggen sync run
+ggen receipt verify
+python3 scripts/verify-ggen-contract.py --check --negative-fixtures \
+  --emit-receipt target/ggen/verification-receipt.json
+python3 scripts/verify-ggen-contract.py \
+  --replay target/ggen/verification-receipt.json
+cargo test --test ggen_law_contract
+```
