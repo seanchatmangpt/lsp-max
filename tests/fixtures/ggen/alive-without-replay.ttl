@@ -1,0 +1,10 @@
+@prefix lsp: <https://chatmangpt.com/ns/lsp-max#> .
+
+lsp:InvalidAliveWithoutReplay
+    a lsp:BuildingBlock ;
+    lsp:blockId "invalid-alive-without-replay" ;
+    lsp:standing "ALIVE" ;
+    lsp:evidence "EVIDENCE-WITNESS",
+        "EVIDENCE-FALSIFIER",
+        "EVIDENCE-INDEPENDENT-VERIFIER",
+        "EVIDENCE-RECEIPT-VERIFIER" .
