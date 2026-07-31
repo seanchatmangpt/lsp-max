@@ -175,29 +175,34 @@ cmd-fence:
     @cat target/cmd/authority-map.json
 
 cmd-gates:
-    python3 scripts/verify-cmd-profile-closure.py --suite all --output target/cmd
-    @cat target/cmd/verifier-report.json
+    python3 scripts/verify-cmd-suite.py protocol-unit --output target/cmd-suite/protocol-unit
 
 cmd-coverage:
-    python3 scripts/verify-cmd-profile-closure.py --suite all --output target/cmd
-    @cat target/cmd/candidate-coverage.json
+    python3 scripts/verify-cmd-suite.py property-fuzz --output target/cmd-suite/property-fuzz
 
 cmd-unit:
-    python3 scripts/verify-cmd-profile-closure.py --suite all --output target/cmd
+    python3 scripts/verify-cmd-suite.py protocol-unit --output target/cmd-suite/protocol-unit
 
-cmd-property: cmd-unit
+cmd-property:
+    python3 scripts/verify-cmd-suite.py property-fuzz --output target/cmd-suite/property-fuzz
 
-cmd-integration: cmd-unit
+cmd-integration:
+    python3 scripts/verify-cmd-suite.py stdio-http-integration --output target/cmd-suite/stdio-http-integration
 
-cmd-e2e: cmd-unit
+cmd-e2e:
+    python3 scripts/verify-cmd-suite.py cli-e2e --output target/cmd-suite/cli-e2e
 
-cmd-security: cmd-unit
+cmd-security:
+    python3 scripts/verify-cmd-suite.py security --output target/cmd-suite/security
 
-cmd-chaos: cmd-unit
+cmd-chaos:
+    python3 scripts/verify-cmd-suite.py chaos --output target/cmd-suite/chaos
 
-cmd-stress: cmd-unit
+cmd-stress:
+    python3 scripts/verify-cmd-suite.py stress --output target/cmd-suite/stress
 
-cmd-benchmark: cmd-unit
+cmd-benchmark:
+    python3 scripts/verify-cmd-suite.py benchmark --output target/cmd-suite/benchmark
 
 cmd-receipt:
     python3 scripts/verify-cmd-profile-closure.py --suite all --output target/cmd --emit-receipt target/cmd/cmd-receipt.json
