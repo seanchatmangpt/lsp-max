@@ -131,5 +131,5 @@ python3 scripts/verify-ggen-contract.py --check --negative-fixtures \
   --emit-receipt target/ggen/verification-receipt.json
 python3 scripts/verify-ggen-contract.py \
   --replay target/ggen/verification-receipt.json
-cargo test --test ggen_law_contract
+cargo test --manifest-path tests/ggen-contract/Cargo.toml --test ggen_law_contract
 ```
