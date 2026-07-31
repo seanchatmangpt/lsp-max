@@ -1,0 +1,74 @@
+@prefix lsp: <https://chatmangpt.com/ns/lsp-max#> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+lsp:Gate01 a lsp:AdmissionGate ; lsp:gateId "GATE-01" ; lsp:order 1 ; lsp:name "Required facts" ; lsp:refusalToken "CMD-REQUIRED-FACT-MISSING" .
+lsp:Gate02 a lsp:AdmissionGate ; lsp:gateId "GATE-02" ; lsp:order 2 ; lsp:name "Scalar cardinality" ; lsp:refusalToken "CMD-SCALAR-CARDINALITY" .
+lsp:Gate03 a lsp:AdmissionGate ; lsp:gateId "GATE-03" ; lsp:order 3 ; lsp:name "Graph closure" ; lsp:refusalToken "CMD-GRAPH-CLOSURE" .
+lsp:Gate04 a lsp:AdmissionGate ; lsp:gateId "GATE-04" ; lsp:order 4 ; lsp:name "Candidate totality" ; lsp:refusalToken "CMD-CANDIDATE-INCOMPLETE" .
+lsp:Gate05 a lsp:AdmissionGate ; lsp:gateId "GATE-05" ; lsp:order 5 ; lsp:name "Reversible construction" ; lsp:refusalToken "CMD-REVERSAL-UNKNOWN" .
+lsp:Gate06 a lsp:AdmissionGate ; lsp:gateId "GATE-06" ; lsp:order 6 ; lsp:name "State and authority separation" ; lsp:refusalToken "AUTH-PREMATURE-PROMOTION" .
+lsp:Gate07 a lsp:AdmissionGate ; lsp:gateId "GATE-07" ; lsp:order 7 ; lsp:name "Broker and receipt closure" ; lsp:refusalToken "AUTH-BROKER-MISMATCH" .
+lsp:Gate08 a lsp:AdmissionGate ; lsp:gateId "GATE-08" ; lsp:order 8 ; lsp:name "Intent-only hooks" ; lsp:refusalToken "LSPMAX-HOOK-ACTUATION-REFUSED" .
+lsp:Gate09 a lsp:AdmissionGate ; lsp:gateId "GATE-09" ; lsp:order 9 ; lsp:name "Coverage bounds" ; lsp:refusalToken "CMD-COVERAGE-OVERFLOW" .
+lsp:Gate10 a lsp:AdmissionGate ; lsp:gateId "GATE-10" ; lsp:order 10 ; lsp:name "Unique identity" ; lsp:refusalToken "CMD-CANDIDATE-DUPLICATE" .
+lsp:Gate11 a lsp:AdmissionGate ; lsp:gateId "GATE-11" ; lsp:order 11 ; lsp:name "Proof closure" ; lsp:refusalToken "LSPMAX-ALIVE-EVIDENCE-INCOMPLETE" .
+lsp:Gate12 a lsp:AdmissionGate ; lsp:gateId "GATE-12" ; lsp:order 12 ; lsp:name "Actuation closure" ; lsp:refusalToken "LSPMAX-UNRECEIPTED-ACTUATION-REFUSED" .
+
+lsp:Gall001 lsp:stageId "G0" ; lsp:objective "Exact-tree observation" .
+lsp:Gall002 lsp:stageId "G1" ; lsp:objective "Authority and Chesterton-fence map" .
+lsp:Gall003 lsp:stageId "G2" ; lsp:objective "Canonical ontology and standing vocabulary" .
+lsp:Gall004 lsp:stageId "G3" ; lsp:objective "Internal candidate lattice" .
+lsp:Gall005 lsp:stageId "G4" ; lsp:objective "External capability lattice" .
+lsp:Gall006 lsp:stageId "G5" ; lsp:objective "Canonical Building Blocks and atomic packs" .
+lsp:Gall007 lsp:stageId "G6" ; lsp:objective "Pure shared kernel and planner" .
+lsp:Gall008 lsp:stageId "G7" ; lsp:objective "Transactional local materialization" .
+lsp:Gall009 lsp:stageId "G8" ; lsp:objective "External broker integration" .
+lsp:Gall010 lsp:stageId "G9" ; lsp:objective "Crown verification and self-hosting" .
+
+lsp:VerifierStage01 a lsp:VerifierStage ; lsp:order 1 ; lsp:name "protocol/unit" ; lsp:standing "UNKNOWN" .
+lsp:VerifierStage02 a lsp:VerifierStage ; lsp:order 2 ; lsp:name "property/fuzz" ; lsp:standing "UNKNOWN" .
+lsp:VerifierStage03 a lsp:VerifierStage ; lsp:order 3 ; lsp:name "stdio+HTTP integration" ; lsp:standing "UNKNOWN" .
+lsp:VerifierStage04 a lsp:VerifierStage ; lsp:order 4 ; lsp:name "black-box CLI E2E" ; lsp:standing "UNKNOWN" .
+lsp:VerifierStage05 a lsp:VerifierStage ; lsp:order 5 ; lsp:name "security" ; lsp:standing "UNKNOWN" .
+lsp:VerifierStage06 a lsp:VerifierStage ; lsp:order 6 ; lsp:name "chaos" ; lsp:standing "UNKNOWN" .
+lsp:VerifierStage07 a lsp:VerifierStage ; lsp:order 7 ; lsp:name "stress" ; lsp:standing "UNKNOWN" .
+lsp:VerifierStage08 a lsp:VerifierStage ; lsp:order 8 ; lsp:name "benchmark" ; lsp:standing "UNKNOWN" .
+lsp:VerifierStage09 a lsp:VerifierStage ; lsp:order 9 ; lsp:name "replay" ; lsp:standing "UNKNOWN" .
+lsp:VerifierStage10 a lsp:VerifierStage ; lsp:order 10 ; lsp:name "external verifier report" ; lsp:standing "UNKNOWN" .
+
+lsp:Acceptance01 a lsp:AcceptanceCriterion ; lsp:order 1 ; lsp:statement "exact-tree census" ; lsp:standing "UNKNOWN" .
+lsp:Acceptance02 a lsp:AcceptanceCriterion ; lsp:order 2 ; lsp:statement "one semantic owner" ; lsp:standing "UNKNOWN" .
+lsp:Acceptance03 a lsp:AcceptanceCriterion ; lsp:order 3 ; lsp:statement "one writer or deterministic merge" ; lsp:standing "UNKNOWN" .
+lsp:Acceptance04 a lsp:AcceptanceCriterion ; lsp:order 4 ; lsp:statement "ontology-owned domain meaning" ; lsp:standing "UNKNOWN" .
+lsp:Acceptance05 a lsp:AcceptanceCriterion ; lsp:order 5 ; lsp:statement "internal dimensions/options/constraints" ; lsp:standing "UNKNOWN" .
+lsp:Acceptance06 a lsp:AcceptanceCriterion ; lsp:order 6 ; lsp:statement "external identity/consent/trust/jurisdiction/consequence" ; lsp:standing "UNKNOWN" .
+lsp:Acceptance07 a lsp:AcceptanceCriterion ; lsp:order 7 ; lsp:statement "independent candidate coverage" ; lsp:standing "UNKNOWN" .
+lsp:Acceptance08 a lsp:AcceptanceCriterion ; lsp:order 8 ; lsp:statement "candidate/verification/authorization/actuation separation" ; lsp:standing "UNKNOWN" .
+lsp:Acceptance09 a lsp:AcceptanceCriterion ; lsp:order 9 ; lsp:statement "IO-free kernel" ; lsp:standing "UNKNOWN" .
+lsp:Acceptance10 a lsp:AcceptanceCriterion ; lsp:order 10 ; lsp:statement "broker-only external consequence" ; lsp:standing "UNKNOWN" .
+lsp:Acceptance11 a lsp:AcceptanceCriterion ; lsp:order 11 ; lsp:statement "non-mutating planning" ; lsp:standing "UNKNOWN" .
+lsp:Acceptance12 a lsp:AcceptanceCriterion ; lsp:order 12 ; lsp:statement "staged atomic recoverable local mutation" ; lsp:standing "UNKNOWN" .
+lsp:Acceptance13 a lsp:AcceptanceCriterion ; lsp:order 13 ; lsp:statement "causal receipt for visible actuation" ; lsp:standing "UNKNOWN" .
+lsp:Acceptance14 a lsp:AcceptanceCriterion ; lsp:order 14 ; lsp:statement "independent postcondition observation" ; lsp:standing "UNKNOWN" .
+lsp:Acceptance15 a lsp:AcceptanceCriterion ; lsp:order 15 ; lsp:statement "intent-only hooks" ; lsp:standing "UNKNOWN" .
+lsp:Acceptance16 a lsp:AcceptanceCriterion ; lsp:order 16 ; lsp:statement "pre-admitted resource ceilings" ; lsp:standing "UNKNOWN" .
+lsp:Acceptance17 a lsp:AcceptanceCriterion ; lsp:order 17 ; lsp:statement "path and ownership before writes" ; lsp:standing "UNKNOWN" .
+lsp:Acceptance18 a lsp:AcceptanceCriterion ; lsp:order 18 ; lsp:statement "second manufacture byte identity" ; lsp:standing "UNKNOWN" .
+lsp:Acceptance19 a lsp:AcceptanceCriterion ; lsp:order 19 ; lsp:statement "five evidence surfaces" ; lsp:standing "UNKNOWN" .
+lsp:Acceptance20 a lsp:AcceptanceCriterion ; lsp:order 20 ; lsp:statement "exact-head CI receipt" ; lsp:standing "UNKNOWN" .
+lsp:Acceptance21 a lsp:AcceptanceCriterion ; lsp:order 21 ; lsp:statement "workflow ownership inventory" ; lsp:standing "UNKNOWN" .
+lsp:Acceptance22 a lsp:AcceptanceCriterion ; lsp:order 22 ; lsp:statement "executor cannot assign aggregate standing" ; lsp:standing "UNKNOWN" .
+lsp:Acceptance23 a lsp:AcceptanceCriterion ; lsp:order 23 ; lsp:statement "automatic repair normal rail" ; lsp:standing "UNKNOWN" .
+lsp:Acceptance24 a lsp:AcceptanceCriterion ; lsp:order 24 ; lsp:statement "no emergency actuation path" ; lsp:standing "UNKNOWN" .
+lsp:Acceptance25 a lsp:AcceptanceCriterion ; lsp:order 25 ; lsp:statement "self-observation and regeneration" ; lsp:standing "UNKNOWN" .
+lsp:Acceptance26 a lsp:AcceptanceCriterion ; lsp:order 26 ; lsp:statement "detached clean-tree replay" ; lsp:standing "UNKNOWN" .
+lsp:Acceptance27 a lsp:AcceptanceCriterion ; lsp:order 27 ; lsp:statement "security sabotage refusal" ; lsp:standing "UNKNOWN" .
+lsp:Acceptance28 a lsp:AcceptanceCriterion ; lsp:order 28 ; lsp:statement "chaos atomic recovery" ; lsp:standing "UNKNOWN" .
+lsp:Acceptance29 a lsp:AcceptanceCriterion ; lsp:order 29 ; lsp:statement "stress/benchmark budgets" ; lsp:standing "UNKNOWN" .
+lsp:Acceptance30 a lsp:AcceptanceCriterion ; lsp:order 30 ; lsp:statement "external standing UNKNOWN until external evidence" ; lsp:standing "UNKNOWN" .
+
+lsp:CmdExclusion01 a lsp:Exclusion ; lsp:exclusionId "CMD-EXCLUSION-01" ; lsp:statement "No direct cloud/process/filesystem/network actuation." .
+lsp:CmdExclusion02 a lsp:Exclusion ; lsp:exclusionId "CMD-EXCLUSION-02" ; lsp:statement "No executor self-promotion." .
+lsp:CmdExclusion03 a lsp:Exclusion ; lsp:exclusionId "CMD-EXCLUSION-03" ; lsp:statement "No external ALIVE without external consequence evidence." .
+lsp:CmdExclusion04 a lsp:Exclusion ; lsp:exclusionId "CMD-EXCLUSION-04" ; lsp:statement "No retirement or workflow consolidation in this checkpoint." .
