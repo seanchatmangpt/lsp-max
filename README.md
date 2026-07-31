@@ -2,13 +2,13 @@
 
 [![Build Status][build-badge]][build-url]
 [![License][license-badge]][license-url]
-[![Rust 1.70+][rust-badge]][rust-url]
+[![Rust 1.82+][rust-badge]][rust-url]
 
 [build-badge]: https://github.com/seanchatmangpt/lsp-max/workflows/rust/badge.svg
 [build-url]: https://github.com/seanchatmangpt/lsp-max/actions
 [license-badge]: https://img.shields.io/badge/license-MIT%2FApache--2.0-blue
 [license-url]: #license
-[rust-badge]: https://img.shields.io/badge/rust-1.70%2B-orange
+[rust-badge]: https://img.shields.io/badge/rust-1.82%2B-orange
 [rust-url]: https://www.rust-lang.org
 
 A post-human LSP 3.18 runtime for autonomous agents. `lsp-max` enforces architectural laws via cryptographic receipt chains, three-valued conformance vectors, and deterministic gates. It is not an IDE helper; it is an admission controller for machine agent workflows.
@@ -18,11 +18,11 @@ A post-human LSP 3.18 runtime for autonomous agents. `lsp-max` enforces architec
 ```bash
 git clone https://github.com/seanchatmangpt/lsp-max.git
 cd lsp-max
-just setup            # fetch sibling repos
+bash scripts/bootstrap.sh  # fetch sibling repos
 cargo test --workspace
 ```
 
-> **Workspace setup:** This repo depends on three siblings (`../lsp-types-max`, `../wasm4pm-compat`, `../wasm4pm`). Run `just setup` or `bash scripts/bootstrap.sh` to fetch them. In Claude Code, `SessionStart` hooks bootstrap automatically.
+> **Workspace setup:** This repo depends on three siblings (`../lsp-types-max`, `../wasm4pm-compat`, `../wasm4pm`). Run `bash scripts/bootstrap.sh` to fetch them. In Claude Code, `SessionStart` hooks bootstrap automatically.
 
 ## Using lsp-max
 
@@ -54,6 +54,45 @@ Extend with the `RulePackServer` trait (20 LOC) + a TOML rule file (50 LOC) inst
 - **Specification-driven:** Generate protocol types from LSP `metaModel.json`; extend via `RulePackServer` trait.
 - **Agent integration:** Hook lifecycle (SessionStart, PreToolUse, PostToolUse, SubagentStart/Stop) for agent discovery and analysis.
 - **Automated gates:** Conformance score calculated as `max(0, 100 - ∑penalties)`. Release admitted only if score = 100.0.
+
+## ggen-first manufacturing
+
+The canonical manufacturing authority is [`packs/lsp-max-runtime-pack/ontology.ttl`](packs/lsp-max-runtime-pack/ontology.ttl). [`ggen.toml`](ggen.toml) projects that admitted graph into governed documentation, evidence manifests, a Rust law contract, and the exact-head GitHub Actions verifier. Generated files carry `@generated` provenance and must be changed through the graph or template, followed by sync, verification, receipt, and replay.
+
+The graph preserves the repository's storage law:
+
+- Salsa owns hot incremental computation, not Tree-sitter trees.
+- Papaya stages hot diagnostics.
+- LSIF stores durable, receipt-bound structure.
+- Oxigraph stores cold meaning outside the `didChange` hot path.
+- OCEL stores process history.
+- LSP projects live law.
+- BLAKE3 receipts establish bounded standing.
+
+It also imports the current ggen Building Block and standing discipline: lifecycle is orthogonal to standing; BRCE is the only lawful actuation path; `ALIVE` requires a witness, falsifier, independent verifier, receipt verifier, and replay over one admitted input closure.
+
+```bash
+# Manufacture and refuse tracked drift
+just ggen-drift
+
+# Admit the semantic graph and execute typed falsifiers
+just ggen-semantic
+
+# Emit and replay a BLAKE3-bound execution receipt
+just ggen-receipt
+
+# Execute the generated Rust witness
+just ggen-rust-contract
+```
+
+The program contract begins at `UNKNOWN`. The independent semantic verifier may establish `PARTIAL_ALIVE` for its bounded graph/fixture surface. It does not establish crown standing or claim the full LSP runtime is `ALIVE`.
+
+Generated references:
+
+- [`docs/generated/GGEN_MANUFACTURING_CONTRACT.md`](docs/generated/GGEN_MANUFACTURING_CONTRACT.md)
+- [`docs/generated/STANDING_MODEL.md`](docs/generated/STANDING_MODEL.md)
+- [`docs/generated/GALL_ROADMAP.md`](docs/generated/GALL_ROADMAP.md)
+- [`evidence/generated/verification-manifest.json`](evidence/generated/verification-manifest.json)
 
 ## Documentation
 
