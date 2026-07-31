@@ -3,6 +3,11 @@ name = "lsp-max-runtime-pack"
 version = "26.7.30"
 description = "Canonical ggen Building Block and combinatorial-maximalism pack for lsp-max: exact-tree observation, bounded candidate lattices, ownership, BRCE-only actuation, Gall checkpoints, five-surface standing, receipts, replay, and external standing."
 standards_profile = "GGEN-STANDARDS-7D-2026-07-30"
-semantic_authority = "ontology.ttl"
+semantic_authority = [
+  "ontology.ttl",
+  "ontology-cmd-core.ttl",
+  "ontology-cmd-lattice.ttl",
+  "ontology-cmd-verification.ttl",
+]
 required_broker = "BRCE"
 standing = "UNKNOWN"
