@@ -1,4 +1,8 @@
 [pack]
 name = "lsp-max-runtime-pack"
 version = "26.7.30"
-description = "Canonical ggen Building Block pack for lsp-max law-state storage boundaries, Gall checkpoints, BRCE-only actuation, standing obligations, generated verification surfaces, and receipt/replay evidence."
+description = "Canonical ggen Building Block and combinatorial-maximalism pack for lsp-max: exact-tree observation, bounded candidate lattices, ownership, BRCE-only actuation, Gall checkpoints, five-surface standing, receipts, replay, and external standing."
+standards_profile = "GGEN-STANDARDS-7D-2026-07-30"
+semantic_authority = "ontology.ttl"
+required_broker = "BRCE"
+standing = "UNKNOWN"
