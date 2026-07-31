@@ -10,6 +10,7 @@ on:
       - 'scripts/cmd-plan.py'
       - 'scripts/verify-cmd-profile.py'
       - 'scripts/verify-cmd-profile-closure.py'
+      - 'scripts/verify-cmd-suite.py'
       - 'tests/fixtures/cmd/**'
       - 'docs/generated/CMD_PROFILE.md'
       - 'evidence/generated/cmd-contract.json'
@@ -21,11 +22,54 @@ on:
 permissions:
   contents: read
 
+{% raw %}
 concurrency:
   group: cmd-contract-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
+  suite-contract:
+    name: suite / ${{ matrix.suite }}
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        suite:
+          - protocol-unit
+          - property-fuzz
+          - stdio-http-integration
+          - cli-e2e
+          - security
+          - chaos
+          - stress
+          - benchmark
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405
+        with:
+          python-version: '3.12'
+
+      - name: Install verifier dependency
+        run: python -m pip install --disable-pip-version-check 'rdflib==7.1.4'
+
+      - name: Execute named suite
+        run: |
+          python scripts/verify-cmd-suite.py "${{ matrix.suite }}" \
+            --output "target/cmd-suite/${{ matrix.suite }}"
+
+      - name: Upload suite evidence
+        uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08
+        with:
+          name: lsp-max-cmd-${{ matrix.suite }}
+          path: target/cmd-suite/${{ matrix.suite }}
+          if-no-files-found: error
+          retention-days: 30
+
   cmd-verifier-ladder:
     runs-on: ubuntu-24.04
     steps:
@@ -49,7 +93,7 @@ jobs:
             --output target/cmd \
             --emit-receipt target/cmd/cmd-receipt.json
 
-      - name: Replay exact-head receipt
+      - name: Replay exact-head receipt and artifact digests
         run: |
           python scripts/verify-cmd-profile-closure.py \
             --replay target/cmd/cmd-receipt.json \
@@ -69,3 +113,4 @@ jobs:
           path: target/cmd
           if-no-files-found: error
           retention-days: 30
+{% endraw %}
