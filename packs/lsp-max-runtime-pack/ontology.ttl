@@ -1,0 +1,184 @@
+@prefix lsp: <https://chatmangpt.com/ns/lsp-max#> .
+@prefix ggen: <https://chatmangpt.com/ns/ggen#> .
+@prefix prov: <http://www.w3.org/ns/prov#> .
+@prefix dcterms: <http://purl.org/dc/terms/> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+@prefix odrl: <http://www.w3.org/ns/odrl/2/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+lsp:LspMaxProgram
+    a lsp:Program ;
+    lsp:programId "lsp-max" ;
+    dcterms:title "lsp-max ggen-first manufacturing program" ;
+    dcterms:identifier <https://chatmangpt.com/id/language-service/lsp-max> ;
+    prov:wasDerivedFrom <https://github.com/seanchatmangpt/lsp-max/commit/220d3251e959f6a58ce0311e995b31a85f98240c> ;
+    lsp:standardVersion "26.7.30" ;
+    lsp:pinnedGgenVersion "26.7.62" ;
+    lsp:pinnedGgenCommit "68952593c40214ac1a681073d65f3902a9cdfce4" ;
+    lsp:admission "ADMITTED" ;
+    lsp:standing "UNKNOWN" ;
+    lsp:requiredBroker "BRCE" ;
+    lsp:receiptAlgorithm "BLAKE3" ;
+    lsp:actuationPolicy lsp:BrokerOnlyActuation ;
+    lsp:containsBlock lsp:LiveLawRuntime,
+        lsp:HotComputation,
+        lsp:DiagnosticStaging,
+        lsp:DurableStructure,
+        lsp:ColdMeaning,
+        lsp:ProcessHistory,
+        lsp:StandingReceipts .
+
+lsp:BrokerOnlyActuation
+    a odrl:Policy ;
+    skos:prefLabel "Zero unreceipted actuation" ;
+    lsp:broker "BRCE" ;
+    lsp:directActuation false .
+
+lsp:LiveLawRuntime
+    a lsp:BuildingBlock ;
+    lsp:blockId "lsp-live-law" ;
+    lsp:architectureFacet "LSP = LIVE law" ;
+    lsp:realization "lsp-max runtime and compositor" ;
+    lsp:lifecycle "active" ;
+    lsp:standing "UNKNOWN" ;
+    lsp:requiredBroker "BRCE" ;
+    lsp:dependsOn lsp:HotComputation, lsp:DiagnosticStaging, lsp:DurableStructure, lsp:ColdMeaning, lsp:ProcessHistory, lsp:StandingReceipts .
+
+lsp:HotComputation
+    a lsp:BuildingBlock ;
+    lsp:blockId "salsa-hot-computation" ;
+    lsp:architectureFacet "Salsa = HOT computation" ;
+    lsp:realization "incremental query state without Tree-sitter tree ownership" ;
+    lsp:lifecycle "active" ;
+    lsp:standing "UNKNOWN" ;
+    lsp:requiredBroker "BRCE" .
+
+lsp:DiagnosticStaging
+    a lsp:BuildingBlock ;
+    lsp:blockId "papaya-hot-diagnostics" ;
+    lsp:architectureFacet "Papaya = HOT diagnostic staging" ;
+    lsp:realization "bounded concurrent diagnostic staging" ;
+    lsp:lifecycle "identified" ;
+    lsp:standing "UNKNOWN" ;
+    lsp:requiredBroker "BRCE" .
+
+lsp:DurableStructure
+    a lsp:BuildingBlock ;
+    lsp:blockId "lsif-durable-structure" ;
+    lsp:architectureFacet "LSIF = DURABLE structure" ;
+    lsp:realization "receipt-bound and staleness-gated LSIF snapshots" ;
+    lsp:lifecycle "active" ;
+    lsp:standing "UNKNOWN" ;
+    lsp:requiredBroker "BRCE" .
+
+lsp:ColdMeaning
+    a lsp:BuildingBlock ;
+    lsp:blockId "oxigraph-cold-meaning" ;
+    lsp:architectureFacet "Oxigraph = COLD meaning" ;
+    lsp:realization "semantic graph outside didChange hot path" ;
+    lsp:lifecycle "active" ;
+    lsp:standing "UNKNOWN" ;
+    lsp:requiredBroker "BRCE" .
+
+lsp:ProcessHistory
+    a lsp:BuildingBlock ;
+    lsp:blockId "ocel-process-history" ;
+    lsp:architectureFacet "OCEL = HISTORY" ;
+    lsp:realization "object-centric event evidence with logical time" ;
+    lsp:lifecycle "active" ;
+    lsp:standing "UNKNOWN" ;
+    lsp:requiredBroker "BRCE" .
+
+lsp:StandingReceipts
+    a lsp:BuildingBlock ;
+    lsp:blockId "blake3-standing-receipts" ;
+    lsp:architectureFacet "Receipts = standing" ;
+    lsp:realization "BLAKE3-bound execution receipt plus replay" ;
+    lsp:lifecycle "active" ;
+    lsp:standing "UNKNOWN" ;
+    lsp:requiredBroker "BRCE" .
+
+lsp:LawZeroUnreceiptedActuation
+    a lsp:Law ;
+    lsp:lawId "LAW-001" ;
+    skos:prefLabel "Zero unreceipted actuation" ;
+    lsp:statement "No effect crosses the actuation boundary without an intent receipt and a result receipt." ;
+    lsp:refusalToken "LSPMAX_UNRECEIPTED_ACTUATION_REFUSED" .
+
+lsp:LawBrokerOnly
+    a lsp:Law ;
+    lsp:lawId "LAW-002" ;
+    skos:prefLabel "BRCE is the exclusive lawful DO path" ;
+    lsp:statement "Hooks and generated artifacts manufacture intent; BRCE alone may actuate bounded effects." ;
+    lsp:refusalToken "LSPMAX_DIRECT_ACTUATION_REFUSED" .
+
+lsp:LawDeterministicGeneration
+    a lsp:Law ;
+    lsp:lawId "LAW-003" ;
+    skos:prefLabel "Deterministic generation and replay" ;
+    lsp:statement "One template owns each generated path and a second sync must be byte-identical or refuse." ;
+    lsp:refusalToken "LSPMAX_GENERATED_DRIFT_REFUSED" .
+
+lsp:LawGeneratedAuthority
+    a lsp:Law ;
+    lsp:lawId "LAW-004" ;
+    skos:prefLabel "Generated outputs are not hand-maintained authority" ;
+    lsp:statement "Edit the admitted graph or template, regenerate, verify, receipt, and replay." ;
+    lsp:refusalToken "LSPMAX_HAND_EDITED_GENERATED_OUTPUT" .
+
+lsp:LawStandingBounded
+    a lsp:Law ;
+    lsp:lawId "LAW-005" ;
+    skos:prefLabel "Standing is evidence-bounded" ;
+    lsp:statement "UNKNOWN is not ADMITTED; checkpoint standing is not crown standing; unsupported is not refused." ;
+    lsp:refusalToken "LSPMAX_STANDING_OVERCLAIM_REFUSED" .
+
+lsp:LawExactBase
+    a lsp:Law ;
+    lsp:lawId "LAW-006" ;
+    skos:prefLabel "Exact base before mutation" ;
+    lsp:statement "Resolve the exact base SHA, preserve repository doctrine, and publish a bounded diff." ;
+    lsp:refusalToken "LSPMAX_BASE_SHA_UNRESOLVED" .
+
+lsp:LawPublicOntology
+    a lsp:Law ;
+    lsp:lawId "LAW-007" ;
+    skos:prefLabel "Public ontology before private truth" ;
+    lsp:statement "Use PROV-O, DCTERMS, SKOS, ODRL, OCEL, SHACL, DCAT, and QUDT where their public semantics apply." ;
+    lsp:refusalToken "LSPMAX_PRIVATE_SEMANTIC_AUTHORITY_REFUSED" .
+
+lsp:LawHookSeparation
+    a lsp:Law ;
+    lsp:lawId "LAW-008" ;
+    skos:prefLabel "Knowledge Hooks manufacture intent" ;
+    lsp:statement "Hook discovery and diagnosis never collapse into direct side effects or truth." ;
+    lsp:refusalToken "LSPMAX_HOOK_ACTUATION_REFUSED" .
+
+lsp:Witness a lsp:EvidenceObligation ; lsp:obligationId "EVIDENCE-WITNESS" ; skos:prefLabel "positive witness" .
+lsp:Falsifier a lsp:EvidenceObligation ; lsp:obligationId "EVIDENCE-FALSIFIER" ; skos:prefLabel "negative falsifier" .
+lsp:IndependentVerifier a lsp:EvidenceObligation ; lsp:obligationId "EVIDENCE-INDEPENDENT-VERIFIER" ; skos:prefLabel "independent verifier" .
+lsp:ReceiptVerifier a lsp:EvidenceObligation ; lsp:obligationId "EVIDENCE-RECEIPT-VERIFIER" ; skos:prefLabel "receipt verifier" .
+lsp:Replay a lsp:EvidenceObligation ; lsp:obligationId "EVIDENCE-REPLAY" ; skos:prefLabel "deterministic replay" .
+
+lsp:UNKNOWN a lsp:StandingState ; lsp:name "UNKNOWN" ; lsp:rank 0 ; lsp:definition "Observation is incomplete or stale; no positive claim is admitted." .
+lsp:UNSUPPORTED a lsp:StandingState ; lsp:name "UNSUPPORTED" ; lsp:rank 1 ; lsp:definition "The bounded implementation does not provide the requested capability." .
+lsp:BLOCKED a lsp:StandingState ; lsp:name "BLOCKED" ; lsp:rank 2 ; lsp:definition "A required dependency or gate prevents execution." .
+lsp:BUILD_BROKEN a lsp:StandingState ; lsp:name "BUILD_BROKEN" ; lsp:rank 3 ; lsp:definition "Observed build execution failed." .
+lsp:PARTIAL_ALIVE a lsp:StandingState ; lsp:name "PARTIAL_ALIVE" ; lsp:rank 4 ; lsp:definition "A bounded checkpoint has live execution evidence; the crown remains open." .
+lsp:ALIVE a lsp:StandingState ; lsp:name "ALIVE" ; lsp:rank 5 ; lsp:definition "Witness, falsifier, independent verifier, receipt verification, and replay all closed inside the declared boundary." .
+
+lsp:Gall001 a lsp:GallCheckpoint ; lsp:checkpointId "GALL-001" ; lsp:order 1 ; lsp:name "Ontology admission" ; lsp:command "python3 scripts/verify-ggen-contract.py --check" ; lsp:requiredState "PARTIAL_ALIVE" .
+lsp:Gall002 a lsp:GallCheckpoint ; lsp:checkpointId "GALL-002" ; lsp:order 2 ; lsp:name "Negative fixtures" ; lsp:command "python3 scripts/verify-ggen-contract.py --negative-fixtures" ; lsp:requiredState "PARTIAL_ALIVE" .
+lsp:Gall003 a lsp:GallCheckpoint ; lsp:checkpointId "GALL-003" ; lsp:order 3 ; lsp:name "ggen deterministic sync" ; lsp:command "ggen sync run && git diff --exit-code -- generated-owned-paths" ; lsp:requiredState "PARTIAL_ALIVE" .
+lsp:Gall004 a lsp:GallCheckpoint ; lsp:checkpointId "GALL-004" ; lsp:order 4 ; lsp:name "Generated Rust contract" ; lsp:command "cargo test --test ggen_law_contract" ; lsp:requiredState "PARTIAL_ALIVE" .
+lsp:Gall005 a lsp:GallCheckpoint ; lsp:checkpointId "GALL-005" ; lsp:order 5 ; lsp:name "Workspace unit and integration verification" ; lsp:command "cargo test --workspace" ; lsp:requiredState "PARTIAL_ALIVE" .
+lsp:Gall006 a lsp:GallCheckpoint ; lsp:checkpointId "GALL-006" ; lsp:order 6 ; lsp:name "Warning-free static verification" ; lsp:command "cargo clippy --workspace --all-targets --all-features -- -D warnings" ; lsp:requiredState "PARTIAL_ALIVE" .
+lsp:Gall007 a lsp:GallCheckpoint ; lsp:checkpointId "GALL-007" ; lsp:order 7 ; lsp:name "Execution receipt" ; lsp:command "python3 scripts/verify-ggen-contract.py --emit-receipt target/ggen/verification-receipt.json" ; lsp:requiredState "PARTIAL_ALIVE" .
+lsp:Gall008 a lsp:GallCheckpoint ; lsp:checkpointId "GALL-008" ; lsp:order 8 ; lsp:name "Receipt replay" ; lsp:command "python3 scripts/verify-ggen-contract.py --replay target/ggen/verification-receipt.json" ; lsp:requiredState "PARTIAL_ALIVE" .
+lsp:Gall009 a lsp:GallCheckpoint ; lsp:checkpointId "GALL-009" ; lsp:order 9 ; lsp:name "Exact-head CI" ; lsp:command "GitHub Actions ggen contract workflow" ; lsp:requiredState "PARTIAL_ALIVE" .
+lsp:Gall010 a lsp:GallCheckpoint ; lsp:checkpointId "GALL-010" ; lsp:order 10 ; lsp:name "Crown judgment" ; lsp:command "all prior checkpoints plus full release law" ; lsp:requiredState "ALIVE" .
+
+lsp:ExclusionDirectCloud a lsp:Exclusion ; lsp:exclusionId "EXCLUSION-DIRECT-CLOUD" ; lsp:statement "No generated template, hook, or architecture kernel directly actuates cloud, process, filesystem, or network state." .
+lsp:ExclusionModelStanding a lsp:Exclusion ; lsp:exclusionId "EXCLUSION-MODEL-STANDING" ; lsp:statement "Model summaries, test prose, and generated manifests do not establish standing." .
+lsp:ExclusionReceiptSynthesis a lsp:Exclusion ; lsp:exclusionId "EXCLUSION-RECEIPT-SYNTHESIS" ; lsp:statement "Receipts are emitted only after observed execution; a receipt never contains its own hash." .
+lsp:ExclusionGeneratedEdits a lsp:Exclusion ; lsp:exclusionId "EXCLUSION-GENERATED-EDITS" ; lsp:statement "Generated paths are edited only through graph or template changes followed by sync." .
