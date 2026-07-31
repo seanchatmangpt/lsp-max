@@ -156,7 +156,7 @@ ggen-receipt:
     python3 scripts/verify-ggen-contract.py --replay target/ggen/verification-receipt.json
 
 ggen-rust-contract:
-    cargo test --test ggen_law_contract
+    cargo test --manifest-path tests/ggen-contract/Cargo.toml --test ggen_law_contract
 
 ggen-drift:
     ${GGEN_BIN:-ggen} sync run
