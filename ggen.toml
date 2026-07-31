@@ -1,0 +1,89 @@
+[project]
+name = "lsp-max"
+version = "26.7.30"
+description = "ggen-first law-state LSP manufacturing contract"
+authors = ["Sean Chatman <sean@chatmangpt.com>"]
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/seanchatmangpt/lsp-max"
+
+[ontology]
+source = "packs/lsp-max-runtime-pack/ontology.ttl"
+base_iri = "https://chatmangpt.com/ns/lsp-max#"
+
+[ontology.prefixes]
+lsp = "https://chatmangpt.com/ns/lsp-max#"
+ggen = "https://chatmangpt.com/ns/ggen#"
+prov = "http://www.w3.org/ns/prov#"
+dcterms = "http://purl.org/dc/terms/"
+skos = "http://www.w3.org/2004/02/skos/core#"
+odrl = "http://www.w3.org/ns/odrl/2/"
+xsd = "http://www.w3.org/2001/XMLSchema#"
+
+[generation]
+output_dir = "."
+
+[[generation.rules]]
+name = "lsp-max-manufacturing-contract"
+query = { inline = """
+PREFIX lsp: <https://chatmangpt.com/ns/lsp-max#>
+SELECT ?id WHERE { ?program a lsp:Program ; lsp:programId ?id . } ORDER BY ?id
+""" }
+template = { file = "packs/lsp-max-runtime-pack/templates/manufacturing-contract.md.tera" }
+output_file = "docs/generated/GGEN_MANUFACTURING_CONTRACT.md"
+skip_empty = false
+mode = "Overwrite"
+
+[[generation.rules]]
+name = "lsp-max-standing-model"
+query = { inline = """
+PREFIX lsp: <https://chatmangpt.com/ns/lsp-max#>
+SELECT ?name WHERE { ?standing a lsp:StandingState ; lsp:name ?name . } ORDER BY ?name
+""" }
+template = { file = "packs/lsp-max-runtime-pack/templates/standing-model.md.tera" }
+output_file = "docs/generated/STANDING_MODEL.md"
+skip_empty = false
+mode = "Overwrite"
+
+[[generation.rules]]
+name = "lsp-max-gall-roadmap"
+query = { inline = """
+PREFIX lsp: <https://chatmangpt.com/ns/lsp-max#>
+SELECT ?order WHERE { ?checkpoint a lsp:GallCheckpoint ; lsp:order ?order . } ORDER BY ?order
+""" }
+template = { file = "packs/lsp-max-runtime-pack/templates/gall-roadmap.md.tera" }
+output_file = "docs/generated/GALL_ROADMAP.md"
+skip_empty = false
+mode = "Overwrite"
+
+[[generation.rules]]
+name = "lsp-max-verification-manifest"
+query = { inline = """
+PREFIX lsp: <https://chatmangpt.com/ns/lsp-max#>
+SELECT ?id WHERE { ?obligation a lsp:EvidenceObligation ; lsp:obligationId ?id . } ORDER BY ?id
+""" }
+template = { file = "packs/lsp-max-runtime-pack/templates/verification-manifest.json.tera" }
+output_file = "evidence/generated/verification-manifest.json"
+skip_empty = false
+mode = "Overwrite"
+
+[[generation.rules]]
+name = "lsp-max-generated-law-test"
+query = { inline = """
+PREFIX lsp: <https://chatmangpt.com/ns/lsp-max#>
+SELECT ?token WHERE { ?law a lsp:Law ; lsp:refusalToken ?token . } ORDER BY ?token
+""" }
+template = { file = "packs/lsp-max-runtime-pack/templates/ggen_law_contract.rs.tera" }
+output_file = "tests/ggen_law_contract.rs"
+skip_empty = false
+mode = "Overwrite"
+
+[[generation.rules]]
+name = "lsp-max-ggen-contract-workflow"
+query = { inline = """
+PREFIX lsp: <https://chatmangpt.com/ns/lsp-max#>
+SELECT ?commit WHERE { ?program a lsp:Program ; lsp:pinnedGgenCommit ?commit . } ORDER BY ?commit
+""" }
+template = { file = "packs/lsp-max-runtime-pack/templates/ggen-contract.yml.tera" }
+output_file = ".github/workflows/ggen-contract.yml"
+skip_empty = false
+mode = "Overwrite"
