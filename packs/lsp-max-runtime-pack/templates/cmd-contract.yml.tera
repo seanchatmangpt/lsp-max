@@ -9,6 +9,7 @@ on:
       - 'scripts/cmd_kernel.py'
       - 'scripts/cmd-plan.py'
       - 'scripts/verify-cmd-profile.py'
+      - 'scripts/verify-cmd-profile-closure.py'
       - 'tests/fixtures/cmd/**'
       - 'docs/generated/CMD_PROFILE.md'
       - 'evidence/generated/cmd-contract.json'
@@ -43,14 +44,14 @@ jobs:
 
       - name: Execute full bounded verifier ladder
         run: |
-          python scripts/verify-cmd-profile.py \
+          python scripts/verify-cmd-profile-closure.py \
             --suite all \
             --output target/cmd \
             --emit-receipt target/cmd/cmd-receipt.json
 
       - name: Replay exact-head receipt
         run: |
-          python scripts/verify-cmd-profile.py \
+          python scripts/verify-cmd-profile-closure.py \
             --replay target/cmd/cmd-receipt.json \
             --output target/cmd/replay
 
