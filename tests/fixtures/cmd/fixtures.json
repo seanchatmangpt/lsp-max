@@ -1,0 +1,42 @@
+[
+  {
+    "name": "omitted-surface",
+    "kind": "observation_omission",
+    "expected": "OBS-TREE-OMISSION"
+  },
+  {
+    "name": "duplicate-owner",
+    "kind": "duplicate_owner",
+    "expected": "OWN-MULTIPLE-EXCLUSIVE"
+  },
+  {
+    "name": "candidate-incomplete",
+    "kind": "candidate_incomplete",
+    "expected": "CMD-CANDIDATE-INCOMPLETE"
+  },
+  {
+    "name": "external-without-consent",
+    "kind": "external_without_consent",
+    "expected": "EXT-CONSENT-MISSING"
+  },
+  {
+    "name": "kernel-actuator-import",
+    "kind": "kernel_actuator_import",
+    "expected": "CMD-KERNEL-ACTUATOR-IMPORT"
+  },
+  {
+    "name": "path-escape",
+    "kind": "path_escape",
+    "expected": "OWN-PATH-ESCAPE"
+  },
+  {
+    "name": "receipt-tamper",
+    "kind": "receipt_tamper",
+    "expected": "RCP-ARTIFACT-TAMPER"
+  },
+  {
+    "name": "self-promotion",
+    "kind": "self_promotion",
+    "expected": "RCP-SELF-PROMOTION"
+  }
+]
