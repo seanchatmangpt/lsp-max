@@ -8,7 +8,7 @@ Each checkpoint is independently receipted. Earlier checkpoints are not inflated
 | 1 | `GALL-001` | Ontology admission | `python3 scripts/verify-ggen-contract.py --check` | `PARTIAL_ALIVE` |
 | 2 | `GALL-002` | Negative fixtures | `python3 scripts/verify-ggen-contract.py --negative-fixtures` | `PARTIAL_ALIVE` |
 | 3 | `GALL-003` | ggen deterministic sync | `ggen sync run && git diff --exit-code -- generated-owned-paths` | `PARTIAL_ALIVE` |
-| 4 | `GALL-004` | Generated Rust contract | `cargo test --test ggen_law_contract` | `PARTIAL_ALIVE` |
+| 4 | `GALL-004` | Generated Rust contract | `cargo test --manifest-path tests/ggen-contract/Cargo.toml --test ggen_law_contract` | `PARTIAL_ALIVE` |
 | 5 | `GALL-005` | Workspace unit and integration verification | `cargo test --workspace` | `PARTIAL_ALIVE` |
 | 6 | `GALL-006` | Warning-free static verification | `cargo clippy --workspace --all-targets --all-features -- -D warnings` | `PARTIAL_ALIVE` |
 | 7 | `GALL-007` | Execution receipt | `python3 scripts/verify-ggen-contract.py --emit-receipt target/ggen/verification-receipt.json` | `PARTIAL_ALIVE` |
