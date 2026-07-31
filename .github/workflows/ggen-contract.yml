@@ -65,7 +65,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout exact candidate
-        uses: actions/checkout@11bd71901bbe5b72f698fdd19549f0f0fb45cf08
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
 
       - name: Install repository Rust toolchain
         uses: dtolnay/rust-toolchain@b3b07ba8b418998c39fb20f53e8b695cdcc8de1b
