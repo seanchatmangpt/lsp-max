@@ -1,0 +1,18 @@
+{%- set program = sparql(query='PREFIX lsp: <https://chatmangpt.com/ns/lsp-max#> SELECT ?id ?standard ?ggenVersion ?ggenCommit ?standing ?broker ?algorithm WHERE { ?p a lsp:Program ; lsp:programId ?id ; lsp:standardVersion ?standard ; lsp:pinnedGgenVersion ?ggenVersion ; lsp:pinnedGgenCommit ?ggenCommit ; lsp:standing ?standing ; lsp:requiredBroker ?broker ; lsp:receiptAlgorithm ?algorithm . } ORDER BY ?id') | first -%}
+{%- set obligations = sparql(query='PREFIX lsp: <https://chatmangpt.com/ns/lsp-max#> SELECT ?id WHERE { ?o a lsp:EvidenceObligation ; lsp:obligationId ?id . } ORDER BY ?id') -%}
+{%- set checkpoints = sparql(query='PREFIX lsp: <https://chatmangpt.com/ns/lsp-max#> SELECT ?order ?id WHERE { ?c a lsp:GallCheckpoint ; lsp:order ?order ; lsp:checkpointId ?id . } ORDER BY ?order') -%}
+{
+  "schema": "chatmangpt.lsp-max.verification-manifest.v1",
+  "generated": true,
+  "program": "{{ program.id }}",
+  "standard_version": "{{ program.standard }}",
+  "pinned_ggen": {
+    "version": "{{ program.ggenVersion }}",
+    "commit": "{{ program.ggenCommit }}"
+  },
+  "standing": "{{ program.standing }}",
+  "required_broker": "{{ program.broker }}",
+  "receipt_algorithm": "{{ program.algorithm }}",
+  "evidence_obligations": [{% for obligation in obligations %}"{{ obligation.id }}"{% if not loop.last %}, {% endif %}{% endfor %}],
+  "gall_checkpoints": [{% for checkpoint in checkpoints %}"{{ checkpoint.id }}"{% if not loop.last %}, {% endif %}{% endfor %}]
+}
