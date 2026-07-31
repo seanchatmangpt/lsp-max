@@ -9,6 +9,7 @@ on:
       - 'docs/generated/**'
       - 'evidence/generated/**'
       - 'tests/ggen_law_contract.rs'
+      - 'tests/ggen-contract/**'
       - 'tests/fixtures/ggen/**'
       - 'scripts/verify-ggen-contract.py'
       - '.github/workflows/ggen-contract.yml'
@@ -73,7 +74,7 @@ jobs:
           toolchain: '1.82.0'
 
       - name: Execute generated Rust contract
-        run: cargo test --test ggen_law_contract
+        run: cargo test --manifest-path tests/ggen-contract/Cargo.toml --test ggen_law_contract
 
   deterministic-ggen-sync:
     runs-on: ubuntu-24.04
