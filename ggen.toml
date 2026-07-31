@@ -17,6 +17,9 @@ prov = "http://www.w3.org/ns/prov#"
 dcterms = "http://purl.org/dc/terms/"
 skos = "http://www.w3.org/2004/02/skos/core#"
 odrl = "http://www.w3.org/ns/odrl/2/"
+dcat = "http://www.w3.org/ns/dcat#"
+sh = "http://www.w3.org/ns/shacl#"
+qudt = "http://qudt.org/schema/qudt/"
 xsd = "http://www.w3.org/2001/XMLSchema#"
 
 [generation]
@@ -37,7 +40,7 @@ mode = "Overwrite"
 name = "lsp-max-standing-model"
 query = { inline = """
 PREFIX lsp: <https://chatmangpt.com/ns/lsp-max#>
-SELECT ?name WHERE { ?standing a lsp:StandingState ; lsp:name ?name . } ORDER BY ?name
+SELECT ?id WHERE { ?standing a lsp:StandingState ; lsp:name ?id . } ORDER BY ?id
 """ }
 template = { file = "packs/lsp-max-runtime-pack/templates/standing-model.md.tera" }
 output_file = "docs/generated/STANDING_MODEL.md"
@@ -48,7 +51,7 @@ mode = "Overwrite"
 name = "lsp-max-gall-roadmap"
 query = { inline = """
 PREFIX lsp: <https://chatmangpt.com/ns/lsp-max#>
-SELECT ?order WHERE { ?checkpoint a lsp:GallCheckpoint ; lsp:order ?order . } ORDER BY ?order
+SELECT ?id WHERE { ?checkpoint a lsp:GallCheckpoint ; lsp:checkpointId ?id . } ORDER BY ?id
 """ }
 template = { file = "packs/lsp-max-runtime-pack/templates/gall-roadmap.md.tera" }
 output_file = "docs/generated/GALL_ROADMAP.md"
@@ -70,7 +73,7 @@ mode = "Overwrite"
 name = "lsp-max-generated-law-test"
 query = { inline = """
 PREFIX lsp: <https://chatmangpt.com/ns/lsp-max#>
-SELECT ?token WHERE { ?law a lsp:Law ; lsp:refusalToken ?token . } ORDER BY ?token
+SELECT ?id WHERE { ?law a lsp:Law ; lsp:refusalToken ?id . } ORDER BY ?id
 """ }
 template = { file = "packs/lsp-max-runtime-pack/templates/ggen_law_contract.rs.tera" }
 output_file = "tests/ggen_law_contract.rs"
@@ -81,9 +84,42 @@ mode = "Overwrite"
 name = "lsp-max-ggen-contract-workflow"
 query = { inline = """
 PREFIX lsp: <https://chatmangpt.com/ns/lsp-max#>
-SELECT ?commit WHERE { ?program a lsp:Program ; lsp:pinnedGgenCommit ?commit . } ORDER BY ?commit
+SELECT ?id WHERE { ?program a lsp:Program ; lsp:pinnedGgenCommit ?id . } ORDER BY ?id
 """ }
 template = { file = "packs/lsp-max-runtime-pack/templates/ggen-contract.yml.tera" }
 output_file = ".github/workflows/ggen-contract.yml"
+skip_empty = false
+mode = "Overwrite"
+
+[[generation.rules]]
+name = "lsp-max-cmd-profile"
+query = { inline = """
+PREFIX lsp: <https://chatmangpt.com/ns/lsp-max#>
+SELECT ?id WHERE { ?program a lsp:Program ; lsp:standardsProfile ?id . } ORDER BY ?id
+""" }
+template = { file = "packs/lsp-max-runtime-pack/templates/cmd-profile.md.tera" }
+output_file = "docs/generated/CMD_PROFILE.md"
+skip_empty = false
+mode = "Overwrite"
+
+[[generation.rules]]
+name = "lsp-max-cmd-contract"
+query = { inline = """
+PREFIX lsp: <https://chatmangpt.com/ns/lsp-max#>
+SELECT ?id WHERE { ?program a lsp:Program ; lsp:standardsProfile ?id . } ORDER BY ?id
+""" }
+template = { file = "packs/lsp-max-runtime-pack/templates/cmd-contract.json.tera" }
+output_file = "evidence/generated/cmd-contract.json"
+skip_empty = false
+mode = "Overwrite"
+
+[[generation.rules]]
+name = "lsp-max-cmd-workflow"
+query = { inline = """
+PREFIX lsp: <https://chatmangpt.com/ns/lsp-max#>
+SELECT ?id WHERE { ?program a lsp:Program ; lsp:standardsProfile ?id . } ORDER BY ?id
+""" }
+template = { file = "packs/lsp-max-runtime-pack/templates/cmd-contract.yml.tera" }
+output_file = ".github/workflows/cmd-contract.yml"
 skip_empty = false
 mode = "Overwrite"
