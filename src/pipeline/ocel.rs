@@ -5,14 +5,14 @@
 //! OCEL 2.0 object-centric log, derives an object-centric directly-follows graph
 //! (OC-DFG), and projects the log onto a small vector of bounded structural
 //! signals — including the object-centric **convergence** and **divergence**
-//! notions from van der Aalst's OCPM framework. A [`LogProfile`] then scores how
+//! notions from van der Aalst's OCPM framework. A `LogProfile` then scores how
 //! well a breed pipeline's cognitive-category coverage meets the *demands* of
 //! that specific log.
 //!
 //! Honesty boundary (three-state law): every signal here is a **structural
 //! proxy** computed from the log's shape. It is NOT engine-backed alignment
 //! conformance (replay fitness / precision), which requires the wasm4pm engine.
-//! Where the log is absent or unparseable, [`read_ocel_log`] returns `None` and
+//! Where the log is absent or unparseable, `read_ocel_log` returns `None` and
 //! the caller stays on a lower-grounding evaluator; the proxy never presents
 //! itself as an admitted conformance verdict.
 
@@ -117,9 +117,9 @@ pub fn read_ocel_log(path: &str) -> Option<OcelLog> {
 /// name the object-centric process-mining notions they proxy.
 #[derive(Debug, Clone, PartialEq)]
 pub struct LogProfile {
-    /// Distinct activities present, normalized by [`ACTIVITY_CAP`].
+    /// Distinct activities present, normalized by `ACTIVITY_CAP`.
     pub activity_variety: f64,
-    /// Distinct object types present, normalized by [`OBJECT_TYPE_CAP`].
+    /// Distinct object types present, normalized by `OBJECT_TYPE_CAP`.
     pub object_type_spread: f64,
     /// Fraction of object traces with at least two events — the demand for
     /// sequential / temporal reasoning over an object's lifecycle.
@@ -273,7 +273,7 @@ impl LogProfile {
     }
 }
 
-/// A [`BreedFitnessEvaluator`] that scores breeds against a fixed [`LogProfile`].
+/// A [`BreedFitnessEvaluator`] that scores breeds against a fixed `LogProfile`.
 ///
 /// Built by `auto_evaluator` when an OCEL log is present but the wasm4pm engine
 /// is not: it grounds fitness in the log's object-centric structure rather than
