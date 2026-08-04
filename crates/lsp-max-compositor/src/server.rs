@@ -330,9 +330,15 @@ impl lsp_max::LanguageServer for CompositorServer {
     ) -> Result<lsp_max::max_protocol::lsp_3_18::TextDocumentContentResult> {
         let uri = params.text_document.uri.as_str();
         if uri == "lsp-max://gate/context" {
-            let ctx = crate::gate_cli_compat::check_agent_context();
-            let serialized = serde_json::to_string_pretty(&ctx).unwrap_or_default();
-            let content = format!("<gate-context>\n{}\n</gate-context>", serialized);
+            let content = self
+                .andon_snapshot
+                .get_context()
+                .render_gate_context()
+                .map_err(|code| lsp_max::jsonrpc::Error {
+                    code: lsp_max::jsonrpc::ErrorCode::ServerError(-32099),
+                    message: code.into(),
+                    data: None,
+                })?;
             return Ok(lsp_max::max_protocol::lsp_3_18::TextDocumentContentResult {
                 text: content,
             });
@@ -629,6 +635,14 @@ pub async fn run_stdio(
     let merge_ctx_for_coord = Arc::clone(&merge_ctx);
     let pool_for_coord = Arc::clone(&pool);
     let gate_for_coord = Arc::clone(&gate);
+    let andon_snapshot = Arc::new(crate::andon_snapshot::AndonSnapshot::new());
+    andon_snapshot.commit_new_state(
+        Vec::new(),
+        vec!["diagnostic-admission".to_string()],
+        Vec::new(),
+        Vec::new(),
+    );
+    let andon_snapshot_for_coord = Arc::clone(&andon_snapshot);
 
     // Heartbeat task: write a liveness timestamp every 10 s so gate check can distinguish
     // a clean "never started" state from a compositor crash (fail-closed behaviour).
@@ -681,6 +695,7 @@ pub async fn run_stdio(
             Arc::clone(&pool_for_coord),
             Arc::clone(&gate_for_coord),
             config.server.len(),
+            Arc::clone(&andon_snapshot_for_coord),
         ));
         CompositorServer {
             client,
