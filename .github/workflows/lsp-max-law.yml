@@ -6,6 +6,9 @@ on:
   pull_request:
     branches: [master]
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   law-check:
     name: Law Compliance Check
@@ -13,10 +16,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Install scanner dependency
+        run: sudo apt-get update && sudo apt-get install -y ripgrep
+
       - name: Run law compliance scanner
         run: |
           chmod +x scripts/check-law-compliance.sh
-          bash scripts/check-law-compliance.sh || true
+          bash scripts/check-law-compliance.sh
           echo "## Law Compliance Report" >> $GITHUB_STEP_SUMMARY
           echo "Scanner: scripts/check-law-compliance.sh" >> $GITHUB_STEP_SUMMARY
           echo "Status: CANDIDATE" >> $GITHUB_STEP_SUMMARY
@@ -45,16 +51,21 @@ jobs:
           TEMPLATE_COUNT=$(find templates/lsp-max -name "*.tera" 2>/dev/null | wc -l || echo 0)
           echo "templates/lsp-max/*.tera: $TEMPLATE_COUNT files — CANDIDATE" >> $GITHUB_STEP_SUMMARY
 
-  gen-dry-run:
-    name: Generator Dry Run
+  library-tests:
+    name: Library Tests
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: false
 
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
+      - name: Install pinned Rust toolchain
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: nightly-2026-04-15
 
-      - name: Cache
+      - name: Cache cargo registry
         uses: actions/cache@v4
         with:
           path: |
@@ -62,26 +73,7 @@ jobs:
             ~/.cargo/git
             target
           key: ${{ runner.os }}-cargo-law-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-cargo-law-
 
-      - name: Create sibling stubs
-        run: |
-          mkdir -p ../lsp-types-max/src ../wasm4pm-compat/src ../wasm4pm/wasm4pm/src
-          for dir in ../lsp-types-max ../wasm4pm-compat; do
-            if [ ! -f "$dir/Cargo.toml" ]; then
-              name=$(basename $dir)
-              cat > "$dir/Cargo.toml" <<TOML
-          [package]
-          name = "$name"
-          version = "0.1.0"
-          edition = "2021"
-          [lib]
-          path = "src/lib.rs"
-          TOML
-              echo "" > "$dir/src/lib.rs"
-            fi
-          done
-
-      - name: Build and test lsp-max-gen
-        run: |
-          cargo test -p lsp-max-gen 2>&1 | tail -20
-          echo "lsp-max-gen tests: CANDIDATE" >> $GITHUB_STEP_SUMMARY
+      - name: Execute lsp-max library tests
+        run: cargo test -p lsp-max --lib
