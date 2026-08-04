@@ -1,4 +1,4 @@
-set shell := ["bash", "-c"]
+set shell := ["bash", "-euo", "pipefail", "-c"]
 
 default:
     @just help
@@ -6,25 +6,28 @@ default:
 list:
     @just --list
 
+audit:
+    @bash scripts/audit-repository.sh
+
 fmt:
     cargo fmt --all
 
 check:
-    cargo check --all
+    cargo check --workspace --all-targets
 
 test:
-    cargo test --all
+    cargo test --workspace --all-targets
 
 clippy:
-    cargo clippy --all-targets -- -D warnings
+    cargo clippy --workspace --all-targets --all-features -- -D warnings
 
-ci: dx qol doctor
+ci: audit dx dx-verify
 
 dx:
     cargo fmt --all --check
-    cargo check --all
-    cargo test --all
-    cargo clippy --all-targets -- -D warnings
+    cargo check --workspace --all-targets
+    cargo test --workspace --all-targets
+    cargo clippy --workspace --all-targets --all-features -- -D warnings
 
 dx-verify:
     @bash scripts/doctor.sh
@@ -35,50 +38,31 @@ dx-polish:
     cargo clippy --workspace --all-targets --all-features -- -D warnings
 
 test-pre-publish:
+    just audit
     just dx-verify
     just dx-polish
-    cargo test --workspace -- --include-ignored
+    cargo test --workspace --all-targets -- --include-ignored
 
 release-version-bump VERSION:
     cargo +stable set-version {{VERSION}} --workspace
 
 release-validate:
     just v26-gate-json
+    just audit
     just doctor
     just doctor-strict
     just dx-verify
     just dx-polish
     just test-pre-publish
+    just release-dry-run
 
 release-dry-run:
     just publish-dry-run
 
 release-publish VERSION:
-    @echo "Publishing v{{VERSION}} to crates.io..."
-    @if [ -z "$CARGO_TOKEN" ]; then \
-        echo "Error: CARGO_TOKEN environment variable not set"; \
-        exit 1; \
-    fi
-    cargo publish -p lsp-max-protocol --token $CARGO_TOKEN
-    @echo "Waiting for lsp-max-protocol to index..."
-    @sleep 15
-    cargo publish -p lsp-max-macros --token $CARGO_TOKEN
-    @echo "Waiting for lsp-max-macros to index..."
-    @sleep 15
-    cargo publish -p lsp-max-ast --token $CARGO_TOKEN
-    @echo "Waiting for lsp-max-ast to index..."
-    @sleep 15
-    cargo publish -p lsp-max-compositor --token $CARGO_TOKEN
-    @echo "Waiting for lsp-max-compositor to index..."
-    @sleep 15
-    cargo publish -p lsp-max-lsif --token $CARGO_TOKEN
-    @echo "Waiting for lsp-max-lsif to index..."
-    @sleep 15
-    cargo publish -p lsp-max-cli --token $CARGO_TOKEN
-    @echo "Waiting for lsp-max-cli to index..."
-    @sleep 15
-    cargo publish --token $CARGO_TOKEN
-    @echo "✓ All crates published for v{{VERSION}}"
+    @echo "REFUSED: repository automation has no authority to publish v{{VERSION}}"
+    @echo "Run the documented human release procedure outside agent and CI execution."
+    @exit 64
 
 qol: q failset receipts receipts-check agents-loc agents-closure-scan tree changed clean
 
@@ -86,22 +70,15 @@ v26-gate-json:
     @bash scripts/v26-gate.sh
 
 v26-verify:
-    @echo "Verifying v26.6.28 components..."
-    just v26-gate-json
-    just doctor
-    just doctor-strict
-    just dx
-    cargo test --all
-    cargo clippy --all-targets -- -D warnings
-    cargo publish --dry-run
+    @just release-validate
 
 doctor:
     @bash scripts/doctor.sh
 
 doctor-strict:
     @bash scripts/doctor.sh --strict
-    cargo test --all --jobs 1 -- --test-threads=1
-    cargo clippy --all-targets --jobs 1 -- -D warnings
+    cargo test --workspace --all-targets --jobs 1 -- --test-threads=1
+    cargo clippy --workspace --all-targets --all-features --jobs 1 -- -D warnings
 
 lsif:
     @echo "lsif"
@@ -125,7 +102,7 @@ closure-channel:
     @echo "closure-channel"
 
 publish-dry-run:
-    cargo publish --dry-run
+    cargo publish -p lsp-max --dry-run --allow-dirty
 
 q:
     @bash scripts/q.sh
