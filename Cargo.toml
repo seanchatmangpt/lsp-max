@@ -135,7 +135,7 @@ license = "MIT OR Apache-2.0"
 repository = "https://github.com/seanchatmangpt/lsp-max"
 homepage = "https://github.com/seanchatmangpt/lsp-max"
 edition = "2021"
-rust-version = "1.82.0"
+rust-version = "1.87.0"
 categories = ["asynchronous", "development-tools"]
 keywords = ["language-server", "lsp", "tower", "lsp-3-18"]
 
