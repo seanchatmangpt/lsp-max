@@ -121,10 +121,7 @@ mod tests {
     }
 
     fn subject() -> (ProjectAdmission, BTreeMap<String, String>) {
-        let files = BTreeMap::from([(
-            "src/lib.rs".to_owned(),
-            "pub fn receipt() {}\n".to_owned(),
-        )]);
+        let files = BTreeMap::from([("src/lib.rs".to_owned(), "pub fn receipt() {}\n".to_owned())]);
         let admission = ProjectAdmission::from_files(
             SemanticSubject::tree_sitter_vertical_slice(),
             "/workspace",
@@ -164,7 +161,10 @@ mod tests {
         );
 
         assert!(!report.equivalent);
-        assert!(report.mismatches.iter().any(|item| item.starts_with("symbols differ")));
+        assert!(report
+            .mismatches
+            .iter()
+            .any(|item| item.starts_with("symbols differ")));
         assert_eq!(report.receipt.outcome, Outcome::Divergent);
     }
 

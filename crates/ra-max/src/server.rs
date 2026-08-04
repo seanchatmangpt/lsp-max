@@ -126,10 +126,7 @@ impl RaMaxServer {
 
 #[lsp_max::async_trait]
 impl LanguageServer for RaMaxServer {
-    async fn initialize(
-        &self,
-        _: InitializeParams,
-    ) -> lsp_max::jsonrpc::Result<InitializeResult> {
+    async fn initialize(&self, _: InitializeParams) -> lsp_max::jsonrpc::Result<InitializeResult> {
         Ok(InitializeResult {
             capabilities: ServerCapabilities {
                 text_document_sync: Some(TextDocumentSyncCapability::Kind(

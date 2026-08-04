@@ -19,7 +19,9 @@ pub use demo::{run_demo, DemoReport};
 pub use differential::{compare_engines, DifferentialReport};
 pub use identity::{ProjectAdmission, SemanticSubject};
 pub use receipt::{Outcome, Receipt, ReceiptChain, ReceiptKind};
-pub use semantic::{SemanticDiagnostic, SemanticEngine, SemanticSnapshot, Symbol, TreeSitterRustEngine};
+pub use semantic::{
+    SemanticDiagnostic, SemanticEngine, SemanticSnapshot, Symbol, TreeSitterRustEngine,
+};
 pub use server::RaMaxServer;
 
 /// Exact `lsp-max` source identity used when RFC 0006 was manufactured.

@@ -30,9 +30,10 @@ impl SourceRange {
     }
 
     pub fn contains(&self, line: u32, column: u32) -> bool {
-        let after_start = line > self.start_line
-            || (line == self.start_line && column >= self.start_column);
-        let before_end = line < self.end_line || (line == self.end_line && column <= self.end_column);
+        let after_start =
+            line > self.start_line || (line == self.start_line && column >= self.start_column);
+        let before_end =
+            line < self.end_line || (line == self.end_line && column <= self.end_column);
         after_start && before_end
     }
 }
@@ -294,10 +295,8 @@ mod tests {
 
     #[test]
     fn subject_drift_is_typed_refusal() {
-        let admitted_files = BTreeMap::from([(
-            "src/main.rs".to_owned(),
-            "fn main() {}".to_owned(),
-        )]);
+        let admitted_files =
+            BTreeMap::from([("src/main.rs".to_owned(), "fn main() {}".to_owned())]);
         let changed_files = BTreeMap::from([(
             "src/main.rs".to_owned(),
             "fn main() { println!(\"changed\"); }".to_owned(),

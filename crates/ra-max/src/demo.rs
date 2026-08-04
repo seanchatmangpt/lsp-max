@@ -46,11 +46,8 @@ pub fn run_demo() -> Result<DemoReport, DemoError> {
     let engine = TreeSitterRustEngine;
     let mut semantic_receipts = ReceiptChain::default();
 
-    let initial_admission = ProjectAdmission::from_files(
-        subject.clone(),
-        "/virtual/ra-max-demo",
-        workspace.files(),
-    );
+    let initial_admission =
+        ProjectAdmission::from_files(subject.clone(), "/virtual/ra-max-demo", workspace.files());
     semantic_receipts.append(
         ReceiptKind::Admission,
         subject.digest(),
@@ -76,11 +73,8 @@ pub fn run_demo() -> Result<DemoReport, DemoError> {
     )?;
     broker.apply_edit(&mut workspace, &edit)?;
 
-    let final_admission = ProjectAdmission::from_files(
-        subject,
-        "/virtual/ra-max-demo",
-        workspace.files(),
-    );
+    let final_admission =
+        ProjectAdmission::from_files(subject, "/virtual/ra-max-demo", workspace.files());
     semantic_receipts.append(
         ReceiptKind::Admission,
         initial_admission.project_hash.clone(),
@@ -145,11 +139,17 @@ mod tests {
         let report = run_demo().expect("demo should execute under the active Rust toolchain");
 
         assert_ne!(report.initial_project_hash, report.final_project_hash);
-        assert_ne!(report.initial_semantic_revision, report.final_semantic_revision);
+        assert_ne!(
+            report.initial_semantic_revision,
+            report.final_semantic_revision
+        );
         assert!(report.rustc_version.starts_with("rustc "));
         assert!(report.differential.equivalent);
         assert!(report.receipt_chains_valid);
-        assert!(report.symbols.iter().any(|symbol| symbol.ends_with(":function:meaning")));
+        assert!(report
+            .symbols
+            .iter()
+            .any(|symbol| symbol.ends_with(":function:meaning")));
         assert!(report.diagnostics.is_empty());
     }
 }

@@ -359,7 +359,10 @@ mod tests {
 
         assert_eq!(applied.authorization_receipt.outcome, Outcome::Authorized);
         assert_eq!(applied.consequence_receipt.outcome, Outcome::Executed);
-        assert_eq!(workspace.get("src/main.rs"), Some("fn main() { let value = 2; }\n"));
+        assert_eq!(
+            workspace.get("src/main.rs"),
+            Some("fn main() { let value = 2; }\n")
+        );
         assert!(broker.verify_receipts());
     }
 
@@ -378,7 +381,10 @@ mod tests {
             Err(BrokerError::StaleEdit { .. })
         ));
         assert_eq!(workspace.digest(), drift_hash);
-        assert_eq!(broker.receipts().last().map(|r| r.outcome), Some(Outcome::Refused));
+        assert_eq!(
+            broker.receipts().last().map(|r| r.outcome),
+            Some(Outcome::Refused)
+        );
     }
 
     #[test]
