@@ -9,7 +9,7 @@ permissions:
 
 concurrency:
   group: one-shot-rustdoc-links-pr-22
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   repair:
