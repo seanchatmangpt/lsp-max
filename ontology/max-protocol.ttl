@@ -85,22 +85,28 @@ lsp:max_vector a lsp:MaxExtension ;
 # NOTIFICATION — max/* push events
 # ─────────────────────────────────────────────────────────────────────────────
 
-# NOTE (Gall CP10, see ~/ggen's 80-20-gall-test-refactor-cheerful-quokka.md plan): these three
+# NOTE (Gall CP10, see ~/ggen's 80-20-gall-test-refactor-cheerful-quokka.md plan): these
 # individuals used to declare `max/gateChanged`/`max/admissionChanged`/`max/receiptArrived` --
 # names with ZERO Rust implementation anywhere in this repo. The real, working, tested
 # `Notification` impls + send-wrapper methods live in `src/andon/lsp.rs` and
 # `src/service/client/lsp_methods.rs:406-430` under the `lspMax/*` wire name, not `max/*`. Per
 # CP1/CP2's own precedent (fix the ontology to match reality, not the other way -- renaming
-# working Rust is higher risk than editing a TTL), these three are corrected to the real
-# `lspMax/*` names below. `lsp:max_admissionChanged`'s `paramType` is also corrected from the
+# working Rust is higher risk than editing a TTL), these are corrected to the real `lspMax/*`
+# names below. `lsp:lspMax_admissionChanged`'s `paramType` is also corrected from the
 # aspirational `AdmissionChangedParams { ... }` (unspecified shape) to the real
 # `crate::andon::lsp::AdmissionChangedParams { status: String }`.
 #
-# `lspMax/andonRaised`, `lspMax/truthTableChanged`, and `lspMax/counterfactualFailed` are real
-# and wired (send-wrapper only, no caller yet, same as admissionChanged pre-CP10) but were never
-# declared here at all -- out of scope for this pass, which only fixes the fidelity bug on the
-# three names this file already declared. Adding those three individuals is future work, not a
-# fidelity correction.
+# Update (concurrent PR, merged same day as CP24-26's PR #26/#27 merge): `lspMax/andonRaised`,
+# `lspMax/truthTableChanged`, `lspMax/counterfactualFailed`, and `lspMax/nextLawfulStepChanged`
+# -- named above as future work, real send-wrapper only, no caller yet -- were independently
+# declared by that PR and are merged in below, not re-derived.
+
+lsp:lspMax_andonRaised a lsp:Notification ;
+    lsp:methodName "lspMax/andonRaised" ;
+    lsp:snakeName  "lsp_max_andon_raised" ;
+    lsp:paramType  "AndonEvent" ;
+    rdfs:comment   "Server-to-client push: an ANDON event was raised." ;
+    law:status     law:CANDIDATE .
 
 lsp:lspMax_admissionChanged a lsp:Notification ;
     lsp:methodName "lspMax/admissionChanged" ;
@@ -121,4 +127,25 @@ lsp:lspMax_gateChanged a lsp:Notification ;
     lsp:snakeName  "gate_changed" ;
     lsp:paramType  "GateChangedParams" ;
     rdfs:comment   "Server-to-client push: ANDON gate state transitioned. Clients must re-query max/gate to confirm. NOTE: like lspMax/receiptArrived, this notification type has NO Rust implementation anywhere in src/andon/lsp.rs or lsp_methods.rs as of CP10 -- still fully aspirational, only the name prefix was corrected to lspMax/* for naming consistency with the other real notifications in this file." ;
+    law:status     law:CANDIDATE .
+
+lsp:lspMax_truthTableChanged a lsp:Notification ;
+    lsp:methodName "lspMax/truthTableChanged" ;
+    lsp:snakeName  "lsp_max_truth_table_changed" ;
+    lsp:paramType  "TruthTableChangedParams" ;
+    rdfs:comment   "Server-to-client push: the queryable truth-table document changed." ;
+    law:status     law:CANDIDATE .
+
+lsp:lspMax_counterfactualFailed a lsp:Notification ;
+    lsp:methodName "lspMax/counterfactualFailed" ;
+    lsp:snakeName  "lsp_max_counterfactual_failed" ;
+    lsp:paramType  "CounterfactualFailedParams" ;
+    rdfs:comment   "Server-to-client push: an invariant counterfactual failed." ;
+    law:status     law:CANDIDATE .
+
+lsp:lspMax_nextLawfulStepChanged a lsp:Notification ;
+    lsp:methodName "lspMax/nextLawfulStepChanged" ;
+    lsp:snakeName  "lsp_max_next_lawful_step_changed" ;
+    lsp:paramType  "NextLawfulStepChangedParams" ;
+    rdfs:comment   "Server-to-client push: the next lawful repair step changed." ;
     law:status     law:CANDIDATE .

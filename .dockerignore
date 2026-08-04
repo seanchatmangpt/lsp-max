@@ -1,0 +1,6 @@
+.git
+.github
+.agents
+target
+web/node_modules
+**/*.log

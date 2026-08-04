@@ -150,7 +150,7 @@ fn which_wasm4pm_cli() -> String {
 ///
 /// 1. `wasm4pm-cli` present -> [`SubprocessFitnessEvaluator`] (engine-backed).
 /// 2. else an OCEL log present and carrying process structure ->
-///    [`LogGroundedFitnessEvaluator`], scoring breeds against the log's own
+///    `LogGroundedFitnessEvaluator`, scoring breeds against the log's own
 ///    object-centric structure instead of ignoring the log.
 /// 3. else -> [`HeuristicFitnessEvaluator`] (log-blind composition heuristic).
 ///

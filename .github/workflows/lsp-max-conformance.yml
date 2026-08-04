@@ -2,111 +2,106 @@ name: lsp-max Conformance Gate
 
 on:
   push:
-    branches: [master, "claude/**"]
+    branches: [master]
   pull_request:
     branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: conformance-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   conformance:
     name: Conformance Score
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
+          persist-credentials: false
           submodules: false
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
 
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
+      - name: Record exact source identity
+        run: git rev-parse HEAD
 
-      - name: Cache cargo registry
-        uses: actions/cache@v4
+      - name: Install scanner and pinned Rust toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ripgrep
+          rustup toolchain install nightly-2026-04-15 --profile minimal
+
+      - name: Run authoritative law compliance scanner
+        run: bash scripts/check-law-compliance.sh
+
+      - name: Verify protocol court projection
+        run: python3 scripts/protocol-court.py --check
+
+      - name: Cache Cargo state
+        uses: actions/cache@v6
         with:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
             target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: ${{ runner.os }}-cargo-
+          key: conformance-${{ runner.os }}-${{ hashFiles('**/Cargo.toml', 'rust-toolchain.toml') }}
+          restore-keys: conformance-${{ runner.os }}-
 
-      - name: Check sibling stubs exist
+      - name: Build lsp-max runtime and targets
+        run: cargo +nightly-2026-04-15 build -p lsp-max --all-targets
+
+      - name: Scan and enforce ontology law-axis consistency
         run: |
-          # lsp-max requires sibling repos; create minimal stubs for CI
-          mkdir -p ../lsp-types-max/src ../wasm4pm-compat/src ../wasm4pm/wasm4pm/src
-          if [ ! -f ../lsp-types-max/Cargo.toml ]; then
-            cat > ../lsp-types-max/Cargo.toml <<'TOML'
-          [package]
-          name = "lsp-types-max"
-          version = "26.6.5"
-          edition = "2021"
-          [lib]
-          path = "src/lib.rs"
-          TOML
-            echo "pub use lsp_types::*;" > ../lsp-types-max/src/lib.rs
-          fi
-          if [ ! -f ../wasm4pm-compat/Cargo.toml ]; then
-            cat > ../wasm4pm-compat/Cargo.toml <<'TOML'
-          [package]
-          name = "wasm4pm-compat"
-          version = "0.1.0"
-          edition = "2021"
-          [lib]
-          path = "src/lib.rs"
-          TOML
-            echo "" > ../wasm4pm-compat/src/lib.rs
-          fi
+          python3 - <<'PY'
+          import os
+          import re
+          from pathlib import Path
 
-      - name: Build lsp-max-gen
-        run: cargo build -p lsp-max-gen 2>&1
+          ontology = Path("ontology/lsp318.ttl")
+          text = ontology.read_text()
+          statuses = (
+              "ADMITTED",
+              "CANDIDATE",
+              "REFUSED",
+              "UNKNOWN",
+              "BLOCKED",
+              "PARTIAL",
+              "OPEN",
+          )
 
-      - name: Scan ontology law-axis status
-        id: ontology
-        run: |
-          echo "## lsp-max Conformance Status" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Axis | Count |" >> $GITHUB_STEP_SUMMARY
-          echo "|------|-------|" >> $GITHUB_STEP_SUMMARY
+          methods = re.findall(r'lsp:methodName\s+"[^"]+"', text)
+          counts = {
+              status: len(re.findall(rf"law:status\s+law:{status}\b", text))
+              for status in statuses
+          }
+          method_count = len(methods)
+          status_total = sum(counts.values())
 
-          ADMITTED=$(grep -r "law:ADMITTED" ontology/ 2>/dev/null | wc -l || echo 0)
-          CANDIDATE=$(grep -r "law:CANDIDATE" ontology/ 2>/dev/null | wc -l || echo 0)
-          REFUSED=$(grep -r "law:REFUSED" ontology/ 2>/dev/null | wc -l || echo 0)
-          UNKNOWN=$(grep -r "law:UNKNOWN" ontology/ 2>/dev/null | wc -l || echo 0)
-          METHODS=$(grep -r "lsp:methodName" ontology/ 2>/dev/null | wc -l || echo 0)
+          if method_count == 0:
+              raise SystemExit("REFUSED: no LSP method declarations were observed")
+          if status_total != method_count:
+              raise SystemExit(
+                  "REFUSED: every declared LSP method must have exactly one "
+                  f"law:status assignment: methods={method_count} statuses={status_total}"
+              )
 
-          echo "| ADMITTED | $ADMITTED |" >> $GITHUB_STEP_SUMMARY
-          echo "| CANDIDATE | $CANDIDATE |" >> $GITHUB_STEP_SUMMARY
-          echo "| REFUSED | $REFUSED |" >> $GITHUB_STEP_SUMMARY
-          echo "| UNKNOWN | $UNKNOWN |" >> $GITHUB_STEP_SUMMARY
-          echo "| Total methods declared | $METHODS |" >> $GITHUB_STEP_SUMMARY
-
-          echo "admitted=$ADMITTED" >> $GITHUB_OUTPUT
-          echo "candidate=$CANDIDATE" >> $GITHUB_OUTPUT
-          echo "methods=$METHODS" >> $GITHUB_OUTPUT
-
-      - name: Check tower-lsp law violations
-        run: |
-          echo "## Law Compliance Scan" >> $GITHUB_STEP_SUMMARY
-          VIOLATIONS=$(grep -r "tower-lsp\|tower_lsp" src/ crates/ lsp-max-protocol/ lsp-max-runtime/ lsp-max-agent/ lsp-max-macros/ 2>/dev/null \
-            | grep -v "target/" \
-            | grep -v "anti-llm-cheat-lsp" \
-            | grep -v "\.toml:.*#" \
-            | wc -l || echo 0)
-          echo "tower-lsp references (forbidden): $VIOLATIONS" >> $GITHUB_STEP_SUMMARY
-          if [ "$VIOLATIONS" -gt "0" ]; then
-            echo "### Violations" >> $GITHUB_STEP_SUMMARY
-            grep -rn "tower-lsp\|tower_lsp" src/ crates/ lsp-max-protocol/ 2>/dev/null | grep -v target/ | head -20 >> $GITHUB_STEP_SUMMARY
-            echo "::error::LawViolation: $VIOLATIONS forbidden tower-lsp reference(s) found"
-            exit 1
-          fi
-          echo "Status: CANDIDATE — no forbidden references detected" >> $GITHUB_STEP_SUMMARY
-
-      - name: Check victory language
-        run: |
-          VICTORY=$(grep -rn '"done"\|"complete"\|"solved"\|"guaranteed"\|"all clean"\|"fully admitted"' \
-            src/ crates/ lsp-max-protocol/ \
-            --include="*.rs" 2>/dev/null \
-            | grep -v target/ \
-            | grep -v "test\|spec\|fixture" \
-            | wc -l || echo 0)
-          if [ "$VICTORY" -gt "0" ]; then
-            echo "::warning::VictoryLanguage: $VICTORY victory-language occurrence(s) found — use bounded statuses"
-          fi
+          standing = "ALIVE" if counts["ADMITTED"] == status_total else "PARTIAL_ALIVE"
+          summary = Path(os.environ["GITHUB_STEP_SUMMARY"])
+          with summary.open("a") as out:
+              out.write("## lsp-max Conformance Status\n\n")
+              out.write(f"Exact ontology standing: **{standing}**\n\n")
+              out.write("| Law status | Assigned methods |\n")
+              out.write("| --- | ---: |\n")
+              for status in statuses:
+                  out.write(f"| {status} | {counts[status]} |\n")
+              out.write(f"| **Total status assignments** | **{status_total}** |\n")
+              out.write(f"| **Declared methods** | **{method_count}** |\n\n")
+              out.write(
+                  "REFUSED is a lawful negative state and does not by itself "
+                  "fail ontology consistency.\n"
+              )
+          PY
