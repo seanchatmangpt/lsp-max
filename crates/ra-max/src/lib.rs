@@ -1,15 +1,16 @@
 //! Executable first vertical slice of RFC 0006.
 //!
 //! `ra-max` separates admitted observation, semantic construction, actuation,
-//! and receipt/replay evidence.  The current semantic implementation is a
-//! deliberately bounded Tree-sitter Rust engine.  It does not claim parity
-//! with rust-analyzer HIR; the differential boundary makes that absence
-//! explicit instead of collapsing it into an admitted claim.
+//! and receipt/replay evidence. The current semantic implementation is a
+//! deliberately bounded Tree-sitter Rust engine with cross-file lexical
+//! intelligence. It does not claim parity with rust-analyzer HIR; ambiguous
+//! Rust scope and type questions are refused instead of guessed.
 
 pub mod broker;
 pub mod demo;
 pub mod differential;
 pub mod identity;
+pub mod intelligence;
 pub mod receipt;
 pub mod semantic;
 pub mod server;
@@ -18,9 +19,14 @@ pub use broker::{ActuationBroker, ConstructedEdit, ToolExecution, WorkspaceState
 pub use demo::{run_demo, DemoReport};
 pub use differential::{compare_engines, DifferentialReport};
 pub use identity::{ProjectAdmission, SemanticSubject};
+pub use intelligence::{
+    CompletionCandidate, HoverInfo, IntelligenceError, Occurrence, RenamePlan, TextReplacement,
+    WorkspaceIndex,
+};
 pub use receipt::{Outcome, Receipt, ReceiptChain, ReceiptKind};
 pub use semantic::{
-    SemanticDiagnostic, SemanticEngine, SemanticSnapshot, Symbol, TreeSitterRustEngine,
+    SemanticDiagnostic, SemanticEngine, SemanticSnapshot, SourceRange, Symbol,
+    TreeSitterRustEngine,
 };
 pub use server::RaMaxServer;
 
