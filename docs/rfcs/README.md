@@ -1,12 +1,19 @@
 # Requests for Comments (RFCs)
 
-This directory contains accepted design decisions for `lsp-max`. Each RFC is a durable record of a significant architectural choice, the rationale, and its consequences.
+This directory contains durable design decisions and active architectural proposals for `lsp-max`. Each RFC records a significant choice, its rationale, boundaries, falsifiers, and consequences.
 
-RFCs are numbered sequentially (0001, 0002, ...) and assigned a status:
+RFCs are numbered sequentially and assigned a status:
 
+- **Proposed:** The design is under review and does not yet claim implementation standing.
 - **Accepted:** The decision is settled and implemented.
 - **Superseded:** A later RFC has replaced this one; see the newer RFC for details.
 - **Withdrawn:** The decision was considered but rejected; kept for historical context.
+
+## Proposed RFCs
+
+| RFC | Title | Status |
+|-----|-------|--------|
+| [0006](0006-rust-analyzer-on-lsp-max.md) | Rust Analyzer on the lsp-max Law-State Runtime | Proposed |
 
 ## Accepted RFCs
 
@@ -24,21 +31,24 @@ For first-time readers, start with:
 
 1. `docs/book/01-architecture.md` — Comprehensive system overview
 2. **RFC 0001** — Why code generation is the foundation
-3. **RFC 0002–0005** — The specific decisions that shape the architecture
+3. **RFC 0002–0005** — The accepted decisions that shape the current architecture
+4. **RFC 0006** — The proposed rust-analyzer rewrite boundary and migration calculus
 
 For deep dives:
 
-- **RFC 0002–0003** are prerequisites for understanding the law-state runtime (layers 3 of the architecture).
+- **RFC 0002–0003** are prerequisites for understanding the law-state runtime.
 - **RFC 0004** explains the five-layer model and why tower-lsp was forked rather than extended.
 - **RFC 0005** governs versioning and deployment semantics.
+- **RFC 0006** specifies how a mature semantic engine can be preserved while runtime authority, actuation, receipts, and replay move into `lsp-max`.
 
 ## Contributing
 
 When a significant architectural decision is needed:
 
-1. Write an RFC in the format above (status, context, decision, rationale, consequences, alternatives).
-2. Number it sequentially (the next available number).
-3. Submit for approval via PR.
-4. Update this README with a row in the table above.
+1. Write an RFC in the format above with status, context, preservation fences, decision, exclusions, falsifiers, consequences, and operational standing.
+2. Number it sequentially using the next available number.
+3. Add proposed RFCs to the proposed table.
+4. Submit for approval via PR.
+5. Move the RFC to the accepted table only after the decision and its required implementation evidence are admitted.
 
-Never edit an existing RFC; instead, write a new RFC that supersedes it and link back.
+Never edit an accepted RFC to rewrite history. Write a new RFC that supersedes it and link back.
