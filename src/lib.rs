@@ -197,11 +197,12 @@ pub(crate) fn rfc3339_now() -> String {
     s /= 24;
     let mut year = 1970u64;
     loop {
-        let leap = if (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0) {
-            1
-        } else {
-            0
-        };
+        let leap =
+            if (year.is_multiple_of(4) && !year.is_multiple_of(100)) || year.is_multiple_of(400) {
+                1
+            } else {
+                0
+            };
         let days = 365 + leap;
         if s < days {
             break;
@@ -209,7 +210,8 @@ pub(crate) fn rfc3339_now() -> String {
         s -= days;
         year += 1;
     }
-    let leap = if (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0) {
+    let leap = if (year.is_multiple_of(4) && !year.is_multiple_of(100)) || year.is_multiple_of(400)
+    {
         1
     } else {
         0
@@ -404,7 +406,7 @@ pub(crate) fn sha256(data: &[u8]) -> String {
     let mut padded = data.to_vec();
     let bit_len = (data.len() as u64) * 8;
     padded.push(0x80);
-    while (padded.len() + 8) % 64 != 0 {
+    while !(padded.len() + 8).is_multiple_of(64) {
         padded.push(0);
     }
     padded.extend_from_slice(&bit_len.to_be_bytes());

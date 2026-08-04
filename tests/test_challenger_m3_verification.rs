@@ -262,37 +262,43 @@ fn test_runtime_max_method_routing() {
     assert!(MaxMethod::try_from("invalid/method").is_err());
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Clone)]
-struct GeneratorManifest {
-    allowed_ignored_directories: Vec<String>,
-    forbidden_generated_paths: Vec<String>,
-    ignored_inventory: Vec<String>,
-    tracked_status: std::collections::BTreeMap<String, String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    digest: Option<String>,
-}
-
 #[test]
-fn test_update_wasm4pm_compat_baseline() {
-    let manifest_path = "/Users/sac/wasm4pm-compat/.gc-sealed-baseline";
-    let manifest_content = std::fs::read_to_string(manifest_path).unwrap();
-    let mut manifest: GeneratorManifest = serde_json::from_str(&manifest_content).unwrap();
+fn test_wasm4pm_compat_dependency_is_portable() {
+    let output = std::process::Command::new(env!("CARGO"))
+        .args(["metadata", "--format-version", "1", "--no-deps"])
+        .output()
+        .expect("execute cargo metadata");
 
-    if !manifest
-        .allowed_ignored_directories
-        .contains(&"wasm4pm-compat-ts".to_string())
-    {
-        manifest
-            .allowed_ignored_directories
-            .push("wasm4pm-compat-ts".to_string());
-    }
+    assert!(
+        output.status.success(),
+        "cargo metadata failed: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
 
-    manifest.digest = None;
+    let metadata: serde_json::Value =
+        serde_json::from_slice(&output.stdout).expect("parse cargo metadata JSON");
+    let packages = metadata["packages"]
+        .as_array()
+        .expect("metadata packages array");
+    let root = packages
+        .iter()
+        .find(|package| package["name"] == "lsp-max")
+        .expect("lsp-max package");
+    let dependency = root["dependencies"]
+        .as_array()
+        .expect("lsp-max dependencies")
+        .iter()
+        .find(|dependency| dependency["name"] == "wasm4pm-compat")
+        .expect("wasm4pm-compat dependency");
 
-    let serialized = serde_json::to_string(&manifest).unwrap();
-    let actual_digest = lsp_max::runtime::sha256::sha256(serialized.as_bytes());
-
-    manifest.digest = Some(actual_digest);
-    let final_json = serde_json::to_string_pretty(&manifest).unwrap();
-    std::fs::write(manifest_path, final_json).unwrap();
+    assert!(
+        dependency["source"]
+            .as_str()
+            .is_some_and(|source| source.starts_with("registry+")),
+        "wasm4pm-compat must resolve from a registry: {dependency}"
+    );
+    assert!(
+        dependency["path"].is_null(),
+        "wasm4pm-compat must not use a local path: {dependency}"
+    );
 }

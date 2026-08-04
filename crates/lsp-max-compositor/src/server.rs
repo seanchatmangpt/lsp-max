@@ -330,9 +330,15 @@ impl lsp_max::LanguageServer for CompositorServer {
     ) -> Result<lsp_max::max_protocol::lsp_3_18::TextDocumentContentResult> {
         let uri = params.text_document.uri.as_str();
         if uri == "lsp-max://gate/context" {
-            let ctx = crate::gate_cli_compat::check_agent_context();
-            let serialized = serde_json::to_string_pretty(&ctx).unwrap_or_default();
-            let content = format!("<gate-context>\n{}\n</gate-context>", serialized);
+            let content = self
+                .andon_snapshot
+                .get_context()
+                .render_gate_context()
+                .map_err(|code| lsp_max::jsonrpc::Error {
+                    code: lsp_max::jsonrpc::ErrorCode::ServerError(-32099),
+                    message: code.into(),
+                    data: None,
+                })?;
             return Ok(lsp_max::max_protocol::lsp_3_18::TextDocumentContentResult {
                 text: content,
             });
@@ -481,6 +487,27 @@ impl CompositorServer {
             });
         }
 
+        // Publish the exact currently observed court state.  This is intentionally
+        // recomputed from the non-destructive buffer view instead of trusting the
+        // advisory gate file or a historical bus entry.
+        let diagnostic_codes = uri_states
+            .iter()
+            .flat_map(|state| state.andon_codes.iter().cloned())
+            .collect::<Vec<_>>();
+        if let (Ok(registry), Ok(mut bus)) = (self.registry.lock(), self.andon_bus.lock()) {
+            let refresh = crate::andon_runtime::refresh(
+                &registry,
+                &mut bus,
+                &self.andon_snapshot,
+                diagnostic_codes,
+            );
+            global_andon_block |= refresh.blocking;
+        } else {
+            // A poisoned court cannot authorize progress.  The gate remains
+            // fail-closed even though no synthetic event is manufactured.
+            global_andon_block = true;
+        }
+
         let child_server_count = self.pool.server_ids_snapshot().len();
 
         let query_timestamp_ms = std::time::SystemTime::now()
@@ -608,6 +635,14 @@ pub async fn run_stdio(
     let merge_ctx_for_coord = Arc::clone(&merge_ctx);
     let pool_for_coord = Arc::clone(&pool);
     let gate_for_coord = Arc::clone(&gate);
+    let andon_snapshot = Arc::new(crate::andon_snapshot::AndonSnapshot::new());
+    andon_snapshot.commit_new_state(
+        Vec::new(),
+        vec!["diagnostic-admission".to_string()],
+        Vec::new(),
+        Vec::new(),
+    );
+    let andon_snapshot_for_coord = Arc::clone(&andon_snapshot);
 
     // Heartbeat task: write a liveness timestamp every 10 s so gate check can distinguish
     // a clean "never started" state from a compositor crash (fail-closed behaviour).
@@ -641,6 +676,18 @@ pub async fn run_stdio(
         registry.register(build_brokered_command());
         registry.register(build_receipt_required());
 
+        let registry = Arc::new(StdMutex::new(registry));
+        let andon_bus = Arc::new(StdMutex::new(AndonBus::new()));
+        let andon_snapshot = Arc::new(crate::andon_snapshot::AndonSnapshot::new());
+        if let (Ok(registry_guard), Ok(mut bus_guard)) = (registry.lock(), andon_bus.lock()) {
+            crate::andon_runtime::refresh(
+                &registry_guard,
+                &mut bus_guard,
+                &andon_snapshot,
+                std::iter::empty(),
+            );
+        }
+
         let flush_coord = Arc::new(FlushCoordinator::spawn(
             Arc::clone(&buffer_for_coord),
             Arc::clone(&merge_ctx_for_coord),
@@ -648,6 +695,7 @@ pub async fn run_stdio(
             Arc::clone(&pool_for_coord),
             Arc::clone(&gate_for_coord),
             config.server.len(),
+            Arc::clone(&andon_snapshot_for_coord),
         ));
         CompositorServer {
             client,
@@ -660,9 +708,9 @@ pub async fn run_stdio(
             gate: Arc::clone(&gate),
             flush_coord,
             merged_capabilities: Arc::new(RwLock::new(None)),
-            registry: Arc::new(StdMutex::new(registry)),
-            andon_bus: Arc::new(StdMutex::new(AndonBus::new())),
-            andon_snapshot: Arc::new(crate::andon_snapshot::AndonSnapshot::new()),
+            registry,
+            andon_bus,
+            andon_snapshot,
         }
     })
     .fallback_method(move |req| {
