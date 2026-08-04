@@ -42,7 +42,7 @@ jobs:
         run: bash scripts/audit-repository.sh
 
   toolchain-contract:
-    name: Pinned nightly feature boundaries
+    name: Pinned nightly supported features
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     steps:
@@ -72,11 +72,11 @@ jobs:
           key: toolchain-contract-${{ runner.os }}-${{ hashFiles('**/Cargo.toml', 'rust-toolchain.toml') }}
           restore-keys: toolchain-contract-${{ runner.os }}-
 
-      - name: Check default runtime feature boundary
+      - name: Check default Tokio runtime boundary
         run: cargo +nightly-2026-04-15 check -p lsp-max --lib
 
-      - name: Check runtime-agnostic feature boundary
-        run: cargo +nightly-2026-04-15 check -p lsp-max --lib --no-default-features --features runtime-agnostic
+      - name: Check all supported features
+        run: cargo +nightly-2026-04-15 check -p lsp-max --lib --all-features
 
   workspace-quality:
     name: Format, Clippy, and workspace tests
