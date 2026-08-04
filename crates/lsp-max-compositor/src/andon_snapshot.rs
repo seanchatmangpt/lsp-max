@@ -60,3 +60,37 @@ impl AndonSnapshot {
         ctx.repairs = repairs;
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn commit_materializes_blocking_context_and_increments_sequence() {
+        let snapshot = AndonSnapshot::new();
+        snapshot.commit_new_state(
+            vec!["GGEN-TPL-001".to_string()],
+            vec!["diagnostic-admission".to_string()],
+            vec![AndonEvent {
+                code: "GGEN-TPL-001".to_string(),
+                blocking: true,
+            }],
+            vec![RepairAction {
+                next_lawful_step: "repair template".to_string(),
+                required_command: "ggen sync".to_string(),
+            }],
+        );
+
+        let first = snapshot.get_context();
+        assert_eq!(first.seq, Some(1));
+        assert_eq!(first.admission_allowed, Some(false));
+        assert_eq!(first.active_andon_codes, vec!["GGEN-TPL-001"]);
+        assert!(first.render_gate_context().is_ok());
+
+        snapshot.commit_new_state(Vec::new(), Vec::new(), Vec::new(), Vec::new());
+        let second = snapshot.get_context();
+        assert_eq!(second.seq, Some(2));
+        assert_eq!(second.admission_allowed, Some(true));
+        assert!(second.active_andon_codes.is_empty());
+    }
+}

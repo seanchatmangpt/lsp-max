@@ -129,3 +129,25 @@ impl LspPushAdapter {
         }
     }
 }
+
+#[cfg(test)]
+mod ontology_fidelity_tests {
+    use super::*;
+
+    #[test]
+    fn implemented_push_methods_are_declared_by_the_protocol_ontology() {
+        let ontology = include_str!("../../ontology/max-protocol.ttl");
+        for method in [
+            LspMaxAndonRaised::METHOD,
+            LspMaxAdmissionChanged::METHOD,
+            LspMaxTruthTableChanged::METHOD,
+            LspMaxCounterfactualFailed::METHOD,
+            LspMaxNextLawfulStepChanged::METHOD,
+        ] {
+            assert!(
+                ontology.contains(&format!("lsp:methodName \"{method}\"")),
+                "ontology does not declare implemented notification {method}"
+            );
+        }
+    }
+}

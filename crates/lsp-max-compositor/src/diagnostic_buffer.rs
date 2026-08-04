@@ -151,6 +151,28 @@ impl DiagnosticBuffer {
         self.andon_uri_count.load(Ordering::Acquire) > 0
     }
 
+    /// Return the currently active ANDON codes across every buffered URI.
+    ///
+    /// This is the bounded evidence surface used to materialize `D_t` after a
+    /// flush. It intentionally derives from the same merge path as publication,
+    /// so the snapshot cannot disagree with diagnostic admission rules.
+    pub fn active_andon_codes(&self) -> Vec<String> {
+        let mut codes = self
+            .buffered_uris()
+            .into_iter()
+            .flat_map(|uri| {
+                self.flush(&uri)
+                    .andon_codes()
+                    .into_iter()
+                    .map(str::to_owned)
+                    .collect::<Vec<_>>()
+            })
+            .collect::<Vec<_>>();
+        codes.sort();
+        codes.dedup();
+        codes
+    }
+
     /// Called by FlushCoordinator after writing the gate file at the end of a flush batch.
     /// Syncs `gate_last_written` so the next deposit() skips redundant writes correctly.
     pub fn sync_gate_written(&self, andon: bool) {
@@ -168,5 +190,47 @@ impl DiagnosticBuffer {
     pub fn buffered_uris(&self) -> Vec<String> {
         let guard = self.inner.pin();
         guard.iter().map(|(k, _)| k.clone()).collect()
+    }
+}
+
+#[cfg(test)]
+mod active_code_tests {
+    use super::*;
+    use std::path::PathBuf;
+
+    fn entry(uri: &str, code: &str) -> DiagnosticEntry {
+        DiagnosticEntry {
+            uri: uri.to_string(),
+            line: 0,
+            character: 0,
+            severity: 1,
+            code: code.to_string(),
+            message: "blocked".to_string(),
+            source_tier: ChildTier::DiagnosticsOnly,
+            server_id: Some("test".to_string()),
+        }
+    }
+
+    #[test]
+    fn active_andon_codes_are_merged_sorted_and_deduplicated() {
+        let gate_path = std::env::temp_dir().join(format!(
+            "lsp-max-active-code-test-{}",
+            std::process::id()
+        ));
+        let gate = Arc::new(GateFile::from_path(PathBuf::from(&gate_path)));
+        let ctx = Arc::new(MergeContext::new(vec!["GGEN-".to_string()]));
+        let buffer = DiagnosticBuffer::new(ctx, gate);
+
+        for uri in ["file:///a.rs", "file:///b.rs"] {
+            buffer.deposit(
+                uri,
+                "test",
+                ChildTier::DiagnosticsOnly,
+                vec![entry(uri, "GGEN-TPL-001")],
+            );
+        }
+
+        assert_eq!(buffer.active_andon_codes(), vec!["GGEN-TPL-001"]);
+        let _ = std::fs::remove_file(gate_path);
     }
 }
