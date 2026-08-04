@@ -163,5 +163,5 @@ rayon-par-bridge = "0.1.0"
 bon = "3.6.4"
 rustc-hash = "2"
 lsp-max-ast = { path = "crates/lsp-max-adapters/lsp-max-ast", version = "26.7.1" }
-chicago-tdd-tools = { path = "/Users/sac/chicago-tdd-tools" }
-chicago-tdd-tools-proc-macros = { path = "/Users/sac/chicago-tdd-tools/proc_macros", package = "chicago-tdd-tools-proc-macros" }
+chicago-tdd-tools = "26.7.1"
+chicago-tdd-tools-proc-macros = "26.7.1"
