@@ -53,57 +53,52 @@ jobs:
 
       - name: Scan and enforce ontology law-axis consistency
         run: |
-          set -euo pipefail
+          python3 - <<'PY'
+          import os
+          import re
+          from pathlib import Path
 
-          ontology="ontology/lsp318.ttl"
+          ontology = Path("ontology/lsp318.ttl")
+          text = ontology.read_text()
+          statuses = (
+              "ADMITTED",
+              "CANDIDATE",
+              "REFUSED",
+              "UNKNOWN",
+              "BLOCKED",
+              "PARTIAL",
+              "OPEN",
+          )
 
-          status_count() {
-            { rg -o "law:status[[:space:]]+law:$1" "$ontology" || true; } | wc -l | tr -d ' '
+          methods = re.findall(r'lsp:methodName\s+"[^"]+"', text)
+          counts = {
+              status: len(re.findall(rf"law:status\s+law:{status}\b", text))
+              for status in statuses
           }
+          method_count = len(methods)
+          status_total = sum(counts.values())
 
-          METHODS="$({ rg -o 'lsp:methodName[[:space:]]+"[^"]+"' "$ontology" || true; } | wc -l | tr -d ' ')"
-          ADMITTED="$(status_count ADMITTED)"
-          CANDIDATE="$(status_count CANDIDATE)"
-          REFUSED="$(status_count REFUSED)"
-          UNKNOWN="$(status_count UNKNOWN)"
-          BLOCKED="$(status_count BLOCKED)"
-          PARTIAL="$(status_count PARTIAL)"
-          OPEN="$(status_count OPEN)"
-          STATUS_TOTAL=$((ADMITTED + CANDIDATE + REFUSED + UNKNOWN + BLOCKED + PARTIAL + OPEN))
-          NON_ADMITTED=$((STATUS_TOTAL - ADMITTED))
+          if method_count == 0:
+              raise SystemExit("REFUSED: no LSP method declarations were observed")
+          if status_total != method_count:
+              raise SystemExit(
+                  "REFUSED: every declared LSP method must have exactly one "
+                  f"law:status assignment: methods={method_count} statuses={status_total}"
+              )
 
-          if [[ "$METHODS" -eq 0 ]]; then
-            echo "::error::No LSP method declarations were observed"
-            exit 1
-          fi
-
-          if [[ "$STATUS_TOTAL" -ne "$METHODS" ]]; then
-            echo "::error::Every declared LSP method must have exactly one law:status assignment: methods=$METHODS statuses=$STATUS_TOTAL"
-            exit 1
-          fi
-
-          if [[ "$NON_ADMITTED" -eq 0 ]]; then
-            STANDING="ALIVE"
-          else
-            STANDING="PARTIAL_ALIVE"
-          fi
-
-          {
-            echo "## lsp-max Conformance Status"
-            echo
-            echo "Exact ontology standing: **${STANDING}**"
-            echo
-            echo "| Law status | Assigned methods |"
-            echo "| --- | ---: |"
-            echo "| ADMITTED | $ADMITTED |"
-            echo "| CANDIDATE | $CANDIDATE |"
-            echo "| REFUSED | $REFUSED |"
-            echo "| UNKNOWN | $UNKNOWN |"
-            echo "| BLOCKED | $BLOCKED |"
-            echo "| PARTIAL | $PARTIAL |"
-            echo "| OPEN | $OPEN |"
-            echo "| **Total status assignments** | **$STATUS_TOTAL** |"
-            echo "| **Declared methods** | **$METHODS** |"
-            echo
-            echo "REFUSED is a lawful negative state and does not by itself fail ontology consistency."
-          } >> "$GITHUB_STEP_SUMMARY"
+          standing = "ALIVE" if counts["ADMITTED"] == status_total else "PARTIAL_ALIVE"
+          summary = Path(os.environ["GITHUB_STEP_SUMMARY"])
+          with summary.open("a") as out:
+              out.write("## lsp-max Conformance Status\n\n")
+              out.write(f"Exact ontology standing: **{standing}**\n\n")
+              out.write("| Law status | Assigned methods |\n")
+              out.write("| --- | ---: |\n")
+              for status in statuses:
+                  out.write(f"| {status} | {counts[status]} |\n")
+              out.write(f"| **Total status assignments** | **{status_total}** |\n")
+              out.write(f"| **Declared methods** | **{method_count}** |\n\n")
+              out.write(
+                  "REFUSED is a lawful negative state and does not by itself "
+                  "fail ontology consistency.\n"
+              )
+          PY
