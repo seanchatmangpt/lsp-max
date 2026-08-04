@@ -6,6 +6,7 @@ use thiserror::Error;
 use crate::broker::{ActuationBroker, BrokerError, WorkspaceState};
 use crate::differential::{compare_engines, DifferentialReport};
 use crate::identity::{digest_bytes, ProjectAdmission, SemanticSubject};
+use crate::intelligence::{IntelligenceError, WorkspaceIndex};
 use crate::receipt::{Outcome, Receipt, ReceiptChain, ReceiptKind};
 use crate::semantic::{SemanticEngine, TreeSitterRustEngine};
 
@@ -15,8 +16,17 @@ pub struct DemoReport {
     pub initial_semantic_revision: String,
     pub final_project_hash: String,
     pub final_semantic_revision: String,
+    pub workspace_index_hash: String,
+    pub workspace_index_valid: bool,
     pub symbols: Vec<String>,
     pub diagnostics: Vec<String>,
+    pub hover_signature: String,
+    pub definition_path: String,
+    pub reference_count: usize,
+    pub completion_labels: Vec<String>,
+    pub rename_plan_hash: String,
+    pub rename_edit_count: usize,
+    pub lexical_only: bool,
     pub rustc_version: String,
     pub differential: DifferentialReport,
     pub semantic_receipts: Vec<Receipt>,
@@ -28,6 +38,10 @@ pub struct DemoReport {
 pub enum DemoError {
     #[error(transparent)]
     Broker(#[from] BrokerError),
+    #[error(transparent)]
+    Intelligence(#[from] IntelligenceError),
+    #[error("demo fixture is missing: {0}")]
+    Fixture(String),
 }
 
 pub fn run_demo() -> Result<DemoReport, DemoError> {
@@ -91,6 +105,23 @@ pub fn run_demo() -> Result<DemoReport, DemoError> {
         Outcome::Executed,
     );
 
+    let index = WorkspaceIndex::build(&final_admission, &final_snapshot, workspace.files());
+    let main_source = workspace
+        .get("src/main.rs")
+        .ok_or_else(|| DemoError::Fixture("src/main.rs".to_owned()))?;
+    let (call_line, call_column) = nth_position(main_source, "meaning", 1)
+        .ok_or_else(|| DemoError::Fixture("meaning call".to_owned()))?;
+    let hover = index.hover_at("src/main.rs", call_line, call_column)?;
+    let definition = index.definition_at("src/main.rs", call_line, call_column)?;
+    let references = index.references_at("src/main.rs", call_line, call_column, true)?;
+    let completions = index.completions("src/main.rs", call_line, call_column + 4, 20)?;
+    let rename = index.rename_plan(
+        "src/main.rs",
+        call_line,
+        call_column,
+        "ultimate_meaning",
+    )?;
+
     let differential = compare_engines(
         &engine,
         &TreeSitterRustEngine,
@@ -112,6 +143,8 @@ pub fn run_demo() -> Result<DemoReport, DemoError> {
         initial_semantic_revision: initial_snapshot.revision_hash,
         final_project_hash: final_admission.project_hash,
         final_semantic_revision: final_snapshot.revision_hash,
+        workspace_index_hash: index.index_hash.clone(),
+        workspace_index_valid: index.verify(),
         symbols: final_snapshot
             .symbols
             .iter()
@@ -122,6 +155,16 @@ pub fn run_demo() -> Result<DemoReport, DemoError> {
             .iter()
             .map(|diagnostic| format!("{}:{}", diagnostic.code, diagnostic.message))
             .collect(),
+        hover_signature: hover.symbol.signature,
+        definition_path: definition.path,
+        reference_count: references.len(),
+        completion_labels: completions
+            .into_iter()
+            .map(|candidate| candidate.label)
+            .collect(),
+        rename_plan_hash: rename.plan_hash,
+        rename_edit_count: rename.edits.values().map(Vec::len).sum(),
+        lexical_only: rename.lexical_only,
         rustc_version: tool.stdout.trim().to_owned(),
         differential,
         semantic_receipts: semantic_receipts.receipts().to_vec(),
@@ -130,12 +173,22 @@ pub fn run_demo() -> Result<DemoReport, DemoError> {
     })
 }
 
+fn nth_position(source: &str, needle: &str, occurrence: usize) -> Option<(u32, u32)> {
+    let byte = source.match_indices(needle).nth(occurrence)?.0;
+    let before = &source[..byte];
+    let line = before.bytes().filter(|byte| *byte == b'\n').count() as u32;
+    let column = before
+        .rsplit_once('\n')
+        .map_or(before.len(), |(_, tail)| tail.len()) as u32;
+    Some((line, column))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
-    fn demo_executes_real_rust_and_replays_receipts() {
+    fn demo_executes_real_rust_and_editor_intelligence() {
         let report = run_demo().expect("demo should execute under the active Rust toolchain");
 
         assert_ne!(report.initial_project_hash, report.final_project_hash);
@@ -146,6 +199,13 @@ mod tests {
         assert!(report.rustc_version.starts_with("rustc "));
         assert!(report.differential.equivalent);
         assert!(report.receipt_chains_valid);
+        assert!(report.workspace_index_valid);
+        assert_eq!(report.definition_path, "src/main.rs");
+        assert_eq!(report.reference_count, 2);
+        assert_eq!(report.rename_edit_count, 2);
+        assert!(report.completion_labels.iter().any(|label| label == "meaning"));
+        assert!(report.hover_signature.starts_with("fn meaning"));
+        assert!(report.lexical_only);
         assert!(report
             .symbols
             .iter()
