@@ -58,10 +58,10 @@ jobs:
           ontology="ontology/lsp318.ttl"
 
           status_count() {
-            rg -o "law:status[[:space:]]+law:$1" "$ontology" | wc -l | tr -d ' '
+            { rg -o "law:status[[:space:]]+law:$1" "$ontology" || true; } | wc -l | tr -d ' '
           }
 
-          METHODS="$(rg -o 'lsp:methodName[[:space:]]+"[^"]+"' "$ontology" | wc -l | tr -d ' ')"
+          METHODS="$({ rg -o 'lsp:methodName[[:space:]]+"[^"]+"' "$ontology" || true; } | wc -l | tr -d ' ')"
           ADMITTED="$(status_count ADMITTED)"
           CANDIDATE="$(status_count CANDIDATE)"
           REFUSED="$(status_count REFUSED)"
