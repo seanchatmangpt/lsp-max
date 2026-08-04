@@ -1,0 +1,34 @@
+name: Rust Docker Build
+
+on:
+  pull_request:
+    branches:
+      - master
+      - main
+  push:
+    branches:
+      - master
+      - main
+  workflow_dispatch:
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  docker-rust:
+    name: cargo build --workspace --all-targets (Docker)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Docker engine identity
+        run: docker version
+
+      - name: Build Rust workspace in clean container
+        run: |
+          docker build \
+            --progress=plain \
+            --file Dockerfile.ci \
+            --tag "lsp-max-rust:${GITHUB_SHA}" \
+            .
