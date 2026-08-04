@@ -23,17 +23,10 @@ fn derive_test_gate_path(agent_id: &str, temp_dir: &str) -> PathBuf {
 }
 
 fn get_cli_command() -> Command {
-    let mut cmd = Command::new("cargo");
-    cmd.args([
-        "run",
-        "-q",
-        "-p",
-        "lsp-max-cli",
-        "--bin",
-        "lsp-max-cli",
-        "--",
-    ]);
-    cmd
+    // This integration test belongs to the CLI package, so Cargo builds and
+    // exposes the exact binary before executing the test. Launching `cargo
+    // run` here would deadlock on the workspace lock held by `cargo test`.
+    Command::new(env!("CARGO_BIN_EXE_lsp-max-cli"))
 }
 
 #[test]
