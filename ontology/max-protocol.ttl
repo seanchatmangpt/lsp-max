@@ -85,23 +85,37 @@ lsp:max_vector a lsp:MaxExtension ;
 # NOTIFICATION — max/* push events
 # ─────────────────────────────────────────────────────────────────────────────
 
-lsp:max_gateChanged a lsp:Notification ;
-    lsp:methodName "max/gateChanged" ;
-    lsp:snakeName  "max_gate_changed" ;
-    lsp:paramType  "GateChangedParams" ;
-    rdfs:comment   "Server-to-client push: ANDON gate state transitioned.  Clients must re-query max/gate to confirm." ;
+lsp:lspMax_andonRaised a lsp:Notification ;
+    lsp:methodName "lspMax/andonRaised" ;
+    lsp:snakeName  "lsp_max_andon_raised" ;
+    lsp:paramType  "AndonEvent" ;
+    rdfs:comment   "Server-to-client push: an ANDON event was raised." ;
     law:status     law:CANDIDATE .
 
-lsp:max_admissionChanged a lsp:Notification ;
-    lsp:methodName "max/admissionChanged" ;
-    lsp:snakeName  "max_admission_changed" ;
+lsp:lspMax_admissionChanged a lsp:Notification ;
+    lsp:methodName "lspMax/admissionChanged" ;
+    lsp:snakeName  "lsp_max_admission_changed" ;
     lsp:paramType  "AdmissionChangedParams" ;
     rdfs:comment   "Server-to-client push: a law axis changed status (e.g. CANDIDATE -> ADMITTED or BLOCKED)." ;
     law:status     law:CANDIDATE .
 
-lsp:max_receiptArrived a lsp:Notification ;
-    lsp:methodName "max/receiptArrived" ;
-    lsp:snakeName  "max_receipt_arrived" ;
-    lsp:paramType  "ReceiptArrivedParams" ;
-    rdfs:comment   "Server-to-client push: a new receipt artifact has been committed and is queryable via max/receipt." ;
+lsp:lspMax_truthTableChanged a lsp:Notification ;
+    lsp:methodName "lspMax/truthTableChanged" ;
+    lsp:snakeName  "lsp_max_truth_table_changed" ;
+    lsp:paramType  "TruthTableChangedParams" ;
+    rdfs:comment   "Server-to-client push: the queryable truth-table document changed." ;
+    law:status     law:CANDIDATE .
+
+lsp:lspMax_counterfactualFailed a lsp:Notification ;
+    lsp:methodName "lspMax/counterfactualFailed" ;
+    lsp:snakeName  "lsp_max_counterfactual_failed" ;
+    lsp:paramType  "CounterfactualFailedParams" ;
+    rdfs:comment   "Server-to-client push: an invariant counterfactual failed." ;
+    law:status     law:CANDIDATE .
+
+lsp:lspMax_nextLawfulStepChanged a lsp:Notification ;
+    lsp:methodName "lspMax/nextLawfulStepChanged" ;
+    lsp:snakeName  "lsp_max_next_lawful_step_changed" ;
+    lsp:paramType  "NextLawfulStepChangedParams" ;
+    rdfs:comment   "Server-to-client push: the next lawful repair step changed." ;
     law:status     law:CANDIDATE .

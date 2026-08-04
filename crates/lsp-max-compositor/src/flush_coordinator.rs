@@ -25,6 +25,7 @@ use crate::child_process::ChildProcessPool;
 use crate::declare::{extract_traces, DeclareModel};
 use crate::dfg::DirectlyFollowsGraph;
 use crate::diagnostic_buffer::DiagnosticBuffer;
+use crate::dt_context::{AndonEvent, RepairAction};
 use crate::gate_file::GateFile;
 use crate::merge::MergeContext;
 use crate::receipt::CompositorReceipt;
@@ -103,6 +104,7 @@ impl FlushCoordinator {
         pool: Arc<ChildProcessPool>,
         gate: Arc<GateFile>,
         expected_server_count: usize,
+        andon_snapshot: Arc<crate::andon_snapshot::AndonSnapshot>,
     ) -> Self {
         // Capacity ≥ expected_server_count × URIs per window — 512 handles N=500 at 1 URI.
         let (tx, rx) = kanal::bounded_async::<FlushSignal>(512);
@@ -121,6 +123,8 @@ impl FlushCoordinator {
         let receipt_seq_bg = Arc::clone(&receipt_seq);
 
         tokio::spawn(async move {
+            let mut last_admission_status: Option<&'static str> = None;
+            let mut last_active_codes = HashSet::<String>::new();
             // Baseline fitness snapshot — written once at startup so MCP bridge and
             // gate-check.sh have a valid file before the first flush cycle. Real flushes
             // overwrite with measured values.
@@ -491,6 +495,69 @@ impl FlushCoordinator {
                 // Sync buffer's last-written flag so deposit() skips redundant writes
                 // correctly on the next round (especially important for ANDON → clear transitions).
                 buffer.sync_gate_written(effective_andon);
+
+                let active_codes = buffer.active_andon_codes();
+                let active_code_set = active_codes.iter().cloned().collect::<HashSet<_>>();
+                let status = if effective_andon {
+                    "BLOCKED"
+                } else {
+                    "ADMITTED"
+                };
+                let events = active_codes
+                    .iter()
+                    .map(|code| AndonEvent {
+                        code: code.clone(),
+                        blocking: true,
+                    })
+                    .collect::<Vec<_>>();
+                let repairs = if effective_andon {
+                    vec![RepairAction {
+                        next_lawful_step:
+                            "Inspect the active diagnostic and satisfy its receipt obligation"
+                                .to_string(),
+                        required_command: "lsp-max-cli gate list".to_string(),
+                    }]
+                } else {
+                    Vec::new()
+                };
+                andon_snapshot.commit_new_state(
+                    active_codes.clone(),
+                    vec!["diagnostic-admission".to_string()],
+                    events,
+                    repairs,
+                );
+
+                for code in active_code_set.difference(&last_active_codes) {
+                    client
+                        .andon_raised(lsp_max::max_andon::andon::AndonEvent {
+                            id: format!("compositor:{code}"),
+                            severity: lsp_max::max_andon::core::Severity::Stop,
+                            code: code.clone(),
+                            title: "Compositor admission blocked".to_string(),
+                            message: format!("Active diagnostic {code} blocks admission"),
+                            invariant_id: Some("diagnostic-admission".to_string()),
+                            observed_state: Some("BLOCKED".to_string()),
+                            expected_state: Some("ADMITTED".to_string()),
+                            blocking: true,
+                            requires_ack: true,
+                            admission_allowed: false,
+                            next_lawful_step: Some(
+                                "Inspect the active diagnostic and satisfy its receipt obligation"
+                                    .to_string(),
+                            ),
+                            required_command: Some("lsp-max-cli gate list".to_string()),
+                            evidence_uri: Some("lsp-max://gate/context".to_string()),
+                            virtual_doc_uri: Some("lsp-max://truth/andon".to_string()),
+                            receipt_required: true,
+                        })
+                        .await;
+                }
+                last_active_codes = active_code_set;
+
+                if last_admission_status != Some(status) {
+                    client.admission_changed(status.to_string()).await;
+                    last_admission_status = Some(status);
+                }
             }
         });
 
