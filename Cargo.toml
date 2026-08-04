@@ -165,8 +165,3 @@ rustc-hash = "2"
 lsp-max-ast = { path = "crates/lsp-max-adapters/lsp-max-ast", version = "26.7.1" }
 chicago-tdd-tools = { path = "/Users/sac/chicago-tdd-tools" }
 chicago-tdd-tools-proc-macros = { path = "/Users/sac/chicago-tdd-tools/proc_macros", package = "chicago-tdd-tools-proc-macros" }
-
-[patch.crates-io]
-wasm4pm = { path = "../wasm4pm/wasm4pm" }
-wasm4pm-compat = { path = "../wasm4pm-compat" }
-lsp-types-max = { path = "../lsp-types-max" }
