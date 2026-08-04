@@ -34,12 +34,13 @@ jobs:
               "[`LogGroundedFitnessEvaluator`]": ("`LogGroundedFitnessEvaluator`", 1),
               "[`LogProfile`]": ("`LogProfile`", 2),
               "[`read_ocel_log`]": ("`read_ocel_log`", 1),
-              "[`LogProfile::activity_variety`]": ("`LogProfile::activity_variety`", 1),
-              "[`LogProfile::object_type_spread`]": ("`LogProfile::object_type_spread`", 1),
+              "[`ACTIVITY_CAP`]": ("`ACTIVITY_CAP`", 1),
+              "[`OBJECT_TYPE_CAP`]": ("`OBJECT_TYPE_CAP`", 1),
               "[`Prng`]": ("`Prng`", 1),
               "[`PipelineBoundedStatus::Refused`]": ("`PipelineBoundedStatus::Refused`", 2),
-              "[`PipelineBoundedStatus::Unknown`]": ("`PipelineBoundedStatus::Unknown`", 2),
               "[`PipelineBoundedStatus::Admitted`]": ("`PipelineBoundedStatus::Admitted`", 1),
+              "[`PipelineBoundedStatus::Partial`]": ("`PipelineBoundedStatus::Partial`", 1),
+              "[`PipelineBoundedStatus::Unknown`]": ("`PipelineBoundedStatus::Unknown`", 2),
           }
 
           files = list(Path("src").rglob("*.rs"))
@@ -63,8 +64,8 @@ jobs:
           }
           if wrong:
               raise SystemExit(f"REFUSED: rustdoc link occurrence mismatch: {wrong}")
-          if sum(observed.values()) != 12:
-              raise SystemExit(f"REFUSED: expected 12 replacements, observed {sum(observed.values())}")
+          if sum(observed.values()) != 13:
+              raise SystemExit(f"REFUSED: expected 13 replacements, observed {sum(observed.values())}")
           PY
 
       - name: Verify strict documentation
