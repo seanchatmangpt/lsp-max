@@ -25,21 +25,21 @@ jobs:
       - name: Record admitted source
         run: git rev-parse HEAD
 
-      - name: Replace exactly nine invalid intra-doc links
+      - name: Replace the exact invalid intra-doc link set
         run: |
           python3 - <<'PY'
           from pathlib import Path
 
           replacements = {
-              "[`LogGroundedFitnessEvaluator`]": "`LogGroundedFitnessEvaluator`",
-              "[`LogProfile`]": "`LogProfile`",
-              "[`read_ocel_log`]": "`read_ocel_log`",
-              "[`LogProfile::activity_variety`]": "`LogProfile::activity_variety`",
-              "[`LogProfile::object_type_spread`]": "`LogProfile::object_type_spread`",
-              "[`Prng`]": "`Prng`",
-              "[`PipelineBoundedStatus::Refused`]": "`PipelineBoundedStatus::Refused`",
-              "[`PipelineBoundedStatus::Unknown`]": "`PipelineBoundedStatus::Unknown`",
-              "[`PipelineBoundedStatus::Admitted`]": "`PipelineBoundedStatus::Admitted`",
+              "[`LogGroundedFitnessEvaluator`]": ("`LogGroundedFitnessEvaluator`", 1),
+              "[`LogProfile`]": ("`LogProfile`", 2),
+              "[`read_ocel_log`]": ("`read_ocel_log`", 1),
+              "[`LogProfile::activity_variety`]": ("`LogProfile::activity_variety`", 1),
+              "[`LogProfile::object_type_spread`]": ("`LogProfile::object_type_spread`", 1),
+              "[`Prng`]": ("`Prng`", 1),
+              "[`PipelineBoundedStatus::Refused`]": ("`PipelineBoundedStatus::Refused`", 2),
+              "[`PipelineBoundedStatus::Unknown`]": ("`PipelineBoundedStatus::Unknown`", 2),
+              "[`PipelineBoundedStatus::Admitted`]": ("`PipelineBoundedStatus::Admitted`", 1),
           }
 
           files = list(Path("src").rglob("*.rs"))
@@ -47,7 +47,7 @@ jobs:
           for path in files:
               text = path.read_text()
               changed = False
-              for old, new in replacements.items():
+              for old, (new, _) in replacements.items():
                   count = text.count(old)
                   if count:
                       observed[old] += count
@@ -56,11 +56,15 @@ jobs:
               if changed:
                   path.write_text(text)
 
-          wrong = {key: count for key, count in observed.items() if count != 1}
+          wrong = {
+              key: {"expected": expected, "observed": observed[key]}
+              for key, (_, expected) in replacements.items()
+              if observed[key] != expected
+          }
           if wrong:
-              raise SystemExit(f"REFUSED: expected exactly one occurrence per rustdoc link: {wrong}")
-          if sum(observed.values()) != 9:
-              raise SystemExit(f"REFUSED: expected 9 replacements, observed {sum(observed.values())}")
+              raise SystemExit(f"REFUSED: rustdoc link occurrence mismatch: {wrong}")
+          if sum(observed.values()) != 12:
+              raise SystemExit(f"REFUSED: expected 12 replacements, observed {sum(observed.values())}")
           PY
 
       - name: Verify strict documentation
