@@ -41,11 +41,11 @@ jobs:
       - name: Install admitted Rust toolchain
         run: rustup toolchain install nightly-2026-04-15 --profile minimal --component rustfmt --component clippy
 
-      - name: Format gate
-        run: cargo +nightly-2026-04-15 fmt -p ra-max -- --check
-
       - name: Compile and execute tests
         run: cargo +nightly-2026-04-15 test -p ra-max --all-targets
+
+      - name: Format gate
+        run: cargo +nightly-2026-04-15 fmt -p ra-max -- --check
 
       - name: Execute receipt-bound Rust demo
         run: cargo +nightly-2026-04-15 run -p ra-max -- demo | tee /tmp/ra-max-demo.json
