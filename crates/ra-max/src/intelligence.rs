@@ -478,10 +478,10 @@ fn is_identifier_continue(character: char) -> bool {
 }
 
 const RUST_KEYWORDS: &[&str] = &[
-    "as", "async", "await", "break", "const", "continue", "crate", "dyn", "else",
-    "enum", "extern", "false", "fn", "for", "if", "impl", "in", "let", "loop",
-    "match", "mod", "move", "mut", "pub", "ref", "return", "self", "Self", "static",
-    "struct", "super", "trait", "true", "type", "unsafe", "use", "where", "while",
+    "as", "async", "await", "break", "const", "continue", "crate", "dyn", "else", "enum", "extern",
+    "false", "fn", "for", "if", "impl", "in", "let", "loop", "match", "mod", "move", "mut", "pub",
+    "ref", "return", "self", "Self", "static", "struct", "super", "trait", "true", "type",
+    "unsafe", "use", "where", "while",
 ];
 
 #[cfg(test)]
@@ -530,9 +530,7 @@ mod tests {
         let definition = index
             .definition_at("src/main.rs", line, column)
             .expect("unique item definition");
-        let hover = index
-            .hover_at("src/main.rs", line, column)
-            .expect("hover");
+        let hover = index.hover_at("src/main.rs", line, column).expect("hover");
         let references = index
             .references_at("src/main.rs", line, column, true)
             .expect("references");
@@ -557,7 +555,7 @@ mod tests {
 
     #[test]
     fn completion_and_rename_cover_the_unique_item_surface() {
-        let (admission, snapshot, mut files) = fixture();
+        let (admission, _snapshot, mut files) = fixture();
         files.insert(
             "src/scratch.rs".to_owned(),
             "fn probe() { mea }\n".to_owned(),

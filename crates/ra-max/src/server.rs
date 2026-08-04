@@ -10,7 +10,9 @@ use parking_lot::{Mutex, RwLock};
 use crate::identity::{digest_bytes, ProjectAdmission, SemanticSubject};
 use crate::intelligence::{CompletionCandidate, IntelligenceError, Occurrence, WorkspaceIndex};
 use crate::receipt::{Outcome, Receipt, ReceiptChain, ReceiptKind};
-use crate::semantic::{SemanticEngine, SemanticSnapshot, SourceRange, Symbol, TreeSitterRustEngine};
+use crate::semantic::{
+    SemanticEngine, SemanticSnapshot, SourceRange, Symbol, TreeSitterRustEngine,
+};
 use crate::WorkspaceState;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -244,7 +246,10 @@ impl LanguageServer for RaMaxServer {
         let Some(analysis) = self.manufacture_analysis() else {
             return Ok(None);
         };
-        match analysis.index.hover_at(&path, position.line, position.character) {
+        match analysis
+            .index
+            .hover_at(&path, position.line, position.character)
+        {
             Ok(info) => Ok(Some(Hover {
                 contents: HoverContents::Markup(MarkupContent {
                     kind: MarkupKind::Markdown,
@@ -275,7 +280,10 @@ impl LanguageServer for RaMaxServer {
         let Some(analysis) = self.manufacture_analysis() else {
             return Ok(None);
         };
-        match analysis.index.definition_at(&path, position.line, position.character) {
+        match analysis
+            .index
+            .definition_at(&path, position.line, position.character)
+        {
             Ok(symbol) => Ok(symbol_location(&symbol).map(GotoDefinitionResponse::Scalar)),
             Err(error) => {
                 self.log_refusal(&error).await;
@@ -300,10 +308,7 @@ impl LanguageServer for RaMaxServer {
             params.context.include_declaration,
         ) {
             Ok(references) => Ok(Some(
-                references
-                    .iter()
-                    .filter_map(occurrence_location)
-                    .collect(),
+                references.iter().filter_map(occurrence_location).collect(),
             )),
             Err(error) => {
                 self.log_refusal(&error).await;
@@ -394,6 +399,7 @@ impl LanguageServer for RaMaxServer {
         }
     }
 
+    #[allow(clippy::mutable_key_type)]
     async fn rename(
         &self,
         params: RenameParams,
@@ -403,13 +409,18 @@ impl LanguageServer for RaMaxServer {
         let Some(analysis) = self.manufacture_analysis() else {
             return Ok(None);
         };
-        match analysis.index.rename_plan(
-            &path,
-            position.line,
-            position.character,
-            &params.new_name,
-        ) {
+        match analysis
+            .index
+            .rename_plan(&path, position.line, position.character, &params.new_name)
+        {
             Ok(plan) => {
+                self.receipts.lock().append(
+                    ReceiptKind::Construction,
+                    plan.subject_revision.clone(),
+                    digest_bytes(format!("rename:{}:{}", plan.old_name, plan.new_name).as_bytes()),
+                    plan.plan_hash.clone(),
+                    Outcome::Constructed,
+                );
                 let changes: HashMap<_, _> = plan
                     .edits
                     .into_iter()
@@ -432,6 +443,7 @@ impl LanguageServer for RaMaxServer {
                     changes: Some(changes),
                     document_changes: None,
                     change_annotations: None,
+                    metadata: None,
                 }))
             }
             Err(error) => {

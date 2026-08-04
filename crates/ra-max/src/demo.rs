@@ -115,12 +115,7 @@ pub fn run_demo() -> Result<DemoReport, DemoError> {
     let definition = index.definition_at("src/main.rs", call_line, call_column)?;
     let references = index.references_at("src/main.rs", call_line, call_column, true)?;
     let completions = index.completions("src/main.rs", call_line, call_column + 4, 20)?;
-    let rename = index.rename_plan(
-        "src/main.rs",
-        call_line,
-        call_column,
-        "ultimate_meaning",
-    )?;
+    let rename = index.rename_plan("src/main.rs", call_line, call_column, "ultimate_meaning")?;
 
     let differential = compare_engines(
         &engine,
@@ -203,7 +198,10 @@ mod tests {
         assert_eq!(report.definition_path, "src/main.rs");
         assert_eq!(report.reference_count, 2);
         assert_eq!(report.rename_edit_count, 2);
-        assert!(report.completion_labels.iter().any(|label| label == "meaning"));
+        assert!(report
+            .completion_labels
+            .iter()
+            .any(|label| label == "meaning"));
         assert!(report.hover_signature.starts_with("fn meaning"));
         assert!(report.lexical_only);
         assert!(report

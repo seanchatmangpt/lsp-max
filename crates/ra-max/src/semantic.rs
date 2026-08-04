@@ -242,10 +242,7 @@ fn symbol_kind(node_kind: &str) -> Option<&'static str> {
 }
 
 fn item_signature(node: Node<'_>, source: &str) -> String {
-    let text = node
-        .utf8_text(source.as_bytes())
-        .unwrap_or_default()
-        .trim();
+    let text = node.utf8_text(source.as_bytes()).unwrap_or_default().trim();
     let boundary = text
         .find('{')
         .or_else(|| text.find(';').map(|index| index + 1))

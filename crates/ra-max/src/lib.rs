@@ -25,8 +25,7 @@ pub use intelligence::{
 };
 pub use receipt::{Outcome, Receipt, ReceiptChain, ReceiptKind};
 pub use semantic::{
-    SemanticDiagnostic, SemanticEngine, SemanticSnapshot, SourceRange, Symbol,
-    TreeSitterRustEngine,
+    SemanticDiagnostic, SemanticEngine, SemanticSnapshot, SourceRange, Symbol, TreeSitterRustEngine,
 };
 pub use server::RaMaxServer;
 
