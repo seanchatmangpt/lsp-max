@@ -1,0 +1,26 @@
+[package]
+name = "ra-max"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Receipt-bound Rust semantic analysis vertical slice on lsp-max"
+publish = false
+
+[dependencies]
+blake3 = "1"
+lsp-max = { path = "../.." }
+lsp-types-max.workspace = true
+parking_lot.workspace = true
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror.workspace = true
+tokio = { version = "1", features = ["io-std", "macros", "rt-multi-thread", "sync"] }
+tracing = "0.1"
+tree-sitter.workspace = true
+tree-sitter-rust = "0.23"
+
+[dev-dependencies]
+tempfile = "3"
