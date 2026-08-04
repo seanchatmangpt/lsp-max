@@ -2,16 +2,20 @@
 
 [![Rust Quality][build-badge]][build-url]
 [![License][license-badge]][license-url]
-[![Rust 1.87+][rust-badge]][rust-url]
+[![Pinned nightly][rust-badge]][rust-url]
 
 [build-badge]: https://github.com/seanchatmangpt/lsp-max/actions/workflows/rust-quality.yml/badge.svg
 [build-url]: https://github.com/seanchatmangpt/lsp-max/actions/workflows/rust-quality.yml
 [license-badge]: https://img.shields.io/badge/license-MIT%2FApache--2.0-blue
 [license-url]: #license
-[rust-badge]: https://img.shields.io/badge/rust-1.87%2B-orange
+[rust-badge]: https://img.shields.io/badge/rust-nightly--2026--04--15-orange
 [rust-url]: https://www.rust-lang.org
 
 A post-human LSP 3.18 runtime for autonomous agents. `lsp-max` enforces architectural laws via cryptographic receipt chains, three-valued conformance vectors, and deterministic gates. It is not an IDE helper; it is an admission controller for machine agent workflows.
+
+## Toolchain contract
+
+The executable workspace authority is the pinned `nightly-2026-04-15` toolchain declared in `rust-toolchain.toml`. The manifests declare Rust `1.87.0` as the dependency-resolution floor, but stable Rust is **unsupported** because `wasm4pm-compat` uses nightly language features. CI records the exact compiler identity and checks both supported runtime feature configurations with the pinned nightly.
 
 ## Quick start
 
@@ -53,16 +57,18 @@ Extend with the `RulePackServer` trait and a TOML rule file instead of reproduci
 - **Process mining:** DFG fitness and Declare constraint validation over LSP event logs.
 - **Specification-driven protocol:** Generate protocol types from the LSP meta-model.
 - **Agent integration:** Lifecycle hooks for discovery and analysis.
-- **Automated gates:** Exact-head CI validates repository invariants, MSRV, formatting, linting, tests, packaging, and clean Docker builds.
+- **Automated gates:** Exact-head CI validates repository invariants, the pinned toolchain, formatting, linting, tests, packaging, and clean Docker builds.
 
 ## Verification
 
 ```bash
 bash scripts/audit-repository.sh
-cargo fmt --all -- --check
-cargo clippy --workspace --all-targets --all-features -- -D warnings
-cargo test --workspace --all-targets
-cargo publish -p lsp-max --dry-run --allow-dirty
+cargo +nightly-2026-04-15 fmt --all -- --check
+cargo +nightly-2026-04-15 check -p lsp-max --lib
+cargo +nightly-2026-04-15 check -p lsp-max --lib --no-default-features --features runtime-agnostic
+cargo +nightly-2026-04-15 clippy --workspace --all-targets --all-features -- -D warnings
+cargo +nightly-2026-04-15 test --workspace --all-targets
+cargo +nightly-2026-04-15 publish -p lsp-max --dry-run --allow-dirty
 ```
 
 `cargo publish` without `--dry-run` is outside automated execution authority.
