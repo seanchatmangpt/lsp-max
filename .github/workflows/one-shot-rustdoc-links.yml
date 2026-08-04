@@ -41,6 +41,22 @@ jobs:
               "[`PipelineBoundedStatus::Admitted`]": ("`PipelineBoundedStatus::Admitted`", 1),
               "[`PipelineBoundedStatus::Partial`]": ("`PipelineBoundedStatus::Partial`", 1),
               "[`PipelineBoundedStatus::Unknown`]": ("`PipelineBoundedStatus::Unknown`", 2),
+              "[`Refused`]: PipelineBoundedStatus::Refused": (
+                  "[`Refused`]: crate::pipeline::types::PipelineBoundedStatus::Refused",
+                  1,
+              ),
+              "[`Admitted`]: PipelineBoundedStatus::Admitted": (
+                  "[`Admitted`]: crate::pipeline::types::PipelineBoundedStatus::Admitted",
+                  1,
+              ),
+              "[`Partial`]: PipelineBoundedStatus::Partial": (
+                  "[`Partial`]: crate::pipeline::types::PipelineBoundedStatus::Partial",
+                  1,
+              ),
+              "[`Unknown`]: PipelineBoundedStatus::Unknown": (
+                  "[`Unknown`]: crate::pipeline::types::PipelineBoundedStatus::Unknown",
+                  1,
+              ),
           }
 
           files = list(Path("src").rglob("*.rs"))
@@ -64,8 +80,8 @@ jobs:
           }
           if wrong:
               raise SystemExit(f"REFUSED: rustdoc link occurrence mismatch: {wrong}")
-          if sum(observed.values()) != 13:
-              raise SystemExit(f"REFUSED: expected 13 replacements, observed {sum(observed.values())}")
+          if sum(observed.values()) != 17:
+              raise SystemExit(f"REFUSED: expected 17 replacements, observed {sum(observed.values())}")
           PY
 
       - name: Verify strict documentation
