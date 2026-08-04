@@ -22,10 +22,10 @@ use wasm4pm_compat::ocel::{EventObjectLink, LinkedOcel, Object as OcelObject, Oc
 use wasm4pm_compat::witness::Ocel20;
 
 use crate::child_process::ChildProcessPool;
-use crate::dt_context::{AndonEvent, RepairAction};
 use crate::declare::{extract_traces, DeclareModel};
 use crate::dfg::DirectlyFollowsGraph;
 use crate::diagnostic_buffer::DiagnosticBuffer;
+use crate::dt_context::{AndonEvent, RepairAction};
 use crate::gate_file::GateFile;
 use crate::merge::MergeContext;
 use crate::receipt::CompositorReceipt;
@@ -498,7 +498,11 @@ impl FlushCoordinator {
 
                 let active_codes = buffer.active_andon_codes();
                 let active_code_set = active_codes.iter().cloned().collect::<HashSet<_>>();
-                let status = if effective_andon { "BLOCKED" } else { "ADMITTED" };
+                let status = if effective_andon {
+                    "BLOCKED"
+                } else {
+                    "ADMITTED"
+                };
                 let events = active_codes
                     .iter()
                     .map(|code| AndonEvent {
@@ -508,8 +512,9 @@ impl FlushCoordinator {
                     .collect::<Vec<_>>();
                 let repairs = if effective_andon {
                     vec![RepairAction {
-                        next_lawful_step: "Inspect the active diagnostic and satisfy its receipt obligation"
-                            .to_string(),
+                        next_lawful_step:
+                            "Inspect the active diagnostic and satisfy its receipt obligation"
+                                .to_string(),
                         required_command: "lsp-max-cli gate list".to_string(),
                     }]
                 } else {

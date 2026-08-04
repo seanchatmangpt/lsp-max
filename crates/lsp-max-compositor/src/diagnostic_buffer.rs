@@ -213,10 +213,8 @@ mod active_code_tests {
 
     #[test]
     fn active_andon_codes_are_merged_sorted_and_deduplicated() {
-        let gate_path = std::env::temp_dir().join(format!(
-            "lsp-max-active-code-test-{}",
-            std::process::id()
-        ));
+        let gate_path =
+            std::env::temp_dir().join(format!("lsp-max-active-code-test-{}", std::process::id()));
         let gate = Arc::new(GateFile::from_path(PathBuf::from(&gate_path)));
         let ctx = Arc::new(MergeContext::new(vec!["GGEN-".to_string()]));
         let buffer = DiagnosticBuffer::new(ctx, gate);
