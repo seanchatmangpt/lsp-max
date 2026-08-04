@@ -4,10 +4,7 @@ use ra_max::RaMaxServer;
 use serde_json::{json, Value};
 use tower::{Service, ServiceExt};
 
-async fn request(
-    service: &mut lsp_max::LspService<RaMaxServer>,
-    message: Request,
-) -> Value {
+async fn request(service: &mut lsp_max::LspService<RaMaxServer>, message: Request) -> Value {
     let response = service
         .ready()
         .await
@@ -38,10 +35,7 @@ async fn routes_the_80_20_editor_surface_through_json_rpc() {
         .finish();
     let initialized = request(&mut service, initialize).await;
     assert_eq!(initialized["capabilities"]["hoverProvider"], true);
-    assert_eq!(
-        initialized["capabilities"]["positionEncoding"],
-        "utf-8"
-    );
+    assert_eq!(initialized["capabilities"]["positionEncoding"], "utf-8");
 
     let uri = "file:///workspace/src/main.rs";
     let source = "fn meaning() -> u32 { 42 }\nfn main() { let answer = meaning(); assert_eq!(answer, 42); }\n";
