@@ -66,7 +66,12 @@ if rg -n 'cargo run --bin lsp-max(\s|$)' README.md docs CONTRIBUTING.md; then
   report_failure "documentation references a nonexistent root lsp-max binary"
 fi
 
-if rg -n '(^|[^-])cargo publish([[:space:]]|$)' .github/workflows scripts --glob '*.yml' --glob '*.yaml' --glob '*.sh' | rg -v -- '--dry-run'; then
+if rg -n '(^|[^-])cargo publish([[:space:]]|$)' .github/workflows scripts \
+  --glob '*.yml' \
+  --glob '*.yaml' \
+  --glob '*.sh' \
+  --glob '!audit-repository.sh' \
+  | rg -v -- '--dry-run'; then
   report_failure "automated real cargo publish path detected"
 fi
 
