@@ -19,6 +19,8 @@ pub mod state_response;
 
 // Heavy modules — require the optional lsp-max* and wasm4pm deps; gated behind `full`.
 #[cfg(feature = "full")]
+pub mod andon_runtime;
+#[cfg(feature = "full")]
 pub mod capability_merge;
 #[cfg(feature = "full")]
 pub mod child_process;
