@@ -1,0 +1,91 @@
+name: One-shot rustdoc link repair
+
+on:
+  pull_request:
+    branches: [master]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: one-shot-rustdoc-links-pr-22
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    if: github.event.pull_request.number == 22 && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: fix/wasm4pm-lsp-example-crates-io-dep
+          fetch-depth: 0
+
+      - name: Record admitted source
+        run: git rev-parse HEAD
+
+      - name: Replace exactly nine invalid intra-doc links
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          replacements = {
+              "[`LogGroundedFitnessEvaluator`]": "`LogGroundedFitnessEvaluator`",
+              "[`LogProfile`]": "`LogProfile`",
+              "[`read_ocel_log`]": "`read_ocel_log`",
+              "[`LogProfile::activity_variety`]": "`LogProfile::activity_variety`",
+              "[`LogProfile::object_type_spread`]": "`LogProfile::object_type_spread`",
+              "[`Prng`]": "`Prng`",
+              "[`PipelineBoundedStatus::Refused`]": "`PipelineBoundedStatus::Refused`",
+              "[`PipelineBoundedStatus::Unknown`]": "`PipelineBoundedStatus::Unknown`",
+              "[`PipelineBoundedStatus::Admitted`]": "`PipelineBoundedStatus::Admitted`",
+          }
+
+          files = list(Path("src").rglob("*.rs"))
+          observed = {key: 0 for key in replacements}
+          for path in files:
+              text = path.read_text()
+              changed = False
+              for old, new in replacements.items():
+                  count = text.count(old)
+                  if count:
+                      observed[old] += count
+                      text = text.replace(old, new)
+                      changed = True
+              if changed:
+                  path.write_text(text)
+
+          wrong = {key: count for key, count in observed.items() if count != 1}
+          if wrong:
+              raise SystemExit(f"REFUSED: expected exactly one occurrence per rustdoc link: {wrong}")
+          if sum(observed.values()) != 9:
+              raise SystemExit(f"REFUSED: expected 9 replacements, observed {sum(observed.values())}")
+          PY
+
+      - name: Verify strict documentation
+        env:
+          RUSTDOCFLAGS: "-D warnings"
+        run: |
+          rustup toolchain install nightly-2026-04-15 --profile minimal
+          cargo +nightly-2026-04-15 doc --workspace --no-deps --all-features
+
+      - name: Remove one-shot authority and enforce bounded diff
+        run: |
+          git rm .github/workflows/one-shot-rustdoc-links.yml
+          changed="$(git diff --name-only)"
+          printf '%s\n' "$changed"
+          while IFS= read -r path; do
+            case "$path" in
+              .github/workflows/one-shot-rustdoc-links.yml|src/pipeline/*.rs) ;;
+              *) echo "REFUSED: unexpected changed path: $path" >&2; exit 1 ;;
+            esac
+          done <<< "$changed"
+
+      - name: Commit repair and self-removal
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/pipeline
+          git commit -m "docs(rustdoc): repair strict intra-doc links"
+          git push origin HEAD:fix/wasm4pm-lsp-example-crates-io-dep
