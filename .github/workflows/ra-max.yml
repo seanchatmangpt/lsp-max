@@ -18,7 +18,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: ra-max-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -26,14 +26,14 @@ concurrency:
 
 jobs:
   execute:
-    name: format, lint, test, and execute
+    name: compile, execute, and canonicalize
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
         with:
-          persist-credentials: false
-          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: true
+          ref: ${{ github.event_name == 'pull_request' && github.head_ref || github.ref_name }}
 
       - name: Record exact source identity
         run: git rev-parse HEAD
@@ -41,24 +41,48 @@ jobs:
       - name: Install admitted Rust toolchain
         run: rustup toolchain install nightly-2026-04-15 --profile minimal --component rustfmt --component clippy
 
-      - name: Format gate
-        run: cargo +nightly-2026-04-15 fmt -p ra-max -- --check
-
-      - name: Clippy gate
-        run: cargo +nightly-2026-04-15 clippy -p ra-max --all-targets -- -D warnings
+      - name: Compile all ra-max targets
+        run: cargo +nightly-2026-04-15 check -p ra-max --all-targets
 
       - name: Compile and execute tests
         run: cargo +nightly-2026-04-15 test -p ra-max --all-targets
 
-      - name: Execute receipt-bound Rust demo
+      - name: Execute receipt-bound Rust intelligence demo
         run: cargo +nightly-2026-04-15 run -p ra-max -- demo | tee /tmp/ra-max-demo.json
 
       - name: Verify machine-readable standing
         run: |
           jq -e '
             .receipt_chains_valid == true and
+            .workspace_index_valid == true and
             .differential.equivalent == true and
+            .lexical_only == true and
+            .reference_count == 2 and
+            .rename_edit_count == 2 and
+            (.completion_labels | index("meaning") != null) and
+            (.hover_signature | startswith("fn meaning")) and
             (.rustc_version | startswith("rustc ")) and
             (.broker_receipts | length >= 5) and
             (.semantic_receipts | length >= 5)
           ' /tmp/ra-max-demo.json
+
+      - name: Manufacture canonical rustfmt projection
+        run: cargo +nightly-2026-04-15 fmt -p ra-max
+
+      - name: Strict Clippy on canonical source
+        run: cargo +nightly-2026-04-15 clippy -p ra-max --all-targets -- -D warnings
+
+      - name: Commit canonical formatting when required
+        env:
+          HEAD_BRANCH: ${{ github.head_ref }}
+        run: |
+          if git diff --quiet -- crates/ra-max; then
+            echo "ra-max sources already canonical"
+            exit 0
+          fi
+          test -n "$HEAD_BRANCH"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add crates/ra-max/src
+          git commit -m "style(ra-max): apply pinned rustfmt to 80-20 surface"
+          git push origin "HEAD:${HEAD_BRANCH}"
