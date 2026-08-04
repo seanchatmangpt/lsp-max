@@ -7,17 +7,19 @@ Read `AGENTS.md` and any nested `AGENTS.md` files that govern the subtree you ch
 Requirements:
 
 - Git
-- Rust `1.87.0` or newer for the declared MSRV boundary
-- The pinned `nightly-2026-04-15` toolchain from `rust-toolchain.toml` for the full workspace gates
-- `rustfmt` and Clippy
+- The pinned `nightly-2026-04-15` toolchain from `rust-toolchain.toml`
+- `rustfmt` and Clippy for that pinned toolchain
 - `ripgrep`
 - Docker for reproducing the clean-container build
+
+The manifests declare Rust `1.87.0` as the dependency-resolution floor. This is not a stable-Rust support claim: `wasm4pm-compat` requires nightly features, so the pinned nightly is the only admitted compiler identity for workspace execution.
 
 ```bash
 git clone <your-fork>
 cd lsp-max
 rustup show
-cargo metadata --format-version 1 --no-deps
+rustc +nightly-2026-04-15 --version --verbose
+cargo +nightly-2026-04-15 metadata --format-version 1 --no-deps
 ```
 
 The repository must resolve from repository-local paths and published crates. Do not require adjacent sibling checkouts, absolute machine paths, fabricated dependency stubs, or generated source committed only to satisfy CI.
@@ -37,12 +39,12 @@ Run the cheapest relevant check first, then expand after it succeeds.
 
 ```bash
 bash scripts/audit-repository.sh
-cargo fmt --all -- --check
-cargo check -p lsp-max --lib
-cargo check -p lsp-max --lib --no-default-features --features runtime-agnostic
-cargo clippy --workspace --all-targets --all-features -- -D warnings
-cargo test --workspace --all-targets
-cargo publish -p lsp-max --dry-run --allow-dirty
+cargo +nightly-2026-04-15 fmt --all -- --check
+cargo +nightly-2026-04-15 check -p lsp-max --lib
+cargo +nightly-2026-04-15 check -p lsp-max --lib --no-default-features --features runtime-agnostic
+cargo +nightly-2026-04-15 clippy --workspace --all-targets --all-features -- -D warnings
+cargo +nightly-2026-04-15 test --workspace --all-targets
+cargo +nightly-2026-04-15 publish -p lsp-max --dry-run --allow-dirty
 ```
 
 For the clean execution boundary:
