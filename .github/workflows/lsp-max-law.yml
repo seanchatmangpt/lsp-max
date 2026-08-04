@@ -2,67 +2,87 @@ name: lsp-max Law Compliance
 
 on:
   push:
-    branches: [master, "claude/**"]
+    branches: [master]
   pull_request:
     branches: [master]
+  workflow_dispatch:
 
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+permissions:
+  contents: read
+
+concurrency:
+  group: law-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   law-check:
     name: Law Compliance Check
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
+          persist-credentials: false
           ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
 
       - name: Record exact source identity
         run: git rev-parse HEAD
 
       - name: Install scanner dependency
-        run: sudo apt-get update && sudo apt-get install -y ripgrep
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ripgrep
 
       - name: Run law compliance scanner
         run: |
-          chmod +x scripts/check-law-compliance.sh
           bash scripts/check-law-compliance.sh
-          echo "## Law Compliance Report" >> $GITHUB_STEP_SUMMARY
-          echo "Scanner: scripts/check-law-compliance.sh" >> $GITHUB_STEP_SUMMARY
-          echo "Status: CANDIDATE" >> $GITHUB_STEP_SUMMARY
+          {
+            echo "## Law Compliance Report"
+            echo "Scanner: scripts/check-law-compliance.sh"
+            echo "Status: ALIVE for the exact checked-out subject"
+          } >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Validate ontology files present
+      - name: Validate ontology, query, and template projections
         run: |
-          echo "## Ontology Validation" >> $GITHUB_STEP_SUMMARY
-          for f in ontology/lsp318.ttl ontology/law-axes.ttl ontology/max-protocol.ttl; do
-            if [ -f "$f" ]; then
-              METHODS=$(grep -c "lsp:methodName" "$f" || echo 0)
-              echo "- $f: $METHODS method declarations — CANDIDATE" >> $GITHUB_STEP_SUMMARY
-            else
-              echo "- $f: OPEN (not yet present)" >> $GITHUB_STEP_SUMMARY
-            fi
+          required=(
+            ontology/lsp318.ttl
+            ontology/law-axes.ttl
+            ontology/max-protocol.ttl
+          )
+
+          for file in "${required[@]}"; do
+            [[ -s "$file" ]] || {
+              echo "::error::Required ontology projection missing or empty: $file"
+              exit 1
+            }
           done
 
-      - name: Validate SPARQL queries present
-        run: |
-          echo "## SPARQL Query Files" >> $GITHUB_STEP_SUMMARY
-          QUERY_COUNT=$(find queries/lsp-max -name "*.sparql" 2>/dev/null | wc -l || echo 0)
-          echo "queries/lsp-max/*.sparql: $QUERY_COUNT files — CANDIDATE" >> $GITHUB_STEP_SUMMARY
+          QUERY_COUNT="$(find queries/lsp-max -type f -name '*.sparql' -print | wc -l | tr -d ' ')"
+          TEMPLATE_COUNT="$(find templates/lsp-max -type f -name '*.tera' -print | wc -l | tr -d ' ')"
 
-      - name: Validate template pack present
-        run: |
-          echo "## Template Pack" >> $GITHUB_STEP_SUMMARY
-          TEMPLATE_COUNT=$(find templates/lsp-max -name "*.tera" 2>/dev/null | wc -l || echo 0)
-          echo "templates/lsp-max/*.tera: $TEMPLATE_COUNT files — CANDIDATE" >> $GITHUB_STEP_SUMMARY
+          {
+            echo "## Projection Inventory"
+            echo "- SPARQL queries: $QUERY_COUNT"
+            echo "- Tera templates: $TEMPLATE_COUNT"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          [[ "$QUERY_COUNT" -gt 0 ]] || {
+            echo "::error::No SPARQL query projections observed"
+            exit 1
+          }
+          [[ "$TEMPLATE_COUNT" -gt 0 ]] || {
+            echo "::error::No Tera template projections observed"
+            exit 1
+          }
 
   library-tests:
     name: Library Tests
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
+          persist-credentials: false
           submodules: false
           ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
 
@@ -70,19 +90,17 @@ jobs:
         run: git rev-parse HEAD
 
       - name: Install pinned Rust toolchain
-        uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: nightly-2026-04-15
+        run: rustup toolchain install nightly-2026-04-15 --profile minimal
 
-      - name: Cache cargo registry
-        uses: actions/cache@v4
+      - name: Cache Cargo state
+        uses: actions/cache@v6
         with:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
             target
-          key: ${{ runner.os }}-cargo-law-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: ${{ runner.os }}-cargo-law-
+          key: law-${{ runner.os }}-${{ hashFiles('**/Cargo.toml', 'rust-toolchain.toml') }}
+          restore-keys: law-${{ runner.os }}-
 
       - name: Execute lsp-max library tests
-        run: cargo test -p lsp-max --lib
+        run: cargo +nightly-2026-04-15 test -p lsp-max --lib
