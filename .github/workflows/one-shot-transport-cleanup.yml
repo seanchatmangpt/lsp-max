@@ -1,0 +1,92 @@
+name: One-shot transport cleanup
+
+on:
+  push:
+    branches: [audit/lsp-max-80-20]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: one-shot-transport-cleanup
+  cancel-in-progress: false
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: audit/lsp-max-80-20
+          fetch-depth: 0
+
+      - name: Record admitted source
+        run: git rev-parse HEAD
+
+      - name: Remove exactly the dead runtime-neutral transport branches
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path("src/transport.rs")
+          text = path.read_text()
+          marker = 'feature = "runtime-agnostic"'
+          observed = text.count(marker)
+          if observed != 4:
+              raise SystemExit(
+                  f"REFUSED: expected exactly 4 runtime-agnostic markers in {path}, observed {observed}"
+              )
+
+          replacements = [
+              '''#[cfg(all(feature = "runtime-agnostic", not(feature = "runtime-tokio")))]
+use async_codec_lite::{FramedRead, FramedWrite};
+#[cfg(all(feature = "runtime-agnostic", not(feature = "runtime-tokio")))]
+use futures::io::{AsyncRead, AsyncWrite};
+
+''',
+              '''#[cfg(all(feature = "runtime-agnostic", not(feature = "runtime-tokio")))]
+fn to_jsonrpc_error(err: impl std::error::Error) -> Error {
+    match err.source().and_then(|e| e.downcast_ref()) {
+        Some(ParseError::Body(err)) if err.is_data() => Error::invalid_request(),
+        _ => Error::parse_error(),
+    }
+}
+
+''',
+              '''    #[cfg(all(feature = "runtime-agnostic", not(feature = "runtime-tokio")))]
+    use futures::io::Cursor;
+''',
+          ]
+
+          for block in replacements:
+              count = text.count(block)
+              if count != 1:
+                  raise SystemExit(
+                      f"REFUSED: expected one exact transport block, observed {count}: {block!r}"
+                  )
+              text = text.replace(block, "")
+
+          if marker in text:
+              raise SystemExit("REFUSED: runtime-agnostic marker remains after bounded cleanup")
+          path.write_text(text)
+          PY
+
+      - name: Format with pinned toolchain
+        run: |
+          rustup toolchain install nightly-2026-04-15 --profile minimal --component rustfmt
+          cargo +nightly-2026-04-15 fmt --all
+
+      - name: Enforce bounded diff
+        run: |
+          changed="$(git diff --name-only)"
+          printf '%s\n' "$changed"
+          test "$changed" = "src/transport.rs"
+
+      - name: Commit cleanup
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/transport.rs
+          git commit -m "fix(transport): remove dead runtime-neutral branches"
+          git push origin HEAD:audit/lsp-max-80-20
