@@ -13,10 +13,11 @@ pub mod sha256;
 pub mod typestate;
 
 pub use mesh::{build_conformance_vector, AutonomicMesh, MaxMesh};
-pub use mesh_hooks::{
-    CustomerRequestClassifierHook, IntakeClearHook, IntakeDiagnosticHook, OcelProcessHook,
-    PolicyEvaluationHook, ReceiptRoutingHook,
-};
+pub use mesh_hooks::{IntakeClearHook, IntakeDiagnosticHook, OcelProcessHook};
+// Gall checkpoint CP14: quarantined behind refund-demo-hooks (default off) — see
+// mesh_hooks.rs's own quarantine comment.
+#[cfg(feature = "refund-demo-hooks")]
+pub use mesh_hooks::{CustomerRequestClassifierHook, PolicyEvaluationHook, ReceiptRoutingHook};
 pub use mesh_types::{
     AutonomicMeshState, ConformanceDeltaEntry, ConformanceGrade, FailureMode, Hook, HookDescriptor,
     HookEvent, InstanceId, LspInstance, LspPhase, MaxDiagnostic, MaxMethod, MeshAction,
@@ -33,7 +34,7 @@ pub mod control_plane;
 pub use control_plane::replay;
 pub use control_plane::views;
 
-#[cfg(test)]
+#[cfg(all(test, feature = "refund-demo-hooks"))]
 mod hook_descriptor_tests {
     use super::*;
 

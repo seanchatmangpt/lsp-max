@@ -1,0 +1,12 @@
+# MESSAGE: Gall checkpoint CP2 -- no Vertex/Edge subclass may carry two distinct
+# lsif:wireLabel values (nondeterministic SPARQL SELECT results downstream --
+# a Tera consumer would get whichever value the query engine happened to return
+# first). Mirrors packs/lsp-max-pack/gates/020_single_valued.rq.
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX lsif: <https://lsp-max.rs/ontology/lsif/>
+
+SELECT ?subject ?wl1 ?wl2 WHERE {
+    ?subject lsif:wireLabel ?wl1 .
+    ?subject lsif:wireLabel ?wl2 .
+    FILTER(?wl1 != ?wl2)
+}

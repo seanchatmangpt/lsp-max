@@ -1,0 +1,18 @@
+PREFIX lsp: <https://lsp-max.rs/ontology/>
+PREFIX law: <https://lsp-max.rs/law/>
+
+# CP6: every CANDIDATE handler's expected input binding and required output
+# shape, as queryable RDF facts on the individual itself — zero Rust source
+# reads required. Consumed standalone here (proof: tests/lsp318_candidate_
+# contracts_are_queryable.rs) and, per the CP6 task, is the literal
+# precondition for CP9's ggen-mcp pack-capability-introspection tool.
+SELECT ?method_name ?snake_method ?expects_binding ?produces_shape
+WHERE {
+    { ?method a lsp:Request } UNION { ?method a lsp:Notification } UNION { ?method a lsp:MaxExtension }
+    ?method lsp:methodName     ?method_name ;
+            lsp:snakeName      ?snake_method ;
+            law:status         law:CANDIDATE ;
+            lsp:expectsBinding ?expects_binding ;
+            lsp:producesShape  ?produces_shape .
+}
+ORDER BY ?method_name

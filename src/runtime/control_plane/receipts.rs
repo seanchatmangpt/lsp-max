@@ -425,5 +425,10 @@ impl ReplayEngine {
     }
 }
 
-#[cfg(test)]
-mod tests;
+// NOTE: pre-existing, unrelated to Gall CP10 -- `mod tests;` used to point at
+// `src/control_plane/receipts/tests.rs` (433 lines), which commit a75efff ("feat: implement
+// D_t PUSH Runtime Admission v26.6.27") deleted while renaming this file to
+// `src/runtime/control_plane/receipts.rs`, without dropping the now-dangling declaration.
+// `cargo test -p lsp-max --lib` could not compile at all until this was removed (E0583, file
+// not found for module `tests`). Discovered while getting a clean CP10 test transcript;
+// removing the stale declaration, not recreating the deleted test content (out of scope here).

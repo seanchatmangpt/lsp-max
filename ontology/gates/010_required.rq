@@ -1,0 +1,28 @@
+# MESSAGE: Gall checkpoint CP2 -- every lsif06.ttl Vertex/Edge subclass, and every
+# lsif:ItemEdgeProperty individual, must carry both rdfs:label and lsif:wireLabel.
+# Mirrors ~/ggen's packs/lsp-max-pack/gates/010_required.rq pattern (SELECT returning
+# any row = a violation), applied here to lsif06.ttl directly rather than through a
+# ggen pack admission flow -- lsif06.ttl is not yet wired into gen.toml's [ontology]
+# source (that's CP3's job); this gate protects the ontology's own structural
+# integrity in the meantime.
+PREFIX rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX lsif: <https://lsp-max.rs/ontology/lsif/>
+
+SELECT ?subject ?missing WHERE {
+    {
+        ?subject rdfs:subClassOf ?super .
+        FILTER(?super = lsif:Vertex || ?super = lsif:Edge)
+        FILTER NOT EXISTS { ?subject rdfs:label ?label }
+        BIND("rdfs:label" AS ?missing)
+    } UNION {
+        ?subject rdfs:subClassOf ?super .
+        FILTER(?super = lsif:Vertex || ?super = lsif:Edge)
+        FILTER NOT EXISTS { ?subject lsif:wireLabel ?wl }
+        BIND("lsif:wireLabel" AS ?missing)
+    } UNION {
+        ?subject rdf:type lsif:ItemEdgeProperty .
+        FILTER NOT EXISTS { ?subject lsif:wireLabel ?wl }
+        BIND("lsif:wireLabel" AS ?missing)
+    }
+}

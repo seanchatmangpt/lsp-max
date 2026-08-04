@@ -6,6 +6,9 @@ use serde_json::{json, Value};
 #[cfg(test)]
 mod bypass;
 
+#[cfg(test)]
+mod admission_notification;
+
 // ── R2: Capability Tracker Tests ──────────────────────────────────────────
 
 fn make_source(id: &str, caps: Value) -> UpstreamSource {

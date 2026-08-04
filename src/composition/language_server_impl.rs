@@ -512,4 +512,33 @@ impl LanguageServer for ComposedServer {
     async fn progress(&self, params: ProgressParams) {
         self.route_notification("$/progress", params).await;
     }
+
+    /// Gall CP10: overrides the trait's default `impls::max_admission()` (which computes a
+    /// fresh verdict on every poll with no notion of "changed") to also detect a real
+    /// admission-decision *change* and push it via the real, working `lspMax/admissionChanged`
+    /// notification (`crate::andon::lsp::LspMaxAdmissionChanged`, sent through
+    /// `Client::admission_changed`, `src/service/client/lsp_methods.rs:412-418`). This is the
+    /// one real caller CP10 wires -- the other four dead `lspMax/*`/`max/*` notification types
+    /// are deliberately left unwired.
+    async fn max_admission(&self) -> Result<Value> {
+        let response = crate::language_server::impls::max_admission().await?;
+        let verdict = response
+            .get("verdict")
+            .and_then(|v| v.as_str())
+            .unwrap_or("Unknown")
+            .to_string();
+
+        let changed = {
+            let mut state = self.state.lock().await;
+            let changed = state.last_admission_verdict.as_deref() != Some(verdict.as_str());
+            state.last_admission_verdict = Some(verdict.clone());
+            changed
+        };
+
+        if changed {
+            self.client.admission_changed(verdict).await;
+        }
+
+        Ok(response)
+    }
 }

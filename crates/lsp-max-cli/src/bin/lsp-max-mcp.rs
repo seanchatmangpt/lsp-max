@@ -283,12 +283,9 @@ fn handle_lsp_repair_plan(constraint: &str) -> Value {
 }
 
 fn read_fitness_status() -> Value {
-    let workspace = std::env::current_dir().unwrap_or_default();
-    let path = workspace.join(".claude/lsp-max-fitness.json");
-    std::fs::read_to_string(&path)
-        .ok()
-        .and_then(|s| serde_json::from_str::<Value>(&s).ok())
-        .unwrap_or_else(|| json!({"law_status": "UNKNOWN"}))
+    // Delegates to lsp_max_cli::mcp_bridge — the real, tested LSP→MCP pull-bridge
+    // read path (CP11). Not a local re-implementation.
+    lsp_max_cli::mcp_bridge::read_fitness_status()
 }
 
 // ── Router builder ────────────────────────────────────────────────────────────

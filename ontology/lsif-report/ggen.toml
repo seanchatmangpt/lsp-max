@@ -1,0 +1,17 @@
+[project]
+name = "lsif-report"
+version = "26.6.9"
+description = "Gall checkpoint CP3: standalone LSIF coverage-report generation, deliberately kept out of the main gen.toml (which does not yet load lsif06.ttl into its single-source ontology graph) so this checkpoint cannot risk the existing lsp318.ttl-driven generation rules."
+
+[ontology]
+source = "../lsif06.ttl"
+
+[generation]
+output_dir = "."
+
+[[generation.rules]]
+name = "lsif-coverage-report"
+query = { file = "queries/coverage.sparql" }
+template = { file = "templates/coverage.md.tera" }
+output_file = "LSIF_COVERAGE.md"
+mode = "Overwrite"

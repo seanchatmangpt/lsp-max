@@ -1,0 +1,17 @@
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX lsif: <https://lsp-max.rs/ontology/lsif/>
+
+SELECT ?kind ?rdfsLabel ?wireLabel WHERE {
+    {
+        ?class rdfs:subClassOf lsif:Vertex ;
+               rdfs:label ?rdfsLabel ;
+               lsif:wireLabel ?wireLabel .
+        BIND("Vertex" AS ?kind)
+    } UNION {
+        ?class rdfs:subClassOf lsif:Edge ;
+               rdfs:label ?rdfsLabel ;
+               lsif:wireLabel ?wireLabel .
+        BIND("Edge" AS ?kind)
+    }
+}
+ORDER BY ?kind ?wireLabel

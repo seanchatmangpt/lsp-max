@@ -35,6 +35,27 @@ lsp:capability a owl:DatatypeProperty ;
 lsp:snakeName a owl:DatatypeProperty ;
     rdfs:range xsd:string .
 
+# ── CP6: stub-contract legibility (CANDIDATE-only, additive) ─────────────────
+# lsp:expectsBinding — the normalized shape of the SPARQL-bound input the
+# generated handler stub (templates/lsp-max/handler.rs.tera, via
+# queries/lsp-max/handlers.sparql's ?param_type binding) actually receives,
+# without requiring a Rust source read: "single-params-struct" for the
+# ordinary one-argument case, "no-params" for the two unit-params methods
+# (lsp:shutdown, lsp:exit, whose lsp:paramType is the literal "()").
+lsp:expectsBinding a owl:DatatypeProperty ;
+    rdfs:range xsd:string ;
+    rdfs:comment "Normalized input-binding shape for the generated handler stub: 'single-params-struct' | 'no-params'." .
+
+# lsp:producesShape — the normalized category of the handler's required
+# return shape, derived from lsp:returnType but queryable without parsing
+# the raw Rust type string: optional-list (Option<Vec<T>>), optional-single
+# (Option<T>), list (Vec<T>), value (a bare T), unit (returnType "()"), or
+# void (no lsp:returnType at all — the 12 Notifications, which produce no
+# response per JSON-RPC).
+lsp:producesShape a owl:DatatypeProperty ;
+    rdfs:range xsd:string ;
+    rdfs:comment "Normalized output shape for the generated handler stub: 'optional-list' | 'optional-single' | 'list' | 'value' | 'unit' | 'void'." .
+
 # ─────────────────────────────────────────────────────────────────────────────
 # TEXT DOCUMENT — REQUESTS
 # ─────────────────────────────────────────────────────────────────────────────
@@ -45,7 +66,9 @@ lsp:textDocument_hover a lsp:Request ;
     lsp:paramType  "HoverParams" ;
     lsp:returnType "Option<Hover>" ;
     lsp:capability "hover_provider" ;
-    law:status     law:CANDIDATE .
+    law:status     law:CANDIDATE ;
+    lsp:expectsBinding "single-params-struct" ;
+    lsp:producesShape  "optional-single" .
 
 lsp:textDocument_completion a lsp:Request ;
     lsp:methodName "textDocument/completion" ;
@@ -53,7 +76,9 @@ lsp:textDocument_completion a lsp:Request ;
     lsp:paramType  "CompletionParams" ;
     lsp:returnType "Option<CompletionResponse>" ;
     lsp:capability "completion_provider" ;
-    law:status     law:CANDIDATE .
+    law:status     law:CANDIDATE ;
+    lsp:expectsBinding "single-params-struct" ;
+    lsp:producesShape  "optional-single" .
 
 lsp:textDocument_definition a lsp:Request ;
     lsp:methodName "textDocument/definition" ;
@@ -61,7 +86,9 @@ lsp:textDocument_definition a lsp:Request ;
     lsp:paramType  "GotoDefinitionParams" ;
     lsp:returnType "Option<GotoDefinitionResponse>" ;
     lsp:capability "definition_provider" ;
-    law:status     law:CANDIDATE .
+    law:status     law:CANDIDATE ;
+    lsp:expectsBinding "single-params-struct" ;
+    lsp:producesShape  "optional-single" .
 
 lsp:textDocument_references a lsp:Request ;
     lsp:methodName "textDocument/references" ;
@@ -69,7 +96,9 @@ lsp:textDocument_references a lsp:Request ;
     lsp:paramType  "ReferenceParams" ;
     lsp:returnType "Option<Vec<Location>>" ;
     lsp:capability "references_provider" ;
-    law:status     law:CANDIDATE .
+    law:status     law:CANDIDATE ;
+    lsp:expectsBinding "single-params-struct" ;
+    lsp:producesShape  "optional-list" .
 
 lsp:textDocument_documentHighlight a lsp:Request ;
     lsp:methodName "textDocument/documentHighlight" ;
@@ -77,7 +106,9 @@ lsp:textDocument_documentHighlight a lsp:Request ;
     lsp:paramType  "DocumentHighlightParams" ;
     lsp:returnType "Option<Vec<DocumentHighlight>>" ;
     lsp:capability "document_highlight_provider" ;
-    law:status     law:CANDIDATE .
+    law:status     law:CANDIDATE ;
+    lsp:expectsBinding "single-params-struct" ;
+    lsp:producesShape  "optional-list" .
 
 lsp:textDocument_documentSymbol a lsp:Request ;
     lsp:methodName "textDocument/documentSymbol" ;
@@ -85,7 +116,9 @@ lsp:textDocument_documentSymbol a lsp:Request ;
     lsp:paramType  "DocumentSymbolParams" ;
     lsp:returnType "Option<DocumentSymbolResponse>" ;
     lsp:capability "document_symbol_provider" ;
-    law:status     law:CANDIDATE .
+    law:status     law:CANDIDATE ;
+    lsp:expectsBinding "single-params-struct" ;
+    lsp:producesShape  "optional-single" .
 
 lsp:textDocument_codeAction a lsp:Request ;
     lsp:methodName "textDocument/codeAction" ;
@@ -93,7 +126,9 @@ lsp:textDocument_codeAction a lsp:Request ;
     lsp:paramType  "CodeActionParams" ;
     lsp:returnType "Option<CodeActionResponse>" ;
     lsp:capability "code_action_provider" ;
-    law:status     law:CANDIDATE .
+    law:status     law:CANDIDATE ;
+    lsp:expectsBinding "single-params-struct" ;
+    lsp:producesShape  "optional-single" .
 
 lsp:textDocument_codeLens a lsp:Request ;
     lsp:methodName "textDocument/codeLens" ;
@@ -101,7 +136,9 @@ lsp:textDocument_codeLens a lsp:Request ;
     lsp:paramType  "CodeLensParams" ;
     lsp:returnType "Vec<CodeLens>" ;
     lsp:capability "code_lens_provider" ;
-    law:status     law:CANDIDATE .
+    law:status     law:CANDIDATE ;
+    lsp:expectsBinding "single-params-struct" ;
+    lsp:producesShape  "list" .
 
 lsp:textDocument_formatting a lsp:Request ;
     lsp:methodName "textDocument/formatting" ;
@@ -109,7 +146,9 @@ lsp:textDocument_formatting a lsp:Request ;
     lsp:paramType  "DocumentFormattingParams" ;
     lsp:returnType "Option<Vec<TextEdit>>" ;
     lsp:capability "document_formatting_provider" ;
-    law:status     law:CANDIDATE .
+    law:status     law:CANDIDATE ;
+    lsp:expectsBinding "single-params-struct" ;
+    lsp:producesShape  "optional-list" .
 
 lsp:textDocument_rangeFormatting a lsp:Request ;
     lsp:methodName "textDocument/rangeFormatting" ;
@@ -117,7 +156,9 @@ lsp:textDocument_rangeFormatting a lsp:Request ;
     lsp:paramType  "DocumentRangeFormattingParams" ;
     lsp:returnType "Option<Vec<TextEdit>>" ;
     lsp:capability "document_range_formatting_provider" ;
-    law:status     law:CANDIDATE .
+    law:status     law:CANDIDATE ;
+    lsp:expectsBinding "single-params-struct" ;
+    lsp:producesShape  "optional-list" .
 
 lsp:textDocument_onTypeFormatting a lsp:Request ;
     lsp:methodName "textDocument/onTypeFormatting" ;
@@ -125,7 +166,9 @@ lsp:textDocument_onTypeFormatting a lsp:Request ;
     lsp:paramType  "DocumentOnTypeFormattingParams" ;
     lsp:returnType "Vec<TextEdit>" ;
     lsp:capability "document_on_type_formatting_provider" ;
-    law:status     law:CANDIDATE .
+    law:status     law:CANDIDATE ;
+    lsp:expectsBinding "single-params-struct" ;
+    lsp:producesShape  "list" .
 
 lsp:textDocument_rename a lsp:Request ;
     lsp:methodName "textDocument/rename" ;
@@ -133,7 +176,9 @@ lsp:textDocument_rename a lsp:Request ;
     lsp:paramType  "RenameParams" ;
     lsp:returnType "Option<WorkspaceEdit>" ;
     lsp:capability "rename_provider" ;
-    law:status     law:CANDIDATE .
+    law:status     law:CANDIDATE ;
+    lsp:expectsBinding "single-params-struct" ;
+    lsp:producesShape  "optional-single" .
 
 lsp:textDocument_prepareRename a lsp:Request ;
     lsp:methodName "textDocument/prepareRename" ;
@@ -141,7 +186,9 @@ lsp:textDocument_prepareRename a lsp:Request ;
     lsp:paramType  "TextDocumentPositionParams" ;
     lsp:returnType "Option<PrepareRenameResponse>" ;
     lsp:capability "rename_provider" ;
-    law:status     law:CANDIDATE .
+    law:status     law:CANDIDATE ;
+    lsp:expectsBinding "single-params-struct" ;
+    lsp:producesShape  "optional-single" .
 
 lsp:textDocument_foldingRange a lsp:Request ;
     lsp:methodName "textDocument/foldingRange" ;
@@ -149,7 +196,9 @@ lsp:textDocument_foldingRange a lsp:Request ;
     lsp:paramType  "FoldingRangeParams" ;
     lsp:returnType "Option<Vec<FoldingRange>>" ;
     lsp:capability "folding_range_provider" ;
-    law:status     law:CANDIDATE .
+    law:status     law:CANDIDATE ;
+    lsp:expectsBinding "single-params-struct" ;
+    lsp:producesShape  "optional-list" .
 
 lsp:textDocument_selectionRange a lsp:Request ;
     lsp:methodName "textDocument/selectionRange" ;
@@ -157,7 +206,9 @@ lsp:textDocument_selectionRange a lsp:Request ;
     lsp:paramType  "SelectionRangeParams" ;
     lsp:returnType "Vec<SelectionRange>" ;
     lsp:capability "selection_range_provider" ;
-    law:status     law:CANDIDATE .
+    law:status     law:CANDIDATE ;
+    lsp:expectsBinding "single-params-struct" ;
+    lsp:producesShape  "list" .
 
 lsp:textDocument_semanticTokensFull a lsp:Request ;
     lsp:methodName "textDocument/semanticTokens/full" ;
@@ -165,7 +216,9 @@ lsp:textDocument_semanticTokensFull a lsp:Request ;
     lsp:paramType  "SemanticTokensParams" ;
     lsp:returnType "Option<SemanticTokensResult>" ;
     lsp:capability "semantic_tokens_provider" ;
-    law:status     law:CANDIDATE .
+    law:status     law:CANDIDATE ;
+    lsp:expectsBinding "single-params-struct" ;
+    lsp:producesShape  "optional-single" .
 
 lsp:textDocument_semanticTokensFullDelta a lsp:Request ;
     lsp:methodName "textDocument/semanticTokens/full/delta" ;
@@ -173,7 +226,9 @@ lsp:textDocument_semanticTokensFullDelta a lsp:Request ;
     lsp:paramType  "SemanticTokensDeltaParams" ;
     lsp:returnType "Option<SemanticTokensFullDeltaResult>" ;
     lsp:capability "semantic_tokens_provider" ;
-    law:status     law:CANDIDATE .
+    law:status     law:CANDIDATE ;
+    lsp:expectsBinding "single-params-struct" ;
+    lsp:producesShape  "optional-single" .
 
 lsp:textDocument_semanticTokensRange a lsp:Request ;
     lsp:methodName "textDocument/semanticTokens/range" ;
@@ -181,7 +236,9 @@ lsp:textDocument_semanticTokensRange a lsp:Request ;
     lsp:paramType  "SemanticTokensRangeParams" ;
     lsp:returnType "Option<SemanticTokensRangeResult>" ;
     lsp:capability "semantic_tokens_provider" ;
-    law:status     law:CANDIDATE .
+    law:status     law:CANDIDATE ;
+    lsp:expectsBinding "single-params-struct" ;
+    lsp:producesShape  "optional-single" .
 
 lsp:textDocument_inlayHint a lsp:Request ;
     lsp:methodName "textDocument/inlayHint" ;
@@ -189,7 +246,9 @@ lsp:textDocument_inlayHint a lsp:Request ;
     lsp:paramType  "InlayHintParams" ;
     lsp:returnType "Option<Vec<InlayHint>>" ;
     lsp:capability "inlay_hint_provider" ;
-    law:status     law:CANDIDATE .
+    law:status     law:CANDIDATE ;
+    lsp:expectsBinding "single-params-struct" ;
+    lsp:producesShape  "optional-list" .
 
 lsp:textDocument_inlineValue a lsp:Request ;
     lsp:methodName "textDocument/inlineValue" ;
@@ -197,7 +256,9 @@ lsp:textDocument_inlineValue a lsp:Request ;
     lsp:paramType  "InlineValueParams" ;
     lsp:returnType "Option<Vec<InlineValue>>" ;
     lsp:capability "inline_value_provider" ;
-    law:status     law:CANDIDATE .
+    law:status     law:CANDIDATE ;
+    lsp:expectsBinding "single-params-struct" ;
+    lsp:producesShape  "optional-list" .
 
 lsp:textDocument_diagnostic a lsp:Request ;
     lsp:methodName "textDocument/diagnostic" ;
@@ -205,7 +266,9 @@ lsp:textDocument_diagnostic a lsp:Request ;
     lsp:paramType  "DocumentDiagnosticParams" ;
     lsp:returnType "DocumentDiagnosticReportResult" ;
     lsp:capability "diagnostic_provider" ;
-    law:status     law:CANDIDATE .
+    law:status     law:CANDIDATE ;
+    lsp:expectsBinding "single-params-struct" ;
+    lsp:producesShape  "value" .
 
 lsp:textDocument_signatureHelp a lsp:Request ;
     lsp:methodName "textDocument/signatureHelp" ;
@@ -213,7 +276,9 @@ lsp:textDocument_signatureHelp a lsp:Request ;
     lsp:paramType  "SignatureHelpParams" ;
     lsp:returnType "Option<SignatureHelp>" ;
     lsp:capability "signature_help_provider" ;
-    law:status     law:CANDIDATE .
+    law:status     law:CANDIDATE ;
+    lsp:expectsBinding "single-params-struct" ;
+    lsp:producesShape  "optional-single" .
 
 lsp:textDocument_declaration a lsp:Request ;
     lsp:methodName "textDocument/declaration" ;
@@ -221,7 +286,9 @@ lsp:textDocument_declaration a lsp:Request ;
     lsp:paramType  "GotoDeclarationParams" ;
     lsp:returnType "Option<GotoDeclarationResponse>" ;
     lsp:capability "declaration_provider" ;
-    law:status     law:CANDIDATE .
+    law:status     law:CANDIDATE ;
+    lsp:expectsBinding "single-params-struct" ;
+    lsp:producesShape  "optional-single" .
 
 lsp:textDocument_typeDefinition a lsp:Request ;
     lsp:methodName "textDocument/typeDefinition" ;
@@ -229,7 +296,9 @@ lsp:textDocument_typeDefinition a lsp:Request ;
     lsp:paramType  "GotoTypeDefinitionParams" ;
     lsp:returnType "Option<GotoTypeDefinitionResponse>" ;
     lsp:capability "type_definition_provider" ;
-    law:status     law:CANDIDATE .
+    law:status     law:CANDIDATE ;
+    lsp:expectsBinding "single-params-struct" ;
+    lsp:producesShape  "optional-single" .
 
 lsp:textDocument_implementation a lsp:Request ;
     lsp:methodName "textDocument/implementation" ;
@@ -237,7 +306,9 @@ lsp:textDocument_implementation a lsp:Request ;
     lsp:paramType  "GotoImplementationParams" ;
     lsp:returnType "Option<GotoImplementationResponse>" ;
     lsp:capability "implementation_provider" ;
-    law:status     law:CANDIDATE .
+    law:status     law:CANDIDATE ;
+    lsp:expectsBinding "single-params-struct" ;
+    lsp:producesShape  "optional-single" .
 
 lsp:textDocument_documentLink a lsp:Request ;
     lsp:methodName "textDocument/documentLink" ;
@@ -245,7 +316,9 @@ lsp:textDocument_documentLink a lsp:Request ;
     lsp:paramType  "DocumentLinkParams" ;
     lsp:returnType "Option<Vec<DocumentLink>>" ;
     lsp:capability "document_link_provider" ;
-    law:status     law:CANDIDATE .
+    law:status     law:CANDIDATE ;
+    lsp:expectsBinding "single-params-struct" ;
+    lsp:producesShape  "optional-list" .
 
 lsp:textDocument_documentColor a lsp:Request ;
     lsp:methodName "textDocument/documentColor" ;
@@ -253,7 +326,9 @@ lsp:textDocument_documentColor a lsp:Request ;
     lsp:paramType  "DocumentColorParams" ;
     lsp:returnType "Vec<ColorInformation>" ;
     lsp:capability "color_provider" ;
-    law:status     law:CANDIDATE .
+    law:status     law:CANDIDATE ;
+    lsp:expectsBinding "single-params-struct" ;
+    lsp:producesShape  "list" .
 
 lsp:textDocument_colorPresentation a lsp:Request ;
     lsp:methodName "textDocument/colorPresentation" ;
@@ -261,7 +336,9 @@ lsp:textDocument_colorPresentation a lsp:Request ;
     lsp:paramType  "ColorPresentationParams" ;
     lsp:returnType "Vec<ColorPresentation>" ;
     lsp:capability "color_provider" ;
-    law:status     law:CANDIDATE .
+    law:status     law:CANDIDATE ;
+    lsp:expectsBinding "single-params-struct" ;
+    lsp:producesShape  "list" .
 
 lsp:textDocument_linkedEditingRange a lsp:Request ;
     lsp:methodName "textDocument/linkedEditingRange" ;
@@ -269,7 +346,9 @@ lsp:textDocument_linkedEditingRange a lsp:Request ;
     lsp:paramType  "LinkedEditingRangeParams" ;
     lsp:returnType "Option<LinkedEditingRanges>" ;
     lsp:capability "linked_editing_range_provider" ;
-    law:status     law:CANDIDATE .
+    law:status     law:CANDIDATE ;
+    lsp:expectsBinding "single-params-struct" ;
+    lsp:producesShape  "optional-single" .
 
 lsp:textDocument_moniker a lsp:Request ;
     lsp:methodName "textDocument/moniker" ;
@@ -277,7 +356,9 @@ lsp:textDocument_moniker a lsp:Request ;
     lsp:paramType  "MonikerParams" ;
     lsp:returnType "Option<Vec<Moniker>>" ;
     lsp:capability "moniker_provider" ;
-    law:status     law:CANDIDATE .
+    law:status     law:CANDIDATE ;
+    lsp:expectsBinding "single-params-struct" ;
+    lsp:producesShape  "optional-list" .
 
 # ─────────────────────────────────────────────────────────────────────────────
 # CALL HIERARCHY
@@ -289,21 +370,27 @@ lsp:textDocument_prepareCallHierarchy a lsp:Request ;
     lsp:paramType  "CallHierarchyPrepareParams" ;
     lsp:returnType "Option<Vec<CallHierarchyItem>>" ;
     lsp:capability "call_hierarchy_provider" ;
-    law:status     law:CANDIDATE .
+    law:status     law:CANDIDATE ;
+    lsp:expectsBinding "single-params-struct" ;
+    lsp:producesShape  "optional-list" .
 
 lsp:callHierarchy_incomingCalls a lsp:Request ;
     lsp:methodName "callHierarchy/incomingCalls" ;
     lsp:snakeName  "call_hierarchy_incoming_calls" ;
     lsp:paramType  "CallHierarchyIncomingCallsParams" ;
     lsp:returnType "Option<Vec<CallHierarchyIncomingCall>>" ;
-    law:status     law:CANDIDATE .
+    law:status     law:CANDIDATE ;
+    lsp:expectsBinding "single-params-struct" ;
+    lsp:producesShape  "optional-list" .
 
 lsp:callHierarchy_outgoingCalls a lsp:Request ;
     lsp:methodName "callHierarchy/outgoingCalls" ;
     lsp:snakeName  "call_hierarchy_outgoing_calls" ;
     lsp:paramType  "CallHierarchyOutgoingCallsParams" ;
     lsp:returnType "Option<Vec<CallHierarchyOutgoingCall>>" ;
-    law:status     law:CANDIDATE .
+    law:status     law:CANDIDATE ;
+    lsp:expectsBinding "single-params-struct" ;
+    lsp:producesShape  "optional-list" .
 
 # ─────────────────────────────────────────────────────────────────────────────
 # TYPE HIERARCHY
@@ -315,21 +402,27 @@ lsp:textDocument_prepareTypeHierarchy a lsp:Request ;
     lsp:paramType  "TypeHierarchyPrepareParams" ;
     lsp:returnType "Option<Vec<TypeHierarchyItem>>" ;
     lsp:capability "type_hierarchy_provider" ;
-    law:status     law:CANDIDATE .
+    law:status     law:CANDIDATE ;
+    lsp:expectsBinding "single-params-struct" ;
+    lsp:producesShape  "optional-list" .
 
 lsp:typeHierarchy_supertypes a lsp:Request ;
     lsp:methodName "typeHierarchy/supertypes" ;
     lsp:snakeName  "type_hierarchy_supertypes" ;
     lsp:paramType  "TypeHierarchySupertypesParams" ;
     lsp:returnType "Option<Vec<TypeHierarchyItem>>" ;
-    law:status     law:CANDIDATE .
+    law:status     law:CANDIDATE ;
+    lsp:expectsBinding "single-params-struct" ;
+    lsp:producesShape  "optional-list" .
 
 lsp:typeHierarchy_subtypes a lsp:Request ;
     lsp:methodName "typeHierarchy/subtypes" ;
     lsp:snakeName  "type_hierarchy_subtypes" ;
     lsp:paramType  "TypeHierarchySubtypesParams" ;
     lsp:returnType "Option<Vec<TypeHierarchyItem>>" ;
-    law:status     law:CANDIDATE .
+    law:status     law:CANDIDATE ;
+    lsp:expectsBinding "single-params-struct" ;
+    lsp:producesShape  "optional-list" .
 
 # ─────────────────────────────────────────────────────────────────────────────
 # WORKSPACE — REQUESTS
@@ -341,7 +434,9 @@ lsp:workspace_symbol a lsp:Request ;
     lsp:paramType  "WorkspaceSymbolParams" ;
     lsp:returnType "Option<Vec<SymbolInformation>>" ;
     lsp:capability "workspace_symbol_provider" ;
-    law:status     law:CANDIDATE .
+    law:status     law:CANDIDATE ;
+    lsp:expectsBinding "single-params-struct" ;
+    lsp:producesShape  "optional-list" .
 
 lsp:workspace_diagnostic a lsp:Request ;
     lsp:methodName "workspace/diagnostic" ;
@@ -349,7 +444,9 @@ lsp:workspace_diagnostic a lsp:Request ;
     lsp:paramType  "WorkspaceDiagnosticParams" ;
     lsp:returnType "WorkspaceDiagnosticReport" ;
     lsp:capability "diagnostic_provider" ;
-    law:status     law:CANDIDATE .
+    law:status     law:CANDIDATE ;
+    lsp:expectsBinding "single-params-struct" ;
+    lsp:producesShape  "value" .
 
 lsp:workspace_executeCommand a lsp:Request ;
     lsp:methodName "workspace/executeCommand" ;
@@ -357,7 +454,9 @@ lsp:workspace_executeCommand a lsp:Request ;
     lsp:paramType  "ExecuteCommandParams" ;
     lsp:returnType "Option<Value>" ;
     lsp:capability "execute_command_provider" ;
-    law:status     law:CANDIDATE .
+    law:status     law:CANDIDATE ;
+    lsp:expectsBinding "single-params-struct" ;
+    lsp:producesShape  "optional-single" .
 
 # ─────────────────────────────────────────────────────────────────────────────
 # CODE LENS — RESOLVE
@@ -369,7 +468,9 @@ lsp:codeLens_resolve a lsp:Request ;
     lsp:paramType  "CodeLens" ;
     lsp:returnType "CodeLens" ;
     lsp:capability "code_lens_provider" ;
-    law:status     law:CANDIDATE .
+    law:status     law:CANDIDATE ;
+    lsp:expectsBinding "single-params-struct" ;
+    lsp:producesShape  "value" .
 
 # ─────────────────────────────────────────────────────────────────────────────
 # DOCUMENT LINK — RESOLVE
@@ -381,7 +482,9 @@ lsp:documentLink_resolve a lsp:Request ;
     lsp:paramType  "DocumentLink" ;
     lsp:returnType "DocumentLink" ;
     lsp:capability "document_link_provider" ;
-    law:status     law:CANDIDATE .
+    law:status     law:CANDIDATE ;
+    lsp:expectsBinding "single-params-struct" ;
+    lsp:producesShape  "value" .
 
 # ─────────────────────────────────────────────────────────────────────────────
 # COMPLETION — RESOLVE
@@ -393,7 +496,9 @@ lsp:completionItem_resolve a lsp:Request ;
     lsp:paramType  "CompletionItem" ;
     lsp:returnType "CompletionItem" ;
     lsp:capability "completion_provider" ;
-    law:status     law:CANDIDATE .
+    law:status     law:CANDIDATE ;
+    lsp:expectsBinding "single-params-struct" ;
+    lsp:producesShape  "value" .
 
 # ─────────────────────────────────────────────────────────────────────────────
 # INLAY HINT — RESOLVE
@@ -405,7 +510,9 @@ lsp:inlayHint_resolve a lsp:Request ;
     lsp:paramType  "InlayHint" ;
     lsp:returnType "InlayHint" ;
     lsp:capability "inlay_hint_provider" ;
-    law:status     law:CANDIDATE .
+    law:status     law:CANDIDATE ;
+    lsp:expectsBinding "single-params-struct" ;
+    lsp:producesShape  "value" .
 
 # ── NOTIFICATIONS (textDocument/* and workspace/*) ────────────────────────────
 
@@ -413,61 +520,81 @@ lsp:textDocument_didOpen a lsp:Notification ;
     lsp:methodName "textDocument/didOpen" ;
     lsp:snakeName  "did_open" ;
     lsp:paramType  "DidOpenTextDocumentParams" ;
-    law:status     law:CANDIDATE .
+    law:status     law:CANDIDATE ;
+    lsp:expectsBinding "single-params-struct" ;
+    lsp:producesShape  "void" .
 
 lsp:textDocument_didChange a lsp:Notification ;
     lsp:methodName "textDocument/didChange" ;
     lsp:snakeName  "did_change" ;
     lsp:paramType  "DidChangeTextDocumentParams" ;
-    law:status     law:CANDIDATE .
+    law:status     law:CANDIDATE ;
+    lsp:expectsBinding "single-params-struct" ;
+    lsp:producesShape  "void" .
 
 lsp:textDocument_didSave a lsp:Notification ;
     lsp:methodName "textDocument/didSave" ;
     lsp:snakeName  "did_save" ;
     lsp:paramType  "DidSaveTextDocumentParams" ;
-    law:status     law:CANDIDATE .
+    law:status     law:CANDIDATE ;
+    lsp:expectsBinding "single-params-struct" ;
+    lsp:producesShape  "void" .
 
 lsp:textDocument_didClose a lsp:Notification ;
     lsp:methodName "textDocument/didClose" ;
     lsp:snakeName  "did_close" ;
     lsp:paramType  "DidCloseTextDocumentParams" ;
-    law:status     law:CANDIDATE .
+    law:status     law:CANDIDATE ;
+    lsp:expectsBinding "single-params-struct" ;
+    lsp:producesShape  "void" .
 
 lsp:workspace_didChangeWatchedFiles a lsp:Notification ;
     lsp:methodName "workspace/didChangeWatchedFiles" ;
     lsp:snakeName  "did_change_watched_files" ;
     lsp:paramType  "DidChangeWatchedFilesParams" ;
-    law:status     law:CANDIDATE .
+    law:status     law:CANDIDATE ;
+    lsp:expectsBinding "single-params-struct" ;
+    lsp:producesShape  "void" .
 
 lsp:workspace_didChangeConfiguration a lsp:Notification ;
     lsp:methodName "workspace/didChangeConfiguration" ;
     lsp:snakeName  "did_change_configuration" ;
     lsp:paramType  "DidChangeConfigurationParams" ;
-    law:status     law:CANDIDATE .
+    law:status     law:CANDIDATE ;
+    lsp:expectsBinding "single-params-struct" ;
+    lsp:producesShape  "void" .
 
 lsp:workspace_didChangeWorkspaceFolders a lsp:Notification ;
     lsp:methodName "workspace/didChangeWorkspaceFolders" ;
     lsp:snakeName  "did_change_workspace_folders" ;
     lsp:paramType  "DidChangeWorkspaceFoldersParams" ;
-    law:status     law:CANDIDATE .
+    law:status     law:CANDIDATE ;
+    lsp:expectsBinding "single-params-struct" ;
+    lsp:producesShape  "void" .
 
 lsp:workspace_didCreateFiles a lsp:Notification ;
     lsp:methodName "workspace/didCreateFiles" ;
     lsp:snakeName  "did_create_files" ;
     lsp:paramType  "CreateFilesParams" ;
-    law:status     law:CANDIDATE .
+    law:status     law:CANDIDATE ;
+    lsp:expectsBinding "single-params-struct" ;
+    lsp:producesShape  "void" .
 
 lsp:workspace_didRenameFiles a lsp:Notification ;
     lsp:methodName "workspace/didRenameFiles" ;
     lsp:snakeName  "did_rename_files" ;
     lsp:paramType  "RenameFilesParams" ;
-    law:status     law:CANDIDATE .
+    law:status     law:CANDIDATE ;
+    lsp:expectsBinding "single-params-struct" ;
+    lsp:producesShape  "void" .
 
 lsp:workspace_didDeleteFiles a lsp:Notification ;
     lsp:methodName "workspace/didDeleteFiles" ;
     lsp:snakeName  "did_delete_files" ;
     lsp:paramType  "DeleteFilesParams" ;
-    law:status     law:CANDIDATE .
+    law:status     law:CANDIDATE ;
+    lsp:expectsBinding "single-params-struct" ;
+    lsp:producesShape  "void" .
 
 # ─────────────────────────────────────────────────────────────────────────────
 # LIFECYCLE — REQUESTS AND NOTIFICATIONS
@@ -478,23 +605,31 @@ lsp:initialize a lsp:Request ;
     lsp:snakeName  "initialize" ;
     lsp:paramType  "InitializeParams" ;
     lsp:returnType "InitializeResult" ;
-    law:status     law:CANDIDATE .
+    law:status     law:CANDIDATE ;
+    lsp:expectsBinding "single-params-struct" ;
+    lsp:producesShape  "value" .
 
 lsp:shutdown a lsp:Request ;
     lsp:methodName "shutdown" ;
     lsp:snakeName  "shutdown" ;
     lsp:paramType  "()" ;
     lsp:returnType "()" ;
-    law:status     law:CANDIDATE .
+    law:status     law:CANDIDATE ;
+    lsp:expectsBinding "no-params" ;
+    lsp:producesShape  "unit" .
 
 lsp:initialized a lsp:Notification ;
     lsp:methodName "initialized" ;
     lsp:snakeName  "initialized" ;
     lsp:paramType  "InitializedParams" ;
-    law:status     law:CANDIDATE .
+    law:status     law:CANDIDATE ;
+    lsp:expectsBinding "single-params-struct" ;
+    lsp:producesShape  "void" .
 
 lsp:exit a lsp:Notification ;
     lsp:methodName "exit" ;
     lsp:snakeName  "exit" ;
     lsp:paramType  "()" ;
-    law:status     law:CANDIDATE .
+    law:status     law:CANDIDATE ;
+    lsp:expectsBinding "no-params" ;
+    lsp:producesShape  "void" .

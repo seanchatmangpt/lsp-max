@@ -33,6 +33,11 @@ pub struct CompositionState {
     pub request_counter: u64,
     /// Trace history of requests.
     pub request_traces: Arc<std::sync::Mutex<Vec<Value>>>,
+    /// The last admission verdict ("Admitted"/"Refused"/"Unknown") pushed to the client via
+    /// `lspMax/admissionChanged`. `None` until the first `max/admission` request. Gall CP10:
+    /// this is the real state this crate compares against to detect an actual admission
+    /// decision change, not a re-send on every poll.
+    pub last_admission_verdict: Option<String>,
 }
 
 impl CompositionState {
@@ -55,6 +60,7 @@ impl CompositionState {
             diagnostics: HashMap::new(),
             request_counter: 0,
             request_traces: Arc::new(std::sync::Mutex::new(Vec::new())),
+            last_admission_verdict: None,
         }
     }
 }
@@ -65,7 +71,7 @@ pub type SharedCompositionState = Arc<Mutex<CompositionState>>;
 /// Composed LSP server that coordinates multiple upstream language servers.
 #[derive(Debug)]
 pub struct ComposedServer {
-    pub(super) _client: Client,
+    pub(super) client: Client,
     pub(super) state: SharedCompositionState,
     pub(super) upstreams: Arc<dashmap::DashMap<String, PersistentUpstream>>,
 }
@@ -336,7 +342,7 @@ impl ComposedServer {
         });
 
         Self {
-            _client: client,
+            client,
             state,
             upstreams,
         }
