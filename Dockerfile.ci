@@ -1,0 +1,23 @@
+FROM rust:bookworm
+
+ENV CARGO_TERM_COLOR=always \
+    CARGO_NET_RETRY=10
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        clang \
+        cmake \
+        libssl-dev \
+        pkg-config \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN rustup toolchain install nightly-2026-04-15 \
+        --profile minimal \
+        --component clippy \
+        --component rustfmt
+
+WORKDIR /workspace
+COPY . .
+
+RUN cargo +nightly-2026-04-15 metadata --format-version 1 --no-deps
+RUN cargo +nightly-2026-04-15 build --workspace --all-targets

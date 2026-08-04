@@ -1,195 +1,81 @@
-name: Release
+name: Release Candidate Validation
 
 on:
   push:
     tags:
-      - 'v*.*.*'
+      - "v*.*.*"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-candidate-${{ github.ref }}
+  cancel-in-progress: false
 
 env:
   CARGO_TERM_COLOR: always
-  RUST_BACKTRACE: 1
+  RUST_BACKTRACE: "1"
 
 jobs:
-  # Format check
-  fmt:
-    name: cargo fmt
-    runs-on: ubuntu-latest
+  validate:
+    name: Validate tagged source without publishing
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@master
+      - uses: actions/checkout@v7
         with:
-          toolchain: nightly-2026-04-15  # keep in sync with rust-toolchain.toml
-          components: rustfmt
-      - run: cargo fmt --all -- --check
+          persist-credentials: false
+          ref: ${{ github.sha }}
 
-  # Lint check with all features
-  clippy:
-    name: cargo clippy
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: nightly-2026-04-15  # keep in sync with rust-toolchain.toml
-          components: clippy
-      - uses: Swatinem/rust-cache@v2
-      - run: cargo clippy --workspace --all-targets --all-features -- -D warnings
+      - name: Record exact source identity
+        run: |
+          git rev-parse HEAD
+          git describe --tags --exact-match HEAD
 
-  # Test suite with 10m timeout
-  test:
-    name: cargo test
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: nightly-2026-04-15  # keep in sync with rust-toolchain.toml
-      - uses: Swatinem/rust-cache@v2
-      - run: cargo test --workspace
+      - name: Install validation toolchain and scanner
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ripgrep
+          rustup toolchain install nightly-2026-04-15 \
+            --profile minimal \
+            --component clippy \
+            --component rustfmt
 
-  # Documentation build
-  docs:
-    name: cargo doc
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@master
+      - name: Cache Cargo state
+        uses: actions/cache@v6
         with:
-          toolchain: nightly-2026-04-15  # keep in sync with rust-toolchain.toml
-      - uses: Swatinem/rust-cache@v2
-      - run: cargo doc --workspace --no-deps --all-features
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: release-candidate-${{ runner.os }}-${{ hashFiles('**/Cargo.toml', 'rust-toolchain.toml') }}
+          restore-keys: release-candidate-${{ runner.os }}-
+
+      - name: Verify repository invariants
+        run: bash scripts/audit-repository.sh
+
+      - name: Verify formatting
+        run: cargo +nightly-2026-04-15 fmt --all -- --check
+
+      - name: Execute strict Clippy
+        run: cargo +nightly-2026-04-15 clippy --workspace --all-targets --all-features -- -D warnings
+
+      - name: Execute workspace tests
+        run: cargo +nightly-2026-04-15 test --workspace --all-targets
+
+      - name: Build documentation
         env:
           RUSTDOCFLAGS: "-D warnings"
+        run: cargo +nightly-2026-04-15 doc --workspace --no-deps --all-features
 
-  # Publish crates in dependency order
-  publish:
-    name: publish crates
-    runs-on: ubuntu-latest
-    needs: [fmt, clippy, test, docs]
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: nightly-2026-04-15  # keep in sync with rust-toolchain.toml
-      - uses: Swatinem/rust-cache@v2
+      - name: Verify root package
+        run: cargo +nightly-2026-04-15 publish -p lsp-max --dry-run --allow-dirty
 
-      # Publish lsp-max-protocol (no lsp-max dependencies)
-      - name: publish lsp-max-protocol
-        run: cargo publish -p lsp-max-protocol --token ${{ secrets.CARGO_TOKEN }}
-        continue-on-error: true
+      - name: Build release profile
+        run: cargo +nightly-2026-04-15 build --release --workspace
 
-      # Wait for lsp-max-protocol to be available
-      - name: wait for lsp-max-protocol
+      - name: Refuse automated publication
         run: |
-          for i in {1..30}; do
-            if cargo search lsp-max-protocol --limit 1 2>/dev/null | grep -q "lsp-max-protocol"; then
-              echo "lsp-max-protocol published successfully"
-              break
-            fi
-            if [ $i -eq 30 ]; then
-              echo "Timeout waiting for lsp-max-protocol"
-              exit 1
-            fi
-            sleep 2
-          done
-
-      # Publish lsp-max-runtime (depends on protocol)
-      - name: publish lsp-max-runtime
-        run: cargo publish -p lsp-max-runtime --token ${{ secrets.CARGO_TOKEN }}
-        continue-on-error: true
-
-      # Publish lsp-max-agent (depends on protocol)
-      - name: publish lsp-max-agent
-        run: cargo publish -p lsp-max-agent --token ${{ secrets.CARGO_TOKEN }}
-        continue-on-error: true
-
-      # Wait for runtime and agent to be available
-      - name: wait for lsp-max-runtime and lsp-max-agent
-        run: |
-          for crate in lsp-max-runtime lsp-max-agent; do
-            for i in {1..30}; do
-              if cargo search "$crate" --limit 1 2>/dev/null | grep -q "$crate"; then
-                echo "$crate published successfully"
-                break
-              fi
-              if [ $i -eq 30 ]; then
-                echo "Timeout waiting for $crate"
-                exit 1
-              fi
-              sleep 2
-            done
-          done
-
-      # Publish lsp-max-macros (no lsp-max dependencies)
-      - name: publish lsp-max-macros
-        run: cargo publish -p lsp-max-macros --token ${{ secrets.CARGO_TOKEN }}
-        continue-on-error: true
-
-      # Wait for macros to be available
-      - name: wait for lsp-max-macros
-        run: |
-          for i in {1..30}; do
-            if cargo search lsp-max-macros --limit 1 2>/dev/null | grep -q "lsp-max-macros"; then
-              echo "lsp-max-macros published successfully"
-              break
-            fi
-            if [ $i -eq 30 ]; then
-              echo "Timeout waiting for lsp-max-macros"
-              exit 1
-            fi
-            sleep 2
-          done
-
-      # Finally publish root lsp-max (depends on all above)
-      - name: publish lsp-max
-        run: cargo publish -p lsp-max --token ${{ secrets.CARGO_TOKEN }}
-        continue-on-error: true
-
-  # Create GitHub release with checksums
-  github-release:
-    name: create github release
-    runs-on: ubuntu-latest
-    needs: [publish]
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: nightly-2026-04-15  # keep in sync with rust-toolchain.toml
-      - uses: Swatinem/rust-cache@v2
-
-      # Build release artifacts
-      - name: build release artifacts
-        run: |
-          mkdir -p artifacts
-          cargo build --release --workspace
-
-          # Copy binaries (if any exist)
-          for binary in $(find target/release -maxdepth 1 -type f -executable ! -name '*.d'); do
-            if [ -f "$binary" ]; then
-              cp "$binary" artifacts/
-            fi
-          done
-
-      # Generate checksums for artifacts
-      - name: generate checksums
-        run: |
-          cd artifacts
-          sha256sum * > SHA256SUMS 2>/dev/null || true
-          cat SHA256SUMS || echo "No artifacts to checksum"
-
-      # Upload artifacts
-      - uses: actions/upload-artifact@v4
-        with:
-          name: release-artifacts
-          path: artifacts/
-          if-no-files-found: ignore
-
-      # Create GitHub release
-      - name: create release
-        uses: softprops/action-gh-release@v1
-        with:
-          files: artifacts/*
-          generate_release_notes: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          echo "REFUSED: this workflow validates tagged source only."
+          echo "Crates.io publication and GitHub release creation require separate human authority."

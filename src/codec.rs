@@ -6,8 +6,6 @@ use bytes::BytesMut;
 use serde::{de::DeserializeOwned, Serialize};
 use tracing::trace;
 
-#[cfg(all(feature = "runtime-agnostic", not(feature = "runtime-tokio")))]
-use async_codec_lite::{Decoder, Encoder};
 #[cfg(feature = "runtime-tokio")]
 use tokio_util::codec::{Decoder, Encoder};
 
@@ -25,18 +23,6 @@ impl<T> Default for LanguageServerCodec<T> {
             content_len: None,
             _marker: PhantomData,
         }
-    }
-}
-
-#[cfg(all(feature = "runtime-agnostic", not(feature = "runtime-tokio")))]
-impl<T: Serialize> Encoder for LanguageServerCodec<T> {
-    type Item = T;
-    type Error = ParseError;
-
-    fn encode(&mut self, item: Self::Item, dst: &mut BytesMut) -> Result<(), Self::Error> {
-        let msg = serde_json::to_string(&item).unwrap_or_default();
-        trace!("-> {}", msg);
-        lsp_max_protocol::base_protocol::encode_message(item, dst)
     }
 }
 
@@ -67,8 +53,6 @@ mod tests {
 
     use super::*;
 
-    #[cfg(all(feature = "runtime-agnostic", not(feature = "runtime-tokio")))]
-    use async_codec_lite::{Decoder, Encoder};
     #[cfg(feature = "runtime-tokio")]
     use tokio_util::codec::{Decoder, Encoder};
 

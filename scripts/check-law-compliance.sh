@@ -33,7 +33,7 @@ echo -e "\n${BLUE}[1] Scanning for plain 'tower_lsp' references...${NC}"
 
 PLAIN_TOWER=$(rg -n "tower_lsp\b|tower-lsp\b|tower_lsp_\w+" \
   --glob '!target/**' --glob '!.git/**' --glob '!.cargo/**' \
-  --glob '!vendor/**' --glob '!**/node_modules/**' \
+  --glob '!artifacts/**' --glob '!vendor/**' --glob '!**/node_modules/**' \
   --glob '!Cargo.lock' --glob '!package-lock.json' \
   --glob '!**/*.wasm' --glob '!**/*.log' \
   . || true)
@@ -75,7 +75,7 @@ echo -e "\n${BLUE}[2] Scanning for TOWER_LSP_MAX_* environment variables...${NC}
 
 TOWER_LSP_MAX=$(rg -n "TOWER_LSP_MAX_\w+" \
   --glob '!target/**' --glob '!.git/**' --glob '!.cargo/**' \
-  --glob '!vendor/**' --glob '!**/node_modules/**' \
+  --glob '!artifacts/**' --glob '!vendor/**' --glob '!**/node_modules/**' \
   --glob '!Cargo.lock' --glob '!package-lock.json' \
   --glob '!**/*.wasm' --glob '!**/*.log' \
   . || true)
@@ -108,7 +108,7 @@ echo -e "\n${BLUE}[3] Scanning for victory language...${NC}"
 # Exclude common legitimate uses like "done();" in Rust, documentation context
 VICTORY=$(rg -n -i "\b(done|solved|all clean|fully admitted|guaranteed)\b" \
   --glob '!target/**' --glob '!.git/**' --glob '!.cargo/**' \
-  --glob '!vendor/**' --glob '!**/node_modules/**' \
+  --glob '!artifacts/**' --glob '!vendor/**' --glob '!**/node_modules/**' \
   --glob '!Cargo.lock' --glob '!package-lock.json' \
   --glob '!**/*.wasm' --glob '!**/*.log' \
   . || true)
