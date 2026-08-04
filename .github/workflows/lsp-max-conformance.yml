@@ -18,6 +18,10 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: false
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+
+      - name: Record exact source identity
+        run: git rev-parse HEAD
 
       - name: Install law scanner dependency
         run: sudo apt-get update && sudo apt-get install -y ripgrep
