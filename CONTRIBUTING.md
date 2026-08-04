@@ -14,6 +14,8 @@ Requirements:
 
 The manifests declare Rust `1.87.0` as the dependency-resolution floor. This is not a stable-Rust support claim: `wasm4pm-compat` requires nightly features, so the pinned nightly is the only admitted compiler identity for workspace execution.
 
+Tokio is currently the only supported runtime. Do not add a runtime-neutral feature flag until client, routing, transport, watchdog, composition, and process-mining boundaries are actually abstracted and the complete feature configuration executes successfully.
+
 ```bash
 git clone <your-fork>
 cd lsp-max
@@ -41,7 +43,7 @@ Run the cheapest relevant check first, then expand after it succeeds.
 bash scripts/audit-repository.sh
 cargo +nightly-2026-04-15 fmt --all -- --check
 cargo +nightly-2026-04-15 check -p lsp-max --lib
-cargo +nightly-2026-04-15 check -p lsp-max --lib --no-default-features --features runtime-agnostic
+cargo +nightly-2026-04-15 check -p lsp-max --lib --all-features
 cargo +nightly-2026-04-15 clippy --workspace --all-targets --all-features -- -D warnings
 cargo +nightly-2026-04-15 test --workspace --all-targets
 cargo +nightly-2026-04-15 publish -p lsp-max --dry-run --allow-dirty
