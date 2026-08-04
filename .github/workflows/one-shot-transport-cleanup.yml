@@ -1,24 +1,25 @@
 name: One-shot transport cleanup
 
 on:
-  push:
-    branches: [audit/lsp-max-80-20]
+  pull_request:
+    branches: [master]
 
 permissions:
   contents: write
 
 concurrency:
-  group: one-shot-transport-cleanup
+  group: one-shot-transport-cleanup-pr-22
   cancel-in-progress: false
 
 jobs:
   cleanup:
+    if: github.event.pull_request.number == 22 && github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
         with:
-          ref: audit/lsp-max-80-20
+          ref: fix/wasm4pm-lsp-example-crates-io-dep
           fetch-depth: 0
 
       - name: Record admitted source
@@ -77,16 +78,17 @@ fn to_jsonrpc_error(err: impl std::error::Error) -> Error {
           rustup toolchain install nightly-2026-04-15 --profile minimal --component rustfmt
           cargo +nightly-2026-04-15 fmt --all
 
-      - name: Enforce bounded diff
+      - name: Remove one-shot authority and enforce bounded diff
         run: |
-          changed="$(git diff --name-only)"
+          git rm .github/workflows/one-shot-transport-cleanup.yml
+          changed="$(git diff --name-status)"
           printf '%s\n' "$changed"
-          test "$changed" = "src/transport.rs"
+          test "$changed" = $'D\t.github/workflows/one-shot-transport-cleanup.yml\nM\tsrc/transport.rs'
 
-      - name: Commit cleanup
+      - name: Commit cleanup and self-removal
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add src/transport.rs
           git commit -m "fix(transport): remove dead runtime-neutral branches"
-          git push origin HEAD:audit/lsp-max-80-20
+          git push origin HEAD:fix/wasm4pm-lsp-example-crates-io-dep
