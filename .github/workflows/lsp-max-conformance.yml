@@ -2,71 +2,85 @@ name: lsp-max Conformance Gate
 
 on:
   push:
-    branches: [master, "claude/**"]
+    branches: [master]
   pull_request:
     branches: [master]
+  workflow_dispatch:
 
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+permissions:
+  contents: read
+
+concurrency:
+  group: conformance-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   conformance:
     name: Conformance Score
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
+          persist-credentials: false
           submodules: false
           ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
 
       - name: Record exact source identity
         run: git rev-parse HEAD
 
-      - name: Install law scanner dependency
-        run: sudo apt-get update && sudo apt-get install -y ripgrep
+      - name: Install scanner and pinned Rust toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ripgrep
+          rustup toolchain install nightly-2026-04-15 --profile minimal
 
       - name: Run authoritative law compliance scanner
         run: bash scripts/check-law-compliance.sh
 
-      - name: Install pinned Rust toolchain
-        uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: nightly-2026-04-15
-
-      - name: Cache cargo registry
-        uses: actions/cache@v4
+      - name: Cache Cargo state
+        uses: actions/cache@v6
         with:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
             target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: ${{ runner.os }}-cargo-
+          key: conformance-${{ runner.os }}-${{ hashFiles('**/Cargo.toml', 'rust-toolchain.toml') }}
+          restore-keys: conformance-${{ runner.os }}-
 
       - name: Build lsp-max runtime and targets
-        run: cargo build -p lsp-max --all-targets
+        run: cargo +nightly-2026-04-15 build -p lsp-max --all-targets
 
-      - name: Scan ontology law-axis status
-        id: ontology
+      - name: Scan and enforce ontology law-axis status
         run: |
-          echo "## lsp-max Conformance Status" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Axis | Count |" >> $GITHUB_STEP_SUMMARY
-          echo "|------|-------|" >> $GITHUB_STEP_SUMMARY
+          count() {
+            rg -o "$1" ontology 2>/dev/null | wc -l | tr -d ' '
+          }
 
-          ADMITTED=$(grep -r "law:ADMITTED" ontology/ 2>/dev/null | wc -l || echo 0)
-          CANDIDATE=$(grep -r "law:CANDIDATE" ontology/ 2>/dev/null | wc -l || echo 0)
-          REFUSED=$(grep -r "law:REFUSED" ontology/ 2>/dev/null | wc -l || echo 0)
-          UNKNOWN=$(grep -r "law:UNKNOWN" ontology/ 2>/dev/null | wc -l || echo 0)
-          METHODS=$(grep -r "lsp:methodName" ontology/ 2>/dev/null | wc -l || echo 0)
+          ADMITTED="$(count 'law:ADMITTED')"
+          CANDIDATE="$(count 'law:CANDIDATE')"
+          REFUSED="$(count 'law:REFUSED')"
+          UNKNOWN="$(count 'law:UNKNOWN')"
+          METHODS="$(count 'lsp:methodName')"
 
-          echo "| ADMITTED | $ADMITTED |" >> $GITHUB_STEP_SUMMARY
-          echo "| CANDIDATE | $CANDIDATE |" >> $GITHUB_STEP_SUMMARY
-          echo "| REFUSED | $REFUSED |" >> $GITHUB_STEP_SUMMARY
-          echo "| UNKNOWN | $UNKNOWN |" >> $GITHUB_STEP_SUMMARY
-          echo "| Total methods declared | $METHODS |" >> $GITHUB_STEP_SUMMARY
+          {
+            echo "## lsp-max Conformance Status"
+            echo
+            echo "| Axis | Count |"
+            echo "|------|-------|"
+            echo "| ADMITTED | $ADMITTED |"
+            echo "| CANDIDATE | $CANDIDATE |"
+            echo "| REFUSED | $REFUSED |"
+            echo "| UNKNOWN | $UNKNOWN |"
+            echo "| Total methods declared | $METHODS |"
+          } >> "$GITHUB_STEP_SUMMARY"
 
-          echo "admitted=$ADMITTED" >> $GITHUB_OUTPUT
-          echo "candidate=$CANDIDATE" >> $GITHUB_OUTPUT
-          echo "methods=$METHODS" >> $GITHUB_OUTPUT
+          if [[ "$METHODS" -eq 0 ]]; then
+            echo "::error::No LSP method declarations were observed"
+            exit 1
+          fi
+
+          if [[ "$REFUSED" -gt 0 ]]; then
+            echo "::error::$REFUSED refused ontology entries block conformance"
+            exit 1
+          fi
