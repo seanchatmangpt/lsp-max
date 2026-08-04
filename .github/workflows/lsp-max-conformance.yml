@@ -38,6 +38,9 @@ jobs:
       - name: Run authoritative law compliance scanner
         run: bash scripts/check-law-compliance.sh
 
+      - name: Verify protocol court projection
+        run: python3 scripts/protocol-court.py --check
+
       - name: Cache Cargo state
         uses: actions/cache@v6
         with:
