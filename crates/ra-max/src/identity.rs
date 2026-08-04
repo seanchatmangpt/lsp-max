@@ -96,7 +96,10 @@ mod tests {
 
     fn files() -> BTreeMap<String, String> {
         BTreeMap::from([
-            ("Cargo.toml".to_owned(), "[package]\nname='demo'\n".to_owned()),
+            (
+                "Cargo.toml".to_owned(),
+                "[package]\nname='demo'\n".to_owned(),
+            ),
             ("src/main.rs".to_owned(), "fn main() {}\n".to_owned()),
         ])
     }
