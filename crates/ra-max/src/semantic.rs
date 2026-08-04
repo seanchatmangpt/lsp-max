@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 
 use serde::{Deserialize, Serialize};
-use tree_sitter::{Node, Parser, Point};
+use tree_sitter::{Node, Parser};
 
 use crate::identity::{digest_parts, ProjectAdmission};
 
@@ -16,7 +16,7 @@ pub struct SourceRange {
 }
 
 impl SourceRange {
-    fn from_node(node: Node<'_>) -> Self {
+    pub fn from_node(node: Node<'_>) -> Self {
         let start = node.start_position();
         let end = node.end_position();
         Self {
@@ -33,8 +33,15 @@ impl SourceRange {
         let after_start =
             line > self.start_line || (line == self.start_line && column >= self.start_column);
         let before_end =
-            line < self.end_line || (line == self.end_line && column <= self.end_column);
+            line < self.end_line || (line == self.end_line && column < self.end_column);
         after_start && before_end
+    }
+
+    pub fn contains_cursor(&self, line: u32, column: u32) -> bool {
+        self.contains(line, column)
+            || (line == self.end_line
+                && column == self.end_column
+                && self.end_byte > self.start_byte)
     }
 }
 
@@ -55,7 +62,9 @@ pub struct Symbol {
     pub path: String,
     pub kind: String,
     pub name: String,
+    pub signature: String,
     pub range: SourceRange,
+    pub selection_range: SourceRange,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -80,7 +89,7 @@ pub trait SemanticEngine: Send + Sync {
 /// Bounded first engine for RFC 0006.
 ///
 /// This engine proves the runtime/authority architecture using genuine Rust
-/// parsing and structural symbols.  It intentionally does not claim HIR,
+/// parsing and structural symbols. It intentionally does not claim HIR,
 /// name-resolution, macro-expansion, or type-inference equivalence.
 #[derive(Clone, Copy, Debug, Default)]
 pub struct TreeSitterRustEngine;
@@ -137,7 +146,9 @@ impl TreeSitterRustEngine {
                             path: path.to_owned(),
                             kind: kind.to_owned(),
                             name: name.to_owned(),
+                            signature: item_signature(node, source),
                             range: SourceRange::from_node(node),
+                            selection_range: SourceRange::from_node(name_node),
                         });
                     }
                 }
@@ -154,7 +165,7 @@ impl TreeSitterRustEngine {
 
 impl SemanticEngine for TreeSitterRustEngine {
     fn name(&self) -> &'static str {
-        "tree-sitter-rust-structural-v1"
+        "tree-sitter-rust-structural-v2"
     }
 
     fn analyze(
@@ -199,7 +210,7 @@ impl SemanticEngine for TreeSitterRustEngine {
         let diagnostics_bytes = serde_json::to_vec(&diagnostics).unwrap_or_default();
         let symbols_bytes = serde_json::to_vec(&symbols).unwrap_or_default();
         let revision_hash = digest_parts([
-            b"ra-max/semantic-revision/v1".as_slice(),
+            b"ra-max/semantic-revision/v2".as_slice(),
             admission.project_hash.as_bytes(),
             self.name().as_bytes(),
             diagnostics_bytes.as_slice(),
@@ -230,6 +241,26 @@ fn symbol_kind(node_kind: &str) -> Option<&'static str> {
     }
 }
 
+fn item_signature(node: Node<'_>, source: &str) -> String {
+    let text = node
+        .utf8_text(source.as_bytes())
+        .unwrap_or_default()
+        .trim();
+    let boundary = text
+        .find('{')
+        .or_else(|| text.find(';').map(|index| index + 1))
+        .unwrap_or(text.len());
+    let mut signature = text[..boundary]
+        .split_whitespace()
+        .collect::<Vec<_>>()
+        .join(" ");
+    if signature.len() > 240 {
+        signature.truncate(237);
+        signature.push_str("...");
+    }
+    signature
+}
+
 fn zero_range() -> SourceRange {
     SourceRange {
         start_byte: 0,
@@ -239,11 +270,6 @@ fn zero_range() -> SourceRange {
         end_line: 0,
         end_column: 0,
     }
-}
-
-#[allow(dead_code)]
-fn _point_type_witness(point: Point) -> (usize, usize) {
-    (point.row, point.column)
 }
 
 #[cfg(test)]
@@ -268,14 +294,19 @@ mod tests {
         let snapshot = TreeSitterRustEngine.analyze(&admission(&files), &files);
 
         assert!(snapshot.diagnostics.is_empty());
-        assert!(snapshot
+        let receipt = snapshot
             .symbols
             .iter()
-            .any(|symbol| symbol.kind == "struct" && symbol.name == "Receipt"));
-        assert!(snapshot
+            .find(|symbol| symbol.kind == "struct" && symbol.name == "Receipt")
+            .expect("struct symbol");
+        let verify = snapshot
             .symbols
             .iter()
-            .any(|symbol| symbol.kind == "function" && symbol.name == "verify"));
+            .find(|symbol| symbol.kind == "function" && symbol.name == "verify")
+            .expect("function symbol");
+        assert_eq!(receipt.signature, "pub struct Receipt;");
+        assert_eq!(verify.signature, "pub fn verify() -> bool");
+        assert!(verify.selection_range.start_byte > verify.range.start_byte);
     }
 
     #[test]
