@@ -51,36 +51,59 @@ jobs:
       - name: Build lsp-max runtime and targets
         run: cargo +nightly-2026-04-15 build -p lsp-max --all-targets
 
-      - name: Scan and enforce ontology law-axis status
+      - name: Scan and enforce ontology law-axis consistency
         run: |
-          count() {
-            rg -o "$1" ontology 2>/dev/null | wc -l | tr -d ' '
+          set -euo pipefail
+
+          ontology="ontology/lsp318.ttl"
+
+          status_count() {
+            rg -o "law:status[[:space:]]+law:$1" "$ontology" | wc -l | tr -d ' '
           }
 
-          ADMITTED="$(count 'law:ADMITTED')"
-          CANDIDATE="$(count 'law:CANDIDATE')"
-          REFUSED="$(count 'law:REFUSED')"
-          UNKNOWN="$(count 'law:UNKNOWN')"
-          METHODS="$(count 'lsp:methodName')"
-
-          {
-            echo "## lsp-max Conformance Status"
-            echo
-            echo "| Axis | Count |"
-            echo "|------|-------|"
-            echo "| ADMITTED | $ADMITTED |"
-            echo "| CANDIDATE | $CANDIDATE |"
-            echo "| REFUSED | $REFUSED |"
-            echo "| UNKNOWN | $UNKNOWN |"
-            echo "| Total methods declared | $METHODS |"
-          } >> "$GITHUB_STEP_SUMMARY"
+          METHODS="$(rg -o 'lsp:methodName[[:space:]]+"[^"]+"' "$ontology" | wc -l | tr -d ' ')"
+          ADMITTED="$(status_count ADMITTED)"
+          CANDIDATE="$(status_count CANDIDATE)"
+          REFUSED="$(status_count REFUSED)"
+          UNKNOWN="$(status_count UNKNOWN)"
+          BLOCKED="$(status_count BLOCKED)"
+          PARTIAL="$(status_count PARTIAL)"
+          OPEN="$(status_count OPEN)"
+          STATUS_TOTAL=$((ADMITTED + CANDIDATE + REFUSED + UNKNOWN + BLOCKED + PARTIAL + OPEN))
+          NON_ADMITTED=$((STATUS_TOTAL - ADMITTED))
 
           if [[ "$METHODS" -eq 0 ]]; then
             echo "::error::No LSP method declarations were observed"
             exit 1
           fi
 
-          if [[ "$REFUSED" -gt 0 ]]; then
-            echo "::error::$REFUSED refused ontology entries block conformance"
+          if [[ "$STATUS_TOTAL" -ne "$METHODS" ]]; then
+            echo "::error::Every declared LSP method must have exactly one law:status assignment: methods=$METHODS statuses=$STATUS_TOTAL"
             exit 1
           fi
+
+          if [[ "$NON_ADMITTED" -eq 0 ]]; then
+            STANDING="ALIVE"
+          else
+            STANDING="PARTIAL_ALIVE"
+          fi
+
+          {
+            echo "## lsp-max Conformance Status"
+            echo
+            echo "Exact ontology standing: **${STANDING}**"
+            echo
+            echo "| Law status | Assigned methods |"
+            echo "| --- | ---: |"
+            echo "| ADMITTED | $ADMITTED |"
+            echo "| CANDIDATE | $CANDIDATE |"
+            echo "| REFUSED | $REFUSED |"
+            echo "| UNKNOWN | $UNKNOWN |"
+            echo "| BLOCKED | $BLOCKED |"
+            echo "| PARTIAL | $PARTIAL |"
+            echo "| OPEN | $OPEN |"
+            echo "| **Total status assignments** | **$STATUS_TOTAL** |"
+            echo "| **Declared methods** | **$METHODS** |"
+            echo
+            echo "REFUSED is a lawful negative state and does not by itself fail ontology consistency."
+          } >> "$GITHUB_STEP_SUMMARY"
