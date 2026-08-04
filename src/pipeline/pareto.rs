@@ -7,7 +7,7 @@
 //! every objective and strictly better on one. The caller then trades objectives
 //! off explicitly rather than accepting a pre-baked weighting.
 //!
-//! Determinism: every run is seeded through [`Prng`]; an identical seed yields an
+//! Determinism: every run is seeded through `Prng`; an identical seed yields an
 //! identical front (same pipelines and same objective values).
 //!
 //! Bounded status only — no victory language. An empty breed pool is [`Refused`];
@@ -15,10 +15,10 @@
 //! convenience scalarization) is [`Admitted`]; anything else is [`Partial`].
 //! [`Unknown`] is never produced here — its absence is intentional, not a gap.
 //!
-//! [`Refused`]: PipelineBoundedStatus::Refused
-//! [`Admitted`]: PipelineBoundedStatus::Admitted
-//! [`Partial`]: PipelineBoundedStatus::Partial
-//! [`Unknown`]: PipelineBoundedStatus::Unknown
+//! [`Refused`]: crate::pipeline::types::PipelineBoundedStatus::Refused
+//! [`Admitted`]: crate::pipeline::types::PipelineBoundedStatus::Admitted
+//! [`Partial`]: crate::pipeline::types::PipelineBoundedStatus::Partial
+//! [`Unknown`]: crate::pipeline::types::PipelineBoundedStatus::Unknown
 
 use crate::pipeline::catalog::{breed_category, BreedCategory, KNOWN_BREEDS};
 use crate::pipeline::search::Prng;
@@ -172,7 +172,7 @@ pub struct ParetoMember {
 /// Outcome of a [`ParetoSearch`] run.
 #[derive(Debug, Clone)]
 pub struct ParetoSearchResult {
-    /// Bounded status of the run. Never [`PipelineBoundedStatus::Unknown`].
+    /// Bounded status of the run. Never `PipelineBoundedStatus::Unknown`.
     pub status: PipelineBoundedStatus,
     /// The non-dominated set discovered. Internally non-dominated by construction.
     pub front: Vec<ParetoMember>,
@@ -224,7 +224,7 @@ impl<'a> ParetoSearch<'a> {
 
     /// Construct a search over a caller-supplied breed pool with the given seed.
     ///
-    /// An empty pool drives the run to [`PipelineBoundedStatus::Refused`].
+    /// An empty pool drives the run to `PipelineBoundedStatus::Refused`.
     pub fn with_pool(config: PipelineSearchConfig, breed_pool: &'a [&'a str], seed: u64) -> Self {
         Self {
             config,
@@ -353,11 +353,11 @@ impl<'a> ParetoSearch<'a> {
 
     /// Run the search and return the Pareto front with a bounded status.
     ///
-    /// Status rules: an empty breed pool returns [`PipelineBoundedStatus::Refused`]
+    /// Status rules: an empty breed pool returns `PipelineBoundedStatus::Refused`
     /// with an empty front; a non-empty front with any member whose scalarized
     /// score meets `config.admission_threshold` returns
-    /// [`PipelineBoundedStatus::Admitted`]; otherwise
-    /// [`PipelineBoundedStatus::Partial`]. [`PipelineBoundedStatus::Unknown`] is
+    /// `PipelineBoundedStatus::Admitted`; otherwise
+    /// `PipelineBoundedStatus::Partial`. `PipelineBoundedStatus::Unknown` is
     /// never returned.
     pub fn run(&mut self) -> ParetoSearchResult {
         if self.breed_pool.is_empty() {

@@ -2,268 +2,53 @@ name: CI
 
 on:
   push:
-    branches:
-      - master
-      - main
-      - develop
+    branches: [master]
   pull_request:
-    branches:
-      - master
-      - main
-      - develop
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docs-ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 env:
   CARGO_TERM_COLOR: always
-  RUST_BACKTRACE: 1
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  RUST_BACKTRACE: "1"
 
 jobs:
-  # Format check
-  fmt:
-    name: cargo fmt
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          path: lsp-max
-
-      # Sibling repos required by Cargo.toml path deps and [patch.crates-io].
-      # If any sibling repo is private, add a SIBLING_REPO_TOKEN secret (PAT
-      # with repo read access). Public repos work without a token.
-      - uses: actions/checkout@v4
-        with:
-          repository: seanchatmangpt/lsp-types-max
-          path: lsp-types-max
-          token: ${{ secrets.SIBLING_REPO_TOKEN || github.token }}
-
-      - uses: actions/checkout@v4
-        with:
-          repository: seanchatmangpt/wasm4pm-compat
-          path: wasm4pm-compat
-
-      - uses: actions/checkout@v4
-        with:
-          repository: seanchatmangpt/wasm4pm
-          path: wasm4pm
-
-      - uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: nightly-2026-04-15  # keep in sync with rust-toolchain.toml
-          components: rustfmt
-
-      - run: cargo fmt -- --check
-        working-directory: lsp-max
-
-  # Lint check with all features
-  clippy:
-    name: cargo clippy
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          path: lsp-max
-
-      - uses: actions/checkout@v4
-        with:
-          repository: seanchatmangpt/lsp-types-max
-          path: lsp-types-max
-          token: ${{ secrets.SIBLING_REPO_TOKEN || github.token }}
-
-      - uses: actions/checkout@v4
-        with:
-          repository: seanchatmangpt/wasm4pm-compat
-          path: wasm4pm-compat
-
-      - uses: actions/checkout@v4
-        with:
-          repository: seanchatmangpt/wasm4pm
-          path: wasm4pm
-
-      - uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: nightly-2026-04-15  # keep in sync with rust-toolchain.toml
-          components: clippy
-
-      - uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: lsp-max
-
-      - run: cargo clippy --workspace --all-targets --all-features -- -D warnings
-        working-directory: lsp-max
-
-  # Test suite with 10m timeout
-  test:
-    name: cargo test
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          path: lsp-max
-
-      - uses: actions/checkout@v4
-        with:
-          repository: seanchatmangpt/lsp-types-max
-          path: lsp-types-max
-          token: ${{ secrets.SIBLING_REPO_TOKEN || github.token }}
-
-      - uses: actions/checkout@v4
-        with:
-          repository: seanchatmangpt/wasm4pm-compat
-          path: wasm4pm-compat
-
-      - uses: actions/checkout@v4
-        with:
-          repository: seanchatmangpt/wasm4pm
-          path: wasm4pm
-
-      - uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: nightly-2026-04-15  # keep in sync with rust-toolchain.toml
-
-      - uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: lsp-max
-
-      - run: cargo test --workspace
-        working-directory: lsp-max
-
-  # Documentation build and dead link check
-  docs:
-    name: cargo doc
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          path: lsp-max
-
-      - uses: actions/checkout@v4
-        with:
-          repository: seanchatmangpt/lsp-types-max
-          path: lsp-types-max
-          token: ${{ secrets.SIBLING_REPO_TOKEN || github.token }}
-
-      - uses: actions/checkout@v4
-        with:
-          repository: seanchatmangpt/wasm4pm-compat
-          path: wasm4pm-compat
-
-      - uses: actions/checkout@v4
-        with:
-          repository: seanchatmangpt/wasm4pm
-          path: wasm4pm
-
-      - uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: nightly-2026-04-15  # keep in sync with rust-toolchain.toml
-
-      - uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: lsp-max
-
-      - run: cargo doc --workspace --no-deps --all-features
-        working-directory: lsp-max
-        env:
-          RUSTDOCFLAGS: "-D warnings"
-
-      - name: Check for dead links (if cargo-deadlinks available)
-        working-directory: lsp-max
-        run: |
-          if cargo install --list | grep -q cargo-deadlinks; then
-            cargo deadlinks --check html 2>/dev/null || true
-          else
-            echo "cargo-deadlinks not installed, skipping dead link check"
-          fi
-
-  # Fast pre-filter: fmt+clippy on changed crates only (PR-only, no narrowing admission)
-  fast-check:
-    name: fast-check (changed crates)
-    runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          path: lsp-max
-          fetch-depth: 0
-
-      - uses: actions/checkout@v4
-        with:
-          repository: seanchatmangpt/lsp-types-max
-          path: lsp-types-max
-          token: ${{ secrets.SIBLING_REPO_TOKEN || github.token }}
-
-      - uses: actions/checkout@v4
-        with:
-          repository: seanchatmangpt/wasm4pm-compat
-          path: wasm4pm-compat
-
-      - uses: actions/checkout@v4
-        with:
-          repository: seanchatmangpt/wasm4pm
-          path: wasm4pm
-
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          components: rustfmt, clippy
-
-      - uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: lsp-max
-
-      - name: determine changed crates
-        id: scope
-        working-directory: lsp-max
-        run: |
-          pkgs="$(bash scripts/changed-crates.sh ${{ github.event.pull_request.base.sha }})"
-          echo "pkgs=$pkgs" >> "$GITHUB_OUTPUT"
-          if [ -z "$pkgs" ]; then
-            echo "status=OPEN" >> "$GITHUB_OUTPUT"
-          elif [ "$pkgs" = "__ALL__" ]; then
-            echo "status=PARTIAL" >> "$GITHUB_OUTPUT"
-          else
-            echo "status=CANDIDATE" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: report scope [OPEN — no changed crates]
-        if: steps.scope.outputs.status == 'OPEN'
-        run: echo "no changed crates attributed [OPEN]"
-
-      - name: report scope [PARTIAL — manifest/toolchain changed, full check required]
-        if: steps.scope.outputs.status == 'PARTIAL'
-        run: echo "manifest/Justfile/toolchain changed: no narrowing possible [PARTIAL]"
-
-      - name: fmt check on changed crates [CANDIDATE]
-        if: steps.scope.outputs.status == 'CANDIDATE'
-        working-directory: lsp-max
-        run: |
-          args=$(printf -- '-p %s ' ${{ steps.scope.outputs.pkgs }})
-          echo "scope: ${{ steps.scope.outputs.pkgs }} [CANDIDATE]"
-          cargo fmt $args -- --check
-
-      - name: clippy on changed crates [CANDIDATE]
-        if: steps.scope.outputs.status == 'CANDIDATE'
-        working-directory: lsp-max
-        run: |
-          args=$(printf -- '-p %s ' ${{ steps.scope.outputs.pkgs }})
-          cargo clippy $args --all-targets -- -D warnings
-
-      - name: fast-check status
-        run: echo "fast-check status: ${{ steps.scope.outputs.status }}"
-
-  # Summary job that gates merges
   result:
     name: CI Result
-    runs-on: ubuntu-latest
-    needs: [fmt, clippy, test, docs]
-    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
     steps:
-      - name: Check CI results
-        run: |
-          if [[ "${{ needs.fmt.result }}" == "failure" ||
-                "${{ needs.clippy.result }}" == "failure" ||
-                "${{ needs.test.result }}" == "failure" ||
-                "${{ needs.docs.result }}" == "failure" ]]; then
-            echo "CI checks failed"
-            exit 1
-          fi
-          echo "All CI checks passed"
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+
+      - name: Record exact source identity
+        run: git rev-parse HEAD
+
+      - name: Install pinned Rust documentation toolchain
+        run: rustup toolchain install nightly-2026-04-15 --profile minimal
+
+      - name: Cache Cargo state
+        uses: actions/cache@v6
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: docs-${{ runner.os }}-${{ hashFiles('**/Cargo.toml', 'rust-toolchain.toml') }}
+          restore-keys: docs-${{ runner.os }}-
+
+      - name: Build workspace documentation
+        env:
+          RUSTDOCFLAGS: "-D warnings"
+        run: cargo +nightly-2026-04-15 doc --workspace --no-deps --all-features
+
+      - name: Execute workspace doctests
+        run: cargo +nightly-2026-04-15 test --workspace --doc

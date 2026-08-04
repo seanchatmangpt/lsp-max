@@ -1,0 +1,137 @@
+name: Rust Quality
+
+on:
+  pull_request:
+    branches: [master]
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rust-quality-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: "1"
+
+jobs:
+  repository-audit:
+    name: Repository invariants
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+
+      - name: Record exact source identity
+        run: git rev-parse HEAD
+
+      - name: Install audit dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ripgrep
+          rustup toolchain install nightly-2026-04-15 --profile minimal
+
+      - name: Execute repository audit
+        run: bash scripts/audit-repository.sh
+
+  toolchain-contract:
+    name: Pinned nightly supported features
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+
+      - name: Record exact source identity
+        run: git rev-parse HEAD
+
+      - name: Install pinned nightly toolchain
+        run: rustup toolchain install nightly-2026-04-15 --profile minimal
+
+      - name: Record compiler identity
+        run: |
+          rustc +nightly-2026-04-15 --version --verbose
+          cargo +nightly-2026-04-15 --version --verbose
+
+      - name: Cache Cargo state
+        uses: actions/cache@v6
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: toolchain-contract-${{ runner.os }}-${{ hashFiles('**/Cargo.toml', 'rust-toolchain.toml') }}
+          restore-keys: toolchain-contract-${{ runner.os }}-
+
+      - name: Check default Tokio runtime boundary
+        run: cargo +nightly-2026-04-15 check -p lsp-max --lib
+
+      - name: Check all supported features
+        run: cargo +nightly-2026-04-15 check -p lsp-max --lib --all-features
+
+  workspace-quality:
+    name: Format, Clippy, and workspace tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+
+      - name: Record exact source identity
+        run: git rev-parse HEAD
+
+      - name: Install pinned Rust quality toolchain
+        run: |
+          rustup toolchain install nightly-2026-04-15 \
+            --profile minimal \
+            --component clippy \
+            --component rustfmt
+
+      - name: Cache Cargo state
+        uses: actions/cache@v6
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: quality-${{ runner.os }}-${{ hashFiles('**/Cargo.toml', 'rust-toolchain.toml') }}
+          restore-keys: quality-${{ runner.os }}-
+
+      - name: Verify formatting
+        run: cargo +nightly-2026-04-15 fmt --all -- --check
+
+      - name: Execute strict workspace Clippy
+        run: cargo +nightly-2026-04-15 clippy --workspace --all-targets --all-features -- -D warnings
+
+      - name: Execute workspace tests and targets
+        run: cargo +nightly-2026-04-15 test --workspace --all-targets
+
+  package-dry-run:
+    name: Root crate package dry run
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+
+      - name: Record exact source identity
+        run: git rev-parse HEAD
+
+      - name: Install pinned Rust toolchain
+        run: rustup toolchain install nightly-2026-04-15 --profile minimal
+
+      - name: Execute package dry run
+        run: cargo +nightly-2026-04-15 publish -p lsp-max --dry-run --allow-dirty
