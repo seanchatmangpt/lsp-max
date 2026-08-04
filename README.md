@@ -1,14 +1,14 @@
 # lsp-max
 
-[![Build Status][build-badge]][build-url]
+[![Rust Quality][build-badge]][build-url]
 [![License][license-badge]][license-url]
-[![Rust 1.70+][rust-badge]][rust-url]
+[![Rust 1.87+][rust-badge]][rust-url]
 
-[build-badge]: https://github.com/seanchatmangpt/lsp-max/workflows/rust/badge.svg
-[build-url]: https://github.com/seanchatmangpt/lsp-max/actions
+[build-badge]: https://github.com/seanchatmangpt/lsp-max/actions/workflows/rust-quality.yml/badge.svg
+[build-url]: https://github.com/seanchatmangpt/lsp-max/actions/workflows/rust-quality.yml
 [license-badge]: https://img.shields.io/badge/license-MIT%2FApache--2.0-blue
 [license-url]: #license
-[rust-badge]: https://img.shields.io/badge/rust-1.70%2B-orange
+[rust-badge]: https://img.shields.io/badge/rust-1.87%2B-orange
 [rust-url]: https://www.rust-lang.org
 
 A post-human LSP 3.18 runtime for autonomous agents. `lsp-max` enforces architectural laws via cryptographic receipt chains, three-valued conformance vectors, and deterministic gates. It is not an IDE helper; it is an admission controller for machine agent workflows.
@@ -18,11 +18,11 @@ A post-human LSP 3.18 runtime for autonomous agents. `lsp-max` enforces architec
 ```bash
 git clone https://github.com/seanchatmangpt/lsp-max.git
 cd lsp-max
-just setup            # fetch sibling repos
-cargo test --workspace
+rustup show
+cargo test --workspace --all-targets
 ```
 
-> **Workspace setup:** This repo depends on three siblings (`../lsp-types-max`, `../wasm4pm-compat`, `../wasm4pm`). Run `just setup` or `bash scripts/bootstrap.sh` to fetch them. In Claude Code, `SessionStart` hooks bootstrap automatically.
+The workspace resolves published external crates and repository-local path dependencies only. No adjacent sibling checkout or bootstrap script is required.
 
 ## Using lsp-max
 
@@ -30,52 +30,62 @@ cargo test --workspace
 
 ```toml
 [dependencies]
-lsp-max = "26.7"  # CalVer: YY.M.D scheme
+lsp-max = "26.7"
 ```
 
-**As a server:**
+**Run an included server example:**
 
 ```bash
-cargo run --bin lsp-max -- --config lsp-max.toml
+cargo run -p powl-lsp -- start server
 ```
 
-Extend with the `RulePackServer` trait (20 LOC) + a TOML rule file (50 LOC) instead of writing 400+ LOC of LSP boilerplate. See `examples/` for reference implementations.
+Extend with the `RulePackServer` trait and a TOML rule file instead of reproducing LSP transport and routing boilerplate. See `examples/` for reference implementations.
 
 ## What is this?
 
-`lsp-max` is a law-state runtime projected through LSP — it enforces invariants, maintains cryptographic receipts, and gates state transitions via formal predicates. Every LSP call is a state-transition attempt. Valid transitions produce receipts; invalid transitions emit ANDON (refusal) diagnostics.
+`lsp-max` is a law-state runtime projected through LSP. It enforces invariants, maintains cryptographic receipts, and gates state transitions through formal predicates. Every LSP call is a state-transition attempt. Valid transitions produce receipts; invalid transitions emit ANDON refusal diagnostics.
 
 **Core features:**
 
-- **Law enforcement:** Receipt chains prove every state transition; no mutation without cryptographic proof.
-- **Conformance vectors:** Three-axis tracking (admitted/refused/unknown) instead of binary support flags.
-- **Multi-server composition:** Fan-out diagnostics to multiple servers; tier-stratified routing (Primary/Secondary/DiagnosticsOnly).
+- **Law enforcement:** Receipt chains bind state transitions to evidence.
+- **Conformance vectors:** Three-axis tracking separates admitted, refused, and unknown states.
+- **Multi-server composition:** Fan-out diagnostics and tier-stratified routing.
 - **Process mining:** DFG fitness and Declare constraint validation over LSP event logs.
-- **Specification-driven:** Generate protocol types from LSP `metaModel.json`; extend via `RulePackServer` trait.
-- **Agent integration:** Hook lifecycle (SessionStart, PreToolUse, PostToolUse, SubagentStart/Stop) for agent discovery and analysis.
-- **Automated gates:** Conformance score calculated as `max(0, 100 - ∑penalties)`. Release admitted only if score = 100.0.
+- **Specification-driven protocol:** Generate protocol types from the LSP meta-model.
+- **Agent integration:** Lifecycle hooks for discovery and analysis.
+- **Automated gates:** Exact-head CI validates repository invariants, MSRV, formatting, linting, tests, packaging, and clean Docker builds.
+
+## Verification
+
+```bash
+bash scripts/audit-repository.sh
+cargo fmt --all -- --check
+cargo clippy --workspace --all-targets --all-features -- -D warnings
+cargo test --workspace --all-targets
+cargo publish -p lsp-max --dry-run --allow-dirty
+```
+
+`cargo publish` without `--dry-run` is outside automated execution authority.
 
 ## Documentation
 
-**Start here:** [`docs/README.md`](docs/README.md) — Documentation overview using the Diataxis framework.
+**Start here:** [`docs/README.md`](docs/README.md)
 
-- **[Tutorials](docs/tutorials/)** — Learn lsp-max by building a complete agent loop
-- **[How-to Guides](docs/how-to/)** — Task-oriented recipes (blocking on ANDON, releasing, etc.)
-- **[Reference](docs/reference/)** — Complete protocol spec, configuration, testing patterns
-- **[Explanation](docs/explanation/)** — Understand why LSP is the law-state substrate
+- **[Tutorials](docs/tutorials/)** — Build a complete agent loop
+- **[How-to Guides](docs/how-to/)** — Task-oriented operational recipes
+- **[Reference](docs/reference/)** — Protocol, configuration, and testing references
+- **[Explanation](docs/explanation/)** — Architectural rationale
 
-**Design decisions:** See [`docs/rfcs/README.md`](docs/rfcs/README.md) for the Accepted RFCs that govern the architecture.
+Additional governance and release material:
 
-**Architecture overview:** [`docs/book/01-architecture.md`](docs/book/01-architecture.md) — Comprehensive system overview.
-
-**Contributing:** [`CONTRIBUTING.md`](CONTRIBUTING.md) — Coding standards, git workflow, and development setup.
-
-**Release process:** [`docs/how-to/release.md`](docs/how-to/release.md) — Version bumping, pre-release checklist, dry-run publish, and manual publish instructions.
-
-**Definition of Done:** [`DEFINITION_OF_DONE.md`](DEFINITION_OF_DONE.md) — Release admission gates for the current version.
-
-**Changelog:** [`CHANGELOG.md`](CHANGELOG.md) — Version history and release notes (CalVer: YY.M.D).
+- [`docs/rfcs/README.md`](docs/rfcs/README.md)
+- [`docs/book/01-architecture.md`](docs/book/01-architecture.md)
+- [`CONTRIBUTING.md`](CONTRIBUTING.md)
+- [`SECURITY.md`](SECURITY.md)
+- [`docs/how-to/release.md`](docs/how-to/release.md)
+- [`DEFINITION_OF_DONE.md`](DEFINITION_OF_DONE.md)
+- [`CHANGELOG.md`](CHANGELOG.md)
 
 ## License
 
-Licensed under either of Apache License, Version 2.0 or MIT license at your option.
+Licensed under either the Apache License, Version 2.0, or the MIT license at your option.
