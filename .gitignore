@@ -32,3 +32,11 @@ vendors/
 scratch/
 /doc/
 libstdin.rlib
+
+# ggen sub-project local state (signing keys, receipts) -- never commit.
+# Scoped, not a blanket **/.ggen/ pattern: .ggen/ocel/agent-edit-events.ocel.jsonl
+# at the repo root is a real, pre-existing intentionally-tracked file.
+/ontology/lsif-report/.ggen/
+/ontology/lsif-report/.ggen-v2/
+/ontology/lsp-status-report/.ggen/
+/ontology/lsp-status-report/.ggen-v2/
