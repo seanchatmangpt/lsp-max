@@ -1,6 +1,6 @@
 name: ra-max Vertical Slice
 
-# Read-only exact-head acceptance rail for RFC 0006.
+# Read-only exact-head acceptance rail for RFC 0006 and its indexed standing.
 on:
   pull_request:
     branches: [master]
