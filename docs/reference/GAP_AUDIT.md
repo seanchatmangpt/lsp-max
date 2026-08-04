@@ -16,6 +16,7 @@ This audit is bounded to repository topology, Cargo metadata, compiler/runtime c
 | P1 | False compiler support claim | Declared Rust floor did not match resolved dependencies or nightly use | Rust `1.87.0` is the dependency-resolution floor; pinned `nightly-2026-04-15` is executable authority; stable is unsupported |
 | P1 | Nonfunctional runtime-neutral feature | Published feature surface did not compile | Removed the selectable feature and async-codec dependency; Tokio is the only admitted runtime |
 | P1 | Missing receipt verification tests | Receipt standing lacked direct tamper/replay controls | Added signature, linkage, sequence, replay, tamper, and serde round-trip tests |
+| P1 | Broken strict-rustdoc links | Documentation could not pass `RUSTDOCFLAGS=-D warnings` | Repaired invalid pipeline links and qualified status reference targets; strict workspace rustdoc passed before commit |
 | P1 | Stale contributor and user setup | Documentation required obsolete sibling repositories and nonexistent commands | README and CONTRIBUTING now match executable topology and replay commands |
 | P1 | Unrelated source deletion in inherited branch | Repair scope silently removed ordinary POWL source | Restored the nested POWL source tree from the exact base SHA |
 | P2 | No vulnerability reporting policy | Security reports lacked a private, typed intake boundary | Added `SECURITY.md` with critical receipt, path, protocol, CI, and actuation boundaries |
@@ -46,6 +47,7 @@ This audit is bounded to repository topology, Cargo metadata, compiler/runtime c
 8. **Release reproducibility — `PARTIAL_ALIVE`.** Package dry-run validates the root crate; reproducible archives, checksums, signed attestations, dependency-order dry-runs for every publishable crate, and consumer installation tests remain outstanding.
 9. **Observability and operational failure drills — `UNKNOWN`.** Structured diagnostics exist, but chaos tests for cancellation storms, channel closure, malformed frames, disk pressure, semantic-store corruption, and receipt replay at scale are incomplete.
 10. **API compatibility discipline — `UNKNOWN`.** No admitted semver/API-diff gate currently prevents accidental public API breakage across CalVer releases.
+11. **Rustdoc output-name collision — `PARTIAL_ALIVE`.** Strict documentation succeeds, but Cargo still reports a nonfatal output collision between the playground `gc005_wasm4pm_adapter` binary and the adapter library target; target naming should be made unique.
 
 ## Falsifiers
 
