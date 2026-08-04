@@ -41,10 +41,10 @@ jobs:
       - name: Execute repository audit
         run: bash scripts/audit-repository.sh
 
-  msrv:
-    name: Rust 1.87 feature boundary
+  toolchain-contract:
+    name: Pinned nightly feature boundaries
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@v7
         with:
@@ -54,8 +54,13 @@ jobs:
       - name: Record exact source identity
         run: git rev-parse HEAD
 
-      - name: Install declared MSRV
-        run: rustup toolchain install 1.87.0 --profile minimal
+      - name: Install pinned nightly toolchain
+        run: rustup toolchain install nightly-2026-04-15 --profile minimal
+
+      - name: Record compiler identity
+        run: |
+          rustc +nightly-2026-04-15 --version --verbose
+          cargo +nightly-2026-04-15 --version --verbose
 
       - name: Cache Cargo state
         uses: actions/cache@v6
@@ -64,14 +69,14 @@ jobs:
             ~/.cargo/registry
             ~/.cargo/git
             target
-          key: msrv-${{ runner.os }}-${{ hashFiles('**/Cargo.toml', 'rust-toolchain.toml') }}
-          restore-keys: msrv-${{ runner.os }}-
+          key: toolchain-contract-${{ runner.os }}-${{ hashFiles('**/Cargo.toml', 'rust-toolchain.toml') }}
+          restore-keys: toolchain-contract-${{ runner.os }}-
 
       - name: Check default runtime feature boundary
-        run: cargo +1.87.0 check -p lsp-max --lib
+        run: cargo +nightly-2026-04-15 check -p lsp-max --lib
 
       - name: Check runtime-agnostic feature boundary
-        run: cargo +1.87.0 check -p lsp-max --lib --no-default-features --features runtime-agnostic
+        run: cargo +nightly-2026-04-15 check -p lsp-max --lib --no-default-features --features runtime-agnostic
 
   workspace-quality:
     name: Format, Clippy, and workspace tests
