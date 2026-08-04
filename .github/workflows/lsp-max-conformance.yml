@@ -61,31 +61,8 @@ jobs:
           echo "candidate=$CANDIDATE" >> $GITHUB_OUTPUT
           echo "methods=$METHODS" >> $GITHUB_OUTPUT
 
-      - name: Check tower-lsp law violations
-        run: |
-          echo "## Law Compliance Scan" >> $GITHUB_STEP_SUMMARY
-          VIOLATIONS=$(grep -r "tower-lsp\|tower_lsp" src/ crates/ lsp-max-protocol/ lsp-max-runtime/ lsp-max-agent/ lsp-max-macros/ 2>/dev/null \
-            | grep -v "target/" \
-            | grep -v "anti-llm-cheat-lsp" \
-            | grep -v "\.toml:.*#" \
-            | wc -l || echo 0)
-          echo "tower-lsp references (forbidden): $VIOLATIONS" >> $GITHUB_STEP_SUMMARY
-          if [ "$VIOLATIONS" -gt "0" ]; then
-            echo "### Violations" >> $GITHUB_STEP_SUMMARY
-            grep -rn "tower-lsp\|tower_lsp" src/ crates/ lsp-max-protocol/ 2>/dev/null | grep -v target/ | head -20 >> $GITHUB_STEP_SUMMARY
-            echo "::error::LawViolation: $VIOLATIONS forbidden tower-lsp reference(s) found"
-            exit 1
-          fi
-          echo "Status: CANDIDATE — no forbidden references detected" >> $GITHUB_STEP_SUMMARY
+      - name: Install law scanner dependency
+        run: sudo apt-get update && sudo apt-get install -y ripgrep
 
-      - name: Check victory language
-        run: |
-          VICTORY=$(grep -rn '"done"\|"complete"\|"solved"\|"guaranteed"\|"all clean"\|"fully admitted"' \
-            src/ crates/ lsp-max-protocol/ \
-            --include="*.rs" 2>/dev/null \
-            | grep -v target/ \
-            | grep -v "test\|spec\|fixture" \
-            | wc -l || echo 0)
-          if [ "$VICTORY" -gt "0" ]; then
-            echo "::warning::VictoryLanguage: $VICTORY victory-language occurrence(s) found — use bounded statuses"
-          fi
+      - name: Run authoritative law compliance scanner
+        run: bash scripts/check-law-compliance.sh
