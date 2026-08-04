@@ -1,6 +1,7 @@
 name: ra-max Vertical Slice
 
 # Read-only exact-head acceptance rail for RFC 0006 and its indexed standing.
+# This workflow is the final source-tree validation boundary for PR #23.
 on:
   pull_request:
     branches: [master]
