@@ -4,8 +4,8 @@ This directory contains durable design decisions and active architectural propos
 
 RFCs are numbered sequentially and assigned a status:
 
-- **Proposed:** The design is under review and does not yet claim implementation standing.
-- **Accepted:** The decision is settled and implemented.
+- **Proposed:** The design is under review and does not yet claim full implementation standing. A proposed RFC may include a bounded executable slice when its remaining exclusions are explicit.
+- **Accepted:** The decision is settled and its required implementation evidence is admitted.
 - **Superseded:** A later RFC has replaced this one; see the newer RFC for details.
 - **Withdrawn:** The decision was considered but rejected; kept for historical context.
 
@@ -13,7 +13,7 @@ RFCs are numbered sequentially and assigned a status:
 
 | RFC | Title | Status |
 |-----|-------|--------|
-| [0006](0006-rust-analyzer-on-lsp-max.md) | Rust Analyzer on the lsp-max Law-State Runtime | Proposed |
+| [0006](0006-rust-analyzer-on-lsp-max.md) | Rust Analyzer on the lsp-max Law-State Runtime | Proposed — executable 80/20 slice |
 
 ## Accepted RFCs
 
@@ -32,14 +32,14 @@ For first-time readers, start with:
 1. `docs/book/01-architecture.md` — Comprehensive system overview
 2. **RFC 0001** — Why code generation is the foundation
 3. **RFC 0002–0005** — The accepted decisions that shape the current architecture
-4. **RFC 0006** — The proposed rust-analyzer rewrite boundary and migration calculus
+4. **RFC 0006** — The proposed rust-analyzer rewrite boundary, executable lexical slice, and migration calculus
 
 For deep dives:
 
 - **RFC 0002–0003** are prerequisites for understanding the law-state runtime.
 - **RFC 0004** explains the five-layer model and why tower-lsp was forked rather than extended.
 - **RFC 0005** governs versioning and deployment semantics.
-- **RFC 0006** specifies how a mature semantic engine can be preserved while runtime authority, actuation, receipts, and replay move into `lsp-max`.
+- **RFC 0006** specifies how a mature semantic engine can be preserved while runtime authority, editor intelligence, actuation, receipts, and replay move into `lsp-max`.
 
 ## Contributing
 
