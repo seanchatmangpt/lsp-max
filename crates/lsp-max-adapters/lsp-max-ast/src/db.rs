@@ -216,6 +216,7 @@ pub struct SalsaLspAdapter {
     db: Mutex<LspMaxDb>,
     inputs: DashMap<DocumentUri, SourceFile>,
     documents: DashMap<DocumentUri, Mutex<Document>>,
+    versions: DashMap<DocumentUri, i32>,
 }
 
 impl SalsaLspAdapter {
@@ -224,12 +225,42 @@ impl SalsaLspAdapter {
             db: Mutex::new(LspMaxDb::new(language)),
             inputs: DashMap::new(),
             documents: DashMap::new(),
+            versions: DashMap::new(),
         }
+    }
+
+    /// Returns whether this adapter was constructed for `language`.
+    ///
+    /// A Salsa database owns exactly one grammar for its lifetime.  Exposing
+    /// this check lets the public compatibility adapter refuse accidental
+    /// cross-language reuse instead of silently parsing with the wrong
+    /// grammar.
+    pub fn accepts_language(&self, language: &tree_sitter::Language) -> bool {
+        self.db.lock().language() == language.clone()
+    }
+
+    pub fn language(&self) -> tree_sitter::Language {
+        self.db.lock().language()
+    }
+
+    /// Returns `true` when no documents are currently admitted.
+    pub fn is_empty(&self) -> bool {
+        self.inputs.is_empty()
+    }
+
+    /// Returns whether `uri` has an admitted open-document input.
+    pub fn contains_uri(&self, uri: &DocumentUri) -> bool {
+        self.inputs.contains_key(uri)
+    }
+
+    pub fn document_version(&self, uri: &DocumentUri) -> Option<i32> {
+        self.versions.get(uri).map(|version| *version)
     }
 
     /// Register a newly-opened document in the incremental database.
     pub fn handle_did_open(&self, params: DidOpenTextDocumentParams) {
         let uri = params.text_document.uri;
+        let version = params.text_document.version;
         let text = params.text_document.text;
         let db = self.db.lock();
         let encoding = PositionEncodingKind::UTF16; // LSP default
@@ -240,7 +271,8 @@ impl SalsaLspAdapter {
         if let Some(doc) = parse_doc_for_language(&language, &text, &encoding) {
             self.documents.insert(uri.clone(), Mutex::new(doc));
         }
-        self.inputs.insert(uri, source);
+        self.inputs.insert(uri.clone(), source);
+        self.versions.insert(uri, version);
     }
 
     /// Apply incremental edits and bump the `text` input in Salsa.
@@ -253,6 +285,7 @@ impl SalsaLspAdapter {
     /// raced ahead of `didOpen`).
     pub fn handle_did_change(&self, params: DidChangeTextDocumentParams) {
         let uri = params.text_document.uri;
+        let version = params.text_document.version;
 
         let source = match self.inputs.get(&uri) {
             Some(r) => *r,
@@ -299,6 +332,7 @@ impl SalsaLspAdapter {
         };
 
         source.set_text(&mut *db).to(new_text);
+        self.versions.insert(uri, version);
     }
 
     /// Remove a closed document from the incremental database.
@@ -306,6 +340,7 @@ impl SalsaLspAdapter {
         let uri = params.text_document.uri;
         self.inputs.remove(&uri);
         self.documents.remove(&uri);
+        self.versions.remove(&uri);
     }
 
     /// Pull diagnostics for a URI as `lsp_types_max::Diagnostic`, using
