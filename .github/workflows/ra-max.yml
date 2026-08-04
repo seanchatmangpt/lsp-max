@@ -44,9 +44,6 @@ jobs:
       - name: Compile and execute tests
         run: cargo +nightly-2026-04-15 test -p ra-max --all-targets
 
-      - name: Format gate
-        run: cargo +nightly-2026-04-15 fmt -p ra-max -- --check
-
       - name: Execute receipt-bound Rust demo
         run: cargo +nightly-2026-04-15 run -p ra-max -- demo | tee /tmp/ra-max-demo.json
 
@@ -59,3 +56,17 @@ jobs:
             (.broker_receipts | length >= 5) and
             (.semantic_receipts | length >= 5)
           ' /tmp/ra-max-demo.json
+
+      - name: Manufacture canonical rustfmt projection
+        run: cargo +nightly-2026-04-15 fmt -p ra-max
+
+      - name: Export canonical Rust sources
+        uses: actions/upload-artifact@v6
+        with:
+          name: ra-max-rustfmt-${{ github.sha }}
+          path: crates/ra-max/src
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Format gate
+        run: git diff --exit-code -- crates/ra-max
