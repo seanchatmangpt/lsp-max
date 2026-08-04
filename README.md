@@ -13,9 +13,11 @@
 
 A post-human LSP 3.18 runtime for autonomous agents. `lsp-max` enforces architectural laws via cryptographic receipt chains, three-valued conformance vectors, and deterministic gates. It is not an IDE helper; it is an admission controller for machine agent workflows.
 
-## Toolchain contract
+## Toolchain and runtime contract
 
-The executable workspace authority is the pinned `nightly-2026-04-15` toolchain declared in `rust-toolchain.toml`. The manifests declare Rust `1.87.0` as the dependency-resolution floor, but stable Rust is **unsupported** because `wasm4pm-compat` uses nightly language features. CI records the exact compiler identity and checks both supported runtime feature configurations with the pinned nightly.
+The executable workspace authority is the pinned `nightly-2026-04-15` toolchain declared in `rust-toolchain.toml`. The manifests declare Rust `1.87.0` as the dependency-resolution floor, but stable Rust is **unsupported** because `wasm4pm-compat` uses nightly language features.
+
+Tokio is the only admitted runtime. A previous `runtime-agnostic` feature was removed because the wider client, routing, transport, watchdog, composition, and process-mining layers remained directly coupled to Tokio and the feature did not compile. Runtime-independent execution remains an explicit **UNSUPPORTED** architectural extension until those boundaries are abstracted and verified end to end.
 
 ## Quick start
 
@@ -65,7 +67,7 @@ Extend with the `RulePackServer` trait and a TOML rule file instead of reproduci
 bash scripts/audit-repository.sh
 cargo +nightly-2026-04-15 fmt --all -- --check
 cargo +nightly-2026-04-15 check -p lsp-max --lib
-cargo +nightly-2026-04-15 check -p lsp-max --lib --no-default-features --features runtime-agnostic
+cargo +nightly-2026-04-15 check -p lsp-max --lib --all-features
 cargo +nightly-2026-04-15 clippy --workspace --all-targets --all-features -- -D warnings
 cargo +nightly-2026-04-15 test --workspace --all-targets
 cargo +nightly-2026-04-15 publish -p lsp-max --dry-run --allow-dirty
