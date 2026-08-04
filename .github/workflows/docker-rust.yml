@@ -21,14 +21,20 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+
+      - name: Record exact source identity
+        run: git rev-parse HEAD
 
       - name: Docker engine identity
         run: docker version
 
       - name: Build Rust workspace in clean container
         run: |
+          SOURCE_SHA="$(git rev-parse HEAD)"
           docker build \
             --progress=plain \
             --file Dockerfile.ci \
-            --tag "lsp-max-rust:${GITHUB_SHA}" \
+            --tag "lsp-max-rust:${SOURCE_SHA}" \
             .
