@@ -18,6 +18,9 @@ exclude = ["FEATURES.md"]
 all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
 
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(feature, values("runtime-agnostic"))'] }
+
 [features]
 default = ["runtime-tokio"]
 runtime-tokio = ["tokio", "tokio-util"]
