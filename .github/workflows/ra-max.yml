@@ -18,7 +18,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: ra-max-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -26,14 +26,14 @@ concurrency:
 
 jobs:
   execute:
-    name: test and execute demo
+    name: test, execute, and canonicalize
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
         with:
-          persist-credentials: false
-          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: true
+          ref: ${{ github.event_name == 'pull_request' && github.head_ref || github.ref_name }}
 
       - name: Record exact source identity
         run: git rev-parse HEAD
@@ -60,13 +60,17 @@ jobs:
       - name: Manufacture canonical rustfmt projection
         run: cargo +nightly-2026-04-15 fmt -p ra-max
 
-      - name: Export canonical Rust sources
-        uses: actions/upload-artifact@v6
-        with:
-          name: ra-max-rustfmt-${{ github.sha }}
-          path: crates/ra-max/src
-          if-no-files-found: error
-          retention-days: 1
-
-      - name: Format gate
-        run: git diff --exit-code -- crates/ra-max
+      - name: Commit canonical formatting when required
+        env:
+          HEAD_BRANCH: ${{ github.head_ref }}
+        run: |
+          if git diff --quiet -- crates/ra-max; then
+            echo "ra-max sources already canonical"
+            exit 0
+          fi
+          test -n "$HEAD_BRANCH"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add crates/ra-max/src
+          git commit -m "style(ra-max): apply pinned rustfmt"
+          git push origin "HEAD:${HEAD_BRANCH}"
