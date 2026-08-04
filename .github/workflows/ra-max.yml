@@ -18,7 +18,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: ra-max-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -26,14 +26,14 @@ concurrency:
 
 jobs:
   execute:
-    name: repair, compile, execute, and canonicalize
+    name: format, lint, test, protocol, and execute
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
         with:
-          persist-credentials: true
-          ref: ${{ github.event_name == 'pull_request' && github.head_ref || github.ref_name }}
+          persist-credentials: false
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
 
       - name: Record exact source identity
         run: git rev-parse HEAD
@@ -41,70 +41,19 @@ jobs:
       - name: Install admitted Rust toolchain
         run: rustup toolchain install nightly-2026-04-15 --profile minimal --component rustfmt --component clippy
 
-      - name: Apply bounded compiler-directed repair
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
+      - name: Format gate
+        run: cargo +nightly-2026-04-15 fmt -p ra-max -- --check
 
-          server = Path("crates/ra-max/src/server.rs")
-          text = server.read_text()
+      - name: Strict Clippy gate
+        run: cargo +nightly-2026-04-15 clippy -p ra-max --all-targets -- -D warnings
 
-          old = "                    change_annotations: None,\n                }))"
-          new = "                    change_annotations: None,\n                    metadata: None,\n                }))"
-          if old in text:
-              if text.count(old) != 1:
-                  raise SystemExit("WorkspaceEdit repair boundary is not unique")
-              text = text.replace(old, new)
-          elif "                    metadata: None," not in text:
-              raise SystemExit("WorkspaceEdit metadata repair boundary missing")
-
-          old = "    async fn rename(\n        &self,\n        params: RenameParams,"
-          new = "    #[allow(clippy::mutable_key_type)]\n    async fn rename(\n        &self,\n        params: RenameParams,"
-          if old in text:
-              if text.count(old) != 1:
-                  raise SystemExit("rename lint fence boundary is not unique")
-              text = text.replace(old, new)
-          elif "#[allow(clippy::mutable_key_type)]\n    async fn rename(" not in text:
-              raise SystemExit("rename lint fence boundary missing")
-
-          old = "            Ok(plan) => {\n                let changes: HashMap<_, _> = plan"
-          new = """            Ok(plan) => {
-                self.receipts.lock().append(
-                    ReceiptKind::Construction,
-                    plan.subject_revision.clone(),
-                    digest_bytes(
-                        format!(\"rename:{}:{}\", plan.old_name, plan.new_name).as_bytes(),
-                    ),
-                    plan.plan_hash.clone(),
-                    Outcome::Constructed,
-                );
-                let changes: HashMap<_, _> = plan"""
-          if old in text:
-              if text.count(old) != 1:
-                  raise SystemExit("rename receipt boundary is not unique")
-              text = text.replace(old, new)
-          elif "format!(\"rename:{}:{}\", plan.old_name, plan.new_name)" not in text:
-              raise SystemExit("rename receipt boundary missing")
-
-          server.write_text(text)
-
-          intelligence = Path("crates/ra-max/src/intelligence.rs")
-          text = intelligence.read_text()
-          old = "let (admission, snapshot, mut files) = fixture();"
-          new = "let (admission, _snapshot, mut files) = fixture();"
-          if old in text:
-              if text.count(old) != 1:
-                  raise SystemExit("unused binding repair boundary is not unique")
-              intelligence.write_text(text.replace(old, new))
-          elif new not in text:
-              raise SystemExit("unused binding repair boundary missing")
-          PY
-
-      - name: Compile all ra-max targets
-        run: cargo +nightly-2026-04-15 check -p ra-max --all-targets
-
-      - name: Compile and execute tests
+      - name: Compile and execute all tests
         run: cargo +nightly-2026-04-15 test -p ra-max --all-targets
+
+      - name: Execute JSON-RPC protocol acceptance
+        run: >-
+          cargo +nightly-2026-04-15 test -p ra-max --test lsp_protocol
+          routes_the_80_20_editor_surface_through_json_rpc -- --exact
 
       - name: Execute receipt-bound Rust intelligence demo
         run: cargo +nightly-2026-04-15 run -p ra-max -- demo | tee /tmp/ra-max-demo.json
@@ -124,24 +73,3 @@ jobs:
             (.broker_receipts | length >= 5) and
             (.semantic_receipts | length >= 5)
           ' /tmp/ra-max-demo.json
-
-      - name: Manufacture canonical rustfmt projection
-        run: cargo +nightly-2026-04-15 fmt -p ra-max
-
-      - name: Strict Clippy on canonical source
-        run: cargo +nightly-2026-04-15 clippy -p ra-max --all-targets -- -D warnings
-
-      - name: Commit compiler repair and canonical formatting
-        env:
-          HEAD_BRANCH: ${{ github.head_ref }}
-        run: |
-          if git diff --quiet -- crates/ra-max; then
-            echo "ra-max source already repaired and canonical"
-            exit 0
-          fi
-          test -n "$HEAD_BRANCH"
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add crates/ra-max/src
-          git commit -m "fix(ra-max): finalize 80-20 LSP intelligence surface"
-          git push origin "HEAD:${HEAD_BRANCH}"
