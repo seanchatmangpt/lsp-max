@@ -8,7 +8,7 @@ pub fn sha256(data: &[u8]) -> String {
     let original_len_bits = (data.len() as u64) * 8;
     padded.push(0x80);
     // Keep padding until length + 8 is a multiple of 64
-    while (padded.len() + 8) % 64 != 0 {
+    while !(padded.len() + 8).is_multiple_of(64) {
         padded.push(0x00);
     }
     padded.extend_from_slice(&original_len_bits.to_be_bytes());
