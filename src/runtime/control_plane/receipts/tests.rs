@@ -85,7 +85,10 @@ fn replay_requires_the_observed_consequence() {
     let (keystore, genesis, chain) = two_receipt_chain();
     let replay = ReplayEngine::new(genesis, keystore.verifying_key());
 
-    assert_eq!(replay.replay(&chain, |receipt| receipt.consequence_hash), Ok(()));
+    assert_eq!(
+        replay.replay(&chain, |receipt| receipt.consequence_hash),
+        Ok(())
+    );
     assert_eq!(
         replay.replay(&chain, |receipt| {
             if receipt.sequence == 42 {
@@ -106,5 +109,8 @@ fn receipt_serde_round_trip_preserves_signature_and_identity() {
         serde_json::from_slice(&encoded).expect("deserialize receipt");
 
     assert_eq!(decoded, chain[0]);
-    assert_eq!(decoded.compute_payload_hash(), chain[0].compute_payload_hash());
+    assert_eq!(
+        decoded.compute_payload_hash(),
+        chain[0].compute_payload_hash()
+    );
 }
