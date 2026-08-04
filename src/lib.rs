@@ -332,11 +332,20 @@ fn build_standard_mesh() -> crate::max_runtime::AutonomicMesh {
     let mut mesh = crate::max_runtime::AutonomicMesh::new();
     mesh.register_hook(Box::new(crate::max_runtime::IntakeDiagnosticHook));
     mesh.register_hook(Box::new(crate::max_runtime::IntakeClearHook));
-    mesh.register_hook(Box::new(
-        crate::max_runtime::CustomerRequestClassifierHook::new(),
-    ));
-    mesh.register_hook(Box::new(crate::max_runtime::PolicyEvaluationHook::new()));
-    mesh.register_hook(Box::new(crate::max_runtime::ReceiptRoutingHook::new()));
+    // Gall checkpoint CP14: the trio below (customer-refund demo hooks, one of which
+    // can trigger a real unconfirmed std::fs::write via
+    // AutonomicMesh::execute_action's "act-create-refund-receipt" special case) is
+    // quarantined behind the refund-demo-hooks feature (default off) rather than
+    // registered unconditionally — see mesh_hooks.rs's own quarantine comment for
+    // the full audit trail.
+    #[cfg(feature = "refund-demo-hooks")]
+    {
+        mesh.register_hook(Box::new(
+            crate::max_runtime::CustomerRequestClassifierHook::new(),
+        ));
+        mesh.register_hook(Box::new(crate::max_runtime::PolicyEvaluationHook::new()));
+        mesh.register_hook(Box::new(crate::max_runtime::ReceiptRoutingHook::new()));
+    }
     mesh
 }
 

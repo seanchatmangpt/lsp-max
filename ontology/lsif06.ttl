@@ -7,131 +7,311 @@
 @prefix lsif: <https://lsp-max.rs/ontology/lsif/> .
 
 # ── Ontology declaration ──────────────────────────────────────────────────────
+#
+# CP1 fidelity-correction pass (Gall checkpoint 1, see ~/ggen's
+# 80-20-gall-test-refactor-cheerful-quokka.md plan): this file previously
+# declared only 14 vertex classes and 10 edge classes with bare (non-wire)
+# edge labels, a ~40-50% subset of the real serde-tagged `Vertex`/`Edge`
+# enums in crates/lsp-max-lsif/src/lsif.rs (24 vertex variants, 21 edge
+# variants). Every class below now has a `lsif:wireLabel` giving the exact
+# `#[serde(rename = "...")]` string lsif.rs actually emits on the wire,
+# verified against tests/lsif_conformance_tests.rs and tests/emitter_witness.rs's
+# own label assertions -- `rdfs:label` stays a human-readable name,
+# `lsif:wireLabel` is the machine-checkable one. Edge *kinds* stay modeled
+# as `owl:Class rdfs:subClassOf lsif:Edge`, matching how `lsif:Vertex`
+# subclasses are already modeled here and how the real Rust `Edge` enum
+# itself is one closed set of *kinds*, not a relation between two other
+# classes -- the actual relation is `lsif:outV`/`lsif:inV`
+# (`owl:ObjectProperty`, unchanged, already correctly modeled below).
+# `lsif:ItemEdgeProperty` (the `Item` edge's `property` field -- load-bearing
+# in real emitted output per `lsif_builder.rs`'s `bind_definition`/
+# `bind_references`) was entirely absent before; added as a class + 7
+# individuals matching the real enum's `#[serde(rename_all = "camelCase")]`
+# values verbatim.
 
 <https://lsp-max.rs/ontology/lsif/> a owl:Ontology ;
     rdfs:label   "LSIF 0.6 Schema Ontology" ;
-    rdfs:comment "Language Server Index Format 0.6 schema vocabulary for semantic code indexing, symbol cross-referencing, and definition/reference tracking." ;
+    rdfs:comment "Language Server Index Format 0.6 schema vocabulary for semantic code indexing, symbol cross-referencing, and definition/reference tracking. Re-derived 2026-08-04 against the real Vertex/Edge enums in crates/lsp-max-lsif/src/lsif.rs, not authored independently of them." ;
     owl:imports  <https://lsp-max.rs/ontology/> ;
     owl:versionInfo "0.6.0" .
 
 # ── Core LSIF Document Types ──────────────────────────────────────────────────
 
 lsif:Document a owl:Class ;
-    rdfs:label "Document" ;
-    rdfs:comment "A source code document indexed by LSIF." .
+    rdfs:subClassOf lsif:Vertex ;
+    rdfs:label "Document" ; lsif:wireLabel "document" ;
+    rdfs:comment "A source code document indexed by LSIF. Mirrors Rust Vertex::Document { uri, language_id, contents }." .
 
 lsif:Element a owl:Class ;
     rdfs:label "Element" ;
-    rdfs:comment "Base class for all LSIF elements (vertices and edges)." .
+    rdfs:comment "Base class for all LSIF elements (vertices and edges). Mirrors Rust `enum Element { Vertex(Vertex), Edge(Edge) }` (untagged)." .
 
 lsif:Vertex a owl:Class ;
     rdfs:subClassOf lsif:Element ;
     rdfs:label "Vertex" ;
-    rdfs:comment "A vertex in the LSIF graph (data element)." .
+    rdfs:comment "A vertex in the LSIF graph (data element). Mirrors Rust `enum Vertex` (#[serde(tag = \"label\")])." .
 
 lsif:Edge a owl:Class ;
     rdfs:subClassOf lsif:Element ;
     rdfs:label "Edge" ;
-    rdfs:comment "An edge in the LSIF graph (relationship between vertices)." .
+    rdfs:comment "An edge in the LSIF graph (relationship between vertices). Mirrors Rust `enum Edge` (#[serde(tag = \"label\")])." .
 
-# ── Vertex Types ─────────────────────────────────────────────────────────────
+lsif:wireLabel a owl:DatatypeProperty ;
+    rdfs:label "wireLabel" ;
+    rdfs:comment "The exact string value LSIF emits in the NDJSON `label` field for this vertex/edge kind -- the real #[serde(rename = \"...\")] value in lsif.rs, not a human-readable name. Distinct from rdfs:label, which may differ (e.g. edge kind TextDocumentDefinition has rdfs:label \"TextDocumentDefinition\" but lsif:wireLabel \"textDocument/definition\")." ;
+    rdfs:range xsd:string .
+
+# ── Vertex Types (24, matching lsif.rs's `enum Vertex` exactly) ────────────────
+
+lsif:MetaData a owl:Class ;
+    rdfs:subClassOf lsif:Vertex ;
+    rdfs:label "MetaData" ; lsif:wireLabel "metaData" ;
+    rdfs:comment "Required first vertex of every LSIF dump: version, projectRoot, positionEncoding, optional toolInfo. LsifBuilder panics if this is not emitted first." .
+
+lsif:Source a owl:Class ;
+    rdfs:subClassOf lsif:Vertex ;
+    rdfs:label "Source" ; lsif:wireLabel "source" ;
+    rdfs:comment "Workspace root and optional repository metadata for the indexed source." .
+
+lsif:Capabilities a owl:Class ;
+    rdfs:subClassOf lsif:Vertex ;
+    rdfs:label "Capabilities" ; lsif:wireLabel "capabilities" ;
+    rdfs:comment "Which LSIF query capabilities this index supports (hover/declaration/definition/typeDefinition/references/documentSymbol/foldingRange/diagnostic providers)." .
+
+lsif:Project a owl:Class ;
+    rdfs:subClassOf lsif:Vertex ;
+    rdfs:label "Project" ; lsif:wireLabel "project" ;
+    rdfs:comment "The indexed project, keyed by language kind." .
 
 lsif:Range a owl:Class ;
     rdfs:subClassOf lsif:Vertex ;
-    rdfs:label "Range" ;
-    rdfs:comment "A source code range (line, character positions)." .
+    rdfs:label "Range" ; lsif:wireLabel "range" ;
+    rdfs:comment "A source code range (start/end Position) with an optional RangeTag (e.g. definition/reference)." .
 
-lsif:Location a owl:Class ;
+lsif:ResultSet a owl:Class ;
     rdfs:subClassOf lsif:Vertex ;
-    rdfs:label "Location" ;
-    rdfs:comment "A location within a document." .
+    rdfs:label "ResultSet" ; lsif:wireLabel "resultSet" ;
+    rdfs:comment "Groups multiple ranges that share the same result data (hover, definition, references, ...)." .
 
-lsif:DocumentSymbol a owl:Class ;
+lsif:ResultRange a owl:Class ;
     rdfs:subClassOf lsif:Vertex ;
-    rdfs:label "DocumentSymbol" ;
-    rdfs:comment "A symbol declaration or definition in a document." .
+    rdfs:label "ResultRange" ; lsif:wireLabel "resultRange" ;
+    rdfs:comment "A range vertex specialized to carry only start/end (no tag), used by result-linking edges." .
 
-lsif:DefinitionResult a owl:Class ;
+lsif:Moniker a owl:Class ;
     rdfs:subClassOf lsif:Vertex ;
-    rdfs:label "DefinitionResult" ;
-    rdfs:comment "Result of a definition query." .
+    rdfs:label "Moniker" ; lsif:wireLabel "moniker" ;
+    rdfs:comment "A qualified name (scheme, identifier, kind, uniqueness level) usable for cross-repository references." .
 
-lsif:ReferenceResult a owl:Class ;
+lsif:PackageInformation a owl:Class ;
     rdfs:subClassOf lsif:Vertex ;
-    rdfs:label "ReferenceResult" ;
-    rdfs:comment "Result of a reference query." .
+    rdfs:label "PackageInformation" ; lsif:wireLabel "packageInformation" ;
+    rdfs:comment "Package/project metadata (name, manager, version, optional repository) a Moniker belongs to." .
 
 lsif:HoverResult a owl:Class ;
     rdfs:subClassOf lsif:Vertex ;
-    rdfs:label "HoverResult" ;
-    rdfs:comment "Result of a hover query." .
+    rdfs:label "HoverResult" ; lsif:wireLabel "hoverResult" ;
+    rdfs:comment "Result of a hover query -- carries HoverResultData (markdown/plaintext contents)." .
 
-lsif:DocumentLink a owl:Class ;
+lsif:ReferenceResult a owl:Class ;
     rdfs:subClassOf lsif:Vertex ;
-    rdfs:label "DocumentLink" ;
-    rdfs:comment "A hyperlink within a document." .
+    rdfs:label "ReferenceResult" ; lsif:wireLabel "referenceResult" ;
+    rdfs:comment "Result of a references query. Carries no inline payload -- linked to concrete ranges only via `item` edges." .
+
+lsif:DeclarationResult a owl:Class ;
+    rdfs:subClassOf lsif:Vertex ;
+    rdfs:label "DeclarationResult" ; lsif:wireLabel "declarationResult" ;
+    rdfs:comment "Result of a go-to-declaration query. Was entirely absent from this ontology before the CP1 fidelity pass." .
+
+lsif:DefinitionResult a owl:Class ;
+    rdfs:subClassOf lsif:Vertex ;
+    rdfs:label "DefinitionResult" ; lsif:wireLabel "definitionResult" ;
+    rdfs:comment "Result of a definition query. Carries no inline payload -- linked via `item` edges, same shape as ReferenceResult." .
+
+lsif:ImplementationResult a owl:Class ;
+    rdfs:subClassOf lsif:Vertex ;
+    rdfs:label "ImplementationResult" ; lsif:wireLabel "implementationResult" ;
+    rdfs:comment "Result of a go-to-implementation query. Was entirely absent from this ontology before the CP1 fidelity pass." .
+
+lsif:TypeDefinitionResult a owl:Class ;
+    rdfs:subClassOf lsif:Vertex ;
+    rdfs:label "TypeDefinitionResult" ; lsif:wireLabel "typeDefinitionResult" ;
+    rdfs:comment "Result of a type-definition query. Was entirely absent from this ontology before the CP1 fidelity pass." .
+
+lsif:CallHierarchyResult a owl:Class ;
+    rdfs:subClassOf lsif:Vertex ;
+    rdfs:label "CallHierarchyResult" ; lsif:wireLabel "callHierarchyResult" ;
+    rdfs:comment "Result of a call-hierarchy query. Was entirely absent from this ontology before the CP1 fidelity pass." .
+
+lsif:TypeHierarchyResult a owl:Class ;
+    rdfs:subClassOf lsif:Vertex ;
+    rdfs:label "TypeHierarchyResult" ; lsif:wireLabel "typeHierarchyResult" ;
+    rdfs:comment "Result of a type-hierarchy query. Was entirely absent from this ontology before the CP1 fidelity pass." .
+
+lsif:FoldingRangeResult a owl:Class ;
+    rdfs:subClassOf lsif:Vertex ;
+    rdfs:label "FoldingRangeResult" ; lsif:wireLabel "foldingRangeResult" ;
+    rdfs:comment "Result of a folding-range query -- carries the real Vec<lsp_types_max::FoldingRange> payload inline. Was entirely absent from this ontology before the CP1 fidelity pass." .
+
+lsif:DocumentLinkResult a owl:Class ;
+    rdfs:subClassOf lsif:Vertex ;
+    rdfs:label "DocumentLinkResult" ; lsif:wireLabel "documentLinkResult" ;
+    rdfs:comment "Result of a document-link query -- carries the real Vec<lsp_types_max::DocumentLink> payload inline. Was entirely absent from this ontology before the CP1 fidelity pass." .
+
+lsif:DocumentSymbolResult a owl:Class ;
+    rdfs:subClassOf lsif:Vertex ;
+    rdfs:label "DocumentSymbolResult" ; lsif:wireLabel "documentSymbolResult" ;
+    rdfs:comment "Result of a documentSymbol query -- carries DocumentSymbolResultData inline. Was entirely absent from this ontology before the CP1 fidelity pass (the old file had a separate, non-matching lsif:DocumentSymbol vertex class instead)." .
 
 lsif:DiagnosticResult a owl:Class ;
     rdfs:subClassOf lsif:Vertex ;
-    rdfs:label "DiagnosticResult" ;
-    rdfs:comment "Diagnostic information for a document." .
+    rdfs:label "DiagnosticResult" ; lsif:wireLabel "diagnosticResult" ;
+    rdfs:comment "Diagnostic information for a document -- carries the real Vec<lsp_types_max::Diagnostic> payload inline." .
 
-lsif:Implementation a owl:Class ;
+lsif:SemanticTokensResult a owl:Class ;
     rdfs:subClassOf lsif:Vertex ;
-    rdfs:label "Implementation" ;
-    rdfs:comment "An implementation of a symbol (e.g., concrete impl, overrides)." .
+    rdfs:label "SemanticTokensResult" ; lsif:wireLabel "semanticTokensResult" ;
+    rdfs:comment "Result of a semantic-tokens query -- carries SemanticTokensData inline. Was entirely absent from this ontology before the CP1 fidelity pass." .
 
-lsif:TypeDefinition a owl:Class ;
+lsif:Event a owl:Class ;
     rdfs:subClassOf lsif:Vertex ;
-    rdfs:label "TypeDefinition" ;
-    rdfs:comment "The type definition associated with a symbol." .
+    rdfs:label "Event" ; lsif:wireLabel "$event" ;
+    rdfs:comment "Scope begin/end marker (kind, scope, data vertex id) used to bracket per-document or per-project vertex ranges. Was entirely absent from this ontology before the CP1 fidelity pass." .
 
-# ── Edge Types ────────────────────────────────────────────────────────────────
+# ── Edge Types (21, matching lsif.rs's `enum Edge` exactly) ────────────────────
 
 lsif:contains a owl:Class ;
     rdfs:subClassOf lsif:Edge ;
-    rdfs:label "contains" ;
-    rdfs:comment "Document contains Range vertices." .
+    rdfs:label "contains" ; lsif:wireLabel "contains" ;
+    rdfs:comment "Document/Project contains Range (or Document) vertices. outV -> inVs (multi-target)." .
 
 lsif:next a owl:Class ;
     rdfs:subClassOf lsif:Edge ;
-    rdfs:label "next" ;
-    rdfs:comment "Chaining edge for storing multiple results (e.g., all references)." .
+    rdfs:label "next" ; lsif:wireLabel "next" ;
+    rdfs:comment "Chains a Range/ResultSet to the ResultSet holding its shared result data." .
 
-lsif:definition a owl:Class ;
+lsif:moniker a owl:Class ;
     rdfs:subClassOf lsif:Edge ;
-    rdfs:label "definition" ;
-    rdfs:comment "Range points to its definition." .
+    rdfs:label "moniker" ; lsif:wireLabel "moniker" ;
+    rdfs:comment "Relates a Range/ResultSet to its Moniker." .
 
-lsif:references a owl:Class ;
+lsif:nextMoniker a owl:Class ;
     rdfs:subClassOf lsif:Edge ;
-    rdfs:label "references" ;
-    rdfs:comment "Range has references via ReferenceResult." .
+    rdfs:label "nextMoniker" ; lsif:wireLabel "nextMoniker" ;
+    rdfs:comment "Links two Monikers as denoting the same symbol (cross-repository linkage). Was entirely absent from this ontology before the CP1 fidelity pass." .
 
-lsif:hover a owl:Class ;
+lsif:belongsTo a owl:Class ;
     rdfs:subClassOf lsif:Edge ;
-    rdfs:label "hover" ;
-    rdfs:comment "Range has hover information." .
+    rdfs:label "belongsTo" ; lsif:wireLabel "belongsTo" ;
+    rdfs:comment "Relates a Moniker to its PackageInformation. Was entirely absent from this ontology before the CP1 fidelity pass." .
 
-lsif:diagnostic a owl:Class ;
+lsif:attach a owl:Class ;
     rdfs:subClassOf lsif:Edge ;
-    rdfs:label "diagnostic" ;
-    rdfs:comment "Document has diagnostic results." .
+    rdfs:label "attach" ; lsif:wireLabel "attach" ;
+    rdfs:comment "Attaches an Event vertex to the vertex it brackets. Was entirely absent from this ontology before the CP1 fidelity pass." .
 
-lsif:documentLink a owl:Class ;
+lsif:packageInformationEdge a owl:Class ;
     rdfs:subClassOf lsif:Edge ;
-    rdfs:label "documentLink" ;
-    rdfs:comment "Document contains document links." .
+    rdfs:label "packageInformation (edge)" ; lsif:wireLabel "packageInformation" ;
+    rdfs:comment "Edge form of packageInformation (outV/inV), distinct from lsif:packageInformation the vertex class below -- lsif.rs's Edge::PackageInformation variant. Was entirely absent from this ontology before the CP1 fidelity pass (the old file only had the vertex, under a different local name lsif:packageInformation, causing a real name collision this pass renamed to disambiguate)." .
 
-lsif:implementation a owl:Class ;
+lsif:item a owl:Class ;
     rdfs:subClassOf lsif:Edge ;
-    rdfs:label "implementation" ;
-    rdfs:comment "Range has implementation references." .
+    rdfs:label "item" ; lsif:wireLabel "item" ;
+    rdfs:comment "Links a DefinitionResult/ReferenceResult/... vertex to its concrete Range(s) within a specific document, optionally tagged with an lsif:ItemEdgeProperty. Was entirely absent from this ontology before the CP1 fidelity pass despite being load-bearing in real emitted output (lsif_builder.rs's bind_definition/bind_references)." .
 
-lsif:typeDefinition a owl:Class ;
+lsif:textDocumentHover a owl:Class ;
     rdfs:subClassOf lsif:Edge ;
-    rdfs:label "typeDefinition" ;
-    rdfs:comment "Range has a type definition." .
+    rdfs:label "TextDocumentHover" ; lsif:wireLabel "textDocument/hover" ;
+    rdfs:comment "Range/ResultSet has hover information." .
+
+lsif:textDocumentDefinition a owl:Class ;
+    rdfs:subClassOf lsif:Edge ;
+    rdfs:label "TextDocumentDefinition" ; lsif:wireLabel "textDocument/definition" ;
+    rdfs:comment "Range/ResultSet points to its DefinitionResult. Wire label corrected from the old bare lsif:definition; the old file's edge label lost the textDocument/ LSP-method namespace that is actually on the wire." .
+
+lsif:textDocumentDeclaration a owl:Class ;
+    rdfs:subClassOf lsif:Edge ;
+    rdfs:label "TextDocumentDeclaration" ; lsif:wireLabel "textDocument/declaration" ;
+    rdfs:comment "Range/ResultSet points to its DeclarationResult. Was entirely absent from this ontology before the CP1 fidelity pass." .
+
+lsif:textDocumentReferences a owl:Class ;
+    rdfs:subClassOf lsif:Edge ;
+    rdfs:label "TextDocumentReferences" ; lsif:wireLabel "textDocument/references" ;
+    rdfs:comment "Range/ResultSet has references via ReferenceResult. Wire label corrected from the old bare lsif:references." .
+
+lsif:textDocumentImplementation a owl:Class ;
+    rdfs:subClassOf lsif:Edge ;
+    rdfs:label "TextDocumentImplementation" ; lsif:wireLabel "textDocument/implementation" ;
+    rdfs:comment "Range/ResultSet has implementation references. Wire label corrected from the old bare lsif:implementation." .
+
+lsif:textDocumentTypeDefinition a owl:Class ;
+    rdfs:subClassOf lsif:Edge ;
+    rdfs:label "TextDocumentTypeDefinition" ; lsif:wireLabel "textDocument/typeDefinition" ;
+    rdfs:comment "Range/ResultSet has a type definition. Wire label corrected from the old bare lsif:typeDefinition." .
+
+lsif:textDocumentCallHierarchy a owl:Class ;
+    rdfs:subClassOf lsif:Edge ;
+    rdfs:label "TextDocumentCallHierarchy" ; lsif:wireLabel "textDocument/callHierarchy" ;
+    rdfs:comment "Range/ResultSet has a CallHierarchyResult. Was entirely absent from this ontology before the CP1 fidelity pass." .
+
+lsif:textDocumentTypeHierarchy a owl:Class ;
+    rdfs:subClassOf lsif:Edge ;
+    rdfs:label "TextDocumentTypeHierarchy" ; lsif:wireLabel "textDocument/typeHierarchy" ;
+    rdfs:comment "Range/ResultSet has a TypeHierarchyResult. Was entirely absent from this ontology before the CP1 fidelity pass." .
+
+lsif:textDocumentFoldingRange a owl:Class ;
+    rdfs:subClassOf lsif:Edge ;
+    rdfs:label "TextDocumentFoldingRange" ; lsif:wireLabel "textDocument/foldingRange" ;
+    rdfs:comment "Document has a FoldingRangeResult. Was entirely absent from this ontology before the CP1 fidelity pass." .
+
+lsif:textDocumentDocumentLink a owl:Class ;
+    rdfs:subClassOf lsif:Edge ;
+    rdfs:label "TextDocumentDocumentLink" ; lsif:wireLabel "textDocument/documentLink" ;
+    rdfs:comment "Document has a DocumentLinkResult. Wire label corrected from the old bare lsif:documentLink." .
+
+lsif:textDocumentDocumentSymbol a owl:Class ;
+    rdfs:subClassOf lsif:Edge ;
+    rdfs:label "TextDocumentDocumentSymbol" ; lsif:wireLabel "textDocument/documentSymbol" ;
+    rdfs:comment "Document has a DocumentSymbolResult. Was entirely absent from this ontology before the CP1 fidelity pass." .
+
+lsif:textDocumentDiagnostic a owl:Class ;
+    rdfs:subClassOf lsif:Edge ;
+    rdfs:label "TextDocumentDiagnostic" ; lsif:wireLabel "textDocument/diagnostic" ;
+    rdfs:comment "Document has diagnostic results. Wire label corrected from the old bare lsif:diagnostic." .
+
+lsif:textDocumentSemanticTokens a owl:Class ;
+    rdfs:subClassOf lsif:Edge ;
+    rdfs:label "TextDocumentSemanticTokens" ; lsif:wireLabel "textDocument/semanticTokens/full" ;
+    rdfs:comment "Document has a SemanticTokensResult. Was entirely absent from this ontology before the CP1 fidelity pass." .
+
+# ── Item edge property (7 values, matching lsif.rs's `ItemEdgeProperty` exactly) ─
+
+lsif:ItemEdgeProperty a owl:Class ;
+    rdfs:label "ItemEdgeProperty" ;
+    rdfs:comment "Closed value set for lsif:item edges' optional `property` field, disambiguating what kind of item-linkage this is. Entirely absent from this ontology before the CP1 fidelity pass, despite lsif_builder.rs's bind_definition/bind_references relying on it." .
+
+lsif:itemProperty_definitions a lsif:ItemEdgeProperty ;
+    rdfs:label "definitions" ; lsif:wireLabel "definitions" .
+
+lsif:itemProperty_declarations a lsif:ItemEdgeProperty ;
+    rdfs:label "declarations" ; lsif:wireLabel "declarations" .
+
+lsif:itemProperty_references a lsif:ItemEdgeProperty ;
+    rdfs:label "references" ; lsif:wireLabel "references" .
+
+lsif:itemProperty_referenceResults a lsif:ItemEdgeProperty ;
+    rdfs:label "referenceResults" ; lsif:wireLabel "referenceResults" .
+
+lsif:itemProperty_implementationResults a lsif:ItemEdgeProperty ;
+    rdfs:label "implementationResults" ; lsif:wireLabel "implementationResults" .
+
+lsif:itemProperty_typeDefinitions a lsif:ItemEdgeProperty ;
+    rdfs:label "typeDefinitions" ; lsif:wireLabel "typeDefinitionResults" ;
+    rdfs:comment "Note the real Rust variant name (TypeDefinitions) and its wire rename (typeDefinitionResults) differ -- #[serde(rename = \"typeDefinitionResults\")] on lsif.rs's ItemEdgeProperty::TypeDefinitions. Both are captured here rather than assumed identical." .
+
+lsif:itemProperty_referenceLinks a lsif:ItemEdgeProperty ;
+    rdfs:label "referenceLinks" ; lsif:wireLabel "referenceLinks" .
 
 # ── Properties ────────────────────────────────────────────────────────────────
 
@@ -167,7 +347,7 @@ lsif:contents a owl:DatatypeProperty ;
 
 lsif:kind a owl:DatatypeProperty ;
     rdfs:label "kind" ;
-    rdfs:comment "Kind of symbol (e.g., 'Class', 'Method', 'Variable')." ;
+    rdfs:comment "Kind of symbol (e.g., 'Class', 'Method', 'Variable'), or Project's language kind, or Event's begin/end kind depending on the vertex it's attached to." ;
     rdfs:range xsd:string .
 
 lsif:detail a owl:DatatypeProperty ;
@@ -198,7 +378,7 @@ lsif:outVs a owl:ObjectProperty ;
 lsif:inVs a owl:ObjectProperty ;
     rdfs:label "inVs" ;
     rdfs:domain lsif:Edge ;
-    rdfs:comment "Multiple target vertices (for multi-vertex edges)." .
+    rdfs:comment "Multiple target vertices -- used by lsif:contains and lsif:item (Rust field name in_vs)." .
 
 lsif:fromRanges a owl:ObjectProperty ;
     rdfs:label "fromRanges" ;
@@ -217,6 +397,17 @@ lsif:signature a owl:DatatypeProperty ;
     rdfs:label "signature" ;
     rdfs:comment "Symbol signature (e.g., method signature)." ;
     rdfs:range xsd:string .
+
+lsif:document a owl:ObjectProperty ;
+    rdfs:label "document" ;
+    rdfs:domain lsif:item ;
+    rdfs:comment "The item edge's own `document: Id` field -- which document the linked ranges belong to. Was entirely absent from this ontology before the CP1 fidelity pass." .
+
+lsif:property a owl:ObjectProperty ;
+    rdfs:label "property" ;
+    rdfs:domain lsif:item ;
+    rdfs:range lsif:ItemEdgeProperty ;
+    rdfs:comment "The item edge's optional `property` field. Was entirely absent from this ontology before the CP1 fidelity pass." .
 
 # ── Query Types ───────────────────────────────────────────────────────────────
 
@@ -252,27 +443,17 @@ lsif:query_implementation a lsif:Query ;
     rdfs:label "implementation query" ;
     rdfs:comment "Implementation references query." .
 
-# ── Moniker Types ─────────────────────────────────────────────────────────────
-
-lsif:Moniker a owl:Class ;
-    rdfs:subClassOf lsif:Vertex ;
-    rdfs:label "Moniker" ;
-    rdfs:comment "A qualified name (moniker) that can be used for cross-repository references." .
+# ── Moniker-adjacent properties ─────────────────────────────────────────────────
 
 lsif:monikerKind a owl:DatatypeProperty ;
     rdfs:label "monikerKind" ;
-    rdfs:comment "Moniker kind: 'import' or 'export'." ;
+    rdfs:comment "Moniker kind: 'import' or 'export' (Rust MonikerKind)." ;
     rdfs:range xsd:string .
 
 lsif:identifier a owl:DatatypeProperty ;
     rdfs:label "identifier" ;
     rdfs:comment "The actual moniker identifier." ;
     rdfs:range xsd:string .
-
-lsif:packageInformation a owl:Class ;
-    rdfs:subClassOf lsif:Vertex ;
-    rdfs:label "PackageInformation" ;
-    rdfs:comment "Package or project metadata." .
 
 lsif:name a owl:DatatypeProperty ;
     rdfs:label "name" ;
@@ -284,22 +465,11 @@ lsif:version a owl:DatatypeProperty ;
     rdfs:comment "Package version." ;
     rdfs:range xsd:string .
 
-lsif:moniker a owl:Class ;
-    rdfs:subClassOf lsif:Edge ;
-    rdfs:label "moniker" ;
-    rdfs:comment "Relates a Range to its Moniker." .
-
-lsif:monikerEdges a owl:Class ;
-    rdfs:subClassOf lsif:Edge ;
-    rdfs:label "monikerEdges" ;
-    rdfs:comment "Links monikers for cross-repository reference." .
-
 # ── Index Information ─────────────────────────────────────────────────────────
 
 lsif:IndexInformation a owl:Class ;
-    rdfs:subClassOf lsif:Vertex ;
     rdfs:label "IndexInformation" ;
-    rdfs:comment "Metadata about an LSIF index." .
+    rdfs:comment "Metadata about an LSIF index. Deliberately NOT rdfs:subClassOf lsif:Vertex (fixed during CP2's gate pass, which correctly refused it for lacking a lsif:wireLabel): this is a documentation/spec-level convenience class with no direct 1:1 Rust enum variant, not a real wire-emitted vertex kind -- its fields below correspond to lsif:MetaData's real fields (version/projectRoot/toolInfo) plus workspace-level summary data lsif.rs does not itself model as one vertex." .
 
 lsif:projectRoot a owl:DatatypeProperty ;
     rdfs:label "projectRoot" ;

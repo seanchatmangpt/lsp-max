@@ -1,0 +1,23 @@
+# MESSAGE: Gall checkpoint CP2 -- value constraints translated from what CP1's
+# fidelity pass established as real: (a) lsif:wireLabel must never be the empty
+# string; (b) every TextDocument* edge class's wireLabel must actually start with
+# "textDocument/" -- this is the exact regression CP1 fixed (bare `lsif:definition`
+# instead of `textDocument/definition`) and this gate exists specifically so it
+# cannot silently reappear. Mirrors packs/lsp-max-pack/gates/030_value_constraints.rq.
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX lsif: <https://lsp-max.rs/ontology/lsif/>
+
+SELECT ?subject ?wireLabel ?violation WHERE {
+    {
+        ?subject lsif:wireLabel ?wireLabel .
+        FILTER(STRLEN(STR(?wireLabel)) = 0)
+        BIND("empty wireLabel" AS ?violation)
+    } UNION {
+        ?subject rdfs:subClassOf lsif:Edge ;
+                 rdfs:label ?label ;
+                 lsif:wireLabel ?wireLabel .
+        FILTER(STRSTARTS(STR(?label), "TextDocument"))
+        FILTER(!STRSTARTS(STR(?wireLabel), "textDocument/"))
+        BIND("TextDocument*-named edge class missing textDocument/ wire prefix" AS ?violation)
+    }
+}

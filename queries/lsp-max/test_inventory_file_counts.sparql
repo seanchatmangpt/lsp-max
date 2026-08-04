@@ -1,0 +1,23 @@
+PREFIX test: <https://lsp-max.rs/ontology/test/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+# Per-file declared test-function count: the number of test:TestCase
+# individuals whose test:file points at each test:TestFile, cross-checked by
+# the Rust proof (tests/test_inventory_counts_match_real_test_counts.rs)
+# against the real per-file #[test]/#[tokio::test] count obtained by
+# actually running `cargo test` and counting -- not trusted blindly.
+SELECT ?fileLabel ?path ?declaredTestCount
+WHERE {
+    ?file a test:TestFile ;
+          rdfs:label ?fileLabel ;
+          test:path ?path .
+    {
+        SELECT ?file (COUNT(?tc) AS ?declaredTestCount)
+        WHERE {
+            ?tc a test:TestCase ;
+                test:file ?file .
+        }
+        GROUP BY ?file
+    }
+}
+ORDER BY ?fileLabel

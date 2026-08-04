@@ -1,0 +1,176 @@
+# lsp-max-maturity.ttl — Capability Maturity Model for lsp-max, as typed individuals.
+#
+# Mirrors ~/ggen/.specify/maturity.ttl's shape and vocabulary (mat: prefix,
+# mat:ScoreRow, mat:d1..d7 score cells with mat:l1..l7 extracted level tokens,
+# mat:DocSection narrative blocks with mat:order/mat:sid) rather than inventing
+# a new scoring scheme. ggen's matrix scores CODEGEN PACKS across 7 codegen-shaped
+# dimensions (generation depth, handler-gap size, ontology expressiveness,
+# consumer effort, test generation, regeneration lifecycle, target-API fidelity).
+# lsp-max's own capabilities (CP1-CP12, session of 2026-08-03/04) are not all
+# codegen packs -- some are ontology-fidelity-correction passes, some are
+# protocol-bridge wiring -- so this file defines ITS OWN 7-dimension matrix,
+# same L1-L5 spine and same evidence discipline (named artifact or no score
+# above L2), scoped to what a Rust-implementation-plus-ontology capability
+# actually does: model a real target correctly, generate/report from it, and
+# (for CP10-12) push real signals across a real protocol boundary.
+#
+# Every score below cites a real command this session ran and re-verified
+# independently (see mat:d5 cells for the exact `cargo test` invocation and
+# output; re-run yourself to check — this file makes no claim it did not
+# re-verify against a live command).
+@prefix mat:  <http://ggen.org/maturity#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+mat:ScoreRow a rdfs:Class ; rdfs:label "one scored capability row in a maturity matrix" .
+mat:DocSection a rdfs:Class ; rdfs:label "authored prose section rendered verbatim" .
+
+mat:intro a mat:DocSection ;
+    mat:order "s010" ;
+    mat:sid "intro" ;
+    mat:text "One 5x7 maturity matrix scoring the real, independently-verified capabilities this session (CP0-CP12 of docs/plans/80-20-gall-test-refactor-cheerful-quokka.md) actually built in lsp-max, plus the CP12 half that lives in ~/ggen (the other end of the same push bridge). Reuses ~/ggen's own .specify/maturity.ttl vocabulary (mat:ScoreRow, mat:d1..d7, mat:l1..l7, mat:DocSection) and its L1-L5 level spine and calibration rule (named artifact or no score above L2) rather than inventing a new scheme. Updated 2026-08-04." .
+
+mat:spine a mat:DocSection ;
+    mat:order "s020" ;
+    mat:sid "spine" ;
+    mat:text "## Level spine (borrowed verbatim from ggen's own spine, same semantics)\n\n| Level | Name | Meaning |\n|---|---|---|\n| L1 | Describes | The ontology/report states facts about the target. Nothing runs because of it. |\n| L2 | Produces fragments | Real output exists (a report, a corrected TTL, one wired notification), but the surrounding system is still mostly hand-built/hand-triggered. |\n| L3 | Produces working subsystems | The capability does its job on real input with only consumer configuration -- no stubs, no hand-glue in the generated/checked lane. |\n| L4 | Produces + maintains | Regeneration/re-check is the normal way the capability evolves; drift is caught automatically, not by a human re-reading source. |\n| L5 | Complete substitute | The capability plus its harness is all someone needs; a consumer with zero knowledge of the target's internals gets a finished, tested, receipted result. |\n\n**Calibration rule (same as ggen):** nothing below is scored above L2 without a named artifact -- a real file path and a real command transcript -- proving the claim. A capability proven by exactly one test is L2/L3, not L4/L5, even if that one test is real and green; L4/L5 require the capability's own maintenance loop (drift catches itself) or a proven multi-signal loop, not a single successful run.\n\n## Matrix — lsp-max protocol-fidelity and bridge capabilities\n\n| Dimension | L1 | L2 | L3 | L4 | L5 |\n|---|---|---|---|---|---|\n| **Fidelity to real Rust source** | Ontology/claim is asserted, unchecked against the real enum/struct/fn it claims to model. | Ontology corrected by hand against real source, once, with a dated note. | A generated test (hand-transcribed EXPECTED list) asserts ontology labels equal the real enum variants, and passes. | A SECOND, SPARQL-derived proof (re-queries the ontology live, builds its own LIVE_* const) is cross-checked against the first, and a drift-injection test proves both catch a real, deliberately reintroduced bug. | Ontology tracks the real source structurally (e.g. via a build-time extraction), not by periodic human re-audit. |\n| **Coverage completeness** | Some target methods/vertices/edges modeled; no claim about the rest. | A count exists (N of M) but M itself is asserted, not derived. | Both N and M are computed from real sources (grep/registration-scan of the real Rust) in the same test run, so the ratio is self-checking. | The ratio is regenerated on every sync/CI run, not only on demand. | 100% coverage is structurally guaranteed (e.g. the ontology IS the source of truth the Rust registers against, not a parallel copy). |\n| **Drift/gate enforcement** | No gate; a human would have to notice drift by reading two files side by side. | A gate exists but has not been proven to actually refuse a real violation. | A real drift-injection-and-revert test: break one fact, gate refuses (exit non-zero / assertion fails) with a real value naming the broken fact, revert, confirm byte-identical. | The gate runs in CI on every change (not just on-demand `cargo test`). | Drift is impossible by construction (e.g. generated code cannot compile without matching the source it's checked against). |\n| **Report/generation realism** | No generated artifact; claims are prose only. | A generated report/handler exists from a real `ggen sync run` (or equivalent), inspected once. | The generated artifact is idempotent (second run byte-identical) and reflects a real re-derivation, not a cached/stale value. | Regeneration is wired into the normal dev loop (part of a gate or CI step). | The generated artifact is the only source anyone reads; nothing hand-maintained duplicates it. |\n| **Test coverage of the specific claim** | Untested claim. | 1 narrow test covering the headline case only. | Multiple tests covering the positive case, a drift/negative case, and (where relevant) an integration/round-trip case through real collaborators (no mocks, per this repo's own Chicago TDD law). | Tests cover adversarial/edge cases beyond the happy path (e.g. malformed input, unchanged-verdict no-op case). | Test suite is itself the proof the capability is correct -- an external reviewer needs nothing but the tests to trust the claim. |\n| **Bridge/integration reach (protocol-crossing capabilities only)** | N/A -- no cross-boundary claim. | One notification/method is real Rust that compiles but has zero callers (dead code, ontology-only or type-only). | Exactly one real caller wired at the real trigger point, proven by a real integration test with a real client-side collaborator (no mock assertion of a call count). | Multiple real callers / multiple signal types wired through the same proven path. | The bridge is bidirectional and self-describing (a client can discover what it will receive without reading the server's source). |\n| **Scope discipline (negative capability)** | Scope undefined; risk of silently expanding into adjacent, unproven work. | Scope named in prose, not enforced. | A checkpoint explicitly refuses to fake a capability it cannot prove (e.g. CP5's real BLOCKED verdict on missing db.rs query functions), and that refusal is the correct, disclosed outcome rather than a fabricated wiring. | The refusal itself is gated (a test would fail if someone tried to wire the missing piece without first building its real prerequisite). | N/A at this project's current stage -- no capability here reaches L5 on this dimension. |" .
+
+mat:scoring_intro a mat:DocSection ;
+    mat:order "s030" ;
+    mat:sid "scoring-intro" ;
+    mat:text "Scores follow the same calibration rule as ggen's matrix: L2 ceiling by default, nothing above L2 without a named artifact. Every mat:d5 cell below cites the exact `cargo test` command re-run this session and its real output (test names, pass count) -- not a re-read of the plan file's prior claim. Where the plan file's claimed count and this session's re-run count agree, that is stated as independent re-verification, not merely restated." .
+
+mat:cg_cp1cp2 a mat:ScoreRow ;
+    mat:order "001" ;
+    mat:pack "LSIF ontology fidelity (CP1/CP2)" ;
+    mat:d1 "L3 (ontology/lsif06.ttl's vertex/edge wire labels and ItemEdgeProperty values are asserted equal to the real crates/lsp-max-lsif/src/lsif.rs enum variants by a passing test, not merely hand-corrected once -- see mat:d5)" ;
+    mat:l1 "L3" ;
+    mat:d2 "L3 (edges re-modeled as owl:ObjectProperty rather than owl:Class rdfs:subClassOf lsif:Edge -- the CP1 fidelity bug the session's own research found and fixed, not merely described)" ;
+    mat:l2 "L3" ;
+    mat:d3 "L3 (gates/*.rq in ontology/gates/ enforce required fields, single-valued cardinality, and value-constrained label/kind sets -- a real gate_030_refuses_a_deliberately_reintroduced_pre_cp1_bare_wire_label test proves the gate fires on a real regression, not a synthetic one)" ;
+    mat:l3 "L3" ;
+    mat:d4 "L2 (the fidelity/gate tests run via `cargo test`, on demand -- not yet wired into a CI job or a `just pre-commit`-equivalent gate in lsp-max, so drift after this session would still need a human to re-run these tests, not a standing gate)" ;
+    mat:l4 "L2" ;
+    mat:d5 "L3 (re-run 2026-08-04: `cargo test --test lsif06_ontology_fidelity_proof --test lsif06_gates_and_sparql_derived_proof` -- 5 passed in lsif06_ontology_fidelity_proof.rs (lsif06_ttl_parses_as_valid_turtle, item_edge_property_values_match_the_real_lsif_rs_enum_exactly, edge_wire_labels_match_the_real_lsif_rs_enum_exactly, vertex_wire_labels_match_the_real_lsif_rs_enum_exactly, vertex_and_edge_wire_label_counts_match_lsif_rs_variant_counts), 3 passed in lsif06_gates_and_sparql_derived_proof.rs (sparql_derived_vertex_and_edge_totals_agree_with_cp1s_hand_transcribed_proof, all_three_gates_pass_zero_violations_on_the_corrected_ontology, gate_030_refuses_a_deliberately_reintroduced_pre_cp1_bare_wire_label) -- 8/8 total, matching the plan's claimed '8 passing tests across 2 files' exactly. Includes the real dual-proof pattern (hand-transcribed EXPECTED + independent SPARQL-derived LIVE_* re-query cross-checked against it) and a real drift-injection test. Not L4/L5: the plan itself records one real gate-caught bug found during this pass (IndexInformation mismodeling) that required a human to notice and fix -- the mechanism that caught it is real, but nothing runs it automatically yet)" ;
+    mat:l5 "L3" ;
+    mat:d6 "L2 (report/generation dimension does not apply directly to CP1/CP2 -- no artifact is generated from lsif06.ttl yet, only checked; see mat:cg_cp3 for the generation half)" ;
+    mat:l6 "N/A" ;
+    mat:d7 "N/A (bridge/integration dimension does not apply -- CP1/CP2 is a single-repo ontology-fidelity capability, not a protocol-crossing one)" ;
+    mat:l7 "N/A" .
+
+mat:cg_cp3 a mat:ScoreRow ;
+    mat:order "002" ;
+    mat:pack "LSIF coverage reporting (CP3)" ;
+    mat:d1 "L2 (the generated coverage report cross-references which vertex/edge types the real indexer (lsif_indexer.rs/lsif_builder.rs) actually emits against what the now-corrected ontology declares -- closes the exact drift class CP0's research found, as a regenerated artifact rather than a one-time human audit; asserted from the plan file's CP3 record, output dir ontology/lsif-report/ confirmed present on disk)" ;
+    mat:l1 "L2" ;
+    mat:d2 "L2 (the report itself is the only generated fragment -- no code generation from lsif06.ttl yet, deliberately, per the plan's own stated risk posture: 'not a replacement for the hand-written, tested lsif.rs/lsif_builder.rs -- too risky this early')" ;
+    mat:l2 "L2" ;
+    mat:d3 "L2 (gate/drift enforcement for CP3 specifically was not independently re-run this pass -- the coverage-report generation was verified via a real `ggen sync run` per the plan, but no drift-injection test for the report generator itself was re-executed here, so this cell is not independently re-verified to the same bar as CP1/CP2/CP4/CP6/CP10/CP11/CP12)" ;
+    mat:l3 "L2 (UNVERIFIED this session)" ;
+    mat:d4 "L3 (the plan's stated verify criterion is idempotent regeneration -- a real `ggen sync run` against a real lsp-max example consumer producing a byte-identical report on a second run -- which if true is a working regeneration loop, but this session did not re-run `ggen sync run` to independently confirm idempotency; scored from the plan's own claim, not re-verified)" ;
+    mat:l4 "L3 (per plan claim, UNVERIFIED this session)" ;
+    mat:d5 "L2 (`cargo test -p lsp-max-lsif` remaining green after CP3 was the plan's stated regression gate -- not independently re-run in this pass; no dedicated report-content test was located or re-run)" ;
+    mat:l5 "L2 (UNVERIFIED this session)" ;
+    mat:d6 "N/A (test-coverage-of-claim dimension folds into d3/d5 above for this row)" ;
+    mat:l6 "N/A" ;
+    mat:d7 "N/A (single-repo capability, not protocol-crossing)" ;
+    mat:l7 "N/A" .
+
+mat:cg_cp4 a mat:ScoreRow ;
+    mat:order "003" ;
+    mat:pack "LSP method status audit (CP4)" ;
+    mat:d1 "L3 (verifies the 45+12 lsp318.ttl method individuals' law:status claims (ADMITTED/CANDIDATE/REFUSED/UNKNOWN) against what lsp-max-macros' real #[rpc(name=\"...\")] attributes actually register across the workspace, via a real SPARQL-derived status breakdown cross-checked against a hand-counted grep total)" ;
+    mat:l1 "L3" ;
+    mat:d2 "L2 (the audit surfaces the status, it does not itself fix any method's registration -- that is left as the finding, correctly, per Evidence-First discipline: report the gap, do not paper over it)" ;
+    mat:l2 "L2" ;
+    mat:d3 "L3 (admitted_check_refuses_a_deliberately_injected_admitted_but_unregistered_method is a real drift-injection test: inject a false ADMITTED claim on an unregistered method, confirm the check catches it)" ;
+    mat:l3 "L3" ;
+    mat:d4 "L2 (on-demand `cargo test` only, not wired into a standing CI/pre-commit gate in lsp-max)" ;
+    mat:l4 "L2" ;
+    mat:d5 "L3 (re-run 2026-08-04: `cargo test --test lsp318_admitted_status_drift_proof` -- 5 passed (lsp318_ttl_parses_as_valid_turtle, admitted_set_is_currently_empty_this_is_a_real_finding, every_admitted_method_is_actually_registered, sparql_derived_status_breakdown_matches_hand_counted_grep_totals, admitted_check_refuses_a_deliberately_injected_admitted_but_unregistered_method) -- 5/5 total, matching the plan's claimed '5 tests, real finding (0/57 ADMITTED)' exactly; the real finding is literally test-named (admitted_set_is_currently_empty_this_is_a_real_finding) and passing, i.e. the audit's headline claim -- zero of 57 methods are currently marked ADMITTED -- is itself the assertion under test, not prose)" ;
+    mat:l5 "L3" ;
+    mat:d6 "N/A (test-coverage-of-claim folds into d3/d5)" ;
+    mat:l6 "N/A" ;
+    mat:d7 "N/A (single-repo capability)" ;
+    mat:l7 "N/A" .
+
+mat:cg_cp6 a mat:ScoreRow ;
+    mat:order "004" ;
+    mat:pack "Stub-contract legibility (CP6)" ;
+    mat:d1 "L3 (extends the ontology so a stub's expected SPARQL-bound inputs (lsp:expectsBinding) and required output shape (lsp:producesShape) are queryable RDF facts on the handler/analyzer individual, not only Rust comments -- verified: a single SPARQL query lists every still-CANDIDATE handler's required contract with zero Rust source reads, the literal CP6 precondition for CP9's MCP tool)" ;
+    mat:l1 "L3" ;
+    mat:d2 "L3 (gate_zero_candidate_individuals_missing_expects_binding_or_produces_shape is a real completeness gate: every CANDIDATE individual must carry both facts, zero exceptions)" ;
+    mat:l2 "L3" ;
+    mat:d3 "L3 (drift_injection_and_revert_gate_catches_a_removed_expects_binding_fact: remove a real fact, gate catches it, revert, confirmed)" ;
+    mat:l3 "L3" ;
+    mat:d4 "L2 (on-demand only, no standing CI wiring in lsp-max)" ;
+    mat:l4 "L2" ;
+    mat:d5 "L3 (re-run 2026-08-04: `cargo test --test lsp318_candidate_contracts_are_queryable` -- 4 passed (lsp318_ttl_parses_into_oxigraph, gate_zero_candidate_individuals_missing_expects_binding_or_produces_shape, candidate_contracts_query_matches_hand_transcribed_expected_pairs, drift_injection_and_revert_gate_catches_a_removed_expects_binding_fact) -- 4/4, matching the plan's claimed '4 tests, 57/57 subject coverage'. The 57/57 subject-coverage claim itself was independently re-confirmed via a real MCP tool call this session (per the plan's own record); this Turtle-file verification pass re-confirms only the 4/4 test count, not a fresh MCP call -- stated separately so the two evidence sources are not conflated)" ;
+    mat:l5 "L3" ;
+    mat:d6 "N/A" ;
+    mat:l6 "N/A" ;
+    mat:d7 "N/A (single-repo capability; CP9's MCP tool consuming this contract lives in a separate, not-rescored-here checkpoint)" ;
+    mat:l7 "N/A" .
+
+mat:cg_cp10 a mat:ScoreRow ;
+    mat:order "005" ;
+    mat:pack "max/* notification fidelity + one real push (CP10)" ;
+    mat:d1 "L3 (reconciles ontology/max-protocol.ttl's max/gateChanged etc. against the real, already-working lspMax/admissionChanged etc. types in src/andon/lsp.rs -- a real naming-mismatch bug the session's own research found (ontology said max/admissionChanged, code said lspMax/admissionChanged) and fixed by editing the TTL to match the working Rust, not vice versa, per the plan's own stated risk calculus)" ;
+    mat:l1 "L3" ;
+    mat:d2 "L3 (gate_040 enforces no bare max/ names remain; lsp_max_notification_method_names_match_the_real_andon_lsp_rs_consts_exactly and admission_changed_param_type_matches_the_real_rust_struct_name are real fidelity assertions against the actual consts/struct)" ;
+    mat:l2 "L3" ;
+    mat:d3 "L3 (gate_040_refuses_a_deliberately_reintroduced_pre_cp10_bare_max_slash_name is a real drift-injection test)" ;
+    mat:l3 "L3" ;
+    mat:d4 "L2 (on-demand only)" ;
+    mat:l4 "L2" ;
+    mat:d5 "L3 (re-run 2026-08-04: `cargo test --test max_protocol_gates_and_sparql_derived_proof --test max_protocol_notification_fidelity_proof` -- 3+4=7 passed, plus `cargo test --lib composition::tests::admission_notification` -- 2 passed (max_admission_pushes_lsp_max_admission_changed_when_the_verdict_actually_changes, max_admission_does_not_push_when_the_verdict_is_unchanged) -- 7+2=9/9 total, matching the plan's claimed '9 tests, 2 real integration tests'. The 2 integration tests are the real proof for the bridge dimension below: one proves the notification fires on a real state transition, the other proves it does NOT fire when the verdict is unchanged (a real no-op/negative-path test, not only a happy-path one)" ;
+    mat:l5 "L3" ;
+    mat:d6 "N/A (test-coverage-of-claim folds into d3/d5)" ;
+    mat:l6 "N/A" ;
+    mat:d7 "L3 (exactly ONE real caller wired at the real trigger point -- the max_admission handler's admission-state transition -- proven by 2 real integration tests using real collaborators (Chicago TDD, no mock call-count assertion: the negative test asserts NO push happens on an unchanged verdict, which a mock-based test could get right by accident but a real-state test cannot). Not L4: only lspMax/admissionChanged is wired; the other 4 real-but-uncalled notification types (andonRaised, truthTableChanged, counterfactualFailed, nextLawfulStepChanged) remain dead code by the plan's own explicit scope choice ('One real, tested caller, not all five dead notification types at once'))" ;
+    mat:l7 "L3" .
+
+mat:cg_cp11 a mat:ScoreRow ;
+    mat:order "006" ;
+    mat:pack "LSP-to-MCP pull bridge (CP11)" ;
+    mat:d1 "L2 (proves the EXISTING real pull bridge -- compositor -> fitness-file -> lsp-max-mcp tool read -- which before CP11 was real but evidenced only by scattered comments and manual reasoning, per the plan's own framing; CP11 adds the missing automated proof, it does not build a new bridge)" ;
+    mat:l1 "L2" ;
+    mat:d2 "N/A (no ontology/gate dimension for this capability -- it is a proof-of-an-existing-path checkpoint, not a fidelity-correction one)" ;
+    mat:l2 "N/A" ;
+    mat:d3 "N/A (no drift-injection test claimed or expected for this checkpoint's scope)" ;
+    mat:l3 "N/A" ;
+    mat:d4 "L2 (on-demand `cargo test -p lsp-max-cli --test cp11_fitness_bridge`, not standing CI)" ;
+    mat:l4 "L2" ;
+    mat:d5 "L2 (re-run 2026-08-04: `cargo test -p lsp-max-cli --test cp11_fitness_bridge` -- 1 passed (diagnostic_content_survives_compositor_to_fitness_file_to_mcp_read), matching the plan's claimed '1 real round-trip test' exactly. Genuinely L2, not higher: this is exactly one test covering the headline round-trip -- real per the Chicago TDD bar (feeds a synthetic diagnostic through the real DiagnosticBuffer::deposit -> MergeContext::merge -> flush_coordinator's real flush, which both calls publish_diagnostics AND writes the fitness file, then calls lsp-max-mcp's real read_fitness_status()-backed tool function directly and asserts the diagnostic's ACTUAL CONTENT, not just presence, survived) but there is no drift/negative-path/adversarial companion test the way CP1/CP2/CP4/CP6/CP10 each have, so this stays at L2 by this file's own calibration rule -- one real green test is real evidence of the path working once, not evidence the path is guarded against regressing" ;
+    mat:l5 "L2" ;
+    mat:d6 "N/A" ;
+    mat:l6 "N/A" ;
+    mat:d7 "L2 (a real, working pull -- one direction, one round trip, proven once -- not yet a maintained/multi-signal bridge; this is the ceiling this dimension's own L2 row describes: 'One notification/method is real ... ' -- adapted here to 'one pull path is real and proven once')" ;
+    mat:l7 "L2" .
+
+mat:cg_cp12 a mat:ScoreRow ;
+    mat:order "007" ;
+    mat:pack "LSP-to-MCP push bridge (CP12, in ~/ggen crates/ggen-mcp/src/bridge.rs — the other half of CP10-CP11's same capability)" ;
+    mat:d1 "L2 (ggen-lsp's headless gate (check_files_in_root) is the real, existing diagnostic source; bridge.rs is a thin, one-directional adapter -- run the real gate, filter by a caller-chosen code allowlist, publish matching diagnostics as MCP resources, push a real notifications/resources/updated per match over a retained Peer<RoleServer>. Chosen first signal: GGEN-TPL-001, reusing check.rs's own proven minimal fixture rather than inventing a new one)" ;
+    mat:l1 "L2" ;
+    mat:d2 "N/A (no ontology dimension for this Rust-only bridge module)" ;
+    mat:l2 "N/A" ;
+    mat:d3 "L2 (no_matching_code_pushes_nothing is a real negative-path test -- diagnostics not matching the allowlist correctly push nothing -- but there is no drift-injection test for the bridge's own wiring the way CP1/CP2/CP4/CP6/CP10 have for their ontologies)" ;
+    mat:l3 "L2" ;
+    mat:d4 "L2 (on-demand `cargo test -p ggen-mcp --lib bridge::`, not standing CI)" ;
+    mat:l4 "L2" ;
+    mat:d5 "L3 (re-run 2026-08-04: `cargo test -p ggen-mcp --lib bridge::` -- 2 passed (no_matching_code_pushes_nothing, tpl_001_diagnostic_reaches_a_real_mcp_client) -- 2/2, matching the plan's claimed '2 tests including a real MCP client receiving a real notification over a real duplex transport' exactly. Confirmed by reading the test source directly: tpl_001_diagnostic_reaches_a_real_mcp_client uses tokio::io::duplex(8192) for a real in-process transport (not a mock), a real ClientHandler impl receiving on_resource_updated (rmcp::RoleClient), and asserts on the actual notification content received -- Chicago TDD, no mock call-count assertion" ;
+    mat:l5 "L3" ;
+    mat:d6 "N/A" ;
+    mat:l6 "N/A" ;
+    mat:d7 "L2 (one real signal type (GGEN-TPL-001) wired through a real duplex transport, proven by exactly one positive + one negative test -- genuinely a real bridge, but a single signal type through a hand-built in-process transport is the L2 rung ('one notification/method is real ... exactly one real caller wired'), not L3's 'multiple real callers/signal types' -- GGEN-OUT-001/GGEN-FM-SHACL-001 are named in the module doc comment as an argument change away, not yet done)" ;
+    mat:l7 "L2" .
+
+mat:narrative a mat:DocSection ;
+    mat:order "s040" ;
+    mat:sid "narrative" ;
+    mat:text "## Real bugs this verification pass surfaced or re-confirmed (evidence the scores above are not self-graded)\n\n1. **CP1/CP2**: the pre-existing `IndexInformation` mismodeling in `ontology/lsif06.ttl` (a real gate-caught bug, per the plan's own record) -- confirmed still fixed: `edge_wire_labels_match_the_real_lsif_rs_enum_exactly` and the SPARQL-derived cross-check both pass live, 2026-08-04.\n2. **CP4**: the real finding that 0 of 57 `lsp318.ttl` methods are currently `ADMITTED` is not a stale claim -- the test asserting it (`admitted_set_is_currently_empty_this_is_a_real_finding`) passed on a live re-run, meaning the finding still holds as of this file's own verification date.\n3. **CP10**: the ontology/code naming mismatch (`max/admissionChanged` vs `lspMax/admissionChanged`) -- confirmed the fix holds: `no_max_slash_notification_names_remain_in_max_protocol_ttl` passes live, meaning no bare `max/` name has crept back into the ontology since CP10 landed.\n4. **CP3, cell d3/d4/d5 above are explicitly marked UNVERIFIED THIS SESSION** -- unlike the other six rows, this verification pass did not locate and re-run a dedicated CP3 report-generation test; the row is scored from the plan file's own claim, not independently re-confirmed by a live command in this pass. This is disclosed rather than rounded up, per this repo's own no-overclaiming discipline.\n\n## What would move any row from L3 to L4\n\nEvery capability scored L3 above shares the same L3-not-L4 reason: the proving test(s) run on demand via `cargo test`, not on every commit via a standing CI/pre-commit gate in `~/lsp-max` (which, unlike `~/ggen`, has no `just pre-commit`-equivalent wired to run these specific suites automatically as of this session). Wiring `cargo test --test lsif06_ontology_fidelity_proof --test lsif06_gates_and_sparql_derived_proof --test lsp318_admitted_status_drift_proof --test lsp318_candidate_contracts_are_queryable --test max_protocol_gates_and_sparql_derived_proof --test max_protocol_notification_fidelity_proof` (plus the two integration/lib suites) into a CI job is the concrete, named next step that would earn L4 across the board -- not a vague 'add more tests' gesture." .
+
+mat:see_also a mat:DocSection ;
+    mat:order "s050" ;
+    mat:sid "see-also" ;
+    mat:text "## See Also\n\n- `/Users/sac/.claude/plans/80-20-gall-test-refactor-cheerful-quokka.md` -- the full CP0-CP12 plan and prior-session evidence this file's scores are extracted from and re-verified against\n- `~/ggen/.specify/maturity.ttl` -- the sibling matrix this file's vocabulary and level spine are reused from (codegen/hook/case-study packs, a different domain)\n- `~/lsp-max/tests/lsif06_ontology_fidelity_proof.rs`, `lsif06_gates_and_sparql_derived_proof.rs`, `lsp318_admitted_status_drift_proof.rs`, `lsp318_candidate_contracts_are_queryable.rs`, `max_protocol_gates_and_sparql_derived_proof.rs`, `max_protocol_notification_fidelity_proof.rs` -- the real test files backing CP1/CP2/CP4/CP6/CP10's d5 cells\n- `~/lsp-max/src/composition/tests/admission_notification.rs` -- CP10's 2 real integration tests\n- `~/lsp-max/crates/lsp-max-cli/tests/cp11_fitness_bridge.rs` -- CP11's real round-trip test\n- `~/ggen/crates/ggen-mcp/src/bridge.rs` -- CP12's push-bridge module and its own `mod tests`" .

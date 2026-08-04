@@ -23,6 +23,14 @@ default = ["runtime-tokio"]
 runtime-agnostic = ["async-codec-lite"]
 runtime-tokio = ["tokio", "tokio-util"]
 proposed = ["lsp-types-max/proposed"]
+# Gall checkpoint CP14: quarantines the customer-refund demo hook chain
+# (CustomerRequestClassifierHook/PolicyEvaluationHook/ReceiptRoutingHook in
+# src/runtime/mesh_hooks.rs) behind an explicit opt-in feature, default off. That
+# chain can trigger a real, unconfirmed std::fs::write via
+# AutonomicMesh::execute_action's "act-create-refund-receipt" special case; a
+# 2026-08-04 safety audit confirmed it is dead on every live path today but wanted
+# it structurally unable to be silently wired into a live dispatch_event call.
+refund-demo-hooks = []
 
 [dependencies]
 async-codec-lite = { version = "0.0", optional = true }
@@ -125,7 +133,6 @@ members = [
     "examples/ggen-lsp",
     "examples/wasm-lsp",
     "examples/lsp-max-scaffold",
-    "crates/lsp-max-andon",
 ]
 
 [workspace.package]

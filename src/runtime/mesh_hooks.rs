@@ -300,17 +300,35 @@ impl Hook for IntakeClearHook {
     }
 }
 
+// QUARANTINED (Gall checkpoint CP14, see ~/ggen's
+// 80-20-gall-test-refactor-cheerful-quokka.md plan): CustomerRequestClassifierHook,
+// PolicyEvaluationHook, and ReceiptRoutingHook below model a customer-refund workflow
+// unrelated to LSP-Max's real purpose. PolicyEvaluationHook::trigger emits
+// MeshAction::ExecuteBoundedAction{action_id: "act-create-refund-receipt"}, and
+// AutonomicMesh::execute_action (src/runtime/mesh.rs) special-cases that exact
+// action_id and performs a real, unconfirmed std::fs::write. A 2026-08-04 safety
+// audit traced every registration site and confirmed this chain is dead on every
+// live path today (only tests/autonomic_mesh/{workflow_test.rs,mesh_tests.rs}
+// register and dispatch into it; ServerState::mesh starts with zero hooks
+// registered). Gated behind this feature (default off) so it cannot be wired into a
+// live dispatch_event call by a future edit without that being an obvious, visible
+// Cargo.toml change -- not deleted, since git history did not surface a clear reason
+// it was added, and deleting working code without understanding why it exists is
+// higher-risk than quarantining it.
+#[cfg(feature = "refund-demo-hooks")]
 pub struct CustomerRequestClassifierHook {
     proof_received: std::sync::Mutex<std::collections::HashSet<String>>,
     policy_states: std::sync::Mutex<std::collections::HashMap<String, PolicyState>>,
 }
 
+#[cfg(feature = "refund-demo-hooks")]
 impl Default for CustomerRequestClassifierHook {
     fn default() -> Self {
         Self::new()
     }
 }
 
+#[cfg(feature = "refund-demo-hooks")]
 impl CustomerRequestClassifierHook {
     pub fn new() -> Self {
         Self {
@@ -320,6 +338,7 @@ impl CustomerRequestClassifierHook {
     }
 }
 
+#[cfg(feature = "refund-demo-hooks")]
 impl Hook for CustomerRequestClassifierHook {
     fn name(&self) -> &str {
         "CustomerRequestClassifierHook"
@@ -446,16 +465,19 @@ impl Hook for CustomerRequestClassifierHook {
     }
 }
 
+#[cfg(feature = "refund-demo-hooks")]
 pub struct PolicyEvaluationHook {
     policy_states: std::sync::Mutex<std::collections::HashMap<String, PolicyState>>,
 }
 
+#[cfg(feature = "refund-demo-hooks")]
 impl Default for PolicyEvaluationHook {
     fn default() -> Self {
         Self::new()
     }
 }
 
+#[cfg(feature = "refund-demo-hooks")]
 impl PolicyEvaluationHook {
     pub fn new() -> Self {
         Self {
@@ -464,6 +486,7 @@ impl PolicyEvaluationHook {
     }
 }
 
+#[cfg(feature = "refund-demo-hooks")]
 impl Hook for PolicyEvaluationHook {
     fn name(&self) -> &str {
         "PolicyEvaluationHook"
@@ -544,17 +567,20 @@ impl Hook for PolicyEvaluationHook {
     }
 }
 
+#[cfg(feature = "refund-demo-hooks")]
 pub struct ReceiptRoutingHook {
     active_diagnostics:
         std::sync::Mutex<std::collections::HashMap<String, std::collections::HashSet<String>>>,
 }
 
+#[cfg(feature = "refund-demo-hooks")]
 impl Default for ReceiptRoutingHook {
     fn default() -> Self {
         Self::new()
     }
 }
 
+#[cfg(feature = "refund-demo-hooks")]
 impl ReceiptRoutingHook {
     pub fn new() -> Self {
         Self {
@@ -563,6 +589,7 @@ impl ReceiptRoutingHook {
     }
 }
 
+#[cfg(feature = "refund-demo-hooks")]
 impl Hook for ReceiptRoutingHook {
     fn name(&self) -> &str {
         "ReceiptRoutingHook"

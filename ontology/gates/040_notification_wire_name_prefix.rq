@@ -1,0 +1,15 @@
+# MESSAGE: Gall checkpoint CP10 -- every lsp:Notification individual in
+# max-protocol.ttl must carry an lsp:methodName that starts with "lspMax/", the real
+# wire-name prefix used by src/andon/lsp.rs's Notification impls and
+# src/service/client/lsp_methods.rs's send-wrapper methods. This is exactly the
+# fidelity bug CP10 fixed (the pre-CP10 ontology declared max/gateChanged,
+# max/admissionChanged, max/receiptArrived -- none of which had any Rust
+# implementation) -- this gate exists so that specific class of drift cannot
+# silently reappear. Mirrors CP1/CP2's 030_value_constraints.rq pattern.
+PREFIX lsp: <https://lsp-max.rs/ontology/>
+
+SELECT ?individual ?methodName WHERE {
+    ?individual a lsp:Notification ;
+                lsp:methodName ?methodName .
+    FILTER(!STRSTARTS(STR(?methodName), "lspMax/"))
+}

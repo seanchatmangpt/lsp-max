@@ -1,0 +1,17 @@
+[project]
+name = "lsp-status-report"
+version = "26.7.3"
+description = "Gall checkpoint CP4: standalone LSP method law:status report generation, deliberately kept out of the main gen.toml (whose single-source [ontology] already loads lsp318.ttl for handler/capability generation) so this checkpoint cannot risk the existing lsp318.ttl-driven generation rules, mirroring CP3's lsif-report/ sub-project shape exactly."
+
+[ontology]
+source = "../lsp318.ttl"
+
+[generation]
+output_dir = "."
+
+[[generation.rules]]
+name = "lsp-status-report"
+query = { file = "queries/status.sparql" }
+template = { file = "templates/status.md.tera" }
+output_file = "LSP_STATUS_REPORT.md"
+mode = "Overwrite"

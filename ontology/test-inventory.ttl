@@ -1,0 +1,325 @@
+@prefix owl:  <http://www.w3.org/2002/07/owl#> .
+@prefix rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+@prefix test: <https://lsp-max.rs/ontology/test/> .
+
+# ── Ontology declaration ──────────────────────────────────────────────────────
+#
+# Test-inventory ontology for the Gall's-Law-checkpoint test files this session
+# (CP0-CP12, see ~/ggen's `80-20-gall-test-refactor-cheerful-quokka.md`) added to
+# lsp-max. Scope is deliberately narrow: only the 8 real test files / 27 real test
+# functions those checkpoints added, not the pre-existing 331-test suite. Makes
+# "what does this test actually prove" a queryable fact instead of something an
+# agent has to re-derive by reading test source every time -- the same move CP6
+# made for handler stub contracts (`lsp:expectsBinding`/`lsp:producesShape`).
+
+<https://lsp-max.rs/ontology/test/> a owl:Ontology ;
+    rdfs:label   "lsp-max Test Inventory Ontology" ;
+    rdfs:comment "Per-test-function facts for the CP0-CP12 Gall's-Law-checkpoint test files: what each test asserts, and what real artifact/behavior its pass actually proves." .
+
+# ── Core classes ─────────────────────────────────────────────────────────────
+
+test:TestFile a owl:Class ;
+    rdfs:label   "TestFile" ;
+    rdfs:comment "A real Rust test file (integration test or #[cfg(test)] module) under test." .
+
+test:TestCase a owl:Class ;
+    rdfs:label   "TestCase" ;
+    rdfs:comment "A single #[test] or #[tokio::test] function." .
+
+test:AssertionKind a owl:Class ;
+    rdfs:label   "AssertionKind" ;
+    rdfs:comment "Closed set of assertion shapes used across this inventory. Closed (not free text) so an agent can group/filter by mechanism without parsing prose -- e.g. 'find every DriftInjectionRevert test' answers 'which tests actually prove their gate/check is not vacuous', a distinct and higher-value query than grepping assert_eq!." .
+
+# ── AssertionKind individuals ────────────────────────────────────────────────
+# Closed set, one per distinct assertion *mechanism* observed across the 27
+# real test functions below (verified by reading each file in full, not
+# inferred from function names).
+
+test:StructuralParse a test:AssertionKind ;
+    rdfs:label "StructuralParse" ;
+    rdfs:comment "Asserts a TTL file parses as valid Turtle / yields >0 triples. No semantic content check." .
+
+test:SetEquality a test:AssertionKind ;
+    rdfs:label "SetEquality" ;
+    rdfs:comment "Asserts a SPARQL-derived BTreeSet/collection equals a hand-transcribed EXPECTED set exactly (assert_eq! on two sets, not a subset/superset check)." .
+
+test:CountEquality a test:AssertionKind ;
+    rdfs:label "CountEquality" ;
+    rdfs:comment "Asserts a numeric count (gate-violation count, SPARQL COUNT aggregate, or collection length) equals a specific expected integer." .
+
+test:MembershipCheck a test:AssertionKind ;
+    rdfs:label "MembershipCheck" ;
+    rdfs:comment "Asserts every element of one set is contained in another (e.g. every ADMITTED method name is present in a real-registration list) -- a one-directional containment check, not full set equality." .
+
+test:DriftInjectionRevert a test:AssertionKind ;
+    rdfs:label "DriftInjectionRevert" ;
+    rdfs:comment "Deliberately corrupts an in-memory copy of real TTL content, asserts the gate/check now refuses it, then asserts the real on-disk file (never mutated) still passes cleanly -- proves a check is a real detector, not a vacuously-passing no-op." .
+
+test:StateTransition a test:AssertionKind ;
+    rdfs:label "StateTransition" ;
+    rdfs:comment "Drives a real state change (e.g. an admission verdict flip) through real production code and asserts a real downstream effect (a notification reaching a real client) occurred with the correct payload." .
+
+test:NoTransition a test:AssertionKind ;
+    rdfs:label "NoTransition" ;
+    rdfs:comment "Asserts that when no real state change occurs, no downstream effect (e.g. no notification) is produced -- proves change-detection is real, not blind re-send-on-every-poll." .
+
+test:FieldContent a test:AssertionKind ;
+    rdfs:label "FieldContent" ;
+    rdfs:comment "Asserts a specific field/property value on a queried individual matches expected real content (e.g. a paramType string references a real Rust struct name)." .
+
+# ── TestFile individuals ─────────────────────────────────────────────────────
+
+test:File_lsif06_ontology_fidelity_proof a test:TestFile ;
+    rdfs:label "lsif06_ontology_fidelity_proof.rs" ;
+    test:path "tests/lsif06_ontology_fidelity_proof.rs" ;
+    test:checkpoint "CP1" ;
+    test:testCount 5 .
+
+test:File_lsif06_gates_and_sparql_derived_proof a test:TestFile ;
+    rdfs:label "lsif06_gates_and_sparql_derived_proof.rs" ;
+    test:path "tests/lsif06_gates_and_sparql_derived_proof.rs" ;
+    test:checkpoint "CP2" ;
+    test:testCount 3 .
+
+test:File_lsp318_admitted_status_drift_proof a test:TestFile ;
+    rdfs:label "lsp318_admitted_status_drift_proof.rs" ;
+    test:path "tests/lsp318_admitted_status_drift_proof.rs" ;
+    test:checkpoint "CP4" ;
+    test:testCount 5 .
+
+test:File_lsp318_candidate_contracts_are_queryable a test:TestFile ;
+    rdfs:label "lsp318_candidate_contracts_are_queryable.rs" ;
+    test:path "tests/lsp318_candidate_contracts_are_queryable.rs" ;
+    test:checkpoint "CP6" ;
+    test:testCount 4 .
+
+test:File_max_protocol_notification_fidelity_proof a test:TestFile ;
+    rdfs:label "max_protocol_notification_fidelity_proof.rs" ;
+    test:path "tests/max_protocol_notification_fidelity_proof.rs" ;
+    test:checkpoint "CP10" ;
+    test:testCount 4 .
+
+test:File_max_protocol_gates_and_sparql_derived_proof a test:TestFile ;
+    rdfs:label "max_protocol_gates_and_sparql_derived_proof.rs" ;
+    test:path "tests/max_protocol_gates_and_sparql_derived_proof.rs" ;
+    test:checkpoint "CP10" ;
+    test:testCount 3 .
+
+test:File_admission_notification a test:TestFile ;
+    rdfs:label "admission_notification.rs" ;
+    test:path "src/composition/tests/admission_notification.rs" ;
+    test:checkpoint "CP10" ;
+    test:testCount 2 .
+
+test:File_cp11_fitness_bridge a test:TestFile ;
+    rdfs:label "cp11_fitness_bridge.rs" ;
+    test:path "crates/lsp-max-cli/tests/cp11_fitness_bridge.rs" ;
+    test:checkpoint "CP11" ;
+    test:testCount 1 .
+
+# ── TestCase individuals: tests/lsif06_ontology_fidelity_proof.rs (CP1) ──────
+
+test:tc_lsif06_ttl_parses_as_valid_turtle a test:TestCase ;
+    test:file test:File_lsif06_ontology_fidelity_proof ;
+    test:function "lsif06_ttl_parses_as_valid_turtle" ;
+    test:assertionKind test:StructuralParse ;
+    test:asserts "ontology/lsif06.ttl loads into an in-memory oxigraph Store without a parse error" ;
+    test:provesReal "lsif06.ttl is syntactically valid Turtle, the precondition every other lsif06 test in this inventory depends on" .
+
+test:tc_vertex_wire_labels_match a test:TestCase ;
+    test:file test:File_lsif06_ontology_fidelity_proof ;
+    test:function "vertex_wire_labels_match_the_real_lsif_rs_enum_exactly" ;
+    test:assertionKind test:SetEquality ;
+    test:asserts "the SPARQL-derived set of lsif:Vertex subclasses' lsif:wireLabel values equals a hand-transcribed EXPECTED_VERTEX_WIRE_LABELS set (24 labels, transcribed from lsif.rs's #[serde(rename)] attributes, not from the ontology)" ;
+    test:provesReal "the ontology's Vertex wire-label set is fidelity-correct against the real lsp-max-lsif::lsif::Vertex enum -- the exact drift class CP0's research found (lsif06.ttl was a hand-curated 40-50% subset before CP1)" .
+
+test:tc_edge_wire_labels_match a test:TestCase ;
+    test:file test:File_lsif06_ontology_fidelity_proof ;
+    test:function "edge_wire_labels_match_the_real_lsif_rs_enum_exactly" ;
+    test:assertionKind test:SetEquality ;
+    test:asserts "the SPARQL-derived set of lsif:Edge subclasses' lsif:wireLabel values equals a hand-transcribed EXPECTED_EDGE_WIRE_LABELS set (21 labels, including the real textDocument/* namespace)" ;
+    test:provesReal "the ontology's Edge wire-label set is fidelity-correct against the real lsp-max-lsif::lsif::Edge enum, including the textDocument/* wire-format namespace CP0 found entirely missing pre-CP1" .
+
+test:tc_item_edge_property_values_match a test:TestCase ;
+    test:file test:File_lsif06_ontology_fidelity_proof ;
+    test:function "item_edge_property_values_match_the_real_lsif_rs_enum_exactly" ;
+    test:assertionKind test:SetEquality ;
+    test:asserts "the SPARQL-derived set of lsif:ItemEdgeProperty individuals' wireLabel values equals a hand-transcribed EXPECTED_ITEM_EDGE_PROPERTIES set (7 values, including the intentional Rust-name/wire-value mismatch TypeDefinitions -> \"typeDefinitionResults\")" ;
+    test:provesReal "the ontology correctly captures the real ItemEdgeProperty enum's wire values, including at least one case where the Rust variant name and its wire rename genuinely diverge -- a case a naive transcription could get wrong" .
+
+test:tc_vertex_and_edge_wire_label_counts_match a test:TestCase ;
+    test:file test:File_lsif06_ontology_fidelity_proof ;
+    test:function "vertex_and_edge_wire_label_counts_match_lsif_rs_variant_counts" ;
+    test:assertionKind test:CountEquality ;
+    test:asserts "SPARQL-derived Vertex wireLabel count == 24 and Edge wireLabel count == 21" ;
+    test:provesReal "the ontology declares exactly as many Vertex/Edge subclasses as the real enums have variants -- no silent under- or over-declaration" .
+
+# ── TestCase individuals: tests/lsif06_gates_and_sparql_derived_proof.rs (CP2) ──
+
+test:tc_all_three_gates_pass_zero_violations a test:TestCase ;
+    test:file test:File_lsif06_gates_and_sparql_derived_proof ;
+    test:function "all_three_gates_pass_zero_violations_on_the_corrected_ontology" ;
+    test:assertionKind test:CountEquality ;
+    test:asserts "gates/{010_required,020_single_valued,030_value_constraints}.rq each return zero violation rows against the real ontology/lsif06.ttl" ;
+    test:provesReal "the corrected lsif06.ttl passes all three admission gates cleanly -- required fields present, no double-valued wireLabels, and every TextDocument*-named edge class carries its real textDocument/ wire prefix" .
+
+test:tc_sparql_derived_totals_agree_with_cp1 a test:TestCase ;
+    test:file test:File_lsif06_gates_and_sparql_derived_proof ;
+    test:function "sparql_derived_vertex_and_edge_totals_agree_with_cp1s_hand_transcribed_proof" ;
+    test:assertionKind test:CountEquality ;
+    test:asserts "an independently-shaped COUNT+GROUP aggregate SPARQL query re-derives vertexCount == 24 and edgeCount == 21, agreeing with CP1's per-class enumeration proof" ;
+    test:provesReal "the 24/21 totals are not an artifact of one particular query shape -- two differently-shaped queries agreeing is the SPARQL-derived second-proof half of the CP1/CP2 dual-proof pattern" .
+
+test:tc_gate_030_refuses_reintroduced_bare_label a test:TestCase ;
+    test:file test:File_lsif06_gates_and_sparql_derived_proof ;
+    test:function "gate_030_refuses_a_deliberately_reintroduced_pre_cp1_bare_wire_label" ;
+    test:assertionKind test:DriftInjectionRevert ;
+    test:asserts "an in-memory copy of lsif06.ttl with textDocument/definition's wireLabel corrupted back to the bare pre-CP1 form \"definition\" makes gate 030's violation count > 0; the real on-disk file (untouched) still passes gate 030 with zero violations" ;
+    test:provesReal "gate 030 is a real, working regression detector for the exact bug class CP1 fixed -- not a check that vacuously always passes" .
+
+# ── TestCase individuals: tests/lsp318_admitted_status_drift_proof.rs (CP4) ──
+
+test:tc_lsp318_ttl_parses a test:TestCase ;
+    test:file test:File_lsp318_admitted_status_drift_proof ;
+    test:function "lsp318_ttl_parses_as_valid_turtle" ;
+    test:assertionKind test:StructuralParse ;
+    test:asserts "ontology/lsp318.ttl loads into an in-memory oxigraph Store without a parse error" ;
+    test:provesReal "lsp318.ttl is syntactically valid Turtle, the precondition every other lsp318 test in this inventory depends on" .
+
+test:tc_every_admitted_method_is_registered a test:TestCase ;
+    test:file test:File_lsp318_admitted_status_drift_proof ;
+    test:function "every_admitted_method_is_actually_registered" ;
+    test:assertionKind test:MembershipCheck ;
+    test:asserts "every lsp:methodName whose law:status is law:ADMITTED is a member of EXPECTED_REGISTERED (a literal copy of lsp_coverage::IMPLEMENTED_METHODS, itself grep-verified against real #[rpc(name=\"...\")] attributes)" ;
+    test:provesReal "no method the ontology claims is ADMITTED lacks a real #[rpc] registration anywhere in the workspace -- currently holds vacuously (zero ADMITTED methods exist), proven non-tautological by the drift-injection test below" .
+
+test:tc_admitted_set_is_currently_empty a test:TestCase ;
+    test:file test:File_lsp318_admitted_status_drift_proof ;
+    test:function "admitted_set_is_currently_empty_this_is_a_real_finding" ;
+    test:assertionKind test:CountEquality ;
+    test:asserts "the SPARQL-derived set of law:ADMITTED method names is empty" ;
+    test:provesReal "as of this checkpoint's authoring, base lsp318.ttl declares zero ADMITTED methods -- all 57 lsp:Request/lsp:Notification individuals are still law:CANDIDATE; a real, non-silent finding this test will start failing (correctly) the moment CP5 or any later work flips a method to ADMITTED" .
+
+test:tc_sparql_derived_status_breakdown a test:TestCase ;
+    test:file test:File_lsp318_admitted_status_drift_proof ;
+    test:function "sparql_derived_status_breakdown_matches_hand_counted_grep_totals" ;
+    test:assertionKind test:CountEquality ;
+    test:asserts "an independently-shaped SELECT-all + rdfs:label join re-derives 57 total method individuals with a (CANDIDATE, ADMITTED, REFUSED, UNKNOWN) status breakdown of exactly (57, 0, 0, 0), agreeing with a `grep -c`/`grep -o | sort | uniq -c` hand count against the real file" ;
+    test:provesReal "the 45-Request + 12-Notification = 57 individual count, and the fact all 57 are CANDIDATE, is not an artifact of one query shape -- the SPARQL-derived second-proof half of the CP4 dual-proof pattern" .
+
+test:tc_admitted_check_refuses_injected_drift a test:TestCase ;
+    test:file test:File_lsp318_admitted_status_drift_proof ;
+    test:function "admitted_check_refuses_a_deliberately_injected_admitted_but_unregistered_method" ;
+    test:assertionKind test:DriftInjectionRevert ;
+    test:asserts "an in-memory copy of lsp318.ttl with lsp:exit's law:status flipped CANDIDATE -> ADMITTED makes the admitted-but-unregistered check catch \"exit\" (genuinely absent from EXPECTED_REGISTERED, since exit is a transport-layer message below the LanguageServer trait); the real on-disk file (untouched) still has zero ADMITTED methods" ;
+    test:provesReal "the every_admitted_method_is_actually_registered check above is a real detector, not a vacuously-passing no-op that only looks meaningful because the ADMITTED set happens to be empty today" .
+
+# ── TestCase individuals: tests/lsp318_candidate_contracts_are_queryable.rs (CP6) ──
+
+test:tc_lsp318_ttl_parses_into_oxigraph a test:TestCase ;
+    test:file test:File_lsp318_candidate_contracts_are_queryable ;
+    test:function "lsp318_ttl_parses_into_oxigraph" ;
+    test:assertionKind test:StructuralParse ;
+    test:asserts "ontology/lsp318.ttl parses into at least one triple" ;
+    test:provesReal "lsp318.ttl is loadable and non-empty, the precondition the CP6 contract-queryability tests below depend on" .
+
+test:tc_gate_zero_candidate_missing_contract_facts a test:TestCase ;
+    test:file test:File_lsp318_candidate_contracts_are_queryable ;
+    test:function "gate_zero_candidate_individuals_missing_expects_binding_or_produces_shape" ;
+    test:assertionKind test:CountEquality ;
+    test:asserts "a FILTER NOT EXISTS gate query for CANDIDATE lsp:Request/lsp:Notification/lsp:MaxExtension individuals missing lsp:expectsBinding, and a second gate for lsp:producesShape, both return zero rows" ;
+    test:provesReal "every still-CANDIDATE handler/method individual in lsp318.ttl carries CP6's new lsp:expectsBinding and lsp:producesShape facts -- the CP6 retrofit is complete, not partial" .
+
+test:tc_candidate_contracts_query_matches_expected a test:TestCase ;
+    test:file test:File_lsp318_candidate_contracts_are_queryable ;
+    test:function "candidate_contracts_query_matches_hand_transcribed_expected_pairs" ;
+    test:assertionKind test:SetEquality ;
+    test:asserts "queries/lsp-max/candidate_contracts.sparql's result rows (method_name, expects_binding, produces_shape) exactly match a hand-transcribed 57-entry EXPECTED map, read directly from lsp318.ttl's real lsp:paramType/lsp:returnType values, not derived from the query under test" ;
+    test:provesReal "candidate_contracts.sparql is the literal, working precondition CP9's ggen-mcp introspection tool needs: a still-CANDIDATE handler's required input/output contract is retrievable via one SPARQL query with zero Rust source reads" .
+
+test:tc_drift_injection_catches_removed_binding a test:TestCase ;
+    test:file test:File_lsp318_candidate_contracts_are_queryable ;
+    test:function "drift_injection_and_revert_gate_catches_a_removed_expects_binding_fact" ;
+    test:assertionKind test:DriftInjectionRevert ;
+    test:asserts "an in-memory copy of lsp318.ttl with textDocument/hover's lsp:expectsBinding fact stripped makes the missing-expectsBinding gate report exactly one violation; the real on-disk file (untouched) still reports zero" ;
+    test:provesReal "the CP6 contract-completeness gate is a real detector for a missing expectsBinding/producesShape fact, not a check that only looks meaningful on a fully-populated graph" .
+
+# ── TestCase individuals: tests/max_protocol_notification_fidelity_proof.rs (CP10) ──
+
+test:tc_max_protocol_ttl_parses a test:TestCase ;
+    test:file test:File_max_protocol_notification_fidelity_proof ;
+    test:function "max_protocol_ttl_parses_as_valid_turtle" ;
+    test:assertionKind test:StructuralParse ;
+    test:asserts "ontology/max-protocol.ttl loads into an in-memory oxigraph Store without a parse error" ;
+    test:provesReal "max-protocol.ttl is syntactically valid Turtle, the precondition every other max-protocol test in this inventory depends on" .
+
+test:tc_lsp_max_notification_names_match a test:TestCase ;
+    test:file test:File_max_protocol_notification_fidelity_proof ;
+    test:function "lsp_max_notification_method_names_match_the_real_andon_lsp_rs_consts_exactly" ;
+    test:assertionKind test:SetEquality ;
+    test:asserts "the SPARQL-derived set of lsp:Notification individuals' lspMax/*-prefixed methodName values equals a hand-transcribed EXPECTED_METHOD_NAMES set of 3 real Notification::METHOD consts from src/andon/lsp.rs" ;
+    test:provesReal "max-protocol.ttl's three lspMax/* Notification individuals now name the real, working, already-wired lspMax/admissionChanged|receiptArrived|gateChanged wire methods -- the naming-mismatch bug CP0's research found (ontology said max/*, working code said lspMax/*) is fixed" .
+
+test:tc_no_bare_max_slash_names_remain a test:TestCase ;
+    test:file test:File_max_protocol_notification_fidelity_proof ;
+    test:function "no_max_slash_notification_names_remain_in_max_protocol_ttl" ;
+    test:assertionKind test:CountEquality ;
+    test:asserts "a SPARQL query for lsp:Notification individuals whose methodName is exactly max/gateChanged, max/admissionChanged, or max/receiptArrived returns zero rows" ;
+    test:provesReal "none of the pre-CP10 unimplemented bare max/* notification names (zero Rust implementation anywhere) remain declared in the ontology" .
+
+test:tc_admission_changed_param_type_matches a test:TestCase ;
+    test:file test:File_max_protocol_notification_fidelity_proof ;
+    test:function "admission_changed_param_type_matches_the_real_rust_struct_name" ;
+    test:assertionKind test:FieldContent ;
+    test:asserts "the lsp:paramType value on the lspMax/admissionChanged individual contains the substring \"AdmissionChangedParams\"" ;
+    test:provesReal "the ontology's declared parameter type for lspMax/admissionChanged references the real crate::andon::lsp::AdmissionChangedParams struct, not a placeholder or stale type name" .
+
+# ── TestCase individuals: tests/max_protocol_gates_and_sparql_derived_proof.rs (CP10) ──
+
+test:tc_gate_040_passes_zero_violations a test:TestCase ;
+    test:file test:File_max_protocol_gates_and_sparql_derived_proof ;
+    test:function "gate_040_passes_zero_violations_on_the_corrected_ontology" ;
+    test:assertionKind test:CountEquality ;
+    test:asserts "gates/040_notification_wire_name_prefix.rq returns zero violation rows against the real ontology/max-protocol.ttl" ;
+    test:provesReal "every lsp:Notification individual in max-protocol.ttl carries the real lspMax/ wire prefix -- the corrected ontology passes its admission gate cleanly" .
+
+test:tc_sparql_derived_notification_count_agrees a test:TestCase ;
+    test:file test:File_max_protocol_gates_and_sparql_derived_proof ;
+    test:function "sparql_derived_lsp_max_notification_count_agrees_with_hand_transcribed_proof" ;
+    test:assertionKind test:CountEquality ;
+    test:asserts "an independently-shaped COUNT aggregate SPARQL query re-derives notificationCount == 3, agreeing with the companion hand-transcribed proof" ;
+    test:provesReal "the 3-notification total is not an artifact of one particular query shape -- the SPARQL-derived second-proof half of the CP10 dual-proof pattern" .
+
+test:tc_gate_040_refuses_reintroduced_bare_name a test:TestCase ;
+    test:file test:File_max_protocol_gates_and_sparql_derived_proof ;
+    test:function "gate_040_refuses_a_deliberately_reintroduced_pre_cp10_bare_max_slash_name" ;
+    test:assertionKind test:DriftInjectionRevert ;
+    test:asserts "an in-memory copy of max-protocol.ttl with lspMax/admissionChanged's methodName corrupted back to the bare pre-CP10 form max/admissionChanged makes gate 040's violation count > 0; the real on-disk file (untouched) still passes gate 040 with zero violations" ;
+    test:provesReal "gate 040 is a real, working regression detector for the exact naming-mismatch bug class CP10 fixed -- not a check that vacuously always passes" .
+
+# ── TestCase individuals: src/composition/tests/admission_notification.rs (CP10) ──
+
+test:tc_max_admission_pushes_on_change a test:TestCase ;
+    test:file test:File_admission_notification ;
+    test:function "max_admission_pushes_lsp_max_admission_changed_when_the_verdict_actually_changes" ;
+    test:assertionKind test:StateTransition ;
+    test:asserts "forcing a real ERROR-severity diagnostic into the process-global registry, then calling the real ComposedServer::max_admission handler, causes exactly one real lspMax/admissionChanged notification (carrying the correct verdict payload) to arrive on a real Client/ClientSocket loopback pair, both for the forced transition and for reverting it back" ;
+    test:provesReal "lspMax/admissionChanged is a real, end-to-end wired push notification reaching a real client when an admission verdict genuinely changes -- not just a Notification impl and a send-wrapper that nothing ever calls (the pre-CP10 dead-code state CP0's research found)" .
+
+test:tc_max_admission_no_push_on_no_change a test:TestCase ;
+    test:file test:File_admission_notification ;
+    test:function "max_admission_does_not_push_when_the_verdict_is_unchanged" ;
+    test:assertionKind test:NoTransition ;
+    test:asserts "calling max_admission twice with no registry change in between yields the same verdict both times, and no second lspMax/admissionChanged notification arrives on the socket within a 50ms race window" ;
+    test:provesReal "the admission-change push is real change-detection keyed on an actual verdict transition, not a blind notification sent on every poll" .
+
+# ── TestCase individuals: crates/lsp-max-cli/tests/cp11_fitness_bridge.rs (CP11) ──
+
+test:tc_diagnostic_content_survives_round_trip a test:TestCase ;
+    test:file test:File_cp11_fitness_bridge ;
+    test:function "diagnostic_content_survives_compositor_to_fitness_file_to_mcp_read" ;
+    test:assertionKind test:FieldContent ;
+    test:asserts "a synthetic diagnostic (distinctive URI, message, and ANDON-classified GGEN-TPL-001 code) deposited into a real DiagnosticBuffer, flushed through a real FlushCoordinator background task, appears -- by its real URI as a case_id, with a real non-UNKNOWN law_status -- in the JSON snapshot returned by lsp_max_cli::mcp_bridge::read_fitness_status_at, the exact function lsp-max-mcp's tool handlers call" ;
+    test:provesReal "the existing LSP-to-MCP pull bridge (compositor deposit -> flush -> fitness-snapshot file -> mcp_bridge read function) is real and carries actual diagnostic content end-to-end, not just file presence -- previously evidenced only by scattered comments and manual reasoning, now a single automated Chicago-TDD proof" .
