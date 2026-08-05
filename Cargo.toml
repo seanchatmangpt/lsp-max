@@ -121,6 +121,7 @@ members = [
     "crates/lsp-max-lsif",
     "crates/lsp-max-adapters/lsp-max-ast",
     "crates/playground",
+    "crates/ra-max",
     "examples/powl-lsp",
     "examples/wasm4pm-lsp",
     "examples/pattern-lsp",
