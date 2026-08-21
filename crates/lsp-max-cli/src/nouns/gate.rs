@@ -13,6 +13,14 @@ pub struct GateCheckResult {
     pub gate_file: String,
     /// False when the compositor process has not written the gate file yet.
     pub compositor_active: bool,
+    /// True when `andon_blocked` was set (also) by DFG conformance fitness
+    /// dropping to `law_status: "BLOCKED"` in `.claude/lsp-max-fitness.json`,
+    /// as opposed to (or in addition to) the single-byte gate file. See
+    /// CHAIN-THEORY.md section 5.3, which named this exact wiring as open:
+    /// fitness/precision were computed and persisted every flush
+    /// (flush_coordinator.rs) but never consulted by the gate that actually
+    /// decides PreToolUse block/allow.
+    pub fitness_blocked: bool,
 }
 
 /// Result of the `gate list` verb.
@@ -112,17 +120,41 @@ impl GateService {
     pub fn check(&self) -> GateCheckResult {
         let path = Self::gate_file_path();
         let compositor_active = path.exists();
-        let andon_blocked = compositor_active
+        let byte_blocked = compositor_active
             && std::fs::read(&path)
                 .ok()
                 .and_then(|b| b.first().copied())
                 .map(|b| b == b'1')
                 .unwrap_or(false);
+        let fitness_blocked = Self::fitness_law_status_blocked();
         GateCheckResult {
-            andon_blocked,
+            andon_blocked: byte_blocked || fitness_blocked,
             gate_file: path.display().to_string(),
             compositor_active,
+            fitness_blocked,
         }
+    }
+
+    /// Read `.claude/lsp-max-fitness.json` (written every flush by
+    /// `FlushCoordinator`) and return true only when its `law_status` field
+    /// is exactly `"BLOCKED"`. Fails open (returns false) on any missing
+    /// file, unreadable content, or unparseable JSON -- matching this
+    /// module's existing graceful-absence pattern for `compositor_active`
+    /// (a workspace with no compositor activity yet, or an older compositor
+    /// build that hasn't started writing the fitness file, must not be
+    /// treated as blocked).
+    fn fitness_law_status_blocked() -> bool {
+        let Ok(cwd) = std::env::current_dir() else {
+            return false;
+        };
+        let fitness_path = cwd.join(".claude/lsp-max-fitness.json");
+        let Ok(content) = std::fs::read_to_string(&fitness_path) else {
+            return false;
+        };
+        let Ok(value) = serde_json::from_str::<serde_json::Value>(&content) else {
+            return false;
+        };
+        value.get("law_status").and_then(|v| v.as_str()) == Some("BLOCKED")
     }
 
     pub fn list(&self) -> GateListResult {
@@ -563,6 +595,90 @@ mod tests {
             // Falsification: byte '0' must NOT be blocked.
             assert!(!result.andon_blocked);
         });
+    }
+
+    /// Real filesystem write/restore against the actual `.claude/` dir this
+    /// test binary runs from, matching `write_gate_and_run`'s own convention
+    /// for the production gate-file path -- serialized under the same
+    /// `TEST_ENV_LOCK` since both mutate shared, real filesystem state.
+    fn write_fitness_and_run<F>(law_status: &str, f: F)
+    where
+        F: FnOnce(&GateService),
+    {
+        let _lock = crate::nouns::TEST_ENV_LOCK
+            .lock()
+            .unwrap_or_else(|p| p.into_inner());
+
+        let cwd = std::env::current_dir().expect("cwd");
+        let dir = cwd.join(".claude");
+        std::fs::create_dir_all(&dir).expect("create .claude dir");
+        let path = dir.join("lsp-max-fitness.json");
+        let prior = std::fs::read(&path).ok();
+
+        let snapshot = serde_json::json!({
+            "fitness": 0.1,
+            "precision": 0.1,
+            "declare_violations": 5,
+            "ocel_event_count": 10,
+            "law_status": law_status,
+            "violations": []
+        });
+        std::fs::write(&path, serde_json::to_vec(&snapshot).unwrap())
+            .expect("write synthetic fitness snapshot");
+
+        let svc = GateService::new();
+        f(&svc);
+
+        match prior {
+            Some(content) => std::fs::write(&path, content).expect("restore prior fitness file"),
+            None => {
+                let _ = std::fs::remove_file(&path);
+            }
+        }
+    }
+
+    #[test]
+    fn check_reports_blocked_when_fitness_law_status_is_blocked() {
+        write_fitness_and_run("BLOCKED", |svc| {
+            let result = svc.check();
+            // Falsification: real DFG conformance fitness dropping to
+            // law_status=BLOCKED must block the gate, independent of the
+            // separate single-byte gate file (CHAIN-THEORY.md section 5.3's
+            // named gap: fitness was computed and persisted but never
+            // consulted by the function that actually decides PreToolUse
+            // block/allow).
+            assert!(result.andon_blocked);
+            assert!(result.fitness_blocked);
+        });
+    }
+
+    #[test]
+    fn check_does_not_block_when_fitness_law_status_is_admitted() {
+        write_fitness_and_run("ADMITTED", |svc| {
+            let result = svc.check();
+            assert!(!result.andon_blocked);
+            assert!(!result.fitness_blocked);
+        });
+    }
+
+    #[test]
+    fn check_does_not_block_when_fitness_file_absent() {
+        // Fail-open: no fitness file yet (fresh session, older compositor
+        // build) must not be treated as blocked.
+        let _lock = crate::nouns::TEST_ENV_LOCK
+            .lock()
+            .unwrap_or_else(|p| p.into_inner());
+        let cwd = std::env::current_dir().expect("cwd");
+        let path = cwd.join(".claude/lsp-max-fitness.json");
+        let prior = std::fs::read(&path).ok();
+        let _ = std::fs::remove_file(&path);
+
+        let result = GateService::new().check();
+        assert!(!result.fitness_blocked);
+
+        if let Some(content) = prior {
+            std::fs::write(&path, content).expect("restore prior fitness file");
+        }
     }
 
     // list — success + falsification (blocking code families)
