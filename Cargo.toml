@@ -120,6 +120,7 @@ members = [
     "crates/lsp-max-compositor",
     "crates/lsp-max-lsif",
     "crates/lsp-max-adapters/lsp-max-ast",
+    "crates/test-analyzer",
     "crates/playground",
     "examples/powl-lsp",
     "examples/wasm4pm-lsp",
