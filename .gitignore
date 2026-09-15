@@ -40,3 +40,6 @@ libstdin.rlib
 /ontology/lsif-report/.ggen-v2/
 /ontology/lsp-status-report/.ggen/
 /ontology/lsp-status-report/.ggen-v2/
+
+# macOS Finder metadata
+.DS_Store
