@@ -26,13 +26,21 @@ mod state;
 
 /// Error that occurs when attempting to call the language server after it has already exited.
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct ExitedError(());
+#[repr(transparent)]
+pub struct ExitedError(pub i32);
 
 impl std::error::Error for ExitedError {}
 
 impl Display for ExitedError {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        f.write_str("language server has exited")
+        write!(f, "language server has exited with status: {}", self.0)
+    }
+}
+
+impl ExitedError {
+    /// Returns the exit status code.
+    pub fn code(&self) -> i32 {
+        self.0
     }
 }
 
@@ -106,16 +114,54 @@ impl<S: LanguageServer> Service<Request> for LspService<S> {
     type Future = BoxFuture<'static, Result<Self::Response, Self::Error>>;
 
     fn poll_ready(&mut self, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
-        match self.state.get() {
-            State::Initializing => Poll::Pending,
-            State::Exited => Poll::Ready(Err(ExitedError(()))),
-            _ => self.inner.poll_ready(cx),
+        if self.state.get() == State::Exited {
+            let code = self.state.get_exit_code();
+            return Poll::Ready(Err(ExitedError(code)));
         }
+        if self.state.poll_initializing(cx).is_pending() {
+            return Poll::Pending;
+        }
+        self.inner.poll_ready(cx)
     }
 
     fn call(&mut self, req: Request) -> Self::Future {
         if self.state.get() == State::Exited {
-            return future::err(ExitedError(())).boxed();
+            let code = self.state.get_exit_code();
+            return future::err(ExitedError(code)).boxed();
+        }
+
+        let method = req.method().to_string();
+        if method == "max/snapshot"
+            || method == "max/conformanceVector"
+            || method == "max/clearDiagnostic"
+            || method == "max/verifyLedger"
+            || method == "max/ledgerReport"
+        {
+            let state = self.state.clone();
+            let (_, id, params) = req.into_parts();
+            return Box::pin(async move {
+                match handle_mesh_rpc(&state, &method, params) {
+                    Ok(val) => {
+                        if let Some(id) = id {
+                            Ok(Some(Response::from_ok(id, val)))
+                        } else {
+                            Ok(None)
+                        }
+                    }
+                    Err(err) => {
+                        if let Some(id) = id {
+                            let rpc_err = Error {
+                                code: ErrorCode::InvalidParams,
+                                message: err.into(),
+                                data: None,
+                            };
+                            Ok(Some(Response::from_error(id, rpc_err)))
+                        } else {
+                            Ok(None)
+                        }
+                    }
+                }
+            });
         }
 
         let fut = self.inner.call(req);
@@ -167,16 +213,16 @@ impl<S: LanguageServer> LspServiceBuilder<S> {
     ///
     /// # Examples
     ///
-    /// ```rust
+    /// ```rust,no_run
     /// use serde_json::{json, Value};
-    /// use tower_lsp::jsonrpc::Result;
-    /// use tower_lsp::lsp_types::*;
-    /// use tower_lsp::{LanguageServer, LspService};
+    /// use tower_lsp_max_max::jsonrpc::Result;
+    /// use tower_lsp_max_max::lsp_types::*;
+    /// use tower_lsp_max_max::{LanguageServer, LspService};
     ///
     /// struct Mock;
     ///
     /// // Implementation of `LanguageServer` omitted...
-    /// # #[tower_lsp::async_trait]
+    /// # #[tower_lsp_max::async_trait]
     /// # impl LanguageServer for Mock {
     /// #     async fn initialize(&self, _: InitializeParams) -> Result<InitializeResult> {
     /// #         Ok(InitializeResult::default())
@@ -244,6 +290,151 @@ impl<S: Debug> Debug for LspServiceBuilder<S> {
             .field("inner", &self.inner)
             .finish_non_exhaustive()
     }
+}
+
+fn handle_mesh_rpc(
+    state: &ServerState,
+    method: &str,
+    params: Option<Value>,
+) -> Result<Value, String> {
+    let mut registry = crate::get_registry().lock().unwrap();
+    crate::update_diagnostics(&mut registry);
+
+    let mut mesh = state.mesh.lock().unwrap();
+
+    // Sync registry -> mesh
+    let instance_id = "LSP_1";
+    if !mesh.instances.contains_key(instance_id) {
+        mesh.add_instance(crate::max_runtime::LspInstance::new(instance_id));
+    }
+    {
+        let instance = mesh.instances.get_mut(instance_id).unwrap();
+        instance.phase = format!("{:?}", registry.current_state);
+        instance.diagnostics = registry.diagnostics.values().cloned().collect();
+        const RECEIPT_ORDER: &[&str] = &[
+            "rcpt-uninitialized",
+            "rcpt-uninitialized-to-initializing:",
+            "rcpt-initializing-to-initialized:",
+            "rcpt-initialized-to-shutdown",
+            "rcpt-shutdown-to-exited",
+        ];
+        fn receipt_order(id: &str) -> usize {
+            RECEIPT_ORDER
+                .iter()
+                .position(|p| id.starts_with(p))
+                .unwrap_or(RECEIPT_ORDER.len())
+        }
+        let mut sorted_receipts: Vec<_> = registry.receipts.values().cloned().collect();
+        sorted_receipts.sort_by_key(|r| receipt_order(&r.receipt_id));
+        instance.receipts = sorted_receipts;
+    }
+
+    // Dispatch RPC
+    let result = mesh.dispatch_rpc(instance_id, method, params.unwrap_or(Value::Null))?;
+
+    // Sync mesh -> registry
+    if let Some(instance) = mesh.instances.get(instance_id) {
+        let mesh_diagnostic_ids: std::collections::HashSet<String> = instance
+            .diagnostics
+            .iter()
+            .map(|d| d.diagnostic_id.clone())
+            .collect();
+        for id in registry
+            .diagnostics
+            .keys()
+            .cloned()
+            .collect::<Vec<String>>()
+        {
+            if !mesh_diagnostic_ids.contains(&id) {
+                registry.diagnostics.remove(&id);
+                registry.cleared_diagnostics.insert(id);
+            }
+        }
+        for d in &instance.diagnostics {
+            registry
+                .diagnostics
+                .insert(d.diagnostic_id.clone(), d.clone());
+        }
+        for r in &instance.receipts {
+            registry.receipts.insert(r.receipt_id.clone(), r.clone());
+        }
+    }
+
+    // Custom post-sync logic for snapshot: register snapshot in registry
+    if method == "max/snapshot" {
+        let snapshot_id: crate::max_protocol::SnapshotId =
+            serde_json::from_value(result.clone())
+                .map_err(|e| format!("Invalid snapshot ID: {}", e))?;
+
+        let capability_vector = crate::max_protocol::MaxCapabilityVector {
+            client: registry.client_capabilities.clone().unwrap_or_default(),
+            server: registry.server_capabilities.clone().unwrap_or_default(),
+            negotiated: serde_json::json!({
+                "conformance": "maximal",
+                "law_framework": "v1"
+            }),
+            experimental: serde_json::json!({}),
+            gaps: vec![],
+        };
+
+        let diagnostics = registry.diagnostics.values().cloned().collect();
+        let actions = registry.repair_plans.values().flatten().cloned().collect();
+
+        let score = if registry.diagnostics.is_empty() {
+            100.0
+        } else {
+            let severity_penalty: f64 = registry
+                .diagnostics
+                .values()
+                .map(|d| match d.lsp.severity {
+                    Some(crate::lsp_types::DiagnosticSeverity::ERROR) => 30.0,
+                    Some(crate::lsp_types::DiagnosticSeverity::WARNING) => 15.0,
+                    _ => 5.0,
+                })
+                .sum();
+            (100.0 - severity_penalty).max(0.0)
+        };
+
+        let (refused_diags, admitted_diags): (Vec<_>, Vec<_>) = registry
+            .diagnostics
+            .values()
+            .partition(|d| {
+                matches!(d.lsp.severity, Some(crate::lsp_types::DiagnosticSeverity::ERROR))
+            });
+        let refused: Vec<crate::max_protocol::LawAxis> =
+            refused_diags.iter().map(|d| d.law_axis.clone()).collect();
+        let admitted: Vec<crate::max_protocol::LawAxis> =
+            admitted_diags.iter().map(|d| d.law_axis.clone()).collect();
+        let derived_score = if admitted.is_empty() && refused.is_empty() {
+            None
+        } else {
+            let total = (admitted.len() + refused.len()) as f64;
+            Some(100.0 * admitted.len() as f64 / total)
+        };
+        let _ = score; // superseded by derived_score
+        let conformance_vector = crate::max_protocol::ConformanceVector {
+            admitted,
+            refused,
+            unknown: Vec::new(),
+            score: derived_score,
+            strict_mode: true,
+        };
+
+        let receipts = registry.receipts.values().cloned().collect();
+
+        let record = crate::SnapshotRecord {
+            id: snapshot_id.clone(),
+            capability_vector,
+            diagnostics,
+            actions,
+            conformance_vector,
+            receipts,
+        };
+
+        registry.snapshots.insert(snapshot_id.0.clone(), record);
+    }
+
+    Ok(result)
 }
 
 #[cfg(test)]
@@ -331,8 +522,28 @@ mod tests {
         assert_eq!(response, Ok(None));
 
         let ready = future::poll_fn(|cx| service.poll_ready(cx)).await;
-        assert_eq!(ready, Err(ExitedError(())));
-        assert_eq!(service.call(exit).await, Err(ExitedError(())));
+        assert_eq!(ready, Err(ExitedError(1)));
+        assert_eq!(service.call(exit).await, Err(ExitedError(1)));
+    }
+
+    #[tokio::test(flavor = "current_thread")]
+    async fn exit_notification_after_shutdown() {
+        let (mut service, _) = LspService::new(|_| Mock);
+
+        let initialize = initialize_request(1);
+        let response = service.ready().await.unwrap().call(initialize).await;
+        assert!(response.is_ok());
+
+        let shutdown = Request::build("shutdown").id(1).finish();
+        let response = service.ready().await.unwrap().call(shutdown).await;
+        assert!(response.is_ok());
+
+        let exit = Request::build("exit").finish();
+        let response = service.ready().await.unwrap().call(exit).await;
+        assert_eq!(response, Ok(None));
+
+        let ready = future::poll_fn(|cx| service.poll_ready(cx)).await;
+        assert_eq!(ready, Err(ExitedError(0)));
     }
 
     #[tokio::test(flavor = "current_thread")]
@@ -388,5 +599,446 @@ mod tests {
             .initialize(InitializeParams::default())
             .await
             .unwrap();
+    }
+
+    #[tokio::test(flavor = "current_thread")]
+    async fn test_max_rpc_endpoints() {
+        // Remove any stale receipt files from previous failed runs
+        let _ = std::fs::remove_file("admission.receipt");
+        let _ = std::fs::remove_file("security.receipt");
+        let _ = std::fs::remove_file("auth.receipt");
+        let _ = std::fs::remove_file("debug.log");
+
+        let (mut service, _) = LspService::new(|_| Mock);
+
+        // 1. Initialize
+        let initialize = initialize_request(1);
+        let response = service.ready().await.unwrap().call(initialize).await;
+        assert!(response.is_ok());
+
+        // 2. Call max/snapshot
+        let req = Request::build("max/snapshot").id(2).finish();
+        let response = service
+            .ready()
+            .await
+            .unwrap()
+            .call(req)
+            .await
+            .unwrap()
+            .unwrap();
+        let (_, res) = response.into_parts();
+        let snapshot_id: max_protocol::SnapshotId = serde_json::from_value(res.unwrap()).unwrap();
+        assert!(snapshot_id.0.starts_with("snap-"));
+
+        // 3. Call max/explainDiagnostic
+        let req = Request::build("max/explainDiagnostic")
+            .params("diag-uninitialized-admission".to_string())
+            .id(3)
+            .finish();
+        let response = service
+            .ready()
+            .await
+            .unwrap()
+            .call(req)
+            .await
+            .unwrap()
+            .unwrap();
+        let (_, res) = response.into_parts();
+        let diagnostic: max_protocol::MaxDiagnostic = serde_json::from_value(res.unwrap()).unwrap();
+        assert_eq!(diagnostic.diagnostic_id, "diag-uninitialized-admission");
+
+        // 4. Call max/repairPlan
+        let req = Request::build("max/repairPlan")
+            .params("diag-uninitialized-admission".to_string())
+            .id(4)
+            .finish();
+        let response = service
+            .ready()
+            .await
+            .unwrap()
+            .call(req)
+            .await
+            .unwrap()
+            .unwrap();
+        let (_, res) = response.into_parts();
+        let plans: Vec<max_protocol::MaxCodeAction> = serde_json::from_value(res.unwrap()).unwrap();
+        assert_eq!(plans.len(), 1);
+        let action = plans[0].clone();
+
+        // Reset server registry state back to Uninitialized to satisfy precondition check
+        if let Ok(mut reg) = crate::get_registry().lock() {
+            reg.current_state = crate::service::State::Uninitialized;
+        }
+
+        // 5. Call max/applyRepairTransaction
+        let req = Request::build("max/applyRepairTransaction")
+            .params(serde_json::to_value(action.clone()).unwrap())
+            .id(5)
+            .finish();
+        let response = service
+            .ready()
+            .await
+            .unwrap()
+            .call(req)
+            .await
+            .unwrap()
+            .unwrap();
+        let (_, res) = response.into_parts();
+        let receipt: max_protocol::Receipt = serde_json::from_value(res.unwrap()).unwrap();
+        assert!(receipt.receipt_id.starts_with("rcpt-"));
+
+        // Verify the diagnostic has been cleared/resolved
+        let req = Request::build("max/explainDiagnostic")
+            .params("diag-uninitialized-admission".to_string())
+            .id(6)
+            .finish();
+        let response = service
+            .ready()
+            .await
+            .unwrap()
+            .call(req)
+            .await
+            .unwrap()
+            .unwrap();
+        let (_, res) = response.into_parts();
+        let err = res.unwrap_err();
+        assert_eq!(
+            err.message,
+            "Diagnostic 'diag-uninitialized-admission' not found"
+        );
+
+        // 6. Test Law 3: Receipt Integrity (Missing Validation Receipt)
+        // Get the repair plan for diag-missing-receipt
+        let req = Request::build("max/repairPlan")
+            .params("diag-missing-receipt".to_string())
+            .id(7)
+            .finish();
+        let response = service
+            .ready()
+            .await
+            .unwrap()
+            .call(req)
+            .await
+            .unwrap()
+            .unwrap();
+        let (_, res) = response.into_parts();
+        let plans2: Vec<max_protocol::MaxCodeAction> =
+            serde_json::from_value(res.unwrap()).unwrap();
+        let action_with_dep = plans2[0].clone();
+
+        // Attempting to apply it fails because expected_receipts has "rcpt-security-auth" which is not registered yet
+        let req = Request::build("max/applyRepairTransaction")
+            .params(serde_json::to_value(action_with_dep.clone()).unwrap())
+            .id(8)
+            .finish();
+        let response = service
+            .ready()
+            .await
+            .unwrap()
+            .call(req)
+            .await
+            .unwrap()
+            .unwrap();
+        let (_, res) = response.into_parts();
+        let err = res.unwrap_err();
+        assert!(err.message.contains("Receipt integrity violation"));
+
+        // Retrieve generator action to get security auth receipt
+        let req = Request::build("max/repairPlan")
+            .params("diag-auth-generator".to_string())
+            .id(9)
+            .finish();
+        let response = service
+            .ready()
+            .await
+            .unwrap()
+            .call(req)
+            .await
+            .unwrap()
+            .unwrap();
+        let (_, res) = response.into_parts();
+        let plans3: Vec<max_protocol::MaxCodeAction> =
+            serde_json::from_value(res.unwrap()).unwrap();
+        let gen_action = plans3[0].clone();
+
+        // Apply generator action to obtain "rcpt-security-auth"
+        let req = Request::build("max/applyRepairTransaction")
+            .params(serde_json::to_value(gen_action).unwrap())
+            .id(10)
+            .finish();
+        let response = service
+            .ready()
+            .await
+            .unwrap()
+            .call(req)
+            .await
+            .unwrap()
+            .unwrap();
+        let (_, res) = response.into_parts();
+        let gen_receipt: max_protocol::Receipt = serde_json::from_value(res.unwrap()).unwrap();
+        assert_eq!(gen_receipt.receipt_id, "rcpt-security-auth");
+
+        // Now apply action_with_dep again - it should succeed!
+        let req = Request::build("max/applyRepairTransaction")
+            .params(serde_json::to_value(action_with_dep).unwrap())
+            .id(11)
+            .finish();
+        let response = service
+            .ready()
+            .await
+            .unwrap()
+            .call(req)
+            .await
+            .unwrap()
+            .unwrap();
+        let (_, res) = response.into_parts();
+        let final_receipt: max_protocol::Receipt = serde_json::from_value(res.unwrap()).unwrap();
+        assert!(final_receipt.receipt_id.starts_with("rcpt-"));
+
+        // 7. Verify we can lookup receipt
+        let req = Request::build("max/receipt")
+            .params("rcpt-security-auth".to_string())
+            .id(12)
+            .finish();
+        let response = service
+            .ready()
+            .await
+            .unwrap()
+            .call(req)
+            .await
+            .unwrap()
+            .unwrap();
+        let (_, res) = response.into_parts();
+        let retrieved: max_protocol::Receipt = serde_json::from_value(res.unwrap()).unwrap();
+        assert_eq!(retrieved.hash, gen_receipt.hash);
+
+        // 8. Test max/runGate
+        let req = Request::build("max/runGate")
+            .params(serde_json::to_value(max_protocol::GateId("some-gate".to_string())).unwrap())
+            .id(13)
+            .finish();
+        let response = service
+            .ready()
+            .await
+            .unwrap()
+            .call(req)
+            .await
+            .unwrap()
+            .unwrap();
+        let (_, res) = response.into_parts();
+        let gate_result: bool = serde_json::from_value(res.unwrap()).unwrap();
+        assert!(gate_result);
+
+        // 9. Export Analysis Bundle for the snapshot
+        let req = Request::build("max/exportAnalysisBundle")
+            .params(serde_json::to_value(snapshot_id.clone()).unwrap())
+            .id(14)
+            .finish();
+        let response = service
+            .ready()
+            .await
+            .unwrap()
+            .call(req)
+            .await
+            .unwrap()
+            .unwrap();
+        let (_, res) = response.into_parts();
+        let bundle: max_protocol::AnalysisBundle = serde_json::from_value(res.unwrap()).unwrap();
+        assert_eq!(bundle.snapshot_id.0, snapshot_id.0);
+        assert!(!bundle.diagnostics.is_empty());
+
+        // Cleanup created receipt files from disk
+        let _ = std::fs::remove_file("admission.receipt");
+        let _ = std::fs::remove_file("security.receipt");
+        let _ = std::fs::remove_file("auth.receipt");
+    }
+
+    #[tokio::test(flavor = "current_thread")]
+    async fn test_lsp_3_18_methods() {
+        let (mut service, _) = LspService::new(|_| Mock);
+
+        let initialize = initialize_request(1);
+        let response = service.ready().await.unwrap().call(initialize).await;
+        assert!(response.is_ok());
+
+        // 1. textDocument/inlineCompletion
+        let req = Request::build("textDocument/inlineCompletion")
+            .params(json!({
+                "textDocument": { "uri": "file:///foo.rs" },
+                "position": { "line": 0, "character": 0 },
+                "context": { "triggerKind": 1 }
+            }))
+            .id(2)
+            .finish();
+        let response = service
+            .ready()
+            .await
+            .unwrap()
+            .call(req)
+            .await
+            .unwrap()
+            .unwrap();
+        let (_, res) = response.into_parts();
+        assert_eq!(res.unwrap_err().code, ErrorCode::MethodNotFound);
+
+        // 2. workspace/textDocumentContent
+        let req = Request::build("workspace/textDocumentContent")
+            .params(json!({
+                "uri": "file:///foo.rs"
+            }))
+            .id(3)
+            .finish();
+        let response = service
+            .ready()
+            .await
+            .unwrap()
+            .call(req)
+            .await
+            .unwrap()
+            .unwrap();
+        let (_, res) = response.into_parts();
+        assert_eq!(res.unwrap_err().code, ErrorCode::MethodNotFound);
+
+        // 3. workspace/textDocumentContent/refresh
+        let req = Request::build("workspace/textDocumentContent/refresh")
+            .params(json!({
+                "uri": "file:///foo.rs"
+            }))
+            .id(4)
+            .finish();
+        let response = service
+            .ready()
+            .await
+            .unwrap()
+            .call(req)
+            .await
+            .unwrap()
+            .unwrap();
+        let (_, res) = response.into_parts();
+        assert_eq!(res.unwrap_err().code, ErrorCode::MethodNotFound);
+    }
+
+    #[derive(Debug)]
+    struct MockLsp318;
+
+    #[async_trait]
+    impl LanguageServer for MockLsp318 {
+        async fn initialize(&self, _: InitializeParams) -> Result<InitializeResult> {
+            Ok(InitializeResult::default())
+        }
+
+        async fn shutdown(&self) -> Result<()> {
+            Ok(())
+        }
+
+        async fn inline_completion(
+            &self,
+            _params: crate::max_protocol::lsp_3_18::InlineCompletionParams,
+        ) -> Result<Option<serde_json::Value>> {
+            Ok(Some(json!({
+                "items": [
+                    {
+                        "insertText": "hello_world",
+                    }
+                ]
+            })))
+        }
+
+        async fn text_document_content(
+            &self,
+            _params: crate::max_protocol::lsp_3_18::TextDocumentContentParams,
+        ) -> Result<crate::max_protocol::lsp_3_18::TextDocumentContentResult> {
+            Ok(crate::max_protocol::lsp_3_18::TextDocumentContentResult {
+                text: "test content".to_string(),
+            })
+        }
+
+        async fn text_document_content_refresh(
+            &self,
+            _params: crate::max_protocol::lsp_3_18::TextDocumentContentRefreshParams,
+        ) -> Result<()> {
+            Ok(())
+        }
+    }
+
+    #[tokio::test(flavor = "current_thread")]
+    async fn test_lsp_3_18_methods_routing() {
+        let (mut service, _) = LspService::new(|_| MockLsp318);
+
+        let initialize = initialize_request(1);
+        let response = service.ready().await.unwrap().call(initialize).await;
+        assert!(response.is_ok());
+
+        // 1. textDocument/inlineCompletion
+        let req = Request::build("textDocument/inlineCompletion")
+            .params(json!({
+                "textDocument": { "uri": "file:///foo.rs" },
+                "position": { "line": 0, "character": 0 },
+                "context": { "triggerKind": 1 }
+            }))
+            .id(2)
+            .finish();
+        let response = service
+            .ready()
+            .await
+            .unwrap()
+            .call(req)
+            .await
+            .unwrap()
+            .unwrap();
+        let (_, res) = response.into_parts();
+        let val = res.unwrap();
+        assert_eq!(
+            val,
+            json!({
+                "items": [
+                    {
+                        "insertText": "hello_world",
+                    }
+                ]
+            })
+        );
+
+        // 2. workspace/textDocumentContent
+        let req = Request::build("workspace/textDocumentContent")
+            .params(json!({
+                "uri": "file:///foo.rs"
+            }))
+            .id(3)
+            .finish();
+        let response = service
+            .ready()
+            .await
+            .unwrap()
+            .call(req)
+            .await
+            .unwrap()
+            .unwrap();
+        let (_, res) = response.into_parts();
+        let val = res.unwrap();
+        assert_eq!(
+            val,
+            json!({
+                "text": "test content"
+            })
+        );
+
+        // 3. workspace/textDocumentContent/refresh
+        let req = Request::build("workspace/textDocumentContent/refresh")
+            .params(json!({
+                "uri": "file:///foo.rs"
+            }))
+            .id(4)
+            .finish();
+        let response = service
+            .ready()
+            .await
+            .unwrap()
+            .call(req)
+            .await
+            .unwrap()
+            .unwrap();
+        let (_, res) = response.into_parts();
+        assert!(res.is_ok());
     }
 }

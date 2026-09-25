@@ -5,16 +5,16 @@
 //! # Example
 //!
 //! ```rust
-//! use tower_lsp::jsonrpc::Result;
-//! use tower_lsp::lsp_types::*;
-//! use tower_lsp::{Client, LanguageServer, LspService, Server};
+//! use tower_lsp_max_max::jsonrpc::Result;
+//! use tower_lsp_max_max::lsp_types::*;
+//! use tower_lsp_max_max::{Client, LanguageServer, LspService, Server};
 //!
 //! #[derive(Debug)]
 //! struct Backend {
 //!     client: Client,
 //! }
 //!
-//! #[tower_lsp::async_trait]
+//! #[tower_lsp_max::async_trait]
 //! impl LanguageServer for Backend {
 //!     async fn initialize(&self, _: InitializeParams) -> Result<InitializeResult> {
 //!         Ok(InitializeResult {
@@ -95,7 +95,7 @@ use lsp_types::request::{
 };
 use lsp_types::*;
 use serde_json::Value;
-use tower_lsp_macros::rpc;
+use lsp_max_macros::rpc;
 use tracing::{error, warn};
 
 use self::jsonrpc::{Error, Result};

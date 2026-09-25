@@ -464,7 +464,7 @@ impl Client {
     /// # Examples
     ///
     /// ```no_run
-    /// # use tower_lsp::{lsp_types::*, Client};
+    /// # use tower_lsp_max_max::{lsp_types::*, Client};
     /// #
     /// # struct Mock {
     /// #     client: Client,
