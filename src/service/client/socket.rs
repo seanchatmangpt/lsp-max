@@ -66,7 +66,12 @@ impl Sink<Response> for ClientSocket {
 
     fn poll_ready(self: Pin<&mut Self>, _: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
         if self.state.get() == State::Exited || self.rx.is_terminated() {
-            Poll::Ready(Err(ExitedError(())))
+            let code = if self.state.get() == State::Exited {
+                self.state.get_exit_code()
+            } else {
+                1
+            };
+            Poll::Ready(Err(ExitedError(code)))
         } else {
             Poll::Ready(Ok(()))
         }
@@ -128,7 +133,7 @@ impl Sink<Response> for ResponseSink {
 
     fn poll_ready(self: Pin<&mut Self>, _: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
         if self.state.get() == State::Exited {
-            Poll::Ready(Err(ExitedError(())))
+            Poll::Ready(Err(ExitedError(self.state.get_exit_code())))
         } else {
             Poll::Ready(Ok(()))
         }

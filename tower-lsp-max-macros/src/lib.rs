@@ -10,7 +10,7 @@ use syn::{parse_macro_input, FnArg, ItemTrait, LitStr, ReturnType, TraitItem};
 
 /// Macro for generating LSP server implementation from [`lsp-types`](https://docs.rs/lsp-types).
 ///
-/// This procedural macro annotates the `tower_lsp::LanguageServer` trait and generates a
+/// This procedural macro annotates the `tower_lsp_max::LanguageServer` trait and generates a
 /// corresponding `register_lsp_methods()` function which registers all the methods on that trait
 /// as RPC handlers.
 #[proc_macro_attribute]
@@ -39,7 +39,7 @@ struct MethodCall<'a> {
     result: Option<&'a syn::Type>,
 }
 
-fn parse_method_calls(lang_server_trait: &ItemTrait) -> Vec<MethodCall> {
+fn parse_method_calls(lang_server_trait: &ItemTrait) -> Vec<MethodCall<'_>> {
     let mut calls = Vec::new();
 
     for item in &lang_server_trait.items {
