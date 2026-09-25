@@ -265,6 +265,7 @@ pub enum MapKeyType {
 pub enum MapKeyBaseName {
     #[serde(rename = "URI")]
     Uri,
+    #[serde(rename = "DocumentUri")]
     DocumentUri,
     String,
     Integer,

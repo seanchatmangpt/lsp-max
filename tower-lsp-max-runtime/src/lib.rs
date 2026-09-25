@@ -1205,7 +1205,8 @@ impl AutonomicMesh {
                 description,
             } => {
                 if action_id == "act-create-refund-receipt" {
-                    let file_path = "/Users/sac/tower-lsp-max/refund_receipt.txt";
+                    let receipt_dir = std::env::var("MESH_RECEIPT_DIR").unwrap_or_else(|_| ".".to_string());
+                    let file_path = std::path::Path::new(&receipt_dir).join("refund_receipt.txt");
                     let content = format!(
                         "REFUND RECEIPT\nInstance: {}\nDescription: {}\nStatus: Executed\nTimestamp: {}\n",
                         instance_id,
@@ -1215,7 +1216,9 @@ impl AutonomicMesh {
                             .unwrap()
                             .as_secs()
                     );
-                    std::fs::write(file_path, content).ok();
+                    if let Err(e) = std::fs::write(&file_path, content) {
+                        eprintln!("warn: failed to write receipt to {}: {}", file_path.display(), e);
+                    }
                 }
                 self.executed_bounded_actions.push(action_id);
             }
@@ -1549,11 +1552,11 @@ impl AutonomicMesh {
             }
 
             "max/hookGraph" => {
-                // Return hook topology: for each hook, which events trigger it
+                // Return hook topology: for each hook, which events trigger it.
+                // Hooks are mesh-level objects — instance_id is not included.
                 let graph: Vec<serde_json::Value> = self.hooks.iter().map(|h| {
                     serde_json::json!({
                         "hook": h.name(),
-                        "instance_id": instance_id,
                     })
                 }).collect();
                 Ok(serde_json::to_value(graph).unwrap())

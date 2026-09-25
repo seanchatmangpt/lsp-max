@@ -278,6 +278,11 @@ where
         match self.state.get() {
             State::Initialized => self.inner.call(req),
             cur_state => {
+                println!(
+                    "NormalService: rejected request/notification '{}' because state is {:?}",
+                    req.method(),
+                    cur_state
+                );
                 let (_, id, _) = req.into_parts();
                 future::ok(not_initialized_response(id, cur_state)).boxed()
             }
@@ -332,4 +337,90 @@ fn not_initialized_response(id: Option<Id>, server_state: State) -> Option<Respo
     Some(Response::from_error(id, error))
 }
 
-// TODO: Add some `tower-test` middleware tests for each middleware.
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+    use tower::ServiceExt;
+
+    struct DummyService;
+
+    impl Service<Request> for DummyService {
+        type Response = Option<Response>;
+        type Error = ExitedError;
+        type Future = BoxFuture<'static, std::result::Result<Self::Response, Self::Error>>;
+
+        fn poll_ready(
+            &mut self,
+            _: &mut Context<'_>,
+        ) -> Poll<std::result::Result<(), Self::Error>> {
+            Poll::Ready(Ok(()))
+        }
+
+        fn call(&mut self, req: Request) -> Self::Future {
+            let (_, id, _) = req.into_parts();
+            let res = id.map(|id| Response::from_ok(id, json!({})));
+            Box::pin(future::ok(res))
+        }
+    }
+
+    #[tokio::test]
+    async fn test_initialize_layer() {
+        let state = Arc::new(ServerState::new());
+        let pending = Arc::new(Pending::new());
+        let layer = Initialize::new(state.clone(), pending.clone());
+        let mut service = layer.layer(DummyService);
+
+        let req = Request::build("initialize")
+            .params(json!({"capabilities": {}}))
+            .id(1)
+            .finish();
+
+        assert_eq!(state.get(), State::Uninitialized);
+        let res = service.ready().await.unwrap().call(req).await.unwrap();
+        assert!(res.is_some());
+        assert_eq!(state.get(), State::Initialized);
+    }
+
+    #[tokio::test]
+    async fn test_shutdown_layer() {
+        let state = Arc::new(ServerState::new());
+        state.try_initialize(json!({"capabilities": {}}));
+        state.transition_to_initialized(json!({}));
+        let pending = Arc::new(Pending::new());
+        let layer = Shutdown::new(state.clone(), pending.clone());
+        let mut service = layer.layer(DummyService);
+
+        let req = Request::build("shutdown").id(1).finish();
+        assert_eq!(state.get(), State::Initialized);
+        let res = service.ready().await.unwrap().call(req).await.unwrap();
+        assert!(res.is_some());
+        assert_eq!(state.get(), State::ShutDown);
+    }
+
+    #[tokio::test]
+    async fn test_normal_layer() {
+        let state = Arc::new(ServerState::new());
+        let pending = Arc::new(Pending::new());
+        let layer = Normal::new(state.clone(), pending.clone());
+        let mut service = layer.layer(DummyService);
+
+        let req = Request::build("textDocument/hover").id(1).finish();
+        // Should refuse since state is not Initialized
+        let res = service
+            .ready()
+            .await
+            .unwrap()
+            .call(req.clone())
+            .await
+            .unwrap();
+        assert!(res.unwrap().error().is_some());
+
+        // Now initialize
+        state.try_initialize(json!({"capabilities": {}}));
+        state.transition_to_initialized(json!({}));
+
+        let res = service.ready().await.unwrap().call(req).await.unwrap();
+        assert!(res.unwrap().result().is_some());
+    }
+}

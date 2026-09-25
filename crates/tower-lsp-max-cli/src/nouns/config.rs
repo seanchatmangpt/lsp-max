@@ -1,6 +1,9 @@
 use clap_noun_verb::Result;
 use clap_noun_verb_macros::verb;
 use serde::Serialize;
+use std::collections::HashMap;
+use std::fs;
+use std::path::PathBuf;
 
 // ==========================================
 // Tier 1: Domain Tier
@@ -23,32 +26,77 @@ impl ConfigService {
         Self
     }
 
+    fn config_path(&self) -> PathBuf {
+        if let Ok(path_str) = std::env::var("TOWER_LSP_MAX_CONFIG") {
+            PathBuf::from(path_str)
+        } else if let Ok(home) = std::env::var("HOME") {
+            PathBuf::from(home).join(".tower-lsp-max-config.json")
+        } else {
+            PathBuf::from(".tower-lsp-max-config.json")
+        }
+    }
+
+    fn load_config(&self) -> HashMap<String, String> {
+        let path = self.config_path();
+        if path.exists() {
+            if let Ok(content) = fs::read_to_string(path) {
+                if let Ok(map) = serde_json::from_str::<HashMap<String, String>>(&content) {
+                    return map;
+                }
+            }
+        }
+        HashMap::new()
+    }
+
+    fn save_config(&self, map: &HashMap<String, String>) -> std::result::Result<(), String> {
+        let path = self.config_path();
+        if let Some(parent) = path.parent() {
+            let _ = fs::create_dir_all(parent);
+        }
+        let content = serde_json::to_string_pretty(map).map_err(|e| e.to_string())?;
+        fs::write(path, content).map_err(|e| e.to_string())?;
+        Ok(())
+    }
+
     pub fn view(&self, key: &str) -> Option<ConfigEntity> {
-        Some(ConfigEntity {
+        let map = self.load_config();
+        map.get(key).map(|value| ConfigEntity {
             key: key.to_string(),
-            value: "mock_value".to_string(),
+            value: value.clone(),
         })
     }
 
-    pub fn set(&self, key: &str, value: &str) -> ConfigEntity {
-        ConfigEntity {
+    pub fn set(&self, key: &str, value: &str) -> std::result::Result<ConfigEntity, String> {
+        let mut map = self.load_config();
+        map.insert(key.to_string(), value.to_string());
+        self.save_config(&map)?;
+        Ok(ConfigEntity {
             key: key.to_string(),
             value: value.to_string(),
-        }
+        })
     }
 
-    pub fn reset(&self, key: &str) -> ConfigEntity {
-        ConfigEntity {
+    pub fn reset(&self, key: &str) -> std::result::Result<ConfigEntity, String> {
+        let mut map = self.load_config();
+        map.remove(key);
+        self.save_config(&map)?;
+        Ok(ConfigEntity {
             key: key.to_string(),
-            value: "default_value".to_string(),
-        }
+            value: "".to_string(),
+        })
     }
 
     pub fn list(&self) -> Vec<ConfigEntity> {
-        vec![ConfigEntity {
-            key: "mock_key".to_string(),
-            value: "mock_value".to_string(),
-        }]
+        let map = self.load_config();
+        map.into_iter()
+            .map(|(key, value)| ConfigEntity { key, value })
+            .collect()
+    }
+}
+
+impl Default for ConfigService {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -76,7 +124,9 @@ pub struct SetResult {
 #[verb("set")]
 pub fn set(key: String, value: String) -> Result<SetResult> {
     let service = ConfigService::new();
-    let config = service.set(&key, &value);
+    let config = service
+        .set(&key, &value)
+        .map_err(clap_noun_verb::error::NounVerbError::execution_error)?;
     Ok(SetResult { config })
 }
 
@@ -88,7 +138,9 @@ pub struct ResetResult {
 #[verb("reset")]
 pub fn reset(key: String) -> Result<ResetResult> {
     let service = ConfigService::new();
-    let config = service.reset(&key);
+    let config = service
+        .reset(&key)
+        .map_err(clap_noun_verb::error::NounVerbError::execution_error)?;
     Ok(ResetResult { config })
 }
 
