@@ -995,6 +995,7 @@ pub struct AutonomicMesh {
     pub event_log: Vec<HookEvent>,
     pub executed_bounded_actions: Vec<String>,
     pub extra: std::collections::HashMap<String, serde_json::Value>,
+    pub workspace_root: std::path::PathBuf,
     /// Tracks re-entrant depth of `dispatch_event` to prevent unbounded recursion.
     /// Transient call-stack state — not serialized or persisted.
     dispatch_depth: usize,
@@ -1014,6 +1015,7 @@ impl AutonomicMesh {
             event_log: Vec::new(),
             executed_bounded_actions: Vec::new(),
             extra: std::collections::HashMap::new(),
+            workspace_root: std::env::current_dir().unwrap_or_else(|_| std::path::PathBuf::from(".")),
             dispatch_depth: 0,
         }
     }
@@ -1205,9 +1207,7 @@ impl AutonomicMesh {
                 description,
             } => {
                 if action_id == "act-create-refund-receipt" {
-                    let receipt_dir = std::env::var("MESH_RECEIPT_DIR")
-                        .unwrap_or_else(|_| ".".to_string());
-                    let file_path = format!("{}/refund_receipt.txt", receipt_dir);
+                    let file_path = self.workspace_root.join("refund_receipt.txt");
                     let content = format!(
                         "REFUND RECEIPT\nInstance: {}\nDescription: {}\nStatus: Executed\nTimestamp: {}\n",
                         instance_id,
@@ -1217,8 +1217,31 @@ impl AutonomicMesh {
                             .unwrap()
                             .as_secs()
                     );
-                    if let Err(e) = std::fs::write(&file_path, content) {
-                        tracing::warn!("Failed to write refund receipt to {}: {}", file_path, e);
+                    if let Err(io_err) = std::fs::write(&file_path, content) {
+                        let diagnostic = Box::new(MaxDiagnostic {
+                            lsp: lsp_types::Diagnostic {
+                                range: lsp_types::Range::default(),
+                                severity: Some(lsp_types::DiagnosticSeverity::ERROR),
+                                code: None,
+                                code_description: None,
+                                source: Some("autonomic-mesh".to_string()),
+                                message: format!(
+                                    "act-create-refund-receipt: failed to write receipt to {}: {}",
+                                    file_path.display(),
+                                    io_err
+                                ),
+                                related_information: None,
+                                tags: None,
+                                data: None,
+                            },
+                            diagnostic_id: "diag-receipt-write-failure".to_string(),
+                            law_id: String::new(),
+                        });
+                        self.execute_action(MeshAction::AddDiagnostic {
+                            instance_id: instance_id.clone(),
+                            diagnostic,
+                        });
+                        return;
                     }
                 }
                 self.executed_bounded_actions.push(action_id);
