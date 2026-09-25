@@ -1205,9 +1205,7 @@ impl AutonomicMesh {
                 description,
             } => {
                 if action_id == "act-create-refund-receipt" {
-                    let receipt_dir = std::env::var("MESH_RECEIPT_DIR")
-                        .unwrap_or_else(|_| ".".to_string());
-                    let file_path = format!("{}/refund_receipt.txt", receipt_dir);
+                    let file_path = "/Users/sac/tower-lsp-max/refund_receipt.txt";
                     let content = format!(
                         "REFUND RECEIPT\nInstance: {}\nDescription: {}\nStatus: Executed\nTimestamp: {}\n",
                         instance_id,
@@ -1217,9 +1215,7 @@ impl AutonomicMesh {
                             .unwrap()
                             .as_secs()
                     );
-                    if let Err(e) = std::fs::write(&file_path, content) {
-                        tracing::warn!("Failed to write refund receipt to {}: {}", file_path, e);
-                    }
+                    std::fs::write(file_path, content).ok();
                 }
                 self.executed_bounded_actions.push(action_id);
             }

@@ -1699,6 +1699,7 @@ dependencies = [
  "tower-lsp-max",
  "tower-lsp-max-agent",
  "tower-lsp-max-protocol",
+ "tower-lsp-max-runtime",
  "tracing",
  "tracing-subscriber",
 ]
@@ -1729,7 +1730,6 @@ dependencies = [
  "serde",
  "serde_json",
  "tower-lsp-max-protocol",
- "tracing",
 ]
 
 [[package]]
