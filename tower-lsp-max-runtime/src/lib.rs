@@ -1552,11 +1552,11 @@ impl AutonomicMesh {
             }
 
             "max/hookGraph" => {
-                // Return hook topology: for each hook, which events trigger it.
-                // Hooks are mesh-level objects — instance_id is not included.
+                // Return hook topology: for each hook, which events trigger it
                 let graph: Vec<serde_json::Value> = self.hooks.iter().map(|h| {
                     serde_json::json!({
                         "hook": h.name(),
+                        "instance_id": instance_id,
                     })
                 }).collect();
                 Ok(serde_json::to_value(graph).unwrap())
@@ -1625,23 +1625,30 @@ impl AutonomicMesh {
             }
 
             "max/admission" => {
-                // Admissibility gate: returns Admitted/Refused/Unknown — NEVER collapses
+                // Admissibility gate: returns AdmissionResult — NEVER collapses Unknown
                 let inst = self.instances.get(instance_id)
                     .ok_or_else(|| format!("Instance not found: {}", instance_id))?;
-                let verdict = if inst.diagnostics.is_empty() {
-                    "Admitted"
+                let (decision, rationale) = if inst.diagnostics.is_empty() {
+                    (lsp_max_protocol::AdmissionDecision::Admitted,
+                     "No diagnostics — instance is admissible".to_string())
                 } else if inst.diagnostics.iter().any(|d| {
                     matches!(d.lsp.severity, Some(lsp_types::DiagnosticSeverity::ERROR))
                 }) {
-                    "Refused"
+                    (lsp_max_protocol::AdmissionDecision::Refused,
+                     format!("{} error diagnostic(s) present", inst.diagnostics.iter()
+                         .filter(|d| matches!(d.lsp.severity, Some(lsp_types::DiagnosticSeverity::ERROR)))
+                         .count()))
                 } else {
-                    "Unknown" // Warnings/hints present — cannot determine admissibility
+                    (lsp_max_protocol::AdmissionDecision::Unknown,
+                     "Warnings or hints present — admissibility cannot be determined".to_string())
                 };
-                Ok(serde_json::json!({
-                    "instance_id": instance_id,
-                    "verdict": verdict,
-                    "diagnostic_count": inst.diagnostics.len(),
-                }))
+                let result = lsp_max_protocol::AdmissionResult {
+                    decision,
+                    law_axis: lsp_max_protocol::LawAxis::Domain,
+                    rationale,
+                    receipt: None,
+                };
+                Ok(serde_json::to_value(&result).map_err(|e| e.to_string())?)
             }
 
             "max/refusal" => {

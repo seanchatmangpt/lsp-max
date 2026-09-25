@@ -394,6 +394,20 @@ pub struct AdmissionResult {
     pub receipt: Option<Receipt>,
 }
 
+impl From<bool> for AdmissionDecision {
+    /// `true` → `Admitted`, `false` → `Refused`. `Unknown` is reserved for explicit construction.
+    fn from(b: bool) -> Self {
+        if b { AdmissionDecision::Admitted } else { AdmissionDecision::Refused }
+    }
+}
+
+impl From<AdmissionDecision> for bool {
+    /// `Admitted` → `true`, everything else → `false`.
+    fn from(d: AdmissionDecision) -> bool {
+        matches!(d, AdmissionDecision::Admitted)
+    }
+}
+
 impl Default for AdmissionResult {
     fn default() -> Self {
         Self {
