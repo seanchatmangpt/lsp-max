@@ -1552,11 +1552,11 @@ impl AutonomicMesh {
             }
 
             "max/hookGraph" => {
-                // Return hook topology: for each hook, which events trigger it.
-                // Hooks are mesh-level objects — instance_id is not included.
+                // Return hook topology: for each hook, which events trigger it
                 let graph: Vec<serde_json::Value> = self.hooks.iter().map(|h| {
                     serde_json::json!({
                         "hook": h.name(),
+                        "instance_id": instance_id,
                     })
                 }).collect();
                 Ok(serde_json::to_value(graph).unwrap())
