@@ -46,3 +46,4 @@ libstdin.rlib
 
 # macOS Finder metadata
 .DS_Store
+target-lane*/
