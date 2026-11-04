@@ -42,14 +42,9 @@ jobs:
         run: python3 scripts/protocol-court.py --check
 
       - name: Cache Cargo state
-        uses: actions/cache@v6
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: conformance-${{ runner.os }}-${{ hashFiles('**/Cargo.toml', 'rust-toolchain.toml') }}
-          restore-keys: conformance-${{ runner.os }}-
+        uses: Swatinem/rust-cache@v2
+        env:
+          RUSTUP_TOOLCHAIN: nightly-2026-04-15
 
       - name: Build lsp-max runtime and targets
         run: cargo +nightly-2026-04-15 build -p lsp-max --all-targets
