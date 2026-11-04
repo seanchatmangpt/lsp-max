@@ -66,11 +66,25 @@ teardown. Passing run: 1 test passed, finished ~1-17s variance across runs.
 ## Gates (commands + exits)
 
 - `cargo test -p lsp-max-compositor --test child_churn_stress --test crash_isolation --test
-  child_eviction_test` → run 1: 5/3/3 passed, 0 failed (exit 0).
-- Run 2 (×2 gate) + full compositor suite: launched in background
-  (`cargo test -p lsp-max-compositor`), see status below. [UPDATE AT RUN COMPLETION]
+  child_eviction_test` → run 1: 5/3/3 passed, 0 failed. Run 2 (×2 gate): 5/3/3 passed, 0 failed
+  (17.10s / 2.06s / 2.06s).
+- Full compositor suite (`cargo test -p lsp-max-compositor`): unit tests 52 passed; 18 of 19
+  integration files 0 failures (churn_stress 5, child_eviction 3, crash_isolation 3,
+  diagnostic_end_position 4, diagnostics_merge 9, fanout_latency 1, gate_path_roundtrip 1,
+  integration 47, priority_semantics 10, priority_validation 5, registry_ontology 6,
+  request_arbitration 9, routing_dispatch 6, routing_integration 21, server_handle_failure 3,
+  speciation 12, v26_6_28_gate 5, andon_prefixes 11, cc_007_lsif_routing 8).
+- ONE suite failure: `diagnostic_relay_probe::run_stdio_relay_works_end_to_end` — PRE-EXISTING,
+  proven by A/B shim: with the AF-20 guard neutralized (`std::mem::forget` of the kill sender,
+  byte-exact restore after) the same test fails identically ("publishDiagnostics: nothing
+  matching arrived" at 20s bound). Not session-introduced. The test depends on the external
+  `/Users/sac/claude-code-config-lsp/target/release/claude-code-config-lsp` binary and the box
+  is under ~10 concurrent cargo compile lanes; likely load/environment-bound. Filed as a
+  candidate defect, out of AF-20 scope (diagnostic_relay_probe.rs is not lane-owned).
 
 ## Standing
 
-- Pool-drop teardown: ADMITTED (fix + non-vacuous court, all gates green ×2 on owned files).
-- Full workspace regression: UNKNOWN (not run this lane; no owned-file regression observed).
+- Pool-drop teardown: ADMITTED (fix + non-vacuous court, owned gates green ×2, compositor suite
+  unregressed — the one suite failure is A/B-proven pre-existing).
+- diagnostic_relay_probe failure: OPEN, pre-existing, needs its own lane (external-binary + load
+  hypothesis unverified).
