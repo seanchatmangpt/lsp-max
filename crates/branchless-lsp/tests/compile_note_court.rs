@@ -28,7 +28,7 @@ use tower::{Service, ServiceExt};
 
 const DIAG_METHOD: &str = "textDocument/publishDiagnostics";
 
-/// A source with a guaranteed rustc syntax error: unbalanced closing brace.
+/// A source with a deterministic rustc syntax error: unbalanced closing brace.
 const SYNTAX_ERROR: &str = "fn f() -> u32 { 1 } }\n";
 
 /// Branch-free fixture (the flip arm): compiles clean, must publish no note.

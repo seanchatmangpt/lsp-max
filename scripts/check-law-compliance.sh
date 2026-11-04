@@ -22,6 +22,10 @@ VIOLATIONS=0
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$PROJECT_ROOT"
 
+# Fail-loud guard: without rg, the `|| true` fallbacks below would silently
+# fake-pass every check. Refuse instead of scanning nothing.
+command -v rg >/dev/null 2>&1 || { echo "ERROR: rg not on PATH — refusing to fake-pass"; exit 2; }
+
 echo -e "${BLUE}========================================${NC}"
 echo -e "${BLUE}Law Compliance Scanner${NC}"
 echo -e "${BLUE}========================================${NC}"
@@ -114,7 +118,9 @@ VICTORY=$(rg -n -i "\b(done|solved|all clean|fully admitted|guaranteed)\b" \
   . || true)
 
 if [ -n "$VICTORY" ]; then
-  # Filter out false positives: function calls, legitimate contexts
+  # Filter out false positives: function calls, legitimate contexts.
+  # "done$" allows the shell while-loop terminator ('done' / '...; done')
+  # inside embedded shell stubs in test files — not victory language.
   FILTERED=$(echo "$VICTORY" | grep -v \
     -e "fn done()\|\.done()" \
     -e "test.*solved" \
@@ -122,6 +128,7 @@ if [ -n "$VICTORY" ]; then
     -e "all_clean\|all-clean" \
     -e "test_.*_solved" \
     -e "comment.*victory\|victory language" \
+    -e "done$" \
     -e "\.md:" \
     -e "Justfile:" \
     -e "\.sh:" \
