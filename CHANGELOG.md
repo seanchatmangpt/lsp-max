@@ -9,6 +9,29 @@ Versioning: **CalVer (YY.M.D)** — `26.6.13` = 2026-06-13.
 
 ## [Unreleased]
 
+### Fixed
+
+- **Law-scanner victory-language + rg fail-loud guard** (`a86d167`):
+  `maturity.ttl` + `compile_note_court.rs` reworded to drop
+  guaranteed/done/done-when-tested phrasing (scanner hits, semantics
+  preserved); `check-law-compliance.sh` now guards on `command -v rg` and
+  refuses (exit 2) instead of silently fake-passing when ripgrep is
+  absent; `lsp-max-law.yml` gained Swatinem/rust-cache@v2 with a
+  RUSTUP_TOOLCHAIN pin replacing the hand-rolled actions/cache.
+
+### Changed
+
+- **CI rust-cache rollout** (`1f6f9bc`, `ee22719`): rust-cache +
+  concurrency blocks across `ci.yml`/`release.yml`/`rust-quality.yml`/
+  `docker-rust.yml` (`1f6f9bc`); `lsp-max-conformance.yml` mirrors the
+  landed law.yml rust-cache pattern with
+  RUSTUP_TOOLCHAIN=nightly-2026-04-15 (`ee22719`).
+- **Thin LTO for the release profile** (`5355dde`, 2026-11-04 — postdates
+  the 26.11.3 section, so recorded here).
+- **PERFORMANCE.md figures relabeled as design targets** (`57b207a`):
+  document-top banner plus per-row (target) markers — the latency figures
+  were formatted as measured fact but no receipt produces them.
+
 ---
 
 ## [26.11.3] — 2026-11-03
