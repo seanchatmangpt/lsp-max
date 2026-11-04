@@ -49,3 +49,4 @@ libstdin.rlib
 target-lane*/
 target-verify/
 target-finalverify/
+__pycache__/
