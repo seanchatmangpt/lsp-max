@@ -39,6 +39,9 @@ fn run_ggen(root: &PathBuf) -> String {
     let out = Command::new("ggen")
         .arg("sync")
         .arg("run")
+        // Registry projection is content-pack sync, no SBB manufacture —
+        // the disclosed FM-LAW-015 opt-out (ggen sync.rs lawful escape hatch).
+        .arg("--skip-ea-admission")
         .current_dir(root)
         .output()
         .expect("spawn ggen");
