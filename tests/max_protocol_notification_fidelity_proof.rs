@@ -1,5 +1,5 @@
 //! Gall checkpoint CP10 (see ~/ggen's `80-20-gall-test-refactor-cheerful-quokka.md` plan):
-//! proves `ontology/max-protocol.ttl`'s three `lsp:Notification` individuals now name the
+//! proves `ontology/max-protocol.ttl`'s five `lsp:Notification` individuals now name the
 //! real, working `lspMax/*` wire methods implemented in `src/andon/lsp.rs` (the `Notification`
 //! impls) and sent via `src/service/client/lsp_methods.rs:406-430`'s wrapper methods, instead
 //! of the pre-CP10 `max/gateChanged`/`max/admissionChanged`/`max/receiptArrived` names that had
@@ -24,16 +24,17 @@ use oxigraph::store::Store;
 
 const MAX_PROTOCOL_TTL: &str = include_str!("../ontology/max-protocol.ttl");
 
-/// The real `Notification::METHOD` wire names declared in `src/andon/lsp.rs`, restricted to
-/// the three this ontology file declares individuals for (`LspMaxAndonRaised`,
-/// `LspMaxTruthTableChanged`, and `LspMaxCounterfactualFailed` are real and wired too, but this
-/// ontology file never declared individuals for them -- adding those is future work, not part
-/// of this fidelity correction). Hand-transcribed from:
+/// All five real `Notification::METHOD` wire names declared in `src/andon/lsp.rs`, matching
+/// the five `lspMax/*` individuals `max-protocol.ttl` declares (ZD-54 removed the two
+/// aspirational `receiptArrived`/`gateChanged` individuals that had no Rust implementation).
+/// Hand-transcribed from:
 ///   `impl Notification for LspMaxAdmissionChanged { const METHOD: &'static str = "lspMax/admissionChanged"; }`
 const EXPECTED_METHOD_NAMES: &[&str] = &[
+    "lspMax/andonRaised",
     "lspMax/admissionChanged",
-    "lspMax/receiptArrived",
-    "lspMax/gateChanged",
+    "lspMax/truthTableChanged",
+    "lspMax/counterfactualFailed",
+    "lspMax/nextLawfulStepChanged",
 ];
 
 fn load_store() -> Store {

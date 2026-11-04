@@ -84,9 +84,9 @@ fn sparql_derived_lsp_max_notification_count_agrees_with_hand_transcribed_proof(
         .parse()
         .expect("integer literal");
     assert_eq!(
-        count, 3,
-        "live COUNT-aggregate query disagrees with the hand-transcribed proof's 3 lspMax/* \
-         Notification individuals"
+        count, 5,
+        "live COUNT-aggregate query disagrees with the hand-transcribed proof's 5 lspMax/* \
+         Notification individuals (the real src/andon/lsp.rs Notification::METHOD consts)"
     );
 }
 

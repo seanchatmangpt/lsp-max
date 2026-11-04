@@ -48,3 +48,4 @@ libstdin.rlib
 .DS_Store
 target-lane*/
 target-verify/
+target-finalverify/

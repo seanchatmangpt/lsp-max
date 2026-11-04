@@ -92,7 +92,11 @@ lsp:max_vector a lsp:MaxExtension ;
 # `src/service/client/lsp_methods.rs:406-430` under the `lspMax/*` wire name, not `max/*`. Per
 # CP1/CP2's own precedent (fix the ontology to match reality, not the other way -- renaming
 # working Rust is higher risk than editing a TTL), these are corrected to the real `lspMax/*`
-# names below. `lsp:lspMax_admissionChanged`'s `paramType` is also corrected from the
+# names below. Update (ZD-54, v26.11.3): the aspirational `lspMax/receiptArrived` and
+# `lspMax/gateChanged` individuals were REMOVED -- they had zero Rust implementation anywhere
+# (grep across src/ and crates/: no hits), and the CP10 fidelity law is exact mirroring of
+# `src/andon/lsp.rs`'s `Notification::METHOD` consts (code authority). Re-add an individual
+# only when its `const METHOD` exists. `lsp:lspMax_admissionChanged`'s `paramType` is also corrected from the
 # aspirational `AdmissionChangedParams { ... }` (unspecified shape) to the real
 # `crate::andon::lsp::AdmissionChangedParams { status: String }`.
 #
@@ -113,20 +117,6 @@ lsp:lspMax_admissionChanged a lsp:Notification ;
     lsp:snakeName  "admission_changed" ;
     lsp:paramType  "AdmissionChangedParams" ;
     rdfs:comment   "Server-to-client push: a law axis changed status (e.g. CANDIDATE -> ADMITTED or BLOCKED). Real, wired: src/andon/lsp.rs's LspMaxAdmissionChanged + src/service/client/lsp_methods.rs's admission_changed() send-wrapper." ;
-    law:status     law:CANDIDATE .
-
-lsp:lspMax_receiptArrived a lsp:Notification ;
-    lsp:methodName "lspMax/receiptArrived" ;
-    lsp:snakeName  "receipt_arrived" ;
-    lsp:paramType  "ReceiptArrivedParams" ;
-    rdfs:comment   "Server-to-client push: a new receipt artifact has been committed and is queryable via max/receipt. NOTE: unlike lspMax/admissionChanged, this notification type has NO Rust implementation anywhere in src/andon/lsp.rs or lsp_methods.rs as of CP10 -- still fully aspirational, only the name prefix was corrected to lspMax/* for naming consistency with the other real notifications in this file." ;
-    law:status     law:CANDIDATE .
-
-lsp:lspMax_gateChanged a lsp:Notification ;
-    lsp:methodName "lspMax/gateChanged" ;
-    lsp:snakeName  "gate_changed" ;
-    lsp:paramType  "GateChangedParams" ;
-    rdfs:comment   "Server-to-client push: ANDON gate state transitioned. Clients must re-query max/gate to confirm. NOTE: like lspMax/receiptArrived, this notification type has NO Rust implementation anywhere in src/andon/lsp.rs or lsp_methods.rs as of CP10 -- still fully aspirational, only the name prefix was corrected to lspMax/* for naming consistency with the other real notifications in this file." ;
     law:status     law:CANDIDATE .
 
 lsp:lspMax_truthTableChanged a lsp:Notification ;
