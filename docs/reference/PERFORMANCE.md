@@ -2,6 +2,8 @@
 
 This document outlines performance expectations, profiling workflows, and optimization strategies for **lsp-max**: the law-state LSP runtime. It covers test budgets, criterion benchmarking, flamegraph profiling, memory layout, and scaling limits.
 
+> **STATUS: DESIGN TARGETS, NOT MEASUREMENTS.** All figures on this page are DESIGN TARGETS, not measurements — no receipt in `docs/jira/` produces them (audited 2026-11-04, E-f finding #9). Measured values appear only in receipts. A future lane can convert targets to receipts using the transit-probe/`divan` benchmark pattern used in cgap/arcus: write a `#[divan::bench]` (or criterion) bench per row, run it on the exact subject, and store the output as a dated receipt artifact under `docs/jira/`.
+
 ---
 
 ## 1. Test Time Budgets
@@ -103,7 +105,7 @@ These are the highest-frequency and most critical paths:
 - **Operation**: Score a `ConformanceVector` (admitted/refused/unknown law axes)
 - **Frequency**: Every conformance query; used in composition decisions
 - **Benchmark**: Compute score for vectors with 5, 50, 500 law axes
-- **Target**: < 10µs for typical (50-axis) vectors
+- **Target** (target, not measured): < 10µs for typical (50-axis) vectors
 
 #### 4. **Diagnostic Merge & Deduplication** (`crates/lsp-max-compositor`)
 - **Operation**: Merge diagnostics from M servers for K URIs with ANDON prefix matching
@@ -119,7 +121,7 @@ These are the highest-frequency and most critical paths:
 - **Operation**: Read/write document content and version (Arc-wrapped RwLock<FxHashMap<Url, Document>>)
 - **Frequency**: Per-document change event; multiple lookups per request
 - **Benchmark**: Concurrent reads (N threads) + writes to M documents
-- **Target**: < 100µs for M=100 documents, N=10 readers
+- **Target** (target, not measured): < 100µs for M=100 documents, N=10 readers
 
 ### Writing a New Criterion Benchmark
 
@@ -353,7 +355,7 @@ These are the documented maximum capacity targets for **lsp-max**:
 | Metric | Limit | Rationale |
 |---|---|---|
 | Concurrent open documents | 5,000 | Typical editor session: 10–100; CI workload: 1,000–5,000 |
-| DocumentStore lookup latency | < 1µs | FxHashMap with RwLock; O(1) average case |
+| DocumentStore lookup latency (target) | < 1µs | FxHashMap with RwLock; O(1) average case |
 
 **Scaling test**: Benchmark DocumentStore with M=1K, 5K, 10K documents. If latency increases super-linearly, rehashing is a bottleneck.
 
@@ -501,7 +503,7 @@ Before declaring a change "performance neutral", verify:
 | **cargo test --ignored** | < 30 seconds | Allows deep stress testing |
 | **JSON-RPC roundtrip** | < 1ms | Request deserialize + route + serialize |
 | **Receipt validation** | < 100µs per receipt | Chain depth max 5 |
-| **Conformance scoring** | < 10µs | Law-axis vector evaluation |
+| **Conformance scoring** (target) | < 10µs | Law-axis vector evaluation |
 | **Diagnostic merge (50 servers × 100 diags)** | < 5ms | Dedup + ANDON matching |
 | **Document store lookup** | < 1µs | RwLock<FxHashMap> read |
 | **Flamegraph regression** | < 10% width increase | Acceptable variance on noisy system |
