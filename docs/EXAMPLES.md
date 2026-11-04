@@ -285,8 +285,8 @@ just dx-verify
 
 All examples depend on:
 - **lsp-max** (`../../`) — the LSP framework
-- **lsp-types-max** (`../../../lsp-types-max`) — LSP 3.18 type definitions (path dependency, version 26.6.24+)
-- **clap-noun-verb** (version 26.6.2+) — CLI grammar framework (most examples use this)
+- **lsp-types-max** (`../../../lsp-types-max`) — LSP 3.18 type definitions (path dependency, version 26.11.3+)
+- **clap-noun-verb** (version 26.11.3+) — CLI grammar framework (most examples use this)
 
 Some examples also depend on:
 - **tree-sitter**, **tree-sitter-rust**, **tree-sitter-latex** — AST parsing

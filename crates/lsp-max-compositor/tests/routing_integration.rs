@@ -24,6 +24,7 @@ fn diag_server(id: &str, exts: &[&str]) -> ChildServer {
         id: id.into(),
         tier: ChildTier::DiagnosticsOnly,
         extensions: exts.iter().map(|s| s.to_string()).collect(),
+        commands: Vec::new(),
     }
 }
 
@@ -32,6 +33,7 @@ fn primary_server(id: &str, exts: &[&str]) -> ChildServer {
         id: id.into(),
         tier: ChildTier::Primary,
         extensions: exts.iter().map(|s| s.to_string()).collect(),
+        commands: Vec::new(),
     }
 }
 
@@ -40,6 +42,7 @@ fn secondary_server(id: &str, exts: &[&str]) -> ChildServer {
         id: id.into(),
         tier: ChildTier::Secondary,
         extensions: exts.iter().map(|s| s.to_string()).collect(),
+        commands: Vec::new(),
     }
 }
 

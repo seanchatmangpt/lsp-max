@@ -5,7 +5,18 @@ use serde_json::Value;
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
-use tokio::sync::{mpsc, oneshot, Mutex};
+use tokio::sync::{mpsc, oneshot, watch, Mutex};
+
+/// Canonical tag carried in `ClientError` messages when a request fails
+/// because the child process died (stdout EOF drain, dead liveness watch, or
+/// a dead write path). Callers match on this prefix — the typed surface for
+/// dead-child vs live-silent (`Ok(None)` timeout) vs answered-null
+/// (`Ok(None)`).
+pub const CHILD_EXITED_TAG: &str = "child-exited";
+
+/// Canonical tag carried in `ClientError` messages for a JSON-RPC `error`
+/// response the CHILD itself sent (distinct from child death).
+pub const SERVER_ERROR_TAG: &str = "server-error";
 
 /// A handle to interact with the connected Language Server.
 /// This acts as the outbound proxy for the downstream client.
@@ -14,6 +25,8 @@ pub struct ServerHandle {
     pub(crate) sender: mpsc::Sender<Value>,
     pub(crate) pending: Arc<Mutex<HashMap<u64, oneshot::Sender<Value>>>>,
     pub(crate) next_id: Arc<AtomicU64>,
+    /// Read-loop liveness (false once stdout EOF/read error drained pending).
+    pub(crate) alive: watch::Receiver<bool>,
 }
 
 impl ServerHandle {
@@ -21,11 +34,13 @@ impl ServerHandle {
         sender: mpsc::Sender<Value>,
         pending: Arc<Mutex<HashMap<u64, oneshot::Sender<Value>>>>,
         next_id: Arc<AtomicU64>,
+        alive: watch::Receiver<bool>,
     ) -> Self {
         Self {
             sender,
             pending,
             next_id,
+            alive,
         }
     }
 
@@ -57,28 +72,74 @@ impl ServerHandle {
         });
 
         let (tx, rx) = oneshot::channel::<Value>();
+
+        // Dead-child fast path: if the read loop already died, fail typed
+        // immediately — never wait out the 30 s timeout on a dead transport.
+        if !*self.alive.borrow() {
+            return Err(ClientError(format!(
+                "{CHILD_EXITED_TAG}: read loop dead (stdout EOF), request {id} not sent"
+            )));
+        }
+
         self.pending.lock().await.insert(id, tx);
 
         if self.sender.send(msg).await.is_err() {
+            // Write loop is gone — the child's stdin closed (broken pipe on
+            // child death). Typed failure, immediate.
             self.pending.lock().await.remove(&id);
-            return Ok(None);
+            return Err(ClientError(format!(
+                "{CHILD_EXITED_TAG}: write path closed before request {id} was sent"
+            )));
         }
 
-        match tokio::time::timeout(std::time::Duration::from_secs(30), rx).await {
-            Ok(Ok(result)) => {
-                if result.is_null() {
-                    return Ok(None);
-                }
-                match serde_json::from_value::<R>(result) {
-                    Ok(v) => Ok(Some(v)),
-                    Err(_) => Ok(None),
-                }
-            }
-            Ok(Err(_)) => Ok(None), // sender dropped
-            Err(_) => {
-                // timeout — clean up
+        tokio::select! {
+            biased;
+
+            // Read loop died while we waited: typed child-exited, immediate.
+            // (Watch receivers need &mut for changed(); clone per request.)
+            _ = async {
+                let mut alive = self.alive.clone();
+                let _ = alive.changed().await;
+            } => {
                 self.pending.lock().await.remove(&id);
-                Ok(None)
+                Err(ClientError(format!(
+                    "{CHILD_EXITED_TAG}: stdout EOF while request {id} in flight"
+                )))
+            }
+
+            result = tokio::time::timeout(std::time::Duration::from_secs(30), rx) => match result {
+                Ok(Ok(result)) => {
+                    // Error object: the read loop's EOF sentinel (message
+                    // "transport closed") is child death — typed, immediate.
+                    // Any other error object is a JSON-RPC error the child
+                    // itself sent; surface it typed too, never laundered to
+                    // Ok(None).
+                    if let Some(err) = result.get("error") {
+                        let tag = if err.get("message").and_then(|m| m.as_str())
+                            == Some("transport closed")
+                        {
+                            CHILD_EXITED_TAG
+                        } else {
+                            SERVER_ERROR_TAG
+                        };
+                        return Err(ClientError(format!("{tag}: {err}")));
+                    }
+                    if result.is_null() {
+                        return Ok(None);
+                    }
+                    match serde_json::from_value::<R>(result) {
+                        Ok(v) => Ok(Some(v)),
+                        Err(_) => Ok(None),
+                    }
+                }
+                Ok(Err(_)) => Err(ClientError(format!(
+                    "{CHILD_EXITED_TAG}: responder for request {id} dropped without answering"
+                ))),
+                Err(_) => {
+                    // Live-but-silent child: bounded timeout stands. Clean up.
+                    self.pending.lock().await.remove(&id);
+                    Ok(None)
+                }
             }
         }
     }

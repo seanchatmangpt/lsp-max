@@ -41,6 +41,41 @@ pub struct ChildServer {
     pub id: String,
     pub tier: ChildTier,
     pub extensions: Vec<String>,
+    /// Spawn commands declared for this server. Empty = not spawn-capable;
+    /// spawn attempts must go through [`ChildServer::spawn_command`], which
+    /// refuses typed instead of guessing a binary name.
+    pub commands: Vec<String>,
+}
+
+/// Typed refusal for a spawn attempt against a command-less child server.
+#[derive(Debug, Clone, PartialEq)]
+pub struct SpawnRefusal {
+    pub server_id: String,
+}
+
+impl std::fmt::Display for SpawnRefusal {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "spawn refused: server '{}' declares no lspmax:command in the registry ontology",
+            self.server_id
+        )
+    }
+}
+
+impl ChildServer {
+    /// Spawn seam: the ONLY lawful way to obtain a spawn command for this
+    /// server. Returns the typed [`SpawnRefusal`] for command-less servers.
+    /// The spawn path itself (child_process.rs) consumes this seam — it does
+    /// not construct commands from ids or config guesses.
+    pub fn spawn_command(&self) -> Result<&str, SpawnRefusal> {
+        self.commands
+            .first()
+            .map(|c| c.as_str())
+            .ok_or_else(|| SpawnRefusal {
+                server_id: self.id.clone(),
+            })
+    }
 }
 
 pub struct ExtensionRouter {
@@ -74,6 +109,22 @@ impl ExtensionRouter {
         self.inner.get(ext).map(|v| v.clone()).unwrap_or_default()
     }
 
+    /// Return every distinct child server (deduplicated by id) that declares
+    /// `command` among its spawn commands.
+    pub fn servers_for_command(&self, command: &str) -> Vec<ChildServer> {
+        let mut out: Vec<ChildServer> = Vec::new();
+        let mut seen: std::collections::HashSet<String> = std::collections::HashSet::new();
+        for entry in self.inner.iter() {
+            for server in entry.value() {
+                if server.commands.iter().any(|c| c == command) && seen.insert(server.id.clone())
+                {
+                    out.push(server.clone());
+                }
+            }
+        }
+        out
+    }
+
     /// Return every distinct child server whose registered extension matches
     /// `filename`. A registered extension matches when `filename` ends with it
     /// after normalising a leading dot, so both bare keys (`rs`) and the dotted,
@@ -101,23 +152,25 @@ impl ExtensionRouter {
 
     /// Build an `ExtensionRouter` from a [`crate::config::CompositorConfig`].
     ///
-    /// For each server entry the priority string maps to tiers:
-    /// - `"full"` → primary extensions get `ChildTier::Primary`, secondary get `ChildTier::Secondary`
-    /// - `"diagnostics-only"` → all extensions get `ChildTier::DiagnosticsOnly`
-    /// - anything else → treated as `"full"`
+    /// The priority string maps through [`ChildTier::from_priority`] — the SAME
+    /// mapping the spawn path (`server.rs`) uses — so both paths agree on every
+    /// accepted spelling. `lsp-max.toml` refuses any other string at load
+    /// ([`crate::config::ACCEPTED_PRIORITY_STRINGS`]); a priority that reaches
+    /// here by direct struct construction falls back conservatively to
+    /// DiagnosticsOnly, matching `from_priority`.
+    ///
+    /// Extension-slot semantics:
+    /// - `"full"` / `"semantic"` → primary extensions `Primary`, secondary extensions `Secondary`
+    /// - `"secondary"` → `Secondary` on both extension slots
+    /// - `"lsif"` → `Lsif` on both extension slots
+    /// - `"diagnostics-only"` → `DiagnosticsOnly` on both extension slots
     pub fn from_config(config: &crate::config::CompositorConfig) -> Self {
         let router = Self::new();
         for entry in &config.server {
-            let diagnostics_only = entry.priority == "diagnostics-only";
-            let primary_tier = if diagnostics_only {
-                ChildTier::DiagnosticsOnly
-            } else {
-                ChildTier::Primary
-            };
-            let secondary_tier = if diagnostics_only {
-                ChildTier::DiagnosticsOnly
-            } else {
-                ChildTier::Secondary
+            let primary_tier = ChildTier::from_priority(&entry.priority);
+            let secondary_tier = match primary_tier {
+                ChildTier::DiagnosticsOnly | ChildTier::Lsif => primary_tier.clone(),
+                ChildTier::Secondary | ChildTier::Primary => ChildTier::Secondary,
             };
             for ext in &entry.primary_extensions {
                 router.register(
@@ -126,6 +179,11 @@ impl ExtensionRouter {
                         id: entry.id.clone(),
                         tier: primary_tier.clone(),
                         extensions: entry.primary_extensions.clone(),
+                        // lspmax:command arrives through the ontology manifest
+                        // (new_from_manifest); the lsp-max.toml config surface
+                        // has no command field on the wire yet, so config-built
+                        // routers spawn nothing until the manifest supplies it.
+                        commands: Vec::new(),
                     },
                 );
             }
@@ -136,6 +194,7 @@ impl ExtensionRouter {
                         id: entry.id.clone(),
                         tier: secondary_tier.clone(),
                         extensions: entry.secondary_extensions.clone(),
+                        commands: Vec::new(),
                     },
                 );
             }
@@ -176,6 +235,7 @@ mod tests {
             id: id.into(),
             tier: ChildTier::DiagnosticsOnly,
             extensions: exts.iter().map(|s| s.to_string()).collect(),
+            commands: Vec::new(),
         }
     }
 

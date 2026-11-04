@@ -2,7 +2,7 @@
 
 **Status: CANDIDATE** — Full CI automation requires GitHub Actions environment. This guide covers manual workflows verified against production; CI integration hooks are documented in section [6](#6-ci-integration-candidates).
 
-**Current Version:** `26.7.3` (CalVer YY.M.D, bumped monthly)
+**Current Version:** `26.11.3` (CalVer YY.M.D, bumped monthly)
 
 ## Table of Contents
 
@@ -21,7 +21,7 @@
 
 **Version Format: `YY.M.D` (CalVer, not SemVer)**
 
-The workspace uses **Calendar Versioning**, not Semantic Versioning. Current version is `26.7.1` (July 1, 2026).
+The workspace uses **Calendar Versioning**, not Semantic Versioning. Current version is `26.11.3` (November 3, 2026).
 
 ### Version Law
 
@@ -29,7 +29,7 @@ All version updates are enforced by the `anti-llm-cheat-lsp` diagnostic suite (f
 
 - **WorkspaceCalVerViolation** — `[workspace.package]` version must be `YY.M.D`
 - **ExternalDepVersionViolation** — external deps must use explicit version constraints; no `*` or unspecified versions
-- **PathDepCalVerViolation** — path dependencies must match workspace CalVer; e.g., `lsp-max-protocol = { path = "./lsp-max-protocol", version = "26.7.1" }`
+- **PathDepCalVerViolation** — path dependencies must match workspace CalVer; e.g., `lsp-max-protocol = { path = "./lsp-max-protocol", version = "26.11.3" }`
 - **VersionUnderflow** — version cannot decrease between releases (temporal monotonicity)
 
 ### Version Bump Procedure
@@ -41,8 +41,8 @@ All version updates are enforced by the `anti-llm-cheat-lsp` diagnostic suite (f
 **Option A: Using Just Recipe (Recommended)**
 
 ```sh
-# Determine the new CalVer date: 2026-07-15 → version 26.7.15 (YY.M.D)
-just release-version-bump 26.7.15
+# Determine the new CalVer date: 2026-11-15 → version 26.11.15 (YY.M.D)
+just release-version-bump 26.11.15
 
 # This will:
 # 1. Update all version references via cargo set-version
@@ -55,15 +55,15 @@ just release-version-bump 26.7.15
 **Option B: Manual Steps**
 
 ```sh
-# 1. Determine the new CalVer date. Today is 2026-06-14, next release is 2026-07-15
-#    Next version: 26.7.15 (YY.M.D)
+# 1. Determine the new CalVer date. Today is 2026-06-14, next release is 2026-11-15
+#    Next version: 26.11.15 (YY.M.D)
 
 # 2. Update all version references
 cargo install cargo-edit --locked  # if needed
-cargo set-version 26.7.15 --workspace
+cargo set-version 26.11.15 --workspace
 
 # 3. Verify all path deps are in sync
-grep -r "version = \"26.7.15\"" . --include="Cargo.toml" \
+grep -r "version = \"26.11.15\"" . --include="Cargo.toml" \
   | grep -E "lsp-max-protocol|lsp-max-runtime|lsp-max-agent|lsp-max-macros"
 
 # 4. Run the diagnostic canary
@@ -72,7 +72,7 @@ cargo run -p anti-llm-cheat-lsp -- check
 
 # 5. Commit the version bump
 git add Cargo.toml */Cargo.toml */*/Cargo.toml
-git commit -m "chore: bump version to 26.7.15 for July 2026 release
+git commit -m "chore: bump version to 26.11.15 for November 2026 release
 
 CalVer (YY.M.D) convention enforced by ANTI-LLM-VERSION-* diagnostics.
 
@@ -254,13 +254,13 @@ After publishing, verify crate integrity:
 
 ```sh
 # Checksums written by `just release-publish`
-cat receipts/publish-checksums-26.7.1.txt
+cat receipts/publish-checksums-26.11.3.txt
 # Format: crate_name | version | sha256
 
 # Verify against crates.io (manual):
-curl -s https://crates.io/api/v1/crates/lsp-max-protocol/26.7.1 \
+curl -s https://crates.io/api/v1/crates/lsp-max-protocol/26.11.3 \
   | jq '.version.checksum'
-# Should match entry in receipts/publish-checksums-26.7.1.txt
+# Should match entry in receipts/publish-checksums-26.11.3.txt
 ```
 
 ---
@@ -278,7 +278,7 @@ GitHub releases **must reference the DOC_COVERAGE_LOG.md iteration** for the rel
 # extract-release-notes.sh: extract DOC_COVERAGE_LOG iteration for a given date
 
 RELEASE_DATE="${1:-2026-06-14}"
-CRATE_VERSION="${2:-26.7.1}"
+CRATE_VERSION="${2:-26.11.3}"
 
 echo "## Release: $CRATE_VERSION ($RELEASE_DATE)"
 echo ""
@@ -309,10 +309,10 @@ echo "- [Checksums](https://crates.io/crates/lsp-max/versions) — crates.io man
 ### GitHub Release Template
 
 ```markdown
-# Release: lsp-max 26.7.1
+# Release: lsp-max 26.11.3
 
 **Release Date:** 2026-06-14  
-**CalVer Version:** 26.7.1 (YY.M.D)
+**CalVer Version:** 26.11.3 (YY.M.D)
 
 ## Summary
 
@@ -345,19 +345,19 @@ This release bundles all capabilities admitted in the DOC_COVERAGE_LOG iteration
 
 Checksums for published crates:
 ```
-lsp-max-protocol | 26.7.1 | sha256:abc123...
-lsp-max-runtime  | 26.7.1 | sha256:def456...
-lsp-max-agent    | 26.7.1 | sha256:ghi789...
-lsp-max-macros   | 26.7.1 | sha256:jkl012...
-lsp-max          | 26.7.1 | sha256:mno345...
+lsp-max-protocol | 26.11.3 | sha256:abc123...
+lsp-max-runtime  | 26.11.3 | sha256:def456...
+lsp-max-agent    | 26.11.3 | sha256:ghi789...
+lsp-max-macros   | 26.11.3 | sha256:jkl012...
+lsp-max          | 26.11.3 | sha256:mno345...
 ```
 
-[See full checksums](./receipts/publish-checksums-26.7.1.txt)
+[See full checksums](./receipts/publish-checksums-26.11.3.txt)
 
 ## Installation
 
 ```sh
-cargo add lsp-max@26.7.1
+cargo add lsp-max@26.11.3
 ```
 
 ### Dependents
@@ -365,7 +365,7 @@ cargo add lsp-max@26.7.1
 - Consumers using `tokio` must include `"io-std"` feature:
   ```toml
   [dependencies]
-  lsp-max = "26.7.1"
+  lsp-max = "26.11.3"
   tokio = { version = "1", features = ["io-std"] }
   ```
 
@@ -387,7 +387,7 @@ cargo add lsp-max@26.7.1
 
 set -euo pipefail
 
-VERSION="${1:-26.7.1}"
+VERSION="${1:-26.11.3}"
 RELEASE_DATE="$(date -u +%Y-%m-%d)"
 
 # Extract DOC_COVERAGE_LOG iteration
@@ -406,7 +406,7 @@ echo "✓ GitHub release v$VERSION created"
 
 ```sh
 export GITHUB_TOKEN="<your-github-token>"
-bash scripts/publish-github-release.sh 26.7.1
+bash scripts/publish-github-release.sh 26.11.3
 ```
 
 ---
@@ -433,7 +433,7 @@ bash scripts/publish-github-release.sh 26.7.1
 1. **Do NOT bump version** — yanking allows recovery without version inflation
 2. **Yank the broken version:**
    ```sh
-   cargo yank -p <crate-name> --vers 26.7.1
+   cargo yank -p <crate-name> --vers 26.11.3
    ```
 3. **Fix the bug locally**
 4. **Re-publish under the same version** (crates.io allows re-publishing after yank):
@@ -445,11 +445,11 @@ bash scripts/publish-github-release.sh 26.7.1
 5. **Update the GitHub release notes** with a note about the yank and re-publish
 6. **Document in CHANGELOG.md:**
    ```markdown
-   ### 26.7.1 (2026-06-14) — Hotfix
+   ### 26.11.3 (2026-06-14) — Hotfix
 
    **Yanked & Re-Published**
 
-   Yanked: lsp-max-runtime 26.7.1  
+   Yanked: lsp-max-runtime 26.11.3  
    Reason: Deadlock in `gate.rs` line 42 under concurrent `admit()` calls  
    Fix: Replaced `RwLock` with `parking_lot::Mutex` for interior mutability
 
@@ -458,7 +458,7 @@ bash scripts/publish-github-release.sh 26.7.1
 
 ### If Publish Succeeds But Sibling Repo Is Out of Sync
 
-**Symptom:** lsp-max 26.7.1 is published, but `../wasm4pm` is still at 26.6.24
+**Symptom:** lsp-max 26.11.3 is published, but `../wasm4pm` is still at 26.10.24
 
 **Steps:**
 
@@ -466,8 +466,8 @@ bash scripts/publish-github-release.sh 26.7.1
 2. **Pin dependents to compatible versions** (add version constraint in Cargo.toml):
    ```toml
    [dependencies]
-   lsp-max = "26.6"  # accepts 26.7.1
-   wasm4pm-compat = "26.6.24"  # will be updated next
+   lsp-max = "26.10"  # accepts 26.11.3
+   wasm4pm-compat = "26.10.24"  # will be updated next
    ```
 3. **Coordinate release schedule** — ensure all sibling repos are versioned together
 4. **Test integration** before declaring the release complete
@@ -477,7 +477,7 @@ bash scripts/publish-github-release.sh 26.7.1
 After any rollback or yank, write a post-mortem in `docs/ROLLBACK_LOG.md`:
 
 ```markdown
-## Incident: lsp-max 26.7.1 Runtime Deadlock
+## Incident: lsp-max 26.11.3 Runtime Deadlock
 
 **Date:** 2026-06-14  
 **Severity:** High (blocks all concurrent gate operations)  
@@ -645,7 +645,7 @@ The following recipes automate release tasks and are **already integrated into t
 
 | Recipe | Purpose | Arguments |
 |--------|---------|-----------|
-| `release-version-bump` | Bump CalVer version | `VERSION` (e.g., 26.7.1) |
+| `release-version-bump` | Bump CalVer version | `VERSION` (e.g., 26.11.3) |
 | `release-validate` | Run all pre-release checks | None |
 | `release-dry-run` | Test publish (no credentials) | None |
 | `dx-verify` | Verify architectural boundaries | None |
@@ -664,7 +664,7 @@ Or inspect `Justfile` directly at the end of the file.
 
 ```sh
 # Step 1: Bump version (monthly)
-just release-version-bump 26.7.1
+just release-version-bump 26.11.3
 
 # Step 2: Validate all pre-release conditions (gate, verify, polish, tests)
 just release-validate
@@ -687,7 +687,7 @@ Recipes `release-validate`, `release-dry-run`, `dx-verify`, `dx-polish`, and `te
 
 ```sh
 # 1. Bump version (once per month)
-just release-version-bump 26.7.15
+just release-version-bump 26.11.15
 
 # 2. Validate everything
 just release-validate
@@ -697,10 +697,10 @@ just release-dry-run
 
 # 4. Publish (credentials required)
 export CARGO_TOKEN="<your-token>"
-just release-publish 26.7.15
+just release-publish 26.11.15
 
 # 5. Extract notes and create GitHub release
-just release-notes-extract 2026-07-15 26.7.15
+just release-notes-extract 2026-11-15 26.11.15
 ```
 
 ### Decision Tree
@@ -712,13 +712,13 @@ A: Run `just release-validate`. If all checks pass, yes.
 A: Run `cargo run -p anti-llm-cheat-lsp -- check`. Fix reported violations (version format, path deps, etc.).
 
 **Q: Publish failed mid-way?**  
-A: Run `just release-publish 26.7.1` again (idempotent). If a crate is already indexed, it will be skipped by crates.io.
+A: Run `just release-publish 26.11.3` again (idempotent). If a crate is already indexed, it will be skipped by crates.io.
 
 **Q: Published but discovered a bug?**  
-A: Yank the version (`cargo yank -p crate --vers 26.7.1`), fix locally, then re-publish under the same version. Document in `CHANGELOG.md` as "Hotfix".
+A: Yank the version (`cargo yank -p crate --vers 26.11.3`), fix locally, then re-publish under the same version. Document in `CHANGELOG.md` as "Hotfix".
 
 **Q: Sibling repos out of sync?**  
-A: Run `just qol-sync` to fetch latest from `../wasm4pm` and `../wasm4pm-compat`. Pin to the constraint `"26.6"` in Cargo.toml to accept 26.6.x versions.
+A: Run `just qol-sync` to fetch latest from `../wasm4pm` and `../wasm4pm-compat`. Pin to the constraint `"26.10"` in Cargo.toml to accept 26.10.x versions.
 
 ---
 

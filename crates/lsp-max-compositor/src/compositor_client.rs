@@ -49,6 +49,8 @@ impl LanguageClient for CompositorClient {
                 uri: uri.clone(),
                 line: d.range.start.line,
                 character: d.range.start.character,
+                end_line: d.range.end.line,
+                end_character: d.range.end.character,
                 severity: match d.severity {
                     Some(DiagnosticSeverity::ERROR) => 1,
                     Some(DiagnosticSeverity::WARNING) => 2,

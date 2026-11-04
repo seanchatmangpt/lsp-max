@@ -30,6 +30,8 @@ fn make_entry(uri: &str, line: u32, code: &str, tier: ChildTier) -> DiagnosticEn
         uri: uri.to_string(),
         line,
         character: 0,
+        end_line: line,
+        end_character: 0,
         severity: 2,
         code: code.to_string(),
         message: "bench".to_string(),

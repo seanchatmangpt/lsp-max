@@ -1,0 +1,14 @@
+{
+  "receipt_id": "cog010-oracle-scan-20637",
+  "law": "COG-010",
+  "scanned_stems": [
+    "bayesian_network",
+    "production_rules",
+    "cbr",
+    "pomdp"
+  ],
+  "scan_pairs_checked": 5,
+  "result": "ADMITTED",
+  "violations": [],
+  "scanned_at": "epoch+20637d 21:41:38Z"
+}

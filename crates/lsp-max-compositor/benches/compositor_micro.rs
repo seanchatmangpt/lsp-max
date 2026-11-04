@@ -35,6 +35,8 @@ fn make_entry(
         uri: uri.to_string(),
         line,
         character,
+        end_line: line,
+        end_character: character,
         severity,
         code: code.to_string(),
         message: message.to_string(),

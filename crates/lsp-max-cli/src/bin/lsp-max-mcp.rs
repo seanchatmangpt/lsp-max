@@ -306,6 +306,7 @@ fn build_router(cfg: &CompositorConfig) -> ExtensionRouter {
                     id: entry.id.clone(),
                     tier: tier.clone(),
                     extensions: entry.primary_extensions.clone(),
+                    commands: Vec::new(),
                 },
             );
         }
@@ -316,6 +317,7 @@ fn build_router(cfg: &CompositorConfig) -> ExtensionRouter {
                     id: entry.id.clone(),
                     tier: ChildTier::Secondary,
                     extensions: entry.secondary_extensions.clone(),
+                    commands: Vec::new(),
                 },
             );
         }

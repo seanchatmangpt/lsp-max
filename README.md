@@ -30,13 +30,28 @@ cargo test --workspace --all-targets
 
 The workspace resolves published external crates and repository-local path dependencies only. No adjacent sibling checkout or bootstrap script is required.
 
+## What's New in 26.11.3
+
+- **Compositor court suites M4-M9**: routing dispatch (`ExtensionRouter`
+  construction paths + `fanout::servers_for_uri`), FanAll diagnostics merge
+  semantics, `andon_code_prefixes` code-attribution/blocking law, and priority
+  semantics (diagnostics-only vs full dispatch tiers) — all landed with real
+  compositor test suites.
+- **Ontology-first registry generation (F3)**: `compositor.ttl` +
+  `registry_servers.rq` + `registry_init.tera` generate the extension registry
+  from the compositor ontology instead of hand-edited lists.
+- **Packaging gate (M13/H3)**: `build-release.sh` + `.claude-plugin` packaging
+  (`plugin.json`/`marketplace.json` `build`/`binaries` fields) and the
+  `docs/reference/compositor-deployment.md` surface.
+- **CalVer bump**: workspace version is now `26.11.3` (YY.M.D, not SemVer).
+
 ## Using lsp-max
 
 **As a library:**
 
 ```toml
 [dependencies]
-lsp-max = "26.7"
+lsp-max = "26.11.3"
 ```
 
 **Run an included server example:**

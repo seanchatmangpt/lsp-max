@@ -1,0 +1,7 @@
+# Written by ggen: signing.key is this checkout's private ed25519 seed and must
+# never be committed (a committed seed signs receipts for anyone who can read the
+# repository). verifying.key is ignored too: every checkout owns its own pair, and a
+# tracked public half without its private half makes a fresh clone's first sync
+# refuse [FM-KEY-010]/[FM-KEY-011]. Publish the public key out of band.
+signing.key
+verifying.key

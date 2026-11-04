@@ -29,7 +29,7 @@ fn mock_handle(capacity: usize) -> (ServerHandle, mpsc::Receiver<Value>) {
     let pending: Arc<Mutex<HashMap<u64, oneshot::Sender<Value>>>> =
         Arc::new(Mutex::new(HashMap::new()));
     let next_id = Arc::new(AtomicU64::new(0));
-    let handle = ServerHandle::new(tx, pending, next_id);
+    let handle = ServerHandle::new(tx, pending, next_id, tokio::sync::watch::channel(true).1);
     (handle, rx)
 }
 

@@ -28,14 +28,20 @@ impl GateService {
     }
 
     /// Derive the workspace-specific gate file path.
-    /// Formula must match lsp-max-compositor/src/gate_file.rs exactly.
+    /// Formula must match src/primitives/gate_path.rs exactly (enforced by
+    /// tests/test_gate_path_byte_equal_court.rs — update the authoritative
+    /// first, then every scaffold copy).
     pub fn gate_file_path() -> PathBuf {
         let workspace = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("/"));
         let hash = fnv1a(workspace.to_string_lossy().as_bytes());
         let dir = std::env::var("XDG_RUNTIME_DIR")
             .map(PathBuf::from)
             .unwrap_or_else(|_| PathBuf::from("/tmp"));
-        dir.join(format!("lsp-max-gate-{hash:016x}"))
+        if let Ok(agent_id) = std::env::var("LSP_MAX_AGENT_ID") {
+            dir.join(format!("lsp-max-gate-{hash:016x}-agent-{agent_id}"))
+        } else {
+            dir.join(format!("lsp-max-gate-{hash:016x}"))
+        }
     }
 
     pub fn check(&self) -> GateStatus {

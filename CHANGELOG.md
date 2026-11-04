@@ -11,6 +11,59 @@ Versioning: **CalVer (YY.M.D)** — `26.6.13` = 2026-06-13.
 
 ---
 
+## [26.11.3] — 2026-11-03
+
+### Workspace version bump + session work landing
+
+- **Bumped all 7 lsp-max crates from `26.7.3` to `26.11.3`** (CalVer,
+  matching the fleet release convention): `lsp-max`, `lsp-max-macros`,
+  `lsp-max-protocol`, `lsp-max-ast`, `lsp-max-lsif`, `lsp-max-compositor`,
+  `lsp-max-cli`. All member manifests use `version.workspace = true`; the
+  single `[workspace.package] version` field at the root was bumped, plus
+  all 11 intra-workspace dependency pins (path deps kept).
+- **Compositor court suites (M4–M9)**: new test suites in
+  `crates/lsp-max-compositor/tests/` covering routing (M4), diagnostics
+  merge order law (M5), ANDON prefix semantics cross-checked against the
+  config-lsp backend (M7), and priority-filter behavior with 10 Chicago-style
+  tests over the real filters (M9). All compositor src untouched — courts
+  only.
+- **Ontology-first registry (F3)**: registry generation re-grounded on the
+  RDF/ontology authority — `ggen` projection of the registry from the
+  ontology graph replaces hand-edited registry state (see
+  `docs/jira/v26.11.3/receipts/f3-registry-ontology.md`; one contract-premise
+  divergence disclosed in that receipt, not silently resolved).
+- **Packaging docs (M13)**: packaging documentation landed in
+  config-lsp (`docs/jira/v26.11.3/receipts/m13-docs.md`).
+- **Notification-dispatch hardening (F4, landed)**: `src/client/builder.rs`
+  carries the typed `transport_closed_error`/`fail_pending` machinery — the
+  read loop drains every pending request with a typed child-exited sentinel on
+  stdout EOF/read error instead of laundering child death into a null success
+  after the 30 s timeout; server-to-client requests are now answered on the
+  write path (canned `workspace/configuration` → `vec![Null; n]`, default →
+  `Null` result); inbound ids parse through a `PendingId` u64|String enum;
+  malformed-param and no-route notifications increment `NotificationCounters`
+  (progress/not_routable/malformed) instead of vanishing into warn logs.
+- **Dead-child eviction (CL-F)**: the compositor lazy-evicts a dead child on
+  `get()` and never respawns — restartOnCrash/maxRestarts are Claude Code
+  front-door concerns (M8 fleet split). Court:
+  `crates/lsp-max-compositor/tests/child_eviction_test.rs` (real child
+  processes; receipt `docs/jira/v26.11.3/receipts/cl-f-eviction.md`).
+- **Diagnostic range end preserved (CL-H)**: relayed diagnostics no longer
+  collapse to their start point — `DiagnosticEntry` carries
+  `end_line`/`end_character` through merge and recombine into a full `Range`
+  on the editor side. Court: `tests/diagnostic_end_position_test.rs`
+  (receipt `docs/jira/v26.11.3/receipts/cl-h-end-position.md`).
+- **Dependency pins (26.11.3)**: workspace pinned at `lsp-types-max = "26.6.24"`
+  — the crates.io maximum (26.11.3 is NOT published upstream). Pin law and
+  adjacent stale externals recorded in
+  `docs/jira/v26.11.3/receipts/xg6-lsp-types-max-pin.md`.
+- **Upgrade notes**: consumers pinning `lsp-max = "26.7.3"` must bump to
+  `26.11.3`. In particular `/Users/sac/claude-code-config-lsp` pins
+  `lsp-max = "26.7.3"` and requires the pin bump `26.7.3 → 26.11.3` in a
+  follow-up migration lane (not edited in this change).
+
+---
+
 ## [26.7.3] — 2026-07-03
 
 ### Real publish + policy correction

@@ -144,7 +144,7 @@ use wasm4pm_compat::fresh_names::FRESH_NAME_PAIRS;
     - [ ] Has `publish = true`? (should be publishable)
     - [ ] Has `repository` URL?
     - [ ] Has `license`?
-    - [ ] Version is CalVer (26.6.9 or similar)?
+    - [ ] Version is CalVer (26.11.3 or similar)?
 
 [ ] Scan lib.rs for public module tree:
     pub mod ocel;

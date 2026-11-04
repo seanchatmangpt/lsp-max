@@ -1,0 +1,25 @@
+# One row per (server, extension) registration for the ExtensionRouter registry_init.
+# ORDER BY ?id ?ext — determinism law: same graph, same byte output.
+#
+# command == id convention (ggen 26.10.11 KD-class OPTIONAL fill-forward workaround):
+# `lspmax:command` is OPTIONAL here. ggen 26.10.11 fill-forward leaks a previous
+# row's bound ?command into rows where it is unbound (silent wrong values, no
+# error). The template neutralizes this by rendering commands only when
+# `row.command and row.command == row.id` — i.e. a server carries commands iff
+# its ?command binding equals its own ?id. Servers without commands are
+# authored in compositor.ttl WITHOUT a lspmax:command triple, so any
+# fill-forwarded value cannot equal the row's id and renders as Vec::new().
+# Do not author a command value that equals a DIFFERENT server's id.
+PREFIX lspmax: <https://lsp-max.dev/ontology#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+SELECT ?id ?tier ?ext ?command
+WHERE {
+    ?server a lspmax:ChildServer ;
+        rdfs:label ?id ;
+        lspmax:hasTier ?tierNode ;
+        lspmax:primaryExtension ?ext .
+    ?tierNode rdfs:label ?tier .
+    OPTIONAL { ?server lspmax:command ?command }
+}
+ORDER BY ?id ?ext

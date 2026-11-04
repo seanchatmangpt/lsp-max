@@ -87,6 +87,7 @@ fn servers_for_uri_primary_first() {
             id: "diag-server".into(),
             tier: ChildTier::DiagnosticsOnly,
             extensions: vec!["rs".into()],
+            commands: Vec::new(),
         },
     );
     router.register(
@@ -95,6 +96,7 @@ fn servers_for_uri_primary_first() {
             id: "primary-server".into(),
             tier: ChildTier::Primary,
             extensions: vec!["rs".into()],
+            commands: Vec::new(),
         },
     );
     router.register(
@@ -103,6 +105,7 @@ fn servers_for_uri_primary_first() {
             id: "secondary-server".into(),
             tier: ChildTier::Secondary,
             extensions: vec!["rs".into()],
+            commands: Vec::new(),
         },
     );
 
@@ -122,6 +125,7 @@ fn servers_for_uri_no_match_returns_empty() {
             id: "ts-server".into(),
             tier: ChildTier::Primary,
             extensions: vec!["ts".into()],
+            commands: Vec::new(),
         },
     );
 
@@ -144,6 +148,8 @@ fn make_entry(
         uri: uri.into(),
         line,
         character,
+        end_line: line,
+        end_character: character,
         severity,
         code: code.into(),
         message: message.into(),
@@ -158,6 +164,8 @@ fn diagnostic_entry_server_id_preserved_through_merge() {
         uri: "file:///foo.rs".into(),
         line: 0,
         character: 0,
+        end_line: 0,
+        end_character: 0,
         severity: 1,
         code: "WASM4PM-CROWN-001".into(),
         message: "missing output_hash".into(),

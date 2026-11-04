@@ -324,7 +324,7 @@ requiring a live server — CI gates and handoff agents can query it offline.
 The compositor streams NDJSON. The agent parses the stream and locates `ConformanceNode` vertices:
 
 ```jsonl
-{"id":1,"type":"vertex","label":"metaData","version":"0.6.0","projectRoot":"file:///workspace","toolInfo":{"name":"lsp-max","version":"26.6.21"}}
+{"id":1,"type":"vertex","label":"metaData","version":"0.6.0","projectRoot":"file:///workspace","toolInfo":{"name":"lsp-max","version":"26.11.3"}}
 {"id":2,"type":"vertex","label":"project","kind":"rust"}
 ...
 {"id":147,"type":"vertex","label":"$lsp-max/conformanceNode","admitted":["Type","Protocol","Receipt"],"refused":[],"unknown":["Documentation"],"score":0.875,"strict_mode":false,"receipt_id":"rcpt-9a2b-..."}

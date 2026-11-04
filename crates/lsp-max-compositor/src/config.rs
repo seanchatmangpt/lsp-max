@@ -3,11 +3,50 @@ pub struct CompositorConfig {
     pub server: Vec<ServerEntry>,
 }
 
+/// Exact priority spellings accepted in `lsp-max.toml`. These are precisely the
+/// strings `ChildTier::from_priority` recognizes; anything else is refused at
+/// deserialization so a typo'd declaration can never silently escalate a server
+/// to Primary tier (M9 hazard, CL-G fix).
+pub const ACCEPTED_PRIORITY_STRINGS: &[&str] =
+    &["full", "diagnostics-only", "semantic", "secondary", "lsif"];
+
+/// Typed refusal for a priority string outside [`ACCEPTED_PRIORITY_STRINGS`].
+#[derive(Debug, Clone, PartialEq)]
+pub struct InvalidPriorityError {
+    pub value: String,
+}
+
+impl std::fmt::Display for InvalidPriorityError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "invalid priority {:?}: accepted values are exactly [{}]",
+            self.value,
+            ACCEPTED_PRIORITY_STRINGS.join(", ")
+        )
+    }
+}
+
+impl std::error::Error for InvalidPriorityError {}
+
+fn deserialize_validated_priority<'de, D>(deserializer: D) -> Result<String, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let s = <String as serde::Deserialize>::deserialize(deserializer)?;
+    if ACCEPTED_PRIORITY_STRINGS.contains(&s.as_str()) {
+        Ok(s)
+    } else {
+        Err(serde::de::Error::custom(InvalidPriorityError { value: s }))
+    }
+}
+
 #[derive(Debug, serde::Deserialize)]
 pub struct ServerEntry {
     pub id: String,
     pub primary_extensions: Vec<String>,
     pub secondary_extensions: Vec<String>,
+    #[serde(deserialize_with = "deserialize_validated_priority")]
     pub priority: String,
     pub andon_code_prefixes: Option<Vec<String>>,
     /// Path to the server binary. `None` means the server is not auto-spawned.

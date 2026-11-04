@@ -1,0 +1,91 @@
+# residuals.toml - cgap residual grid export for lsp-max branchless-lsp
+#
+# Machine-readable seed: branchless-lsp's `#[allow_isel_residual]` attribute
+# pre-seeds its per-target residual allowlist from this file (see
+# handoff note: lane-f12-residual-seed.md).
+#
+# Schema (documented per row):
+#   [[residual]]
+#   symbol        = "<crate-local fn path, e.g. select::select_slice>"
+#   target        = "aarch64" | "riscv32imc" | "any"
+#   residual_kind = "isel_residual" | "repaired_hot" | "skip_reference"
+#                   isel_residual  = documented branch(es) survive ISel
+#                                    (asserted EXACTLY by the census)
+#                   repaired_hot   = 0-branch HOT cell (post-repair PASS)
+#                   skip_reference = SKIP-REFERENCE: presence required,
+#                                    no 0-branch claim (loop/alloc driver)
+#   branch_count  = exact allowed count of flow instructions
+#   provenance    = "<receipt path>:<line>" (cite, not a copy)
+#
+# Sources: repairs/repair-01-branchless-census.md (REP1, authoritative),
+# convergence/lane-11-branchless-census-witness.md,
+# exhaustive/lane-03-branchless-complete.md.
+[[residual]]
+symbol = "select::select_slice"
+target = "aarch64"
+residual_kind = "isel_residual"
+branch_count = 1  # cbz: empty-mask default
+provenance = "docs/jira/v26.11.2/repairs/repair-01-branchless-census.md:72"
+
+[[residual]]
+symbol = "select::select_slice"
+target = "riscv32imc"
+residual_kind = "isel_residual"
+branch_count = 2  # beqz empty check + bnez select-lowering
+provenance = "docs/jira/v26.11.2/repairs/repair-01-branchless-census.md:72-73"
+
+[[residual]]
+symbol = "select::cmov_u64"
+target = "aarch64"
+residual_kind = "repaired_hot"
+branch_count = 0  # cmp+csel, HOT-class count
+provenance = "docs/jira/v26.11.2/repairs/repair-01-branchless-census.md:68"
+
+[[residual]]
+symbol = "select::cmov_u64"
+target = "riscv32imc"
+residual_kind = "isel_residual"
+branch_count = 1  # bnez; rv32imc has no Zicond, ISel lowers selects to branch
+provenance = "docs/jira/v26.11.2/repairs/repair-01-branchless-census.md:68-71"
+
+[[residual]]
+symbol = "eytzinger::eytzinger_restore"
+target = "aarch64"
+residual_kind = "repaired_hot"
+branch_count = 0  # rbit/clz/lsr
+provenance = "docs/jira/v26.11.2/repairs/repair-01-branchless-census.md:74-75"
+
+[[residual]]
+symbol = "eytzinger::eytzinger_restore"
+target = "riscv32imc"
+residual_kind = "isel_residual"
+branch_count = 1  # beqz variable-shift guard; rv32 shifts do not mask shift amount
+provenance = "docs/jira/v26.11.2/repairs/repair-01-branchless-census.md:74-76"
+
+[[residual]]
+symbol = "select::saturated_subs_p28"
+target = "any"
+residual_kind = "repaired_hot"
+branch_count = 0  # repaired, HOT PASS on both targets
+provenance = "docs/jira/v26.11.2/repairs/repair-01-branchless-census.md:62-65"
+
+[[residual]]
+symbol = "eytzinger::eytzinger_search"
+target = "any"
+residual_kind = "skip_reference"
+branch_count = -1  # not censused; presence required only
+provenance = "docs/jira/v26.11.2/repairs/repair-01-branchless-census.md:78-81"
+
+[[residual]]
+symbol = "eytzinger::to_eytzinger_layout"
+target = "any"
+residual_kind = "skip_reference"
+branch_count = -1
+provenance = "docs/jira/v26.11.2/repairs/repair-01-branchless-census.md:78-81"
+
+[[residual]]
+symbol = "select::checked_uniform_select"
+target = "any"
+residual_kind = "skip_reference"
+branch_count = -1
+provenance = "docs/jira/v26.11.2/repairs/repair-01-branchless-census.md:78-81"

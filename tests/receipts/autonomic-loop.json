@@ -1,0 +1,17 @@
+{
+  "receipt_type": "autonomic-loop",
+  "layer": 5,
+  "law_status": "ADMITTED",
+  "boundary": "fitness_snapshot_written_by_flush_coordinator + gate_structured_json + mcp_fitness_snapshot",
+  "components": {
+    "flush_coordinator": "writes .claude/lsp-max-fitness.json after every flush cycle",
+    "gate_check_sh": "emits structured JSON with decision/reason/routing_action on ANDON block",
+    "lsp_route_mcp": "reads fitness snapshot and returns law_status + fitness_snapshot in response"
+  },
+  "fitness_thresholds": {
+    "ADMITTED": "fitness >= 0.80 AND declare_violations == 0",
+    "CANDIDATE": "fitness >= 0.60 AND declare_violations <= 2",
+    "BLOCKED": "otherwise"
+  },
+  "negative_control": "fitness=0.40 violations=5 yields BLOCKED (verified in fitness_snapshot_blocked_threshold test)"
+}

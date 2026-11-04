@@ -113,7 +113,11 @@ fn gate_file_path() -> std::path::PathBuf {
     let dir = std::env::var("XDG_RUNTIME_DIR")
         .map(std::path::PathBuf::from)
         .unwrap_or_else(|_| std::path::PathBuf::from("/tmp"));
-    dir.join(format!("lsp-max-gate-{hash:016x}"))
+    if let Ok(agent_id) = std::env::var("LSP_MAX_AGENT_ID") {
+        dir.join(format!("lsp-max-gate-{hash:016x}-agent-{agent_id}"))
+    } else {
+        dir.join(format!("lsp-max-gate-{hash:016x}"))
+    }
 }
 
 fn fnv1a(bytes: &[u8]) -> u64 {

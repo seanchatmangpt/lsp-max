@@ -24,11 +24,14 @@ vendors/
 **/refund_receipt.txt
 **/target_e2e/
 **/lsif_dump.json
-**/receipts/
-!/crates/anti-llm-cheat-lsp/receipts/
-!/crates/lsp-max-compositor/receipts/
-!/examples/lsp-max-scaffold/receipts/
-!/receipts/
+# receipts/ is TRACKED where it is documentation (docs/jira wave receipts,
+# crate fixture receipts). The old blanket **/receipts/ rule silently
+# ignored docs/jira/**/receipts/*.md — wave close records vanished from
+# status — so it is removed; runtime receipt noise is scoped below instead.
+/crates/lsp-max-compositor/.ggen/
+/crates/lsp-max-compositor/.ggen-v2/
+/crates/lsp-max-compositor/target-lane*/
+
 scratch/
 /doc/
 libstdin.rlib

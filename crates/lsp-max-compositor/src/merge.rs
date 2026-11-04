@@ -15,6 +15,11 @@ pub struct DiagnosticEntry {
     pub uri: String,
     pub line: u32,
     pub character: u32,
+    /// Range end (inclusive-exclusive position in the child's document). Preserved
+    /// through relay so multi-character spans survive the merge instead of
+    /// collapsing to the start point (M10 residual 1).
+    pub end_line: u32,
+    pub end_character: u32,
     pub severity: u8, // 1=Error, 2=Warning, 3=Info, 4=Hint
     pub code: String,
     pub message: String,

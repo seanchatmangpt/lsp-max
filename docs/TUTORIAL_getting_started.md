@@ -18,7 +18,7 @@ cargo install --path crates/lsp-max-anti-cheat-cli
 lsp-max-anti-cheat --version
 ```
 
-You should see: `lsp-max-anti-cheat 26.6.9`
+You should see: `lsp-max-anti-cheat 26.11.3`
 
 ---
 

@@ -1,0 +1,34 @@
+[package]
+name = "branchless-lsp"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+description = "Branchless-lint LSP: syn AST advisory tier + DWARF/capstone disassembly court tier with residual accounting"
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+categories.workspace = true
+keywords.workspace = true
+publish = false
+
+[dependencies]
+lsp-max = { path = "../.." }
+lsp-types-max.workspace = true
+tree-sitter.workspace = true
+tree-sitter-rust = "0.23"
+syn = { version = "2.0", features = ["full", "extra-traits", "visit", "printing", "proc-macro"] }
+proc-macro2 = { version = "1", features = ["span-locations"] }
+object = { version = "0.36", default-features = false, features = ["read"] }
+gimli = { version = "0.31", default-features = false, features = ["read", "std"] }
+capstone = "0.12"
+tempfile = "3"
+blake3 = "1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+toml = "0.8"
+tokio = { version = "1", features = ["full"] }
+
+[dev-dependencies]
+tower = { version = "0.4", default-features = false, features = ["util"] }
+futures = "0.3"

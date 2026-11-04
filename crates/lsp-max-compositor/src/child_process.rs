@@ -8,6 +8,8 @@ use lsp_max::lsp_types::{
     InitializedParams, ServerCapabilities,
 };
 use std::process::Stdio;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
 use tokio::process::Command;
 
 /// A no-op implementation of `LanguageClient` used when the compositor does not
@@ -23,6 +25,10 @@ impl LanguageClient for NoopClient {}
 pub struct ChildProcess {
     pub server_id: String,
     pub handle: ServerHandle,
+    /// Set to `true` by the exit-watcher task once the OS child has exited
+    /// (clean or crash). Drives the pool's dead-entry eviction: see
+    /// `ChildProcessPool::get` and the no-respawn law below.
+    pub exited: Arc<AtomicBool>,
 }
 
 impl ChildProcess {
@@ -62,18 +68,23 @@ impl ChildProcess {
         // Background task owns the Child so wait() has exclusive &mut access.
         // The oneshot carries the ExitStatus back to the caller's future.
         let (exit_tx, exit_rx) = tokio::sync::oneshot::channel::<std::process::ExitStatus>();
+        let exited = Arc::new(AtomicBool::new(false));
+        let exited_for_watcher = Arc::clone(&exited);
         tokio::spawn(async move {
-            match child.wait().await {
-                Ok(status) => {
-                    let _ = exit_tx.send(status);
-                }
-                Err(_) => {
-                    // Process unreachable — let the receiver detect the dropped sender.
-                }
+            let status = child.wait().await.ok();
+            // Liveness flip happens unconditionally — even when the oneshot
+            // receiver is gone, the pool must observe the child as dead.
+            exited_for_watcher.store(true, Ordering::Release);
+            if let Some(status) = status {
+                let _ = exit_tx.send(status);
             }
         });
 
-        let proc = Self { server_id, handle };
+        let proc = Self {
+            server_id,
+            handle,
+            exited,
+        };
         let exit_fut = async move {
             exit_rx.await.map_err(|_| {
                 std::io::Error::other("exit watcher task dropped before sending status")
@@ -107,6 +118,20 @@ impl ChildProcess {
 }
 
 /// Manages a pool of spawned child LSP servers, keyed by server_id.
+///
+/// ── NO-RESPAWN LAW ──────────────────────────────────────────────────────────
+/// When a child exits (crash or clean exit), the pool EVICTS the dead entry
+/// (`get` removes it once the exit-watcher flag is observed) and the
+/// compositor does NOT respawn. Respawn policy — restartOnCrash, maxRestarts,
+/// backoff — is a Claude Code FRONT-door concern (fleet split per M8: the
+/// front door owns process restart; the compositor owns fan-out and merge
+/// over the children it was handed). The compositor's only obligations after
+/// a child death are: (a) never dispatch into a dead child again, (b) keep
+/// the session and the surviving children serving. Finding filed as M8;
+/// receipt: docs/jira/v26.11.3/receipts/cl-f-eviction.md. The prior behavior
+/// (dead entries retained forever, exit watcher only logging + clearing
+/// buffer entries at the server.rs block) is falsified by
+/// `tests/child_eviction_test.rs`.
 pub struct ChildProcessPool {
     processes: dashmap::DashMap<String, ChildProcess>,
 }
@@ -136,7 +161,31 @@ impl ChildProcessPool {
         &self,
         server_id: &str,
     ) -> Option<dashmap::mapref::one::Ref<'_, String, ChildProcess>> {
-        self.processes.get(server_id)
+        if let Some(entry) = self.processes.get(server_id) {
+            if entry.value().exited.load(Ordering::Acquire) {
+                // Dead child: evict so every subsequent dispatch (fanout,
+                // flush coordinator, routing) skips it. Dispatch to an
+                // evicted id falls back to the remaining live children —
+                // the documented FirstSuccess/fan-all behavior — and the
+                // session stays alive.
+                drop(entry);
+                self.processes.remove(server_id);
+                return None;
+            }
+            Some(entry)
+        } else {
+            None
+        }
+    }
+
+    /// True if `server_id` has a live (non-exited) child in the pool.
+    /// Reads the liveness flag without taking a map lock guard on the
+    /// child entry path used by health/state surfaces.
+    pub fn is_live(&self, server_id: &str) -> bool {
+        match self.processes.get(server_id) {
+            Some(entry) => !entry.value().exited.load(Ordering::Acquire),
+            None => false,
+        }
     }
 
     pub fn server_ids(&self) -> Vec<String> {

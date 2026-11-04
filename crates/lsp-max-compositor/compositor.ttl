@@ -42,3 +42,53 @@ lspmax:secondaryExtension a owl:DatatypeProperty ;
     rdfs:domain lspmax:ChildServer ;
     rdfs:range xsd:string ;
     rdfs:label "secondaryExtension" .
+
+lspmax:andonPrefix a owl:DatatypeProperty ;
+    rdfs:domain lspmax:ChildServer ;
+    rdfs:range xsd:string ;
+    rdfs:label "andonPrefix" .
+
+lspmax:command a owl:DatatypeProperty ;
+    rdfs:domain lspmax:ChildServer ;
+    rdfs:range xsd:string ;
+    rdfs:comment "Spawn command for the child server binary. Absent = server is not spawn-capable; spawn attempts must refuse typed (no fallback to a guessed binary name). Convention: the command value is the server's own binary name (equal to its rdfs:label) — this lets the registry template distinguish a server's own command from ggen 26.10.11's OPTIONAL cross-join leak, which stamps every solution with every bound ?command value." ;
+    rdfs:label "command" .
+
+# ---- Server individuals (ontology-first per-consumer registry) ----
+
+lspmax:server-claude-code-config-lsp a lspmax:ChildServer ;
+    rdfs:label "claude-code-config-lsp" ;
+    lspmax:hasTier lspmax:DiagnosticsOnly ;
+    lspmax:primaryExtension ".json", ".md" ;
+    lspmax:andonPrefix "CCC-" ;
+    lspmax:command "claude-code-config-lsp" .
+
+lspmax:server-vscode-json-lsp a lspmax:ChildServer ;
+    rdfs:label "vscode-json-lsp" ;
+    lspmax:hasTier lspmax:Primary ;
+    lspmax:primaryExtension ".json" ;
+    lspmax:andonPrefix "VSJ-" .
+
+lspmax:server-markdown-lsp a lspmax:ChildServer ;
+    rdfs:label "markdown-lsp" ;
+    lspmax:hasTier lspmax:Primary ;
+    lspmax:primaryExtension ".md" ;
+    lspmax:andonPrefix "MDL-" .
+
+lspmax:server-justfile-lsp a lspmax:ChildServer ;
+    rdfs:label "justfile-lsp" ;
+    lspmax:hasTier lspmax:Primary ;
+    lspmax:primaryExtension ".just" ;
+    lspmax:andonPrefix "JUST-" .
+
+lspmax:server-ggen-lsp a lspmax:ChildServer ;
+    rdfs:label "ggen-lsp" ;
+    lspmax:hasTier lspmax:Primary ;
+    lspmax:primaryExtension ".ttl", ".rq", ".tera" ;
+    lspmax:andonPrefix "GGEN-" .
+
+lspmax:server-wasm4pm-lsp a lspmax:ChildServer ;
+    rdfs:label "wasm4pm-lsp" ;
+    lspmax:hasTier lspmax:DiagnosticsOnly ;
+    lspmax:primaryExtension ".ocel.json", ".receipt.json", ".ocel.jsonl" ;
+    lspmax:andonPrefix "WASM4PM-" .

@@ -9,7 +9,7 @@ Every proposed component carries a bounded status in
 path and symbol and verified; everything else is marked `CANDIDATE` or `OPEN` and
 is **not** asserted to work.
 
-CalVer: workspace `26.6.x` (YY.M.D), not SemVer.
+CalVer: workspace `26.11.x` (YY.M.D), not SemVer.
 
 ---
 

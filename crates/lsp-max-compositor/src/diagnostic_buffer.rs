@@ -203,6 +203,8 @@ mod active_code_tests {
             uri: uri.to_string(),
             line: 0,
             character: 0,
+            end_line: 0,
+            end_character: 0,
             severity: 1,
             code: code.to_string(),
             message: "blocked".to_string(),

@@ -1,0 +1,11 @@
+PREFIX lsp: <https://microsoft.github.io/language-server-protocol/>
+PREFIX law: <https://lsp-max.io/law#>
+
+# Conformance-init extraction: one row per declared method with its law status.
+# ORDER BY is mandatory under strict_mode (error E0013 at config-validation time).
+SELECT ?method ?status
+WHERE {
+  ?m lsp:methodName ?method ;
+     law:status ?status .
+}
+ORDER BY ?method

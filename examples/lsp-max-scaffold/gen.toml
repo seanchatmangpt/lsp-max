@@ -1,12 +1,10 @@
 [project]
 name = "lsp-max-scaffold"
-language_id = "scaffold"
 version = "26.6.20"
 description = "Law-state LSP scaffold generator manifest"
 
 [ontology]
 source = "ontology/scaffold.ttl"
-packs = ["lsp-max"]
 
 [generation]
 output_dir = "."
@@ -14,18 +12,15 @@ output_dir = "."
 # Generate LSP method handler stubs from ontology declarations.
 [[generation.rules]]
 name = "scaffold-handlers"
-description = "Generate handler stubs for CANDIDATE methods from ontology"
-input  = "ontology/scaffold.ttl"
-query  = { inline = "SELECT ?method WHERE { ?m lsp:methodName ?method ; law:status law:CANDIDATE . }" }
+query  = { file = "queries/handlers.sparql" }
 template = { file = "templates/handler_stub.rs.tera" }
 output_file = "src/generated_handlers.rs"
-mode = "Guard"
+mode = "Overwrite"
 
 # Generate the conformance vector initialisation from ontology law-status rows.
 [[generation.rules]]
 name = "scaffold-conformance"
-description = "Generate ScaffoldConformanceVector initialisation from ontology"
 query  = { file = "queries/conformance_init.sparql" }
 template = { file = "templates/conformance_init.rs.tera" }
 output_file = "src/generated_conformance.rs"
-mode = "Guard"
+mode = "Overwrite"

@@ -579,8 +579,8 @@ impl CompositorServer {
                         character: d.character,
                     },
                     end: Position {
-                        line: d.line,
-                        character: d.character,
+                        line: d.end_line,
+                        character: d.end_character,
                     },
                 },
                 severity: Some(match d.severity {

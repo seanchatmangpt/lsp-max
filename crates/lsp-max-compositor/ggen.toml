@@ -1,10 +1,12 @@
 [project]
 name = "lsp-max-compositor"
-language_id = "lsp"
 version = "26.6.30"
 
 [ontology]
 source = "../../ontology/chicago_v26_6_30.ttl"
+# Additive: compositor.ttl carries the CompositorServer/ChildServer vocabulary and
+# the per-consumer server individuals consumed by the registry-init rule below.
+imports = ["compositor.ttl"]
 
 [generation]
 output_dir = "."
@@ -16,7 +18,6 @@ path     = "../../../chicago-tdd-tools"
 
 [[generation.rules]]
 name        = "cc-scaffold-stubs"
-description = "Generate scaffold!() stubs from ctt:ScaffoldStub ontology instances"
 query       = { pack = "chicago-tdd-tools", output = "queries", file = "scaffold_stubs.rq" }
 template    = { pack = "chicago-tdd-tools", output = "templates", file = "scaffold_stubs.rs.tera" }
 output_file = "src/generated/{{ ticket_id | lower | replace(from='-', to='_') }}_{{ fn_name }}.rs"
@@ -24,8 +25,20 @@ mode        = "Create"
 
 [[generation.rules]]
 name        = "cc-chicago-tests"
-description = "Generate #[chicago_test] acceptance tests from ctt:ScaffoldStub ontology instances"
 query       = { pack = "chicago-tdd-tools", output = "queries", file = "scaffold_stubs.rq" }
 template    = { pack = "chicago-tdd-tools", output = "templates", file = "chicago_test.rs.tera" }
 output_file = "../../tests/chicago/{{ ticket_id | lower | replace(from='-', to='_') }}_{{ fn_name }}.rs"
 mode        = "Create"
+
+# Ontology-first per-consumer registry: SPARQL SELECT over lspmax:ChildServer
+# individuals in compositor.ttl (ORDER BY ?id ?ext — determinism law) rendered
+# through registry_init.tera into src/registry_init.rs. ASK guard skips when the
+# graph holds zero individuals.
+[[generation.rules]]
+name        = "registry-init-from-ontology"
+query       = { file = "queries/registry_servers.rq" }
+template    = { file = "registry_init.tera" }
+output_file = "src/registry_init.rs"
+mode        = "Overwrite"
+skip_empty  = true
+when        = "PREFIX lspmax: <https://lsp-max.dev/ontology#> ASK { ?s a lspmax:ChildServer }"

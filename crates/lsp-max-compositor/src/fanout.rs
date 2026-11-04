@@ -94,6 +94,7 @@ mod tests {
                 id: "ggen-lsp".into(),
                 tier: ChildTier::Primary,
                 extensions: vec![".rs".into()],
+                commands: Vec::new(),
             },
         );
         router.register(
@@ -102,6 +103,7 @@ mod tests {
                 id: "diagnostics-only-lsp".into(),
                 tier: ChildTier::DiagnosticsOnly,
                 extensions: vec![".rs".into()],
+                commands: Vec::new(),
             },
         );
 
@@ -142,6 +144,7 @@ mod tests {
                 id: "diag".into(),
                 tier: ChildTier::DiagnosticsOnly,
                 extensions: vec!["rs".into()],
+                commands: Vec::new(),
             },
         );
         router.register(
@@ -150,6 +153,7 @@ mod tests {
                 id: "primary".into(),
                 tier: ChildTier::Primary,
                 extensions: vec!["rs".into()],
+                commands: Vec::new(),
             },
         );
         router.register(
@@ -158,6 +162,7 @@ mod tests {
                 id: "secondary".into(),
                 tier: ChildTier::Secondary,
                 extensions: vec!["rs".into()],
+                commands: Vec::new(),
             },
         );
 

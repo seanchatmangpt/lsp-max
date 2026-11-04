@@ -283,7 +283,7 @@ just pipeline-schema
 
 ```json
 {
-  "version": "26.6.9",
+  "version": "26.11.3",
   "breed_count": 57,
   "default_generations": 10,
   "default_population_size": 20,
