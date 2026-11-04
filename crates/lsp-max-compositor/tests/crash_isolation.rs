@@ -102,7 +102,11 @@ async fn bounded_request(
     )
     .await;
     match result {
-        Ok(inner) => (inner.is_ok(), start.elapsed()),
+        // CL-E: a LIVE child that answers method-not-found surfaces a typed
+        // `server-error` — that IS a served round-trip (transport alive).
+        // Only `child-exited` / timeout means the transport failed.
+        Ok(Ok(_)) => (true, start.elapsed()),
+        Ok(Err(e)) => (e.0.starts_with("server-error"), start.elapsed()),
         Err(_) => (false, start.elapsed()),
     }
 }

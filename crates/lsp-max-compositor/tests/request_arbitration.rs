@@ -32,8 +32,8 @@
 
 use std::future::Future;
 use std::str::FromStr;
-use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::Duration;
 
 use lsp_max::client::{ClientBuilder, ServerHandle};
@@ -42,7 +42,7 @@ use lsp_max::lsp_types::{
     HoverParams, TextDocumentIdentifier, TextDocumentPositionParams,
 };
 use lsp_max_compositor::child_process::NoopClient;
-use lsp_max_compositor::fanout::{dispatch_strategy, servers_for_uri, DispatchStrategy};
+use lsp_max_compositor::fanout::{DispatchStrategy, dispatch_strategy, servers_for_uri};
 use lsp_max_compositor::{ChildServer, ChildTier, ExtensionRouter};
 
 const RS_URI: &str = "file:///workspace/main.rs";
@@ -251,9 +251,11 @@ async fn both_children_claiming_doc_are_candidates_in_tier_order() {
     let candidates = servers_for_uri(&router, RS_URI);
     let ids: Vec<&str> = candidates.iter().map(|s| s.id.as_str()).collect();
     assert_eq!(ids, vec![a.id.as_str(), b.id.as_str()]);
-    assert!(candidates
-        .iter()
-        .all(|s| matches!(s.tier, ChildTier::Primary)));
+    assert!(
+        candidates
+            .iter()
+            .all(|s| matches!(s.tier, ChildTier::Primary))
+    );
 }
 
 /// Strategy classification pins hover/completion to FirstSuccess and

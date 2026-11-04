@@ -29,6 +29,30 @@ pub struct ChildProcess {
     /// (clean or crash). Drives the pool's dead-entry eviction: see
     /// `ChildProcessPool::get` and the no-respawn law below.
     pub exited: Arc<AtomicBool>,
+    /// Kill-on-drop guard (AF-20): dropping the `ChildProcess` — and hence
+    /// the pool that owns it — signals the exit watcher to SIGKILL the child
+    /// and reap it. Without this, dropping the pool leaves children alive:
+    /// the client read_loop holds a clone of the outbound sender and the
+    /// write_loop holds the child's stdin, so pool drop never produces stdin
+    /// EOF (see tests/child_churn_stress.rs, pool-drop-teardown court).
+    /// Teardown kill only — a respawn would violate the NO-RESPAWN law.
+    kill_tx: Option<tokio::sync::oneshot::Sender<()>>,
+}
+
+impl Drop for ChildProcess {
+    fn drop(&mut self) {
+        // Sync, no await in Drop. Two redundant fire paths (either suffices —
+        // witnessed by the shim court: suppressing ONLY the send does not
+        // neutralize the guard because taking+dropping the sender closes the
+        // channel and resolves kill_rx): (1) explicit send, ignored when the
+        // watcher already finished (child exited on its own); (2) the take +
+        // drop of the sender itself, which closes the channel and selects the
+        // kill branch. Both are teardown kills — a respawn would violate the
+        // NO-RESPAWN law.
+        if let Some(tx) = self.kill_tx.take() {
+            let _ = tx.send(());
+        }
+    }
 }
 
 impl ChildProcess {
@@ -68,10 +92,22 @@ impl ChildProcess {
         // Background task owns the Child so wait() has exclusive &mut access.
         // The oneshot carries the ExitStatus back to the caller's future.
         let (exit_tx, exit_rx) = tokio::sync::oneshot::channel::<std::process::ExitStatus>();
+        let (kill_tx, kill_rx) = tokio::sync::oneshot::channel::<()>();
         let exited = Arc::new(AtomicBool::new(false));
         let exited_for_watcher = Arc::clone(&exited);
         tokio::spawn(async move {
-            let status = child.wait().await.ok();
+            // AF-20: the watcher selects on natural exit vs the kill-on-drop
+            // signal from `ChildProcess::drop`. On the kill signal the child
+            // is SIGKILLed and reaped, so pool drop cannot leak the process
+            // even though the read_loop/write_loop tasks still hold the
+            // transport ends.
+            let status = tokio::select! {
+                st = child.wait() => st.ok(),
+                _ = kill_rx => {
+                    let _ = child.start_kill();
+                    child.wait().await.ok()
+                }
+            };
             // Liveness flip happens unconditionally — even when the oneshot
             // receiver is gone, the pool must observe the child as dead.
             exited_for_watcher.store(true, Ordering::Release);
@@ -84,6 +120,7 @@ impl ChildProcess {
             server_id,
             handle,
             exited,
+            kill_tx: Some(kill_tx),
         };
         let exit_fut = async move {
             exit_rx.await.map_err(|_| {

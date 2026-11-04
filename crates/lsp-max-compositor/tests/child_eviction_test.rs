@@ -84,15 +84,21 @@ async fn bounded_request(
     method: &str,
     secs: u64,
 ) -> Result<Option<serde_json::Value>, String> {
-    tokio::time::timeout(
+    let inner = tokio::time::timeout(
         std::time::Duration::from_secs(secs),
         child
             .handle
             .request::<serde_json::Value>(method, serde_json::json!({})),
     )
     .await
-    .map_err(|_| format!("request exceeded {secs}s bound"))?
-    .map_err(|e| e.to_string())
+    .map_err(|_| format!("request exceeded {secs}s bound"))?;
+    match inner {
+        // CL-E: a LIVE child answering method-not-found surfaces a typed
+        // `server-error` — that IS a served round-trip; normalize to Ok(None).
+        Ok(v) => Ok(v),
+        Err(e) if e.0.starts_with("server-error") => Ok(None),
+        Err(e) => Err(e.to_string()),
+    }
 }
 
 // ── E1 + E2: eviction at get() + typed fallback on the dead handle ──────────

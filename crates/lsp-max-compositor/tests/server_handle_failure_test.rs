@@ -24,14 +24,35 @@ const HANDSHAKE_BOUND: u64 = 30;
 const DEAD_CHILD_BOUND: u64 = 2;
 const INFLIGHT_BOUND: u64 = 40;
 
-/// Marker embedded in a stub's argv so pkill targets exactly this test's
-/// child — never a bystander.
-const KILL_MARKER: &str = "lspmax-shf-do-not-match";
+/// Markers embedded in stubs' argv so pkill targets exactly one test's child —
+/// never a bystander. DISTINCT per test: the courts run in parallel threads,
+/// so a shared marker would let D1's pkill kill D3's live stub (witnessed
+/// flake, fixed 2026-11-03).
+const KILL_MARKER: &str = "lspmax-shf-kill-do-not-match";
+// The live-silent court's stub carries its own marker in argv
+// (`lspmax-shf-silent-do-not-match`) so no court's pkill can match it.
 
 /// Shell stub: answers one `initialize` (id 1), then goes silent forever
 /// while advertising its kill marker in argv.
 const SILENT_STUB: &str = r#"
-# lspmax-shf-do-not-match
+# lspmax-shf-kill-do-not-match
+cl=''
+while read -r line; do
+  line=$(printf '%s' "$line" | tr -d '\r')
+  [ -z "$line" ] && break
+  case "$line" in
+    Content-Length:*) cl="${line#Content-Length: }" ;;
+  esac
+done
+dd bs=1 count="$cl" > /dev/null 2>&1
+body='{"jsonrpc":"2.0","id":1,"result":{"capabilities":{}}}'
+printf 'Content-Length: %d\r\n\r\n%s' "${#body}" "$body"
+while true; do sleep 1; done
+"#;
+
+/// Same silent stub, different argv marker — never pkill'ed by any court.
+const LIVE_SILENT_STUB: &str = r#"
+# lspmax-shf-silent-do-not-match
 cl=''
 while read -r line; do
   line=$(printf '%s' "$line" | tr -d '\r')
@@ -138,7 +159,7 @@ async fn sigkilled_child_fails_pending_requests_typed() {
 #[tokio::test]
 #[ignore = "30 s wall-clock by design; run with --include-ignored"]
 async fn live_silent_child_still_honors_bounded_timeout() {
-    let (child, _exit) = spawn_child("shf-silent", "sh", &["-c", SILENT_STUB]).await;
+    let (child, _exit) = spawn_child("shf-silent", "sh", &["-c", LIVE_SILENT_STUB]).await;
 
     let start = std::time::Instant::now();
     let outcome = child
