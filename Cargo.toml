@@ -106,6 +106,17 @@ path = "tests/chicago/cc_004_fanout.rs"
 name = "cc_005_merge_upstream"
 path = "tests/chicago/cc_005_merge_upstream.rs"
 
+[[test]]
+name = "test_autonomic_mesh"
+path = "tests/test_autonomic_mesh.rs"
+# ZD-34: the three hooks this test registers (CustomerRequestClassifierHook,
+# PolicyEvaluationHook, ReceiptRoutingHook) are QUARANTINED behind
+# `refund-demo-hooks` (default off; Gall checkpoint CP14 — see
+# src/runtime/mesh_hooks.rs:300). Required-features, not an unconditional
+# target, so `cargo test --workspace --all-targets` skips (loudly, in
+# Cargo.toml) instead of failing to compile against a feature-off lib.
+required-features = ["refund-demo-hooks"]
+
 [[bench]]
 name = "pipeline_search"
 harness = false

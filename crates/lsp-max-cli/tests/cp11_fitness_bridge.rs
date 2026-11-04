@@ -26,6 +26,7 @@ use std::time::Duration;
 
 use lsp_max::lsp_types::{InitializeParams, InitializeResult};
 use lsp_max::{jsonrpc::Result as LspResult, Client, LanguageServer, LspService};
+use lsp_max_compositor::andon_snapshot::AndonSnapshot;
 use lsp_max_compositor::child_process::ChildProcessPool;
 use lsp_max_compositor::diagnostic_buffer::DiagnosticBuffer;
 use lsp_max_compositor::flush_coordinator::FlushCoordinator;
@@ -102,6 +103,7 @@ async fn diagnostic_content_survives_compositor_to_fitness_file_to_mcp_read() {
         pool,
         Arc::clone(&gate),
         1, // expected_server_count — quorum of 1 fires the flush immediately
+        Arc::new(AndonSnapshot::new()), // AF-19: andon snapshot param added to spawn
     );
 
     // ── Deposit a synthetic diagnostic carrying the distinctive content ─────────
@@ -109,6 +111,9 @@ async fn diagnostic_content_survives_compositor_to_fitness_file_to_mcp_read() {
         uri: distinctive_uri.to_string(),
         line: 7,
         character: 3,
+        // AF-19: diagnostic range end position added to DiagnosticEntry
+        end_line: 7,
+        end_character: 3,
         severity: 1, // Error — required for has_andon_block / ANDON routing
         code: distinctive_code.to_string(),
         message: distinctive_message.to_string(),
