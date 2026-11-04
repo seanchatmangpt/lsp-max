@@ -186,3 +186,6 @@ rustc-hash = "2"
 lsp-max-ast = { path = "crates/lsp-max-adapters/lsp-max-ast", version = "26.11.3" }
 chicago-tdd-tools = "26.7.1"
 chicago-tdd-tools-proc-macros = { version = "26.7.1", package = "chicago-tdd-tools-proc-macros" }
+
+[profile.release]
+lto = "thin"
