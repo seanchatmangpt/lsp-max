@@ -63,14 +63,9 @@ jobs:
           cargo +nightly-2026-04-15 --version --verbose
 
       - name: Cache Cargo state
-        uses: actions/cache@v6
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: toolchain-contract-${{ runner.os }}-${{ hashFiles('**/Cargo.toml', 'rust-toolchain.toml') }}
-          restore-keys: toolchain-contract-${{ runner.os }}-
+        uses: Swatinem/rust-cache@v2
+        env:
+          RUSTUP_TOOLCHAIN: nightly-2026-04-15
 
       - name: Check default Tokio runtime boundary
         run: cargo +nightly-2026-04-15 check -p lsp-max --lib
@@ -99,14 +94,9 @@ jobs:
             --component rustfmt
 
       - name: Cache Cargo state
-        uses: actions/cache@v6
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: quality-${{ runner.os }}-${{ hashFiles('**/Cargo.toml', 'rust-toolchain.toml') }}
-          restore-keys: quality-${{ runner.os }}-
+        uses: Swatinem/rust-cache@v2
+        env:
+          RUSTUP_TOOLCHAIN: nightly-2026-04-15
 
       - name: Verify formatting
         run: cargo +nightly-2026-04-15 fmt --all -- --check
@@ -132,6 +122,11 @@ jobs:
 
       - name: Install pinned Rust toolchain
         run: rustup toolchain install nightly-2026-04-15 --profile minimal
+
+      - name: Cache Cargo state
+        uses: Swatinem/rust-cache@v2
+        env:
+          RUSTUP_TOOLCHAIN: nightly-2026-04-15
 
       - name: Execute package dry run
         run: cargo +nightly-2026-04-15 publish -p lsp-max --dry-run --allow-dirty

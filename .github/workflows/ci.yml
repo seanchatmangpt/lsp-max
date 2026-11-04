@@ -36,14 +36,9 @@ jobs:
         run: rustup toolchain install nightly-2026-04-15 --profile minimal
 
       - name: Cache Cargo state
-        uses: actions/cache@v6
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: docs-${{ runner.os }}-${{ hashFiles('**/Cargo.toml', 'rust-toolchain.toml') }}
-          restore-keys: docs-${{ runner.os }}-
+        uses: Swatinem/rust-cache@v2
+        env:
+          RUSTUP_TOOLCHAIN: nightly-2026-04-15
 
       - name: Build workspace documentation
         env:

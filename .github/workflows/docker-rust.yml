@@ -3,8 +3,22 @@ name: Rust Docker Build
 on:
   pull_request:
     branches: [master]
+    paths:
+      - 'src/**'
+      - 'crates/**'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+      - 'Dockerfile.ci'
+      - '.github/workflows/docker-rust.yml'
   push:
     branches: [master]
+    paths:
+      - 'src/**'
+      - 'crates/**'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+      - 'Dockerfile.ci'
+      - '.github/workflows/docker-rust.yml'
   workflow_dispatch:
 
 permissions:
@@ -31,11 +45,16 @@ jobs:
       - name: Docker engine identity
         run: docker version
 
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
       - name: Build Rust workspace in clean container
-        run: |
-          SOURCE_SHA="$(git rev-parse HEAD)"
-          docker build \
-            --progress=plain \
-            --file Dockerfile.ci \
-            --tag "lsp-max-rust:${SOURCE_SHA}" \
-            .
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile.ci
+          load: true
+          provenance: false
+          tags: lsp-max-rust:${{ github.sha }}
+          cache-from: type=gha,scope=docker-ci
+          cache-to: type=gha,mode=max,scope=docker-ci

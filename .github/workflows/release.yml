@@ -43,14 +43,9 @@ jobs:
             --component rustfmt
 
       - name: Cache Cargo state
-        uses: actions/cache@v6
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: release-candidate-${{ runner.os }}-${{ hashFiles('**/Cargo.toml', 'rust-toolchain.toml') }}
-          restore-keys: release-candidate-${{ runner.os }}-
+        uses: Swatinem/rust-cache@v2
+        env:
+          RUSTUP_TOOLCHAIN: nightly-2026-04-15
 
       - name: Verify repository invariants
         run: bash scripts/audit-repository.sh
