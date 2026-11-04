@@ -1,5 +1,5 @@
 {
-  "receipt_id": "cog010-oracle-scan-20637",
+  "receipt_id": "cog010-oracle-scan-20761",
   "law": "COG-010",
   "scanned_stems": [
     "bayesian_network",
@@ -10,5 +10,5 @@
   "scan_pairs_checked": 5,
   "result": "ADMITTED",
   "violations": [],
-  "scanned_at": "epoch+20637d 21:41:38Z"
+  "scanned_at": "epoch+20761d 13:04:17Z"
 }
