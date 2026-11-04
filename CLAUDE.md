@@ -17,7 +17,7 @@ A fork of `tower-lsp` (Tower-based LSP framework) upgraded into **lsp-max**: a "
 
 ## Versioning
 
-Workspace version uses **CalVer (YY.M.D)**, not SemVer. The current version is `26.6.21`. Version-law violations are a diagnostic family (`ANTI-LLM-VERSION-*`).
+Workspace version uses **CalVer (YY.M.D)**, not SemVer. The current version is `26.11.3`. Version-law violations are a diagnostic family (`ANTI-LLM-VERSION-*`).
 
 ## Sibling repo dependencies (build prerequisite)
 
