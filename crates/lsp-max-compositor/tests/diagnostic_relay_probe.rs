@@ -8,15 +8,44 @@ use std::process::{Command, Stdio};
 use std::sync::mpsc;
 use std::time::{Duration, Instant};
 
+/// Resolve the external claude-code-config-lsp binary used as the compositor
+/// child server. Order: explicit env override, then a fallback search over the
+/// known workspace locations. `None` ⇒ caller must SKIP loudly — never fake a
+/// pass against a hardcoded path.
+fn resolve_child_bin() -> Option<String> {
+    if let Ok(override_bin) = std::env::var("CCC_PROBE_CHILD_BIN") {
+        if !override_bin.trim().is_empty() && std::path::Path::new(&override_bin).exists() {
+            return Some(override_bin);
+        }
+    }
+    let candidates = [
+        "/Users/sac/claude-code-config-lsp/target/release/claude-code-config-lsp",
+        "/Users/sac/claude-code-config-lsp/target/debug/claude-code-config-lsp",
+        "/Users/sac/claude-code-config-lsp/dist/claude-code-config-lsp-26.6.24",
+    ];
+    candidates
+        .iter()
+        .find(|c| std::path::Path::new(c).exists())
+        .map(|c| c.to_string())
+}
+
 #[tokio::test]
 async fn run_stdio_relay_works_end_to_end() {
     if std::env::var("CCC_PROBE_ROLE").is_ok() {
         return; // child-role processes never re-enter this test
     }
+    let Some(child_bin) = resolve_child_bin() else {
+        eprintln!(
+            "[SKIP] diagnostic_relay_probe::run_stdio_relay_works_end_to_end: \
+             external claude-code-config-lsp binary not found — set \
+             CCC_PROBE_CHILD_BIN or build /Users/sac/claude-code-config-lsp \
+             (cargo build --release). SKIP is typed and loud, not a pass."
+        );
+        return;
+    };
     let self_exe = std::env::current_exe().unwrap();
     let fixture = std::env::temp_dir().join("ccc-probe3-ws");
     let _ = std::fs::create_dir_all(fixture.join(".claude"));
-    let child_bin = "/Users/sac/claude-code-config-lsp/target/release/claude-code-config-lsp";
     let toml = format!(
         "[[server]]\nid = \"ccc-child\"\nprimary_extensions = [\".json\", \".md\"]\nsecondary_extensions = []\npriority = \"diagnostics-only\"\nandon_code_prefixes = [\"CCC-\"]\ncommand = \"{child_bin}\"\nargs = [\"serve\", \"--stdio\"]\n"
     );
