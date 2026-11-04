@@ -37,7 +37,7 @@ const CLEAN: &str = "#[no_mangle]\npub extern \"C\" fn lspa2_clean(x: u32) -> u3
 /// Drive one did_save through the REAL service; return every
 /// publishDiagnostics notification for the saved URI.
 async fn save_and_collect(content: &str, uri_str: &str) -> Vec<PublishDiagnosticsParams> {
-    let (mut service, mut socket) = LspService::new(|client| BranchlessLspServer::new(client));
+    let (mut service, mut socket) = LspService::new(BranchlessLspServer::new);
     let init = Request::build("initialize")
         .params(serde_json::json!({"capabilities": {}}))
         .id(1)
@@ -153,8 +153,10 @@ async fn clean_save_publishes_no_compile_note() {
 /// COURT (ordering arm): note diagnostic is emitted FIRST (deterministic).
 #[test]
 fn note_diag_is_emitted_before_function_verdicts() {
-    let mut out = Tier2Outcome::default();
-    out.note = Some("compile error (not a court verdict): boom".to_string());
+    let out = Tier2Outcome {
+        note: Some("compile error (not a court verdict): boom".to_string()),
+        ..Default::default()
+    };
     let diags = verdict_diagnostics(&out);
     assert_eq!(diags.len(), 1);
     assert_eq!(diags[0].severity, Some(DiagnosticSeverity::WARNING));
@@ -171,8 +173,10 @@ fn note_diag_is_emitted_before_function_verdicts() {
 #[test]
 fn oversized_note_truncates_deterministically() {
     let long = "x".repeat(10_000);
-    let mut out = Tier2Outcome::default();
-    out.note = Some(long.clone());
+    let out = Tier2Outcome {
+        note: Some(long.clone()),
+        ..Default::default()
+    };
     let diags = verdict_diagnostics(&out);
     assert_eq!(diags.len(), 1);
     let msg = &diags[0].message;
@@ -183,8 +187,10 @@ fn oversized_note_truncates_deterministically() {
     assert!(msg.ends_with("...[truncated]"));
     // Determinism: identical input, identical output.
     let again = {
-        let mut o = Tier2Outcome::default();
-        o.note = Some(long);
+        let o = Tier2Outcome {
+            note: Some(long),
+            ..Default::default()
+        };
         verdict_diagnostics(&o)
     };
     assert_eq!(diags, again, "truncation must be deterministic");
@@ -197,8 +203,10 @@ fn oversized_note_truncates_deterministically() {
 /// must NOT classify it as a refusal. Severity WARNING == 2, ERROR == 1.
 #[test]
 fn note_diag_is_warning_not_error_for_gate_parity() {
-    let mut out = Tier2Outcome::default();
-    out.note = Some("compile error (not a court verdict): e".to_string());
+    let out = Tier2Outcome {
+        note: Some("compile error (not a court verdict): e".to_string()),
+        ..Default::default()
+    };
     let d = &verdict_diagnostics(&out)[0];
     assert_eq!(
         d.severity,

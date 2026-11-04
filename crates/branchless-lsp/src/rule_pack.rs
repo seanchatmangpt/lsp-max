@@ -252,10 +252,10 @@ pub fn sanitize_for_compile(source: &str) -> String {
         // Copy everything before `#[`.
         out.push_str(&rest[..at]);
         // Find the matching close bracket (depth-aware).
-        let mut rest_iter = after.char_indices();
+        let _rest_iter = after.char_indices();
         // Skip the keyword chars we already know.
         let keyword_end = after
-            .find(|c: char| c == ']' || c == '(')
+            .find([']', '('])
             .expect("owner check guarantees ']' or '('");
         // Scan from after '#[' for the depth-aware close.
         let mut depth = 1usize;
@@ -330,7 +330,7 @@ pub fn run_tier2(source: &str, target: TargetKind) -> Tier2Outcome {
                 ParsedAttrs::default()
             }
         };
-        let branchy = !f.sites.is_empty();
+        let _branchy = !f.sites.is_empty();
         // Exact-count court (DOD-15): the bool form `classify_seeded`
         // collapses the count to `usize::from(branchy)` (=1), which admits
         // ANY measured budget >= 1 regardless of the true site count.
@@ -720,4 +720,3 @@ mod tests {
         assert!(verdict_diagnostics(&residual).is_empty());
     }
 }
-

@@ -692,9 +692,9 @@ pub extern "C" fn br_fn(x: u32) -> u32 {
 /// - Forward conditional edges are `Conditional` (ANDON-refused).
 /// - `bl`/`jal` are `Call`; `b`/`br`/`j`/`c.j`/`jalr`/`ret-class` are
 ///   `Unconditional` (not ANDON-refused).
-/// Prologue/epilogue idioms (sp-adjust, saves, pc-relative literal loads)
-/// contain no conditional in-function backward edge, so the rule yields no
-/// false positives there by construction.
+///   Prologue/epilogue idioms (sp-adjust, saves, pc-relative literal loads)
+///   contain no conditional in-function backward edge, so the rule yields no
+///   false positives there by construction.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BranchClass {
     /// Backward conditional in-function edge: the loop-back branch of a
@@ -745,8 +745,8 @@ pub struct FnClassification {
 /// - arm64: ABSOLUTE `#`-prefixed targets (`b.lo #0x28`).
 /// - riscv32c: RELATIVE offsets (`bgeu a2, a1, 0x14` at pc 14 resolves to
 ///   34; `bltu a2, a3, -0xa` at pc 30 resolves to 20).
-/// Unparseable op_str -> None -> classifier conservatively refuses
-/// (Conditional = ANDON-refused); fail-closed over fail-open.
+///   Unparseable op_str -> None -> classifier conservatively refuses
+///   (Conditional = ANDON-refused); fail-closed over fail-open.
 fn parse_target_addr(op_str: &str, pc: u64, arch: CourtArch) -> Option<u64> {
     let tok = op_str.split(',').next_back()?.trim();
     let tok = tok.trim_start_matches('#');

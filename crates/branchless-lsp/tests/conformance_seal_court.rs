@@ -30,7 +30,7 @@ const CLEAN: &str = "#[no_mangle]\npub extern \"C\" fn g06_clean(x: u32) -> u32 
 /// Run `initialize` + the given saves through the REAL service and return
 /// it (the server borrows from the service, so the service must outlive).
 async fn session_with_saves(saves: &[(&str, &str)]) -> LspService<BranchlessLspServer> {
-    let (mut service, mut socket) = LspService::new(|client| BranchlessLspServer::new(client));
+    let (mut service, mut socket) = LspService::new(BranchlessLspServer::new);
     // The loopback socket is a capacity-1 mpsc (lsp-max
     // src/service/client/mod.rs:46): a second undrained
     // publishDiagnostics blocks the server forever. Drain it for the

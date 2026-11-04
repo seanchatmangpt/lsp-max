@@ -17,7 +17,7 @@
 //! FAIL; skips are loud ([SKIP]).
 
 use branchless_lsp::compiler_worker::{CompileOutcome, CompilerWorker, TargetKind};
-use branchless_lsp::disasm_court::{BranchClass, DisasmCourt, LineMap};
+use branchless_lsp::disasm_court::{BranchClass, DisasmCourt};
 
 fn compile_dbg(src: &str, target: TargetKind) -> std::path::PathBuf {
     let w = CompilerWorker::new();
@@ -53,7 +53,6 @@ pub extern "C" fn e9_loop(x: u32) -> u32 {
 pub extern "C" fn e9_free(x: u32) -> u32 { x.wrapping_add(1) }
 "#;
 
-
 /// Court 1 (line correlation, arm64 host): the loop fn's branch sites
 /// resolve to DWARF lines that land INSIDE the function span, and at least
 /// one site pins the `while` source line exactly. Line-level, not
@@ -64,13 +63,18 @@ fn e9_dwarf_line_correlation_lands_inside_function_span() {
     let court = DisasmCourt::arm64();
     let (map, fns) = court.judge_classified(&obj);
     assert!(map.row_count() > 0, "LineMap parsed zero rows (vacuous)");
-    let g = fns.iter().find(|f| f.name.contains("e9_loop")).expect("e9_loop");
+    let g = fns
+        .iter()
+        .find(|f| f.name.contains("e9_loop"))
+        .expect("e9_loop");
     assert!(!g.sites.is_empty(), "loop fn must have branch sites");
     let while_line = line_of(LOOP_PROBE, "while i <");
     let fn_open = line_of(LOOP_PROBE, "fn e9_loop");
     // All sites land inside the function span [fn_open, while_line + 4].
     for s in &g.sites {
-        let l = s.line.expect("site line must resolve (line-level precision)");
+        let l = s
+            .line
+            .expect("site line must resolve (line-level precision)");
         assert!(
             l >= fn_open && l <= while_line + 4,
             "branch site line {l} outside function span [{fn_open}, {}]",
@@ -140,9 +144,14 @@ fn e9_counted_loop_structural_not_andon_refused() {
     let obj = compile_dbg(LOOP_PROBE, TargetKind::Riscv32Imc);
     let court = DisasmCourt::riscv32c();
     let (_map, fns) = court.judge_classified(&obj);
-    let l = fns.iter().find(|f| f.name.contains("e9_loop")).expect("e9_loop");
+    let l = fns
+        .iter()
+        .find(|f| f.name.contains("e9_loop"))
+        .expect("e9_loop");
     assert!(
-        l.sites.iter().any(|s| s.class == BranchClass::LoopStructural),
+        l.sites
+            .iter()
+            .any(|s| s.class == BranchClass::LoopStructural),
         "counted loop must have LoopStructural back-edges; sites = {:?}",
         l.sites
     );
@@ -150,14 +159,16 @@ fn e9_counted_loop_structural_not_andon_refused() {
         !l.andon_refused,
         "counted loop's structurally-necessary branches must NOT be ANDON-refused"
     );
-    let free = fns.iter().find(|f| f.name.contains("e9_free")).expect("e9_free");
+    let free = fns
+        .iter()
+        .find(|f| f.name.contains("e9_free"))
+        .expect("e9_free");
     assert!(
         free.sites.is_empty(),
         "branchfree fn must yield zero sites (no prologue/epilogue false positives); got {:?}",
         free.sites
     );
 }
-
 
 /// Court 4 (column precision): the -g probe carries DWARF column data and
 /// the court surfaces it on BranchSite.column. If the active rustc emits no
@@ -177,7 +188,9 @@ fn e9_column_precision_or_loud_floor() {
         );
     }
     assert!(
-        fns.iter().flat_map(|f| f.sites.iter()).any(|s| s.column.is_some()),
+        fns.iter()
+            .flat_map(|f| f.sites.iter())
+            .any(|s| s.column.is_some()),
         "column data present in .debug_line but no branch site surfaced one"
     );
 }
@@ -187,11 +200,14 @@ fn e9_column_precision_or_loud_floor() {
 /// (LoopStructural site vanishes). A court that cannot flip is FAIL.
 #[test]
 fn e9_opcode_mutation_flips_classification() {
-    use object::{Object, ObjectSection, ObjectSymbol};
+    use object::{Object, ObjectSection};
     let obj = compile_dbg(LOOP_PROBE, TargetKind::Riscv32Imc);
     let court = DisasmCourt::riscv32c();
     let (_map, fns) = court.judge_classified(&obj);
-    let l = fns.iter().find(|f| f.name.contains("e9_loop")).expect("e9_loop");
+    let l = fns
+        .iter()
+        .find(|f| f.name.contains("e9_loop"))
+        .expect("e9_loop");
     let site = l
         .sites
         .iter()
@@ -222,7 +238,10 @@ fn e9_opcode_mutation_flips_classification() {
         .filter(|s| s.class == BranchClass::LoopStructural)
         .map(|s| (s.addr, s.size))
         .collect();
-    assert!(!ls_sites.is_empty(), "baseline LoopStructural sites present");
+    assert!(
+        !ls_sites.is_empty(),
+        "baseline LoopStructural sites present"
+    );
     let mut mutated = bytes.clone();
     for (a, sz) in &ls_sites {
         let off = fstart + (a - sec_addr);
@@ -235,7 +254,10 @@ fn e9_opcode_mutation_flips_classification() {
     std::fs::write(&mutated_path, &mutated).expect("write mutated object");
 
     let (_m2, fns2) = court.judge_classified(&mutated_path);
-    let l2 = fns2.iter().find(|f| f.name.contains("e9_loop")).expect("e9_loop survives");
+    let l2 = fns2
+        .iter()
+        .find(|f| f.name.contains("e9_loop"))
+        .expect("e9_loop survives");
     let after_classes = l2.sites.iter().map(|s| s.class).collect::<Vec<_>>();
     assert_ne!(
         before_classes, after_classes,
@@ -256,12 +278,22 @@ fn e9_arm64_mutation_flips_classification() {
     let obj = compile_dbg(LOOP_PROBE, TargetKind::Aarch64AppleDarwin);
     let court = DisasmCourt::arm64();
     let (_map, fns) = court.judge_classified(&obj);
-    let l = fns.iter().find(|f| f.name.contains("e9_loop")).expect("e9_loop");
-    let site = l.sites.iter().find(|s| s.class == BranchClass::LoopStructural).expect("baseline");
+    let l = fns
+        .iter()
+        .find(|f| f.name.contains("e9_loop"))
+        .expect("e9_loop");
+    let site = l
+        .sites
+        .iter()
+        .find(|s| s.class == BranchClass::LoopStructural)
+        .expect("baseline");
     let before = l.sites.iter().map(|s| s.class).collect::<Vec<_>>();
     let bytes = std::fs::read(&obj).expect("read probe object");
     let parsed = object::File::parse(&*bytes).expect("parse probe object");
-    let sec = parsed.sections().find(|s| s.name().map(|n| n == "__text").unwrap_or(false)).expect("__text");
+    let sec = parsed
+        .sections()
+        .find(|s| s.name().map(|n| n == "__text").unwrap_or(false))
+        .expect("__text");
     let (fstart, _fend) = sec.file_range().expect("file range");
     let sec_addr = sec.address();
     let ls_sites: Vec<(u64, u32)> = l
@@ -270,7 +302,10 @@ fn e9_arm64_mutation_flips_classification() {
         .filter(|s| s.class == BranchClass::LoopStructural)
         .map(|s| (s.addr, s.size))
         .collect();
-    assert!(!ls_sites.is_empty(), "baseline LoopStructural sites present");
+    assert!(
+        !ls_sites.is_empty(),
+        "baseline LoopStructural sites present"
+    );
     let mut mutated = bytes.clone();
     for (a, sz) in &ls_sites {
         let off = fstart + (a - sec_addr);
@@ -282,9 +317,15 @@ fn e9_arm64_mutation_flips_classification() {
     let mutated_path = obj.with_extension("mutated.o");
     std::fs::write(&mutated_path, &mutated).expect("write mutated object");
     let (_m2, fns2) = court.judge_classified(&mutated_path);
-    let l2 = fns2.iter().find(|f| f.name.contains("e9_loop")).expect("survives");
+    let l2 = fns2
+        .iter()
+        .find(|f| f.name.contains("e9_loop"))
+        .expect("survives");
     let after = l2.sites.iter().map(|s| s.class).collect::<Vec<_>>();
     assert_ne!(before, after, "arm64 court did not flip (vacuous)");
-    assert!(!after.contains(&BranchClass::LoopStructural), "mutated arm64 stream must lose LoopStructural; got {after:?}");
+    assert!(
+        !after.contains(&BranchClass::LoopStructural),
+        "mutated arm64 stream must lose LoopStructural; got {after:?}"
+    );
     let _ = std::fs::remove_file(&mutated_path);
 }

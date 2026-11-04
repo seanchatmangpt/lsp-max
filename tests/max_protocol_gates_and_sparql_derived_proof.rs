@@ -32,8 +32,7 @@ fn gate_violation_count(store: &Store, gate_sparql: &str) -> usize {
     let query = evaluator
         .parse_query(gate_sparql)
         .expect("gate query must parse");
-    let QueryResults::Solutions(solutions) = query.on_store(store).execute().expect("eval")
-    else {
+    let QueryResults::Solutions(solutions) = query.on_store(store).execute().expect("eval") else {
         panic!("expected SELECT results");
     };
     solutions.count()

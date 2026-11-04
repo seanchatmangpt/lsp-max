@@ -11,7 +11,7 @@ use lsp_max::client::LanguageClient;
 use lsp_max::lsp_types::{
     DiagnosticSeverity, NumberOrString, Position, PublishDiagnosticsParams, Range, Uri,
 };
-use lsp_max_compositor::merge::{merge_diagnostics, DiagnosticEntry, MergeContext};
+use lsp_max_compositor::merge::{merge_diagnostics, MergeContext};
 use lsp_max_compositor::{ChildTier, CompositorClient, DiagnosticBuffer, GateFile};
 
 fn diag(range: Range, code: &str, message: &str) -> lsp_max::lsp_types::Diagnostic {

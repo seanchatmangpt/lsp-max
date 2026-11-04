@@ -42,8 +42,7 @@ fn unique_diag_id() -> String {
 
 #[tokio::test(flavor = "current_thread")]
 async fn max_admission_pushes_lsp_max_admission_changed_when_the_verdict_actually_changes() {
-    let (service, mut socket) =
-        LspService::new(|client| ComposedServer::new(client, Vec::new()));
+    let (service, mut socket) = LspService::new(|client| ComposedServer::new(client, Vec::new()));
     let server = service.inner();
 
     let diag_id = unique_diag_id();
@@ -167,10 +166,9 @@ async fn max_admission_pushes_lsp_max_admission_changed_when_the_verdict_actuall
     );
 
     if reverted_verdict != forced_verdict {
-        let revert_req = socket
-            .next()
-            .await
-            .expect("the revert transition must also push a real lspMax/admissionChanged notification");
+        let revert_req = socket.next().await.expect(
+            "the revert transition must also push a real lspMax/admissionChanged notification",
+        );
         assert_eq!(
             revert_req,
             Request::from_notification::<crate::andon::lsp::LspMaxAdmissionChanged>(
@@ -184,8 +182,7 @@ async fn max_admission_pushes_lsp_max_admission_changed_when_the_verdict_actuall
 
 #[tokio::test(flavor = "current_thread")]
 async fn max_admission_does_not_push_when_the_verdict_is_unchanged() {
-    let (service, mut socket) =
-        LspService::new(|client| ComposedServer::new(client, Vec::new()));
+    let (service, mut socket) = LspService::new(|client| ComposedServer::new(client, Vec::new()));
     let server = service.inner();
 
     // First call always transitions from `None`, draining it here.
@@ -195,14 +192,14 @@ async fn max_admission_does_not_push_when_the_verdict_is_unchanged() {
         .and_then(Value::as_str)
         .unwrap()
         .to_string();
-    let _ = socket.next().await.expect("first call pushes one notification");
+    let _ = socket
+        .next()
+        .await
+        .expect("first call pushes one notification");
 
     // A second call with no registry change must compute the SAME verdict and must NOT push a
     // second notification -- proving this is real change-detection, not a blind re-send-on-every-poll.
-    let second = server
-        .max_admission()
-        .await
-        .expect("second call succeeds");
+    let second = server.max_admission().await.expect("second call succeeds");
     let second_verdict = second.get("verdict").and_then(Value::as_str).unwrap();
     assert_eq!(
         second_verdict, first_verdict,

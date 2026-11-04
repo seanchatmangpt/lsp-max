@@ -127,7 +127,7 @@ pub fn apply_edit(src: &str, edit: &WorkspaceEdit) -> String {
     let mut lines: Vec<String> = src.lines().map(String::from).collect();
     // Descending order keeps earlier (line, col) offsets valid.
     let mut sorted = edit.edits.clone();
-    sorted.sort_by(|a, b| (b.start_line, b.start_col).cmp(&(a.start_line, a.start_col)));
+    sorted.sort_by_key(|e| std::cmp::Reverse((e.start_line, e.start_col)));
     let mut last: Option<(usize, usize)> = None;
     for e in &sorted {
         let cur = (e.start_line, e.start_col);
@@ -451,9 +451,7 @@ pub fn insert_allow_isel_residual(
             "#[allow_isel_residual(target = \"riscv32\", \
              max_branches = {n}, reason = \"measured\")]"
         ),
-        None => {
-            format!("#[allow_isel_residual(target = \"riscv32\", reason = \"unmeasured\")]")
-        }
+        None => "#[allow_isel_residual(target = \"riscv32\", reason = \"unmeasured\")]".to_string(),
     };
     let edit = WorkspaceEdit {
         edits: vec![TextEdit {

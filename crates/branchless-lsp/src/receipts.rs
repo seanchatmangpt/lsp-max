@@ -203,7 +203,7 @@ impl ReceiptWriter {
         v.serialize_into(&mut scratch)
             .expect("5-field canonical form fits 512B scratch");
         let hash = blake3::hash(scratch.as_bytes()).to_hex().to_string();
-        std::fs::create_dir_all(&self.write_root())?;
+        std::fs::create_dir_all(self.write_root())?;
         std::fs::write(
             self.write_root().join(format!("{hash}.txt")),
             scratch.as_bytes(),
@@ -229,7 +229,7 @@ impl ReceiptWriter {
         frame(v, source_bytes, elf_text_bytes, c_file_bytes, &mut scratch)
             .map_err(|_| std::io::Error::new(std::io::ErrorKind::FileTooLarge, ReceiptOverflow))?;
         let hash = blake3::hash(scratch.as_bytes()).to_hex().to_string();
-        std::fs::create_dir_all(&self.write_root())?;
+        std::fs::create_dir_all(self.write_root())?;
         std::fs::write(
             self.write_root().join(format!("{hash}.txt")),
             scratch.as_bytes(),
@@ -262,10 +262,7 @@ pub fn session_lease() -> [u8; 32] {
             .duration_since(std::time::UNIX_EPOCH)
             .map(|d| d.as_nanos())
             .unwrap_or(0);
-        let tid = {
-            let x = &0u8 as *const u8 as usize;
-            x
-        };
+        let tid = { &0u8 as *const u8 as usize };
         let mut input = [0u8; 8 * 8];
         input[0..8].copy_from_slice(&(addr_entropy as u64).to_le_bytes());
         input[8..16].copy_from_slice(&(instant as u64).to_le_bytes());
@@ -381,6 +378,7 @@ mod tests {
         assert_eq!(h1.len(), 64);
     }
 
+    #[allow(dead_code)] // 2026-11-04: fixture helper retained for receipt-vector tests
     fn report_stub() -> crate::disasm_court::DisasmReport {
         crate::disasm_court::DisasmReport {
             functions: vec![fv("x", 0)],

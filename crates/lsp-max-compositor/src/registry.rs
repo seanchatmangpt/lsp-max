@@ -116,8 +116,7 @@ impl ExtensionRouter {
         let mut seen: std::collections::HashSet<String> = std::collections::HashSet::new();
         for entry in self.inner.iter() {
             for server in entry.value() {
-                if server.commands.iter().any(|c| c == command) && seen.insert(server.id.clone())
-                {
+                if server.commands.iter().any(|c| c == command) && seen.insert(server.id.clone()) {
                     out.push(server.clone());
                 }
             }

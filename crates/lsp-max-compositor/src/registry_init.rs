@@ -11,10 +11,7 @@ impl ExtensionRouter {
             ChildServer {
                 id: "claude-code-config-lsp".into(),
                 tier: ChildTier::DiagnosticsOnly,
-                extensions: vec![
-                    ".json".into(),
-                    ".md".into(),
-                ],
+                extensions: vec![".json".into(), ".md".into()],
                 commands: vec!["claude-code-config-lsp".into()],
             },
         );
@@ -23,10 +20,7 @@ impl ExtensionRouter {
             ChildServer {
                 id: "claude-code-config-lsp".into(),
                 tier: ChildTier::DiagnosticsOnly,
-                extensions: vec![
-                    ".json".into(),
-                    ".md".into(),
-                ],
+                extensions: vec![".json".into(), ".md".into()],
                 commands: vec!["claude-code-config-lsp".into()],
             },
         );
@@ -35,11 +29,7 @@ impl ExtensionRouter {
             ChildServer {
                 id: "ggen-lsp".into(),
                 tier: ChildTier::Primary,
-                extensions: vec![
-                    ".rq".into(),
-                    ".tera".into(),
-                    ".ttl".into(),
-                ],
+                extensions: vec![".rq".into(), ".tera".into(), ".ttl".into()],
                 commands: Vec::new(),
             },
         );
@@ -48,11 +38,7 @@ impl ExtensionRouter {
             ChildServer {
                 id: "ggen-lsp".into(),
                 tier: ChildTier::Primary,
-                extensions: vec![
-                    ".rq".into(),
-                    ".tera".into(),
-                    ".ttl".into(),
-                ],
+                extensions: vec![".rq".into(), ".tera".into(), ".ttl".into()],
                 commands: Vec::new(),
             },
         );
@@ -61,11 +47,7 @@ impl ExtensionRouter {
             ChildServer {
                 id: "ggen-lsp".into(),
                 tier: ChildTier::Primary,
-                extensions: vec![
-                    ".rq".into(),
-                    ".tera".into(),
-                    ".ttl".into(),
-                ],
+                extensions: vec![".rq".into(), ".tera".into(), ".ttl".into()],
                 commands: Vec::new(),
             },
         );
@@ -74,9 +56,7 @@ impl ExtensionRouter {
             ChildServer {
                 id: "justfile-lsp".into(),
                 tier: ChildTier::Primary,
-                extensions: vec![
-                    ".just".into(),
-                ],
+                extensions: vec![".just".into()],
                 commands: Vec::new(),
             },
         );
@@ -85,9 +65,7 @@ impl ExtensionRouter {
             ChildServer {
                 id: "markdown-lsp".into(),
                 tier: ChildTier::Primary,
-                extensions: vec![
-                    ".md".into(),
-                ],
+                extensions: vec![".md".into()],
                 commands: Vec::new(),
             },
         );
@@ -96,9 +74,7 @@ impl ExtensionRouter {
             ChildServer {
                 id: "vscode-json-lsp".into(),
                 tier: ChildTier::Primary,
-                extensions: vec![
-                    ".json".into(),
-                ],
+                extensions: vec![".json".into()],
                 commands: Vec::new(),
             },
         );

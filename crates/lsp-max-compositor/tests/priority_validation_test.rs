@@ -69,9 +69,9 @@ fn every_accepted_priority_parses_and_maps_to_its_tier() {
         ("diagnostics-only", ChildTier::DiagnosticsOnly),
     ];
     for (priority, want) in expected {
-        let config = parse(&manifest(priority)).expect(&format!(
-            "accepted priority {priority:?} must parse (valid set unchanged)"
-        ));
+        let config = parse(&manifest(priority)).unwrap_or_else(|_| {
+            panic!("accepted priority {priority:?} must parse (valid set unchanged)")
+        });
         assert_eq!(
             config.server[0].priority, priority,
             "parsed value round-trips"

@@ -120,8 +120,7 @@ fn select_wire_labels(store: &Store, superclass: &str) -> BTreeSet<String> {
     );
     let evaluator = SparqlEvaluator::new();
     let query = evaluator.parse_query(&sparql).expect("query must parse");
-    let QueryResults::Solutions(solutions) = query.on_store(store).execute().expect("eval")
-    else {
+    let QueryResults::Solutions(solutions) = query.on_store(store).execute().expect("eval") else {
         panic!("expected SELECT results");
     };
     solutions
@@ -147,8 +146,7 @@ fn select_item_edge_properties(store: &Store) -> BTreeSet<String> {
     "#;
     let evaluator = SparqlEvaluator::new();
     let query = evaluator.parse_query(sparql).expect("query must parse");
-    let QueryResults::Solutions(solutions) = query.on_store(&store).execute().expect("eval")
-    else {
+    let QueryResults::Solutions(solutions) = query.on_store(store).execute().expect("eval") else {
         panic!("expected SELECT results");
     };
     solutions

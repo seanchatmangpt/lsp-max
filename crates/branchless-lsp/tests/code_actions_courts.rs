@@ -6,17 +6,16 @@
 //! fail the semantic check - a court that cannot flip is FAIL.
 
 use branchless_lsp::code_actions::{
-    apply_edit, insert_allow_isel_residual, rewrite_if_else_to_mask,
-    rewrite_match_to_jump_table, NoFix, WorkspaceEdit,
+    apply_edit, insert_allow_isel_residual, rewrite_if_else_to_mask, rewrite_match_to_jump_table,
+    NoFix, WorkspaceEdit,
 };
 use branchless_lsp::lint_source;
 
 /// A rewritten source is valid Rust iff re-linting a planted branchy probe
 /// appended to it still sees the probe (an unparsable rewrite swallows it).
 fn syn_parse_ok(src: &str) {
-    let planted = format!(
-        "{src}fn e12_planted_probe() -> u32 {{ if true {{ 1 }} else {{ 0 }} }}\n"
-    );
+    let planted =
+        format!("{src}fn e12_planted_probe() -> u32 {{ if true {{ 1 }} else {{ 0 }} }}\n");
     let r = lint_source(&planted);
     assert!(
         r.hits.iter().any(|h| h.kind == "if"),
@@ -28,7 +27,11 @@ fn syn_parse_ok(src: &str) {
 fn court_if_else_mask_roundtrip_is_tier1_clean() {
     let src = "fn f(cond: bool, x: u32, y: u32) -> u32 {\n    if cond { x } else { y }\n}\n";
     let report_before = lint_source(src);
-    assert_eq!(report_before.hits.len(), 1, "pre: exactly the if is flagged");
+    assert_eq!(
+        report_before.hits.len(),
+        1,
+        "pre: exactly the if is flagged"
+    );
     assert_eq!(report_before.hits[0].line, 2);
     let edit = rewrite_if_else_to_mask(src, 2, 5).expect("rewrite applies");
     let rewritten = apply_edit(src, &edit);
@@ -55,8 +58,9 @@ fn court_if_else_mask_semantics_flip_on_inverted_mask() {
     assert_ne!(bad, good.as_str(), "mutation must change the text");
     // Structural check: canonical text is polarity-correct; the inverted
     // mutation has (!x mask-polarity swapped combine) and must be detected.
-    let canon_ok =
-        good.contains("& mask) | ((") && good.contains("& !mask)") && good.contains("wrapping_neg()");
+    let canon_ok = good.contains("& mask) | ((")
+        && good.contains("& !mask)")
+        && good.contains("wrapping_neg()");
     let bad_is_inverted = bad.contains("!mask) | ((");
     assert!(canon_ok, "canonical shape: {good}");
     assert!(bad_is_inverted, "mutation recognized as inverted: {bad}");
@@ -108,7 +112,10 @@ fn court_allow_insert_measured_uses_tier2_count() {
     assert!(rewritten.contains("target = \"riscv32\""));
     assert!(rewritten.contains("max_branches = 2"));
     assert!(rewritten.contains("reason = \"measured\""));
-    assert!(rewritten.contains("fn f(cond: bool"), "insert corrupts the fn");
+    assert!(
+        rewritten.contains("fn f(cond: bool"),
+        "insert corrupts the fn"
+    );
     // Unmeasured template omits max_branches honestly.
     let unmeasured = insert_allow_isel_residual(src, 1, None).expect("insert applies");
     let u_text = &unmeasured.edits[0].new_text;

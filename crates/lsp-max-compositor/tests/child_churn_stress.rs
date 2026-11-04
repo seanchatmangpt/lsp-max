@@ -29,7 +29,7 @@ use lsp_max_compositor::child_process::{ChildProcess, ChildProcessPool, NoopClie
 use lsp_max_compositor::diagnostic_buffer::DiagnosticBuffer;
 use lsp_max_compositor::merge::MergeContext;
 use lsp_max_compositor::registry::ChildTier;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::Arc;
 
@@ -71,12 +71,17 @@ impl SpawnLedger {
 /// `pidfile` before exec'ing the echo server — gives the court an exact,
 /// observable pid to SIGKILL mid-flight (exec keeps the pid, so the kill
 /// lands on the LSP server itself, not the shell).
-async fn spawn_churn_child(ledger: &SpawnLedger, server_id: &str, pidfile: &PathBuf) -> ChildProcess {
+async fn spawn_churn_child(ledger: &SpawnLedger, server_id: &str, pidfile: &Path) -> ChildProcess {
     ledger.bump();
-    let script = format!("echo $$ > \"{}\"; exec \"{}\"", pidfile.display(), STABLE_CHILD);
-    let (proc, _exit_fut) = ChildProcess::spawn(server_id.to_string(), "sh", &["-c", &script], NoopClient)
-        .await
-        .expect("churn child spawn must succeed");
+    let script = format!(
+        "echo $$ > \"{}\"; exec \"{}\"",
+        pidfile.display(),
+        STABLE_CHILD
+    );
+    let (proc, _exit_fut) =
+        ChildProcess::spawn(server_id.to_string(), "sh", &["-c", &script], NoopClient)
+            .await
+            .expect("churn child spawn must succeed");
     proc
 }
 
@@ -103,7 +108,7 @@ async fn initialize_bounded(child: &ChildProcess) {
 
 /// Read the pid published by the `sh` wrapper, with a bounded poll (the
 /// wrapper writes it asynchronously with respect to spawn() returning).
-fn read_pid(pidfile: &PathBuf) -> u32 {
+fn read_pid(pidfile: &Path) -> u32 {
     let deadline = std::time::Instant::now() + std::time::Duration::from_secs(POLL_BOUND);
     while std::time::Instant::now() < deadline {
         if let Ok(s) = std::fs::read_to_string(pidfile) {
@@ -113,7 +118,10 @@ fn read_pid(pidfile: &PathBuf) -> u32 {
         }
         std::thread::sleep(std::time::Duration::from_millis(5));
     }
-    panic!("pidfile never appeared within {POLL_BOUND}s: {}", pidfile.display());
+    panic!(
+        "pidfile never appeared within {POLL_BOUND}s: {}",
+        pidfile.display()
+    );
 }
 
 /// SIGKILL an exact pid (untrappable, mid-flight death — the kill_stress
@@ -229,9 +237,7 @@ async fn poll_children_dead(children: &[(Arc<AtomicBool>, Option<u32>)], secs: u
     poll_until(secs, || {
         children
             .iter()
-            .all(|(flag, pid)| {
-                flag.load(Ordering::Acquire) && pid.map_or(true, |p| !pid_alive(p))
-            })
+            .all(|(flag, pid)| flag.load(Ordering::Acquire) && pid.is_none_or(|p| !pid_alive(p)))
     })
     .await;
 }
@@ -262,7 +268,10 @@ struct LeakWitness {
 }
 
 fn witness(tag: &str, cycle: usize) -> LeakWitness {
-    let w = LeakWitness { fds: fd_count(), rss: rss_kb() };
+    let w = LeakWitness {
+        fds: fd_count(),
+        rss: rss_kb(),
+    };
     eprintln!(
         "witness {tag} cycle={cycle} descendants={} fds={} rss_kb={}",
         descendant_count(),
@@ -292,7 +301,7 @@ async fn churn_200_cycles_spawn_exchange_sigkill_evict_respawn() {
         pool.register(id.clone(), child);
 
         // Handshake proves the child is serving before the kill lands.
-        initialize_bounded(&pool.get(&id).expect("registered").value()).await;
+        initialize_bounded(pool.get(&id).expect("registered").value()).await;
 
         // Exchange N requests pre-kill (mid-flight = after live traffic).
         for _ in 0..REQUESTS_PER_CYCLE {
@@ -311,10 +320,16 @@ async fn churn_200_cycles_spawn_exchange_sigkill_evict_respawn() {
         // Typed child-exited (post-CL-E law): exit flag flips, the OS pid is
         // reaped, and the id is evicted by get(); it never comes back.
         poll_children_dead(&[(Arc::clone(&exited), Some(pid))], EXIT_BOUND).await;
-        assert!(pool.get(&id).is_none(), "cycle {cycle}: dead child not evicted");
+        assert!(
+            pool.get(&id).is_none(),
+            "cycle {cycle}: dead child not evicted"
+        );
         // No-respawn observation inside the loop: the evicted id never
         // reappears on a subsequent lookup.
-        assert!(pool.get(&id).is_none(), "cycle {cycle}: evicted id reappeared");
+        assert!(
+            pool.get(&id).is_none(),
+            "cycle {cycle}: evicted id reappeared"
+        );
 
         // Leak checkpoint per 50 cycles: the exact killed pid must be reaped
         // (never re-spawned behind our back), fd/RSS witnesses recorded.
@@ -426,10 +441,18 @@ async fn fanout_soak_8_children_500_requests_no_cross_bleed() {
         );
         total += served;
     }
-    assert_eq!(total, FANOUT_CHILDREN * FANOUT_REQUESTS, "soak accounting drift");
+    assert_eq!(
+        total,
+        FANOUT_CHILDREN * FANOUT_REQUESTS,
+        "soak accounting drift"
+    );
 
     // Ledger: exactly the explicit spawns.
-    assert_eq!(ledger.count(), FANOUT_CHILDREN, "implicit spawns in fanout court");
+    assert_eq!(
+        ledger.count(),
+        FANOUT_CHILDREN,
+        "implicit spawns in fanout court"
+    );
 
     // Explicit teardown: SIGKILL every child (exact pids) — an AF-20-era
     // pre-drop kill would now be redundant (pool drop itself tears children
@@ -542,7 +565,9 @@ async fn buffer_stays_consistent_when_children_are_sigkilled_mid_buffering() {
         }
     });
 
-    writer.await.expect("deposit-writer task panicked under kill pressure");
+    writer
+        .await
+        .expect("deposit-writer task panicked under kill pressure");
     killer.await.expect("killer task panicked");
 
     // Typed child-exited for every killed child: exit flags flip, pids
@@ -553,7 +578,10 @@ async fn buffer_stays_consistent_when_children_are_sigkilled_mid_buffering() {
         .collect();
     poll_children_dead(&dead, EXIT_BOUND).await;
     for (id, _, _) in &children {
-        assert!(pool.get(id).is_none(), "child {id} not evicted after SIGKILL");
+        assert!(
+            pool.get(id).is_none(),
+            "child {id} not evicted after SIGKILL"
+        );
     }
 
     // Buffer state stays consistent AFTER the kills: every URI still merges
@@ -582,7 +610,11 @@ async fn buffer_stays_consistent_when_children_are_sigkilled_mid_buffering() {
     );
 
     // Ledger: exactly the explicit spawns.
-    assert_eq!(ledger.count(), BUFFER_CHILDREN, "implicit spawns in buffer court");
+    assert_eq!(
+        ledger.count(),
+        BUFFER_CHILDREN,
+        "implicit spawns in buffer court"
+    );
     let _ = std::fs::remove_dir_all(&tmp);
 }
 
@@ -613,7 +645,7 @@ async fn pool_drop_teardown_reaps_all_children_within_bound() {
         pool.register(id.clone(), child);
         // Handshake proves the child is live and serving through the pool
         // before the drop.
-        initialize_bounded(&pool.get(&id).expect("registered").value()).await;
+        initialize_bounded(pool.get(&id).expect("registered").value()).await;
         dead.push(record);
     }
 
@@ -633,7 +665,11 @@ async fn pool_drop_teardown_reaps_all_children_within_bound() {
     poll_children_dead(&dead, POLL_BOUND).await;
 
     // Ledger: exactly the explicit spawns; pool drop spawned nothing.
-    assert_eq!(ledger.count(), N, "implicit spawns during pool-drop teardown");
+    assert_eq!(
+        ledger.count(),
+        N,
+        "implicit spawns during pool-drop teardown"
+    );
 
     let _ = std::fs::remove_dir_all(&tmp);
 }
@@ -660,7 +696,7 @@ async fn no_respawn_law_killed_children_are_never_auto_respawned() {
         let child = spawn_churn_child(&ledger, &id, &pidfile).await;
         let exited = Arc::clone(&child.exited);
         pool.register(id.clone(), child);
-        initialize_bounded(&pool.get(&id).expect("registered").value()).await;
+        initialize_bounded(pool.get(&id).expect("registered").value()).await;
         let pid = read_pid(&pidfile);
         sigkill(pid);
         killed.push((id, exited, pid));
@@ -681,7 +717,12 @@ async fn no_respawn_law_killed_children_are_never_auto_respawned() {
     // compositor ever gains a respawn policy, THIS assert flips — the
     // intended falsifier surface.
     let after = ledger.count();
-    assert_eq!(after - before, n, "implicit spawns observed: delta {}", after - before);
+    assert_eq!(
+        after - before,
+        n,
+        "implicit spawns observed: delta {}",
+        after - before
+    );
     let deadline = tokio::time::Instant::now() + std::time::Duration::from_secs(2);
     while tokio::time::Instant::now() < deadline {
         let ids = pool.server_ids_snapshot();

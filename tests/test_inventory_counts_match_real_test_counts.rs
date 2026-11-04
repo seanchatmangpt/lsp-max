@@ -25,7 +25,8 @@ use oxigraph::sparql::{QueryResults, SparqlEvaluator};
 use oxigraph::store::Store;
 
 const TEST_INVENTORY_TTL: &str = include_str!("../ontology/test-inventory.ttl");
-const FILE_COUNTS_QUERY: &str = include_str!("../queries/lsp-max/test_inventory_file_counts.sparql");
+const FILE_COUNTS_QUERY: &str =
+    include_str!("../queries/lsp-max/test_inventory_file_counts.sparql");
 
 /// Real per-file test counts, obtained by actually running (2026-08-04):
 ///   `cargo test --test <name> -- --list`                      (6 integration-test files)
@@ -60,8 +61,7 @@ fn declared_file_counts(store: &Store) -> BTreeMap<String, usize> {
     let query = evaluator
         .parse_query(FILE_COUNTS_QUERY)
         .expect("test_inventory_file_counts.sparql must parse");
-    let QueryResults::Solutions(solutions) = query.on_store(store).execute().expect("eval")
-    else {
+    let QueryResults::Solutions(solutions) = query.on_store(store).execute().expect("eval") else {
         panic!("expected SELECT results");
     };
     solutions
@@ -109,9 +109,7 @@ fn declared_per_file_test_counts_match_real_cargo_test_list_counts() {
 
     for (file, real_count) in REAL_COUNTS {
         let declared_count = declared.get(*file).unwrap_or_else(|| {
-            panic!(
-                "test-inventory.ttl has no test:TestFile individual with rdfs:label {file:?}"
-            )
+            panic!("test-inventory.ttl has no test:TestFile individual with rdfs:label {file:?}")
         });
         assert_eq!(
             declared_count, real_count,

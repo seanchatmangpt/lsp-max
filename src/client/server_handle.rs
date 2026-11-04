@@ -1,11 +1,11 @@
 use crate::client::ClientError;
 use crate::lsp_types::*;
-use serde_json::Value;
 use serde_json::json;
+use serde_json::Value;
 use std::collections::HashMap;
-use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
-use tokio::sync::{Mutex, mpsc, oneshot, watch};
+use std::sync::Arc;
+use tokio::sync::{mpsc, oneshot, watch, Mutex};
 
 /// Canonical tag carried in `ClientError` messages when a request fails
 /// because the child process died (stdout EOF drain, dead liveness watch, or

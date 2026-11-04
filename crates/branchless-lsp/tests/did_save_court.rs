@@ -42,7 +42,7 @@ const ALLOWED: &str = "#[allow_isel_residual]\n#[no_mangle]\npub extern \"C\" fn
 /// Drive one did_save through the REAL service and return every
 /// publishDiagnostics notification that comes out the loopback socket.
 async fn save_and_collect(content: &str, uri_str: &str) -> Vec<PublishDiagnosticsParams> {
-    let (mut service, mut socket) = LspService::new(|client| BranchlessLspServer::new(client));
+    let (mut service, mut socket) = LspService::new(BranchlessLspServer::new);
     let init = Request::build("initialize")
         .params(serde_json::json!({"capabilities": {}}))
         .id(1)
@@ -113,14 +113,13 @@ async fn did_save_branchy_publishes_error_naming_the_function() {
         pubs[0].diagnostics.len()
     );
     assert!(
-        errs.iter()
-            .any(|d| d.message.contains("g06_branchy")),
+        errs.iter().any(|d| d.message.contains("g06_branchy")),
         "[FAIL] the ERROR diagnostic must carry the offending fn name; got {:?}",
         errs.iter().map(|d| &d.message).collect::<Vec<_>>()
     );
     assert!(
-        errs.iter()
-            .any(|d| d.code == Some(lsp_types_max::NumberOrString::String(
+        errs.iter().any(|d| d.code
+            == Some(lsp_types_max::NumberOrString::String(
                 branchless_lsp::rule_pack::ANDON_RULE_ID.into()
             ))),
         "[FAIL] diagnostic must carry the pinned rule id"
@@ -174,7 +173,7 @@ async fn did_save_allowed_branchy_flips_to_clean() {
 #[tokio::test(flavor = "current_thread")]
 async fn did_save_updates_live_tier2_state_and_conformance() {
     let uri_str = "file:///tmp/g06-state.rs";
-    let (mut service, _socket) = LspService::new(|client| BranchlessLspServer::new(client));
+    let (mut service, _socket) = LspService::new(BranchlessLspServer::new);
     let init = Request::build("initialize")
         .params(serde_json::json!({"capabilities": {}}))
         .id(1)
@@ -194,22 +193,23 @@ async fn did_save_updates_live_tier2_state_and_conformance() {
             text: Some(BRANCHY.to_string()),
         })
         .await;
-    let st = server.tier2_state().lock().expect("tier2 lock");
-    assert_eq!(
-        st.last_uri.as_deref(),
-        Some(uri_str),
-        "tier2 state must record the saved uri"
-    );
-    let v = st
-        .last_vector
-        .as_ref()
-        .expect("tier2 state must record the verdict vector");
-    assert!(
-        v.n_refused >= 1,
-        "vector must count the refusal; vector: n_refused={}",
-        v.n_refused
-    );
-    drop(st);
+    {
+        let st = server.tier2_state().lock().expect("tier2 lock");
+        assert_eq!(
+            st.last_uri.as_deref(),
+            Some(uri_str),
+            "tier2 state must record the saved uri"
+        );
+        let v = st
+            .last_vector
+            .as_ref()
+            .expect("tier2 state must record the verdict vector");
+        assert!(
+            v.n_refused >= 1,
+            "vector must count the refusal; vector: n_refused={}",
+            v.n_refused
+        );
+    } // guard ends lexically before the await below
     let cv = server
         .max_conformance_vector(None)
         .await
@@ -291,10 +291,7 @@ async fn wire_errors(content: String, uri_str: &str) -> Vec<lsp_types_max::Diagn
         !pubs.is_empty(),
         "[FAIL] did_save must publish diagnostics for the parameterized save"
     );
-    err_diags(&pubs[0])
-        .into_iter()
-        .cloned()
-        .collect::<Vec<_>>()
+    err_diags(&pubs[0]).into_iter().cloned().collect::<Vec<_>>()
 }
 
 /// ARM (i): measured budget N admits the branchy fn — zero ERROR on the
@@ -303,11 +300,7 @@ async fn wire_errors(content: String, uri_str: &str) -> Vec<lsp_types_max::Diagn
 #[tokio::test(flavor = "current_thread")]
 async fn lspa3_measured_budget_admits_branchy_on_wire() {
     let n = measured_branch_count();
-    let errs = wire_errors(
-        allowed_with("aarch64", n),
-        "file:///tmp/lspa3-admit.rs",
-    )
-    .await;
+    let errs = wire_errors(allowed_with("aarch64", n), "file:///tmp/lspa3-admit.rs").await;
     assert!(
         errs.is_empty(),
         "[FAIL] measured budget max_branches={} must admit the branchy fn \
@@ -340,11 +333,10 @@ async fn lspa3_budget_minus_one_refuses_branchy_on_wire() {
         errs.iter().map(|d| &d.message).collect::<Vec<_>>()
     );
     assert!(
-        errs.iter()
-            .any(|d| d.code
-                == Some(lsp_types_max::NumberOrString::String(
-                    branchless_lsp::rule_pack::ANDON_RULE_ID.into()
-                ))),
+        errs.iter().any(|d| d.code
+            == Some(lsp_types_max::NumberOrString::String(
+                branchless_lsp::rule_pack::ANDON_RULE_ID.into()
+            ))),
         "[FAIL] the refusal must carry the pinned ANDON rule id"
     );
 }

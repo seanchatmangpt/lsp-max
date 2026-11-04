@@ -79,7 +79,8 @@ async fn diagnostic_content_survives_compositor_to_fitness_file_to_mcp_read() {
     // is the documented, public way external crates obtain a real `Client` (its init
     // closure runs synchronously inside `LspService::build`, confirmed by reading
     // src/service.rs — `init(client.clone())` before `new` returns).
-    let captured_client: Arc<std::sync::Mutex<Option<Client>>> = Arc::new(std::sync::Mutex::new(None));
+    let captured_client: Arc<std::sync::Mutex<Option<Client>>> =
+        Arc::new(std::sync::Mutex::new(None));
     let captured_client_for_init = Arc::clone(&captured_client);
     let (service, socket) = LspService::new(move |client| {
         *captured_client_for_init.lock().unwrap() = Some(client);

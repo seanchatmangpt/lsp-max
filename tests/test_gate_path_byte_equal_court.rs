@@ -12,8 +12,7 @@
 use std::path::PathBuf;
 
 const AUTHORITATIVE: &str = include_str!("../src/primitives/gate_path.rs");
-const SCAFFOLD_GATE: &str =
-    include_str!("../examples/lsp-max-scaffold/src/nouns/gate.rs");
+const SCAFFOLD_GATE: &str = include_str!("../examples/lsp-max-scaffold/src/nouns/gate.rs");
 const SCAFFOLD_SERVER: &str = include_str!("../examples/lsp-max-scaffold/src/server.rs");
 
 /// Extract the normalized derivation rows of `gate_file_path` from a source
@@ -22,9 +21,8 @@ const SCAFFOLD_SERVER: &str = include_str!("../examples/lsp-max-scaffold/src/ser
 /// fully-qualified `std::path::` on the `PathBuf` type. Comment and blank
 /// lines inside the body are dropped.
 fn formula_rows(src: &str) -> Vec<String> {
-    let brace_delta = |t: &str| -> i32 {
-        t.matches('{').count() as i32 - t.matches('}').count() as i32
-    };
+    let brace_delta =
+        |t: &str| -> i32 { t.matches('{').count() as i32 - t.matches('}').count() as i32 };
     let mut rows: Vec<String> = Vec::new();
     let mut in_body = false;
     let mut depth: i32 = 0;
@@ -67,7 +65,9 @@ fn row_diff(a: &[String], b: &[String]) -> String {
         let la = a.get(i).map(|s| s.as_str()).unwrap_or("<missing>");
         let lb = b.get(i).map(|s| s.as_str()).unwrap_or("<missing>");
         if la != lb {
-            out.push_str(&format!("  row {i}:\n    authoritative: {la}\n    copy:         {lb}\n"));
+            out.push_str(&format!(
+                "  row {i}:\n    authoritative: {la}\n    copy:         {lb}\n"
+            ));
         }
     }
     out
@@ -81,11 +81,7 @@ fn scaffold_gate_noun_formula_is_row_identical_to_authoritative() {
         !auth.is_empty(),
         "authoritative gate_file_path not found in src/primitives/gate_path.rs"
     );
-    assert_eq!(
-        auth, copy,
-        "{}",
-        row_diff(&auth, &copy)
-    );
+    assert_eq!(auth, copy, "{}", row_diff(&auth, &copy));
 }
 
 #[test]
@@ -127,5 +123,5 @@ fn authoritative_formula_derives_expected_file_name() {
     assert!(joined.contains("lsp-max-gate-{hash:016x}"));
     assert!(joined.contains("lsp-max-gate-{hash:016x}-agent-{agent_id}"));
     assert!(joined.contains("fnv1a(workspace.to_string_lossy().as_bytes())"));
-    assert!(PathBuf::from("/tmp").join("x") == PathBuf::from("/tmp/x"));
+    assert!(PathBuf::from("/tmp").join("x") == *"/tmp/x");
 }

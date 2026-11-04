@@ -18,7 +18,10 @@ fn maturity_ttl_parses_as_valid_turtle() {
     store
         .load_from_reader(oxigraph::io::RdfFormat::Turtle, MATURITY_TTL.as_bytes())
         .expect("lsp-max-maturity.ttl must parse as valid Turtle");
-    assert!(store.len().unwrap() > 0, "store must not be empty after load");
+    assert!(
+        store.len().unwrap() > 0,
+        "store must not be empty after load"
+    );
 }
 
 #[test]

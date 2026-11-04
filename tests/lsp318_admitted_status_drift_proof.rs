@@ -177,8 +177,7 @@ fn select_admitted_method_names(store: &Store) -> BTreeSet<String> {
     "#;
     let evaluator = SparqlEvaluator::new();
     let query = evaluator.parse_query(sparql).expect("query must parse");
-    let QueryResults::Solutions(solutions) = query.on_store(store).execute().expect("eval")
-    else {
+    let QueryResults::Solutions(solutions) = query.on_store(store).execute().expect("eval") else {
         panic!("expected SELECT results");
     };
     solutions
@@ -209,8 +208,7 @@ fn select_all_method_status_pairs(store: &Store) -> Vec<(String, String)> {
     "#;
     let evaluator = SparqlEvaluator::new();
     let query = evaluator.parse_query(sparql).expect("query must parse");
-    let QueryResults::Solutions(solutions) = query.on_store(store).execute().expect("eval")
-    else {
+    let QueryResults::Solutions(solutions) = query.on_store(store).execute().expect("eval") else {
         panic!("expected SELECT results");
     };
     solutions
@@ -322,7 +320,12 @@ fn sparql_derived_status_breakdown_matches_hand_counted_grep_totals() {
     let unknown_count = pairs.iter().filter(|(_, s)| s == "UNKNOWN").count();
 
     assert_eq!(
-        (candidate_count, admitted_count, refused_count, unknown_count),
+        (
+            candidate_count,
+            admitted_count,
+            refused_count,
+            unknown_count
+        ),
         (57, 0, 0, 0),
         "hand count via `grep -o 'law:status *law:[A-Z]*' ontology/lsp318.ttl | sort | \
          uniq -c` against the real file gives exactly 57 CANDIDATE and zero of any \
@@ -369,10 +372,13 @@ fn admitted_check_refuses_a_deliberately_injected_admitted_but_unregistered_meth
         "in-memory-corrupted TTL must now declare 'exit' as ADMITTED"
     );
     let registered: BTreeSet<&str> = EXPECTED_REGISTERED.iter().copied().collect();
-    let unregistered_but_admitted: Vec<&String> =
-        admitted.iter().filter(|m| !registered.contains(m.as_str())).collect();
+    let unregistered_but_admitted: Vec<&String> = admitted
+        .iter()
+        .filter(|m| !registered.contains(m.as_str()))
+        .collect();
     assert!(
-        !unregistered_but_admitted.is_empty() && unregistered_but_admitted.contains(&&"exit".to_string()),
+        !unregistered_but_admitted.is_empty()
+            && unregistered_but_admitted.contains(&&"exit".to_string()),
         "the admitted-but-unregistered check must catch the deliberately injected \
          'exit' -> ADMITTED drift; found unregistered_but_admitted = {:?}",
         unregistered_but_admitted

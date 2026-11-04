@@ -262,6 +262,8 @@ pub(crate) mod tests {
         // Anti-vacuity: the SAME counter must see allocations when a
         // Vec runs, so the zero above is a measured zero, not a dead
         // counter.
+        #[allow(clippy::useless_vec)]
+        // 2026-11-04: heap alloc is the point — the anti-vacuity court must see the counter register a Vec allocation
         let _v = vec![0u8; 64];
         let allocs_pos = SEAL_ALLOC_WATCH.with(|c| c.get());
         assert!(

@@ -19,7 +19,8 @@ use oxigraph::store::Store;
 use std::collections::BTreeMap;
 
 const LSP318_TTL: &str = include_str!("../ontology/lsp318.ttl");
-const CANDIDATE_CONTRACTS_QUERY: &str = include_str!("../queries/lsp-max/candidate_contracts.sparql");
+const CANDIDATE_CONTRACTS_QUERY: &str =
+    include_str!("../queries/lsp-max/candidate_contracts.sparql");
 
 /// Gate-style query (FILTER NOT EXISTS): any CANDIDATE `lsp:Request` /
 /// `lsp:Notification` / `lsp:MaxExtension` individual missing
@@ -58,8 +59,14 @@ WHERE {
 /// `ontology/lsp318.ttl`, not derived from the generation query under test.
 fn expected_candidate_contracts() -> BTreeMap<&'static str, (&'static str, &'static str)> {
     [
-        ("callHierarchy/incomingCalls", ("single-params-struct", "optional-list")),
-        ("callHierarchy/outgoingCalls", ("single-params-struct", "optional-list")),
+        (
+            "callHierarchy/incomingCalls",
+            ("single-params-struct", "optional-list"),
+        ),
+        (
+            "callHierarchy/outgoingCalls",
+            ("single-params-struct", "optional-list"),
+        ),
         ("codeLens/resolve", ("single-params-struct", "value")),
         ("completionItem/resolve", ("single-params-struct", "value")),
         ("documentLink/resolve", ("single-params-struct", "value")),
@@ -68,53 +75,164 @@ fn expected_candidate_contracts() -> BTreeMap<&'static str, (&'static str, &'sta
         ("initialized", ("single-params-struct", "void")),
         ("inlayHint/resolve", ("single-params-struct", "value")),
         ("shutdown", ("no-params", "unit")),
-        ("textDocument/codeAction", ("single-params-struct", "optional-single")),
+        (
+            "textDocument/codeAction",
+            ("single-params-struct", "optional-single"),
+        ),
         ("textDocument/codeLens", ("single-params-struct", "list")),
-        ("textDocument/colorPresentation", ("single-params-struct", "list")),
-        ("textDocument/completion", ("single-params-struct", "optional-single")),
-        ("textDocument/declaration", ("single-params-struct", "optional-single")),
-        ("textDocument/definition", ("single-params-struct", "optional-single")),
+        (
+            "textDocument/colorPresentation",
+            ("single-params-struct", "list"),
+        ),
+        (
+            "textDocument/completion",
+            ("single-params-struct", "optional-single"),
+        ),
+        (
+            "textDocument/declaration",
+            ("single-params-struct", "optional-single"),
+        ),
+        (
+            "textDocument/definition",
+            ("single-params-struct", "optional-single"),
+        ),
         ("textDocument/diagnostic", ("single-params-struct", "value")),
         ("textDocument/didChange", ("single-params-struct", "void")),
         ("textDocument/didClose", ("single-params-struct", "void")),
         ("textDocument/didOpen", ("single-params-struct", "void")),
         ("textDocument/didSave", ("single-params-struct", "void")),
-        ("textDocument/documentColor", ("single-params-struct", "list")),
-        ("textDocument/documentHighlight", ("single-params-struct", "optional-list")),
-        ("textDocument/documentLink", ("single-params-struct", "optional-list")),
-        ("textDocument/documentSymbol", ("single-params-struct", "optional-single")),
-        ("textDocument/foldingRange", ("single-params-struct", "optional-list")),
-        ("textDocument/formatting", ("single-params-struct", "optional-list")),
-        ("textDocument/hover", ("single-params-struct", "optional-single")),
-        ("textDocument/implementation", ("single-params-struct", "optional-single")),
-        ("textDocument/inlayHint", ("single-params-struct", "optional-list")),
-        ("textDocument/inlineValue", ("single-params-struct", "optional-list")),
-        ("textDocument/linkedEditingRange", ("single-params-struct", "optional-single")),
-        ("textDocument/moniker", ("single-params-struct", "optional-list")),
-        ("textDocument/onTypeFormatting", ("single-params-struct", "list")),
-        ("textDocument/prepareCallHierarchy", ("single-params-struct", "optional-list")),
-        ("textDocument/prepareRename", ("single-params-struct", "optional-single")),
-        ("textDocument/prepareTypeHierarchy", ("single-params-struct", "optional-list")),
-        ("textDocument/rangeFormatting", ("single-params-struct", "optional-list")),
-        ("textDocument/references", ("single-params-struct", "optional-list")),
-        ("textDocument/rename", ("single-params-struct", "optional-single")),
-        ("textDocument/selectionRange", ("single-params-struct", "list")),
-        ("textDocument/semanticTokens/full", ("single-params-struct", "optional-single")),
-        ("textDocument/semanticTokens/full/delta", ("single-params-struct", "optional-single")),
-        ("textDocument/semanticTokens/range", ("single-params-struct", "optional-single")),
-        ("textDocument/signatureHelp", ("single-params-struct", "optional-single")),
-        ("textDocument/typeDefinition", ("single-params-struct", "optional-single")),
-        ("typeHierarchy/subtypes", ("single-params-struct", "optional-list")),
-        ("typeHierarchy/supertypes", ("single-params-struct", "optional-list")),
-        ("workspace/didChangeConfiguration", ("single-params-struct", "void")),
-        ("workspace/didChangeWatchedFiles", ("single-params-struct", "void")),
-        ("workspace/didChangeWorkspaceFolders", ("single-params-struct", "void")),
+        (
+            "textDocument/documentColor",
+            ("single-params-struct", "list"),
+        ),
+        (
+            "textDocument/documentHighlight",
+            ("single-params-struct", "optional-list"),
+        ),
+        (
+            "textDocument/documentLink",
+            ("single-params-struct", "optional-list"),
+        ),
+        (
+            "textDocument/documentSymbol",
+            ("single-params-struct", "optional-single"),
+        ),
+        (
+            "textDocument/foldingRange",
+            ("single-params-struct", "optional-list"),
+        ),
+        (
+            "textDocument/formatting",
+            ("single-params-struct", "optional-list"),
+        ),
+        (
+            "textDocument/hover",
+            ("single-params-struct", "optional-single"),
+        ),
+        (
+            "textDocument/implementation",
+            ("single-params-struct", "optional-single"),
+        ),
+        (
+            "textDocument/inlayHint",
+            ("single-params-struct", "optional-list"),
+        ),
+        (
+            "textDocument/inlineValue",
+            ("single-params-struct", "optional-list"),
+        ),
+        (
+            "textDocument/linkedEditingRange",
+            ("single-params-struct", "optional-single"),
+        ),
+        (
+            "textDocument/moniker",
+            ("single-params-struct", "optional-list"),
+        ),
+        (
+            "textDocument/onTypeFormatting",
+            ("single-params-struct", "list"),
+        ),
+        (
+            "textDocument/prepareCallHierarchy",
+            ("single-params-struct", "optional-list"),
+        ),
+        (
+            "textDocument/prepareRename",
+            ("single-params-struct", "optional-single"),
+        ),
+        (
+            "textDocument/prepareTypeHierarchy",
+            ("single-params-struct", "optional-list"),
+        ),
+        (
+            "textDocument/rangeFormatting",
+            ("single-params-struct", "optional-list"),
+        ),
+        (
+            "textDocument/references",
+            ("single-params-struct", "optional-list"),
+        ),
+        (
+            "textDocument/rename",
+            ("single-params-struct", "optional-single"),
+        ),
+        (
+            "textDocument/selectionRange",
+            ("single-params-struct", "list"),
+        ),
+        (
+            "textDocument/semanticTokens/full",
+            ("single-params-struct", "optional-single"),
+        ),
+        (
+            "textDocument/semanticTokens/full/delta",
+            ("single-params-struct", "optional-single"),
+        ),
+        (
+            "textDocument/semanticTokens/range",
+            ("single-params-struct", "optional-single"),
+        ),
+        (
+            "textDocument/signatureHelp",
+            ("single-params-struct", "optional-single"),
+        ),
+        (
+            "textDocument/typeDefinition",
+            ("single-params-struct", "optional-single"),
+        ),
+        (
+            "typeHierarchy/subtypes",
+            ("single-params-struct", "optional-list"),
+        ),
+        (
+            "typeHierarchy/supertypes",
+            ("single-params-struct", "optional-list"),
+        ),
+        (
+            "workspace/didChangeConfiguration",
+            ("single-params-struct", "void"),
+        ),
+        (
+            "workspace/didChangeWatchedFiles",
+            ("single-params-struct", "void"),
+        ),
+        (
+            "workspace/didChangeWorkspaceFolders",
+            ("single-params-struct", "void"),
+        ),
         ("workspace/didCreateFiles", ("single-params-struct", "void")),
         ("workspace/didDeleteFiles", ("single-params-struct", "void")),
         ("workspace/didRenameFiles", ("single-params-struct", "void")),
         ("workspace/diagnostic", ("single-params-struct", "value")),
-        ("workspace/executeCommand", ("single-params-struct", "optional-single")),
-        ("workspace/symbol", ("single-params-struct", "optional-list")),
+        (
+            "workspace/executeCommand",
+            ("single-params-struct", "optional-single"),
+        ),
+        (
+            "workspace/symbol",
+            ("single-params-struct", "optional-list"),
+        ),
     ]
     .into_iter()
     .collect()
@@ -131,8 +249,7 @@ fn store_from_ttl(ttl: &str) -> Store {
 fn run_select(store: &Store, sparql: &str) -> Vec<Vec<(String, String)>> {
     let evaluator = SparqlEvaluator::new();
     let query = evaluator.parse_query(sparql).expect("query must parse");
-    let QueryResults::Solutions(solutions) = query.on_store(store).execute().expect("eval")
-    else {
+    let QueryResults::Solutions(solutions) = query.on_store(store).execute().expect("eval") else {
         panic!("expected SELECT results");
     };
     solutions
@@ -153,11 +270,7 @@ fn run_select(store: &Store, sparql: &str) -> Vec<Vec<(String, String)>> {
 #[test]
 fn lsp318_ttl_parses_into_oxigraph() {
     let store = store_from_ttl(LSP318_TTL);
-    let count = run_select(
-        &store,
-        "SELECT ?s WHERE { ?s ?p ?o }",
-    )
-    .len();
+    let count = run_select(&store, "SELECT ?s WHERE { ?s ?p ?o }").len();
     assert!(count > 0, "lsp318.ttl must parse into at least one triple");
 }
 

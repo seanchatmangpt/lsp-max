@@ -128,7 +128,7 @@ impl CompilerWorker {
         static SEQ: AtomicU32 = AtomicU32::new(0);
         let key = format!(
             "{}-{}",
-            blake3::hash(src.as_bytes()).to_hex().to_string(),
+            blake3::hash(src.as_bytes()).to_hex(),
             SEQ.fetch_add(1, Ordering::Relaxed)
         );
         let lib = self.staging.join(format!("probe_dbg_{key}.rs"));

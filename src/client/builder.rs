@@ -85,8 +85,12 @@ impl ClientBuilder {
         // requests already in flight).
         let (alive_tx, alive_rx) = tokio::sync::watch::channel(true);
 
-        let handle =
-            ServerHandle::new(tx.clone(), Arc::clone(&pending), Arc::clone(&next_id), alive_rx);
+        let handle = ServerHandle::new(
+            tx.clone(),
+            Arc::clone(&pending),
+            Arc::clone(&next_id),
+            alive_rx,
+        );
 
         // Spawn write loop: read from rx, serialize as LSP framing, write to output
         tokio::spawn(write_loop(rx, output));
@@ -152,10 +156,7 @@ fn transport_closed_error(reason: &str) -> Value {
 }
 
 /// Drain every pending request with the typed transport-closed sentinel.
-async fn fail_pending(
-    pending: Arc<Mutex<HashMap<u64, oneshot::Sender<Value>>>>,
-    reason: &str,
-) {
+async fn fail_pending(pending: Arc<Mutex<HashMap<u64, oneshot::Sender<Value>>>>, reason: &str) {
     let mut map = pending.lock().await;
     for (_, tx) in map.drain() {
         let _ = tx.send(transport_closed_error(reason));
@@ -261,10 +262,10 @@ async fn read_loop<I: AsyncRead + Unpin, C: LanguageClient>(
                         // String ids never match our outbound numeric ids; a
                         // response with a string id cannot correlate to any
                         // pending request — count, don't correlate.
-                        tracing::debug!("lsp-max-client: response with string id {s} has no pending entry");
-                        counters
-                            .not_routable
-                            .fetch_add(1, Ordering::Relaxed);
+                        tracing::debug!(
+                            "lsp-max-client: response with string id {s} has no pending entry"
+                        );
+                        counters.not_routable.fetch_add(1, Ordering::Relaxed);
                     }
                 }
             }
@@ -326,37 +327,30 @@ async fn dispatch_notification<C: LanguageClient>(
     counters: &NotificationCounters,
 ) {
     match method {
-        "textDocument/publishDiagnostics" => match serde_json::from_value::<
-            PublishDiagnosticsParams,
-        >(params)
-        {
-            Ok(p) => client.publish_diagnostics(p).await,
-            Err(e) => {
-                counters.malformed.fetch_add(1, Ordering::Relaxed);
-                tracing::warn!(
-                    "lsp-max-client: malformed textDocument/publishDiagnostics params: {}",
-                    e
-                );
+        "textDocument/publishDiagnostics" => {
+            match serde_json::from_value::<PublishDiagnosticsParams>(params) {
+                Ok(p) => client.publish_diagnostics(p).await,
+                Err(e) => {
+                    counters.malformed.fetch_add(1, Ordering::Relaxed);
+                    tracing::warn!(
+                        "lsp-max-client: malformed textDocument/publishDiagnostics params: {}",
+                        e
+                    );
+                }
             }
-        },
+        }
         "window/logMessage" => match serde_json::from_value::<LogMessageParams>(params) {
             Ok(p) => client.log_message(p).await,
             Err(e) => {
                 counters.malformed.fetch_add(1, Ordering::Relaxed);
-                tracing::warn!(
-                    "lsp-max-client: malformed window/logMessage params: {}",
-                    e
-                );
+                tracing::warn!("lsp-max-client: malformed window/logMessage params: {}", e);
             }
         },
         "window/showMessage" => match serde_json::from_value::<ShowMessageParams>(params) {
             Ok(p) => client.show_message(p).await,
             Err(e) => {
                 counters.malformed.fetch_add(1, Ordering::Relaxed);
-                tracing::warn!(
-                    "lsp-max-client: malformed window/showMessage params: {}",
-                    e
-                );
+                tracing::warn!("lsp-max-client: malformed window/showMessage params: {}", e);
             }
         },
         "$/progress" => match serde_json::from_value::<ProgressParams>(params) {
@@ -371,10 +365,7 @@ async fn dispatch_notification<C: LanguageClient>(
         "telemetry/event" => client.telemetry_event(params).await,
         _ => {
             counters.not_routable.fetch_add(1, Ordering::Relaxed);
-            tracing::debug!(
-                "lsp-max-client: unknown notification dropped: {}",
-                method
-            );
+            tracing::debug!("lsp-max-client: unknown notification dropped: {}", method);
         }
     }
 }

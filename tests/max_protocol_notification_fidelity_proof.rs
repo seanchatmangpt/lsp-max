@@ -56,8 +56,7 @@ fn select_notification_method_names(store: &Store) -> BTreeSet<String> {
     "#;
     let evaluator = SparqlEvaluator::new();
     let query = evaluator.parse_query(sparql).expect("query must parse");
-    let QueryResults::Solutions(solutions) = query.on_store(store).execute().expect("eval")
-    else {
+    let QueryResults::Solutions(solutions) = query.on_store(store).execute().expect("eval") else {
         panic!("expected SELECT results");
     };
     solutions
@@ -108,8 +107,7 @@ fn no_max_slash_notification_names_remain_in_max_protocol_ttl() {
     "#;
     let evaluator = SparqlEvaluator::new();
     let query = evaluator.parse_query(sparql).expect("query must parse");
-    let QueryResults::Solutions(solutions) = query.on_store(&store).execute().expect("eval")
-    else {
+    let QueryResults::Solutions(solutions) = query.on_store(&store).execute().expect("eval") else {
         panic!("expected SELECT results");
     };
     assert_eq!(
@@ -141,10 +139,7 @@ fn admission_changed_param_type_matches_the_real_rust_struct_name() {
         .next()
         .expect("one row for lspMax/admissionChanged")
         .expect("solution");
-    let param_type = row
-        .get("paramType")
-        .expect("?paramType bound")
-        .to_string();
+    let param_type = row.get("paramType").expect("?paramType bound").to_string();
     assert!(
         param_type.contains("AdmissionChangedParams"),
         "lspMax/admissionChanged's lsp:paramType must reference the real \

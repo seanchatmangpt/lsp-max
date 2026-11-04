@@ -44,18 +44,12 @@ fn frame(msg: &Value) -> Vec<u8> {
 
 /// Drive the real read loop over a duplex stream. Returns the feed writer so
 /// the stream stays open while the test polls the client's recorded state.
-async fn drive_read_loop(
-    client: RecordingClient,
-    msgs: &[Value],
-) -> tokio::io::DuplexStream {
+async fn drive_read_loop(client: RecordingClient, msgs: &[Value]) -> tokio::io::DuplexStream {
     let (mut feed_writer, feed_reader) = tokio::io::duplex(4096);
     let (_, discard_output) = tokio::io::duplex(64);
     let _handle = ClientBuilder::new().build(client, feed_reader, discard_output);
     for m in msgs {
-        feed_writer
-            .write_all(&frame(m))
-            .await
-            .expect("write frame");
+        feed_writer.write_all(&frame(m)).await.expect("write frame");
     }
     feed_writer.flush().await.expect("flush");
     feed_writer
@@ -167,10 +161,7 @@ async fn malformed_frame_skipped_session_alive() {
     feed_writer.flush().await.expect("flush");
 
     let got = wait_for_diagnostics(&log).await;
-    assert!(
-        !got.is_empty(),
-        "read loop must survive a malformed frame"
-    );
+    assert!(!got.is_empty(), "read loop must survive a malformed frame");
     assert_eq!(got[0]["uri"], "file:///b.json");
 }
 
@@ -194,6 +185,10 @@ async fn malformed_params_dropped_session_alive() {
     let log = client.log();
     let _feed = drive_read_loop(client, &msgs).await;
     let got = wait_for_diagnostics(&log).await;
-    assert_eq!(got.len(), 1, "malformed params must be dropped, valid ones dispatched");
+    assert_eq!(
+        got.len(),
+        1,
+        "malformed params must be dropped, valid ones dispatched"
+    );
     assert_eq!(got[0]["uri"], "file:///c.json");
 }

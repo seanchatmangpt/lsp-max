@@ -14,9 +14,9 @@
 use lsp_max::client::ServerHandle;
 use serde_json::Value;
 use std::collections::HashMap;
-use std::sync::Arc;
 use std::sync::atomic::AtomicU64;
-use tokio::sync::{Mutex, mpsc, oneshot};
+use std::sync::Arc;
+use tokio::sync::{mpsc, oneshot, Mutex};
 
 const N: usize = 500;
 const LATENCY_BUDGET_MS: u128 = 100;

@@ -342,9 +342,9 @@ pub enum SeedVerdict {
     Unknown,
 }
 
-impl ResidualGrid {
-    /// Parse the grid from TOML text.
-    pub fn from_str(text: &str) -> Result<Self, String> {
+impl std::str::FromStr for ResidualGrid {
+    type Err = String;
+    fn from_str(text: &str) -> Result<Self, String> {
         let raw: Vec<_> = toml::from_str::<toml::Value>(text)
             .map_err(|e| format!("residuals.toml parse: {e}"))?
             .get("residual")
@@ -373,10 +373,14 @@ impl ResidualGrid {
         }
         Ok(Self { rows })
     }
+}
 
+impl ResidualGrid {
     /// The canonical embedded grid.
     pub fn canonical() -> Self {
-        Self::from_str(RESIDUALS_TOML).expect("embedded residuals.toml parses")
+        RESIDUALS_TOML
+            .parse()
+            .expect("embedded residuals.toml parses")
     }
 
     /// Row count.
@@ -604,7 +608,7 @@ mod tests {
             "branch_count = 9  # cbz: empty-mask default",
         );
         assert_ne!(tampered, RESIDUALS_TOML, "tamper must take effect");
-        let grid = ResidualGrid::from_str(&tampered).expect("parse");
+        let grid: ResidualGrid = tampered.parse().expect("parse");
         let SeedVerdict::Seeded { row } = grid.lookup("select_slice", "aarch64") else {
             panic!("row still present");
         };
@@ -640,7 +644,7 @@ mod tests {
 
     fn param_attrs(max: Option<usize>) -> ParsedAttrs {
         let mut src =
-            format!("#[allow_isel_residual(target = \"riscv32\", reason = \"measured\")]");
+            "#[allow_isel_residual(target = \"riscv32\", reason = \"measured\")]".to_string();
         if let Some(m) = max {
             src = format!(
                 "#[allow_isel_residual(target = \"riscv32\", max_branches = {m}, \
@@ -658,7 +662,7 @@ mod tests {
         )
         .into()])
         .expect("parse ok");
-        assert!(a.allow_isel_residual == false, "bare flag must stay unset");
+        assert!(!a.allow_isel_residual, "bare flag must stay unset");
         let p = a.residual_params.expect("params present");
         assert_eq!(p.target, "riscv32");
         assert_eq!(p.max_branches, Some(3));

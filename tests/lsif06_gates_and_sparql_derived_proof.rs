@@ -30,9 +30,10 @@ fn store_from_ttl(ttl: &str) -> Store {
 
 fn gate_violation_count(store: &Store, gate_sparql: &str) -> usize {
     let evaluator = SparqlEvaluator::new();
-    let query = evaluator.parse_query(gate_sparql).expect("gate query must parse");
-    let QueryResults::Solutions(solutions) = query.on_store(store).execute().expect("eval")
-    else {
+    let query = evaluator
+        .parse_query(gate_sparql)
+        .expect("gate query must parse");
+    let QueryResults::Solutions(solutions) = query.on_store(store).execute().expect("eval") else {
         panic!("expected SELECT results");
     };
     solutions.count()
@@ -107,8 +108,14 @@ fn sparql_derived_vertex_and_edge_totals_agree_with_cp1s_hand_transcribed_proof(
         .unwrap()
         .parse()
         .expect("integer literal");
-    assert_eq!(vertex_count, 24, "live COUNT-aggregate query disagrees with CP1's 24 vertex kinds");
-    assert_eq!(edge_count, 21, "live COUNT-aggregate query disagrees with CP1's 21 edge kinds");
+    assert_eq!(
+        vertex_count, 24,
+        "live COUNT-aggregate query disagrees with CP1's 24 vertex kinds"
+    );
+    assert_eq!(
+        edge_count, 21,
+        "live COUNT-aggregate query disagrees with CP1's 21 edge kinds"
+    );
 }
 
 /// Drift-injection-and-revert: deliberately corrupt one real edge's wireLabel

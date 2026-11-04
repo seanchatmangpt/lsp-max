@@ -56,7 +56,11 @@ fn stdio_example_bin() -> Option<PathBuf> {
     }
     for root in &roots {
         for profile in ["debug", "release"] {
-            let bin = root.join("target").join(profile).join("examples").join("stdio");
+            let bin = root
+                .join("target")
+                .join(profile)
+                .join("examples")
+                .join("stdio");
             if bin.exists() {
                 return Some(bin);
             }

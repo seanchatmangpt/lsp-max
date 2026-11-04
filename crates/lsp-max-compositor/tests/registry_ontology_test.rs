@@ -1,7 +1,14 @@
 // Court for the ontology-first registry-init generation rule (ggen 26.10.11).
 // Chicago-style: real ggen subprocess over real files; assertions on real bytes.
+//
+// GGEN VERSION LAW: this court requires ggen >= 26.11.3 — the first release
+// supporting `ggen sync run --skip-ea-admission` (the disclosed FM-LAW-015
+// opt-out for content-pack sync). Older ambient ggen (e.g. 26.9.28) rejects
+// the flag and the court must fail LOUDLY with a version refusal, not a
+// confusing arg-parse error. Resolution order: $LSP_MAX_GGEN_BIN, then the
+// pinned install at ~/.local/bin/ggen, then PATH.
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::Command;
 
 use lsp_max_compositor::registry::{ExtensionRouter, SpawnRefusal};
@@ -16,7 +23,7 @@ fn stage_scratch() -> (tempfile::TempDir, PathBuf) {
     (dir, root)
 }
 
-fn copy_inputs(root: &PathBuf) {
+fn copy_inputs(root: &Path) {
     fs::copy(
         crate_dir().join("compositor.ttl"),
         root.join("compositor.ttl"),
@@ -35,8 +42,60 @@ fn copy_inputs(root: &PathBuf) {
     .unwrap();
 }
 
+// Minimum ggen version supporting `sync run --skip-ea-admission`.
+const MIN_GGEN: (u64, u64, u64) = (26, 11, 3);
+
+fn parse_ggen_version(output: &str) -> Option<(u64, u64, u64)> {
+    let ver = output.split_whitespace().nth(1)?;
+    let mut parts = ver.trim().split('.');
+    let major = parts.next()?.parse().ok()?;
+    let minor = parts.next()?.parse().ok()?;
+    let patch = parts.next()?.parse().ok()?;
+    Some((major, minor, patch))
+}
+
+fn ggen_version_at(bin: &str) -> Option<(u64, u64, u64)> {
+    let out = Command::new(bin).arg("--version").output().ok()?;
+    if !out.status.success() {
+        return None;
+    }
+    parse_ggen_version(&String::from_utf8_lossy(&out.stdout))
+}
+
+fn at_least(found: (u64, u64, u64), min: (u64, u64, u64)) -> bool {
+    found >= min
+}
+
+// Resolve a lawful ggen binary: env override, pinned ~/.local/bin install,
+// then PATH. Refuses (typed, loud) any candidate older than MIN_GGEN.
+fn resolve_ggen() -> String {
+    let home = std::env::var("HOME").unwrap_or_default();
+    let mut candidates: Vec<String> = Vec::new();
+    if let Ok(bin) = std::env::var("LSP_MAX_GGEN_BIN") {
+        candidates.push(bin);
+    }
+    if !home.is_empty() {
+        candidates.push(format!("{home}/.local/bin/ggen"));
+    }
+    candidates.push("ggen".to_string());
+
+    let mut attempts: Vec<String> = Vec::new();
+    for bin in candidates {
+        match ggen_version_at(&bin) {
+            Some(v) if at_least(v, MIN_GGEN) => return bin,
+            Some(v) => attempts.push(format!("{bin} (version {v:?} < {MIN_GGEN:?})")),
+            None => attempts.push(format!("{bin} (no parseable --version)")),
+        }
+    }
+    panic!(
+        "GGEN-VERSION-LAW REFUSED: `sync run --skip-ea-admission` requires ggen \
+         >= {MIN_GGEN:?}; no lawful candidate found. Tried: {attempts:?}. Install \
+         ggen >= 26.11.3 (e.g. at ~/.local/bin/ggen) or set $LSP_MAX_GGEN_BIN."
+    );
+}
+
 fn run_ggen(root: &PathBuf) -> String {
-    let out = Command::new("ggen")
+    let out = Command::new(resolve_ggen())
         .arg("sync")
         .arg("run")
         // Registry projection is content-pack sync, no SBB manufacture —
@@ -187,17 +246,15 @@ fn command_less_server_spawn_is_typed_refusal_not_guess() {
             server_id: "ggen-lsp".to_string()
         }
     );
-    assert!(err
-        .to_string()
-        .contains("declares no lspmax:command"));
+    assert!(err.to_string().contains("declares no lspmax:command"));
 }
 
 #[test]
 fn generated_registry_init_emits_commands_field() {
     // The generated surface (src/registry_init.rs) must carry the commands
     // field: declared server gets the command, undeclared get Vec::new().
-    let generated =
-        fs::read_to_string(crate_dir().join("src/registry_init.rs")).expect("read registry_init.rs");
+    let generated = fs::read_to_string(crate_dir().join("src/registry_init.rs"))
+        .expect("read registry_init.rs");
     assert!(
         generated.contains("commands: vec![\"claude-code-config-lsp\".into()]"),
         "declared server must carry its command in generated registry"
