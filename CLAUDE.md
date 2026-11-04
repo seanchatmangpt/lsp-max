@@ -185,13 +185,16 @@ The five-layer model: (1) actuation grammar → (2) local LSP state surface → 
 - **`lsp-max-runtime`** — typestate machine, phases, transitions, runtime snapshotting.
 - **`lsp-max-agent`** — agent integration and analysis bundles.
 - **`lsp-max-macros`** — internal proc macros (e.g. `#[tower_lsp::async_trait]` equivalent surface).
-- **`crates/lsp-max-cli`** — actuation grammar: noun/verb CLI built on `clap-noun-verb` (filename = noun, `#[verb]` = action). 31 noun modules — see Noun/Verb Pattern section below. `gate check` and `gate list` verbs are wired here.
+- **`crates/lsp-max-cli`** — actuation grammar: noun/verb CLI built on `clap-noun-verb` (filename = noun, `#[verb]` = action). 44 noun modules — see Noun/Verb Pattern section below. `gate check` and `gate list` verbs are wired here.
 - **`crates/lsp-max-client`** — LSP *client* framework (drives servers in tests).
 - **`crates/lsp-max-base`**, **`-live`**, **`-lsif`**, **`-specgen`** — base protocol types, live surfaces, LSIF export/conformance, and codegen from the official LSP 3.18 `metaModel.json`.
 - **`crates/lsp-max-adapters/`** — ported `auto-lsp` stack (`lsp-max-ast-core`, `lsp-max-ast-codegen`, `lsp-max-ast`): tree-sitter-driven AST/codegen layer. Tree-sitter observes; it never admits.
 - **`crates/lsp-max-compositor/`** — multi-server fan-out and merge. Contains `declare.rs` (Van der Aalst Declare constraint model, 9 constraint types) and `dfg.rs` (Directly-Follows Graph with fitness/precision metrics). `FlushCoordinator` uses adaptive quorum debounce and accumulates OCEL 2.0 events via `take_ocel_events()`.
 - **`crates/wasm4pm-lsp`**, **`crates/gc005-wasm4pm-adapter`** — process-mining LSP surfaces over the wasm4pm engine; dogfood tests (`dogfood_gc00*.rs`) validate gate conformance.
 - **`examples/wasm4pm-lsp/`** — standalone cognitive-breeds example (not in workspace crates). Contains 10 `CognitiveBreed` implementations (`src/breeds/`), a conformance runner binary (`src/bin/conformance_runner.rs`), OCPN models, OCEL fitness reports, and paper fixtures. `src/lib.rs` exposes `pub mod breeds;` so the runner binary can reference `wasm4pm_lsp::breeds::dispatch`. Governed by COG laws 1–12; see `examples/wasm4pm-lsp/CLAUDE.md` for local guidance. LLM breed (`llm.rs`) requires `ANTHROPIC_API_KEY`; returns `None` gracefully when absent.
+- **`crates/branchless-lsp`** — branchless-lint LSP: syn AST advisory tier + DWARF/capstone disassembly court tier with residual accounting.
+- **`crates/ra-max`** — receipt-bound Rust semantic analysis vertical slice on lsp-max.
+- **`crates/test-analyzer`** — test pattern analyzer and falsification detector for Rust projects.
 - **`crates/playground`** — dev-dependency harness with demo binaries (`dogfood_harness`, `lsif_demo`).
 - **`crates/anti-llm-cheat-lsp`** — the diagnostic canary: an LSP that detects reintroduction of plain `tower-lsp`, fake receipts, fake routes, and victory language. Implements `RulePackServer` via a `scan_uri_classified` override that bridges the internal AhoCorasick engine into `ClassifiedFindings`. Virtual document `anti-llm://process-model` surfaces a live DFG + Declare conformance report from active diagnostics. Other examples (`pattern-lsp`, `clap-noun-verb-lsp`, `axum-lsp`, `bevy-lsp`, `tex-lsp`, `wasm4pm-compat-lsp`) are workspace members and must keep compiling.
 
@@ -312,9 +315,9 @@ pub fn do_thing(instance_id: String) -> Result<DoThingResult> {
 
 Add `pub mod your_noun;` to `crates/lsp-max-cli/src/nouns/mod.rs`. The `linkme` crate auto-discovers `#[verb]` items; no manual wiring is needed beyond the `mod` declaration.
 
-### Current nouns (31 total, in mod.rs order)
+### Current nouns (44 total, in mod.rs order)
 
-`admission`, `agent`, `alias`, `batch`, `client`, `config`, `conformance`, `diagnostics`, `doctor`, `event`, `export`, `gate`, `history`, `hook`, `import`, `logs`, `metamodel`, `metrics`, `ocel`, `plugin`, `process`, `receipt`, `repair`, `rpc`, `server`, `snapshot`, `state`, `swarm`, `task`, `telemetry`, `workspace`
+`admission`, `admit`, `agent`, `alias`, `batch`, `client`, `config`, `conformance`, `diagnostics`, `doctor`, `event`, `explain`, `export`, `gate`, `generate`, `ggen`, `history`, `hook`, `import`, `insight`, `intent`, `logs`, `mesh`, `metamodel`, `metrics`, `ocel`, `ontology`, `pack`, `pipeline`, `plugin`, `process`, `receipt`, `repair`, `rpc`, `server`, `snapshot`, `state`, `stream`, `swarm`, `task`, `telemetry`, `template`, `testmatrix`, `workspace`
 
 ### State path resolution
 
