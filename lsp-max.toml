@@ -35,3 +35,13 @@ secondary_extensions = []
 priority = "full"
 # Cover the whole GGEN- namespace (TPL/YIELD/SRC and others). Only ERROR blocks.
 andon_code_prefixes = ["GGEN-"]
+
+[[server]]
+id = "anti-llm-cheat-lsp"
+command = "/Users/sac/anti-llm-cheat-lsp/target/debug/anti-llm-cheat-lsp"
+args = ["server"]
+primary_extensions = [".tsx", ".jsx"]
+secondary_extensions = [".ts", ".js"]
+priority = "full"
+# React admissibility and SRVE architecture codes triggering ANDON
+andon_code_prefixes = ["ANTI-REACT-", "SRVE-", "ANTI-LLM-"]
